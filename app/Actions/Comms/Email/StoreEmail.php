@@ -97,7 +97,7 @@ class StoreEmail extends OrgAction
         $liveSnapShot = StoreEmailSnapshot::make()->action(
             $email,
             $snapshotData,
-            strict: false, // todo check this
+            strict: false,
         );
 
         $email->update(
@@ -128,6 +128,7 @@ class StoreEmail extends OrgAction
         );
         if ($addLiveSnapshot) {
             data_set($snapshotData, 'state', SnapshotStateEnum::LIVE);
+
 
             $liveSnapShot = StoreEmailSnapshot::make()->action(
                 $email,

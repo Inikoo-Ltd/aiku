@@ -38,6 +38,9 @@ class UpdateProductCategory extends OrgAction
 
     public function handle(ProductCategory $productCategory, array $modelData): ProductCategory
     {
+        $originalImageId = $productCategory->image_id;
+
+
         if (Arr::has($modelData, 'department_id')) {
             $departmentId = Arr::pull($modelData, 'department_id');
             if ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
@@ -60,19 +63,30 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
+        if (Arr::has($modelData, 'image')) {
+            $imageData = ['image' => Arr::pull($modelData, 'image')];
+            if ($imageData['image']) {
+                $this->processCatalogueImage($imageData, $productCategory);
+            } else {
+                data_set($modelData, 'image_id', null, false);
+            }
 
-        $imageData = ['image' => Arr::pull($modelData, 'image')];
-        if ($imageData['image']) {
-            $this->processCatalogueImage($imageData, $productCategory);
         }
+
         $originalMasterProductCategory = null;
         if (Arr::has($modelData, 'master_product_category_id')) {
             $originalMasterProductCategory = $productCategory->masterProductCategory;
         }
 
-
         $productCategory = $this->update($productCategory, $modelData, ['data']);
-        $changes         = $productCategory->getChanges();
+        $productCategory->refresh();
+
+
+        if (!$productCategory->image_id && $originalImageId) {
+            $productCategory->images()->detach($originalImageId);
+        }
+
+        $changes = Arr::except($productCategory->getChanges(), ['updated_at']);
 
         if (Arr::hasAny($changes, ['code', 'name', 'type'])) {
             ProductCategoryRecordSearch::dispatch($productCategory);
@@ -93,11 +107,49 @@ class UpdateProductCategory extends OrgAction
             }
         }
 
+        if (Arr::has($changes, 'name')) {
+            UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
+                'translations' => [
+                    'name' => [$productCategory->shop->language->code => Arr::pull($modelData, 'name')]
+                ]
+            ]);
+
+        }
+
+        if (Arr::has($changes, 'description_title')) {
+            UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
+                'translations' => [
+                    'description_title' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_title')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changes, 'description')) {
+            UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
+                'translations' => [
+                    'description' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changes, 'description_extra')) {
+            UpdateProductCategoryAndMasterTranslations::make()->action($productCategory, [
+                'translations' => [
+                    'description_extra' => [$productCategory->shop->language->code => Arr::pull($modelData, 'description_extra')]
+                ]
+            ]);
+        }
+
+
+
+
+
         if (Arr::hasAny($changes, [
             'code',
             'name',
             'type',
-            'state'
+            'state',
+            'name_i8n'
         ])) {
             $this->productCategoryHydrators($productCategory);
             if ($productCategory->webpage_id) {
@@ -118,6 +170,20 @@ class UpdateProductCategory extends OrgAction
         return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
+    public function prepareForValidation()
+    {
+        if ($this->has('department_or_sub_department_id')) {
+            $parent = ProductCategory::find($this->get('department_or_sub_department_id'));
+            if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+                $this->set('department_id', $parent->id);
+                $this->set('sub_department_id', null);
+            } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $this->set('sub_department_id', $parent->id);
+                $this->set('department_id', $parent->department->id);
+            }
+        }
+    }
+
 
     public function rules(): array
     {
@@ -130,17 +196,17 @@ class UpdateProductCategory extends OrgAction
                     table: 'product_categories',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
                         ['column' => 'type', 'value' => $this->productCategory->type, 'operator' => '='],
-                        ['column' => 'id', 'value' => $this->productCategory->id, 'operator' => '!=']
+                        ['column' => 'id', 'value' => $this->productCategory->id, 'operator' => '!='],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
 
                     ]
                 ),
             ],
             'name'              => ['sometimes', 'max:250', 'string'],
-            'image_id'          => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'image_id'          => ['sometimes', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
             'state'             => ['sometimes', 'required', Rule::enum(ProductCategoryStateEnum::class)],
-            'description'       => ['sometimes', 'required', 'max:65500'],
+            'description'       => ['sometimes', 'nullable', 'max:65500'],
             'description_title' => ['sometimes', 'nullable', 'max:255'],
             'description_extra' => ['sometimes', 'nullable', 'max:65500'],
             'department_id'     => [
@@ -151,22 +217,28 @@ class UpdateProductCategory extends OrgAction
             ],
             'sub_department_id' => [
                 'sometimes',
+                'nullable',
                 Rule::exists('product_categories', 'id')
                     ->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)
                     ->where('shop_id', $this->shop->id)
             ],
 
-            'follow_master' => ['sometimes', 'boolean'],
-            'image'         => [
+            'follow_master'              => ['sometimes', 'boolean'],
+            'image'                      => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'webpage_id'    => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
-            'url'           => ['sometimes', 'nullable', 'string', 'max:250'],
-            'images'        => ['sometimes', 'array'],
-
+            'webpage_id'                 => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                        => ['sometimes', 'nullable', 'string', 'max:250'],
+            'images'                     => ['sometimes', 'array'],
+            'master_product_category_id' => ['sometimes', 'integer', 'nullable', Rule::exists('master_product_categories', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
+            'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0'],
+            'name_i8n' => ['sometimes', 'array'],
+            'description_title_i8n' => ['sometimes', 'array'],
+            'description_i8n' => ['sometimes', 'array'],
+            'description_extra_i8n' => ['sometimes', 'array'],
         ];
 
         if (!$this->strict) {

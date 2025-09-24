@@ -179,7 +179,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
         </div>
 
         <!-- Section: Sub Navigaiton -->
-        <div class="flex flex-col gap-y-1 mb-1">
+        <div class="flex flex-col gap-y-3 lg:gap-y-1 mb-1">
             <template v-for="nav, navIndex in currentActiveHorizontal?.subNavigation" :key="`${navIndex}`">
                 <RetinaNavigationSimple :nav="nav" :navKey="navIndex" />
             </template>

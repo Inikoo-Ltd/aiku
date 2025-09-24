@@ -39,8 +39,6 @@ use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
 
 /**
- *
- *
  * @property int $id
  * @property ProductCategoryTypeEnum $type
  * @property ProductCategoryStateEnum $state
@@ -80,6 +78,13 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_i8n
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
+ * @property string|null $cost_price_ratio
+ * @property int|null $lifestyle_image_id
+ * @property bool|null $bucket_images images following the buckets
+ * @property bool|null $is_name_reviewed
+ * @property bool|null $is_description_title_reviewed
+ * @property bool|null $is_description_reviewed
+ * @property bool|null $is_description_extra_reviewed
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
@@ -113,7 +118,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static Builder<static>|ProductCategory whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
  * @method static Builder<static>|ProductCategory whereLocale(string $column, string $locale)
  * @method static Builder<static>|ProductCategory whereLocales(string $column, array $locales)
- * @method static Builder<static>|ProductCategory withTrashed()
+ * @method static Builder<static>|ProductCategory withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|ProductCategory withoutTrashed()
  * @mixin Eloquent
  */

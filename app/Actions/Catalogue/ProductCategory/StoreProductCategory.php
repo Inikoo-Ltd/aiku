@@ -44,23 +44,32 @@ class StoreProductCategory extends OrgAction
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
         if (class_basename($parent) == 'ProductCategory') {
+            $shop = $parent->shop;
             data_set($modelData, 'shop_id', $parent->shop_id);
-            data_set($modelData, 'department_id', $parent->id);
             data_set($modelData, 'parent_id', $parent->id);
 
             if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 data_set($modelData, 'department_id', $parent->id);
+                data_set($modelData, 'sub_department_id', null);
             } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 data_set($modelData, 'sub_department_id', $parent->id);
+                data_set($modelData, 'department_id', $parent->department_id);
             }
         } else {
             $modelData['shop_id'] = $parent->id;
+            $shop = $parent;
         }
 
-        $productCategory = DB::transaction(function () use ($modelData) {
-            /** @var ProductCategory $productCategory */
-            $productCategory = ProductCategory::create($modelData);
+        if ($shop->language->code == 'en') {
+            data_set($modelData, 'is_name_reviewed', true);
+            data_set($modelData, 'is_description_title_reviewed', true);
+            data_set($modelData, 'is_description_reviewed', true);
+            data_set($modelData, 'is_description_extra_reviewed', true);
+        }
 
+
+        $productCategory = DB::transaction(function () use ($modelData) {
+            $productCategory = ProductCategory::create($modelData);
             $productCategory->stats()->create();
             $productCategory->orderingIntervals()->create();
             $productCategory->salesIntervals()->create();
@@ -110,7 +119,8 @@ class StoreProductCategory extends OrgAction
                     ->max(12 * 1024)
             ],
             'state'       => ['sometimes', Rule::enum(ProductCategoryStateEnum::class)],
-            'description' => ['sometimes', 'max:1500'],
+            'description' => ['sometimes', 'max:65500'],
+            'master_product_category_id' => ['sometimes', Rule::exists('master_product_categories', 'id')->where('group_id', $this->organisation->group_id)]
 
         ];
 
@@ -202,6 +212,4 @@ class StoreProductCategory extends OrgAction
             ]);
         }
     }
-
-
 }

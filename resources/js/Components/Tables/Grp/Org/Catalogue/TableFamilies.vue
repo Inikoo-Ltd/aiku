@@ -14,8 +14,10 @@ import { routeType } from "@/types/route"
 import { remove as loRemove } from 'lodash-es'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCheck } from "@fal";
+import { faCheck, faTimesCircle, faCheckCircle } from "@fal";
 import { RouteParams } from "@/types/route-params";
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faCheck)
 
@@ -30,7 +32,6 @@ const props = defineProps<{
     isCheckBox?: boolean
 }>()
 
-console.log(props)
 
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
@@ -65,7 +66,22 @@ function familyRoute(family: Family) {
             return route(
                 "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show",
                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).department, (route().params as RouteParams).subDepartment, family.slug])
+        case "grp.org.shops.show.catalogue.sub_departments.show.families.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.families.show",
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).subDepartment, family.slug])
+        case "grp.masters.master_shops.show.master_collections.show":
+            return route(
+                "grp.masters.master_shops.show.master_families.show",
+                [(route().params as RouteParams).masterShop, family.slug])
         case 'grp.overview.catalogue.families.index':
+            return route(
+                'grp.org.shops.show.catalogue.families.show',
+                [family.organisation_slug, family.shop_slug, family.slug])
+        case 'grp.masters.master_shops.show.master_departments.show.master_families.show':
+        case 'grp.masters.master_shops.show.master_families.show':
+        case 'grp.masters.master_shops.show.master_sub_departments.master_families.show':
+        case 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show':
             return route(
                 'grp.org.shops.show.catalogue.families.show',
                 [family.organisation_slug, family.shop_slug, family.slug])
@@ -78,6 +94,10 @@ function shopRoute(family: Family) {
             return route(
                 "grp.org.shops.show.catalogue.dashboard",
                 [(route().params as RouteParams).organisation, family.shop_slug])
+        default:
+            return route(
+                "grp.org.shops.show.catalogue.dashboard",
+                [family.organisation_slug, family.shop_slug])
     }
 }
 function productRoute(family: Family) {
@@ -108,7 +128,7 @@ function departmentRoute(family: Family) {
     }
 }
 
-function collectionRoute(shop_slug: string, collection: { id: string, name: string, code?: string }) {
+function collectionRoute(organisation_slug: string, shop_slug: string, collection: { id: string, name: string, code?: string }) {
     switch (route().current()) {
         case 'xxxxxxxxx':
             return route(
@@ -122,7 +142,7 @@ function collectionRoute(shop_slug: string, collection: { id: string, name: stri
             return route(
                 "grp.org.shops.show.catalogue.collections.show",
                 {
-                    organisation: (route().params as RouteParams).organisation,
+                    organisation: organisation_slug,
                     shop: shop_slug,
                     collection: collection.slug
                 })
@@ -134,7 +154,7 @@ function subDepartmentRoute(family: Family) {
         case 'grp.org.shops.show.catalogue.families.index':
             return route(
                 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
-                 [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug, family.sub_department_slug])
+                [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, family.department_slug, family.sub_department_slug])
         case 'grp.org.shops.show.catalogue.departments.show.families.index':
             return route(
                 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
@@ -142,41 +162,57 @@ function subDepartmentRoute(family: Family) {
     }
 }
 
+function masterFamilyRoute(family: Family) {
+    if (!family.master_product_category_id) {
+        return '';
+    }
+
+    return route(
+        "grp.helpers.redirect_master_product_category",
+        [family.master_product_category_id]);
+}
+
 const isLoadingDetach = ref<string[]>([])
+
+const dotClass = (filled: boolean) =>
+    filled ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600";
+const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle);
 
 </script>
 
 <template>
-    <Table
-        :resource="data"
-        :name="tab"
-        class="mt-5"
-        :isCheckBox="isCheckBox"
-        @onSelectRow="(item) => (console.log('qqqq', item), emits('selectedRow', item))"
-    >
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckBox"
+        @onSelectRow="(item) => (console.log('qqqq', item), emits('selectedRow', item))">
         <template #cell(state)="{ item: family }">
             <Icon :data="family.state" />
         </template>
         <template #cell(code)="{ item: family }">
-            <Link :href="familyRoute(family)" class="primaryLink">
+            <div class="whitespace-nowrap">
+                <Link :href="(masterFamilyRoute(family) as string)" v-tooltip="trans('Go to Master')" class="mr-1"
+                    :class="[family.master_product_category_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
+                </Link>
+
+                <Link :href="familyRoute(family)" class="primaryLink">
                 {{ family["code"] }}
-            </Link>
+                </Link>
+            </div>
         </template>
         <template #cell(shop_code)="{ item: family }">
             <Link :href="shopRoute(family)" class="secondaryLink">
-                {{ family["shop_code"] }}
+            {{ family["shop_code"] }}
             </Link>
         </template>
         <template #cell(current_products)="{ item: family }">
             <Link :href="productRoute(family)" class="primaryLink">
-                {{ family["current_products"] }}
+            {{ family["current_products"] }}
             </Link>
         </template>
 
         <!-- Column: Department code -->
         <template #cell(department_code)="{ item: family }">
             <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
-                {{ family["department_code"] }}
+            {{ family["department_code"] }}
             </Link>
 
             <div v-else>
@@ -187,7 +223,7 @@ const isLoadingDetach = ref<string[]>([])
         <!-- Column: Department name -->
         <template #cell(department_name)="{ item: family }">
             <Link v-if="family.department_slug" :href="departmentRoute(family)" class="secondaryLink">
-                {{ family["department_name"] }}
+            {{ family["department_name"] }}
             </Link>
         </template>
 
@@ -196,8 +232,10 @@ const isLoadingDetach = ref<string[]>([])
             <div class="flex flex-col gap-2">
                 <ul>
                     <li v-for="collect in family.collections" :key="collect.id" class="list-disc">
-                        <Link :href="collectionRoute(family.shop_slug, collect)" class="secondaryLink w-fit">
-                            {{ collect.name }} <span v-if="collect.code" class="text-gray-400 italic">({{ collect.code }})</span>
+                        <Link :href="collectionRoute(family.organisation_slug, family.shop_slug, collect)"
+                            class="secondaryLink w-fit">
+                        {{ collect.name }} <span v-if="collect.code" class="text-gray-400 italic">({{ collect.code
+                            }})</span>
                         </Link>
                     </li>
                 </ul>
@@ -211,50 +249,61 @@ const isLoadingDetach = ref<string[]>([])
         </template>
         <template #cell(sub_department_name)="{ item: family }">
             <Link v-if="family.sub_department_slug" :href="subDepartmentRoute(family)" class="secondaryLink">
-                {{ family["sub_department_code"] }}
+            {{ family["sub_department_code"] }}
             </Link>
             <span v-else class="text-xs text-gray-400 italic">-</span>
         </template>
 
         <template #cell(actions)="{ item }">
-            <Link
-                v-if="routes?.detach?.name"
-                as="button"
-                :href="route(routes.detach.name, routes.detach.parameters)"
-                :method="routes.detach.method"
-                :data="{
+            <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
+                :method="routes.detach.method" :data="{
                     family: item.id
-                }"
-                preserve-scroll
-                @start="() => isLoadingDetach.push('detach' + item.id)"
-                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)"
-            >
-                <Button
-                    icon="fal fa-times"
-                    type="negative"
-                    size="xs"
-                    :loading="isLoadingDetach.includes('detach' + item.id)"
-                />
+                }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
         </template>
-         <template #cell(action)="{ item }">
-            <Link
-                v-if="routes?.detach?.name"
-                as="button"
-                :href="route(routes.detach.name, {...routes.detach.parameters, family : item.id})"
-                :method="routes.detach.method"
-                preserve-scroll
-                @start="() => isLoadingDetach.push('detach' + item.id)"
-                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)"
-            >
-                <Button
-                    icon="fal fa-times"
-                    type="negative"
-                    size="xs"
-                    :loading="isLoadingDetach.includes('detach' + item.id)"
-                />
+        <template #cell(action)="{ item }">
+            <Link v-if="routes?.detach?.name" as="button"
+                :href="route(routes.detach.name, { ...routes.detach.parameters, family: item.id })"
+                :method="routes.detach.method" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
+        </template>
+        <template #cell(is_name_reviewed)="{ item }">
+            <div >
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_name_reviewed),
+                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="'Review name'" />
+            </div>
+        </template>
+        <template #cell(is_description_reviewed)="{ item }">
+            <div>
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_description_reviewed),
+                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="'Review name'" />
+            </div>
+        </template>
+        <template #cell(is_description_title_reviewed)="{ item }">
+            <div>
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_description_title_reviewed),
+                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="'Review name'" />
+            </div>
+        </template>
+        <template #cell(is_description_extra_reviewed)="{ item }">
+            <div>
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_description_extra_reviewed),
+                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="'Review name'" />
+            </div>
         </template>
     </Table>
-    <!-- <pre>{{ data.data[0] }}</pre> -->
 </template>

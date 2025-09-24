@@ -80,8 +80,8 @@ class IndexMasterDepartments extends OrgAction
             'master_product_category_stats.number_current_departments as used_in',
             'master_product_category_stats.number_current_master_product_categories_type_family as families',
             'master_product_category_stats.number_current_master_assets_type_product as products',
-            'master_product_category_stats.number_current_sub_departments as sub_departments',
-            'master_product_category_stats.number_current_collections as collections',
+            'master_product_category_stats.number_current_master_product_categories_type_sub_department as sub_departments',
+            'master_product_category_stats.number_collections_state_active as collections',
         ]);
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
@@ -97,7 +97,7 @@ class IndexMasterDepartments extends OrgAction
 
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
-            ->allowedSorts(['code', 'name'])
+            ->allowedSorts(['code', 'name','used_in','sub_departments','collections','families','products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -123,16 +123,16 @@ class IndexMasterDepartments extends OrgAction
 
 
             if ($parent instanceof Group) {
-                $table->column('master_shop_code', __('Shop'), sortable: true);
+                $table->column('master_shop_code', __('M. Shop'), sortable: true);
             }
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current shops with this master'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'sub_departments', label: __('sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'collections', label: __('collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'families', label: __('families'), tooltip: __('current master families'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'products', label: __('products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'sub_departments', label: __('M. Sub-departments'), tooltip: __('current sub departments'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'collections', label: __('M. Collections'), tooltip: __('current collections'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'families', label: __('M. Families'), tooltip: __('current master families'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'products', label: __('M. Products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -173,6 +173,28 @@ class IndexMasterDepartments extends OrgAction
             $subNavigation = null;
         }
 
+        $actions = [];
+        if ($request->route()->getName() == 'grp.masters.master_shops.show.master_departments.index') {
+            $actions = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'create',
+                    'tooltip' => __('new master department'),
+                    'label'   => __('master department'),
+                    'route'   => match ($this->parent::class) {
+                        MasterProductCategory::class => [
+                            'name'       => 'grp.masters.master_departments.create',
+                            'parameters' => $request->route()->originalParameters()
+                        ],
+                        default => [
+                            'name'       => 'grp.masters.master_shops.show.master_departments.create',
+                            'parameters' => $request->route()->originalParameters()
+                        ]
+                    }
+                ],
+            ];
+        }
+
 
         return Inertia::render(
             'Masters/MasterDepartments',
@@ -189,6 +211,7 @@ class IndexMasterDepartments extends OrgAction
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
+                    'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => MasterDepartmentsResource::collection($masterDepartments),

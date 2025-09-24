@@ -14,8 +14,6 @@ class FetchAuroraUpload extends FetchAurora
 {
     protected function parseModel(): void
     {
-        //   print_r($this->auroraModelData);
-
 
         if ($this->auroraModelData->{'Upload Object'} == 'production_part') {
             return;

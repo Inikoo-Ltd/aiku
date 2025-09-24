@@ -136,6 +136,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $deleted_at
  * @property string|null $source_id
  * @property string|null $colour
+ * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -270,6 +271,7 @@ class Organisation extends Model implements HasMedia, Auditable
         'settings' => 'array',
         'source'   => 'array',
         'location' => 'array',
+        'forbidden_dispatch_countries' => 'array',
         'type'     => OrganisationTypeEnum::class
     ];
 
@@ -277,7 +279,8 @@ class Organisation extends Model implements HasMedia, Auditable
         'data'     => '{}',
         'settings' => '{}',
         'source'   => '{}',
-        'location' => '{}'
+        'location' => '{}',
+        'forbidden_dispatch_countries' => '{}'
     ];
 
     protected $guarded = [];

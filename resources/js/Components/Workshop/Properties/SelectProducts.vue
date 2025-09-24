@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 import draggable from 'vuedraggable'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -10,12 +10,30 @@ import { set } from 'lodash-es'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import Image from '@/Components/Image.vue'
+import { notify } from '@kyvg/vue3-notification'
+import { Select } from 'primevue'
+import { isFutureDatePassed } from '@/Composables/useFormatTime'
 
 interface Product {
     id: number
     code: string
     name: string
     slug: string
+}
+
+interface LuigiProductHits {
+    attributes: {
+        image_url: string
+        price: string
+        formatted_price: string
+        department: string[]
+        category: string[]
+        product_code: string[]
+        stock_qty: string[]
+        title: string
+        web_url: string[]
+    }
+    url: string
 }
 
 // Props
@@ -49,6 +67,7 @@ const props = defineProps<{
     }
 }>()
 
+const webpage_luigi_tracker_id = inject('webpage_luigi_tracker_id', null)
 
 const emits = defineEmits<{
     (e: 'update:modelValue', value: keyof typeof props.modelValue): void
@@ -124,7 +143,12 @@ const localType = computed({
     if (newType === 'other-family') {
         fetchProductFromFamily(normalizedModelValue.value.other_family?.id)
     }
-    
+
+    if (is_luigi_value(newType)) {
+        const luigi_type = newType.replace(/^luigi-/, '')
+        fetchRecommenders(luigi_type)
+    }
+
     emits('update:modelValue', {
         type: newType,
         products: normalizedModelValue.value.products ?? [],
@@ -178,117 +202,249 @@ function removeProduct(index: number) {
   updated.splice(index, 1)
   localProducts.value = updated
 }
+
+// Section: Luigi fetch
+const listProducts = ref<LuigiProductHits[] | null>()
+const isLoadingFetchLuigi = ref(false)
+const isLuigiHaveError = ref(false)
+const fetchRecommenders = async (recommendation_type: string) => {
+    // isLuigiHaveError.value = false
+    // try {
+    //     isLoadingFetchLuigi.value = true
+    //     const response = await axios.post(
+    //         `https://live.luigisbox.com/v1/recommend?tracker_id=${webpage_luigi_tracker_id}`,
+    //         [
+    //             {
+    //                 "blacklisted_item_ids":  [],
+    //                 "item_ids": [],
+    //                 "recommendation_type": recommendation_type || "test_reco",
+    //                 "recommender_client_identifier": recommendation_type || "test_reco",
+    //                 "size": 4,
+    //                 // "user_id": "1234",
+    //                 "recommendation_context":  {},
+    //                 // "hit_fields": ["url", "title"]
+    //             }
+    //         ],
+    //         {
+    //             headers: {
+    //                 'Content-Type': 'application/json;charset=utf-8'
+    //             }
+    //         }
+    //     )
+    //     if (response.status !== 200) {
+    //         console.error('Error fetching recommenders:', response.statusText)
+    //     }
+    //     console.log('Response axios:', response.data)
+    //     listProducts.value = response.data[0].hits
+    //     console.log('list products xxxxx:', listProducts.value)
+    // } catch (error: any) {
+    //     isLuigiHaveError.value = true
+    //     console.error('Error on fetching recommendations:', error)
+    //     notify({
+    //         title: trans("Something went wrong"),
+    //         text: trans("Recommendations might not be active yet. Please contact the support team."),
+    //         type: 'error'
+    //     })
+    // }
+    // isLoadingFetchLuigi.value = false
+}
+const is_luigi_value = (value: string) => {
+    return ['luigi-trends', 'luigi-recently_ordered', 'luigi-last_seen', 'luigi-item_detail_alternatives'].includes(value)
+}
+
+
+const listType = [
+    {
+        label: trans('Custom'),
+        value: 'custom'
+    },
+    {
+        label: trans('Best Seller'),
+        value: 'best-seller'
+    },
+    {
+        label: trans('Other Family'),
+        value: 'other-family'
+    },
+    {
+        label: trans('Current Family'),
+        value: 'current-family'
+    },
+    {
+        label: trans('Luigi: Top Trending'),
+        value: 'luigi-trends',
+        show_new_until: '2025-09-27',
+        is_disabled: true
+    },
+    {
+        label: trans('Luigi: Customer Recently Ordered'),
+        value: 'luigi-recently_ordered',
+        show_new_until: '2025-09-27',
+        is_disabled: true
+    },
+    {
+        label: trans('Luigi: Recently Viewed'),
+        value: 'luigi-last_seen',
+        show_new_until: '2025-09-27',
+        is_disabled: true
+    },
+    {
+        label: trans('Luigi: You might also like'),
+        value: 'luigi-item_detail_alternatives',
+        show_new_until: '2025-09-27',
+        is_disabled: true
+    }
+]
 </script>
 
 <template>
   <div class="space-y-6">
     <!-- Type Selection -->
     <div>
-      <label class="block mb-2 font-semibold text-gray-700">Show Type</label>
-      <select
-        v-model="localType"
-        class="border border-gray-300 px-4 py-2 rounded w-full focus:ring-2 focus:ring-primary focus:outline-none"
-      >
-        <option value="">Select type</option>
-        <option value="custom">Custom</option>
-        <option value="best-seller">Best Seller</option>
-        <option value="other-family">Other Family</option>
-        <option value="current-family">
-          <div>
-            Current Family
-            <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
-          </div>
-        </option>
-      </select>
+        <label class="block text-sm text-gray-700">Select view type:</label>
+        <!-- <select
+            v-model="localType"
+            class="border border-gray-300 px-4 py-2 rounded w-full focus:ring-2 focus:ring-primary focus:outline-none"
+        >
+            <option value="">Select type</option>
+            <option value="custom">Custom</option>
+            <option value="best-seller">Best Seller</option>
+            <option value="other-family">Other Family</option>
+            <option value="current-family">
+                <div>
+                    Current Family
+                    <FontAwesomeIcon icon="fas fa-plus" class="text-gray-500" fixed-width aria-hidden="true" />
+                </div>
+            </option>
+            <option value="luigi-trends">Luigi: Top Trending</option>
+            <option value="luigi-recently_ordered">Luigi: Customer Recently Ordered</option>
+            <option value="luigi-last_seen">Luigi: Recently Viewed</option>
+            <option value="luigi-item_detail_alternatives">Luigi: You might also like</option>
+        </select> -->
+
+        <Select
+            v-model="localType"
+            :options="listType"
+            :optionDisabled="(e) => e.is_disabled"
+            optionValue="value"
+            optionLabel="label"
+            placeholder="Select recommendation type"
+            class="w-full"
+        >
+            <template #option="slotProps">
+                <div class="flex items-center">
+                    <div>{{ slotProps.option.label }}</div>
+                    <div v-if="slotProps.option.show_new_until && !isFutureDatePassed(slotProps.option.show_new_until)"
+                        class="ml-2 inline bg-yellow-100 border border-yellow-300 text-yellow-600 whitespace-nowrap items-center gap-x-1 rounded select-none pl-0.5 pr-1 py-0.5 text-xs w-fit font-medium"
+                    >
+                        <FontAwesomeIcon icon="fas fa-sparkles" class="" fixed-width aria-hidden="true" />
+                        {{ trans("New") }}
+                    </div>
+                </div>
+            </template>
+        </Select>
     </div>
 
     <!-- Draggable Custom Products -->
-    <draggable
-      v-if="localType === 'custom'"
-      v-model="localProducts"
-      item-key="id"
-      handle=".drag-handle"
-      class="space-y-4"
-      :animation="200"
-    >
-      <template #item="{ element: product, index }">
-        <div class="border border-gray-300 rounded p-4 bg-white shadow-sm relative group">
-          <!-- Remove Product -->
-          <button
-            type="button"
-            class="absolute top-2 right-2 text-gray-400 hover:text-red-600"
-            @click="removeProduct(index)"
-            title="Remove product"
-          >
-            <FontAwesomeIcon :icon="faTimes" />
-          </button>
-
-          <!-- Drag Handle -->
-          <div class="cursor-move drag-handle text-gray-400 hover:text-gray-600 text-sm mb-2 flex items-center gap-1">
-            <FontAwesomeIcon :icon="faGripVertical" />
-            <span>Drag to reorder</span>
-          </div>
-
-          <!-- Product Selector -->
-          <PureMultiselectInfiniteScroll
-            :modelValue="product"
-            :object="true"
-            @update:modelValue="(val) => updateProductAt(index, val)"
-            :fetchRoute="{
-              name: 'grp.json.shop.products',
-              parameters: {
-                shop: (route().params as any).shop
-              }
-            }"
-            placeholder="Select product"
-            valueProp="slug"
-            :required="true"
-          >
-            <template #singlelabel="{ value }">
-              <div v-if="value">{{ value.code }} - {{ value.name }}</div>
-              <div v-else class="text-gray-400 italic">Select product</div>
-            </template>
-
-            <template #option="{ option }">
-              <div>{{ option.code }} - {{ option.name }}</div>
-            </template>
-          </PureMultiselectInfiniteScroll>
+    <template v-if="localType === 'custom'">
+        <draggable
+          v-model="localProducts"
+          item-key="id"
+          handle=".drag-handle"
+          class="space-y-4"
+          :animation="200"
+        >
+          <template #item="{ element: product, index }">
+            <div class="border border-gray-300 rounded p-4 bg-white shadow-sm relative group">
+              <!-- Remove Product -->
+              <button
+                type="button"
+                class="absolute top-2 right-2 text-gray-400 hover:text-red-600"
+                @click="removeProduct(index)"
+                title="Remove product"
+              >
+                <FontAwesomeIcon :icon="faTimes" />
+              </button>
+              <!-- Drag Handle -->
+              <div class="cursor-move drag-handle text-gray-400 hover:text-gray-600 text-sm mb-2 flex items-center gap-1">
+                <FontAwesomeIcon :icon="faGripVertical" />
+                <span>Drag to reorder</span>
+              </div>
+              <!-- Product Selector -->
+              <PureMultiselectInfiniteScroll
+                :modelValue="product"
+                :object="true"
+                @update:modelValue="(val) => updateProductAt(index, val)"
+                :fetchRoute="{
+                  name: 'grp.json.shop.products',
+                  parameters: {
+                    shop: (route().params as any).shop
+                  }
+                }"
+                placeholder="Select product"
+                valueProp="slug"
+                :required="true"
+              >
+                <template #singlelabel="{ value }">
+                  <div v-if="value">{{ value.code }} - {{ value.name }}</div>
+                  <div v-else class="text-gray-400 italic">Select product</div>
+                </template>
+                <template #option="{ option }">
+                  <div>{{ option.code }} - {{ option.name }}</div>
+                </template>
+              </PureMultiselectInfiniteScroll>
+            </div>
+          </template>
+        </draggable>
+        
+        <!-- Add Product Button -->
+        <div class="xpt-2">
+            <Button type="dashed" icon="fas fa-plus" label="Add Product" full @click="addEmptyProduct" />
         </div>
-      </template>
-    </draggable>
-
-    <!-- Add Product Button -->
-    <div v-if="localType === 'custom'" class="xpt-2">
-        <Button type="dashed" icon="fas fa-plus" label="Add Product" full @click="addEmptyProduct" />
-    </div>
+    </template>
 
     <!-- Section: Best Seller Read-Only List -->
     <div v-else-if="localType === 'best-seller'" class="space-y-4">
-        <div
-            v-for="(product, index) in normalizedModelValue.top_sellers"
-            :key="product.id || index"
-            class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-sm relative grid grid-cols-5 gap-x-2"
-        >
-            <div class=" h-fit shadow">
-                <Image
-                    :src="product.web_images?.main?.thumbnail"
-                    xclass=" object-cover rounded"
-                    imageCover
-                    :alt="product.name"
-                />
+        <div class="relative">
+            <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                <div class="w-full border-t border-gray-300" />
             </div>
-            <div class="col-span-4">
-                <!-- Static Icon -->
-                <div class="text-gray-400 text-sm xmb-2 flex items-center gap-1">
-                    <!-- <FontAwesomeIcon :icon="faGripVertical" /> -->
-                    <span>Best seller product {{ index + 1 }} </span>
+            <div class="relative flex justify-center">
+                <span class="bg-white px-2 text-sm text-gray-500">{{ trans("Products example") }}</span>
+            </div>
+        </div>
+
+        <template v-if="normalizedModelValue.top_sellers?.length">
+            <div
+                v-for="(product, index) in normalizedModelValue.top_sellers"
+                :key="product.id || index"
+                class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-sm relative grid grid-cols-5 gap-x-2"
+            >
+                <div class=" h-fit shadow">
+                    <Image
+                        :src="product.web_images?.main?.thumbnail"
+                        xclass=" object-cover rounded"
+                        imageCover
+                        :alt="product.name"
+                    />
                 </div>
-                <!-- Read-only Product Info -->
-                <div class="text-gray-700">
-                    <div class="font-semibold text-base">{{ product.name }}</div>
-                    <div class="text-xs text-gray-500">Code: {{ product.code }}</div>
+                <div class="col-span-4">
+                    <!-- Static Icon -->
+                    <div class="text-gray-400 text-sm xmb-2 flex items-center gap-1">
+                        <!-- <FontAwesomeIcon :icon="faGripVertical" /> -->
+                        <span>Best seller product {{ index + 1 }} </span>
+                    </div>
+                    <!-- Read-only Product Info -->
+                    <div class="text-gray-700">
+                        <div class="font-semibold text-base">{{ product.name }}</div>
+                        <div class="text-xs text-gray-500">Code: {{ product.code }}</div>
+                    </div>
                 </div>
             </div>
+        </template>
+
+        <div v-else class="text-gray-500 text-sm text-center py-2 bg-gray-200">
+            {{ trans("No products found for best seller.") }}
         </div>
     </div>
 
@@ -344,7 +500,7 @@ function removeProduct(index: number) {
                 >
                     <div class=" h-fit shadow">
                         <Image
-                            :src="product.web_images.main.thumbnail"
+                            :src="product.web_images?.main?.thumbnail"
                             xclass=" object-cover rounded"
                             imageCover
                             :alt="product.name"
@@ -418,5 +574,70 @@ function removeProduct(index: number) {
             {{ trans("No products found in this family.") }}
         </div>
     </div>
+
+    <div v-else-if="is_luigi_value(localType)" class="space-y-4">
+        <div class="relative space-y-2 min-h-12">
+            <div v-if="isLoadingFetchLuigi" class="flex items-center justify-center absolute bg-black/40 text-white text-3xl top-0 inset-0">
+                <LoadingIcon />
+            </div>
+            
+            <!-- <div v-else-if="isLuigiHaveError" class="flex items-center justify-center text-red-500 xtext-3xl">
+                There is an issue retrieve products list from Luigi. Make sure Recommendations was setup in Luigi
+            </div> -->
+
+            <template v-else>
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div class="w-full border-t border-gray-300" />
+                    </div>
+                    <div class="relative flex justify-center">
+                        <span class="bg-white px-2 text-sm text-gray-500">{{ trans("Products example") }}</span>
+                    </div>
+                </div>
+                
+                <template v-if="listProducts?.length">
+                    <div
+                        v-for="(product, index) in listProducts"
+                        :key="`${localType}-${product.url}`"
+                        class="border border-gray-300 rounded px-2 py-4 bg-gray-50 shadow-sm relative grid grid-cols-5 gap-x-2"
+                    >
+                        <div class=" h-fit shadow aspect-square rounded border border-black/5 overflow-hidden">
+                            <img
+                                :src="product.attributes.image_url"
+                                :alt="`Images of ${product.attributes.title}`"
+                                class="w-full h-full object-contain"
+                            />
+                        </div>
+                        <div class="col-span-4">
+                            <!-- Static Icon -->
+                            <!-- <div class="text-gray-400 text-sm xmb-2 flex items-center gap-1">
+                                <span>Product {{ index + 1 }} from {{ normalizedModelValue.other_family?.name }} </span>
+                            </div> -->
+                            <!-- Read-only Product Info -->
+                            <div class="text-gray-700">
+                                <div class="font-semibold">{{ product.attributes.title }}</div>
+                                <div class="text-xs text-gray-500">Code: {{ product.attributes.product_code?.[0] }}</div>
+                                <div class="text-xs text-gray-500">Price: {{ product.attributes.formatted_price }}</div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
+                <div v-else-if="!isLoadingFetchLuigi" class="text-gray-500 text-sm text-center py-3 bg-gray-200">
+                    {{ trans("The products example not displayed here.") }}
+                </div>
+            </template>
+
+
+            
+        </div>
+    </div>
   </div>
 </template>
+
+<style lang="scss">
+.p-select-option.p-select-option-selected {
+    background: color-mix(in srgb, var(--grp-color-0) 85%, #00000000) !important; /* cc = 80% opacity in hex */
+    color: var(--grp-color-1) !important;
+}
+</style>

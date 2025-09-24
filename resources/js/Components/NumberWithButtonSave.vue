@@ -185,10 +185,11 @@ const onClickPlusButton = () => {
 </script>
 
 <template>
-	<div class="relative w-full" :class="parentClass">
+	<div class="relative w-fit" :class="parentClass">
 		<div
 			v-if="true"
 			class="flex items-center justify-center border border-gray-300 rounded gap-y-1 px-1 py-0.5">
+			<slot name="prefix"></slot>
 			<!-- Button: Save -->
 			<button
 				v-if="!noUndoButton"
@@ -248,7 +249,7 @@ const onClickPlusButton = () => {
 						:max="max || undefined"
 						style="width: 100%"
 						:disabled="props.readonly || form.processing"
-						inputClass="!p-1 md:!p-0"
+						inputClass="!p-1 lg:!p-0"
 						:inputStyle="{
 							width: bindToTarget?.fluid ? undefined : '50px',
 							color: props.readonly ? '#6b7280' : colorTheme ?? '#374151',

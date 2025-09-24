@@ -12,12 +12,12 @@ namespace App\Actions\Masters\MasterProductCategory\UI;
 
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\GrpAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\UI\SupplyChain\MasterDepartmentTabsEnum;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
-use App\Http\Resources\Catalogue\FamilyResource;
 use App\Http\Resources\Masters\MasterDepartmentsResource;
+use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -83,7 +83,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
 
                 'upload_image_route' => [
                     'method'     => 'post',
-                    'name'       => 'grp.models.master_product_image.upload',
+                    'name'       => 'grp.models.master_product_category_image.upload',
                     'parameters' => [
                         'masterProductCategory' => $masterDepartment->id
                     ]
@@ -91,7 +91,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
 
                 'update_route' => [
                     'method'     => 'patch',
-                    'name'       => 'grp.models.master_product.update',
+                    'name'       => 'grp.models.master_product_category.update',
                     'parameters' => [
                         'masterProductCategory' => $masterDepartment->id
                     ]
@@ -99,8 +99,8 @@ class ShowMasterDepartmentWorkshop extends GrpAction
 
                 'department'               => MasterDepartmentsResource::make($masterDepartment),
                 'web_block_types'          => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::DEPARTMENT->value)->get()),
-                'families'                 => FamilyResource::collection(
-                    $masterDepartment->children()->where('type', ProductCategoryTypeEnum::FAMILY)->where('status', true)->get()
+                'families'                 => MasterFamiliesResource::collection(
+                    $masterDepartment->children()->where('type', MasterProductCategoryTypeEnum::FAMILY)->where('status', true)->get()
                 ),
                 'web_block_types_families' => WebBlockTypesResource::collection(WebBlockType::where('category', WebBlockCategoryScopeEnum::FAMILY->value)->get()),
             ]
@@ -112,11 +112,11 @@ class ShowMasterDepartmentWorkshop extends GrpAction
         return new DepartmentsResource($masterDepartment);
     }
 
-    public function getBreadcrumbs(MasterShop|Group $parent, MasterProductCategory $department, string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(MasterShop|Group $parent, MasterProductCategory $masterDepartment, string $routeName, array $routeParameters): array
     {
         return ShowMasterDepartment::make()->getBreadcrumbs(
             $parent,
-            $department,
+            $masterDepartment,
             routeName: preg_replace('/blueprint$/', 'show', $routeName),
             routeParameters: $routeParameters,
             suffix: '('.__('Blueprint').')'

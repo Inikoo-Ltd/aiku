@@ -84,6 +84,7 @@ trait WithIrisProductsInWebpage
 
     public function getBaseQuery(string $stockMode): QueryBuilder
     {
+        $customer = request()->user()?->customer;
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
@@ -100,6 +101,18 @@ trait WithIrisProductsInWebpage
         });
         $queryBuilder->join('trade_units', 'trade_units.id', 'model_has_trade_units.trade_unit_id');
 
+        if ($customer) {
+            $basket = $customer->orderInBasket;
+
+            if ($basket) {
+                $queryBuilder->leftjoin('transactions', function ($join) use ($basket) {
+                    $join->on('transactions.model_id', '=', 'products.id')
+                        ->where('transactions.model_type', '=', 'Product')
+                        ->where('transactions.order_id', '=', $basket->id)
+                        ->whereNull('transactions.deleted_at');
+                });
+            }
+        }
 
         return $queryBuilder;
     }
@@ -122,10 +135,13 @@ trait WithIrisProductsInWebpage
 
     public function getSelect(): array
     {
-        return [
+        $select = [
             'products.id',
             'products.image_id',
             'products.code',
+            'products.group_id',
+            'products.organisation_id',
+            'products.shop_id',
             'products.name',
             'products.available_quantity',
             'products.price',
@@ -140,8 +156,15 @@ trait WithIrisProductsInWebpage
             'products.web_images',
             'webpages.url'
         ];
-    }
 
+        $customer = request()->user()?->customer;
+        if ($customer && $customer->orderInBasket) {
+            $select[] = 'transactions.id as transaction_id';
+            $select[] = 'transactions.quantity_ordered as quantity_ordered';
+        }
+
+        return $select;
+    }
     public function getAllowedSorts(): array
     {
         return [

@@ -12,6 +12,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Http\Resources\Helpers\TaxNumberResource;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -75,16 +76,25 @@ class ShowRetinaAccountManagement extends RetinaAction
                                     ],
                                     'contact_address' => [
                                         'type'    => 'address',
-                                        'label'   => __('Address'),
+                                        'label'   => __('Billing Address'),
                                         'value'   => AddressFormFieldsResource::make($customer->address)->getArray(),
                                         'options' => [
                                             'countriesAddressData' => GetAddressData::run()
                                         ]
                                     ],
-                                    'vat'      => [
+//                                    'delivery_address' => [
+//                                        'type'    => 'delivery_address',
+//                                        'label'   => __('Delivery Address'),
+//                                        'value'   => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray(),
+//                                        'options' => [
+//                                            'use_billing_address' => $customer->address_id === $customer->delivery_address_id,
+//                                            'countriesAddressData' => GetAddressData::run()
+//                                        ]
+//                                    ],
+                                    'tax_number'      => [
                                         'type'    => 'tax_number',
-                                        'label'   => __('vat'),
-                                        'value'   => null,
+                                        'label'   => __('Tax number'),
+                                        'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                         'country' => $customer->address->country_code,
                                     ]
                                 ]

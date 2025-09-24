@@ -27,6 +27,7 @@ import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Icon from "../Icon.vue"
 import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 import ButtonExport from "@/Components/ButtonExport.vue"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faTruckCouch, faUpload, faFilePdf, faMapSigns, faNarwhal, faReceipt, faLayerPlus, faPallet, faWarehouse, faEmptySet, faMoneyBillWave)
 
@@ -47,6 +48,15 @@ const originUrl = location.origin
 const layout = inject("layout", layoutStructure)
 
 const isShowDummySlotName = false
+
+const setError = (e) => {
+    console.error("Error", e)
+    notify({
+        title: trans("Something went wrong"),
+        text: e.message || "failed.",
+        type: "error",
+    })
+}
 </script>
 
 
@@ -66,7 +76,7 @@ const isShowDummySlotName = false
             <div :class="Object.keys(data?.parentTag || {}).length || data?.parentTag?.length ? '-mt-1.5' : ''">
                 <template v-if="Object.keys(data?.parentTag || {}).length || data?.parentTag?.length">
                     <div v-if="data?.parentTag?.length" class="flex gap-x-2">
-                        <ButtonWithLink v-for="tag in data?.parentTag" :routeTarget="tag.route">
+                        <ButtonWithLink v-for="tag in data?.parentTag" :routeTarget="tag.route" @error="setError">
                             <template #default="{ isLoadingVisit }">
                                 <div class="cursor-pointer inline-flex items-center gap-x-1 rounded-sm select-none px-1 py-0.5 text-xxs w-fit font-medium border"
                                      :class="`bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-500`"
@@ -80,6 +90,7 @@ const isShowDummySlotName = false
                     </div>
                 </template>
 
+                <!-- Section: Main title group -->
                 <div class="flex leading-none py-1.5 items-center gap-x-2 font-bold text-gray-700 text-2xl tracking-tight ">
                     <div v-if="data.container" class="text-slate-500 text-lg">
                         <Link v-if="data.container.href"
@@ -116,16 +127,24 @@ const isShowDummySlotName = false
                          class="w-6 h-6" />
 
                     <div class="flex flex-col sm:flex-row gap-y-1.5 gap-x-3 sm:items-center ">
-                        <h2 :class="data.noCapitalise ? '' : 'capitalize'" class="space-x-2">
-                            <span v-if="data.model" class="text-gray-400 font-medium">{{ data.model }}</span>
-                            <span class="">{{ useTruncate(data.title, 30) }}</span>
-                        </h2>
+                        <div class="xspace-x-2">
+                            <template v-if="data.model">
+                                <span class="text-gray-400 font-medium">{{ data.model }}</span>
+                                <span>&nbsp;</span>
+                            </template>
+                            <span class="inline-block">{{ useTruncate(data.title, 30) }}</span>
+                        </div>
                         <!-- Section: After Title -->
                         <slot name="afterTitle">
-                            <div v-if="data.iconRight || data.titleRight || data.afterTitle" class="flex gap-x-2 items-center">
+                            <component
+                                    v-if="data.iconRight || data.titleRight || data.afterTitle"
+                                    :is="data?.iconRight?.url ? 'a' : 'div'"
+                                    :href="data?.iconRight?.url ? route(data?.iconRight?.url.name, data?.iconRight?.url.parameters) : ''"
+                                >
+                            <div class="flex gap-x-2 items-center">
                                 <FontAwesomeIcon v-if="data.iconRight" v-tooltip="data.iconRight.tooltip || ''"
-                                                 :icon="data.iconRight?.icon || data.iconRight" class="h-4 align-top" :class="data.iconRight.class"
-                                                 aria-hidden="true"
+                                                 :icon="data.iconRight?.icon || data.iconRight" class="align-top" :class="data.iconRight.class"
+                                                 aria-hidden="true" :color="data.iconRight.color"
                                                  :rotation="data?.iconRight?.icon_rotation"
                                 />
                                 <span v-if="data.titleRight" class="text-lg">{{ data.titleRight }}</span>
@@ -133,12 +152,14 @@ const isShowDummySlotName = false
                                     {{ data.afterTitle.label }}
                                 </div>
                             </div>
+                            </component>
                         </slot>
                         <slot name="platform">
                             <div v-if="data.platform" v-tooltip="data.platform.title || data.platform.name" class=" h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none" v-html="ChannelLogo(data.platform.type)">
                             </div>
 
                         </slot>
+                        <slot name="afterTitle2" />
                     </div>
                 </div>
             </div>
@@ -241,34 +262,39 @@ const isShowDummySlotName = false
                     <Transition name="headlessui">
                         <PopoverPanel class="top-[120%] absolute z-10 right-0 bg-white shadow-lg border border-gray-300 rounded-md p-4 min-w-32 w-fit max-w-96">
                             <div class="flex flex-col items-end sm:flex-row flex-wrap justify-end sm:items-center gap-y-1 gap-x-2 rounded-md">
-                                <template v-for="action in data.wrapped_actions">
+                                <template v-for="(action, wrappedIdx) in data.wrapped_actions">
                                     <template v-if="action">
-                                        <!-- Button -->
-                                        <Action v-if="action.type == 'button'" :action="action" :dataToSubmit="dataToSubmit" />
-
-                                        <!-- ButtonGroup -->
-                                        <div v-if="action.type == 'buttonGroup' && action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
-                                            (action.button?.length || 0) > 1 ? '' : '',
-                                        ]" :style="{
-                                        }">
-                                            <component v-for="(button, index) in action.button" :key="'buttonPH' + index + button.label"
-                                                       :is="button.route?.name ? Link : 'div'"
-                                                       :href="button.route?.name ? route(button.route.name, button.route.parameters) : '#'"
-                                                       class="" :method="button.route?.method || 'get'"
-                                                       @start="() => isButtonLoading = 'buttonGroup' + index"
-                                                       @finish="() => button.fullLoading ? false : isButtonLoading = false"
-                                                       @error="() => button.fullLoading ? isButtonLoading = false : false"
-                                                       :as="button.target ? 'a' : 'div'" :target="button.target">
-                                                <Button :style="button.style" :label="button.label" :icon="button.icon"
-                                                        :loading="isButtonLoading === 'buttonGroup' + index"
-                                                        :iconRight="button.iconRight" :disabled="button.disabled"
-                                                        :key="`ActionButton${button.label}${button.style}`"
-                                                        :tooltip="button.tooltip"
-                                                        class="inline-flex items-center h-full rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0"
-                                                        :class="{ 'rounded-l-md': index === 0, 'rounded-r-md ': index === action.button?.length - 1 }">
-                                                </Button>
-                                            </component>
-                                        </div>
+                                        <slot :name="`wrapped-${kebabCase(action.key ? action.key : wrappedIdx.toString())}`" :action="action">
+                                            <span v-if="isShowDummySlotName">
+                                                {{ `wrapped-${kebabCase(action.key ? action.key : wrappedIdx.toString())}` }}
+                                            </span>
+                                            <!-- Button -->
+                                            <Action v-if="action.type == 'button'" :action="action" :dataToSubmit="dataToSubmit" />
+                                            
+                                            <!-- ButtonGroup -->
+                                            <div v-if="action.type == 'buttonGroup' && action.button?.length" class="rounded-md flex flex-wrap justify-end gap-y-1" :class="[
+                                                (action.button?.length || 0) > 1 ? '' : '',
+                                            ]" :style="{
+                                            }">
+                                                <component v-for="(button, index) in action.button" :key="'buttonPH' + index + button.label"
+                                                           :is="button.route?.name ? Link : 'div'"
+                                                           :href="button.route?.name ? route(button.route.name, button.route.parameters) : '#'"
+                                                           class="" :method="button.route?.method || 'get'"
+                                                           @start="() => isButtonLoading = 'buttonGroup' + index"
+                                                           @finish="() => button.fullLoading ? false : isButtonLoading = false"
+                                                           @error="() => button.fullLoading ? isButtonLoading = false : false"
+                                                           :as="button.target ? 'a' : 'div'" :target="button.target">
+                                                    <Button :style="button.style" :label="button.label" :icon="button.icon"
+                                                            :loading="isButtonLoading === 'buttonGroup' + index"
+                                                            :iconRight="button.iconRight" :disabled="button.disabled"
+                                                            :key="`ActionButton${button.label}${button.style}`"
+                                                            :tooltip="button.tooltip"
+                                                            class="inline-flex items-center h-full rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0"
+                                                            :class="{ 'rounded-l-md': index === 0, 'rounded-r-md ': index === action.button?.length - 1 }">
+                                                    </Button>
+                                                </component>
+                                            </div>
+                                        </slot>
                                     </template>
                                 </template>
                             </div>

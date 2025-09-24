@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\WithCustomerSubNavigation;
 use App\Actions\OrgAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -56,6 +57,8 @@ class IndexCustomerSalesChannels extends OrgAction
         if ($shop) {
             $queryBuilder->where('customer_sales_channels.shop_id', $shop->id);
         }
+        $queryBuilder->leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id');
+        $queryBuilder->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id');
 
         $queryBuilder->select([
             'customer_sales_channels.id',
@@ -66,11 +69,18 @@ class IndexCustomerSalesChannels extends OrgAction
             'customer_sales_channels.can_connect_to_platform',
             'customer_sales_channels.exist_in_platform',
             'customer_sales_channels.platform_status',
-            'customer_sales_channels.number_customer_clients as number_customer_clients',
+            'customer_sales_channels.number_customer_clients as number_clients',
             'customer_sales_channels.number_portfolios as number_portfolios',
             'customer_sales_channels.number_portfolio_broken as number_portfolio_broken',
             'customer_sales_channels.number_orders as number_orders',
             'customer_sales_channels.platform_id',
+            'customers.contact_name as customer_contact_name',
+            'customers.company_name as customer_company_name',
+            'customers.slug as customer_slug',
+            'customers.id as customer_id',
+            'platforms.type as platform_type',
+            'platforms.code as platform_code',
+            'platforms.name as platform_name',
         ])
             ->selectSub(function ($subquery) {
                 $subquery->from('orders')
@@ -80,7 +90,7 @@ class IndexCustomerSalesChannels extends OrgAction
             }, 'total_amount');
 
         return $queryBuilder->defaultSort('customer_sales_channels.reference')
-            ->allowedSorts(['reference', 'name', 'number_customer_clients', 'number_portfolios', 'number_orders', 'total_amount','platform_status'])
+            ->allowedSorts(['reference', 'name', 'number_clients', 'number_portfolios', 'number_orders', 'total_amount', 'platform_status'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -123,13 +133,13 @@ class IndexCustomerSalesChannels extends OrgAction
                 ],
                 'data'        => CustomerSalesChannelsResource::collection($platforms),
             ]
-        )->table($this->tableStructure());
+        )->table($this->tableStructure(parent: $this->parent));
     }
 
 
-    public function tableStructure(array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(Customer|Platform $parent, array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -138,12 +148,23 @@ class IndexCustomerSalesChannels extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_portfolios', label: __('Portfolios'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'total_amount', label: __('Sales'), canBeHidden: false, sortable: true, searchable: true, align: 'right')
-                ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'action', label: __('Actions'), canBeHidden: false, searchable: true)
+                ->column(key: 'name', label: __('Name'), sortable: true);
+            if ($parent instanceof Platform) {
+                $table->column(key: 'customer_company_name', label: __('Customer'), sortable: true);
+            }
+
+            $table->column(key: 'number_portfolios', label: __('Portfolios'), sortable: true)
+                ->column(key: 'number_clients', label: __('Clients'), sortable: true)
+
+                ->column(key: 'number_orders', label: __('Orders'), sortable: true)
+                ->column(key: 'total_amount', label: __('Sales'), sortable: true, align: 'right');
+
+            if (!($parent instanceof Platform && $parent->type == PlatformTypeEnum::MANUAL)) {
+                $table->column(key: 'platform_status', label: __('Status'), sortable: true);
+            }
+
+
+            $table->column(key: 'action', label: __('Actions'), searchable: true)
                 ->defaultSort('reference');
         };
     }

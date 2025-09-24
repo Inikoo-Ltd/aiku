@@ -10,6 +10,7 @@ namespace App\Actions\Transfers\FetchStack;
 
 use App\Enums\Transfers\FetchStack\FetchStackStateEnum;
 use App\Models\Transfers\FetchStack;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ProcessFetchStacks
@@ -20,32 +21,42 @@ class ProcessFetchStacks
     /**
      * @throws \Exception
      */
-    public function handle(): void
+    public function handle(bool $runInBackground = true, Command $command = null): void
     {
-
         StoreFetchStacks::run();
 
-        foreach (FetchStack::where('state', FetchStackStateEnum::IN_PROCESS)->orderBy('submitted_at')->get() as $fetchStack) {
+
+        $query = FetchStack::where('state', FetchStackStateEnum::IN_PROCESS)
+            ->orderBy('submitted_at');
+        $query->limit($runInBackground ? 1000 : 100000);
+
+        /** @var FetchStack $fetchStack */
+        foreach ($query->get() as $fetchStack) {
             $fetchStack->update([
                 'state'            => FetchStackStateEnum::SEND_TO_QUEUE,
                 'send_to_queue_at' => now()
             ]);
-            ProcessFetchStack::run($fetchStack, true);
+
+            $command?->info("Processing: $fetchStack->id $fetchStack->operation $fetchStack->operation_id $fetchStack->submitted_at ");
+
+            ProcessFetchStack::run($fetchStack, $runInBackground);
         }
     }
 
 
     public function getCommandSignature(): string
     {
-        return 'fetch_stacks:process';
+        return 'fetch_stacks:process {background?}';
     }
 
     /**
      * @throws \Exception
      */
-    public function asCommand(): int
+    public function asCommand(Command $command): int
     {
-        $this->handle();
+        $processInBackground = $command->argument('background') ?? true;
+
+        $this->handle($processInBackground, $command);
 
         return 0;
     }

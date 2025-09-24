@@ -41,7 +41,6 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
     public function toArray($request): array
     {
         $storedItem = StoredItem::find($this->id);
-        // dd($this->pallet_return_state === PalletStateEnum::PICKING->value);
         return [
             'id'                     => $this->id,
             'slug'                   => $this->slug,
@@ -51,6 +50,11 @@ class PalletReturnItemsWithStoredItemsResource extends JsonResource
             'is_checked'             => (bool) $this->pallet_return_state === PalletStateEnum::IN_PROCESS->value ? $this->pallet_return_id : false,
             'pallet_return_state'    => $this->pallet_return_state ?? null,
             'pallet_stored_items'    => $storedItem->palletStoredItems()
+                ->whereHas(
+                    'pallet',
+                    fn ($q) =>
+                    $q->where('state', PalletStateEnum::STORING)
+                )
                 ->when(
                     in_array($this->pallet_return_state, [PalletStateEnum::PICKED->value, PalletStateEnum::DISPATCHED->value]),
                     fn ($query) => $query->where(function ($q) {

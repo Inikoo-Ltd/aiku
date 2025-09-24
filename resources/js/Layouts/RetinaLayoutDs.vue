@@ -47,10 +47,10 @@ library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFol
 
 const layout = useLayoutStore()
 const locale = useLocaleStore()
-
+const isOpenMenuMobile = ref(false)
 provide("layout", layout)
 provide("locale", locale)
-
+provide('isOpenMenuMobile', isOpenMenuMobile)
 const { props } = usePage()
 const irisTheme = props?.iris?.theme ?? { color: [...useColorTheme[2]] }
 
@@ -79,7 +79,8 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 			class="relative z-50 md:z-0"
 			:data="layout.iris.header"
 			:colorThemed="irisTheme"
-			:menu="layout.iris.menu" />
+			:menu="layout.iris.menu"
+		/>
 
 		<!-- wrapper for mobile overlay + content -->
 		<div class="relative">
@@ -113,7 +114,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 						'fixed inset-y-0 left-0 md:h-fit bg-white shadow-lg transform z-50 md:z-0 transition-all',
 						sidebarOpen ? 'translate-x-0' : '-translate-x-full',
 						'md:relative md:translate-x-0 md:flex md:flex-col',
-						layout.leftSidebar.show ? 'min-w-56 w-56' : 'min-w-56 w-56 md:min-w-14 md:w-14 '
+						layout.leftSidebar.show ? 'min-w-56 w-1/2 md:w-56' : 'min-w-56 w-56 md:min-w-14 md:w-14 '
 					]"
 				/>
 

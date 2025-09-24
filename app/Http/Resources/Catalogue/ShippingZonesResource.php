@@ -24,6 +24,7 @@ class ShippingZonesResource extends JsonResource
             'territories'              => $this->territories,
             'position'                 => $this->position,
             'created_at'               => $this->created_at,
+            'currency_code'            => $this->currency_code
         ];
     }
 }

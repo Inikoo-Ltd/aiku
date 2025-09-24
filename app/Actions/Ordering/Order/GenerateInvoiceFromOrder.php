@@ -9,15 +9,21 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
+use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Invoice\StoreInvoice;
+use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromAdjustment;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromCharge;
 use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransactionFromShipping;
+use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
+use App\Enums\Accounting\Payment\PaymentTypeEnum;
+use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Helpers\Address;
 use App\Models\Ordering\Adjustment;
@@ -27,6 +33,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
 class GenerateInvoiceFromOrder extends OrgAction
@@ -106,7 +113,7 @@ class GenerateInvoiceFromOrder extends OrgAction
                     StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
                 } else {
                     $updatedData = $this->recalculateTransactionTotals($transaction);
-                    StoreInvoiceTransaction::make()->action($invoice, $transaction->historicAsset, $updatedData);
+                    StoreInvoiceTransaction::make()->action($invoice, $transaction, $updatedData);
                     $transaction->update(
                         [
                             'quantity_picked' => $updatedData['quantity'],
@@ -115,9 +122,46 @@ class GenerateInvoiceFromOrder extends OrgAction
                 }
             }
 
-            foreach ($order->payments as $payment) {
-                AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+
+
+            $totalPaid      = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->sum('payments.amount');
+
+            if ($totalPaid > $invoice->total_amount) {
+                $amountToCredit = $totalPaid - $invoice->total_amount;
+                /** @var \App\Models\Accounting\PaymentAccountShop $paymentAccountShop */
+                $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
+                $paymentData        = [
+                    'reference'               => 'cu-'.Str::ulid(),
+                    'amount'                  => -$amountToCredit,
+                    'status'                  => PaymentStatusEnum::SUCCESS,
+                    'type'                    => PaymentTypeEnum::REFUND,
+                    'payment_account_shop_id' => $paymentAccountShop->id
+                ];
+
+
+
+                $creditPayment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);
+                AttachPaymentToOrder::run($order, $creditPayment, [
+                    'amount' => $creditPayment->amount,
+                ]);
+
+                StoreCreditTransaction::make()->action($invoice->customer, [
+                    'amount'     => $amountToCredit,
+                    'type'       => CreditTransactionTypeEnum::FROM_EXCESS,
+                    'payment_id' => $creditPayment->id,
+                    'date'       => now()
+                ]);
             }
+            $order->refresh();
+
+            foreach ($order->payments as $payment) {
+                if ($payment->status == PaymentStatusEnum::SUCCESS) {
+                    $invoice->payments()->attach($payment, [
+                        'amount' => $payment->amount,
+                    ]);
+                }
+            }
+            UpdateInvoicePaymentState::run($invoice);
 
 
             $invoice->refresh();
@@ -161,11 +205,11 @@ class GenerateInvoiceFromOrder extends OrgAction
         $pickings = [];
         foreach ($transaction->deliveryNoteItems as $deliveryNoteItem) {
             if ($deliveryNoteItem->quantity_required == 0) {
-                $pickings[] = 1;
+                $ratioOfPicking = 1;
+            } else {
+                $ratioOfPicking = $deliveryNoteItem->quantity_picked / $deliveryNoteItem->quantity_required;
             }
-
-            $ratioOfPicking = $deliveryNoteItem->quantity_picked / $deliveryNoteItem->quantity_required;
-            $pickings[]     = $ratioOfPicking;
+            $pickings[] = $ratioOfPicking;
         }
         if (empty($pickings)) {
             //to check this or I will reget

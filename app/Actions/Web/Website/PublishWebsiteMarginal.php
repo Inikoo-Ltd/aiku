@@ -37,6 +37,8 @@ class PublishWebsiteMarginal extends OrgAction
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedFooterSnapshot->layout;
         } elseif ($marginal == 'menu') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedMenuSnapshot->layout;
+        } elseif ($marginal == 'sidebar') {
+            $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedSidebarSnapshot->layout;
         } elseif ($marginal == 'department') {
             $layout = Arr::get($modelData, 'layout') ?? $website->unpublishedDepartmentSnapshot->layout;
         } elseif ($marginal == 'sub_department') {
@@ -86,7 +88,7 @@ class PublishWebsiteMarginal extends OrgAction
             ]
         );
 
-        if (in_array($marginal, ['header', 'footer','menu', 'department', 'sub_department', 'family', 'product', 'products', 'collection'])) {
+        if (in_array($marginal, ['header', 'footer','menu', 'sidebar', 'department', 'sub_department', 'family', 'product', 'products', 'collection'])) {
             $updateData = [
                 "live_{$marginal}_snapshot_id"    => $snapshot->id,
                 "published_layout->$marginal"     => $snapshot->layout,
@@ -109,12 +111,8 @@ class PublishWebsiteMarginal extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $request->merge(
-            [
-                'publisher_id'   => $request->user()->id,
-                'publisher_type' => 'User'
-            ]
-        );
+        $this->set('publisher_id', $request->user()->id);
+        $this->set('publisher_type', class_basename($request->user()));
     }
 
     public function rules(): array
@@ -138,6 +136,12 @@ class PublishWebsiteMarginal extends OrgAction
     {
         $this->initialisationFromShop($website->shop, $request);
         $this->handle($website, 'menu', $this->validatedData);
+    }
+
+    public function sidebar(Website $website, ActionRequest $request): void
+    {
+        $this->initialisationFromShop($website->shop, $request);
+        $this->handle($website, 'sidebar', $this->validatedData);
     }
 
     public function footer(Website $website, ActionRequest $request): void

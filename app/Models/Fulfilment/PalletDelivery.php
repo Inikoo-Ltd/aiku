@@ -102,7 +102,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletDelivery withoutTrashed()
  * @mixin \Eloquent
  */

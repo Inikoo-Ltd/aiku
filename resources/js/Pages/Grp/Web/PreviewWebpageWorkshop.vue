@@ -22,6 +22,7 @@ const props = defineProps<{
   layout: {
     color: string[]
   }
+  luigisbox_tracker_id?: string
 }>()
 
 const layout: any = inject("layout", {});
@@ -43,6 +44,7 @@ const updateIrisLayout = () => {
   layout.iris = {
     currency: defaultCurrency,
     is_logged_in: isLoggedIn,
+    luigisbox_tracker_id: props.luigisbox_tracker_id
   }
 }
 
@@ -57,7 +59,7 @@ const showWebpage = (item) => {
 }
 
 onMounted(() => {
-  layout.app.theme = props.layout.color,
+  layout.app.theme = props.layout?.color,
   layout.app.webpage_layout = props.layout
   updateIrisLayout()
 })
@@ -114,6 +116,7 @@ watch(() => props.webpage, (val) => {
 watch(filterBlock, () => {
   updateIrisLayout()
 }, { immediate: true });
+
 </script>
 
 <template>
@@ -125,7 +128,7 @@ watch(filterBlock, () => {
             <template v-for="(block, idx) in data.layout.web_blocks" :key="block.id">
               <section v-show="showWebpage(block)" :data-block-id="idx" class="w-full min-h-[50px] relative"
                 :class="{ 'border-4 active-block': activeBlock === idx }"
-                :style="activeBlock === idx ? { borderColor: layout?.app?.theme[0] } : {}"
+                :style="activeBlock === idx ? { borderColor: layout?.app?.theme?.[0] } : {}"
                 @click="() => sendMessageToParent('activeBlock', idx)">
                 <!-- Toolbar Controls -->
                 <div v-if="activeBlock === idx" class="trapezoid-button" @click.stop>

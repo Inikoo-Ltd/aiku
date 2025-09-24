@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\Charge;
 
 use App\Actions\Billables\Charge\Search\ChargeRecordSearch;
-use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -53,7 +53,7 @@ class UpdateCharge extends OrgAction
             );
         }
 
-        UpdateAsset::run(
+        UpdateAssetFromModel::run(
             $charge->asset,
             [
                 'price' => null,
@@ -66,6 +66,22 @@ class UpdateCharge extends OrgAction
         return $charge;
     }
 
+
+    public function prepareForValidation()
+    {
+        $settings = $this->charge->settings ?? [];
+        if ($this->has('amount')) {
+            $amount = (string) $this->get('amount');
+            $settings['amount'] = $amount;
+        }
+
+        if ($this->has('min_order')) {
+            $minOrder = (string) $this->get('min_order');
+
+            $settings['rules'] = '<;' . $minOrder;
+        }
+        $this->set('settings', $settings);
+    }
 
     public function rules(): array
     {
@@ -84,6 +100,7 @@ class UpdateCharge extends OrgAction
                 ),
             ],
             'name'        => ['sometimes', 'required', 'max:250', 'string'],
+            'label'        => ['sometimes', 'string'],
             'description' => ['sometimes', 'max:1024', 'string'],
 
             'data'     => ['sometimes', 'array'],

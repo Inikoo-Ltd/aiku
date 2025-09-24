@@ -15,8 +15,11 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUn
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
+use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Actions\GrpAction;
+use App\Actions\Helpers\Brand\AttachBrandToModel;
+use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
@@ -24,6 +27,7 @@ use App\Models\Goods\TradeUnit;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use App\Stubs\Migrations\HasProductInformation;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -40,8 +44,56 @@ class UpdateTradeUnit extends GrpAction
 
     public function handle(TradeUnit $tradeUnit, array $modelData): TradeUnit
     {
-        $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
+        if (Arr::has($modelData, 'name_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'name' => Arr::pull($modelData, 'name_i8n')
+                ]
+            ]);
+        }
 
+        if (Arr::has($modelData, 'description_title_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'description' => Arr::pull($modelData, 'description_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
+                'translations' => [
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'tags')) {
+            AttachTagsToModel::make()->action($tradeUnit, [
+                'tags_id' => Arr::pull($modelData, 'tags')
+            ]);
+        }
+
+        if (Arr::has($modelData, 'brands')) {
+            AttachBrandToModel::make()->action($tradeUnit, [
+                'brand_id' => Arr::pull($modelData, 'brands')
+            ]);
+        }
+        $oldTradeUnitFamily = null;
+        if (Arr::has($modelData, 'trade_unit_family_id')) {
+            $oldTradeUnitFamily = $tradeUnit->tradeUnitFamily;
+        }
+
+        $tradeUnit = $this->update($tradeUnit, $modelData, ['data', 'marketing_dimensions']);
+        $tradeUnit->refresh();
 
         if ($tradeUnit->wasChanged('gross_weight')) {
             foreach ($tradeUnit->stocks as $stock) {
@@ -63,11 +115,12 @@ class UpdateTradeUnit extends GrpAction
                 ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($product);
             }
         }
-
-        if ($tradeUnit->wasChanged('marketing_dimensions')) {
-            foreach ($tradeUnit->products as $product) {
-                ProductHydrateMarketingDimensionFromTradeUnits::dispatch($product);
+        
+        if ($tradeUnit->wasChanged('trade_unit_family_id')) {   
+            if($oldTradeUnitFamily) {
+                TradeUnitFamilyHydrateTradeUnits::dispatch($oldTradeUnitFamily);
             }
+            TradeUnitFamilyHydrateTradeUnits::dispatch($tradeUnit->tradeUnitFamily);
         }
 
         $dangerousGoodsFields     = $this->getDangerousGoodsFieldNames();
@@ -159,12 +212,27 @@ class UpdateTradeUnit extends GrpAction
             'duty_rate'                    => ['sometimes', 'nullable', 'string'],
             'hts_us'                       => ['sometimes', 'nullable', 'string'],
             'marketing_ingredients'        => ['sometimes', 'nullable', 'string'],
+            'name_i8n'                     => ['sometimes', 'array'],
+            'description_title_i8n'        => ['sometimes', 'array'],
+            'description_i8n'              => ['sometimes', 'array'],
+            'description_extra_i8n'        => ['sometimes', 'array'],
+            'tags'                         => ['sometimes', 'array'],
+            'brands'                       => ['sometimes'],
+            'trade_unit_family_id'         => ['sometimes']
         ];
 
         if (!$this->strict) {
             $rules['gross_weight']     = ['sometimes', 'nullable', 'numeric'];
             $rules['net_weight']       = ['sometimes', 'nullable', 'numeric'];
             $rules['marketing_weight'] = ['sometimes', 'nullable', 'numeric'];
+
+
+            //            unset($rules['marketing_dimensions']);
+            //            unset($rules['gross_weight']);
+            //            unset($rules['net_weight']);
+            //            unset($rules['marketing_weight']);
+
+
             $rules                     = $this->noStrictUpdateRules($rules);
         }
 

@@ -28,27 +28,33 @@ class CheckoutComOrderPaymentFailure extends RetinaWebhookAction
         $paymentAccountShopID = Arr::get($orderPaymentApiPoint->data, 'payment_methods.checkout');
         $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopID);
 
-        $payment = $this->getCheckOutPayment(
+        $checkoutComPayment = $this->getCheckOutPayment(
             $paymentAccountShop,
             $modelData['cko-payment-id']
         );
 
-        if (Arr::get($payment, 'error')) {
-            return $this->processError($orderPaymentApiPoint, $payment);
+        if (Arr::get($checkoutComPayment, 'error')) {
+            return $this->processError($orderPaymentApiPoint, $checkoutComPayment);
         }
 
+        return $this->processFailure($orderPaymentApiPoint, $checkoutComPayment);
+    }
+
+    public function processFailure(OrderPaymentApiPoint $orderPaymentApiPoint, array $checkoutComPayment)
+    {
         return UpdateOrderPaymentApiPoint::run(
             $orderPaymentApiPoint,
             [
                 'state'        => OrderPaymentApiPointStateEnum::FAILURE,
                 'processed_at' => now(),
                 'data'         => [
-                    'payment' => Arr::except($payment, ['http_metadata', '_links'])
+                    'payment' => Arr::except($checkoutComPayment, ['http_metadata', '_links'])
                 ]
 
             ]
         );
     }
+
 
     public function rules(): array
     {
@@ -87,7 +93,7 @@ class CheckoutComOrderPaymentFailure extends RetinaWebhookAction
             );
         } else {
             return Redirect::route('retina.ecom.checkout.show')->with(
-                'notification',
+                'modal',
                 $notification
             );
         }

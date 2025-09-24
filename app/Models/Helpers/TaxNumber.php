@@ -10,6 +10,7 @@ namespace App\Models\Helpers;
 
 use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
+use App\Enums\Helpers\TaxNumber\TaxNumberValidationTypeEnum;
 use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -34,16 +35,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $checksum hash of country_code,number,status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $checked_at Last time was validated online
- * @property string|null $invalid_checked_at Last time was validated online with tax number invalid
+ * @property \Illuminate\Support\Carbon|null $checked_at Last time was validated online
+ * @property \Illuminate\Support\Carbon|null $invalid_checked_at Last time was validated online with tax number invalid
  * @property string|null $external_service_failed_at Last time on;ine validation fail due external service down
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property TaxNumberValidationTypeEnum|null $validation_type
+ * @property int|null $manual_validation_user_id
+ * @property string|null $manual_validation_notes
  * @property-read \App\Models\Helpers\Country|null $country
  * @method static Builder<static>|TaxNumber newModelQuery()
  * @method static Builder<static>|TaxNumber newQuery()
  * @method static Builder<static>|TaxNumber onlyTrashed()
  * @method static Builder<static>|TaxNumber query()
- * @method static Builder<static>|TaxNumber withTrashed()
+ * @method static Builder<static>|TaxNumber withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|TaxNumber withoutTrashed()
  * @mixin Eloquent
  */
@@ -52,11 +56,14 @@ class TaxNumber extends Model
     use SoftDeletes;
 
     protected $casts = [
-        'data'       => 'array',
-        'audited_at' => 'datetime',
-        'status'     => TaxNumberStatusEnum::class,
-        'type'       => TaxNumberTypeEnum::class,
-        'valid'      => 'boolean',
+        'data'               => 'array',
+        'audited_at'         => 'datetime',
+        'checked_at'         => 'datetime',
+        'invalid_checked_at' => 'datetime',
+        'validation_type'    => TaxNumberValidationTypeEnum::class,
+        'status'             => TaxNumberStatusEnum::class,
+        'type'               => TaxNumberTypeEnum::class,
+        'valid'              => 'boolean',
     ];
 
     protected $attributes = [
@@ -69,7 +76,7 @@ class TaxNumber extends Model
     {
         static::creating(
             function (TaxNumber $taxNumber) {
-                /** @var \App\Models\Helpers\Country $country */
+                /** @var Country $country */
                 $country                 = Country::find($taxNumber->country_id);
                 $taxNumber->country_code = $country?->code;
                 $taxNumber->type         = $taxNumber->getType($country);
@@ -95,6 +102,26 @@ class TaxNumber extends Model
     public function country(): BelongsTo
     {
         return $this->belongsTo(Country::class);
+    }
+
+    public function getFormattedTaxNumber(): string
+    {
+        if (!in_array($this->type,[TaxNumberTypeEnum::GB_VAT, TaxNumberTypeEnum::EU_VAT])) {
+            return $this->number;
+        }
+
+        $number = strtoupper(trim($this->number));
+        $cc = strtoupper(trim((string) $this->country_code));
+
+        if ($cc === '') {
+            return $number;
+        }
+
+        if (str_starts_with($number, $cc)) {
+            return $number;
+        }
+
+        return $cc.' '.$number;
     }
 
 

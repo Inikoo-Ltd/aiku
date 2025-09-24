@@ -7,7 +7,7 @@
  */
 
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
-use App\Actions\Dispatching\DeliveryNote\CopyOrderNotesToDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\FinaliseDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
@@ -26,7 +26,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
-    Route::patch('copy-notes', CopyOrderNotesToDeliveryNote::class)->name('copy_notes');
     Route::patch('update-address', UpdateDeliveryNoteDeliveryAddress::class)->name('update_address');
     Route::post('shipment-from-warehouse', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
@@ -40,6 +39,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('packed', SetDeliveryNoteStateAsPacked::class)->name('packed');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
         Route::patch('dispatched', DispatchDeliveryNote::class)->name('dispatched');
+        Route::patch('rollback', UndispatchDeliveryNote::class)->name('rollback');
         Route::patch('finalise-and-dispatch', FinaliseAndDispatchDeliveryNote::class)->name('finalise_and_dispatch');
         Route::patch('cancel', CancelDeliveryNote::class)->name('cancel');
     });

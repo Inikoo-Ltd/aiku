@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { ref, watch, onBeforeMount, computed } from 'vue'
+import { ref, watch, onBeforeMount, computed, nextTick, onMounted } from 'vue'
 import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
@@ -26,6 +26,7 @@ const emits = defineEmits<{
 }>()
 
 const _swiperRef = ref()
+const swiperInstance = ref()
 // const finalOptions = ref<Timeline[]>([])
 
 const computedXxx = computed(() => {
@@ -56,11 +57,52 @@ const setupState = (step: Timeline) => {
     }else return
 }
 
-// watch(() => props.state, (newData) => {
-//     stepsWithIndex()
-// })
+// Handle Swiper initialization
+const onSwiper = (swiper) => {
+    swiperInstance.value = swiper
+    // Auto scroll to active step after Swiper is initialized
+    setTimeout(() => {
+        scrollToActiveStep()
+    }, 100)
+}
 
-// onBeforeMount(stepsWithIndex)
+// Auto scroll to active step
+const scrollToActiveStep = async (withDelay = false) => {
+    if (!swiperInstance.value || !props.state) return
+    
+    await nextTick()
+    
+    // Add delay for initial load to ensure Swiper is fully initialized
+    if (withDelay) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+    }
+    
+    const activeStepIndex = computedXxx.value.findIndex(step => step.key === props.state)
+    if (activeStepIndex !== -1) {
+        try {
+            swiperInstance.value.slideTo(activeStepIndex, 500) // 500ms animation duration
+        } catch (error) {
+            console.log('Error sliding to active step:', error)
+        }
+    }
+}
+
+// Watch for state changes and scroll to active step (including initial load)
+watch(() => props.state, () => {
+    scrollToActiveStep()
+}, { immediate: true })
+
+// Watch for options changes and scroll to active step (including initial load)
+watch(() => props.options, () => {
+    scrollToActiveStep(true) // Use delay for options change as it might affect Swiper initialization
+}, { immediate: true })
+
+// Scroll to active step on mount with delay
+onMounted(() => {
+    setTimeout(() => {
+        scrollToActiveStep(true)
+    }, 150) // Additional delay to ensure Swiper is fully ready
+})
 
 // Format Date
 const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
@@ -77,7 +119,8 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
 <template>
     <div class="w-full py-5 sm:py-2 flex flex-col isolate">
         <Swiper ref="_swiperRef" :slideToClickedSlide="false" :slidesPerView="slidesPerView"
-            :centerInsufficientSlides="true" :pagination="{ clickable: true, }" class="w-full h-fit isolate">
+            :centerInsufficientSlides="true" :pagination="{ clickable: true, }" 
+            @swiper="onSwiper" class="w-full h-fit isolate">
             <template v-for="(step, stepIndex) in computedXxx" :key="stepIndex">
                 <SwiperSlide>
                     <!-- Section: Title -->

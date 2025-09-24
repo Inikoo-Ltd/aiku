@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { faCube, faLink, faHeart } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
+import { faCircle, faHeart as fasHeart, faDotCircle, faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { ref, inject, onMounted} from "vue"
+import { ref, inject, onMounted, computed} from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { useLocaleStore } from '@/Stores/locale'
 import ProductContentsIris from "./ProductContentIris.vue"
@@ -15,11 +15,11 @@ import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
 import { Image as ImageTS } from '@/types/Image'
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { set } from "lodash-es"
+import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import axios from "axios"
 
-library.add(faCube, faLink)
+library.add(faCube, faLink, faFilePdf, faFileDownload)
 
 interface ProductResource {
     id: number
@@ -49,6 +49,7 @@ const props = withDefaults(defineProps<{
 	screenType: 'mobile' | 'tablet' | 'desktop'
 }>(), {
 })
+
 const layout = inject('layout',{})
 const currency = layout?.iris?.currency
 const locale = useLocaleStore()
@@ -166,11 +167,62 @@ onMounted(() => {
             showButton.value = true
         }
     })
+    if (props.fieldValue?.product?.luigi_identity) {
+        window?.dataLayer?.push({
+            event: "view_item",
+            ecommerce: {
+                items: [
+                    {
+                        item_id: props.fieldValue?.product?.luigi_identity,
+                    }
+                ]
+            }
+        })
+    }
 })
 
 const toggleExpanded = () => {
   expanded.value = !expanded.value
 }
+
+const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldValue.product.images :
+	props.fieldValue.product.images
+		.filter(item => item.type == "image")
+		.map(item => ({
+			label: item.label,
+			column: item.column_in_db,
+			images: item.images,
+		}))
+)
+
+const videoSetup = ref(
+	props.fieldValue.product.images.find(item => item.type === "video") || null
+)
+
+
+
+const validImages = computed(() => {
+  if (!imagesSetup.value) return []
+
+  const hasType = imagesSetup.value.some(item => "type" in item)
+
+  if (hasType) {
+    return imagesSetup.value
+      .filter(item => item.images)
+      .flatMap(item => {
+        const images = Array.isArray(item.images) ? item.images : [item.images]
+        return images.map(img => ({
+          source: img,
+          thumbnail: img
+        }))
+      })
+  }
+
+  // berarti array of string/url
+  return imagesSetup.value
+})
+
+
 
 </script>
 
@@ -179,12 +231,12 @@ const toggleExpanded = () => {
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             marginLeft : 'auto', marginRight : 'auto'
 		}" class="mx-auto max-w-7xl py-8 text-gray-800 overflow-hidden px-6 hidden sm:block">
-        <div class="grid grid-cols-12 gap-x-10 mb-2">
+        <div class="grid grid-cols-12 gap-x-10 mb-2"> 
             <div class="col-span-7">
                 <div class="py-1 w-full">
-                    <ImageProducts :images="fieldValue.product.images" />
+                    <ImageProducts  :images="validImages" :video="videoSetup?.url"/>
                 </div>
-                <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
+                <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="fieldValue?.product?.tags?.length">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
                         :key="index">
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
@@ -200,12 +252,11 @@ const toggleExpanded = () => {
                 <div class="flex justify-between mb-4 items-start">
                     <div class="w-full">
                         <h1 class="text-2xl font-bold text-gray-900">{{ fieldValue.product.name }}</h1>
-                        <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
+                        <div class="flex flex-wrap justify-between gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
-                            <div class="flex items-center gap-[1px]">
-                            </div>
+                            <div class="flex items-center gap-[1px]"></div>
                         </div>
-                        <div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                        <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                 :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
@@ -244,7 +295,7 @@ const toggleExpanded = () => {
                         </template>
                     </div>
                 </div>
-                <div class="flex items-end pb-3 mb-3">
+                <div v-if="layout?.iris?.is_logged_in" class="flex items-end pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-3xl capitalize leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
 
@@ -278,7 +329,7 @@ const toggleExpanded = () => {
                 <div class="text-xs font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_content, screenType)">
                     <div v-html="fieldValue.product.description"></div>
                 </div>
-                <div v-if="fieldValue.setting.information" class="my-4 space-y-2">
+                <div v-if="fieldValue.setting?.information" class="my-4 space-y-2">
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
                         :informations="fieldValue?.information" :styleData="fieldValue?.information_style"/>
                     <div v-if="fieldValue?.paymentData?.length > 0"
@@ -309,10 +360,10 @@ const toggleExpanded = () => {
     <!-- Mobile Layout -->
     <div class="block sm:hidden px-4 py-6 text-gray-800">
         <h2 class="text-xl font-bold mb-2">{{ fieldValue.product.name }}</h2>
-        <ImageProducts :images="fieldValue.product.images" />
+        <ImageProducts :images="validImages" :video="videoSetup?.url" />
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
-            <div>
+            <div v-if="layout?.iris?.is_logged_in">
                 <div class="text-lg font-semibold">
                     {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
                     <span class="text-xs text-gray-500 ml-1">
@@ -333,7 +384,7 @@ const toggleExpanded = () => {
         </div>
 
 
-        <div class="flex flex-wrap gap-2 mt-4">
+        <div class="flex flex-wrap gap-2 mt-4" v-if="fieldValue?.product?.tags?.length">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in fieldValue.product.tags"
                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />

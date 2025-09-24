@@ -19,7 +19,7 @@ import { routeType } from '@/types/route'
 import CollectionsShowcase from '@/Components/Dropshipping/Catalogue/CollectionsShowcase.vue'
 import TableFamilies from '@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue'
 import TableProducts from '@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue'
-import ListSelector from "@/Components/Departement&Family/ListSelector.vue"
+import ListSelector from "@/Components/DepartmentAndFamily/ListSelector.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 
@@ -171,7 +171,7 @@ const onSubmitAttach = async ({
         :is="component"
         :data="props[currentTab as keyof typeof props]"
         :tab="currentTab"
-        :routes="props.routes[currentTab]"
+        :routes="props.routes?.[currentTab]"
     />
 
     <!-- Modal: Products -->

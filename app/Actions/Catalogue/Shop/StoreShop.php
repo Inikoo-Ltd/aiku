@@ -129,7 +129,7 @@ class StoreShop extends OrgAction
             $shop->outboxCustomerNotificationIntervals()->create();
             $shop->outboxColdEmailsIntervals()->create();
             $shop->outboxPushIntervals()->create();
-
+            StoreShopPlatformStats::run($shop);
 
             foreach (TimeSeriesFrequencyEnum::cases() as $frequency) {
                 $shop->timeSeries()->create(['frequency' => $frequency]);
@@ -173,6 +173,14 @@ class StoreShop extends OrgAction
                     'model'           => SerialReferenceModelEnum::INVOICE,
                     'organisation_id' => $organisation->id,
                     'format'          => 'inv-' . $shop->slug . '-%04d'
+                ]
+            );
+
+            $shop->serialReferences()->create(
+                [
+                    'model'           => SerialReferenceModelEnum::REFUND,
+                    'organisation_id' => $organisation->id,
+                    'format'          => 'ref-' . $shop->slug . '-%04d'
                 ]
             );
 

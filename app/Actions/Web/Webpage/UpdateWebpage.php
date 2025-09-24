@@ -54,15 +54,7 @@ class UpdateWebpage extends OrgAction
         $oldUrl     = $webpage->url;
 
         if ($currentSeoData) {
-            $isUseCanonicalUrl = Arr::pull($currentSeoData, 'is_use_canonical_url');
-            if ($isUseCanonicalUrl) {
-                data_set($modelData, 'is_use_canonical_url', $isUseCanonicalUrl);
-            }
 
-            $canonicalUrl = Arr::pull($currentSeoData, 'canonical_url');
-            if ($canonicalUrl) {
-                data_set($modelData, 'canonical_url', $canonicalUrl);
-            }
 
             $newData = [];
             data_set($newData, 'structured_data', Arr::pull($currentSeoData, 'structured_data', Arr::get($oldSeoData, 'structured_data')));
@@ -88,7 +80,7 @@ class UpdateWebpage extends OrgAction
                 data_set($modelData, 'seo_data.image', $source);
             }
         }
-        // dd($modelData);
+
         if (Arr::has($modelData, 'state_data')) {
             if (Arr::has($modelData, 'state_data.state')) {
                 data_set($modelData, 'state', Arr::get($modelData, 'state_data.state'));
@@ -122,9 +114,9 @@ class UpdateWebpage extends OrgAction
                 ]);
             }
 
-            $key = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($webpage->url);
+            $key = config('iris.cache.webpage_path.prefix') . '_' . $webpage->website_id . '_' . strtolower($webpage->url);
             Cache::forget($key);
-            $key = config('iris.cache.webpage_path.prefix').'_'.$webpage->website_id.'_'.strtolower($oldUrl);
+            $key = config('iris.cache.webpage_path.prefix') . '_' . $webpage->website_id . '_' . strtolower($oldUrl);
             Cache::forget($key);
         }
 
@@ -150,7 +142,6 @@ class UpdateWebpage extends OrgAction
 
         return $webpage;
     }
-
 
     public function rules(): array
     {
@@ -204,8 +195,8 @@ class UpdateWebpage extends OrgAction
                     ->max(12 * 1024)
             ],
             'seo_data'                  => ['sometimes', 'array:meta_title'],
-         //   'seo_data.meta_title'       => ['sometimes', 'nullable', 'string', 'max:72'],
-         //   'seo_data.meta_description' => ['sometimes', 'nullable', 'string', 'max:320'],
+            //   'seo_data.meta_title'       => ['sometimes', 'nullable', 'string', 'max:72'],
+            //   'seo_data.meta_description' => ['sometimes', 'nullable', 'string', 'max:320'],
             'level'                     => ['sometimes', 'integer'],
             'sub_type'                  => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
             'type'                      => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
@@ -247,8 +238,6 @@ class UpdateWebpage extends OrgAction
 
     public function asController(Webpage $webpage, ActionRequest $request): Webpage
     {
-
-        // dd($request->all());
 
         $this->webpage = $webpage;
         $this->initialisationFromShop($webpage->shop, $request);

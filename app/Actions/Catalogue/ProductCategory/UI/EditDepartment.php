@@ -9,40 +9,25 @@
 namespace App\Actions\Catalogue\ProductCategory\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
+use App\Http\Resources\Helpers\LanguageResource;
 use Lorisleiva\Actions\ActionRequest;
 
 class EditDepartment extends OrgAction
 {
+    use WithCatalogueEditAuthorisation;
+
     public function handle(ProductCategory $department): ProductCategory
     {
         return $department;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                ]
-            );
 
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.'.$this->organisation->id,
-                    'shops-view'.$this->organisation->id,
-                ]
-            );
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
 
     public function inOrganisation(Organisation $organisation, ProductCategory $department, ActionRequest $request): ProductCategory
     {
@@ -61,10 +46,26 @@ class EditDepartment extends OrgAction
 
     public function htmlResponse(ProductCategory $department, ActionRequest $request): Response
     {
+        $urlMaster                              = null;
+        if ($department->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $department->masterProductCategory->id
+                ]
+            ];
+        }
+        $languages = [$department->shop->language_id => LanguageResource::make($department->shop->language)->resolve()];
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('department'),
+                'warning' => $department->masterProductCategory ? [
+                    'type'  =>  'warning',
+                    'title' =>  'warning',
+                    'text'  =>  __('Changing name or description may affect master department.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -75,6 +76,12 @@ class EditDepartment extends OrgAction
                 ],
                 'pageHead'    => [
                     'title'    => $department->name,
+                    'iconRight' => $urlMaster ? [
+                        'icon'  => "fab fa-octopus-deploy",
+                        'color' => "#4B0082",
+                        'class' => 'opacity-70 hover:opacity-100',
+                        'url'   => $urlMaster
+                    ] : [],
                     'icon'     =>
                         [
                             'icon'  => ['fal', 'fa-folder-tree'],
@@ -93,56 +100,120 @@ class EditDepartment extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => [
+                    'blueprint' =>
+                    array_filter(
                         [
-                            'label'  => __('Name/Description'),
-                            'icon'   => 'fa-light fa-tag',
-                            'fields' => [
-                                'code' => [
-                                    'type'  => 'input',
-                                    'label' => __('code'),
-                                    'value' => $department->code
-                                ],
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('name'),
-                                    'value' => $department->name
-                                ],
-                                'description_title' => [
-                                    'type'  => 'input',
-                                    'label' => __('description title'),
-                                    'value' => $department->description_title
-                                ],
-                                'description' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('description'),
-                                    'value' => $department->description
-                                ],
-                                'description_extra' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('description extra'),
-                                    'value' => $department->description_extra
-                                ],
-                            ]
-                        ],
-                        [
-                            'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'fields' => [
-                                'follow_master' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Follow Master'),
-                                    'value' => $department->follow_master
-                                ],
-                                "image"         => [
-                                    "type"    => "image_crop_square",
-                                    "label"   => __("Image"),
-                                    "value"   => $department->imageSources(720, 480),
-                                ],
-                            ]
+                            [
+                                'label'  => __('Id'),
+                                'icon'   => 'fa-light fa-fingerprint',
+                                'fields' => [
+                                    'code' => [
+                                        'type'  => 'input',
+                                        'label' => __('code'),
+                                        'value' => $department->code
+                                    ],
+                                ]
+                            ],
+                            [
+                                'label'  => __('Name/Description'),
+                                'icon'   => 'fa-light fa-tag',
+                                'fields' => [
+                                    'name' => $department->masterProductCategory ? [
+                                        'type'  => 'input_translation',
+                                        'label' => __('name'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $department->masterProductCategory->name,
+                                        'languages' => $languages,
+                                        'value' => $department->getTranslations('name_i8n'),
+                                        'mode' => 'single'
+                                    ] : [
+                                        'type'  => 'input',
+                                        'label' => __('name'),
+                                        'value' =>  $department->name
+                                    ],
+                                    'description_title' => $department->masterProductCategory ? [
+                                        'type'  => 'input_translation',
+                                        'label' => __('description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $department->masterProductCategory->description_title,
+                                        'languages' => $languages,
+                                        'value' => $department->getTranslations('description_title_i8n'),
+                                        'mode' => 'single'
+                                    ] : [
+                                        'type'  => 'input',
+                                        'label' => __('description title'),
+                                        'value' =>  $department->description_title
+                                    ],
+                                    'description' => $department->masterProductCategory ? [
+                                        'type'  => 'textEditor_translation',
+                                        'label' => __('description'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $department->masterProductCategory->description,
+                                        'languages' => $languages,
+                                        'value' => $department->getTranslations('description_i8n'),
+                                        'mode' => 'single'
+                                    ] : [
+                                        'type'  => 'textEditor',
+                                        'label' => __('description'),
+                                        'value' => $department->description
+                                    ],
+                                    'description_extra' => $department->masterProductCategory ? [
+                                        'type'  => 'textEditor_translation',
+                                        'label' => __('Extra description'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $department->masterProductCategory->description_extra,
+                                        'languages' => $languages,
+                                        'value' => $department->getTranslations('description_extra_i8n'),
+                                        'mode' => 'single'
+                                    ] : [
+                                        'type'  => 'textEditor',
+                                        'label' => __('Extra description'),
+                                        'value' =>  $department->description_extra
+                                    ],
+                                ]
+                            ],
+                            [
+                                'label'  => __('Pricing'),
+                                'icon'   => 'fa-light fa-money-bill',
+                                'fields' => [
+                                    'cost_price_ratio' => [
+                                        'type'          => 'input_number',
+                                        'bind' => [
+                                            'maxFractionDigits' => 3
+                                        ],
+                                        'label'         => __('pricing ratio'),
+                                        'placeholder'   => __('Cost price ratio'),
+                                        'required'      => true,
+                                        'value'         => $department->cost_price_ratio,
+                                        'min'           => 0
+                                    ],
+                                ]
+                            ],
+                            [
+                                'label'  => __('Properties'),
+                                'icon'   => 'fa-light fa-fingerprint',
+                                'fields' => [
+                                    'follow_master' => [
+                                        'type'  => 'toggle',
+                                        'label' => __('Follow Master'),
+                                        'value' => $department->follow_master
+                                    ],
+                                    "image"         => [
+                                        "type"    => "crop-image-full",
+                                        "label"   => __("Image"),
+                                        "value"   => $department->imageSources(720, 480),
+                                        "required" => false,
+                                        'noSaveButton' => true,
+                                        "full"         => true
+                                    ]
+                                ]
+                            ],
                         ]
-
-                    ],
+                    ),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.product_category.update',

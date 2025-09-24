@@ -17,6 +17,7 @@ use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Helpers\LanguageResource;
 
 class EditFamily extends OrgAction
 {
@@ -25,26 +26,7 @@ class EditFamily extends OrgAction
         return $family;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Organisation) {
-            $this->canEdit = $request->user()->authTo(
-                [
-                    'org-supervisor.' . $this->organisation->id,
-                ]
-            );
 
-            return $request->user()->authTo(
-                [
-                    'org-supervisor.' . $this->organisation->id,
-                    'shops-view' . $this->organisation->id,
-                ]
-            );
-        } else {
-            $this->canEdit = $request->user()->authTo("products.{$this->shop->id}.edit");
-            return $request->user()->authTo("products.{$this->shop->id}.view");
-        }
-    }
 
     public function inOrganisation(Organisation $organisation, ProductCategory $family, ActionRequest $request): ProductCategory
     {
@@ -61,6 +43,7 @@ class EditFamily extends OrgAction
         return $this->handle($family);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $family, ActionRequest $request): ProductCategory
     {
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
@@ -68,9 +51,18 @@ class EditFamily extends OrgAction
         return $this->handle($family);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inSubDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
     {
-        $this->parent = $subDepartment;
+
+        $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
+
+        return $this->handle($family);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): ProductCategory
+    {
 
         $this->initialisationFromShop($shop, $request)->withTab(DepartmentTabsEnum::values());
 
@@ -81,10 +73,10 @@ class EditFamily extends OrgAction
     {
         $departmentIdFormData = [];
 
-        if ($family?->parent?->type == ProductCategoryTypeEnum::DEPARTMENT) {
+        if ($family->parent?->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $departmentIdFormData['department_id'] = [
                 'type'     => 'select',
-                'label'    => __('Departement'),
+                'label'    => __('Department'),
                 'required' => true,
                 'options'  => $family->shop->productCategories()
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
@@ -94,10 +86,33 @@ class EditFamily extends OrgAction
             ];
 
         }
+
+        $urlMaster                              = null;
+        if ($family->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $family->masterProductCategory->id
+                ]
+            ];
+        }
+        $languages = [$family->shop->language_id => LanguageResource::make($family->shop->language)->resolve()];
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('family'),
+                'warning' => $family->masterProductCategory ? [
+                    'type'  =>  'warning',
+                    'title' =>  'warning',
+                    'text'  =>  __('Changing name or description may affect master family.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
+                'iconRight' => $urlMaster ? [
+                        'icon'  => "fab fa-octopus-deploy",
+                        'color' => "#4B0082",
+                        'class' => 'opacity-70 hover:opacity-100',
+                        'url'   => $urlMaster
+                    ] : [],
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $family,
                     $request->route()->getName(),
@@ -122,81 +137,154 @@ class EditFamily extends OrgAction
                 ],
 
                 'formData' => [
-                    'blueprint' => [
+                    'blueprint' => array_filter(
                         [
-                            'label'  => __('Name/Description'),
-                            'icon'   => 'fa-light fa-tag',
-                            'fields' => [
-                                'code' => [
-                                    'type'  => 'input',
-                                    'label' => __('code'),
-                                    'value' => $family->code
-                                ],
-                                'name' => [
-                                    'type'  => 'input',
-                                    'label' => __('name'),
-                                    'value' => $family->name
-                                ],
-                                'description_title' => [
-                                    'type'  => 'input',
-                                    'label' => __('description title'),
-                                    'value' => $family->description_title
-                                ],
-                                'description' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('description'),
-                                    'value' => $family->description
-                                ],
-                                'description_extra' => [
-                                    'type'  => 'textEditor',
-                                    'label' => __('description extra'),
-                                    'value' => $family->description_extra
-                                ],
-                            ]
-                        ],
-                        [
-                            'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-fingerprint',
-                            'title'  => __('id'),
-                            'fields' => [
-                                "image"         => [
-                                    "type"    => "image_crop_square",
-                                    "label"   => __("Image"),
-                                    "value"   => $family->imageSources(720, 480),
-                                ],
-                                ...$departmentIdFormData
-                            ]
-                        ],
-                        [
-                            'label'  => __('Department'),
-                            'icon'   => 'fa-light fa-box',
-                            'fields' => [
-                                'department_id'  =>  [
-                                    'type'    => 'select_infinite',
-                                    'label'   => __('Department'),
-                                    'options'   => [
-                                        [
-                                            'id' => $family->department?->id,
-                                            'code' => $family->department?->code
-                                        ]
+                            [
+                                'label'  => __('Id'),
+                                'icon'   => 'fa-light fa-fingerprint',
+                                'fields' => [
+                                    'code' => [
+                                        'type'  => 'input',
+                                        'label' => __('code'),
+                                        'value' => $family->code
                                     ],
-                                    'fetchRoute'    => [
-                                        'name'       => 'grp.org.shops.show.catalogue.departments.index',
-                                        'parameters' => [
-                                            'organisation' => $this->organisation->slug,
-                                            'shop' => $this->shop->slug
-                                        ]
-                                    ],
-                                    'valueProp' => 'id',
-                                    'labelProp' => 'code',
-                                    'required' => false,
-                                    'value'   => $family->department->id ?? null,
                                 ]
                             ],
+                            [
+                                'label'  => __('Name/Description'),
+                                'icon'   => 'fa-light fa-tag',
+                                'fields' => [
+                                    'code' => [
+                                        'type'  => 'input',
+                                        'label' => __('code'),
+                                        'value' => $family->code
+                                    ],
+                                    'name' => $family->masterProductCategory ? [
+                                        'type'  => 'input_translation',
+                                        'label' => __('name'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $family->masterProductCategory->name,
+                                        'languages' => $languages,
+                                        'value' => $family->getTranslations('name_i8n'),
+                                        'mode' => 'single'
+                                    ] : [
+                                        'type'  => 'input',
+                                        'label' => __('name'),
+                                        'value' => $family->name
+                                    ],
+                                    'description_title' => $family->masterProductCategory ? [
+                                        'type'  => 'input_translation',
+                                        'label' => __('description title'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $family->masterProductCategory->description_title,
+                                        'languages' => $languages,
+                                        'mode' => 'single',
+                                        'value' => $family->getTranslations('description_title_i8n')
+                                    ] : [
+                                         'type'  => 'input',
+                                         'label' => __('description title'),
+                                         'value' => $family->description_title
+                                    ],
+                                    'description' => $family->masterProductCategory ? [
+                                        'type'  => 'textEditor_translation',
+                                        'label' => __('description'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $family->masterProductCategory->description,
+                                        'languages' => $languages,
+                                        'mode' => 'single',
+                                        'value' => $family->getTranslations('description_i8n')
+                                    ] : [
+                                        'type'  => 'textEditor',
+                                        'label' => __('description'),
+                                        'value' => $family->description
+                                    ],
+                                    'description_extra' => $family->masterProductCategory ? [
+                                        'type'  => 'textEditor_translation',
+                                        'label' => __('Extra description'),
+                                        'language_from' => 'en',
+                                        'full' => true,
+                                        'main' => $family->masterProductCategory->description_extra,
+                                        'languages' => $languages,
+                                        'mode' => 'single',
+                                        'value' => $family->getTranslations('description_extra_i8n')
+                                    ] : [
+                                        'type'  => 'textEditor',
+                                        'label' => __('Extra description'),
+                                        'value' => $family->description_extra
+                                    ],
+                                ]
+                            ],
+                            [
+                                'label'  => __('Pricing'),
+                                'title'  => __('id'),
+                                'icon'   => 'fa-light fa-money-bill',
+                                'fields' => [
+                                    'cost_price_ratio' => [
+                                        'type'          => 'input_number',
+                                        'bind' => [
+                                            'maxFractionDigits' => 3
+                                        ],
+                                        'label'         => __('pricing ratio'),
+                                        'placeholder'   => __('Cost price ratio'),
+                                        'required'      => true,
+                                        'value'         => $family->cost_price_ratio,
+                                        'min'           => 0
+                                    ]
+                                ]
+                            ],
+                            [
+                                'label'  => __('Image'),
+                                'icon'   => 'fa-light fa-image',
+                                'title'  => __('Media'),
+                                'fields' => [
+                                    "image"         => [
+                                        "type"    => "crop-image-full",
+                                        "label"   => __("Image"),
+                                        "value"   => $family->imageSources(720, 480),
+                                        "required" => false,
+                                        'noSaveButton' => true,
+                                        "full"         => true
+                                    ],
+                                    ...$departmentIdFormData
+                                ]
+                            ],
+                            [
+                                'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
+                                'icon'   => 'fa-light fa-folder-tree',
+                                'fields' => [
+                                    'department_or_sub_department_id'  =>  [
+                                        'type'    => 'select_infinite',
+                                        'label'   => __('Parent'),
+                                        'options'   => [
+                                                [
+                                                    'id' =>  $family->subDepartment->id ?? $family->department->id  ?? null,
+                                                    'code' =>  $family->subDepartment->code ?? $family->department->code  ?? null,
+                                                    'type' =>  $family->subDepartment->type ?? $family->department->type  ?? null
+                                                ]
+                                        ],
+                                        'fetchRoute'    => [
+                                            'name'       => 'grp.json.shop.department_and_sub_departments',
+                                            'parameters' => [
+                                                'shop' => $family->shop->slug,
+                                            ]
+                                        ],
+                                        'required' => true,
+                                        'type_label' => 'department-and-sub-department',
+                                        'valueProp' => 'id',
+                                        'labelProp' => 'code',
+                                        'value'   => $family->subDepartment->id ?? $family->department->id  ?? null,
+                                    ],
 
+
+
+                                ],
+
+                            ],
                         ],
-
-                    ],
+                    ),
                     'args'      => [
                         'updateRoute' => [
                             'name'       => 'grp.models.product_category.update',

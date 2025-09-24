@@ -20,7 +20,6 @@ use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
-use App\Http\Resources\Helpers\ImagesResource;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -44,77 +43,6 @@ class ShowTradeUnit extends GrpAction
         return $this->handle($tradeUnit);
     }
 
-
-    public function getImagesData(TradeUnit $tradeUnit): array
-    {
-
-        return [
-            [
-                'label' => __('Main'),
-                'type'  => 'image',
-                'column_in_db' => 'image_id',
-                'images' => $tradeUnit->imageSources(),
-            ],
-            [
-                'label' => __('Video'),
-                'type'  => 'video',
-                'information' => __('You can use YouTube or Vimeo links'),
-                'column_in_db' => 'video_url',
-                'url' => $tradeUnit->video_url,
-            ],
-            [
-                'label' => __('Front side'),
-                'type'  => 'image',
-                'column_in_db' => 'front_image_id',
-                'images' => $tradeUnit->imageSources(getImage:'frontImage'),
-            ],
-            [
-                'label' => __('Left side'),
-                'type'  => 'image',
-                'column_in_db' => 'left_image_id',
-                'images' => $tradeUnit->imageSources(getImage:'leftImage'),
-            ],
-            [
-                'label' => __('3/4 angle side'),
-                'type'  => 'image',
-                'column_in_db' => '34_image_id',
-                'images' => $tradeUnit->imageSources(getImage:'threeQuarterImage'),
-            ],
-            [
-                'label' => __('Right side'),
-                'type'  => 'image',
-                'column_in_db' => 'right_image_id',
-                'images' => $tradeUnit->imageSources(getImage:'rightImage'),
-            ],
-            [
-                'label' => __('Back side'),
-                'type'  => 'image',
-                'column_in_db' => 'back_image_id',
-                'images' => $tradeUnit->imageSources(getImage:'backImage'),
-            ],
-            [
-                'label' => __('Top side'),
-                'type'  => 'image',
-                'column_in_db' => 'top_image_id',
-                'images' => $tradeUnit->imageSources(getImage:'topImage'),
-            ],
-            [
-                'label' => __('Bottom side'),
-                'type'  => 'image',
-                'column_in_db' => 'bottom_image_id',
-                'images' => $tradeUnit->imageSources(getImage:'bottomImage'),
-            ],
-            [
-                'label' => __('Comparison image'),
-                'type'  => 'image',
-                'column_in_db' => 'size_comparison_image_id',
-                'images' => $tradeUnit->imageSources(getImage:'sizeComparisonImage'),
-            ],
-        ];
-
-
-    }
-
     public function htmlResponse(TradeUnit $tradeUnit, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -136,6 +64,9 @@ class ShowTradeUnit extends GrpAction
                         'icon'  => 'fal fa-atom'
                     ],
                     'title'   => $tradeUnit->code,
+                    'afterTitle' => [
+                      'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
+                    ],
                     'actions' => [
                         $this->canEdit ? [
                             'type'  => 'button',
@@ -168,14 +99,6 @@ class ShowTradeUnit extends GrpAction
                     'navigation' => TradeUnitTabsEnum::navigation()
 
                 ],
-                'images_category_box' => $this->getImagesData($tradeUnit),
-                'images_update_route' => [
-                    'name'       => 'grp.models.trade-unit.update_images',
-                    'parameters' => [
-                        'tradeUnit' => $tradeUnit->id,
-                    ],
-                    'method'     => 'patch'
-                ],
 
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
                     fn () => GetTradeUnitShowcase::run($tradeUnit)
@@ -186,8 +109,8 @@ class ShowTradeUnit extends GrpAction
                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))),
 
                 TradeUnitTabsEnum::IMAGES->value => $this->tab == TradeUnitTabsEnum::IMAGES->value ?
-                    fn () => ImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))
-                    : Inertia::lazy(fn () => ImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))),
+                    fn () =>  GetTradeUnitImages::run($tradeUnit)
+                    : Inertia::lazy(fn () => GetTradeUnitImages::run($tradeUnit)),
 
                 TradeUnitTabsEnum::PRODUCTS->value => $this->tab == TradeUnitTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))

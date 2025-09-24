@@ -10,6 +10,7 @@ namespace App\Models\Masters;
 
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasHistory;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
@@ -18,14 +19,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property string $slug
@@ -37,20 +37,24 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property string $cost_price_ratio
+ * @property string $price_rrp_ratio
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $masterProductCategories
  * @property-read \App\Models\Masters\MasterShopOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterShopOrderingStats|null $orderingStats
  * @property-read \App\Models\Masters\MasterShopSalesIntervals|null $salesIntervals
+ * @property-read LaravelCollection<int, Shop> $shops
  * @property-read \App\Models\Masters\MasterShopStats|null $stats
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterShopTimeSeries> $timeSeries
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterShop withoutTrashed()
  * @mixin \Eloquent
  */
@@ -104,6 +108,11 @@ class MasterShop extends Model implements Auditable
         return $this->belongsTo(Group::class);
     }
 
+    public function shops(): HasMany
+    {
+        return $this->hasMany(Shop::class);
+    }
+
     public function stats(): HasOne
     {
         return $this->hasOne(MasterShopStats::class);
@@ -134,7 +143,7 @@ class MasterShop extends Model implements Auditable
         return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::DEPARTMENT)->get();
     }
 
-    public function subDepartments(): LaravelCollection
+    public function getMasterSubDepartments(): LaravelCollection
     {
         return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
     }
@@ -161,4 +170,8 @@ class MasterShop extends Model implements Auditable
         return $this->hasMany(MasterAsset::class);
     }
 
+    public function masterCollections(): MorphToMany
+    {
+        return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
+    }
 }

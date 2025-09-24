@@ -14,10 +14,14 @@ import Icon from "@/Components/Icon.vue";
 import { useLocaleStore } from "@/Stores/locale";
 
 import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle } from "@fal";
+import { faStar } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { RouteParams } from "@/types/route-params";
+import { trans } from "laravel-vue-i18n"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import NotesDisplay from "@/Components/NotesDisplay.vue";
 
-library.add(faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle);
+library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle);
 
 defineProps<{
   data: {
@@ -55,6 +59,10 @@ function orderRoute(order: Order) {
       return route(
         "grp.org.shops.show.crm.customers.show.customer_clients.orders.show",
         [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, (route().params as RouteParams).customerClient, order.slug]);
+    case "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index":
+      return route(
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show",
+        [(route().params as RouteParams).organisation, (route().params as RouteParams).shop, (route().params as RouteParams).customer, (route().params as RouteParams).customerSalesChannel, (route().params as RouteParams).customerClient, order.slug]);
     default:
       return '';
   }
@@ -105,13 +113,13 @@ function customerRoute(order: Order) {
 
     <template #cell(organisation_code)="{ item: order }">
       <Link :href="organisationRoute(order)" class="secondaryLink">
-        {{ order["organisation_code"] }}
+      {{ order["organisation_code"] }}
       </Link>
     </template>
 
     <template #cell(shop_code)="{ item: order }">
       <Link :href="shopRoute(order)" class="secondaryLink">
-        {{ order["shop_code"] }}
+      {{ order["shop_code"] }}
       </Link>
     </template>
 
@@ -119,15 +127,40 @@ function customerRoute(order: Order) {
       <Icon :data="order.state_icon" />
     </template>
 
+
+    <template #cell(pay_status)="{ item: order }">
+      <span v-if="order.pay_status == 'waiting'" class="text-blue-400">
+        {{ order["pay_status"] }}
+      </span>
+      <span v-else-if="order.pay_status == 'success'" class="text-green-500">
+        {{ order["pay_status"] }}
+      </span>
+      <span v-else-if="order.pay_status == 'fail'" class="text-red-500">
+        {{ order["pay_status"] }}
+      </span>
+      <span v-else>
+        {{ order["pay_status"] }}
+      </span>
+    </template>
+
     <template #cell(reference)="{ item: order }">
-      <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
+      <div class="flex gap-2 flex-wrap items-center">
+        <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
         {{ order["reference"] }}
-      </Link>
+        </Link>
+        <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
+          class="text-yellow-500" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart"
+          class="text-yellow-500" fixed-width aria-hidden="true" />
+        <NotesDisplay :item="order" reference-field="reference" />
+      </div>
+
+
     </template>
 
     <template #cell(customer_name)="{ item: order }">
       <Link :href="customerRoute(order)" class="secondaryLink">
-        {{ order["customer_name"] }}
+      {{ order["customer_name"] }}
       </Link>
     </template>
 

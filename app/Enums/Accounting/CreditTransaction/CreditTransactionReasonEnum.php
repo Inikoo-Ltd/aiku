@@ -15,11 +15,11 @@ enum CreditTransactionReasonEnum: string
 {
     use EnumHelperTrait;
 
-    case PAY_FOR_SHIPPING      = 'pay_for_shipping';
-    case COMPENSATE_CUSTOMER   = 'compensate_customer';
-    case TRANSFER              = 'transfer';
-    case MONEY_BACK              = 'money_back';
-    case OTHER                 = 'other';
+    case PAY_FOR_SHIPPING = 'pay_for_shipping';
+    case COMPENSATE_CUSTOMER = 'compensate_customer';
+    case TRANSFER = 'transfer';
+    case MONEY_BACK = 'money_back';
+    case OTHER = 'other';
 
     public function label(): string
     {

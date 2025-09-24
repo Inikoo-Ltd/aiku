@@ -5,10 +5,27 @@
   -->
 
 <script setup lang="ts">
-import { Head, router, useForm, Link} from "@inertiajs/vue3";
+import { Head, router, useForm, Link } from "@inertiajs/vue3";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSmileWink,faRecycle, faCube, faChair, faHandPaper, faExternalLink, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faTired, faFilePdf, faBoxOpen, faExclamation, faExclamationTriangle } from "@fal";
-import { faArrowRight, faCheck } from "@fas";
+import {
+    faSmileWink,
+    faRecycle,
+    faCube,
+    faChair,
+    faHandPaper,
+    faExternalLink,
+    faFolder,
+    faBoxCheck,
+    faPrint,
+    faExchangeAlt,
+    faUserSlash,
+    faTired,
+    faFilePdf,
+    faBoxOpen,
+    faExclamation,
+    faExclamationTriangle,
+} from "@fal";
+import { faArrowRight, faCheck, faStar, faTimes } from "@fas";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import { capitalize } from "@/Composables/capitalize";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
@@ -17,7 +34,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue";
 import BoxNote from "@/Components/Pallet/BoxNote.vue";
 import Timeline from "@/Components/Utils/Timeline.vue";
 import { Timeline as TSTimeline } from "@/types/Timeline";
-import { computed, provide, ref, watch, onMounted  } from "vue";
+import { computed, provide, ref, watch, onMounted } from "vue";
 import type { Component } from "vue";
 import { useTabChange } from "@/Composables/tab-change";
 import BoxStatsDeliveryNote from "@/Components/Warehouse/DeliveryNotes/BoxStatsDeliveryNote.vue";
@@ -33,15 +50,15 @@ import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfi
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
 import axios from "axios";
-import { get, set } from 'lodash-es';
+import { get, debounce } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
 import PureAddress from "@/Components/Pure/PureAddress.vue"
 import Message from 'primevue/message';
-import { debounce } from "lodash-es";
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 
-library.add(faSmileWink,faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck);
+library.add(faSmileWink, faRecycle, faTired, faFilePdf, faFolder, faBoxCheck, faPrint, faExchangeAlt, faUserSlash, faCube, faChair, faHandPaper, faExternalLink, faArrowRight, faCheck, faStar, faTimes);
 
 const props = defineProps<{
     title: string,
@@ -49,9 +66,9 @@ const props = defineProps<{
     tabs: TSTabs
     items?: {}
     pickings?: {}
-    warning?:{
-        text : string
-        picking_sessions : routeType
+    warning?: {
+        text: string
+        picking_sessions: routeType
     }
     alert?: {
         status: string
@@ -59,6 +76,7 @@ const props = defineProps<{
         description?: string
     }
     delivery_note: DeliveryNote
+    is_collection: boolean
     notes?: {
         note_list: {
             label: string
@@ -93,9 +111,7 @@ const props = defineProps<{
         fetch_route: routeType
     }
     address: {
-        delivery: {
-
-        }
+        delivery: {}
         options: {
             countriesAddressData: {
                 id: number
@@ -135,9 +151,9 @@ const onUpdatePicker = () => {
     const routeName = isUnassigned ? props.routes.set_queue.name : props.routes.update.name;
     const routeParams = {
         ...props.routes[isUnassigned ? 'set_queue' : 'update'].parameters,
-        ...(isUnassigned ? { user: selectedPicker.value.id } : {})
+        ...(isUnassigned ? {user: selectedPicker.value.id} : {})
     };
-    const payload = isUnassigned ? {} : { picker_user_id: selectedPicker.value.id };
+    const payload = isUnassigned ? {} : {picker_user_id: selectedPicker.value.id};
 
     router.patch(
         route(routeName, routeParams),
@@ -163,33 +179,33 @@ const onUpdatePicker = () => {
 // Section: Shipment
 const isLoadingButton = ref<string | boolean>(false);
 const isLoadingData = ref<string | boolean>(false);
-const formTrackingNumber = useForm({ shipping_id: "", tracking_number: "" });
+const formTrackingNumber = useForm({shipping_id: "", tracking_number: ""});
 const isModalShipment = ref(false);
 const optionShippingList = ref([]);
-const onOpenModalTrackingNumber = async () => {
-    isLoadingData.value = "addTrackingNumber";
-    try {
-        const xxx = await axios.get(
-            route(props.shipments.fetch_route.name, props.shipments.fetch_route.parameters)
-        );
-        optionShippingList.value = xxx?.data?.data || [];
-    } catch (error) {
-        console.error(error);
-        notify({
-            title: trans("Something went wrong."),
-            text: trans("Failed to retrieve shipper list"),
-            type: "error"
-        });
-    }
-    isLoadingData.value = false;
-};
+// const onOpenModalTrackingNumber = async () => {
+//     isLoadingData.value = "addTrackingNumber";
+//     try {
+//         const xxx = await axios.get(
+//             route(props.shipments.fetch_route.name, props.shipments.fetch_route.parameters)
+//         );
+//         optionShippingList.value = xxx?.data?.data || [];
+//     } catch (error) {
+//         console.error(error);
+//         notify({
+//             title: trans("Something went wrong."),
+//             text: trans("Failed to retrieve shipper list"),
+//             type: "error"
+//         });
+//     }
+//     isLoadingData.value = false;
+// };
 const onSubmitShipment = () => {
     formTrackingNumber
         .transform((data) => ({
             shipper_id: data.shipping_id?.id,
             tracking: data.shipping_id?.api_shipper ? undefined : data.tracking_number
         }))
-        .post(route(props.shipments.submit_route.name, { ...props.shipments.submit_route.parameters }), {
+        .post(route(props.shipments.submit_route.name, {...props.shipments.submit_route.parameters}), {
             preserveScroll: true,
             onStart: () => {
                 isLoadingButton.value = "addTrackingNumber";
@@ -214,17 +230,17 @@ const onSubmitShipment = () => {
 }
 
 const onSaveAddress = (submitShipment: Function) => {
-    const filterDataAddress = { ...xxxCopyAddress.value }
+    const filterDataAddress = {...xxxCopyAddress.value}
     delete filterDataAddress.formatted_address
     delete filterDataAddress.country
     delete filterDataAddress.country_code
     delete filterDataAddress.id
     delete filterDataAddress.can_edit
     delete filterDataAddress.can_delete
-    
+
     const updateRoute = {
         name: 'grp.models.delivery_note.update_address',
-        parameters: { deliveryNote: props.delivery_note.id }
+        parameters: {deliveryNote: props.delivery_note.id}
     }
     router.patch(
         route(updateRoute.name, updateRoute.parameters),
@@ -261,24 +277,23 @@ const listError = ref({
 });
 provide("listError", listError.value);
 
-const isModalEditAddress = ref(false)
-const xxxCopyAddress = ref({ ...props.address.delivery })
+// const isModalEditAddress = ref(false)
+const xxxCopyAddress = ref({...props.address.delivery})
 
 // ✅ Toggle for picking view — with localStorage persistence
-const pickingView = ref(false);
+const pickingView = ref(props.box_stats?.is_replacement ? true : false);
 
 // ✅ Get initial value from localStorage
 const storedPickingView = localStorage.getItem('delivery-note:pickingView');
 if (storedPickingView !== null) {
-  pickingView.value = storedPickingView === 'true';
+    pickingView.value = storedPickingView === 'true';
 }
 
 // ✅ Watch and persist to localStorage
 watch(pickingView, (val) => {
-  localStorage.setItem('delivery-note:pickingView', String(val));
+    localStorage.setItem('delivery-note:pickingView', String(val));
 });
 
-console.log(props)
 const showWarningMessage = ref(true);
 
 
@@ -290,60 +305,72 @@ const debReloadPage = debounce(() => {
 
 const selectSocketBasedPlatform = (porto) => {
     return {
-      event: `grp.dn.${porto.id}`,
-      action: '.dn-note-update'
+        event: `grp.dn.${porto.id}`,
+        action: '.dn-note-update'
     }
 }
 
 onMounted(() => {
-  const socketConfig = selectSocketBasedPlatform(props.delivery_note)
+    const socketConfig = selectSocketBasedPlatform(props.delivery_note)
 
-  if (!socketConfig) {
-    console.warn('Socket config not found for platform:', props.delivery_note.id)
-    return
-  }
+    if (!socketConfig) {
+        console.warn('Socket config not found for platform:', props.delivery_note.id)
+        return
+    }
 
-  const channel = window.Echo
-    .private(socketConfig.event)
-    .listen(socketConfig.action, (eventData: any) => {
-      debReloadPage()
-    })
-  console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
+    const channel = window.Echo
+        .private(socketConfig.event)
+        .listen(socketConfig.action, (eventData: any) => {
+            debReloadPage()
+        })
+    console.log('Subscribed to channel for porto ID:', props.delivery_note.id, 'Channel:', channel)
 })
-</script>
 
+
+</script>
 
 <template>
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" isButtonGroupWithBorder>
-        <template #otherBefore>
-            <!-- Button: Download PDF -->
-            <div class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
-                <FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
+        <template #afterTitle2>
+            <FontAwesomeIcon v-if="delivery_note.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
+                icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="delivery_note.has_extra_packing" v-tooltip="trans('Extra packing')"
+                icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+        </template>
 
+        <template #otherBefore v-if="!box_stats.is_replacement">
+            <!-- toggle picking view -->
+            <div v-if="(delivery_note_state.value !== 'dispatched' && delivery_note_state.value !== 'cancelled')" class="flex items-center gap-3 bg-gray-50 border border-gray-200 px-4 py-2 rounded-md">
+                <FontAwesomeIcon :icon="faBoxOpen" class="text-gray-400" fixed-width />
                 <div class="flex items-center justify-between w-full">
                     <span class="text-sm text-gray-700 font-medium mx-2">
-                        Picking View
+                        {{trans('Picking View')}}
                     </span>
 
-                    <ToggleSwitch v-model="pickingView" />
+                    <ToggleSwitch v-model="pickingView">
+                        <template #handle="{ checked }">
+                            <FontAwesomeIcon 
+                                :icon="checked ? faCheck : faTimes" 
+                                :class="checked ? '' : 'text-red-500'"
+                                class="text-xs"
+                                fixed-width 
+                            />
+                           
+                        </template>
+                    </ToggleSwitch>
                 </div>
             </div>
-
-            <a :href="route('grp.pdfs.delivery-notes', {
+            <!-- Button: Download PDF -->
+            <a v-if="route().params.deliveryNote" :href="route('grp.pdfs.delivery-notes', {
                 deliveryNote: route().params.deliveryNote,
             })" as="a" target="_blank" class="flex items-center"
                 v-tooltip="trans('Download PDF of this Delivery Note')">
                 <Button class="flex items-center" icon="fal fa-file-pdf" type="tertiary" />
             </a>
 
-            <!-- Button: Shipment -->
-            <!-- <Button
-                v-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value) && !(box_stats?.shipments?.length)"
-                @click="() => box_stats.parcels?.length ? (isModalShipment = true, onOpenModalTrackingNumber()) : set(listError, 'box_stats_parcel', true)"
-                v-tooltip="box_stats.parcels?.length ? '' : trans('Please add at least one parcel')"
-                :label="trans('Shipment')" icon="fal fa-shipping-fast" type="tertiary" /> -->
+
         </template>
 
         <template #button-to-queue="{ action }">
@@ -360,6 +387,17 @@ onMounted(() => {
             <Button @click="isModalToQueue = true" :label="action.label" :icon="action.icon" type="tertiary" />
         </template>
 
+        <template #button-cancel="{ action}">
+            <ModalConfirmationDelete :routeDelete="action.route"
+                :title="trans('Are you sure you want to cancel the delivery?')"
+                :description="trans('This will rollback the Order to submitted state as well as cancelling this Delivery Note. This action cannot be undone.')"
+                isFullLoading :noLabel="trans('Yes, cancel delivery')" noIcon="x"
+                :cancelLabel="trans('No, keep delivery')">
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button @click="changeModel" :label="action.label" :type="action.style" />
+                </template>
+            </ModalConfirmationDelete>
+        </template>
 
     </PageHeading>
     <!-- Section: Pallet Warning -->
@@ -367,40 +405,36 @@ onMounted(() => {
         <AlertMessage :alert />
     </div>
 
-  <div v-if="warning && showWarningMessage" class="p-1">
-  <Message 
-    severity="warn"
-    class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800"
-    :closable="true"
-    @close="showWarningMessage = false"
-  >
-    <div class="flex items-start gap-3">
-      <!-- Icon -->
-      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 w-4 h-4 flex-shrink-0" />
+    <div v-if="warning && showWarningMessage" class="p-1">
+        <Message severity="warn" class="p-1 rounded-md border-l-4 border-yellow-500 bg-yellow-50 text-yellow-800"
+            :closable="true" @close="showWarningMessage = false">
+            <div class="flex items-start gap-3">
+                <!-- Icon -->
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 w-4 h-4 flex-shrink-0" />
 
-      <!-- Main Content -->
-      <div class="flex gap-2 flex-wrap items-center">
-        <!-- Warning Text -->
-        <div class="text-sm font-medium">
-          {{ warning?.text }}
-        </div>
+                <!-- Main Content -->
+                <div class="flex gap-2 flex-wrap items-center">
+                    <!-- Warning Text -->
+                    <div class="text-sm font-medium">
+                        {{ warning?.text }}
+                    </div>
 
-        <!-- Session Links in One Line -->
-        <div class="flex flex-wrap items-center gap-2 font-bold underline">
-          <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
-            <Link :href="route(item.route.name, item.route.parameters)" class="text-sm hover:underline">
-              {{ item.reference }}
-            </Link>
-          </template>
-        </div>
-      </div>
+                    <!-- Session Links in One Line -->
+                    <div class="flex flex-wrap items-center gap-2 font-bold underline">
+                        <template v-for="(item, idx) in warning?.picking_sessions" :key="idx">
+                            <Link :href="route(item.route.name, item.route.parameters)" class="text-sm hover:underline">
+                            {{ item.reference }}
+                            </Link>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </Message>
     </div>
-  </Message>
-</div>
 
 
     <!-- Section: Box Note -->
-    <div v-if="pickingView" class="relative">
+    <div v-if="(pickingView && !box_stats.is_replacement) || (delivery_note_state.value === 'dispatched' || delivery_note_state.value === 'cancelled')" class="relative">
         <Transition name="headlessui">
             <div xv-if="notes?.note_list?.some(item => !!(item?.note?.trim()))"
                 class="p-2 grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 h-fit lg:max-h-64 w-full lg:justify-center border-b border-gray-300">
@@ -428,7 +462,8 @@ onMounted(() => {
 
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab" :routes
-            :state="delivery_note.state" />
+            :state="delivery_note.state" @update:quantity-to-resend="handleQuantityToResendUpdate"
+            @validation-error="handleValidationError" />
     </div>
 
     <!-- Modal: Select picker -->
@@ -588,3 +623,10 @@ onMounted(() => {
         </div>
     </Modal>
 </template>
+
+<style scoped>
+.p-toggleswitch {
+    --p-toggleswitch-checked-background: #10b981;
+    --p-toggleswitch-checked-hover-background: #059669;
+}
+</style>

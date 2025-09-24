@@ -74,12 +74,15 @@ class IndexTransactions extends OrgAction
                 'transactions.quantity_cancelled',
                 'transactions.gross_amount',
                 'transactions.net_amount',
+                'transactions.model_type as model_type',
                 'transactions.created_at',
                 'assets.code as asset_code',
                 'assets.name as asset_name',
                 'assets.type as asset_type',
+                'products.id as product_id',
                 'products.price as price',
                 'products.slug as product_slug',
+                'products.image_id as product_image_id',
                 'products.available_quantity as available_quantity',
                 'currencies.code as currency_code',
                 'orders.id as order_id',
@@ -112,6 +115,9 @@ class IndexTransactions extends OrgAction
             $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
 
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+           /*  if (app()->environment('local')) {
+                $table->column(key: 'new_quantity', label: __('new quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+            } */
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             if ($parent instanceof Order &&
                 (!isset($parent->platform) || $parent->platform->type === PlatformTypeEnum::MANUAL)) {

@@ -18,6 +18,7 @@ enum OrdersTabsEnum: string
 
     case ORDERS    = 'orders';
     case LAST_ORDERS    = 'last_orders';
+    case EXCESS_ORDERS    = 'excess_orders';
     case STATS     = 'stats';
     case HISTORY   = 'history';
 
@@ -31,6 +32,10 @@ enum OrdersTabsEnum: string
             ],
             OrdersTabsEnum::LAST_ORDERS => [
                 'title' => __('last orders'),
+                'icon'  => 'fal fa-bars',
+            ],
+            OrdersTabsEnum::EXCESS_ORDERS => [
+                'title' => __('overpaid orders'),
                 'icon'  => 'fal fa-bars',
             ],
             OrdersTabsEnum::STATS => [

@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\TaxNumber;
 
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Models\Helpers\TaxNumber;
 
 class UpdateTaxNumber
@@ -17,6 +18,12 @@ class UpdateTaxNumber
 
     public function handle(TaxNumber $taxNumber, array $modelData): TaxNumber
     {
-        return $this->update($taxNumber, $modelData, ['data']);
+        $taxNumber = $this->update($taxNumber, $modelData, ['data']);
+
+        if ($taxNumber->wasChanged(['type', 'number', 'country_code']) && $taxNumber->type == TaxNumberTypeEnum::EU_VAT) {
+            $taxNumber = ValidateEuropeanTaxNumber::run($taxNumber);
+        }
+
+        return $taxNumber;
     }
 }

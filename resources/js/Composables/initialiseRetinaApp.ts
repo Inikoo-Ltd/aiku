@@ -36,8 +36,8 @@ export const initialiseRetinaApp = () => {
     }
     
     router.on('navigate', (event) => {
-        // To see Vue filename in console (component.vue())
-        if (usePage().component) {
+        // To see Vue filename in console (component.vue)
+        if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
             window.component = {
                 vue: usePage().component
             }
@@ -69,8 +69,10 @@ export const initialiseRetinaApp = () => {
     // Echo: Website wide websocket
     echoWebsite.subscribe(usePage().props.iris.website.id)  // Websockets: notification
 
-    if (usePage().props.localeData) {
-        loadLanguageAsync(usePage().props.localeData.language.code)
+    if (usePage().props?.iris?.locale) {
+        loadLanguageAsync(usePage().props?.iris?.locale)
+    } else if (usePage().props.localeData?.language?.code) {
+        loadLanguageAsync(usePage().props.localeData?.language?.code)
     }
 
 

@@ -30,16 +30,16 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
-const isLoadingSub = ref<null | number>(null)
+const isLoadingSub = ref<null | string>(null)
 </script>
 
 <template>
     <div class="flex flex-wrap p-4 gap-x-4 gap-y-4">
-        <div v-for="dash in data" class="w-full max-w-sm px-6 py-6 rounded-lg bg-white shadow border border-gray-200">
-            <div class="text-lg font-semibold text-gray-400 capitalize mb-3">
+        <div v-for="(dash, idxDash) in data" class="w-full max-w-sm px-5 py-4 lg:px-6 lg:py-6 rounded-lg bg-white shadow border border-gray-200">
+            <div class="text-lg font-semibold text-gray-400 capitalize xmb-1.5 lg:mb-3">
                 {{ dash.label }}
             </div>
-            <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
                 <!-- Total Count -->
                 <div class="flex items-center">
                     <span class="text-3xl font-bold text-org-500">
@@ -55,13 +55,13 @@ const isLoadingSub = ref<null | number>(null)
                         :is="item.route?.name ? Link : 'div'"
                         :href="item.route?.name ? route(item.route.name, item.route.parameters) : '#'"
                         :key="item.key"
-                        class="flex items-center gap-2 px-1 py-0.5 rounded"
+                        class="flex items-center gap-2 px-2 py-1 lg:px-1 lg:py-0.5 rounded"
                         :class="item.route?.name ? 'hover:bg-gray-200' : ''"
                         xv-tooltip="item.label"
-                        @start="() => isLoadingSub = idx"
+                        @start="() => isLoadingSub = `${idxDash}${idx}`"
                     >
                         <LoadingIcon
-                            v-if="isLoadingSub === idx"
+                            v-if="isLoadingSub === `${idxDash}${idx}`"
                         />
                         <Icon
                             v-else-if="item.icon_state"

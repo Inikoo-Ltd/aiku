@@ -15,7 +15,6 @@ use App\Http\Resources\Catalogue\ShippingZonesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Ordering\ShippingZone;
 use App\Models\Ordering\ShippingZoneSchema;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -26,7 +25,6 @@ class IndexShippingZones extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-    private ShippingZoneSchema $parent;
 
     public function handle(ShippingZoneSchema $parent, $prefix = null): LengthAwarePaginator
     {
@@ -43,11 +41,8 @@ class IndexShippingZones extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ShippingZone::class);
 
-        if ($parent instanceof ShippingZoneSchema) {
-            $queryBuilder->where('shipping_zones.shipping_zone_schema_id', $parent->id);
-        } else {
-            abort(419);
-        }
+        $queryBuilder->where('shipping_zones.shipping_zone_schema_id', $parent->id);
+
 
         $queryBuilder->leftjoin('shipping_zone_stats', 'shipping_zone_stats.shipping_zone_id', '=', 'shipping_zones.id');
         $queryBuilder->leftjoin('currencies', 'shipping_zones.currency_id', '=', 'currencies.id');
@@ -63,17 +58,18 @@ class IndexShippingZones extends OrgAction
                 'shipping_zones.territories',
                 'shipping_zones.position',
                 'shipping_zones.created_at',
+                'currencies.code as currency_code'
             ]);
 
-        return $queryBuilder->allowedSorts(['name', 'status'])
+        return $queryBuilder->allowedSorts(['name', 'status', 'position'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(ShippingZoneSchema $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(ShippingZoneSchema $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -90,29 +86,12 @@ class IndexShippingZones extends OrgAction
                         ],
                         default => null
                     }
-
-                    /*
-                    [
-                        'title'       => __('no products'),
-                        'description' => $canEdit ? __('Get started by creating a new product.') : null,
-                        'count'       => $this->organisation->stats->number_products,
-                        'action'      => $canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new product'),
-                            'label'   => __('product'),
-                            'route'   => [
-                                'name'       => 'shops.products.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : null
-                    ]*/
                 );
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'position', label: __('position'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'territories', label: __('territories'), canBeHidden: false, sortable: false, searchable: false);
-            $table->column(key: 'price', label: __('price'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'territories', label: __('territories'), canBeHidden: false);
+            $table->column(key: 'price', label: __('price'), canBeHidden: false);
         };
     }
 

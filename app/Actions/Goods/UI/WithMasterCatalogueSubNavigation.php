@@ -83,7 +83,7 @@ trait WithMasterCatalogueSubNavigation
                 'number'   => $masterShop->stats->number_current_master_assets_type_product,
                 'label'    => __('Master Products'),
                 'route'    => [
-                    'name'       => 'grp.masters.master_shops.show.products.index',
+                    'name'       => 'grp.masters.master_shops.show.master_products.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -91,6 +91,21 @@ trait WithMasterCatalogueSubNavigation
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
                     'tooltip' => __('Master Products')
+                ]
+            ],
+
+            [
+                'number'   => $masterShop->stats->number_master_collections,
+                'label'    => __('Master Collections'),
+                'route'    => [
+                    'name'       => 'grp.masters.master_shops.show.master_collections.index',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-stream'],
+                    'tooltip' => __('Master Collections')
                 ]
             ],
 

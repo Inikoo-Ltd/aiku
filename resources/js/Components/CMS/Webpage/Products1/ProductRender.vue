@@ -49,10 +49,14 @@ const props = defineProps<{
     product: ProductResource
     productHasPortfolio : Array<Number>
     style?: Object|null
+    currency?: {
+        code: string
+        name: string
+    }
 }>()
 
 
-const currency = layout?.iris?.currency 
+const currency = layout?.iris?.currency || props.currency
 
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
@@ -128,7 +132,6 @@ const onUnselectFavourite = (product: ProductResource) => {
 
 <template>
     <div class="relative flex flex-col justify-between h-full">
-
         <!-- Top Section -->
         <div>
             <div v-if="product?.top_seller"
@@ -174,7 +177,6 @@ const onUnselectFavourite = (product: ProductResource) => {
                 </div>
             </template>
 
-
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full mb-1 rounded sm:h-[305px] h-[180px]">
                 <Image :src="product?.web_images?.main?.gallery" alt="product image" 
@@ -193,7 +195,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             </div>
 
             <!-- SKU and RRP -->
-            <div class="flex justify-between text-xs text-gray-600 mb-1 capitalize">
+            <div class="flex justify-between text-xs text-gray-600 mb-1">
                 <span>{{ product?.code }}</span>
                 <span v-if="product.rpp">
                     RRP: {{ locale.currencyFormat((currency.code,product.rpp || 0)) }}/ {{ product.unit }}
@@ -218,8 +220,8 @@ const onUnselectFavourite = (product: ProductResource) => {
             <div v-if="layout?.iris?.is_logged_in" class="mb-3">
 
                 <div class="flex justify-between text-sm ">
-                    <span>{{trans('Price')}}: <span class="font-semibold">{{ locale.currencyFormat(currency.code,product.price) }}</span></span>
-                    <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(currency.code,product.rrp) }}</span></span>
+                    <span>{{trans('Price')}}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,product.price) }}</span></span>
+                    <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(currency?.code,product.rrp) }}</span></span>
 
                 </div>
             </div>

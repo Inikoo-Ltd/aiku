@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { router, useForm } from "@inertiajs/vue3"
-import { ref, onMounted, nextTick } from "vue"
+import { ref, onMounted, nextTick, provide } from "vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { trans } from "laravel-vue-i18n"
 import IconField from "primevue/iconfield"
@@ -56,6 +56,8 @@ const form = useForm({
 	poll_replies: initialPollReplies,
 	is_opt_in: false,
 	interest: [],
+    tax_number: ''
+
 })
 
 // Define reactive variables
@@ -65,7 +67,7 @@ const submit = () => {
 	isLoading.value = true
 
 	const { isDirty, errors, __rememberable, hasErrors, progress, wasSuccessful, ...xxx } = form
-	// console.log('fooooorm', xxx)
+
 	if (form.password == form.password_confirmation) {
 		form
 		.transform((data) => ({
@@ -101,6 +103,8 @@ onMounted(async () => {
 	document.getElementById("contact_name")?.focus()
 })
 
+const registrationWarning = ref({})
+provide('registrationWarning', registrationWarning)
 
 </script>
 
@@ -170,7 +174,7 @@ onMounted(async () => {
 									class="capitalize block text-sm font-medium text-gray-700"
 								>
 									<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-									Password
+									{{ trans("Password") }}
 									</label>
 								<div class="mt-2 password">
 									<PureInput
@@ -191,7 +195,7 @@ onMounted(async () => {
 									class="capitalize block text-sm font-medium text-gray-700"
 								>
 									<FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
-									Retype Password
+									{{ trans("Retype Password") }}
 								</label>
 								<div class="mt-2 password">
 									<PureInput
@@ -224,10 +228,39 @@ onMounted(async () => {
 
 					<!-- Submit Button -->
 					<div>
-						<div v-if="Object.keys(form.errors || {}).length" class="mb-4 text-red-600">
-							There is {{ Object.keys(form.errors || {}).length }} error(s) in the form. Please correct them before submitting.
-
+						<!-- Warning: only tax_number -->
+						<div
+							v-if="registrationWarning.tax_number"
+							class="mb-4 bg-amber-100 rounded text-amber-700 border border-amber-300 px-4 py-2"
+							>
+							<span class="font-bold">{{ trans('Warning') }}:</span>
+							<ul class="list-disc list-inside">
+								<!-- handle string or array error shapes -->
+								<li v-if="Array.isArray(registrationWarning.tax_number)" v-for="(msg, i) in registrationWarning.tax_number" :key="i">
+									{{ msg }}
+								</li>
+								<li v-else>
+									{{ registrationWarning.tax_number }}
+								</li>
+							</ul>
 						</div>
+
+						<!-- Errors (everything except tax_number) -->
+						<div
+							v-if="Object.keys(form?.errors ?? {}).filter(k => k !== 'tax_number').length"
+							class="mb-4 text-red-600"
+						>
+							<span class="font-bold">{{ trans('Errors') }}:</span>
+							<ul class="list-disc list-inside">
+								<template v-for="(error, key) in form.errors" :key="key">
+									<template v-if="key !== 'tax_number'">
+										<li v-if="Array.isArray(error)" v-for="(msg, i) in error" :key="i">{{ msg }}</li>
+										<li v-else>{{ error }}</li>
+									</template>
+								</template>
+							</ul>
+						</div>
+
 						<div class="flex justify-end">
 							<button
 								type="submit"

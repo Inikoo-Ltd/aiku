@@ -20,10 +20,14 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Accounting\Invoice;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
@@ -37,21 +41,32 @@ class DeleteInvoice extends OrgAction
         try {
             $invoice = DB::transaction(function () use ($invoice, $modelData) {
                 $invoice = $this->update($invoice, $modelData);
-                $invoice->delete();
                 foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
                     DeleteInvoiceTransaction::make()->action($invoiceTransaction);
                 }
 
+                $invoice->delete();
+
                 return $invoice;
             });
-            StoreDeletedInvoiceHistory::run(invoice: $invoice);
-            SendInvoiceDeletedNotification::dispatch($invoice);
-            $this->postDeleteInvoiceHydrators($invoice);
+
+            if ($invoice->type === InvoiceTypeEnum::INVOICE) {
+                StoreDeletedInvoiceHistory::run(invoice: $invoice);
+                SendInvoiceDeletedNotification::dispatch($invoice);
+                $this->postDeleteInvoiceHydrators($invoice);
+            }
         } catch (Throwable) {
             //
         }
 
         return $invoice;
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+       return Redirect::route('grp.org.accounting.invoices.index', [
+            $this->organisation->slug
+       ]);
     }
 
     public function postDeleteInvoiceHydrators(Invoice $invoice): void
@@ -74,7 +89,7 @@ class DeleteInvoice extends OrgAction
     public function rules(): array
     {
         return [
-            'deleted_note' => ['sometimes', 'string', 'max:4000'],
+            'deleted_note' => ['required', 'string', 'max:4000'],
             'deleted_by'   => ['sometimes', 'nullable', 'integer', Rule::exists('users', 'id')->where('group_id', $this->group->id)],
         ];
     }

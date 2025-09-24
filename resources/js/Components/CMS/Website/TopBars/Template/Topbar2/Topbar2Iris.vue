@@ -11,6 +11,7 @@ import { getStyles } from '@/Composables/styles'
 import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
 import Image from '@/Components/Image.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import SwitchLanguage from '@/Components/Iris/SwitchLanguage.vue'
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -119,6 +120,7 @@ const urlLoginWithRedirect = () => {
                 url="/app/profile"
                 icon="fal fa-user"
                 type="transparent"
+                class="hidden md:block"
             >
                 <template #label>
                     <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
@@ -172,7 +174,13 @@ const urlLoginWithRedirect = () => {
                 type="transparent"
             >
                 <template #label>
-                <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" />
+                <!-- <span v-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)" /> -->
+                <span
+                    xclass="text-white"
+                    xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                    v-html="textReplaceVariables('{{ items_count }} items ({{ cart_amount }})', layout.iris_variables)"
+                >
+                </span>
                 </template>
             </ButtonWithLink>
 
@@ -206,17 +214,21 @@ const urlLoginWithRedirect = () => {
                 <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
             </a> -->
 
-            <ButtonWithLink
-                v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
-                v-tooltip="trans('Profile')"
-                url="/app/profile"
-                icon="fal fa-user"
-                class="col-span-2 md:hidden space-x-1.5 flex flex-nowrap items-center "
-            >
-                <template #label>
-                    <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
-                </template>
-            </ButtonWithLink>
+            <div class="col-span-2 md:hidden w-fit flex items-center gap-x-2">
+                <ButtonWithLink
+                    v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
+                    v-tooltip="trans('Profile')"
+                    url="/app/profile"
+                    icon="fal fa-user"
+                    class="space-x-1.5 flex flex-nowrap items-center "
+                >
+                    <template #label>
+                        <span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+                    </template>
+                </ButtonWithLink>
+
+                <SwitchLanguage />
+            </div>
 
             <Image
                 class="h-9 max-w-32 "
@@ -242,6 +254,7 @@ const urlLoginWithRedirect = () => {
                 :data="{}"
                 icon="fal fa-sign-out"
                 class="col-span-2 text-right block md:hidden space-x-1.5 "
+                type="negative"
             >
                 <template #label>
                 <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
@@ -249,7 +262,10 @@ const urlLoginWithRedirect = () => {
             </ButtonWithLink>
         </div>
 
-        <div class="col-span-2 flex md:justify-end gap-x-4 ">
+        <div class="col-span-2 flex md:justify-end md:items-center gap-x-4 ">
+            <SwitchLanguage
+                class="hidden md:block"
+            />
             <!-- Section: LogoutRetina -->
             <!-- <a v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
                 :href="model?.logout?.link"

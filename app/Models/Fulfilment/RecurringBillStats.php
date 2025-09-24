@@ -11,8 +11,6 @@ namespace App\Models\Fulfilment;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $recurring_bill_id
  * @property int $number_transactions

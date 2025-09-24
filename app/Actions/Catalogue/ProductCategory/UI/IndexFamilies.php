@@ -23,6 +23,7 @@ use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -34,6 +35,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use Spatie\QueryBuilder\AllowedSort;
+use Spatie\QueryBuilder\Sorts\Sort;
+use Illuminate\Database\Eloquent\Builder;
 
 class IndexFamilies extends OrgAction
 {
@@ -81,6 +85,14 @@ class IndexFamilies extends OrgAction
         return $this->handle(parent: $subDepartment, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
+
+        return $this->handle(parent: $subDepartment, prefix: ProductCategoryTabsEnum::INDEX->value);
+    }
+
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
@@ -89,7 +101,7 @@ class IndexFamilies extends OrgAction
         return $this->handle(parent: $shop, prefix: ProductCategoryTabsEnum::INDEX->value);
     }
 
-    public function handle(Group|Shop|ProductCategory|Organisation|Collection $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Shop|ProductCategory|Organisation|Collection|MasterProductCategory $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -103,15 +115,16 @@ class IndexFamilies extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
 
-        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-            $queryBuilder->whereElementGroup(
-                key: $key,
-                allowedElements: array_keys($elementGroup['elements']),
-                engine: $elementGroup['engine'],
-                prefix: $prefix
-            );
+        if (class_basename($parent) != 'MasterProductCategory') {
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $queryBuilder->whereElementGroup(
+                    key: $key,
+                    allowedElements: array_keys($elementGroup['elements']),
+                    engine: $elementGroup['engine'],
+                    prefix: $prefix
+                );
+            }
         }
-
 
         $queryBuilder->leftJoin('shops', 'product_categories.shop_id', 'shops.id');
         $queryBuilder->leftJoin('organisations', 'product_categories.organisation_id', '=', 'organisations.id');
@@ -129,11 +142,11 @@ class IndexFamilies extends OrgAction
             } elseif ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $queryBuilder->where('product_categories.sub_department_id', $parent->id);
             } else {
-                // todo
                 abort(419);
             }
+        } elseif (class_basename($parent) == 'MasterProductCategory') {
+            $queryBuilder->where('product_categories.master_product_category_id', $parent->id);
         }
-
 
         return $queryBuilder
             ->defaultSort('product_categories.code')
@@ -161,7 +174,9 @@ class IndexFamilies extends OrgAction
                 'organisations.slug as organisation_slug',
                 'product_category_sales_intervals.sales_grp_currency_all as sales_all',
                 'product_category_ordering_intervals.invoices_all as invoices_all',
-                DB::raw("(
+                'product_categories.master_product_category_id',
+                DB::raw(
+                    "(
                     SELECT json_agg(json_build_object(
                         'id', c.id,
                         'slug', c.slug,
@@ -173,19 +188,52 @@ class IndexFamilies extends OrgAction
                     WHERE chm.model_id = product_categories.id
                         AND chm.model_type = 'ProductCategory'
                         AND c.deleted_at IS NULL
-                ) as collections"),
+                )::text as collections"
+                ),
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')
             ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
             ->leftjoin('product_categories as departments', 'departments.id', 'product_categories.department_id')
             ->leftjoin('product_categories as sub_departments', 'sub_departments.id', 'product_categories.sub_department_id')
-            ->allowedSorts(['code', 'name', 'shop_code', 'department_code', 'number_current_products', 'sub_department_name', 'department_name'])
+            ->allowedSorts([
+                'code',
+                'name',
+                'shop_code',
+                'department_code',
+                'number_current_products',
+                'sub_department_name',
+                'department_name',
+                'sales_all',
+                'invoices_all',
+                AllowedSort::custom(
+                    'collections',
+                    new class () implements Sort {
+                        public function __invoke(Builder $query, bool $descending, string $property)
+                        {
+                            $direction = $descending ? 'desc' : 'asc';
+                            $query->orderBy(
+                                DB::raw(
+                                    "(
+                                SELECT json_agg(c.name)
+                                FROM collection_has_models chm
+                                JOIN collections c ON chm.collection_id = c.id
+                                WHERE chm.model_id = product_categories.id
+                                AND chm.model_type = 'ProductCategory'
+                                AND c.deleted_at IS NULL
+                            )::text"
+                                ),
+                                $direction
+                            );
+                        }
+                    }
+                )
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Shop|ProductCategory|Organisation|Collection $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false, $sales = true): Closure
+    public function tableStructure(Group|Shop|ProductCategory|Organisation|Collection|MasterProductCategory $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false, $sales = true): Closure
     {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit, $sales) {
             if ($prefix) {
@@ -193,13 +241,14 @@ class IndexFamilies extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix . 'Page');
             }
-
-            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-                $table->elementGroup(
-                    key: $key,
-                    label: $elementGroup['label'],
-                    elements: $elementGroup['elements']
-                );
+            if (class_basename($parent) != 'MasterProductCategory') {
+                foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                    $table->elementGroup(
+                        key: $key,
+                        label: $elementGroup['label'],
+                        elements: $elementGroup['elements']
+                    );
+                }
             }
 
             $table
@@ -239,12 +288,15 @@ class IndexFamilies extends OrgAction
 
             if ($sales) {
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sales', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'invoices', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'invoices_all', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 if ($parent instanceof Organisation) {
                     $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                     $table->column(key: 'department_code', label: __('department'), canBeHidden: false, sortable: true, searchable: true);
+                }
+                if (class_basename($parent) == 'MasterProductCategory') {
+                    $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
                 }
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
@@ -281,14 +333,14 @@ class IndexFamilies extends OrgAction
     public function getActions(ActionRequest $request): array
     {
         $actions = [];
-        if ($this->canEdit) {
-            if ($this->parent instanceof ProductCategory) {
-                $createRoute = "grp.org.shops.show.catalogue.departments.show.families.create";
+        if ($this->canEdit && $this->parent instanceof ProductCategory) {
+            $createRoute = "grp.org.shops.show.catalogue.departments.show.families.create";
 
-                if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                    $createRoute = "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.create";
-                }
+            if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+                $createRoute = "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.create";
+            }
 
+            if (is_null($this->parent->masterProductCategory)) {
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'create',
@@ -337,14 +389,10 @@ class IndexFamilies extends OrgAction
         if ($this->parent instanceof ProductCategory) {
             if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $title      = $this->parent->name;
-                $model      = '';
                 $icon       = [
                     'icon'  => ['fal', 'fa-folder-tree'],
                     'title' => __('department')
                 ];
-                // $iconRight  = [
-                //     'icon' => 'fal fa-folder',
-                // ];
                 $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
@@ -352,14 +400,10 @@ class IndexFamilies extends OrgAction
                 ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $title      = $this->parent->name;
-                $model      = '';
                 $icon       = [
                     'icon'  => ['fal', 'fa-dot-circle'],
                     'title' => __('sub department')
                 ];
-                // $iconRight  = [
-                //     'icon' => 'fal fa-folder',
-                // ];
                 $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
 
@@ -370,33 +414,31 @@ class IndexFamilies extends OrgAction
 
         $routes = null;
 
-        if ($this->parent instanceof PRoductCategory) {
-            if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-                $routes = [
-                    'attach' => [
-                        'name'       => 'grp.models.sub-department.families.attach',
-                        'parameters' => [
-                            'subDepartment' => $this->parent->id
-                        ]
-                    ],
-                    'detach' => [
-                        'method'  => 'delete',
-                        'name'       => 'grp.models.sub-department.family.detach',
-                        'parameters' => [
-                            'subDepartment' => $this->parent->id
-                        ]
-                    ],
-                    'fetch_families'   => [
-                        'name'      =>  'grp.json.product_category.families.index',
-                        'parameters' => [
-                            'productCategory' => $this->parent->slug
-                        ]
-                    ],
-                ];
-            }
+        if ($this->parent instanceof ProductCategory && $this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $routes = [
+                'attach'         => [
+                    'name'       => 'grp.models.sub-department.families.attach',
+                    'parameters' => [
+                        'subDepartment' => $this->parent->id
+                    ]
+                ],
+                'detach'         => [
+                    'method'     => 'delete',
+                    'name'       => 'grp.models.sub-department.family.detach',
+                    'parameters' => [
+                        'subDepartment' => $this->parent->id
+                    ]
+                ],
+                'fetch_families' => [
+                    'name'       => 'grp.json.product_category.families.index',
+                    'parameters' => [
+                        'productCategory' => $this->parent->slug
+                    ]
+                ],
+            ];
         }
 
-
+        // dd(FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))->resolve());
         return Inertia::render(
             'Org/Catalogue/Families',
             [
@@ -426,11 +468,16 @@ class IndexFamilies extends OrgAction
                     : Inertia::lazy(fn () => FamiliesResource::collection($families)),
 
                 ProductCategoryTabsEnum::SALES->value => $this->tab == ProductCategoryTabsEnum::SALES->value ?
-                    fn () => FamiliesResource::collection($families)
-                    : Inertia::lazy(fn () => FamiliesResource::collection($families)),
+                    fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($this->parent, prefix: ProductCategoryTabsEnum::SALES->value))),
+
+                ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
+                    fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
+                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamiliesNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
-        )->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
-            ->table($this->tableStructure(parent: $this->parent, modelOperations: null, canEdit: false, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales));
+        )->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::INDEX->value, sales: false))
+            ->table($this->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::SALES->value, sales: $this->sales))
+            ->table(IndexFamiliesNeedReviews::make()->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value));
     }
 
     public function getBreadcrumbs(Group|Shop|ProductCategory|Organisation|Collection $parent, string $routeName, array $routeParameters, string $suffix = null): array
@@ -474,17 +521,13 @@ class IndexFamilies extends OrgAction
                     $suffix
                 )
             ),
-            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index' => array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.families.index' => array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     [
-                        'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.index',
-                        'parameters' => [
-                            $routeParameters['organisation'],
-                            $routeParameters['shop'],
-                            $routeParameters['department'],
-                            $routeParameters['subDepartment']
-                        ]
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
                     ],
                     $suffix
                 )

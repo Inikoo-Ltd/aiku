@@ -248,14 +248,12 @@ class IndexWebpages extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CATALOGUE);
         } elseif ($bucket == 'content') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CONTENT);
-        } elseif ($bucket == 'info') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::INFO);
-        } elseif ($bucket == 'operations') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::OPERATIONS);
         } elseif ($bucket == 'blog') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
         } elseif ($bucket == 'storefront') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::STOREFRONT);
+        } else {
+            $queryBuilder->whereNot('webpages.type', WebpageTypeEnum::BLOG);
         }
 
         if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
@@ -364,7 +362,6 @@ class IndexWebpages extends OrgAction
         if ($this->parent instanceof Website) {
             $subNavigation = $this->getWebpageNavigation($this->parent);
         }
-
 
 
         $routeName = $request->route()->getName();

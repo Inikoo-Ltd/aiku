@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCubes, faSeedling, faBooks, faFolderTree, faAlbumCollection } from "@fal"
+import { faCubes, faLink, faSeedling, faBooks, faFolderTree, faAlbumCollection } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -15,9 +15,14 @@ import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
 import { routeType } from '@/types/route'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
+import { trans } from 'laravel-vue-i18n'
+import CopyButton from '@/Components/Utils/CopyButton.vue'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import BoxApiUrl from '@/Components/Showcases/Retina/Catalouge/BoxApiUrl.vue'
 
 
-library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt, faBooks, faFolderTree, faAlbumCollection)
+library.add(faCheckCircle, faTimesCircle, faCubes, faLink, faSeedling, faFireAlt, faBooks, faFolderTree, faAlbumCollection)
 
 const props = defineProps<{
     pageHead: PageHeadingTS
@@ -64,7 +69,7 @@ const props = defineProps<{
 }>()
 
 
-
+const routeAPI = window.location.origin + '/data-feed.csv'
 </script>
 
 
@@ -72,6 +77,11 @@ const props = defineProps<{
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
     <div class="p-6">
+        <!-- Box: API URL -->
+        <BoxApiUrl
+            :routeApi="routeAPI"
+        />
+
         <dl class="grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <StatsBox v-for="stat in stats" :stat="stat">
             </StatsBox>

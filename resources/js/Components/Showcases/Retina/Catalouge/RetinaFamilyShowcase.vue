@@ -6,6 +6,10 @@ import Image from "@/Components/Image.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {faAlbumCollection } from "@fal";
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
+import { trans } from 'laravel-vue-i18n'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+import CopyButton from '@/Components/Utils/CopyButton.vue'
+import BoxApiUrl from './BoxApiUrl.vue'
 
 library.add(faAlbumCollection);
 
@@ -23,11 +27,17 @@ const props = defineProps<{
   }
 }>()
 
+const routeAPI = window.location.origin + `/${props.data?.family?.data?.slug}/data-feed.csv`
 
 </script>
 
 <template>
   <div class="px-4 pb-8 m-5">
+        <!-- Box: API URL -->
+        <BoxApiUrl
+            :routeApi="routeAPI"
+        />
+
     <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 ">
       <div>
         <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">

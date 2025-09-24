@@ -52,7 +52,7 @@ defineExpose({
 
         <!-- What Do You Sell -->
         <div class="sm:col-span-6">
-          <label for="what-you-sell" class="capitalize block text-sm font-medium text-gray-700">
+          <label for="what-you-sell" class="block text-sm font-medium text-gray-700">
             <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{trans("What Do You Sell")}}
           </label>
@@ -73,7 +73,7 @@ defineExpose({
 
         <!-- Shipments Sent Per Week -->
         <div class="sm:col-span-3">
-          <label for="shipments-per-week" class="capitalize block text-sm font-medium text-gray-700">
+          <label for="shipments-per-week" class="block text-sm font-medium text-gray-700">
             <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{trans("Shipments Sent PerWeek")}}
           </label>
@@ -94,7 +94,7 @@ defineExpose({
 
         <!-- Goods Size and Weight -->
         <div class="sm:col-span-3">
-          <label for="goods-size-and-weight" class="capitalize block text-sm font-medium text-gray-700">
+          <label for="goods-size-and-weight" class="block text-sm font-medium text-gray-700">
             <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{trans("Size and Weight of Your Goods")}}
           </label>

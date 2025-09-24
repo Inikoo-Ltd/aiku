@@ -49,16 +49,12 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->currency  = $order->currency->code;
         $paymentSessionRequest->reference = $order->reference;
 
-        //        $product=new Product();
-        //
-        //        $product->name='xxx';
-        //        $product->quantity=1;
-        //        $product->unit_price=$toPayByOther;
-        //
-        //
-        //        $paymentSessionRequest->items = [
-        //            $product
-        //        ];
+
+        $product = new Product();
+        $product->name       = 'items';
+        $product->quantity   = 1;
+        $product->unit_price = $toPayByOther;
+        $paymentSessionRequest->items = [$product];
 
         $paymentSessionRequest->three_ds          = new ThreeDsRequest();
         $paymentSessionRequest->three_ds->enabled = true;
@@ -69,7 +65,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
 
         $paymentSessionRequest->disabled_payment_methods = [
-            'applepay',
+            'bizum'
         ];
 
 

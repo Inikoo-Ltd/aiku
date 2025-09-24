@@ -53,8 +53,6 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
         $query = QueryBuilder::for(Portfolio::class);
         $query->where('portfolios.customer_sales_channel_id', $customerSalesChannel->id);
 
-        $query->where('portfolios.status', true);
-
         $query->leftJoin('customer_sales_channels', 'customer_sales_channels.id', 'portfolios.customer_sales_channel_id');
 
         $query->leftJoin('customers', 'customers.id', 'portfolios.customer_id');
@@ -77,6 +75,8 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'portfolios.platform_status',
                 'portfolios.has_valid_platform_product_id',
                 'portfolios.number_platform_possible_matches as matches',
+                'portfolios.data',
+                'platforms.type as platform_type',
                 'customer_sales_channels.platform_status as customer_sales_channel_platform_status',
             ])
             ->defaultSort('portfolios.reference')
@@ -88,6 +88,8 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $portfolios, ActionRequest $request): Response
     {
+
+
         return Inertia::render(
             'Org/Dropshipping/Portfolios',
             [
@@ -141,6 +143,90 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                 'platform'                   => $this->customerSalesChannel->platform,
                 'customerSalesChannel'       => $this->customerSalesChannel,
                 'customerSalesChannelId'     => $this->customerSalesChannel->id,
+                'routes'         => [
+                    'bulk_upload'               => [
+                        'name'       => 'grp.models.dropshipping.shopify.bulk_upload',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'batch_all'                 => [
+                        'name'       => 'grp.models.dropshipping.shopify.batch_all',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'fetch_products'            => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name' => 'grp.json.dropshipping.customer_sales_channel.woo_products'
+                        ],
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name' => 'grp.json.dropshipping.customer_sales_channel.shopify_products'
+                        ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'grp.json.dropshipping.customer_sales_channel.ebay_products'
+                        ],
+                        default => false
+                    },
+                    'single_create_new' => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name' => 'grp.models.portfolio.store_new_woo_product'
+                        ],
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name' => 'grp.models.portfolio.store_new_shopify_product'
+                        ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'grp.models.portfolio.store_new_ebay_product'
+                        ],
+                        default => false
+                    },
+                    'single_match' => match ($this->customerSalesChannel->platform->type) {
+                        PlatformTypeEnum::WOOCOMMERCE => [
+                            'name' => 'grp.models.portfolio.match_to_existing_woo_product'
+                        ],
+                        PlatformTypeEnum::SHOPIFY => [
+                            'name' => 'grp.models.portfolio.match_to_existing_shopify_product'
+                        ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'grp.models.portfolio.match_to_existing_ebay_product'
+                        ],
+                        default => false
+                    },
+                    'itemRoute'                 => [
+                        'name'       => 'xxx',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->slug
+                        ]
+                    ],
+                    'addPortfolioRoute'         => [
+                        'name'       => 'xxx',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'updatePortfolioRoute'      => [
+                        'name'       => 'xxx',
+                        'parameters' => []
+                    ],
+                    'deletePortfolioRoute'      => [
+                        'name'       => 'xxx',
+                        'parameters' => []
+                    ],
+                    'clonePortfolioRoute'       => [
+                        'method'     => 'post',
+                        'name'       => 'xxx',
+                        'parameters' => [
+                            'targetCustomerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                    'batchDeletePortfolioRoute' => [
+                        'name'       => 'xxx',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ],
+                        'method'     => 'post'
+                    ],
+                ],
             ]
         )->table($this->tableStructure());
     }

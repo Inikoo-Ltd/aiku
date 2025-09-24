@@ -52,6 +52,7 @@ class GetOrderProducts extends OrgAction
                 'products.state',
                 'products.created_at',
                 'products.updated_at',
+                'products.price',
                 'products.slug',
                 'products.available_quantity',
                 'transactions.quantity_ordered as quantity_ordered',

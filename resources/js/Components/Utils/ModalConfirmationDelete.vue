@@ -12,13 +12,13 @@ import { trans } from 'laravel-vue-i18n'
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '../Pure/PureInput.vue'
-
+import Textarea from 'primevue/textarea'
 library.add(faTimes, faExclamationTriangle, faAsterisk)
 
 const props = defineProps<{
     description?: string
     icon?: Icon
-    yesLabel?: string
+    cancelLabel?: string
     noLabel?: string
     noIcon?: string
     routeDelete?: routeType
@@ -150,11 +150,12 @@ const messageDelete = ref('')
                                                 {{ whyLabel || trans("Why you deleting this?") }}
                                                 <FontAwesomeIcon icon='far fa-asterisk' class='text-red-500 h-2' size="xs" fixed-width aria-hidden='true' />
                                             </label>
-
-                                            <PureInput
-                                                v-model="messageDelete"
-                                                :placeholder="props.message?.placeholder || trans('Enter the reason for deleting')"
+                                            <Textarea v-model="messageDelete"
+                                                rows="5"
+                                                fluid
                                                 v-bind="props.message"
+                                                :placeholder="props.message?.placeholder || trans('Enter the reason for deleting')"
+                                                :disabled="isLoadingdelete"
                                             />
                                         </div>
                                         <div class="mt-5 flex flex-row-reverse gap-2">
@@ -180,7 +181,7 @@ const messageDelete = ref('')
                                             <Button
                                                 type="tertiary"
                                                 icccon="far fa-arrow-left"
-                                                :label="trans('cancel')"
+                                                :label="cancelLabel ?? trans('cancel')"
                                                 full
                                                 @click="() => (isOpenModal = false, emits('onNo'))"
                                             />

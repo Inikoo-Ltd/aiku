@@ -10,7 +10,7 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
@@ -20,6 +20,8 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
+use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Accounting\Invoice;
@@ -49,11 +51,14 @@ class StoreInvoice extends OrgAction
     public function handle(Customer|Order|RecurringBill $parent, array $modelData): Invoice
     {
         data_set($modelData, 'uuid', Str::uuid());
+        data_set($modelData, 'ulid', Str::ulid());
+
+        data_set($modelData, 'pay_status', InvoicePayStatusEnum::UNPAID);
+        data_set($modelData, 'pay_detailed_status', InvoicePayDetailedStatusEnum::UNPAID);
 
         if (!Arr::has($modelData, 'footer')) {
             data_set($modelData, 'footer', $this->shop->invoice_footer);
         }
-
 
         if (!Arr::has($modelData, 'reference')) {
             data_set(
@@ -67,12 +72,32 @@ class StoreInvoice extends OrgAction
         }
 
         if (class_basename($parent) == 'Customer') {
-            $modelData['customer_id'] = $parent->id;
+            $customer = $parent;
         } elseif (class_basename($parent) == 'RecurringBill') {
-            $modelData['customer_id'] = $parent->fulfilmentCustomer->customer_id;
+            $customer = $parent->fulfilmentCustomer->customer;
         } else {
-            $modelData['customer_id'] = $parent->customer_id;
+            $customer = $parent->customer;
         }
+
+
+        data_set($modelData, 'customer_id', $customer->id);
+        data_set($modelData, 'customer_name', $customer->name, false);
+        data_set($modelData, 'customer_contact_name', $customer->contact_name, false);
+        data_set($modelData, 'identity_document_type', $customer->identity_document_type, false);
+        data_set($modelData, 'identity_document_number', $customer->identity_document_number, false);
+
+
+        $taxNumber = $customer->taxNumber;
+        if ($taxNumber) {
+            data_set($modelData, 'tax_number', $taxNumber->getFormattedTaxNumber(), false);
+            data_set($modelData, 'tax_number_status', $taxNumber->status, false);
+            data_set($modelData, 'tax_number_valid', $taxNumber->valid, false);
+        } else {
+            data_set($modelData, 'tax_number', null, false);
+            data_set($modelData, 'tax_number_status', 'na', false);
+            data_set($modelData, 'tax_number_valid', false, false);
+        }
+
 
         if (!Arr::has($modelData, 'billing_address')) {
             if ($parent instanceof Order) {
@@ -97,8 +122,9 @@ class StoreInvoice extends OrgAction
 
         $billingAddressData = Arr::pull($modelData, 'billing_address');
 
-        $modelData['shop_id']     = $this->shop->id;
-        $modelData['currency_id'] = $this->shop->currency_id;
+        $modelData['shop_id']        = $this->shop->id;
+        $modelData['master_shop_id'] = $this->shop->master_shop_id;
+        $modelData['currency_id']    = $this->shop->currency_id;
 
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
@@ -109,6 +135,7 @@ class StoreInvoice extends OrgAction
         $date = now();
         data_set($modelData, 'date', $date, overwrite: false);
         data_set($modelData, 'tax_liability_at', $date, overwrite: false);
+        data_set($modelData, 'effective_total', Arr::get($modelData, 'total_amount', 0));
 
 
         $invoice = DB::transaction(function () use ($parent, $modelData, $billingAddressData, $deliveryAddressData) {
@@ -154,7 +181,7 @@ class StoreInvoice extends OrgAction
             CategoriseInvoice::run($invoice);
         } elseif ($invoice->invoiceCategory) { // run hydrators when category from fetch
             InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-            InvoiceCategoryHydrateSales::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+            InvoiceCategoryHydrateSalesIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
         }
 
@@ -239,7 +266,7 @@ class StoreInvoice extends OrgAction
                 'nullable',
                 'exists:customer_sales_channels,id',
             ],
-            'platform_id' => [
+            'platform_id'               => [
                 'sometimes',
                 'nullable',
                 'exists:platforms,id',

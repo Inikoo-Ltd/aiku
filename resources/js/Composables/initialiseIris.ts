@@ -19,11 +19,24 @@ export const initialiseIrisApp = () => {
     console.log('Init Iris: ', usePage().props)
 
     router.on('navigate', (event) => {
+        // To see Vue filename in console (component.vue)
+        if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
+            window.component = {
+                vue: usePage().component
+            }
+        }
+
         console.log('on nav')
         layout.currentParams = route().v().params  // current params
         layout.currentQuery = route().v().query  // current query
         layout.currentRoute = route().current()  // current route
     })
+
+    if (usePage().props?.iris?.locale) {
+        loadLanguageAsync(usePage().props?.iris?.locale)
+    } else if (usePage().props.localeData?.language?.code) {
+        loadLanguageAsync(usePage().props.localeData?.language?.code)
+    }
 
     watchEffect(() => {
         // Set currency to used by global

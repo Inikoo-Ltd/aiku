@@ -22,13 +22,18 @@ class TaxNumberResource extends JsonResource
         $taxNumber = $this;
 
         return [
-            'id'         => $taxNumber->id,
-            'number'     => $taxNumber->number,
-            'type'       => $taxNumber->type,
-            'country_id' => $taxNumber->country_id,
-            'status'     => $taxNumber->status,
-            'valid'      => $taxNumber->valid,
-            'data'       => $taxNumber->data,
+            'id'                         => $taxNumber->id,
+            'number'                     => $taxNumber->number,
+            'type'                       => $taxNumber->type,
+            'country_id'                 => $taxNumber->country_id,
+            'country'                    => $taxNumber->country_id ? CountryResource::make($taxNumber->country) : null,
+            'status'                     => $taxNumber->status,
+            'valid'                      => $taxNumber->valid,
+            'data'                       => $taxNumber->data,
+            'checked_at'                 => $taxNumber->checked_at,
+            'invalid_checked_at'         => $taxNumber->invalid_checked_at,
+            'external_service_failed_at' => $taxNumber->external_service_failed_at,
+            'validation_type'            => $taxNumber->validation_type,
 
 
         ];

@@ -1,21 +1,23 @@
 <script setup lang="ts">
-import {routeType} from '@/types/route';
-import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome';
-import {faImage} from "@far";
-import {faInfoCircle} from "@fas";
-import Image from "@/Components/Image.vue";
+import { routeType } from '@/types/route';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faInfoCircle } from "@fas";
 import Message from "primevue/message";
-import {Link} from "@inertiajs/vue3";
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
-import {library} from "@fortawesome/fontawesome-svg-core";
-import {trans} from "laravel-vue-i18n";
-import {ref} from "vue";
-import {faAlbum, faAlbumCollection} from "@fal";
+import { Link, router } from "@inertiajs/vue3";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAlbumCollection } from "@fal";
+import ReviewContent from '@/Components/ReviewContent.vue';
+import ProductCategoryCard from '@/Components/ProductCategoryCard.vue';
+import { trans } from 'laravel-vue-i18n';
 
 library.add(faAlbumCollection);
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     data: {
+        translation_box: {
+            title: string
+            save_route: routeType
+        }
         family: {
             data: {},
         },
@@ -26,59 +28,106 @@ const props = defineProps<{
             detach_family: routeType
         }
     }
-}>()
+    actions?: any
+    isMaster?: boolean
+}>(), {
+    // Default values
+    isMaster: false,
+});
 
-const product = props.data.data
+const navigateTo = () => {
+    let routeCurr = route().current();
+    let targetRoute;
+    let routeParams = route().params;
+    
+    switch (routeCurr) {
+        case "grp.masters.master_shops.show.master_departments.show.master_families.show":
+        case "grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show" :
+            targetRoute = route("grp.masters.master_shops.show.master_departments.show.master_families.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+            
+        case "grp.masters.master_shops.show.master_sub_departments.master_families.show":
+            targetRoute = route("grp.masters.master_shops.show.master_sub_departments.master_families.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
 
-console.log(props.data)
+        case "grp.masters.master_shops.show.master_families.show":
+            targetRoute = route("grp.masters.master_shops.show.master_families.edit", {...routeParams, section: 1})
+            break;
 
-const links = ref([
-    {label: trans("Create Collection"), route_target: props.data.routeList?.collectionRoute, icon: faAlbumCollection},
-]);
+        case "grp.org.shops.show.catalogue.families.show":
+            targetRoute = route("grp.org.shops.show.catalogue.families.edit", { ...routeParams, section: 1 })
+            break;
+        
+        case "grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show": 
+            targetRoute = route("grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.edit", { ...routeParams, section: 1 })
+            break;
 
+        default:
+            targetRoute = route("grp.org.shops.show.catalogue.departments.show.families.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+    }
+    router.visit(targetRoute);
+}
 </script>
 
 <template>
-    <div class="px-4 pb-8 m-5">
-        <Message v-if="data.department?.url_master" severity="success" closable>
-            <template #icon>
-                <FontAwesomeIcon :icon="faInfoCircle"/>
-            </template>
-            <span class="ml-2">Right Now you follow
-        <Link :href="route(data.department.url_master.name, data.department.url_master.parameters)"
-              class="underline font-bold">
-        the master data
-        </Link>
-      </span>
-        </Message>
-
-
-        <div class="grid grid-cols-1 lg:grid-cols-[30%_1fr] gap-6 mt-4 ">
-            <div>
-                <div class="bg-white p-6 rounded-2xl shadow-md border border-gray-200">
-                    <div class="flex items-center justify-between mb-6">
-                        <div class="flex-1 mx-4">
-                            <div class="bg-white rounded-lg shadow hover:shadow-md transition duration-300">
-                                <Image v-if="data.family.data?.image" :src="data.family.data?.image" :imageCover="true"
-                                       class="w-full h-40 object-cover rounded-t-lg"/>
-                                <div v-else class="flex justify-center items-center bg-gray-100 w-full h-48">
-                                    <FontAwesomeIcon :icon="faImage" class="w-8 h-8 text-gray-400"/>
-                                </div>
-                            </div>
-                        </div>
+    <div class="pb-8 m-5">
+        <div class="space-y-4">
+            <Message v-if="data.family?.data.url_master" severity="success" closable>
+                <template #icon>
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </template>
+                <span class="ml-2">
+                    {{ trans("Right now you follow") }}
+                    <Link :href="route(data.family.data.url_master.name, data.family.data.url_master.parameters)"
+                        class="underline font-bold">
+                    {{ trans("the master data") }}
+                    </Link>
+                </span>
+            </Message>
+            <Message
+                v-if="!data.family.data.description || !data.family.data.description_title || !data.family.data.description_extra && actions"
+                severity="error" closable>
+                <template #icon>
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </template>
+                <div class="ml-2">
+                    <div class="flex gap-2 flex-wrap box-border">
+                        <span v-if="!data.family.data.description_title">{{ trans("Description Title is missing")
+                            }}.</span>
+                        <span v-if="!data.family.data.description">{{ trans("Description is missing") }}.</span>
+                        <span v-if="!data.family.data.description_extra">{{ trans("Extra description is missing")
+                            }}.</span>
                     </div>
-
-
-                    <div class="border-t pt-4 space-y-4 text-gray-700">
-                        <div class="font-bold">
-                            {{ data.family.data?.name || "No label" }}
-                        </div>
-                        <div class="text-sm h-64 overflow-y-auto pr-1 text-justify"
-                             v-html="data.family.data?.description">
-                        </div>
-                    </div>
+                    {{ trans("Please") }}
+                    <Link
+                        @click="navigateTo"
+                        class="underline font-bold">
+                    {{ trans("add missing description fields") }}
+                    </Link>.
                 </div>
+            </Message>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
+            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                <ProductCategoryCard :data="data.family.data"  />
+            </div>
+            <div class="col-span-1 md:col-span-1 lg:col-span-4"></div>
+            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                <ReviewContent v-if="!isMaster" :data="data.family.data"  />
             </div>
         </div>
+
+        <!--    <TranslationBox :master="data.family.data" :needTranslation="data.family.data" v-bind="data.translation_box" /> -->
     </div>
 </template>

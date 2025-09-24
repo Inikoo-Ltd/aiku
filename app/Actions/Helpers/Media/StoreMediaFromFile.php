@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Media;
 
+use App\Actions\Helpers\Media\Hydrators\MediaHydrateDimensions;
 use App\Models\Helpers\Media;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
@@ -43,7 +44,7 @@ class StoreMediaFromFile
             ->toMediaCollection($collection);
 
         UpdateIsAnimatedMedia::run($media, $imageData['path']);
-
+        MediaHydrateDimensions::run($media);
         return $media;
     }
 }

@@ -33,6 +33,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateGuests;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterCollections;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterFamiliesWithNoDepartment;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterShops;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOfferCampaigns;
@@ -70,7 +71,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProducts;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRawMaterials;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRecurringBills;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRentals;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSales;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductSuppliers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProspects;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePurchaseOrders;
@@ -105,6 +106,7 @@ use App\Models\SysAdmin\Group;
 class HydrateGroup extends HydrateModel
 {
     use WithHydrateCommand;
+
     public string $commandSignature = 'hydrate:groups';
 
     public function __construct()
@@ -130,7 +132,7 @@ class HydrateGroup extends HydrateModel
         GroupHydratePayments::run($group);
         GroupHydratePaymentAccounts::run($group);
         GroupHydratePaymentServiceProviders::run($group);
-        GroupHydrateSales::run($group);
+        GroupHydrateSalesIntervals::run($group);
         GroupHydrateOrderIntervals::run($group);
         GroupHydrateCollections::run($group);
         GroupHydrateWarehouses::run($group);
@@ -214,7 +216,7 @@ class HydrateGroup extends HydrateModel
         GroupHydrateProductsWithNoFamily::run($group);
         GroupHydrateWebUserRequests::run($group->id);
 
-
+        GroupHydrateMasterFamiliesWithNoDepartment::run($group);
     }
 
 }

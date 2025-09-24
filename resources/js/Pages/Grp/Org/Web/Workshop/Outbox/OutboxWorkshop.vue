@@ -10,25 +10,26 @@ import axios from 'axios'
 import Dialog from 'primevue/dialog';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import SelectButton from 'primevue/selectbutton';
 import { trans } from "laravel-vue-i18n"
 import 'v-calendar/style.css'
 import Multiselect from "@vueform/multiselect"
 import Tag from '@/Components/Tag.vue'
-
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane, faCheckCircle, faCircle, faClock } from '@fal'
+import { faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow, faPaperPlane } from '@fal'
+import { faUserCog } from '@fas'
+
+
 import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { data } from "autoprefixer"
 
-library.add(faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
+library.add(faUserCog,faArrowAltToTop, faArrowAltToBottom, faTh, faBrowser, faCube, faPalette, faCheeseburger, faDraftingCompass, faWindow)
 
 const props = defineProps<{
     title: string,
     pageHead: PageHeadingTypes
-    builder: String
+    builder: string
     imagesUploadRoute: routeType
     updateRoute: routeType
     snapshot: routeType
@@ -43,7 +44,6 @@ const props = defineProps<{
     }
 }>()
 
-// const mergeTags = ref([])
 const comment = ref('')
 const isLoading = ref(false)
 const openTemplates = ref(false)
@@ -209,21 +209,6 @@ const schedulePublish = async () =>{
     }
 }
 
-/*const getMergeTagData = async () => {
-    return axios.get(route('grp.json.mailshot.merge-tags', { id: 1 }))
-        .then(response => {
-            mergeTags.value = response.data
-        })
-        .catch(error => {
-            console.error(error);
-            return mergeTags.value = [];
-        });
-}*/
-
-/*onMounted(()=>{
-    getMergeTagData()
-})*/
-
 </script>
 
 
@@ -305,9 +290,5 @@ const schedulePublish = async () =>{
         </div>
     </Dialog>
 
-    <!--  <Modal :isOpen="openTemplates" @onClose="openTemplates = false" width="w-[600px]">
-        <div class="overflow-y-auto">
-            <TemplateMailshot @changeTemplate="changeTemplate" :mailshot="mailshot"/>
-        </div>
-    </Modal> -->
+
 </template>

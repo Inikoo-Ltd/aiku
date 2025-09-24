@@ -8,7 +8,9 @@
 
 namespace App\Actions\Web\WebBlock;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Web\WebBlockProductResource;
+use App\Http\Resources\Web\WebBlockProductResourceEcom;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -22,9 +24,15 @@ class GetWebBlockProduct
         $permissions =  [];
 
 
+        if ($webpage->shop->type == ShopTypeEnum::B2B) {
+            $resourceWebBlockProduct = WebBlockProductResourceEcom::make($webpage->model)->toArray(request());
+        } else {
+            $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
+        }
+
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
-        data_set($webBlock, 'web_block.layout.data.fieldValue.product', WebBlockProductResource::make($webpage->model)->toArray(request()));
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
 
         return $webBlock;
     }

@@ -23,6 +23,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $quantity_not_picked
  * @property mixed $quantity_dispatched
  * @property mixed $packed_in
+ * @property mixed $org_stock_slug
  */
 class DeliveryNoteItemsResource extends JsonResource
 {
@@ -39,6 +40,17 @@ class DeliveryNoteItemsResource extends JsonResource
         );
 
 
+        $packedIn = $this->packed_in;
+        if ($packedIn == null) {
+            $packedIn = 1;
+        }
+
+
+        $quantityDispatched = $this->quantity_dispatched;
+        if ($quantityDispatched == null) {
+            $quantityDispatched = 0;
+        }
+
 
         return [
             'id'                           => $this->id,
@@ -47,11 +59,13 @@ class DeliveryNoteItemsResource extends JsonResource
             'quantity_required'            => $this->quantity_required,
             'quantity_required_fractional' => $requiredFactionalData,
 
+            'quantity_dispatched'          => $this->quantity_dispatched,
+            'quantity_dispatched_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($quantityDispatched)), $packedIn),
             'quantity_picked'              => $this->quantity_picked,
-            'quantity_picked_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked)), $this->packed_in),
+            'quantity_picked_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_picked ?? 0)), $packedIn),
 
             'quantity_packed'              => $this->quantity_packed,
-            'quantity_packed_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_packed)), $this->packed_in),
+            'quantity_packed_fractional'   => riseDivisor(divideWithRemainder(findSmallestFactors($this->quantity_packed ?? 0)), $packedIn),
 
 
             'org_stock_code'               => $this->org_stock_code,

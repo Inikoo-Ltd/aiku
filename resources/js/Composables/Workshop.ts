@@ -5,6 +5,20 @@
  *  copyright: 2024
 */
 
+import { usePage } from "@inertiajs/vue3"
+
+
+// Method: format currency
+const formatCurrency = (amount: number) => {
+    if (!usePage()?.props?.iris) {
+        return amount
+    }
+
+    return new Intl.NumberFormat(usePage()?.props?.iris?.website_i18n?.current_language?.code || 'en-US', {
+        style: "currency",
+        currency: usePage()?.props?.iris?.currency?.code || '',
+    }).format(amount || 0)
+}
 
 // Check if the user is logged in
 export const checkVisible = (visible: string | null, isLoggedIn: boolean) => {
@@ -62,7 +76,7 @@ export const dummyIrisVariables = {
     reference: '000001'
 }
 
-export const textReplaceVariables = (text?: string, piniaVariables?: {}) => {
+export const textReplaceVariables = (text?: string, piniaVariables?: PiniaVariables) => {
     if (!text) {
         return ''
     }
@@ -73,10 +87,11 @@ export const textReplaceVariables = (text?: string, piniaVariables?: {}) => {
 
     return text.replace(/\{\{\s*name\s*\}\}/g, piniaVariables?.name || piniaVariables?.username || '-')
     .replace(/\{\{\s*username\s*\}\}/g, piniaVariables?.username || '-')
+    .replace(/\{\{\s*items_count\s*\}\}/g, piniaVariables?.items_count || 0)
     .replace(/\{\{\s*email\s*\}\}/g, piniaVariables?.email || '-')
     .replace(/\{\{\s*favourites_count\s*\}\}/g, piniaVariables?.favourites_count || '0')
     .replace(/\{\{\s*cart_count\s*\}\}/g, piniaVariables?.cart_count || '0')
-    .replace(/\{\{\s*cart_amount\s*\}\}/g, piniaVariables?.cart_amount || '-')
+    .replace(/\{\{\s*cart_amount\s*\}\}/g, formatCurrency(piniaVariables?.cart_amount) || '0')
     .replace(/\{\{\s*reference\s*\}\}/g, piniaVariables?.reference || '')
 }
 
@@ -138,3 +153,15 @@ export const resolveResponsiveValue = (
   // 3. Fallback to global
   return getValue(base);
 };
+
+
+interface PiniaVariables {
+    name: string
+    username: string
+    email: string
+    items_count: number
+    favourites_count: number
+    cart_count: number
+    cart_amount: string
+    reference: string
+}

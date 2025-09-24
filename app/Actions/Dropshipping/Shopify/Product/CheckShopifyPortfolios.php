@@ -28,7 +28,7 @@ class CheckShopifyPortfolios
     private array $tableData = [];
 
 
-    public function handle(Group|Organisation|Shop|Customer|CustomerSalesChannel $parent, Command $command = null): void
+    public function handle(Group|Organisation|Shop|Customer|CustomerSalesChannel $parent = null, Command $command = null): void
     {
         $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
@@ -43,7 +43,7 @@ class CheckShopifyPortfolios
             $query->where('customer_sales_channel_id', $parent->id);
         } elseif ($parent instanceof Organisation) {
             $query->where('organisation_id', $parent->id);
-        } else {
+        } elseif ($parent instanceof Group) {
             $query->where('group_id', $parent->id);
         }
 

@@ -404,7 +404,7 @@ test('create and set success 1st top up', function ($payment) {
 
     expect($topUp->creditTransaction->amount)->toBe('100.00')
         ->and($topUp->creditTransaction->running_amount)->toBe('100.00')
-        ->and($topUp->creditTransaction->type)->toBe(CreditTransactionTypeEnum::TOP_UP->value);
+        ->and($topUp->creditTransaction->type)->toBe(CreditTransactionTypeEnum::TOP_UP);
 
     return $topUp;
 })->depends('create payment');
@@ -471,7 +471,7 @@ test('create and set success 2nd top up', function ($payment) {
 
     expect($topUp->creditTransaction->amount)->toBe('150.00')
         ->and($topUp->creditTransaction->running_amount)->toBe('250.00')
-        ->and($topUp->creditTransaction->type)->toBe(CreditTransactionTypeEnum::TOP_UP->value);
+        ->and($topUp->creditTransaction->type)->toBe(CreditTransactionTypeEnum::TOP_UP);
 
     return $topUp;
 })->depends('create payment');
@@ -1243,7 +1243,7 @@ test('UI show invoice in Organisation', function () {
                             ->has('reference')
                             ->has('route')
                             ->has('contact_name')
-                            ->has('company_name')
+                            ->has('name')
                             ->has('location')
                             ->has('phone')
                     )
@@ -1301,7 +1301,7 @@ test('UI show invoice in Shop', function () {
                             ->has('reference')
                             ->has('route')
                             ->has('contact_name')
-                            ->has('company_name')
+                            ->has('name')
                             ->has('location')
                             ->has('phone')
                     )

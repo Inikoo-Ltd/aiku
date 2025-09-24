@@ -20,6 +20,10 @@ enum MasterCollectionTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
+    case FAMILIES            = 'families';
+    case PRODUCTS            = 'products';
+    case COLLECTIONS         = 'collections';
+    case SHOP_COLLECTIONS         = 'shop_collections';
     case HISTORY  = 'history';
 
 
@@ -36,6 +40,22 @@ enum MasterCollectionTabsEnum: string
                 'title' => __('changelog'),
                 'icon'  => 'fal fa-clock',
 
+            ],
+            MasterCollectionTabsEnum::FAMILIES => [
+              'title' => __('Families'),
+              'icon'  => 'fal fa-folder',
+            ],
+            MasterCollectionTabsEnum::PRODUCTS => [
+                'title' => __('Products'),
+                'icon'  => 'fal fa-cube',
+            ],
+            MasterCollectionTabsEnum::COLLECTIONS => [
+                'title' => __('Collections'),
+                'icon'  => 'fal fa-cube',
+            ],
+            MasterCollectionTabsEnum::SHOP_COLLECTIONS => [
+                'title' => __('Shop Collections'),
+                'icon'  => 'fal fa-cube',
             ],
             MasterCollectionTabsEnum::SHOWCASE => [
                 'title' => __('overview'),

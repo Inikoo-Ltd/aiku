@@ -83,6 +83,7 @@ onMounted(() => {
 
   checkScreenType()
   window.addEventListener('resize', checkScreenType)
+  window.listWebBlocks = props.web_blocks
 })
 
 
@@ -92,7 +93,6 @@ onBeforeUnmount(() => {
 
 const layout: any = inject("layout", {});
 
-console.log(props)
 
 </script>
 
@@ -113,10 +113,16 @@ console.log(props)
 
 
   <div class="bg-white">
-      <div v-for="(web_block_data, web_block_data_idx) in props.web_blocks" :key="'block' + web_block_data.id" class="w-full">
+      <div v-for="(web_block_data, web_block_data_idx) in props.web_blocks"
+        :key="'block' + web_block_data.id"
+        class="w-full"
+        :id="`v-${web_block_data.type}`"
+      >
         <component
           :screenType="screenType"
-          :is="getIrisComponent(web_block_data.type)"
+          :is="getIrisComponent(web_block_data.type, {
+            shop_type: layout.retina.type
+          })"
           :theme="layout?.app?.theme" :key="web_block_data_idx"
           :fieldValue="web_block_data.web_block.layout.data.fieldValue" />
       </div>

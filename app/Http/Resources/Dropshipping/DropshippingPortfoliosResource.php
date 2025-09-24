@@ -34,14 +34,13 @@ use Illuminate\Support\Arr;
  * @property mixed $margin
  * @property mixed $platform_product_id
  * @property mixed $item_description
+ * @property mixed $id
  *
  */
 class DropshippingPortfoliosResource extends JsonResource
 {
     public function toArray($request): array
     {
-
-
         if ($department = $this->item->department) {
             $department = $department->name.', ';
         }
@@ -51,6 +50,7 @@ class DropshippingPortfoliosResource extends JsonResource
         $marketing_weight = $this->item->marketing_weight;
         $price            = $this->item->price;
         $image            = $this->item->imageSources(64, 64);
+        $fullSizeImage    = $this->item->imageSources();
         $category         = $department.$this->item->family?->name;
 
 
@@ -129,28 +129,34 @@ class DropshippingPortfoliosResource extends JsonResource
         }
 
         return [
-            'id'                   => $this->id,
-            'item_id'              => $itemId,
-            'code'                 => $this->item?->code ?? $this->item_code,
-            'currency_code'        => $this->item?->currency?->code,
-            'handle'               => $this->platform_handle,
-            'name'                 => $this->customer_product_name ?? $this->item?->name ?? $this->item_name ?? $this->item?->code,
-            'description'          => $this->customer_description ?? $this->item?->description ?? $this->item_description,
-            'quantity_left'        => $quantity,
-            'weight'               => $weight,
-            'marketing_weight'     => $marketing_weight,
-            'price'                => $price,
-            'selling_price'        => $this->selling_price,
-            'customer_price'       => $this->customer_price,
-            'status'               => $this->status,
-            'margin'               => percentage($this->margin, 1),
-            'image'                => $image,
-            'type'                 => $this->item_type,
-            'created_at'           => $this->created_at,
-            'updated_at'           => $this->updated_at,
-            'platform_product_id'  => $this->platform_product_id,
-            'upload_warning'       => $this->upload_warning,
-            'shopify_product_data' => Arr::get($this->data, 'shopify_product', []),
+            'id'                    => $this->id,
+            'item_id'               => $itemId,
+            'code'                  => $this->item?->code ?? $this->item_code,
+            'currency_code'         => $this->item?->currency?->code,
+            'handle'                => $this->platform_handle,
+            'name'                  => $this->customer_product_name ?? $this->item?->name ?? $this->item_name ?? $this->item?->code,
+            'description'           => $this->customer_description ?? $this->item?->description ?? $this->item_description,
+            'quantity_left'         => $quantity,
+            'weight'                => $weight,
+            'marketing_weight'      => $marketing_weight,
+            'price'                 => $price,
+            'selling_price'         => $this->selling_price,
+            'customer_price'        => $this->customer_price,
+            'status'                => $this->status,
+            'margin'                => percentage($this->margin, 1),
+            'image'                 => $image,
+            'full_size_image'       => $fullSizeImage,
+            'type'                  => $this->item_type,
+            'created_at'            => $this->created_at,
+            'updated_at'            => $this->updated_at,
+            'platform_product_id'   => $this->platform_product_id,
+            'upload_warning'        => $this->upload_warning,
+            'shopify_product_data'  => Arr::get($this->data, 'shopify_product', []),
+            'platform_product_data' => match ($this->platform->type) {
+                PlatformTypeEnum::WOOCOMMERCE => Arr::get($this->data, 'woo_product', []),
+                PlatformTypeEnum::EBAY => Arr::get($this->data, 'ebay_product', []),
+                default => [],
+            },
 
             'has_valid_platform_product_id'          => $this->has_valid_platform_product_id,
             'exist_in_platform'                      => $this->exist_in_platform,

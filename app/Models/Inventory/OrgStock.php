@@ -72,6 +72,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\InventoryDailySnapshot> $inventoryDailySnapshots
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
@@ -88,7 +89,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|OrgStock newQuery()
  * @method static Builder<static>|OrgStock onlyTrashed()
  * @method static Builder<static>|OrgStock query()
- * @method static Builder<static>|OrgStock withTrashed()
+ * @method static Builder<static>|OrgStock withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|OrgStock withoutTrashed()
  * @mixin \Eloquent
  */
@@ -141,7 +142,7 @@ class OrgStock extends Model implements Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code.' '.$this->organisation->code;
+                return $this->code . ' ' . $this->organisation->code;
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
@@ -195,23 +196,20 @@ class OrgStock extends Model implements Auditable
 
     public function tradeUnits(): MorphToMany
     {
-        if ($this->stock_id) {
-            return $this->stock->tradeUnits();
-        }
 
-        // Used in private stocks (stock_id=null)
-        return $this->morphToMany(
-            TradeUnit::class,
-            'model',
-            'model_has_trade_units',
-            'model_id',
-            null,
-            null,
-            null,
-            'trade_units',
-        )
-            ->withPivot(['quantity', 'notes'])
-            ->withTimestamps();
+        return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
+        //        return $this->morphToMany(
+        //            TradeUnit::class,
+        //            'model',
+        //            'model_has_trade_units',
+        //            'model_id',
+        //            null,
+        //            null,
+        //            null,
+        //            'trade_units',
+        //        )
+        //            ->withPivot(['quantity', 'notes'])
+        //            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany
@@ -232,4 +230,9 @@ class OrgStock extends Model implements Auditable
         )->withPivot(['quantity', 'notes'])->withTimestamps();
     }
 
+    public function locations(): BelongsToMany
+    {
+        return $this->belongsToMany(Location::class, 'location_org_stocks')
+            ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
+    }
 }

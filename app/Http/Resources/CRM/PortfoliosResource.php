@@ -8,8 +8,10 @@
 
 namespace App\Http\Resources\CRM;
 
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $reference
@@ -53,6 +55,11 @@ class PortfoliosResource extends JsonResource
             'platform_status'               => $this->platform_status,
             'platform_possible_matches'     => $this->platform_possible_matches,
             'platform_product_id'           => $this->platform_product_id,
+            'platform_product_data' => match ($this->platform_type) {
+                PlatformTypeEnum::WOOCOMMERCE->value => Arr::get($this->data, 'woo_product', []),
+                PlatformTypeEnum::EBAY->value => Arr::get($this->data, 'ebay_product', []),
+                default => [],
+            },
 
 
             'customer_sales_channel_id' => $this->customer_sales_channel_id ?? null,

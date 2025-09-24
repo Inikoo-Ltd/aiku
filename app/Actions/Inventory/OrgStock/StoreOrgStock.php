@@ -49,11 +49,12 @@ class StoreOrgStock extends OrgAction
         data_set($modelData, 'organisation_id', $organisation->id);
         data_set($modelData, 'code', $stock->code);
         data_set($modelData, 'name', $stock->name);
-        data_set($modelData, 'unit_value', $stock->unit_value);
+
 
         $orgStock = DB::transaction(function () use ($stock, $modelData, $parent) {
             /** @var OrgStock $orgStock */
             $orgStock = $stock->orgStocks()->create($modelData);
+            $orgStock = $this->associateTradeUnits($orgStock);
             $orgStock->stats()->create();
             $orgStock->intervals()->create();
             $orgStock->salesIntervals()->create();
@@ -86,10 +87,29 @@ class StoreOrgStock extends OrgAction
     }
 
 
+    protected function associateTradeUnits(OrgStock $orgStock): OrgStock
+    {
+        $tradeUnits = [];
+        foreach ($orgStock->stock->tradeUnits as $tradeUnit) {
+
+            $tradeUnits[$tradeUnit->id] = [
+                'quantity' => $tradeUnit->pivot->quantity
+            ];
+
+        }
+
+        $orgStock->tradeUnits()->sync($tradeUnits);
+
+
+
+        return $orgStock;
+    }
+
     public function rules(ActionRequest $request): array
     {
         $rules = [
             'state'           => ['sometimes', Rule::enum(OrgStockStateEnum::class)],
+            'unit_cost'       => ['sometimes', 'numeric', 'min:0'],
             'quantity_status' => ['sometimes', 'nullable', Rule::enum(OrgStockQuantityStatusEnum::class)],
         ];
 

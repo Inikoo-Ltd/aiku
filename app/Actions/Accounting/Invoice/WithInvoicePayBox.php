@@ -121,7 +121,7 @@ trait WithInvoicePayBox
                 'currency_code'                          => $invoice->currency->code,
                 'total_invoice'                          => $invoice->total_amount,
                 'total_refunds'                          => $totalRefund,
-                'total_balance'                          => $irTotal,
+                'total_balance'                          => number_format($irTotal, 2, '.', ''),
                 'total_paid_in'                          => $totalPaidIn,
                 'total_paid_out'                         => $refundsPayOut,
                 'total_excess_payment'                   => $totalExcessPayment,

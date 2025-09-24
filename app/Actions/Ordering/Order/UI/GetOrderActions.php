@@ -130,20 +130,37 @@ class GetOrderActions
                                  ]
                              ]
                          ] : [],
-                         [
-                             'type'    => 'button',
-                             'style'   => '',
-                             'tooltip' => __('Rollback'),
-                             'label'   => __('Rollback'),
-                             'key'     => 'rollback',
-                             'route'   => [
-                                 'method'     => 'patch',
-                                 'name'       => 'grp.models.order.rollback_dispatch',
-                                 'parameters' => [
-                                     'order' => $order->id
-                                 ]
+                        //  [
+                        //      'type'    => 'button',
+                        //      'style'   => '',
+                        //      'tooltip' => __('Rollback'),
+                        //      'label'   => __('Rollback'),
+                        //      'key'     => 'rollback',
+                        //      'route'   => [
+                        //          'method'     => 'patch',
+                        //          'name'       => 'grp.models.order.rollback_dispatch',
+                        //          'parameters' => [
+                        //              'order' => $order->id
+                        //          ]
+                        //      ]
+                        //  ],
+                     [
+                         'type'    => 'button',
+                         'style'   => 'save',
+                         'icon'    => 'fal fa-plus',
+                         'tooltip' => __('Create Replacement Delivery Note'),
+                         'label'   => __('Replacement'),
+                         'key'     => 'replacement',
+                         'route'   => [
+                             'method'     => 'get',
+                             'name'       => 'grp.org.shops.show.ordering.orders.show.replacement.create',
+                             'parameters' => [
+                                 'organisation' => $order->organisation->slug,
+                                 'shop' => $order->shop->slug,
+                                 'order' => $order->slug
                              ]
                          ]
+                     ],
                  ],
 
                 default => []
@@ -164,7 +181,8 @@ class GetOrderActions
                 array_unshift($actions, [
                     'type'  => 'button',
                     'style' => 'cancel',
-                    'key'   => 'action',
+                    'key'   => 'cancel',
+                    'label'   => __('Cancel'),
                     'route' => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.state.cancelled',

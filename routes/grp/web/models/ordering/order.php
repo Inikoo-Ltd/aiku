@@ -6,12 +6,14 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\DeliveryNote\StoreReplacementDeliveryNote;
 use App\Actions\Dispatching\Picking\AssignPackerToPicking;
 use App\Actions\Dispatching\Picking\AssignPickerToPicking;
 use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\Picking\UpdatePicking;
 use App\Actions\Helpers\Media\AttachAttachmentToModel;
 use App\Actions\Helpers\Media\DetachAttachmentFromModel;
+use App\Actions\Ordering\Order\AddBalanceFromExcessPaymentOrder;
 use App\Actions\Ordering\Order\CancelOrder;
 use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\ImportTransactionInOrder;
@@ -23,12 +25,15 @@ use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
-use App\Actions\Ordering\Order\UpdateOrderStateToDispatched;
+use App\Actions\Ordering\Order\DispatchOrder;
+use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
 use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Retina\Dropshipping\Orders\DeleteOrderAddressCollection;
+use App\Actions\Retina\Dropshipping\Orders\StoreOrderAddressCollection;
 use Illuminate\Support\Facades\Route;
 
 Route::name('transaction.')->prefix('transaction/{transaction:id}')->group(function () {
@@ -43,7 +48,12 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::patch('delivery-address-update', UpdateOrderDeliveryAddress::class)->name('delivery_address_update');
     Route::patch('generate-invoice', GenerateInvoiceFromOrder::class)->name('generate_invoice');
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
+    Route::post('delivery-note/replacement', StoreReplacementDeliveryNote::class)->name('replacement_delivery_note.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
+    Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
+
+    Route::post('add-collection', StoreOrderAddressCollection::class)->name('basket.collection.store');
+    Route::delete('delete-collection', DeleteOrderAddressCollection::class)->name('basket.collection.delete');
 
     Route::name('attachment.')->prefix('attachment')->group(function () {
         Route::post('attachment/attach', [AttachAttachmentToModel::class, 'inOrder'])->name('attach');
@@ -56,6 +66,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     });
 
     Route::patch('send-back-to-Basket', SendOrderBackToBasket::class)->name('send_back_to_basket');
+    Route::post('return-excess', AddBalanceFromExcessPaymentOrder::class)->name('return_excess_payment');
 
     Route::name('state.')->prefix('state')->group(function () {
         Route::patch('creating', SendOrderBackToBasket::class)->name('creating');
@@ -64,7 +75,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
         Route::patch('in-warehouse', SendOrderToWarehouse::class)->name('in-warehouse');
         Route::patch('handling', UpdateOrderStateToHandling::class)->name('handling');
         Route::patch('packed', UpdateOrderStateToPacked::class)->name('packed');
-        Route::patch('dispatched', UpdateOrderStateToDispatched::class)->name('dispatched');
+        Route::patch('dispatched', DispatchOrder::class)->name('dispatched');
     });
 });
 

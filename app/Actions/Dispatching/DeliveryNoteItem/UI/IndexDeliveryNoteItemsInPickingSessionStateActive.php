@@ -54,6 +54,7 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'org_stocks.id as org_stock_id',
                 'org_stocks.code as org_stock_code',
                 'org_stocks.name as org_stock_name',
+                'org_stocks.slug as org_stock_slug',
                 'org_stocks.packed_in',
                 'delivery_notes.slug as delivery_note_slug',
                 'delivery_notes.id as delivery_note_id',
@@ -62,6 +63,12 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
                 'locations.sort_code as picking_position',
                 'warehouse_areas.code as warehouse_area_code',
                 'warehouse_areas.picking_position as warehouse_area_picking_position',
+                'delivery_notes.is_premium_dispatch as delivery_note_is_premium_dispatch',
+                'delivery_notes.has_extra_packing as delivery_note_has_extra_packing',
+                'delivery_notes.customer_notes as delivery_note_customer_notes',
+                'delivery_notes.public_notes as delivery_note_public_notes',
+                'delivery_notes.internal_notes as delivery_note_internal_notes',
+                'delivery_notes.shipping_notes as delivery_note_shipping_notes',
             ])
             ->allowedSorts(['id', 'org_stock_name', 'org_stock_code', 'quantity_required', 'quantity_picked', 'quantity_packed', 'state', 'picking_position'])
             ->allowedFilters([$globalSearch])
@@ -88,8 +95,8 @@ class IndexDeliveryNoteItemsInPickingSessionStateActive extends OrgAction
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'delivery_note_reference', label: __('Delivery Note'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'org_stock_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'org_stock_code', label: __('SKU'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'org_stock_name', label: __('SKU Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'pickings', label: __('Pickings'), canBeHidden: false);
             $table->column(key: 'picking_position', label: __('To do actions'), canBeHidden: false, sortable: true);
         };

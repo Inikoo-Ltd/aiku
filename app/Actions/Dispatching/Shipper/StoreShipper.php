@@ -11,10 +11,12 @@ namespace App\Actions\Dispatching\Shipper;
 use App\Actions\Dispatching\Shipper\Hydrators\ShipperHydrateUniversalSearch;
 use App\Actions\OrgAction;
 use App\Models\Dispatching\Shipper;
+use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
-use Illuminate\Support\Arr;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -26,10 +28,6 @@ class StoreShipper extends OrgAction
     public function handle(Organisation $organisation, array $modelData): Shipper
     {
         data_set($modelData, 'group_id', $organisation->group_id);
-
-        if (Arr::exists($modelData, 'base_url')) {
-            data_set($modelData, 'settings.base_url', Arr::pull($modelData, 'base_url'));
-        }
 
         $shipper = DB::transaction(function () use ($organisation, $modelData) {
             /** @var Shipper $shipper */
@@ -47,10 +45,8 @@ class StoreShipper extends OrgAction
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        if ($this->has('website') and $this->get('website') != null) {
-            if (!Str::startsWith($this->get('website'), 'http')) {
-                $this->fill(['website' => 'https://'.$this->get('website')]);
-            }
+        if ($this->has('website') && $this->get('website') != null && !Str::startsWith($this->get('website'), 'http')) {
+            $this->fill(['website' => 'https://'.$this->get('website')]);
         }
     }
 
@@ -70,6 +66,7 @@ class StoreShipper extends OrgAction
                 ),
             ],
             'name'         => ['required', 'max:255', 'string'],
+            'trade_as'     => ['required', 'max:16', 'string'],
             'api_shipper'  => ['sometimes', 'nullable', 'string', 'max:255'],
             'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -78,10 +75,10 @@ class StoreShipper extends OrgAction
             'website'      => ['sometimes', 'nullable', 'url'],
             'tracking_url' => ['sometimes', 'nullable', 'string', 'max:255'],
             'source_id'    => ['sometimes', 'nullable', 'string', 'max:64'],
-            'base_url'     => ['sometimes'],
         ];
 
         if (!$this->strict) {
+            $rules['trade_as']   = ['sometimes', 'string'];
             $rules['created_at'] = ['sometimes', 'date'];
             $rules['fetched_at'] = ['sometimes', 'date'];
             $rules['deleted_at'] = ['sometimes', 'nullable', 'date'];
@@ -107,10 +104,25 @@ class StoreShipper extends OrgAction
         return $this->handle($organisation, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(Organisation $organisation, ActionRequest $request): Shipper
     {
         $this->initialisation($organisation, $request);
 
         return $this->handle($organisation, $this->validatedData);
+    }
+
+    public function htmlResponse(Shipper $shipper): RedirectResponse
+    {
+        /** @var Warehouse $warehouse */
+        $warehouse = $shipper->organisation->warehouses()->first();
+
+        return Redirect::route('grp.org.warehouses.show.dispatching.shippers.show', [
+            $shipper->organisation->slug,
+            $warehouse->slug,
+            $shipper->slug
+        ]);
     }
 }

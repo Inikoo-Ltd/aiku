@@ -8,10 +8,14 @@
 
 namespace App\Actions\Masters\MasterProductCategory;
 
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterProductCategories;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Models\Helpers\Country;
 use App\Models\Masters\MasterProductCategory;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
@@ -42,6 +46,8 @@ class DeleteMasterProductCategory extends OrgAction
         } else {
             $masterProductCategory->delete();
         }
+        MasterShopHydrateMasterDepartments::dispatch($masterProductCategory->masterShop)->delay($this->hydratorsDelay);
+        GroupHydrateMasterProductCategories::dispatch($masterProductCategory->group)->delay($this->hydratorsDelay);
 
         return $masterProductCategory;
     }
@@ -83,5 +89,16 @@ class DeleteMasterProductCategory extends OrgAction
         };
     }
 
+    public function getCommandSignature(): string
+    {
+        return 'master_product_category:delete {master_product_category_id}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $masterProductCategory = MasterProductCategory::findOrFail($command->argument('master_product_category_id'));
+        $this->action($masterProductCategory,true);
+        return 0;
+    }
 
 }

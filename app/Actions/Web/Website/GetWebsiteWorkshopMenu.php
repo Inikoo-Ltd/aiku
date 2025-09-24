@@ -15,14 +15,13 @@ class GetWebsiteWorkshopMenu
 
         //todo this is a horrible hack need to ne replaced one day from a repair action
         if (!Arr::get($website->unpublishedMenuSnapshot, 'layout.menu')) {
-
             return [
-                'menu'    => Arr::get($website->published_layout, 'menu', [])
+                'menu' => Arr::get($website->published_layout, 'menu', [])
             ];
         }
 
         return [
-            'menu'    => Arr::get($website->unpublishedMenuSnapshot, 'layout.menu', [])
+            'menu' => Arr::get($website->unpublishedMenuSnapshot, 'layout.menu', [])
         ];
     }
 }

@@ -10,7 +10,7 @@ import LayoutWorkshop from "@/Components/CMS/Website/Layout/LayoutWorkshop.vue"
 import ProductBlockWorkshop from "@/Components/CMS/Website/ProductBlock/ProductBlockWorkshop.vue"
 import ProductsBlockWorkshop from '@/Components/CMS/Website/ProductsBlock/ProductsBlockWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import SubDepartementWorkshop from '@/Components/CMS/Website/SubDepartementBlockWorkshop/SubDepartementWorkshop.vue'
+import SubDepartmentWorkshop from '@/Components/CMS/Website/SubDepartmentBlockWorkshop/SubDepartmentWorkshop.vue'
 import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
 import CollectionsBlockWorkshop from '@/Components/CMS/Website/CollectionsWorkshop/CollectionsBlockWorkshop.vue'
 
@@ -23,6 +23,7 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
+    currency: {}
     category?: {}
     product?: {}
     website_layout: {}
@@ -36,13 +37,13 @@ const props = defineProps<{
 
 
 let currentTab = ref(props.tabs?.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const loadingPublish = ref(false)
 
 const component = computed(() => {
     const components = {
         website_layout: LayoutWorkshop,
-        sub_department: SubDepartementWorkshop,
+        sub_department: SubDepartmentWorkshop,
         families: FamiliesBlockWorkshop,
         products: ProductsBlockWorkshop,
         product: ProductBlockWorkshop,
@@ -108,6 +109,10 @@ provide('reload', router.reload())
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
     <KeepAlive>
-        <component :is="component" :data="props[currentTab]" />
+        <component
+          :is="component"
+          :data="props[currentTab]"
+          :currency="props.currency"
+        />
     </KeepAlive>
 </template>

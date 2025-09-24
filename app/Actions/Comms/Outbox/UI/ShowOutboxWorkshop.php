@@ -14,7 +14,6 @@ use App\Actions\Traits\Actions\WithActionButtons;
 use App\Enums\Comms\Email\EmailBuilderEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\Email;
-use App\Models\Comms\EmailTemplate;
 use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -32,6 +31,9 @@ class ShowOutboxWorkshop extends OrgAction
 
     private Fulfilment|Shop $parent;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(Outbox $outbox): Email
     {
         if ($outbox->builder == EmailBuilderEnum::BLADE) {
@@ -43,6 +45,7 @@ class ShowOutboxWorkshop extends OrgAction
         return $outbox->emailOngoingRun?->email;
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -54,6 +57,7 @@ class ShowOutboxWorkshop extends OrgAction
         return $this->handle($outbox);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -65,6 +69,8 @@ class ShowOutboxWorkshop extends OrgAction
         return $this->handle($outbox);
     }
 
+
+    /** @noinspection PhpUnusedParameterInspection */
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -87,10 +93,6 @@ class ShowOutboxWorkshop extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                // 'navigation'  => [
-                //     'previous' => $this->getPrevious($emailTemplate, $request),
-                //     'next'     => $this->getNext($emailTemplate, $request),
-                // ],
                 'title' => $email->subject,
                 'pageHead' => [
                     'title' => $email->subject,
@@ -98,7 +100,7 @@ class ShowOutboxWorkshop extends OrgAction
                         'tooltip' => __('mailshot'),
                         'icon' => 'fal fa-mail-bulk'
                     ],
-                    // 'iconRight' => $emailTemplate->state->stateIcon()[$emailTemplate->state->value],
+
                     'actions' => [
                         [
                             'type' => 'button',
@@ -109,34 +111,10 @@ class ShowOutboxWorkshop extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters()),
                             ]
                         ],
-                        /* [
-                            'type' => 'button',
-                            'style' => 'exit',
-                            'label' => __('Toggle'),
-                            'route' => match (class_basename($this->parent)) {
-                                Shop::class => [
-                                    'method' => 'patch',
-                                    'name' => 'grp.models.shop.outboxes.toggle',
-                                    'parameters' => [
-                                        'shop' => $email->shop_id,
-                                        'outbox' => $email->outbox_id
-                                    ],
-                                ],
-                                Fulfilment::class => [
-                                    'method' => 'patch',
-                                    'name' => 'grp.models.fulfilment.outboxes.toggle',
-                                    'parameters' => [
-                                        'shop' => $email->shop_id,
-                                        'outbox' => $email->outbox_id
-                                    ],
-                                ],
-                                default => []
-                            }
-                        ], */
+
                     ]
 
                 ],
-                /*  'compiled_layout'    => $email->snapshot->compiled_layout, */
                 'unpublished_layout' => $email->unpublishedSnapshot->layout,
                 'snapshot' => $email->unpublishedSnapshot,
                 'builder' => $email->builder,
@@ -174,10 +152,6 @@ class ShowOutboxWorkshop extends OrgAction
                 ],
                 'mergeTags' => GetMailshotMergeTags::run(),
                 'status' => $email->outbox->state,
-                // 'loadRoute'           => [ -> i don't know what kind of data should i give to this route
-                //     'name'       => 'grp.models.email-templates.content.show',
-                //     'parameters' => $emailTemplate->id
-                // ]
                 'apiKey' => [
                     'client_id' => Arr::get($beeFreeSettings, 'client_id'),
                     'client_secret' => Arr::get($beeFreeSettings, 'client_secret'),
@@ -188,7 +162,7 @@ class ShowOutboxWorkshop extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
     {
-        $headCrumb = function (string $type, Email $email, array $routeParameters, string $suffix = null) {
+        $headCrumb = function (Email $email, array $routeParameters, string $suffix = null) {
             return [
                 [
                     'type' => 'simple',
@@ -212,7 +186,6 @@ class ShowOutboxWorkshop extends OrgAction
                     $routeParameters
                 ),
                 $headCrumb(
-                    'modelWithIndex',
                     $outbox->emailOngoingRun->email,
                     [
                         'index' => [
@@ -232,39 +205,5 @@ class ShowOutboxWorkshop extends OrgAction
     }
 
 
-    // public function getPrevious(EmailTemplate $emailTemplate, ActionRequest $request): ?array
-    // {
-    //     $previous = EmailTemplate::where('slug', '<', $emailTemplate->slug)->orderBy('slug')->first();
-
-    //     return $this->getNavigation($previous, $request->route()->getName());
-    // }
-
-    // public function getNext(EmailTemplate $emailTemplate, ActionRequest $request): ?array
-    // {
-    //     $next = EmailTemplate::where('slug', '>', $emailTemplate->slug)->orderBy('slug')->first();
-
-    //     return $this->getNavigation($next, $request->route()->getName());
-    // }
-
-    // private function getNavigation(?EmailTemplate $emailTemplate, string $routeName): ?array
-    // {
-    //     if (!$emailTemplate) {
-    //         return null;
-    //     }
-
-
-    //     return match ($routeName) {
-    //         'org.crm.shop.prospects.mailshots.workshop' => [
-    //             'label' => $emailTemplate->slug,
-    //             'route' => [
-    //                 'name'       => $routeName,
-    //                 'parameters' => [
-    //                     $emailTemplate->scope->slug,
-    //                     $emailTemplate->slug
-    //                 ]
-    //             ]
-    //         ],
-    //     };
-    // }
 
 }

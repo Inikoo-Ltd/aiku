@@ -1,6 +1,7 @@
 .DS_Store
 /bootstrap/ssr
 /node_modules
+/.qodo
 
 /public/build
 /public/hot
@@ -107,3 +108,5 @@ rgb.icc
 /storage/app/sitemaps/
 /storage/app/data-feeds/**
 
+/slim_restore.sh
+/get_slim.sh

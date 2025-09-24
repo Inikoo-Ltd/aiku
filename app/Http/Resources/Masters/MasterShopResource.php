@@ -36,8 +36,8 @@ class MasterShopResource extends JsonResource
                      [
                          'label' => __('Master Departments'),
                          'route' => [
-                             'name'       => 'grp.masters.master_departments.index',
-                             'parameters' => []
+                             'name'       => 'grp.masters.master_shops.show.master_departments.index',
+                             'parameters' => [$masterShop->slug]
                          ],
                          'icon'  => 'fal fa-folder-tree',
                          "color" => "#a3e635",
@@ -49,14 +49,18 @@ class MasterShopResource extends JsonResource
                                  'icon'  => 'fal fa-folder-tree',
                                  'class' => ''
                              ],
+                             'route' => [
+                                 'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
+                                 'parameters' => [$masterShop->slug]
+                             ],
                              'count'   => $masterShop->stats->number_current_master_product_categories_type_sub_department,
                          ],
                      ],
                      [
                          'label' => __('Master Families'),
                          'route' => [
-                             'name'       => 'grp.masters.master_families.index',
-                             'parameters' => []
+                             'name'       => 'grp.masters.master_shops.show.master_families.index',
+                             'parameters' => [$masterShop->slug]
                          ],
                          'icon'  => 'fal fa-folder',
                          "color" => "#e879f9",
@@ -65,8 +69,8 @@ class MasterShopResource extends JsonResource
                      [
                          'label' => __('Master Products'),
                          'route' => [
-                             'name'       => 'grp.masters.master_products.index',
-                             'parameters' => []
+                             'name'       => 'grp.masters.master_shops.show.master_products.index',
+                             'parameters' => [$masterShop->slug]
                          ],
                          'icon'  => 'fal fa-cube',
                          "color" => "#38bdf8",
@@ -75,12 +79,22 @@ class MasterShopResource extends JsonResource
                      [
                          'label' => __('Master Collections'),
                          'route' => [
-                             'name'       => 'grp.masters.master_collections.index',
-                             'parameters' => []
+                             'name'       => 'grp.masters.master_shops.show.master_collections.index',
+                             'parameters' => [$masterShop->slug]
                          ],
                          'icon'  => 'fal fa-album-collection',
                          "color" => "#4f46e5",
                          'value' => $masterShop->stats->number_current_master_collections,
+                     ],
+                     [
+                         'label' => __('Pending Master Families'),
+                         'route' => [
+                             'name'       => 'grp.masters.master_shops.show.master_collections.index',
+                             'parameters' => [$masterShop->slug]
+                         ],
+                         'icon'  => 'fal fa-exclamation-triangle',
+                         "color" => "#df1c1cff",
+                         'value' => $masterShop->stats->number_master_families_with_pending_master_assets,
                      ],
                 ]
         ];

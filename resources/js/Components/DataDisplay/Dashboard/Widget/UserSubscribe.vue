@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { inject, ref, computed } from "vue"
-import axios from "axios"
 import { router, useForm } from "@inertiajs/vue3" // Inertia router
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -15,7 +14,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { faExclamationTriangle } from "@fal"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
-import Dialog from "primevue/dialog" // Import the Dialog component
+import Dialog from "primevue/dialog"
 
 // Add icons to the library
 library.add(faEdit, faTrash, faPlus, faSave, faSignOutAlt, faExclamationTriangle)
@@ -190,7 +189,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 		<div class="rounded-lg bg-white shadow border border-gray-200">
 			<!-- Card Header -->
 			<div class="px-4 py-5 flex items-center justify-between">
-				<dt class="text-lg font-semibold text-gray-500 capitalize">Subscriber</dt>
+				<dt class="text-lg font-semibold text-gray-500">{{ trans("Subscriber") }}</dt>
 				<FontAwesomeIcon
 					:icon="faEdit"
 					class="text-blue-500 cursor-pointer"
@@ -216,7 +215,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 					</span>
 				</div>
 				<div v-if="!hasSubscriptions" class="mt-2">
-					<p class="text-gray-600 italic">not subscribe set</p>
+					<p class="text-gray-600 italic">{{trans('Nobody has subscribed yet')}}</p>
 				</div>
 			</div>
 		</div>
@@ -224,6 +223,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 
 	<!-- Edit Modal -->
 	<Dialog
+
 		v-model:visible="showModal"
 		header="Edit Subscriber"
 		modal

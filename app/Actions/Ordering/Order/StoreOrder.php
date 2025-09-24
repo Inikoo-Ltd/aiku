@@ -14,6 +14,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateOrders;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCreatedIntervals;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
@@ -29,6 +31,7 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
@@ -80,7 +83,8 @@ class StoreOrder extends OrgAction
         data_set($modelData, 'date', now(), overwrite: false);
 
         if ($this->strict) {
-            $modelData['pay_status'] = OrderPayStatusEnum::UNPAID->value;
+            $modelData['pay_status']          = OrderPayStatusEnum::UNPAID->value;
+            $modelData['pay_detailed_status'] = OrderPayDetailedStatusEnum::UNPAID->value;
             if ($parent instanceof Customer) {
                 data_forget($modelData, 'billing_address'); // Just in case is added by mistake
                 data_forget($modelData, 'delivery_address'); // Just in case is added by mistake
@@ -103,18 +107,23 @@ class StoreOrder extends OrgAction
             $modelData['customer_id'] = $parent->id;
             $modelData['currency_id'] = $parent->shop->currency_id;
             $modelData['shop_id']     = $parent->shop_id;
+            $shop                     = $parent->shop;
         } elseif ($parent instanceof CustomerClient) {
-            $modelData['customer_id']        = $parent->customer_id;
-            $modelData['customer_client_id'] = $parent->id;
-            $modelData['currency_id']        = $parent->shop->currency_id;
-            $modelData['shop_id']            = $parent->shop_id;
-            $modelData['platform_id'] = $parent->salesChannel->platform_id;
+            $modelData['customer_id']               = $parent->customer_id;
+            $modelData['customer_client_id']        = $parent->id;
+            $modelData['currency_id']               = $parent->shop->currency_id;
+            $modelData['shop_id']                   = $parent->shop_id;
+            $modelData['platform_id']               = $parent->salesChannel->platform_id;
             $modelData['customer_sales_channel_id'] = $parent->customer_sales_channel_id;
-
+            $shop                                   = $parent->shop;
         } else {
             $modelData['currency_id'] = $parent->currency_id;
             $modelData['shop_id']     = $parent->id;
+            $shop                     = $parent;
         }
+
+        data_set($modelData, 'master_shop_id', $shop->master_shop_id);
+
 
         if (!Arr::exists($modelData, 'tax_category_id')) {
             if ($parent instanceof Shop) {
@@ -124,7 +133,7 @@ class StoreOrder extends OrgAction
             } else {
                 $taxNumber = $parent->customer->taxNumber;
             }
-            // dd($deliveryAddress);
+
             data_set(
                 $modelData,
                 'tax_category_id',
@@ -141,13 +150,28 @@ class StoreOrder extends OrgAction
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 
+
         $modelData = $this->processExchanges($modelData, $parent->shop);
 
-        $order = DB::transaction(function () use ($modelData, $billingAddress, $deliveryAddress) {
-            /** @var Order $order */
+
+        if ($this->strict) {
+            data_set($modelData, 'customer_locked', true);
+            data_set($modelData, 'billing_locked', true);
+            data_set($modelData, 'delivery_locked', true);
+        }
+
+        $order = DB::transaction(function () use ($modelData, $billingAddress, $deliveryAddress, $shop) {
             $order = Order::create($modelData);
             $order->refresh();
             $order->stats()->create();
+
+            if ($shop->masterShop) {
+                $shop->masterShop->orderingStats->update(
+                    [
+                        'last_order_created_at' => now()
+                    ]
+                );
+            }
 
             if ($order->billing_locked) {
                 $this->createFixedAddress(
@@ -210,10 +234,17 @@ class StoreOrder extends OrgAction
         OrganisationHydrateOrderInBasketAtCreatedIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
         ShopHydrateOrderInBasketAtCreatedIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
 
+        if ($order->master_shop_id) {
+            MasterShopHydrateOrderInBasketAtCreatedIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
+        }
+
         if ($order->updated_by_customer_at) {
             GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
             OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
             ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
+            if ($order->master_shop_id) {
+                MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
+            }
         }
 
         if ($order->customer_client_id) {
@@ -274,8 +305,8 @@ class StoreOrder extends OrgAction
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
-            'billing_address' => ['sometimes', 'required',  new ValidAddress()], // only need when parent is Shop
-            'delivery_address' => ['sometimes', 'required',  new ValidAddress()],  // only need when the parent is Shop|CustomerClient
+            'billing_address'           => ['sometimes', 'required', new ValidAddress()], // only need when parent is Shop
+            'delivery_address'          => ['sometimes', 'required', new ValidAddress()],  // only need when the parent is Shop|CustomerClient
 
 
         ];

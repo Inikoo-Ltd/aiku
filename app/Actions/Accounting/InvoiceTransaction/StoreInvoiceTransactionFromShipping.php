@@ -39,7 +39,7 @@ class StoreInvoiceTransactionFromShipping extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->shippingZone and $this->shippingZone->shop_id != $this->shop->id) {
+        if ($this->shippingZone && $this->shippingZone->shop_id != $this->shop->id) {
             $validator->errors()->add('shipping_zone', 'Shipping Zone does not belong to this shop');
         }
     }

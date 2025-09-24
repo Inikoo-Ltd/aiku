@@ -19,8 +19,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use OwenIt\Auditing\Contracts\Auditable;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id

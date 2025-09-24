@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Goods;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\ImageResource;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -17,6 +18,16 @@ class TradeUnitResource extends JsonResource
     {
         /** @var TradeUnit $tradeUnit */
         $tradeUnit = $this;
+
+        $ingredients = $tradeUnit->ingredients->pluck('name');
+
+        $specifications = [
+            'ingredients'       => $ingredients,
+            'gross_weight'      => $tradeUnit->gross_weight,
+            'marketing_weights' => $tradeUnit->marketing_weights,
+            'barcode'           => $tradeUnit->barcode,
+            'dimensions'        => $tradeUnit->marketing_dimensions,
+        ];
 
         return array(
             'slug'   => $tradeUnit->slug,
@@ -31,15 +42,17 @@ class TradeUnitResource extends JsonResource
             'volume'               => $tradeUnit->volume,
             'type'                 => $tradeUnit->type,
             'image_id'             => $tradeUnit->image_id,
-
+            'images'          => ImageResource::collection($tradeUnit->images),
+            'image_thumbnail' => $tradeUnit->imageSources(720, 480),
             'name'                  => $tradeUnit->name,
             'description'           => $tradeUnit->description,
             'description_title'     => $tradeUnit->description_title,
             'description_extra'     => $tradeUnit->description_extra,
-            'name_i8n'              => $this->safeDecode($tradeUnit->name_i8n),
-            'description_i8n'       => $this->safeDecode($tradeUnit->description_i8n),
-            'description_title_i8n' => $this->safeDecode($tradeUnit->description_title_i8n),
-            'description_extra_i8n' => $this->safeDecode($tradeUnit->description_extra_i8n),
+            'name_i8n'              => $tradeUnit->getTranslations('name_i8n'),
+            'description_i8n'       => $tradeUnit->getTranslations('description_i8n'),
+            'description_title_i8n' => $tradeUnit->getTranslations('description_title_i8n'),
+            'description_extra_i8n' => $tradeUnit->getTranslations('description_extra_i8n'),
+            'specifications'        => $specifications,
         );
     }
 

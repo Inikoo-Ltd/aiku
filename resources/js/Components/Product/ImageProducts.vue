@@ -13,10 +13,12 @@ import {
 } from '@fal'
 import { ulid } from 'ulid'
 import Image from '@/Components/Image.vue'
+import { faVideo } from '@fas'
 
 const props = defineProps<{
   images: { source: string; thumbnail: string }[]
-  breakpoints: {
+  video?: string
+  breakpoints?: {
     [key: number]: {
       slidesPerView: number
     }
@@ -44,11 +46,11 @@ function closeImageModal() {
 }
 
 const onPrevNavigation = () => {
-    selectedIndex.value = (selectedIndex.value - 1 + props.images.length) % props.images.length
+  selectedIndex.value = (selectedIndex.value - 1 + props.images.length) % props.images.length
 }
 
 const onRightNavigation = () => {
-    selectedIndex.value = (selectedIndex.value + 1) % props.images.length
+  selectedIndex.value = (selectedIndex.value + 1) % props.images.length
 }
 
 onMounted(async () => {
@@ -72,9 +74,12 @@ onMounted(async () => {
     }
   })
 })
+
+console.log(props.video)
 </script>
 
 <template>
+
   <div class="w-full flex flex-col items-center relative">
     <!-- Shared Navigation Buttons -->
     <div class="absolute inset-0 pointer-events-none z-50">
@@ -89,40 +94,56 @@ onMounted(async () => {
     </div>
 
     <!-- Main Swiper -->
-    <div class="relative w-full">
-      <Swiper :key="keySwiperMain" :slides-per-view="1" :loop="true" :autoplay="false" :navigation="navigation"
-        :modules="[Navigation, Autoplay, Thumbs]" :thumbs="{ swiper: thumbsSwiper }"
-        class="aspect-square w-full rounded-lg mb-4">
-        <SwiperSlide v-for="(image, index) in props.images" :key="index" class="flex justify-center items-center">
-          <div
-            class="bg-gray-100 w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
-            @click="openImageModal(index)">
-            <Image :src="image.source" :alt="`Image ${index + 1}`" class="w-full h-full object-cover" />
-          </div>
-        </SwiperSlide>
-      </Swiper>
-    </div>
+    <Swiper :key="keySwiperMain" :slides-per-view="1" :loop="true" :autoplay="false" :navigation="navigation"
+      :modules="[Navigation, Autoplay, Thumbs]" :thumbs="{ swiper: thumbsSwiper }"
+      class="aspect-square w-full rounded-lg mb-4">
+      <!-- Images -->
+      <SwiperSlide v-for="(image, index) in props.images" :key="`img-${index}`"
+        class="flex justify-center items-center">
+        <div
+          class="bg-gray-100 w-full aspect-square flex items-center justify-center overflow-hidden rounded-lg cursor-pointer"
+          @click="openImageModal(index)">
+          <Image :src="image.source" :alt="`Image ${index + 1}`" class="w-full h-full object-cover" />
+        </div>
+      </SwiperSlide>
+
+      <!-- Video Slide -->
+      <SwiperSlide v-if="props.video" key="video">
+        <div class="w-full aspect-square flex items-center justify-center bg-black rounded-lg overflow-hidden">
+          <iframe class="w-full h-full" :src="props.video" frameborder="0" allow="autoplay; fullscreen"
+            allowfullscreen></iframe>
+        </div>
+      </SwiperSlide>
+    </Swiper>
+
 
     <!-- Thumbnail Swiper -->
     <Swiper :key="keySwiperThumb" :space-between="8" watch-slides-progress :modules="[Thumbs]"
-      @swiper="(swiper) => (thumbsSwiper = swiper)" :breakpoints="breakpoints ?? {
-        0: {
-          slidesPerView: 3
-        },
-        640: {
-          slidesPerView: 6
-        }
-      }" class="w-full">
-      <SwiperSlide v-for="(image, index) in props.images" :key="index"
+      @swiper="(swiper) => (thumbsSwiper = swiper)"
+      :breakpoints="breakpoints ?? { 0: { slidesPerView: 3 }, 640: { slidesPerView: 6 } }" class="w-full">
+      <!-- Image thumbnails -->
+      <SwiperSlide v-for="(image, index) in props.images" :key="`thumb-${index}`"
         class="cursor-pointer rounded overflow-hidden border border-gray-300">
-        <slot name="image-thumbnail" :image :index>
-          <div class="aspect-square w-full">
-            
-            <Image :src="image.source" :alt="`Thumbnail ${index + 1}`" class="w-full h-full object-cover" />
-          </div>
-        </slot>
+        <div class="aspect-square w-full">
+          <Image :src="image.source" :alt="`Thumbnail ${index + 1}`"
+            class="w-full h-full object-cover" />
+        </div>
       </SwiperSlide>
+
+      <!-- Video thumbnail -->
+      <SwiperSlide v-if="props.video" key="thumb-video"
+        class="cursor-pointer rounded overflow-hidden border border-gray-300">
+        <div class="aspect-square w-full flex items-center justify-center bg-gray-200 relative">
+          <!-- Thumbnail placeholder -->
+          <FontAwesomeIcon :icon=faVideo class="text-3xl text-gray-600" />
+          <span class="absolute bottom-2 text-xs text-gray-700 bg-white/70 px-2 py-0.5 rounded">
+            Video
+          </span>
+        </div>
+      </SwiperSlide>
+
     </Swiper>
+
 
     <!-- Modal Viewer -->
     <div v-if="showModal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
@@ -135,19 +156,17 @@ onMounted(async () => {
         </button>
 
         <!-- Manual Navigation Buttons -->
-        <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
-          @click="onPrevNavigation">
+        <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40" @click="onPrevNavigation">
           <FontAwesomeIcon :icon="faChevronCircleLeft" />
         </button>
-        <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
-          @click="onRightNavigation">
+        <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40" @click="onRightNavigation">
           <FontAwesomeIcon :icon="faChevronCircleRight" />
         </button>
 
         <!-- Image Display -->
         <div class="block w-full h-[80vh] mb-1 rounded">
           <Image :src="props.images[selectedIndex]?.source" :alt="`Image ${selectedIndex + 1}`"
-           :style="{ objectFit: 'contain' }" :imageCover="true" />
+            :style="{ objectFit: 'contain' }" :imageCover="true" />
         </div>
       </div>
     </div>

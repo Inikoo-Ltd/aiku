@@ -84,9 +84,8 @@ trait IsOrder
         $customerClientData = null;
 
         if ($order->customerClient) {
-            $customerClientData = array_merge(
-                CustomerClientResource::make($order->customerClient)->getArray(),
-                [
+            if ($order->customer_sales_channel_id) {
+                $clientRoute = [
                     'route' => [
                         'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
                         'parameters' => [
@@ -97,18 +96,27 @@ trait IsOrder
                             'customerClient'       => $order->customerClient->ulid
                         ]
                     ]
-                ]
+                ];
+            } else {
+                $clientRoute = [];
+            }
+
+
+            $customerClientData = array_merge(
+                CustomerClientResource::make($order->customerClient)->getArray(),
+                $clientRoute
             );
         }
         $deliveryNotes     = $order->deliveryNotes;
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
-            foreach ($deliveryNotes as $deliveryNote) {
+            foreach ($deliveryNotes->sortBy('created_at') as $deliveryNote) {
                 $deliveryNotesData[] = [
                     'id'        => $deliveryNote->id,
-                    'slug'        => $deliveryNote->slug,
+                    'slug'      => $deliveryNote->slug,
                     'reference' => $deliveryNote->reference,
+                    'type'      => $deliveryNote->type,
                     'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
                     'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
                 ];
@@ -140,6 +148,7 @@ trait IsOrder
                 'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],
             'delivery_notes'   => $deliveryNotesData,
+            'shipping_notes'   => $order->shipping_notes,
             'products'         => [
                 'payment'          => [
                     'routes'       => [
@@ -161,6 +170,16 @@ trait IsOrder
                     'paid_amount'  => (float)$order->payment_amount,
                     'pay_amount'   => $roundedDiff,
                     'pay_status'   => $order->pay_status,
+                ],
+                'excesses_payment' => [
+                    'amount'               => round($order->payment_amount - $order->total_amount, 2),
+                    'route_to_add_balance' => [
+                        'name'       => 'grp.models.order.return_excess_payment',
+                        'parameters' => [
+                            'order' => $order->id
+                        ],
+                        'method'     => 'post'
+                    ]
                 ],
                 'estimated_weight' => $estWeight,
             ],

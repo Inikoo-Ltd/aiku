@@ -58,7 +58,8 @@ class FetchAuroraNoProductTransactions
 
     public function processAdjustmentTransaction(Order $order, array $transactionData): Transaction
     {
-        if ($transaction = Transaction::where('source_alt_id', $transactionData['transaction']['source_alt_id'])->first()) {
+        if ($transaction = Transaction::withTrashed()->where('source_alt_id', $transactionData['transaction']['source_alt_id'])->first()) {
+            $transactionData['transaction']['deleted_at'] = null;
             $transaction = UpdateTransaction::make()->action(
                 transaction: $transaction,
                 modelData: $transactionData['transaction'],
@@ -86,7 +87,7 @@ class FetchAuroraNoProductTransactions
         /** @var ShippingZone $shippingZone */
         $shippingZone = Arr::get($transactionData, 'model');
 
-        if ($transaction = Transaction::where('source_alt_id', $transactionData['transaction']['source_alt_id'])->first()) {
+        if ($transaction = Transaction::withTrashed()->where('source_alt_id', $transactionData['transaction']['source_alt_id'])->first()) {
 
             data_set($transactionData, 'transaction.model', 'ShippingZone');
             if ($shippingZone) {
@@ -95,6 +96,7 @@ class FetchAuroraNoProductTransactions
                 data_set($transactionData, 'transaction.historic_asset_id', $shippingZone->current_historic_asset_id);
             }
 
+            $transactionData['transaction']['deleted_at'] = null;
             $transaction = UpdateTransaction::make()->action(
                 transaction: $transaction,
                 modelData: $transactionData['transaction'],
@@ -123,7 +125,7 @@ class FetchAuroraNoProductTransactions
         /** @var Charge $charge */
         $charge = Arr::get($transactionData, 'model');
 
-        if ($transaction = Transaction::where('source_alt_id', $transactionData['transaction']['source_alt_id'])->first()) {
+        if ($transaction = Transaction::withTrashed()->where('source_alt_id', $transactionData['transaction']['source_alt_id'])->first()) {
 
             data_set($transactionData, 'transaction.model', 'Charge');
             if ($charge) {
@@ -131,7 +133,7 @@ class FetchAuroraNoProductTransactions
                 data_set($transactionData, 'transaction.asset_id', $charge->id);
                 data_set($transactionData, 'transaction.historic_asset_id', $charge->current_historic_asset_id);
             }
-
+            $transactionData['transaction']['deleted_at'] = null;
             $transaction = UpdateTransaction::make()->action(
                 transaction: $transaction,
                 modelData: $transactionData['transaction'],

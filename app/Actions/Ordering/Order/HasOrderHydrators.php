@@ -10,9 +10,11 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderHandling;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
+use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydrateOrders;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderHandling;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
@@ -23,16 +25,23 @@ trait HasOrderHydrators
     public function orderHydrators(Order $order): void
     {
         GroupHydrateOrders::dispatch($order->shop->group)->delay($this->hydratorsDelay);
+
         OrganisationHydrateOrders::dispatch($order->shop->organisation)->delay($this->hydratorsDelay);
         OrganisationHydrateOrderHandling::dispatch($order->shop->organisation)->delay($this->hydratorsDelay);
+
         ShopHydrateOrders::dispatch($order->shop)->delay($this->hydratorsDelay);
         ShopHydrateOrderHandling::dispatch($order->shop)->delay($this->hydratorsDelay);
+
+        if ($order->master_shop_id) {
+            MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay($this->hydratorsDelay);
+        }
         if ($order->customer_id) {
             CustomerHydrateOrders::dispatch($order->customer)->delay($this->hydratorsDelay);
         }
 
         if ($order->platform_id) {
             PlatformHydrateOrders::dispatch($order->platform)->delay($this->hydratorsDelay);
+            ShopPlatformStatsHydrateOrders::dispatch($order->shop, $order->platform)->delay($this->hydratorsDelay);
         }
 
         if ($order->customerSalesChannel) {

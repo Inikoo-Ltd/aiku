@@ -631,7 +631,7 @@ watch(() => newForm, () => {
                             <div v-if="jobGroup.scope !== 'shop' && (departmentName === 'prod'  && productionsLength > 0) || departmentName !== 'prod'"
                                  class="grid grid-cols-3 gap-x-1.5 px-2 items-center even:bg-gray-50 transition-all duration-200 ease-in-out">
                                 <!-- Section: Department label -->
-                                <div class="flex items-center capitalize gap-x-1.5">
+                                <div class="flex items-center gap-x-1.5">
                                     <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class="text-gray-400 fixed-width" aria-hidden="true" />
                                     {{ jobGroup.department }}
                                 </div>
@@ -646,7 +646,7 @@ watch(() => newForm, () => {
                                                 <button
                                                     v-if="!subDepartment.isHide"
                                                     @click.prevent="handleClickSubDepartment(departmentName, subDepartment.slug, subDepartment.optionsType)"
-                                                    class="group h-full cursor-pointer flex items-center justify-start rounded-md py-3 px-3 font-medium capitalize disabled:text-gray-400 disabled:cursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
+                                                    class="group h-full cursor-pointer flex items-center justify-start rounded-md py-3 px-3 font-medium disabled:text-gray-400 disabled:cursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
                                                     :class="(isRadioChecked('org-admin') && subDepartment.slug != 'org-admin' && !isLevelGroupAdmin(jobGroup.level)) || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') ? 'text-green-500' : ''"
                                                     :disabled="
                                                         isGroupAdminSelected
@@ -703,7 +703,7 @@ watch(() => newForm, () => {
                                                 <div class="flex flex-col gap-y-4 pt-4">
                                                     <template v-for="optionData, optionKey, optionIdx in optionsList" :key="optionKey + optionIdx">
                                                         <div v-if="jobGroup.subDepartment.some(subDep => subDep.optionsType?.includes(optionKey))" class="">
-                                                            <div class="text-white text-center bg-gray-400 capitalize py-0.5">{{ optionKey }}</div>
+                                                            <div class="text-white text-center bg-gray-400 py-0.5">{{ optionKey }}</div>
                                                             <div class="flex flex-col gap-x-2 gap-y-0.5">
                                                                 <!-- Section: Box radio -->
                                                                 <div v-for="(shop, idxZXC) in optionData" class="grid grid-cols-4 items-center justify-start gap-x-6 min-h-6"
@@ -725,7 +725,7 @@ watch(() => newForm, () => {
                                                                             <button
                                                                                 v-if="subDep.optionsType?.includes(optionKey)"
                                                                                 @click.prevent="onClickJobFinetune(departmentName, shop.slug, subDep.slug, optionKey)"
-                                                                                class="group h-full cursor-pointer flex items-center justify-center rounded-md px-3 font-medium capitalize disabled:text-gray-400 disabled:cursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
+                                                                                class="group h-full cursor-pointer flex items-center justify-center rounded-md px-3 font-medium disabled:text-gray-400 disabled:cursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
                                                                                 :disabled="isGroupAdminSelected || isRadioChecked('org-admin') || isRadioChecked('group-admin') || (isRadioChecked('shop-admin') && jobGroup.scope === 'shop' && subDep.slug !== 'shop-admin')"
                                                                                 v-tooltip="subDep.label"
                                                                             >

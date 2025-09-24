@@ -10,7 +10,6 @@ import {Head, Link} from "@inertiajs/vue3";
 import {computed, defineAsyncComponent, ref} from "vue";
 import type {Component} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
-import ModelDetails from "@/Components/ModelDetails.vue";
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -38,10 +37,11 @@ import {
     faDraftingCompass,
     faEnvelope,
     faArrowCircleLeft,
-    faTrashAlt, faExpandArrows, faTruck
+    faTrashAlt, faExpandArrows, faTruck, faAddressCard, faReceipt
 } from "@fal";
-import {faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck, faOmega} from "@fas";
+import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck, faOmega, faExclamationCircle, faCheckCircle } from "@fas";
 import {faCheck} from "@far";
+import {faSpinnerThird} from "@fad";
 import {useFormatTime} from "@/Composables/useFormatTime";
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import TableInvoiceTransactions from "@/Components/Tables/Grp/Org/Accounting/TableInvoiceTransactions.vue";
@@ -55,9 +55,11 @@ import InvoiceRefundPay from "@/Components/Segmented/InvoiceRefund/InvoiceRefund
 import ModalAfterConfirmationDelete from "@/Components/Utils/ModalAfterConfirmationDelete.vue";
 import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue";
 import Icon from "@/Components/Icon.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 
 
-library.add(faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega);
+library.add(faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird);
 
 const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
 
@@ -72,7 +74,7 @@ const props = defineProps<{
 
     box_stats: {
         customer: {
-            company_name: string
+            name: string
             contact_name: string
             route: routeType
             location: string[]
@@ -141,6 +143,7 @@ const props = defineProps<{
         icon: Icon
     }[]
 }>();
+
 const currentTab = ref<string>(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 
@@ -150,8 +153,7 @@ const component = computed(() => {
         grouped_fulfilment_invoice_transactions: TableInvoiceTransactions,
         itemized_fulfilment_invoice_transactions: TableInvoiceTransactions,
         payments: TablePayments,
-        details: ModelDetails,
-        history: ModelChangelog,
+        history: TableHistories,
         email: TableDispatchedEmails,
         refunds: TableRefunds
     };
@@ -176,6 +178,37 @@ const onPayInOnClick = () => {
 // Section: Send Invoice
 const isVisitWorkshopOutbox = ref(false);
 const isModalSendInvoice = ref(false);
+
+// Tax number validation helper functions
+const getStatusIcon = (status: string, valid: boolean) => {
+    if (status === 'invalid' || !valid) {
+        return 'fa-exclamation-circle'
+    }
+    if (status === 'valid' || valid) {
+        return 'fa-check-circle'
+    }
+    return 'fa-spinner-third'
+}
+
+const getStatusColor = (status: string, valid: boolean) => {
+    if (status === 'invalid' || !valid) {
+        return 'text-red-600'
+    }
+    if (status === 'valid' || valid) {
+        return 'text-green-600'
+    }
+    return 'text-yellow-600'
+}
+
+const taxNumberStatusText = computed(() => {
+    if (props.invoice.tax_number_status === 'invalid' || !props.invoice.tax_number_valid) {
+        return trans('Invalid')
+    }
+    if (props.invoice.tax_number_status === 'valid' || props.invoice.tax_number_valid) {
+        return trans('Valid')
+    }
+    return trans('Pending')
+})
 
 </script>
 
@@ -267,6 +300,27 @@ const isModalSendInvoice = ref(false);
                 </template>
             </div>
         </template>
+        
+        <template #wrapped-delete-booked-in="{ action }">
+            <ModalConfirmationDelete
+                :routeDelete="action.route"
+                isFullLoading
+                isWithMessage
+                keyMessage="deleted_note"
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button
+                        icon="fal fa-trash-alt"
+                        @click="changeModel"
+                        :style="'edit'"
+                        :label="trans('Delete')"
+                        :injectStyle="{
+                            color: '#ef4444 !important'
+                        }"
+                    />
+                </template>
+            </ModalConfirmationDelete>
+        </template>
     </PageHeading>
 
     <div class="grid grid-cols-4 divide-x divide-gray-300 border-b border-gray-200">
@@ -286,24 +340,24 @@ const isModalSendInvoice = ref(false);
                     <dd class="text-base text-gray-500">#{{ box_stats?.customer.reference }}</dd>
                 </Link>
             </dl>
-            <!-- Field: Contact name -->
-            <dl v-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="'Contact name'" class="flex-none">
-                    <span class="sr-only">Contact name</span>
+            <!-- Field: Customer name -->
+            <dl v-if="box_stats?.customer.name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <dt  v-tooltip="trans('Customer name')"  class="flex-none">
+                    <span class="sr-only">{{trans('Customer name')}}</span>
                     <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true"/>
                 </dt>
-                <dd class="text-base text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
+                <dd class="text-base text-gray-500">{{ box_stats?.customer.name }}</dd>
             </dl>
 
-            <!-- Field: Company name -->
-            <dl v-if="box_stats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                <dt v-tooltip="'Company name'" class="flex-none">
-                    <span class="sr-only">Company name</span>
-                    <FontAwesomeIcon icon="fal fa-building" size="xs" class="text-gray-400" fixed-width
+            <!-- Field: Contact name -->
+            <dl v-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <dt v-tooltip="trans('Customer contact name')" class="flex-none">
+                    <span class="sr-only">{{'Customer contact name'}}</span>
+                    <FontAwesomeIcon icon="fal fa-address-card" size="xs" class="text-gray-400" fixed-width
                                      aria-hidden="true"/>
                 </dt>
-                <dd class="text-base text-gray-500">{{ box_stats?.customer.company_name }}</dd>
+                <dd class="text-base text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
             </dl>
 
 
@@ -315,6 +369,24 @@ const isModalSendInvoice = ref(false);
                                      aria-hidden="true"/>
                 </dt>
                 <dd class="text-base text-gray-500">{{ box_stats?.customer.phone }}</dd>
+            </dl>
+
+            <!-- Field: Tax Number -->
+            <dl v-if="invoice.tax_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                <dt v-tooltip="trans('Tax Number')" class="flex-none">
+                    <span class="sr-only">Tax Number</span>
+                    <FontAwesomeIcon icon="fal fa-receipt" size="xs" class="text-gray-400" fixed-width
+                                     aria-hidden="true"/>
+                </dt>
+                <dd class="text-base text-gray-500 flex items-center gap-x-2">
+                    <span>{{ invoice.tax_number }}</span>
+                    <FontAwesomeIcon 
+                        :icon="getStatusIcon(invoice.tax_number_status, invoice.tax_number_valid)"
+                        :class="getStatusColor(invoice.tax_number_status, invoice.tax_number_valid)" 
+                        size="xs"
+                        v-tooltip="taxNumberStatusText"
+                    />
+                </dd>
             </dl>
 
             <!-- Field: Address -->

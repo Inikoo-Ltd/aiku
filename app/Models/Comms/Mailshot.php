@@ -79,7 +79,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Mailshot newQuery()
  * @method static Builder<static>|Mailshot onlyTrashed()
  * @method static Builder<static>|Mailshot query()
- * @method static Builder<static>|Mailshot withTrashed()
+ * @method static Builder<static>|Mailshot withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Mailshot withoutTrashed()
  * @mixin Eloquent
  */

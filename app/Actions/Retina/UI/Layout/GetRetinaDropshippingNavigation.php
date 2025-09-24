@@ -44,56 +44,56 @@ class GetRetinaDropshippingNavigation
                 ],
                 'topMenu' => [
                     'subSections' =>
-                    [
                         [
-                            'label' => __(''),
-                            'icon'  => ['far', 'fa-books'],
-                            'root'  => 'retina.catalogue.',
-                            'route' => [
-                                'name' => 'retina.catalogue.dashboard'
-                            ]
-                        ],
-                        [
-                            'label' => __('Departments'),
-                            'icon'  => ['far', 'fa-folder-tree'],
-                            'root'  => 'retina.catalogue.departments.',
-                            'route' => [
-                                'name' => 'retina.catalogue.departments.index'
-                            ]
-                        ],
-                        [
-                            'label' => __('Sub Departments'),
-                            'icon'  => ['far', 'fa-dot-circle'],
-                            'root'  => 'retina.catalogue.sub_departments.',
-                            'route' => [
-                                'name' => 'retina.catalogue.sub_departments.index'
-                            ]
-                        ],
-                        [
-                            'label' => __('Collections'),
-                            'icon'  => ['far', 'fa-album-collection'],
-                            'root'  => 'retina.catalogue.collections.',
-                            'route' => [
-                                'name' => 'retina.catalogue.collections.index'
-                            ]
-                        ],
-                        [
-                            'label' => __('Families'),
-                            'icon'  => ['far', 'fa-folder'],
-                            'root'  => 'retina.catalogue.families.',
-                            'route' => [
-                                'name' => 'retina.catalogue.families.index'
-                            ]
-                        ],
-                        [
-                            'label' => __('Products'),
-                            'icon'  => ['far', 'fa-cube'],
-                            'root'  => 'retina.catalogue.products.',
-                            'route' => [
-                                'name' => 'retina.catalogue.products.index'
-                            ]
-                        ],
-                    ]
+                            [
+                                'label' => __('Catalogue'),
+                                'icon'  => ['far', 'fa-books'],
+                                'root'  => 'retina.catalogue.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.dashboard'
+                                ]
+                            ],
+                            [
+                                'label' => __('Departments'),
+                                'icon'  => ['far', 'fa-folder-tree'],
+                                'root'  => 'retina.catalogue.departments.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.departments.index'
+                                ]
+                            ],
+                            [
+                                'label' => __('Sub Departments'),
+                                'icon'  => ['far', 'fa-dot-circle'],
+                                'root'  => 'retina.catalogue.sub_departments.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.sub_departments.index'
+                                ]
+                            ],
+                            [
+                                'label' => __('Collections'),
+                                'icon'  => ['far', 'fa-album-collection'],
+                                'root'  => 'retina.catalogue.collections.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.collections.index'
+                                ]
+                            ],
+                            [
+                                'label' => __('Families'),
+                                'icon'  => ['far', 'fa-folder'],
+                                'root'  => 'retina.catalogue.families.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.families.index'
+                                ]
+                            ],
+                            [
+                                'label' => __('Products'),
+                                'icon'  => ['far', 'fa-cube'],
+                                'root'  => 'retina.catalogue.products.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.products.index'
+                                ]
+                            ],
+                        ]
                 ]
             ];
         }
@@ -105,8 +105,6 @@ class GetRetinaDropshippingNavigation
         foreach (
             $customer->customerSalesChannels as $customerSalesChannels
         ) {
-
-
             $reference = $customerSalesChannels->name ?? 'n/a';
 
             $platforms_navigation[] = [
@@ -148,25 +146,12 @@ class GetRetinaDropshippingNavigation
 
 
         $groupNavigation['invoice'] = [
-            'label'   => __('Invoice'),
-            'icon'    => ['fal', 'fa-file-invoice-dollar'],
-            'root'    => 'retina.dropshipping.invoices.',
-            'route'   => [
+            'label' => __('Invoices'),
+            'icon'  => ['fal', 'fa-file-invoice-dollar'],
+            'root'  => 'retina.dropshipping.invoices.',
+            'route' => [
                 'name' => 'retina.dropshipping.invoices.index'
             ],
-            // 'topMenu' => [
-            //     'subSections' => [
-            //         [
-            //             'label' => __('View Top ups'),
-            //             'icon'  => ['far', 'fa-eye'],
-            //             'root'  => 'retina.top_up.',
-            //             'route' => [
-            //                 'name' => 'retina.top_up.index',
-
-            //             ]
-            //         ],
-            //     ]
-            // ]
         ];
 
         $groupNavigation['top_up'] = [
@@ -206,13 +191,13 @@ class GetRetinaDropshippingNavigation
 
         if ($hasNonManualChannels || $hasApiTokens || $hasCreditCards) {
             $groupNavigation['saved_credit_cards'] = [
-                'label' => __('Saved Cards'),
-                'icon'  => ['fal', 'fa-credit-card'],
-                'root'  => 'retina.dropshipping.mit_saved_cards.',
-                'route' => [
+                'label'     => __('Saved Cards'),
+                'icon'      => ['fal', 'fa-credit-card'],
+                'root'      => 'retina.dropshipping.mit_saved_cards.',
+                'route'     => [
                     'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
                 ],
-                'indicator' => ! $hasCreditCards
+                'indicator' => !$hasCreditCards
             ];
         }
 
@@ -221,7 +206,7 @@ class GetRetinaDropshippingNavigation
             'icon'    => ['fal', 'fa-users-cog'],
             'root'    => 'retina.sysadmin.',
             'route'   => [
-                'name' => 'retina.sysadmin.dropshipping.dashboard'
+                'name' => 'retina.sysadmin.dashboard'
             ],
             'topMenu' => [
                 'subSections' => [

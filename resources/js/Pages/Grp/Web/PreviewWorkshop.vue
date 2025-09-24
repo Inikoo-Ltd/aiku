@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { getComponent } from '@/Composables/getWorkshopComponents'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
-import { ref, onMounted, provide, onBeforeUnmount, inject, watch } from 'vue'
+import { ref, onMounted, provide, onBeforeUnmount, inject, watch, computed } from 'vue'
 import WebPreview from "@/Layouts/WebPreview.vue";
 import { sendMessageToParent } from '@/Composables/Workshop'
 import RenderHeaderMenu from './RenderHeaderMenu.vue'
@@ -16,7 +16,11 @@ import "@/../css/Iris/editor.css"
 import { getStyles } from "@/Composables/styles";
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.vue';
-
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { Sidebar } from 'primevue';
+library.add(faTimes)
 
 defineOptions({ layout: WebPreview })
 const props = defineProps<{
@@ -32,14 +36,20 @@ const props = defineProps<{
     }
     layout: {
 
-    }
+    },
+    sidebar: {}
 }>()
+
+// console.log(props.sidebar);
+
+const isOpenMenuMobile = inject('isOpenMenuMobile')
 const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)
 const { mode } = route().params;
 const isPreviewMode = ref(mode != 'iris' ? false : true)
 const isInWorkshop = route().params.isInWorkshop || false
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const active_language = ref<string|null>(null)
 const defaultCurrency = {
   code: "GBP",
   symbol: "£",
@@ -67,16 +77,18 @@ const updateData = (newVal) => {
     sendMessageToParent('autosave', newVal)
 }
 
+
 onMounted(() => {
-    layout.app.theme = props.layout.color,
-    layout.app.webpage_layout = props.layout
+    layout.app.theme = props?.layout?.color,
+    layout.app.webpage_layout = props?.layout
     updateIrisLayout(isPreviewLoggedIn.value)
     window.addEventListener('message', (event) => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value
         if (event.data.key === 'isPreviewMode') isPreviewMode.value = event.data.value
+        if (event.data.key === 'active_language') active_language.value = event.data.value
         if (event.data.key === 'reload') {
             router.reload({
-                only: ['footer', 'header', 'webpage', 'navigation'],
+                only: ['footer', 'header', 'webpage', 'navigation', 'sidebar'],
                 onSuccess: () => {
                     if (props.webpage) data.value = props.webpage
                 }
@@ -85,6 +97,9 @@ onMounted(() => {
     });
     checkScreenType()
     window.addEventListener('resize', checkScreenType)
+    if (props.sidebar) {
+        isOpenMenuMobile.value = true
+    }
 });
 
 
@@ -103,29 +118,33 @@ onBeforeUnmount(() => {
 
 provide('isPreviewLoggedIn', isPreviewLoggedIn)
 provide('isPreviewMode', isPreviewMode)
+const compSidebar = computed(() => {
+    return props?.sidebar?.sidebar
+})
+provide('sidebarMenu', compSidebar)
+
 
 watch(isPreviewLoggedIn, (value) => {
      updateIrisLayout(isPreviewLoggedIn.value)
 }, { immediate: true });
 
-
 </script>
 
 
 <template>
-    <div class="editor-class">
+    <div class="editor-class" :class="route().params?.mode !== 'iris' ? 'is-not-mode-iris' : ''">
         <div v-if="isInWorkshop" class="bg-gray-200 shadow-xl px-8 py-4 flex justify-center items-center gap-x-2">
             <ButtonPreviewLogin v-model="isPreviewLoggedIn" />
         </div>
 
         <div class="shadow-xl" :class="props.layout?.layout == 'fullscreen' ? 'w-full' : 'container max-w-7xl mx-auto'">
             <div>
-                <RenderHeaderMenu 
-                    v-if="header?.data" 
-                    :data="header.data" 
+                <RenderHeaderMenu
+                    v-if="header?.data"
+                    :data="header.data"
                     :menu="navigation"
-                    :loginMode="isPreviewLoggedIn" 
-                    @update:model-value="updateData(header.data)" 
+                    :loginMode="isPreviewLoggedIn"
+                    @update:model-value="updateData(header.data)"
                     :screenType="screenType"
                 />
             </div>
@@ -143,7 +162,8 @@ watch(isPreviewLoggedIn, (value) => {
 
             <!-- Footer -->
             <component v-if="footer?.data?.data"
-                :is="isPreviewMode || route().current() == 'grp.websites.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
+
+                :is="isPreviewMode || route().current() == 'grp.websites.preview' || route().current() == 'grp.org.shops.show.web.webpages.snapshot.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
                 v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
         </div>
     </div>
@@ -152,22 +172,24 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 
-<style  lang="scss">
-:deep(.hover-dashed) {
-    @apply relative;
+<style lang="scss">
+.is-not-mode-iris {
+    .hover-dashed {
+        @apply relative;
 
-    &::after {
-        content: "";
-        @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        &::after {
+            content: "";
+            @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        }
     }
-}
 
-:deep(.hover-text-input) {
-    @apply relative isolate;
+    .hover-text-input {
+        @apply relative isolate;
 
-    &::after {
-        content: "";
-        @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        &::after {
+            content: "";
+            @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
+        }
     }
 }
 

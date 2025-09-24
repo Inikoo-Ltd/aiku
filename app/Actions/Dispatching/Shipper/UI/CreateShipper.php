@@ -24,25 +24,22 @@ class CreateShipper extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'title'       => __('new shipper'),
                 'pageHead'    => [
-                    'title'        => __('new shipper'),
-                    'icon'         => [
+                    'title'   => __('new shipper'),
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-shipping-fast'],
                         'title' => __('shipper')
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
                             'label' => __('cancel'),
                             'route' => [
-                                'name'       => match ($request->route()->getName()) {
-                                    default                       => preg_replace('/create$/', 'index', $request->route()->getName())
-                                },
+                                'name'       => 'grp.org.warehouses.show.dispatching.shippers.current.index',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
@@ -54,26 +51,30 @@ class CreateShipper extends OrgAction
                             [
                                 'title'  => __('contact'),
                                 'fields' => [
-                                    'code' => [
+                                    'code'     => [
                                         'type'  => 'input',
                                         'label' => __('code')
                                     ],
-                                    'name' => [
+                                    'name'     => [
                                         'type'  => 'input',
                                         'label' => __('name')
                                     ],
-                                    'base_url' => [
+                                    'trade_as' => [
                                         'type'  => 'input',
-                                        'label' => __('base url')
+                                        'label' => __('Trade as')
+                                    ],
+                                    'tracking_url' => [
+                                        'type'  => 'input',
+                                        'label' => __('Tracking url')
                                     ],
                                 ]
                             ]
                         ],
                     'route'     => [
-                        'name'      => 'grp.models.shipper.store',
+                        'name'       => 'grp.models.shipper.store',
                         'parameters' => [
                             'organisation' => $organisation->id,
-                            ]
+                        ]
                     ]
                 ]
 
@@ -83,16 +84,16 @@ class CreateShipper extends OrgAction
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): Response
     {
-        $this->parent = $organisation;
         $this->initialisationFromWarehouse($warehouse, $request);
 
         return $this->handle($organisation, $request);
     }
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+
+    public function getBreadcrumbs(array $routeParameters): array
     {
         return array_merge(
             IndexShippers::make()->getBreadcrumbs(
-                routeName: preg_replace('/create$/', 'index', $routeName),
+                routeName: 'grp.org.warehouses.show.dispatching.shippers.current.index',
                 routeParameters: $routeParameters,
             ),
             [

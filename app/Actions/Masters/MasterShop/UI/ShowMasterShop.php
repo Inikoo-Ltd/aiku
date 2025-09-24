@@ -10,6 +10,7 @@ namespace App\Actions\Masters\MasterShop\UI;
 
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\GrpAction;
+use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Enums\UI\Catalogue\MasterShopTabsEnum;
 use App\Http\Resources\Masters\MasterShopResource;
 use App\Models\Masters\MasterShop;
@@ -62,12 +63,12 @@ class ShowMasterShop extends GrpAction
                     ],
                     'subNavigation' => $subNavigation,
                     'actions' => [
-                        [
+                         [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => 'blueprint',
+                            'label' => 'Edit',
                             'route' => [
-                                'name'       => "grp.masters.master_shops.blueprint",
+                                'name'       => "grp.masters.master_shops.edit",
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ],
@@ -80,11 +81,13 @@ class ShowMasterShop extends GrpAction
 
                 MasterShopTabsEnum::SHOWCASE->value => $this->tab == MasterShopTabsEnum::SHOWCASE->value
                     ?
-                    fn () => MasterShopResource::make($masterShop)
-                    : Inertia::lazy(fn () => MasterShopResource::make($masterShop)),
+                    fn () => MasterShopResource::make($masterShop)->resolve()
+                    : Inertia::lazy(fn () => MasterShopResource::make($masterShop)->resolve()),
             ]
         );
     }
+
+
 
     public function jsonResponse(MasterShop $masterShop): MasterShopResource
     {
@@ -95,7 +98,7 @@ class ShowMasterShop extends GrpAction
     {
         return
             array_merge(
-                IndexMasterShops::make()->getBreadcrumbs(),
+                ShowMastersDashboard::make()->getBreadcrumbs(),
                 [
                     [
                         'type'           => 'modelWithIndex',

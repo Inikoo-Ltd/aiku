@@ -23,6 +23,7 @@ use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -52,6 +53,37 @@ class UpdateDeliveryNote extends OrgAction
                 OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
                     ->delay($this->hydratorsDelay);
             }
+
+
+            if (Arr::hasAny($changes, ['customer_notes', 'public_notes', 'internal_notes', 'shipping_notes'])) {
+                $order = $deliveryNote->orders()->first();
+
+                if (Arr::has($changes, 'customer_notes')) {
+                    $order->update(
+                        [
+                            'customer_notes' => $deliveryNote->customer_notes,
+                        ]
+                    );
+                } elseif (Arr::has($changes, 'public_notes')) {
+                    $order->update(
+                        [
+                            'public_notes' => $deliveryNote->public_notes,
+                        ]
+                    );
+                } elseif (Arr::has($changes, 'internal_notes')) {
+                    $order->update(
+                        [
+                            'internal_notes' => $deliveryNote->internal_notes,
+                        ]
+                    );
+                } elseif (Arr::has($changes, 'shipping_notes')) {
+                    $order->update(
+                        [
+                            'shipping_notes' => $deliveryNote->shipping_notes,
+                        ]
+                    );
+                }
+            }
         }
 
         return $deliveryNote;
@@ -80,12 +112,14 @@ class UpdateDeliveryNote extends OrgAction
             'packer_id'      => ['sometimes'],
             'picker_user_id' => ['sometimes'],
             'packer_user_id' => ['sometimes'],
+            'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
             'parcels'        => ['sometimes', 'array'],
-            'customer_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'public_notes'              => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'internal_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'shipping_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'dispatched_at'             => ['sometimes', 'nullable', 'date'],
+            'customer_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'shipping_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'dispatched_at'  => ['sometimes', 'nullable', 'date'],
+            'finalised_at'  => ['sometimes', 'nullable', 'date'],
         ];
 
         if (!$this->strict) {

@@ -4,7 +4,7 @@ import LoginPassword from '@/Components/Auth/LoginPassword.vue'
 import Checkbox from '@/Components/Checkbox.vue'
 import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
-import { onMounted, ref, nextTick } from 'vue'
+import { onMounted, ref, nextTick, provide, inject } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import RetinaShowIris from '@/Layouts/RetinaShowIris.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
@@ -14,6 +14,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
 import Modal from '@/Components/Utils/Modal.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
 defineOptions({ layout: RetinaShowIris })
 
@@ -27,7 +28,9 @@ const form = useForm({
     password: '',
     remember: false,
 })
-
+const layout = inject('layout', retinaLayoutStructure)
+const isOpenMenuMobile = ref(false)
+provide('isOpenMenuMobile', isOpenMenuMobile)
 
 const isLoading = ref(false)
 
@@ -101,10 +104,10 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                 <LoadingIcon class="text-4xl" />
             </div>
 
-            <div class="border border-gray-300 p-5 rounded mb-4 ">
-                <p>Hey, as you notice we just got a brand new system for our website.</p>
-                <p class="py-3">You can log in with your old username and password or use your google account to login (if the emails match).</p>
-                <p>if the password is not working, you can reset it from the forgot password page and all will be ok.</p>
+            <div v-if="layout.retina.type !== 'b2b'" class="border border-gray-300 p-5 rounded mb-4 ">
+                <p>  {{ trans('Hey, as you notice we just got a brand new system for our website.') }} </p>
+                <p class="py-3"> {{ trans('You can log in with your old username and password or use your google account to login (if the emails match)') }}.</p>
+                <p>{{ trans(' if the password is not working, you can reset it from the forgot password page and all will be ok.') }}</p>
             </div>
 
 
@@ -152,7 +155,6 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
                 <!-- Submit Button -->
                 <div class="w-full">
-                    <!-- <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" :type="'tertiary'" :class="'!bg-[#C1A027] !text-white'" /> -->
                     <button
                         @click.prevent="submit"
                         class="w-full relative flex items-center justify-center gap-2 bg-[#1D252E] disabled:bg-[#393e49] text-white disabled:text-gray-300 hover:bg-black font-normal border border-[#1D252E] rounded-sm px-16 py-2 cursor-pointer transition duration-75 ease-in-out"
@@ -190,7 +192,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                 <!-- Registration Link -->
                 <div class="border-t border-gray-200 flex justify-center items-center mt-2 pt-4">
                     <p class="text-sm text-gray-500">
-                        {{ trans("Don\'t have an account") }}?
+                        {{ trans("Don't have an account") }}?
                         <Link :href="route('retina.register')"
                             class="  font-medium hover:underline transition duration-150 ease-in-out ml-1">
                             {{ trans("Register here") }}

@@ -32,6 +32,7 @@ import { layoutStructure } from '@/Composables/useLayoutStructure'
 import TableBetweenFilter from '@/Components/Table/TableBetweenFilter.vue'
 import TableRadioFilter from './TableRadioFilter.vue'
 import TableDateInterval from './TableDateInterval.vue'
+import Icon from '../Icon.vue'
 library.add(faCheckSquare, faCheck, faSquare, faMinusSquare, fasCheckSquare, faWatchCalculator,faYinYang)
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -746,6 +747,14 @@ const isLoading = ref<string | boolean>(false)
             :class="{ 'opacity-75': isVisiting || isParentLoading }">
             <div class="py-2 sm:py-0 my-0">
                 <!-- Wrapper -->
+                 
+                <!-- Filter: Checkbox element -->
+                <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-full border-b border-gray-300">
+                    <TableElements :elements="queryBuilderProps.elementGroups"
+                        @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
+                        :tableName="props.name" />
+                </div>
+
                 <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4">
 
                     <!-- Left Section: Records, Model Operations, MO Bulk, Search -->
@@ -854,12 +863,6 @@ const isLoading = ref<string | boolean>(false)
                                 :tableName="props.name" />
                         </div>
 
-                        <!-- Filter: Checkbox element -->
-                        <div v-if="Object.keys(queryBuilderProps?.elementGroups || [])?.length" class="w-fit">
-                            <TableElements :elements="queryBuilderProps.elementGroups"
-                                @checkboxChanged="(data) => queryBuilderData.elementFilter = data"
-                                :tableName="props.name" />
-                        </div>
 
                         <!-- Filter: Radio element -->
                         <div v-if="queryBuilderProps.radioFilter?.radio" class="w-fit">
@@ -1036,6 +1039,13 @@ const isLoading = ref<string | boolean>(false)
                                                         <span class="whitespace-nowrap">{{
                                                             useFormatTime(item[column.key], { formatTime: 'hms' })
                                                             }}</span>
+                                                    </template>
+                                                    <template v-else-if="column.type === 'icon'">
+                                                        <Icon
+                                                            v-if="item[column.key]?.icon"
+                                                            :data="item[column.key]"
+                                                        />
+                                                        <FontAwesomeIcon v-else :icon="item[column.key]" class="" fixed-width aria-hidden="true" />
                                                     </template>
                                                     <template v-else>
                                                         {{ item[column.key] }}

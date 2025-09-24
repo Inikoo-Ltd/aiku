@@ -20,8 +20,10 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Catalogue\ShopResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\SerialReference;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
@@ -49,6 +51,10 @@ class UpdateShop extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Shop
     {
+        if(Arr::has($modelData, 'invoice_serial_references')){
+            $shop=$this->updateInvoiceSerialReferences($shop,Arr::pull($modelData, 'invoice_serial_references'));
+        }
+
         $oldMasterShop = $shop->masterShop;
 
         if (Arr::exists($modelData, 'address')) {
@@ -144,10 +150,45 @@ class UpdateShop extends OrgAction
         return $shop;
     }
 
+    public function updateInvoiceSerialReferences(Shop $shop , array $modelData):Shop
+    {
+
+        $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
+            ->where('container_type', 'Shop')
+            ->where('container_id', $shop->id)->first();
+
+        $invoiceSerialReference->updateQuietly(
+        [
+            'format' => $modelData['stand_alone_invoice_numbers_format'],
+            'serial' => $modelData['stand_alone_invoice_numbers_serial'],
+        ]);
+
+
+        $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
+            ->where('container_type', 'Shop')
+            ->where('container_id', $shop->id)->first();
+
+        $refundSerialReference->updateQuietly(
+            [
+                'format' => $modelData['stand_alone_refund_numbers_format'],
+                'serial' => $modelData['stand_alone_refund_numbers_serial'],
+            ]);
+
+        $settings=$shop->settings;
+        data_set($settings,'invoicing.stand_alone_invoice_numbers',$modelData['stand_alone_invoice_numbers']);
+        data_set($settings,'invoicing.stand_alone_refund_numbers',$modelData['stand_alone_refund_numbers']);
+
+        $shop->updateQuietly([
+            'settings' => $settings,
+        ]);
+        $shop->refresh();
+        return $shop;
+    }
 
     public function rules(): array
     {
         $rules = [
+            'invoice_serial_references'   => ['sometimes', 'array'],
             'registration_needs_approval' => ['sometimes', 'boolean'],
             'stand_alone_invoice_numbers' => ['sometimes', 'boolean'],
             'master_shop_id'              => [
@@ -157,8 +198,8 @@ class UpdateShop extends OrgAction
 
             ],
 
-            'name'                     => ['sometimes', 'required', 'string', 'max:255'],
-            'code'                     => [
+            'name'                         => ['sometimes', 'required', 'string', 'max:255'],
+            'code'                         => [
                 'sometimes',
                 'required',
                 'max:8',
@@ -177,35 +218,39 @@ class UpdateShop extends OrgAction
                 ),
 
             ],
-            'contact_name'             => ['sometimes', 'nullable', 'string', 'max:255'],
-            'company_name'             => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'                    => ['sometimes', 'nullable', 'email'],
-            'phone'                    => ['sometimes', 'nullable'],
-            'identity_document_number' => ['sometimes', 'nullable', 'string'],
-            'identity_document_type'   => ['sometimes', 'nullable', 'string'],
-            'type'                     => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
-            'currency_id'              => ['sometimes', 'required', 'exists:currencies,id'],
-            'country_id'               => ['sometimes', 'required', 'exists:countries,id'],
-            'language_id'              => ['sometimes', 'required', 'exists:languages,id'],
-            'timezone_id'              => ['sometimes', 'required', 'exists:timezones,id'],
-            'address'                  => ['sometimes', 'required', new ValidAddress()],
-            'collection_address'       => ['sometimes', 'required', new ValidAddress()],
-            'state'                    => ['sometimes', Rule::enum(ShopStateEnum::class)],
-            'shopify_shop_name'        => ['sometimes', 'string'],
-            'shopify_api_key'          => ['sometimes', 'string'],
-            'shopify_api_secret'       => ['sometimes', 'string'],
-            'shopify_access_token'     => ['sometimes', 'string'],
-            'registration_number'      => ['sometimes', 'string'],
-            'vat_number'               => ['sometimes', 'string'],
-            'required_approval'        => ['sometimes', 'boolean'],
-            'invoice_footer'           => ['sometimes', 'string', 'max:10000'],
-            'image'                    => [
+            'contact_name'                 => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_name'                 => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email'                        => ['sometimes', 'nullable', 'email'],
+            'phone'                        => ['sometimes', 'nullable'],
+            'identity_document_number'     => ['sometimes', 'nullable', 'string'],
+            'identity_document_type'       => ['sometimes', 'nullable', 'string'],
+            'type'                         => ['sometimes', 'required', Rule::enum(ShopTypeEnum::class)],
+            'currency_id'                  => ['sometimes', 'required', 'exists:currencies,id'],
+            'country_id'                   => ['sometimes', 'required', 'exists:countries,id'],
+            'language_id'                  => ['sometimes', 'required', 'exists:languages,id'],
+            'timezone_id'                  => ['sometimes', 'required', 'exists:timezones,id'],
+            'address'                      => ['sometimes', 'required', new ValidAddress()],
+            'collection_address'           => ['sometimes', 'required', new ValidAddress()],
+            'state'                        => ['sometimes', Rule::enum(ShopStateEnum::class)],
+            'shopify_shop_name'            => ['sometimes', 'string'],
+            'shopify_api_key'              => ['sometimes', 'string'],
+            'shopify_api_secret'           => ['sometimes', 'string'],
+            'shopify_access_token'         => ['sometimes', 'string'],
+            'registration_number'          => ['sometimes', 'string'],
+            'vat_number'                   => ['sometimes', 'string'],
+            'required_approval'            => ['sometimes', 'boolean'],
+            'invoice_footer'               => ['sometimes', 'string', 'max:10000'],
+            'cost_price_ratio'             => ['sometimes', 'numeric', 'min:0'],
+            'price_rrp_ratio'              => ['sometimes', 'numeric', 'min:0'],
+            'extra_languages'              => ['sometimes', 'array', 'nullable'],
+            'forbidden_dispatch_countries' => ['sometimes', 'array', 'nullable'],
+            'image'                        => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'colour'                   => ['sometimes', 'string'],
+            'colour'                       => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {

@@ -12,8 +12,6 @@ import { faExclamationTriangle } from "@far"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
-
-import customerSalesChannel from "@/Pages/Grp/Org/Dropshipping/CustomerSalesChannel.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faUndoAlt, faTrashAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -29,78 +27,95 @@ const confirm = useConfirm()
 const deletingId = ref<number | null>(null)
 
 function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
-
-    switch (route().current()) {
-        case "grp.org.shops.show.crm.platforms.show":
-            return route("grp.org.shops.show.crm.platforms.show.customer_sales_channels.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).platform,
-                    customerSalesChannel.slug]
-            )
-            break
-        default:
-            return route("grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug]
-            )
+    const current = route().current()
+    if (current === "grp.org.shops.show.crm.platforms.show") {
+        return route(
+            "grp.org.shops.show.crm.platforms.show.customer_sales_channels.show",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                (route().params as RouteParams).platform,
+                customerSalesChannel.slug
+            ]
+        )
     }
+    return route(
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            (route().params as RouteParams).customer,
+            customerSalesChannel.slug
+        ]
+    )
+}
+
+function customerRoute(customerSalesChannel: CustomerSalesChannel) {
+    // Both branches return the same route; simplify to a single return.
+    return route(
+        "grp.org.shops.show.crm.customers.show",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            customerSalesChannel.customer_slug
+        ]
+    )
 }
 
 function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
-    switch (route().current()) {
-        case "grp.org.shops.show.crm.platforms.show":
-            return ""
-
-        default:
-            return route(
-                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug])
+    const current = route().current()
+    if (current === "grp.org.shops.show.crm.platforms.show") {
+        return route(
+            "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
+            [
+                (route().params as RouteParams).organisation,
+                (route().params as RouteParams).shop,
+                customerSalesChannel.customer_slug,
+                customerSalesChannel.slug
+            ]
+        )
     }
-
-
+    return route(
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            (route().params as RouteParams).customer,
+            customerSalesChannel.slug
+        ]
+    )
 }
 
 function clientsRoute(customerSalesChannel: CustomerSalesChannel) {
-    switch (route().current()) {
-        case "grp.org.shops.show.crm.platforms.show":
-            return ""
-
-        default:
-            return route(
-                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug])
+    const current = route().current()
+    if (current === "grp.org.shops.show.crm.platforms.show") {
+        return ""
     }
-
+    return route(
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            (route().params as RouteParams).customer,
+            customerSalesChannel.slug
+        ]
+    )
 }
 
 function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
-    switch (route().current()) {
-        case "grp.org.shops.show.crm.platforms.show":
-            return ""
-
-        default:
-            return route(
-                "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index",
-                [
-                    (route().params as RouteParams).organisation,
-                    (route().params as RouteParams).shop,
-                    (route().params as RouteParams).customer,
-                    customerSalesChannel.slug])
+    const current = route().current()
+    if (current === "grp.org.shops.show.crm.platforms.show") {
+        return ""
     }
-
+    return route(
+        "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index",
+        [
+            (route().params as RouteParams).organisation,
+            (route().params as RouteParams).shop,
+            (route().params as RouteParams).customer,
+            customerSalesChannel.slug
+        ]
+    )
 }
 
 
@@ -144,9 +159,16 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         <template #cell(name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
                 <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image"
-                     :alt="customerSalesChannel.platform_name" class="w-6 h-6" />
+                     :alt="customerSalesChannel.platform_name" class="w-6 h-6"/>
                 <Link :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">
                     {{ customerSalesChannel.name || customerSalesChannel.reference }}
+                </Link>
+            </div>
+        </template>
+        <template #cell(customer_company_name)="{ item: customerSalesChannel }">
+            <div class="flex items-center gap-2">
+                <Link :href="(customerRoute(customerSalesChannel) as string)" class="primaryLink">
+                    {{ customerSalesChannel.customer_company_name }}
                 </Link>
             </div>
         </template>
@@ -155,16 +177,23 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
 
             <template v-if="item.status==='open'">
                 <template v-if="item.platform_code=='manual'">
-                    <FontAwesomeIcon v-tooltip="trans('Web/Api channel active')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-tooltip="trans('Web/Api channel active')" icon="fal fa-check"
+                                     class="text-green-500" fixed-width aria-hidden="true"/>
 
                 </template>
                 <template v-else>
-                    <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="trans('App installed ok')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else v-tooltip="trans('Broken channel delete it and create new one')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
-                    <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="trans('App installed ok')"
+                                     icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true"/>
+                    <FontAwesomeIcon v-else v-tooltip="trans('Broken channel delete it and create new one')"
+                                     icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true"/>
+                    <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')"
+                                     icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true"/>
+                    <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times"
+                                     class="text-red-500" fixed-width aria-hidden="true"/>
+                    <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')"
+                                     icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true"/>
+                    <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times"
+                                     class="text-red-500" fixed-width aria-hidden="true"/>
                 </template>
             </template>
             <template v-else>
@@ -173,18 +202,30 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         </template>
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
+
             <Link :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
-                <span v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0" 
-                    >
+
+                <span v-if="customerSalesChannel.platform_type=='manual'">
+                       {{ customerSalesChannel.number_portfolios }}
+                </span>
+                <template v-else>
+                      <span
+                          v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0"
+                      >
                     {{ customerSalesChannel.number_portfolios }}
                 </span>
-                <span v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios" 
-                    class="text-red-500">
+                    <span
+                        v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios"
+                        class="text-red-500">
                     {{ customerSalesChannel.number_portfolio_broken }}
                 </span>
-                <span v-else>
-                    <span class="text-red-500">{{ customerSalesChannel.number_portfolio_broken }}</span>/{{ customerSalesChannel.number_portfolios }}
+                    <span v-else>
+                    <span class="text-red-500">{{
+                            customerSalesChannel.number_portfolio_broken
+                        }}</span>/{{ customerSalesChannel.number_portfolios }}
                 </span>
+                </template>
+
             </Link>
         </template>
 
@@ -220,7 +261,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                 </ModalConfirmationDelete>
 
                 <Button v-if="!item.platform_status" type="negative" :label="trans('Delete')" :icon="faTrashAlt"
-                        @click="(event) => confirmDelete(event, item)" />
+                        @click="(event) => confirmDelete(event, item)"/>
             </div>
         </template>
     </Table>
@@ -228,7 +269,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
 
     <ConfirmPopup>
         <template #icon>
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500"/>
         </template>
     </ConfirmPopup>
 </template>

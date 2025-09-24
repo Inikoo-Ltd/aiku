@@ -22,7 +22,6 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -237,10 +236,8 @@ class ShowOrder extends OrgAction
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
-        $readonly = true;
-        if ($platform->type == PlatformTypeEnum::MANUAL) {
-            $readonly = false;
-        }
+        $readonly = false;
+
 
         return Inertia::render(
             'Org/Ordering/Order',
@@ -277,26 +274,39 @@ class ShowOrder extends OrgAction
                     'navigation' => OrderTabsEnum::navigation()
                 ],
                 'routes'      => [
-                    'updateOrderRoute' => [
+                    'modify'   => [
+                                'name' => 'grp.models.order.modification.save',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
+                    'updateOrderRoute'  => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.update',
                         'parameters' => [
                             'order' => $order->id,
                         ]
                     ],
-                    'products_list'    => [
+                    'rollback_dispatch' => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.order.rollback_dispatch',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
+                    'products_list'     => [
                         'name'       => 'grp.json.order.products',
                         'parameters' => [
                             'order' => $order->id
                         ]
                     ],
-                    'delivery_note'    => $deliveryNoteRoute
+                    'delivery_note'     => $deliveryNoteRoute
                 ],
 
                 'notes'                       => $this->getOrderNotes($order),
                 'timelines'                   => $finalTimeline,
                 'readonly'                    => $readonly,
-                'delivery_address_management' => $this->shop->type == ShopTypeEnum::DROPSHIPPING ? GetDropshippingOrderDeliveryAddressManagement::run(order: $order) : GetOrderAddressManagement::run(order: $order),
+                'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
 
                 'box_stats'     => $this->getOrderBoxStats($order),
                 'currency'      => CurrencyResource::make($order->currency)->toArray(request()),
@@ -562,6 +572,24 @@ class ShowOrder extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show'
+            => array_merge(
+                (new ShowCustomerClient())->getBreadcrumbs($this->customerSalesChannel, 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show', $routeParameters),
+                $headCrumb(
+                    $order,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index',
+                            'parameters' => Arr::except($routeParameters, ['order'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show',
                             'parameters' => $routeParameters
                         ]
                     ],

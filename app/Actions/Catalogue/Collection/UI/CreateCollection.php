@@ -122,6 +122,17 @@ class CreateCollection extends OrgAction
         return $this->handle($subDepartment, $request);
     }
 
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): Response
+    {
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($subDepartment, $request);
+    }
+
+
+
     public function getBreadcrumbs(Shop|ProductCategory $parent, string $routeName, array $routeParameters): array
     {
         $label = __('Creating collection');
@@ -145,6 +156,21 @@ class CreateCollection extends OrgAction
                 IndexCollectionsInProductCategory::make()->getBreadcrumbs(
                     $parent,
                     'grp.org.shops.show.catalogue.departments.show.collection.index',
+                    $routeParameters,
+                ),
+                [
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => $label,
+                        ]
+                    ]
+                ]
+            ),
+            'grp.org.shops.show.catalogue.sub_departments.show.collection.create' => array_merge(
+                IndexCollectionsInProductCategory::make()->getBreadcrumbs(
+                    $parent,
+                    'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
                     $routeParameters,
                 ),
                 [

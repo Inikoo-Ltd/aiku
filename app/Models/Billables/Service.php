@@ -71,7 +71,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Service withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Service withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Service withoutTrashed()
  * @mixin \Eloquent
  */

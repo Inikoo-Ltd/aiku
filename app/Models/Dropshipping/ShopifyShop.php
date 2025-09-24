@@ -11,8 +11,6 @@ namespace App\Models\Dropshipping;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyShop newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyShop newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopifyShop query()

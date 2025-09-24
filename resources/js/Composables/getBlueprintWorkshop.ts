@@ -1,5 +1,3 @@
-import type { Component } from "vue"
-
 import Footer1Blueprint from "@/Components/CMS/Website/Footers/footerTheme1/bluprint"
 import Topbar1Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar1/Blueprint"
 import Topbar2Blueprint from "@/Components/CMS/Website/TopBars/Template/Topbar2/Blueprint"
@@ -29,20 +27,23 @@ import Button from "@/Components/CMS/Webpage/Button/Blueprint"
 import ColumnLayout2Blueprint from "@/Components/CMS/Webpage/Column/Blueprint"
 import DisclosureBlueprint from "@/Components/CMS/Webpage/Disclosure/Blueprint"
 import FamilyBluprint from "@/Components/CMS/Webpage/Family-1/Blueprint"
-import DepartementBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
+import DepartmentBlueprint from "@/Components/CMS/Webpage/Department1/Blueprint"
 import Timeline2Bluprint from "@/Components/CMS/Webpage/Step1/Blueprint"
 import Carousel1Blueprint from "@/Components/CMS/Webpage/Carousel-1/Blueprint"
-import SubDepartement1Blueprint from "@/Components/CMS/Webpage/SubDepartement1/Blueprint"
+import SubDepartment1Blueprint from "@/Components/CMS/Webpage/SubDepartment1/Blueprint"
 import Product1Blueprint from "@/Components/CMS/Webpage/Product1/Blueprint"
 import ProductsList1Blueprint from '@/Components/CMS/Webpage/Products1/Blueprint'
 import VideoBlueprint from '@/Components/CMS/Webpage/Video/Blueprint'
 import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
-import Product1Workshop from "@/Components/CMS/Webpage/Product1/Blueprint"
+import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
 
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
+import { blueprint as LuigiTrends1Blueprint  } from "@/Components/CMS/Webpage/LuigiTrends1/Blueprint"
+import { blueprint as LuigiLastSeen1  } from "@/Components/CMS/Webpage/LuigiLastSeen1/Blueprint"
+import { blueprint as LuigiItemAlternatives1  } from "@/Components/CMS/Webpage/LuigiItemAlternatives1/Blueprint"
 
 
 export const getBlueprint = (componentName: string, data?: object) => {
@@ -63,17 +64,17 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"footer-1": Footer1Blueprint.blueprint,
 
 		// departments
-		"departments": DepartementBlueprint.blueprint,
-		"department-1": DepartementBlueprint.blueprint,
+		"departments": DepartmentBlueprint.blueprint,
+		"department-1": DepartmentBlueprint.blueprint,
 
 		// sub-department
-		"sub-departments-1": SubDepartement1Blueprint.blueprint,
+		"sub-departments-1": SubDepartment1Blueprint.blueprint,
 
 		// family
 		"family-1": FamilyBluprint.blueprint,
 
 		// families list
-		"families-1": FamilyBluprint.blueprint,
+		"families-1": Families1Blueprint.blueprint,
 
 		// products list
 		"products-1": ProductsList1Blueprint.blueprint,
@@ -83,6 +84,11 @@ export const getBlueprint = (componentName: string, data?: object) => {
 
 		// see also — accepts dynamic data
 		"see-also-1": () => SeeAlso1Blueprint(data).blueprint,
+
+		// Luigi
+		"luigi-trends-1": () => LuigiTrends1Blueprint(data).blueprint,
+		"luigi-last-seen-1": () => LuigiLastSeen1(data).blueprint,
+		"luigi-item-alternatives-1": () => LuigiItemAlternatives1(data).blueprint,
 
 		// misc
 		"banner": WowsbarBannerBlueprint.blueprint,
@@ -116,23 +122,6 @@ export const getBlueprint = (componentName: string, data?: object) => {
 	const blueprint = components[componentName]
 	return typeof blueprint === 'function' ? blueprint() : blueprint ?? []
 }
-
-/* export const getBluprintPermissions = (componentName: string) => {
-	const components: Component = {
-		"departments": false,
-		"family-1": false,
-		"families-1": false,
-		"product": false,
-		"product-1": false,
-		"family": false,
-		"families": false,
-		"sub-departments-1": false,
-		"department-1": false,
-		"products-1": false,
-	}
-	return components[componentName] ?? true
-} */
-
 
 type PermissionData = {
   permissions?: string[]

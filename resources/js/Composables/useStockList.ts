@@ -42,7 +42,7 @@ export const useHeadlineText = () => {
     ]
 }
 
-// 0-1: Main Layout (bg & text color)
+// 0-1: Main Layout (primary bg & primary text color)
 // 2-3: Navigation and box (bg & text color)
 // 4-5: Button and mini-box (bg & text color)
 // 6-7: SecondaryLink bg and text

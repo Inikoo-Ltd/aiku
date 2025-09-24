@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import MobileMenu from '@/Components/MobileMenu.vue'
+import IrisSidebarMenu from '@/Components/IrisSidebarMenu.vue'
 import { getStyles } from "@/Composables/styles";
 import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
-import { inject } from 'vue';
+import { inject, watch, ref, onMounted } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
 import { faBaby, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
@@ -33,6 +33,8 @@ import {
 import { faLambda } from "@fad";
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { checkScreenType } from '@/Composables/useWindowSize'
+import { computed } from 'vue'
 
 // Add icons to the library
 library.add(
@@ -53,19 +55,127 @@ const props = defineProps<{
         }
     },
     menuData: Object
+    productCategories : Array<any>
     screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
+console.log('-- Header data', props)
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
+const sidebarMenu = inject('sidebarMenu', null) // come from layout PreviewLayout
+const computedSelectedSidebarData = computed(() => {
+    return sidebarMenu?.value || layout.iris?.sidebar
+})
 
+const convertToDepartmentStructure = (menusData) => {
+    const dataArray = Array.isArray(menusData) ? menusData : [menusData];
+
+    // Regex untuk menghapus awalan http:// atau https://
+    const removeProtocol = url => {
+        if (!url || typeof url !== 'string') return null;
+        return url.replace(/^https?:\/\//, '');
+    };
+
+    return dataArray.map(menu => {
+        const mainLinkHref = menu?.link?.href;
+        const mainLinkTarget = menu?.link?.type;
+
+        const departmentStructure = {
+            url: removeProtocol(mainLinkHref),
+            name: menu?.label || null,
+            type: mainLinkTarget || null,
+            sub_departments: []
+        };
+
+        if (Array.isArray(menu?.subnavs)) {
+            menu.subnavs.forEach(subnav => {
+                const subLinkHref = subnav?.link?.href;
+                const subLinkTarget = subnav?.link?.type;
+
+                const subDepartment = {
+                    url: removeProtocol(subLinkHref),
+                    name: subnav?.title || null,
+                    type: subLinkTarget || null,
+                    families: []
+                };
+
+                if (Array.isArray(subnav?.links)) {
+                    subnav.links.forEach(link => {
+                        const linkHref = link?.link?.href;
+                        const linkTarget = link?.link?.type;
+
+                        const family = {
+                            url: removeProtocol(linkHref),
+                            name: link?.label || null,
+                            type: linkTarget || null
+                        };
+
+                        subDepartment.families.push(family);
+                    });
+                }
+
+                departmentStructure.sub_departments.push(subDepartment);
+            });
+        }
+
+        return departmentStructure;
+    });
+}
+
+const customMenusBottom = ref([]); // Create a reactive ref to hold the bottom navigation
+const customMenusTop = ref([]); // Create a reactive ref to hold the top navigation
+
+watch(computedSelectedSidebarData,
+    (newValue) => {
+        if (newValue) {
+            const navigationBottomData = newValue?.data?.fieldValue?.navigation_bottom;
+            const navigationData = newValue?.data?.fieldValue?.navigation;
+            
+            // console.log('navigationBottomData', navigationBottomData);
+            // Process navigation_bottom data
+            if (navigationBottomData) {
+                const convertedBottom = convertToDepartmentStructure(navigationBottomData);
+                customMenusBottom.value = [...convertedBottom];
+                // console.log('Bottom menu data:', convertedBottom);
+            } else {
+                customMenusBottom.value = [];
+            }
+            // console.log('navigationData 111', customMenusBottom.value);
+            
+            // Process navigation data
+            if (navigationData) {
+                const convertedTop = convertToDepartmentStructure(navigationData);
+                customMenusTop.value = [...convertedTop];
+            } else {
+                customMenusTop.value = [];
+            }
+        } else {
+            customMenusBottom.value = []; // Handle the case where newValue is null or undefined
+            customMenusTop.value = [];
+        }
+    },
+    { immediate: true, deep: true } // Add options for immediate and deep watching
+);
+
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+
+onMounted(() => {
+    screenType.value = checkScreenType()
+})
 </script>
 
 <template>
     <div class="block md:hidden p-3">
         <div class="flex justify-between items-center">
             <!-- Section: Hamburger mobile -->
-            <MobileMenu :header="headerData" :menu="menuData" />
+            <IrisSidebarMenu
+                :header="headerData"
+                :menu="menuData"
+                :productCategories="productCategories"
+                :custom-menus-bottom="customMenusBottom"
+                :custom-menus-top="customMenusTop"
+                :screenType
+            />
 
             <!-- Section: Logo  -->
             <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">

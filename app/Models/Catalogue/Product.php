@@ -19,8 +19,10 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Currency;
+use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
+use App\Models\Masters\MasterAsset;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
@@ -47,8 +49,6 @@ use Spatie\Sluggable\SlugOptions;
 use Spatie\Translatable\HasTranslations;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -142,9 +142,31 @@ use Spatie\Translatable\HasTranslations;
  * @property array<array-key, mixed>|null $description_title_i8n
  * @property array<array-key, mixed>|null $description_extra_i8n
  * @property bool $is_single_trade_unit Indicates if the product has a single trade unit
+ * @property int|null $master_product_id
+ * @property string|null $mark_for_discontinued_at
+ * @property string|null $discontinued_at
+ * @property string|null $cost_price_ratio
+ * @property int|null $lifestyle_image_id
+ * @property bool|null $bucket_images images following the buckets
+ * @property int|null $art1_image_id
+ * @property int|null $art2_image_id
+ * @property int|null $art3_image_id
+ * @property int|null $art4_image_id
+ * @property int|null $art5_image_id
+ * @property bool|null $is_name_reviewed
+ * @property bool|null $is_description_title_reviewed
+ * @property bool|null $is_description_reviewed
+ * @property bool|null $is_description_extra_reviewed
+ * @property-read Media|null $art1Image
+ * @property-read Media|null $art2Image
+ * @property-read Media|null $art3Image
+ * @property-read Media|null $art4Image
+ * @property-read Media|null $art5Image
  * @property-read \App\Models\Catalogue\Asset|null $asset
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read Media|null $backImage
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
+ * @property-read Media|null $bottomImage
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
@@ -154,21 +176,29 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Customer|null $exclusiveForCustomer
  * @property-read \App\Models\Catalogue\ProductCategory|null $family
  * @property-read LaravelCollection<int, Favourite> $favourites
+ * @property-read Media|null $frontImage
  * @property-read Group $group
  * @property-read \App\Models\Catalogue\HistoricAsset|null $historicAsset
  * @property-read LaravelCollection<int, \App\Models\Catalogue\HistoricAsset> $historicAssets
- * @property-read \App\Models\Helpers\Media|null $image
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
+ * @property-read Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
+ * @property-read Media|null $leftImage
+ * @property-read Media|null $lifestyleImage
  * @property-read Product|null $mainProduct
- * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read MasterAsset|null $masterProduct
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read LaravelCollection<int, OrgStock> $orgStocks
  * @property-read Organisation $organisation
  * @property-read LaravelCollection<int, Portfolio> $portfolios
  * @property-read LaravelCollection<int, Product> $productVariants
- * @property-read \App\Models\Helpers\Media|null $seoImage
+ * @property-read Media|null $rightImage
+ * @property-read Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
+ * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
+ * @property-read Media|null $threeQuarterImage
+ * @property-read Media|null $topImage
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
@@ -183,7 +213,7 @@ use Spatie\Translatable\HasTranslations;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereLocale(string $column, string $locale)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereLocales(string $column, array $locales)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product withoutTrashed()
  * @mixin \Eloquent
  */
@@ -381,5 +411,85 @@ class Product extends Model implements Auditable, HasMedia
     public function currency(): BelongsTo
     {
         return $this->belongsTo(Currency::class, 'currency_id');
+    }
+
+    public function masterProduct(): BelongsTo
+    {
+        return $this->belongsTo(MasterAsset::class, 'master_product_id');
+    }
+
+    public function getLuigiIdentity(): string
+    {
+        return $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->webpage?->website?->id . ':' . $this->webpage?->id;
+    }
+
+    public function frontImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'front_image_id');
+    }
+
+    public function threeQuarterImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', '34_image_id');
+    }
+
+    public function leftImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'left_image_id');
+    }
+
+    public function rightImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'right_image_id');
+    }
+
+    public function backImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'back_image_id');
+    }
+
+    public function topImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'top_image_id');
+    }
+
+    public function bottomImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'bottom_image_id');
+    }
+
+    public function sizeComparisonImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'size_comparison_image_id');
+    }
+
+    public function lifestyleImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'lifestyle_image_id');
+    }
+
+    public function art1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art1_image_id');
+    }
+
+    public function art2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art2_image_id');
+    }
+
+    public function art3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art3_image_id');
+    }
+
+    public function art4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art4_image_id');
+    }
+
+    public function art5Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art5_image_id');
     }
 }

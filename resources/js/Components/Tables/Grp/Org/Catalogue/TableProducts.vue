@@ -5,26 +5,31 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { Product } from "@/types/product";
 import Icon from "@/Components/Icon.vue";
 import { remove as loRemove } from "lodash-es";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faConciergeBell, faGarage, faExclamationTriangle, faPencil } from "@fal";
+import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faMinus, faSave } from "@fal";
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { onMounted, onUnmounted, ref, inject } from "vue";
-
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
 import { Invoice } from "@/types/invoice";
 import { RouteParams } from "@/types/route-params";
+import InputNumber from 'primevue/inputnumber';
+import ListItem from "@tiptap/extension-list-item";
+import { faCross, faPlus } from "@far";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
 
 
-library.add(faConciergeBell, faGarage, faExclamationTriangle, faPencil);
+library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil);
 
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string,
     routes: {
@@ -33,16 +38,83 @@ const props = defineProps<{
         detach: routeType
     },
     isCheckboxProducts?: boolean
+    master?: boolean
 }>()
 
 const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
 }>()
 
+const editingValues = ref<Record<number, { price: number; rrp: number }>>({})
+const editingBackup = ref<Record<number, any>>({})
+const onEditOpen = ref<number[]>([])
+const loadingSave = ref([])
+
+function onEdit(item) {
+    // backup original values
+    editingBackup.value[item.id] = { ...item }
+
+    // make a working copy
+    editingValues.value[item.id] = {
+        price: item.price,
+        rrp: item.rrp
+    }
+
+    if (!onEditOpen.value.includes(item.id)) {
+        onEditOpen.value.push(item.id)
+    }
+}
+
+function onSave(item) {
+    const updated = editingValues.value[item.id]
+
+    if (!updated) return
+
+    router.patch(
+        route('grp.models.product.update', { product: item.id }),
+        {
+            price: updated.price,
+            rrp: updated.rrp,
+        },
+        {
+            preserveScroll: true,
+            onStart: () => {
+                loadingSave.value.push(item.id)
+            },
+            onSuccess: () => {
+                // merge back into original item so the table updates immediately
+                Object.assign(item, updated)
+
+                // cleanup
+                loRemove(onEditOpen.value, (id) => id === item.id)
+                delete editingBackup.value[item.id]
+                delete editingValues.value[item.id]
+            },
+            onError: (errors) => {
+                console.error('Save failed', errors)
+            },
+            onFinish: () => {
+                loRemove(loadingSave.value, (id) => id === item.id)
+            }
+        }
+    )
+}
+
+function onCancel(item) {
+    if (editingBackup.value[item.id]) {
+        Object.assign(item, editingBackup.value[item.id])
+    }
+    loRemove(onEditOpen.value, (id) => id === item.id)
+    delete editingBackup.value[item.id]
+    delete editingValues.value[item.id]
+}
+
+
 function productRoute(product: Product) {
     if (!product.slug) {
         return ''
     }
+
     switch (route().current()) {
         case "grp.org.shops.show.catalogue.products.current_products.index":
             return route(
@@ -130,6 +202,29 @@ function productRoute(product: Product) {
                     (route().params as RouteParams).family,
                     product.slug
                 ]);
+        case "grp.org.shops.show.catalogue.sub_departments.show.products.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).subDepartment,
+                    product.slug
+                ]);
+        case "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index":
+            return route(
+                "grp.org.shops.show.catalogue.sub_departments.show.families.show.products.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
+                    (route().params as RouteParams).subDepartment,
+                    (route().params as RouteParams).family,
+                    product.slug
+                ]);
+        case "grp.masters.master_shops.show.master_collections.show":
+            return route(
+                "grp.masters.master_shops.show.master_products.show",
+                [(route().params as RouteParams).masterShop, product.slug])
 
         case "retina.dropshipping.products.index":
             return route(
@@ -143,11 +238,33 @@ function productRoute(product: Product) {
             return route(
                 "grp.org.shops.show.catalogue.products.current_products.show",
                 [product.organisation_slug, product.shop_slug, product.slug]);
+        /*  case "grp.masters.master_shops.show.master_families.master_products.show":
+             return route(
+                 "grp.org.shops.show.catalogue.products.current_products.show",
+                 [
+                     product.organisation_slug,
+                     product.shop_slug,
+                     product.slug
+                 ]); */
         default:
-            return '';
+            if (product.asset_id) {
+                return route(
+                    "grp.helpers.redirect_asset",
+                    [product.asset_id]);
+            } else return ''
+
     }
 }
 
+function masterProductRoute(product: {}) {
+    if (!product.master_product_id) {
+        return '';
+    }
+
+    return route(
+        "grp.helpers.redirect_master_product",
+        [product.master_product_id]);
+}
 
 function organisationRoute(invoice: Invoice) {
     if (!invoice.organisation_slug) {
@@ -161,10 +278,12 @@ function organisationRoute(invoice: Invoice) {
 
 function shopRoute(invoice: Invoice) {
     if (!invoice.organisation_slug || !invoice.shop_slug) {
-        return ''
+        return route(
+            "grp.helpers.redirect_asset",
+            [invoice.asset_id]);
     }
     if (route().current() == "grp.goods.trade-units.show") {
-        
+
         return route(
             "grp.org.shops.show.catalogue.products.all_products.index",
             [
@@ -174,7 +293,7 @@ function shopRoute(invoice: Invoice) {
     }
 
     return route(
-        "grp.org.shops.show.catalogue.products.current_products.index",
+        "grp.org.shops.show.catalogue.dashboard",
         [
             invoice.organisation_slug,
             invoice.shop_slug
@@ -185,6 +304,17 @@ function shopRoute(invoice: Invoice) {
 const onEditProduct = ref(false);
 
 const isLoadingDetach = ref<string[]>([]);
+
+
+function getMargin(item: ProductItem) {
+    const p = Number(item.product?.price);
+    const cost = Number(item.product?.org_cost);
+
+    if (isNaN(p) || p === 0) return 0.000;
+    if (isNaN(cost) || cost === 0) return 100.000;
+
+    return Number((((p - cost) / p) * 100).toFixed(1));
+}
 
 
 onMounted(() => {
@@ -203,24 +333,60 @@ const locale = inject("locale", aikuLocaleStructure);
 </script>
 
 <template>
-    <Table
-        :resource="data"
-        :name="tab"
-        class="mt-5"
-        :isCheckBox="isCheckboxProducts"
-        @onSelectRow="(item) => emits('selectedRow', item)"
-    >
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts"
+        @onSelectRow="(item) => emits('selectedRow', item)">
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
-                {{ refund["organisation_code"] }}
+            {{ refund["organisation_code"] }}
             </Link>
         </template>
         <template #cell(state)="{ item: product }">
             <Icon :data="product.state"></Icon>
         </template>
-        
+
         <template #cell(price)="{ item: product }">
-            {{ locale.currencyFormat(product.currency_code, product.price) }}
+            <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].price"
+                mode="currency" :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
+                inputClass="w-full text-xs">
+                <template #incrementbuttonicon>
+                    <FontAwesomeIcon :icon="faPlus" />
+                </template>
+                <template #decrementbuttonicon>
+                    <FontAwesomeIcon :icon="faMinus" />
+                </template>
+            </InputNumber>
+            <span v-else>
+                {{ locale.currencyFormat(product.currency_code, product.price) }}
+            </span>
+        </template>
+
+
+
+
+        <template #cell(rrp)="{ item: product }">
+            <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].rrp" mode="currency"
+                :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
+                inputClass="w-full text-xs">
+                <template #incrementbuttonicon>
+                    <FontAwesomeIcon :icon="faPlus" />
+                </template>
+                <template #decrementbuttonicon>
+                    <FontAwesomeIcon :icon="faMinus" />
+                </template>
+            </InputNumber>
+
+            <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
+        </template>
+
+
+        <template #cell(margin)="{ item }">
+            <span :class="{
+                'text-green-600 font-medium': getMargin(item) > 0,
+                'text-red-600 font-medium': getMargin(item) < 0,
+                'text-gray-500': getMargin(item) === 0
+            }" class="whitespace-nowrap text-xs inline-block w-16">
+                {{ getMargin(item) + '%' }}
+            </span>
         </template>
 
         <template #cell(sales_all)="{ item: product }">
@@ -228,14 +394,20 @@ const locale = inject("locale", aikuLocaleStructure);
         </template>
 
         <template #cell(code)="{ item: product }">
-            <Link :href="productRoute(product)" class="primaryLink">
+            <div class="whitespace-nowrap">
+                <Link :href="(masterProductRoute(product) as string)" v-tooltip="'Go to Master'" class="mr-1"
+                    :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
+                </Link>
+                <Link :href="productRoute(product)" class="primaryLink">
                 {{ product["code"] }}
-            </Link>
+                </Link>
+            </div>
         </template>
 
         <template #cell(shop_code)="{ item: product }">
             <Link v-if="product['shop_slug']" :href="(shopRoute(product) as string)" class="secondaryLink">
-                {{ product["shop_slug"] }}
+            {{ product["shop_code"] }}
             </Link>
         </template>
 
@@ -245,47 +417,47 @@ const locale = inject("locale", aikuLocaleStructure);
         </template>
 
         <template #cell(actions)="{ item }">
-            <Link
-                v-if="routes?.detach?.name"
-                as="button"
-                :href="route(routes.detach.name, routes.detach.parameters)"
-                :method="routes?.detach?.method"
-                :data="{
+            <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
+                :method="routes?.detach?.method" :data="{
                     product: item.id
-                }"
-                preserve-scroll
-                @start="() => isLoadingDetach.push('detach' + item.id)"
-                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)"
-            >
-                <Button
-                    icon="fal fa-times"
-                    type="negative"
-                    size="xs"
-                    :loading="isLoadingDetach.includes('detach' + item.id)"
-                />
+                }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
-            <Link
-                v-else="item?.delete_product?.name"
-                as="button"
+            <Link v-else-if="item?.delete_product?.name" as="button"
                 :href="route(item.delete_product.name, item.delete_product.parameters)"
-                :method="item?.delete_product?.method"
-                :data="{
+                :method="item?.delete_product?.method" :data="{
                     product: item.id
-                }"
-                preserve-scroll
-                @start="() => isLoadingDetach.push('detach' + item.id)"
-                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)"
-            >
-                <Button
-                    icon="fal fa-times"
-                    type="negative"
-                    size="xs"
-                    :loading="isLoadingDetach.includes('detach' + item.id)"
-                />
+                }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
+
+            <div v-if="master">
+                <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="onEdit(item)">
+                    <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"
+                        aria-hidden="true" v-tooltip="'edit'"/>
+                </button>
+
+                <span v-else class="flex items-center space-x-3">
+                    <Button type="negative" v-tooltip="'cancel'" :icon="faXmark" @click="onCancel(item)" size="sm">
+                    </Button>
+
+                    <button class="h-9 align-bottom text-center" :disabled="loadingSave.includes(item.id)"
+                        @click="onSave(item)" v-tooltip="'save'">
+                        <FontAwesomeIcon v-if="loadingSave.includes(item.id)" icon="fad fa-spinner-third"
+                            class="text-2xl animate-spin" fixed-width aria-hidden="true" />
+
+                        <FontAwesomeIcon v-else-if="editingValues[item.id]" icon="fad fa-save" class="h-8"
+                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+
+                        <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
+                    </button>
+                </span>
+            </div>
+
         </template>
-
-
     </Table>
 </template>
-

@@ -177,7 +177,7 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                         class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
-                @if($invoice->tax_number)
+                @if($invoice->tax_number  && $invoice->tax_number_valid)
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
                             class="address_value">{{ $invoice->tax_number }}</span>
@@ -283,8 +283,10 @@
             </td>
 
             <td style="text-align:left">
-                @if($transaction->historicAsset)
+                @if($transaction->quantity==0 || $transaction->quantity==null)
                     {{ $invoice->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
+                @elseif($transaction->historicAsset)
+                    {{ $invoice->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
                 @endif
             </td>
 
@@ -316,9 +318,13 @@
 
     <tr>
         <td style="border:none" colspan="4"></td>
-        <td class="totals">{{ __('TAX') }} <br> @if($invoice->tax_number)
-                <small>Valid tax number: {{ $invoice->tax_number }}</small>
-            @endif</td>
+        <td class="totals">
+            {{ __('Tax') }}
+
+            <br><small>{{$invoice->taxCategory->name}}
+             ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
+            </small>
+        </td>
         <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
     </tr>
 
@@ -331,6 +337,39 @@
 
 </table>
 
+<br>
+@if (!empty($refunds))
+    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+        <tr class="title">
+            <td colspan="6">{{ __('Refunds') }}</td>
+        </tr>
+
+        <tr class="title">
+            <td style="width:14%;text-align:left">{{ __('Code') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
+            <td style="text-align:left;width:20%">{{ __('Price') }}</td>
+            <td style="text-align:left">{{ __('Qty') }}</td>
+            <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
+        </tr>
+
+        <tbody>
+        @foreach($refunds as $refund)
+            <tr class="@if($loop->last) last @endif">
+                <td style="text-align:left">
+                    {{ $refund['code'] }}
+                </td>
+                <td style="text-align:left" colspan="2">
+                    {{ $refund['description'] }}
+                </td>
+                <td style="text-align:left">{{  $invoice->currency->symbol . $refund['price'] }}</td>
+                <td style="text-align:right">{{ $refund['quantity'] }}</td>
+                <td style="text-align:right">{{ $invoice->currency->symbol . $refund['total'] }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+
+    </table>
+@endif
 <br>
 
 @if($invoice->payments->count() >0)
@@ -383,11 +422,11 @@
             <td width="33%" style="color:#000;text-align: left;">
                 <small>
                     {{$shop->name}}<br>
-                    @if(Arr::exists($shop->data,'vat_number'))
-                        {{__('VAT Number')}}:<b>{{Arr::get($shop->data,'vat_number')}}</b><br>
+                    @if($shop->taxNumber)
+                        {{__('VAT Number')}}:<b>{{$shop->taxNumber?->getFormattedTaxNumber()}}</b><br>
                     @endif
-                    @if(Arr::exists($shop->data,'registration_number'))
-                        {{__('Registration Number')}}: {{Arr::get($shop->data,'registration_number')}}
+                    @if($shop->identity_document_number)
+                        {{__('Registration Number')}}: {{$shop->identity_document_number}}
                     @endif
                 </small>
             </td>

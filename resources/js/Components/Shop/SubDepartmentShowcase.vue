@@ -1,208 +1,156 @@
 <script setup lang="ts">
-import {trans} from 'laravel-vue-i18n'
-import {router} from '@inertiajs/vue3'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import {faUnlink, faThLarge, faBars, faSeedling, faCheck, faFolderTree} from "@fal"
-import {library} from "@fortawesome/fontawesome-svg-core"
-import {notify} from '@kyvg/vue3-notification'
-import {routeType} from '@/types/route'
-import {ref, provide} from 'vue'
-import EmptyState from '../Utils/EmptyState.vue'
-import Image from '../Image.vue'
-import {Image as ImageTS} from '@/types/Image'
-import {FontAwesomeIcon} from '@fortawesome/vue-fontawesome'
-import Icon from "@/Components/Icon.vue"
-import CollectionList from "@/Components/Departement&Family/CollectionList.vue"
+import { faUnlink, faThLarge, faBars, faSeedling, faCheck, faInfoCircle } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { routeType } from '@/types/route'
+import { ref, provide } from 'vue'
+import { Image as ImageTS } from '@/types/Image'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { trans } from "laravel-vue-i18n"
+import ProductCategoryCard from "../ProductCategoryCard.vue"
+import { Message } from "primevue"
+import { Link, router } from "@inertiajs/vue3";
+import MasterNavigation from "../Navigation/MasterNavigation.vue"
+import FormCreateMasterFamily from "../Master/FormCreateMasterFamily.vue"
+import ReviewContent from "../ReviewContent.vue"
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
-const props = defineProps<{
-    data: {
-        subDepartment: {
-            slug: string
-            image_id: ImageTS | string | null
-            code: string
-            name: string
-            state: string
-            created_at: string
-            updated_at: string
-        }
-
-        routes: {
-            detach_family: routeType,
-            attach_collections_route: routeType,
-            detach_collections_route: routeType
-        }
-        collections: {
-            data: {
-                id: number
+const props = withDefaults(
+    defineProps<{
+        data: {
+            translation_box: {
+                title: string
+                save_route: routeType
+            }
+            subDepartment: {
+                slug: string
+                image_id: ImageTS | string | null
+                code: string
                 name: string
-                description?: string
-                image?: ImageTS[]
-            }[]
-        },
-        routeList: {
-            collectionRoute: string,
-            collections_route: string
-        },
-        has_wepage?: boolean
-    }
-}>()
+                state: string
+                created_at: string
+                updated_at: string
+                description: string
+                description_title: string
+                description_extra: string
+            }
 
-const isLoadingDelete = ref<string[]>([])
-const isLoadingSubmit = ref(false)
-const unassignLoadingIds = ref<number[]>([])
+            routes: {
+                detach_family: routeType,
+                attach_collections_route: routeType,
+                detach_collections_route: routeType
+            }
+            collections: {
+                data: {
+                    id: number
+                    name: string
+                    description?: string
+                    image?: ImageTS[]
+                }[]
+            },
+            routeList: {
+                collectionRoute: string,
+                collections_route: string
+            },
+            has_wepage?: boolean
+            storeFamilyRoute: any
+            shopsData: any
+        },
+        isMaster: boolean
+    }>(), {
+        isMaster: false,
+    }
+)
+
 const isModalOpen = ref(false)
 provide('isModalOpen', isModalOpen)
 
-const onDetachFamily = (slug: string) => {
-    router.delete(
-        route(props.data.routes.detach_family.name, {
-            ...props.data.routes.detach_family.parameters,
-            family: slug
-        }),
-        {
-            onStart: () => isLoadingDelete.value.push(slug),
-            onFinish: () => {
-                isLoadingDelete.value = isLoadingDelete.value.filter(item => item !== slug)
-            },
-            preserveScroll: true,
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: "Family has been unlinked",
-                    type: "success",
-                })
-            }
-        }
-    )
+const navigateTo = () => {
+    let routeCurr = route().current();
+    let targetRoute;
+    let routeParams = route().params;
+    
+    switch (routeCurr) {
+        case "grp.masters.master_shops.show.master_departments.show.master_sub_departments.show":
+            targetRoute = route("grp.masters.master_shops.show.master_departments.show.master_sub_departments.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+        case "grp.masters.master_shops.show.master_sub_departments.show":
+            targetRoute = route("grp.masters.master_shops.show.master_sub_departments.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+        default:
+            targetRoute = route("grp.org.shops.show.catalogue.departments.show.sub_departments.edit", {
+                ...routeParams,
+                section: 1
+            });
+            break;
+    }
+    router.visit(targetRoute);
 }
 
-const assignCollection = async (collections: any[]) => {
-    const method = props.data.routes.attach_collections_route.method
-    const url = route(
-        props.data.routes.attach_collections_route.name,
-        props.data.routes.attach_collections_route.parameters
-    )
-    const collectionIds = collections.map((c) => c.id)
+const showDialog = ref<boolean>(false)
 
-    router[method](
-        url,
-        {collections: collectionIds},
-        {
-            onBefore: () => (isLoadingSubmit.value = true),
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong."),
-                    text: error?.products || trans("Failed to add collection."),
-                    type: "error",
-                })
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success!"),
-                    text: trans("Successfully added portfolios"),
-                    type: "success",
-                })
-                isModalOpen.value = false
-            },
-            onFinish: () => {
-                isLoadingSubmit.value = false
-            },
-        }
-    )
-}
-
-const UnassignCollection = async (id: number) => {
-    unassignLoadingIds.value.push(id)
-    const method = props.data.routes.detach_collections_route.method
-    const url = route(props.data.routes.detach_collections_route.name, {
-        ...props.data.routes.detach_collections_route.parameters,
-        collection: id,
-    })
-
-    router[method](
-        url,
-        {
-            onError: (error) => {
-                notify({
-                    title: trans("Something went wrong."),
-                    text: error?.products || trans("Failed to remove collection."),
-                    type: "error",
-                })
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success!"),
-                    text: trans("Collection has been removed."),
-                    type: "success",
-                })
-            },
-            onFinish: () => {
-                unassignLoadingIds.value = unassignLoadingIds.value.filter((x) => x !== id)
-            },
-        }
-    )
+const openFamilyModal = () => {
+    showDialog.value = true
 }
 </script>
 
 <template>
-    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
-        <!-- Grid Layout: SubDepartment + Collection List -->
-        <div class="grid grid-cols-1 lg:grid-cols-[5fr_2fr] gap-8">
-
-            <!-- Left: SubDepartment & Families -->
-            <div class="space-y-8">
-
-                <!-- SubDepartment Header -->
-                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-                    <div class="flex items-center gap-4">
-                        <div
-                            class="w-20 h-20 rounded-xl bg-gray-50 border border-gray-200 flex items-center justify-center overflow-hidden shadow-sm">
-                            <Image
-                                v-if="data.subDepartment?.image"
-                                :src="data.subDepartment?.image"
-                                :alt="data.subDepartment?.name"
-                                class="w-full h-full object-cover"
-                                imageCover
-                            />
-                            <FontAwesomeIcon
-                                v-else
-                                :icon="faFolderTree"
-                                class="w-10 h-10 text-gray-400"
-                            />
-                        </div>
-
-                        <div>
-                            <h1 class="text-2xl font-bold text-gray-800">{{ data.subDepartment.name }}</h1>
-                            <p class="text-sm text-gray-500">Code: {{ data.subDepartment.code }}</p>
-                            <p class="text-sm text-gray-500">
-                                Status:
-                                <span
-                                    class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium"
-                                    :class="{
-                    'bg-green-100 text-green-700': data.subDepartment.state === 'active',
-                    'bg-gray-100 text-gray-600': data.subDepartment.state !== 'active',
-                  }"
-                                >
-                  {{ data.subDepartment.state }}
+    <div class="px-4 pb-8 m-5">
+        <!-- Master Message -->
+        <div class="space-y-4">
+            <Message v-if="data.subDepartment?.url_master" severity="success" closable>
+                <template #icon>
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </template>
+                <span class="ml-2">
+                    {{ trans("Right now you follow") }}
+                    <Link :href="route(data.subDepartment.url_master.name, data.subDepartment.url_master.parameters)"
+                        class="underline font-bold">
+                    {{ trans("the master data") }}
+                    </Link>
                 </span>
-                            </p>
-                        </div>
+            </Message>
+            <Message
+                v-if="!data.subDepartment.description || !data.subDepartment.description_title || !data.subDepartment.description_extra"
+                severity="error" closable>
+                <template #icon>
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </template>
+                <div class="ml-2">
+                    <div class="flex gap-2 flex-wrap box-border">
+                        <span v-if="!data.subDepartment.description_title">{{ trans("Description Title is missing")
+                            }}.</span>
+                        <span v-if="!data.subDepartment.description">{{ trans("Description is missing") }}.</span>
+                        <span v-if="!data.subDepartment.description_extra">{{ trans("Extra description is missing")
+                            }}.</span>
                     </div>
-
-                    <div class="text-sm text-gray-400 sm:text-right">
-                        <p>Created at:</p>
-                        <p class="font-medium">{{ new Date(data.subDepartment.created_at).toLocaleDateString() }}</p>
-                    </div>
+                    {{ trans("Please") }}
+                    <Link @click="navigateTo()" class="underline font-bold">
+                    {{ trans("add missing description fields") }}
+                    </Link>.
                 </div>
-
-
-            </div>
-
-
+            </Message>
         </div>
-    </div>
-</template>
 
+         <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-8 gap-4 mt-4">
+            <div class="col-span-1 md:col-span-1 lg:col-span-2">
+                  <ProductCategoryCard :data="data.subDepartment" />
+            </div>
+            <div  class="md:col-start-7 md:col-end-9">
+                <MasterNavigation v-if="isMaster"
+                    sub-department-route="grp.masters.master_shops.show.master_departments.show.master_sub_departments.create"
+                    :families-event="openFamilyModal" isAddFamilies />
+                <ReviewContent v-else  :data="data.subDepartment"  />
+            </div>
+        </div>
+        
+    </div>
+    <FormCreateMasterFamily :showDialog="showDialog" :storeProductRoute="data.storeFamilyRoute"
+        @update:show-dialog="(value) => showDialog = value" :shopsData="data.shopsData" />
+</template>

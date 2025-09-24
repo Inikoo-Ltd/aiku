@@ -10,8 +10,14 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
@@ -51,6 +57,9 @@ class StoreProduct extends OrgAction
      */
     public function handle(Shop|ProductCategory $parent, array $modelData): Product
     {
+
+
+
         if (!Arr::has($modelData, 'unit_price')) {
             data_set($modelData, 'unit_price', Arr::get($modelData, 'price') / Arr::get($modelData, 'units', 1));
         }
@@ -81,16 +90,26 @@ class StoreProduct extends OrgAction
             }
         }
         data_set($modelData, 'currency_id', $shop->currency_id);
+        data_set($modelData, 'bucket_images', $this->strict);
 
+        if ($shop->language->code == 'en') {
+            data_set($modelData, 'is_name_reviewed', true);
+            data_set($modelData, 'is_description_title_reviewed', true);
+            data_set($modelData, 'is_description_reviewed', true);
+            data_set($modelData, 'is_description_extra_reviewed', true);
+        }
 
         $product = DB::transaction(function () use ($shop, $modelData, $orgStocks) {
             /** @var Product $product */
             $product = $shop->products()->create($modelData);
             $product = $this->syncOrgStocks($product, $orgStocks);
-            $product = $this->associateTradeUnits($product);
+            ProductHydrateTradeUnitsFields::run($product);
             $product = ModelHydrateSingleTradeUnits::run($product);
-
             $product = ProductHydrateForSale::run($product);
+            ProductHydrateGrossWeightFromTradeUnits::run($product);
+            ProductHydrateBarcodeFromTradeUnit::run($product);
+            ProductHydrateMarketingWeightFromTradeUnits::run($product);
+            ProductHydrateMarketingDimensionFromTradeUnits::run($product);
 
             if ($product->is_main) {
                 $product->updateQuietly([
@@ -101,8 +120,11 @@ class StoreProduct extends OrgAction
             $product->stats()->create();
             $product->refresh();
 
+            $product = $this->createAsset($product);
+            ProductHydrateAvailableQuantity::run($product);
+            $product->refresh();
 
-            return $this->createAsset($product);
+            return $product;
         });
 
         ProductHydrateProductVariants::dispatch($product->mainProduct)->delay($this->hydratorsDelay);
@@ -176,7 +198,7 @@ class StoreProduct extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'                      => [
+            'code'              => [
                 'required',
                 'max:32',
                 new AlphaDashDot(),
@@ -190,31 +212,34 @@ class StoreProduct extends OrgAction
                     ]
                 ),
             ],
-            'name'                      => ['required', 'max:250', 'string'],
-            'state'                     => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
-            'family_id'                 => [
+            'name'              => ['required', 'max:250', 'string'],
+            'state'             => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
+            'family_id'         => [
                 'sometimes',
                 'required',
                 Rule::exists('product_categories', 'id')
                     ->where('shop_id', $this->shop->id)
                     ->where('type', ProductCategoryTypeEnum::FAMILY)
             ],
-            'department_id'             => [
+            'department_id'     => [
                 'sometimes',
                 'required',
                 Rule::exists('product_categories', 'id')
                     ->where('shop_id', $this->shop->id)
                     ->where('type', ProductCategoryTypeEnum::DEPARTMENT)
             ],
-            'price'                     => ['required', 'numeric', 'min:0'],
-            'unit_price'                => ['sometimes', 'numeric', 'min:0'],
-            'unit'                      => ['sometimes', 'required', 'string'],
-            'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'description'               => ['sometimes', 'required', 'max:1500'],
-            'data'                      => ['sometimes', 'array'],
-            'settings'                  => ['sometimes', 'array'],
-            'is_main'                   => ['required', 'boolean'],
-            'units'                     => ['sometimes', 'numeric'],
+            'price'             => ['required', 'numeric', 'min:0'],
+            'unit_price'        => ['sometimes', 'numeric', 'min:0'],
+            'unit'              => ['sometimes', 'required', 'string'],
+            'rrp'               => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'description'       => ['sometimes', 'required', 'max:15000'],
+            'data'              => ['sometimes', 'array'],
+            'settings'          => ['sometimes', 'array'],
+            'is_main'           => ['required', 'boolean'],
+            'units'             => ['sometimes', 'numeric'],
+            'description_title' => ['sometimes', 'string', 'nullable', 'max:300'],
+            'description_extra' => ['sometimes', 'string', 'nullable', 'max:15000'],
+
             'main_product_id'           => [
                 'sometimes',
                 'nullable',
@@ -228,7 +253,11 @@ class StoreProduct extends OrgAction
                 'nullable',
                 'integer',
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
-            ]
+            ],
+            'master_product_id'         => ['sometimes'],
+            'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
+            'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
+            'marketing_dimensions'   => ['sometimes'],
         ];
 
         if ($this->state == ProductStateEnum::DISCONTINUED) {

@@ -20,7 +20,6 @@ function tradeUnitRoute(tradeUnit: TradeUnit) {
         [tradeUnit.slug])
 }
 
-
 </script>
 
 <template>

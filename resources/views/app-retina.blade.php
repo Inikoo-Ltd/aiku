@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="h-full text-[10px] lg:text-[16px]"  lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html class="h-full text-[14px] lg:text-[16px]"  lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -38,6 +38,11 @@
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
             })(window,document,'script','dataLayer','{{ Arr::get(request()->get("website")->settings, "google_tag_id", "") }}');</script>
             <!-- End Google Tag Manager -->
+        @endif
+
+        <!-- Section: Luigi analytics -->
+        @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', ''))
+            <script async src="https://scripts.luigisbox.com/{{ Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script> 
         @endif
     </head>
     <body class="font-sans antialiased h-full text-slate-700">

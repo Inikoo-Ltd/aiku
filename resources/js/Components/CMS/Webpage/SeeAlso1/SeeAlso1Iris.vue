@@ -17,6 +17,8 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import RecommendersLuigi1Iris from "./RecommendersLuigi1Iris.vue"
+import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
 
@@ -60,24 +62,41 @@ const compSwiperOptions = computed(() => {
         return props.fieldValue?.settings?.products_data?.top_sellers || []
     }
 })
+
+console.log('see also',props)
 </script>
 
 <template>
- <div id="see-also-carousel" class="w-full pb-6" :style="{
+ <div id="see-also-1-iris" class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
     width: 'auto'
   }">
     <!-- Title -->
-    <div class="px-4 py-6 pb-2">
+    <div class="px-3 py-6 pb-2">
       <div class="text-3xl font-semibold text-gray-800">
         <div v-html="fieldValue.title"></div>
       </div>
     </div>
 
+    <div v-if="fieldValue.settings.products_data.type === 'luigi-trends'">
+        <RecommendersLuigi1Iris :slidesPerView recommendation_type="trends" />
+    </div>
+
+    <div v-else-if="fieldValue.settings.products_data.type === 'luigi-recently_ordered'">
+        <RecommendersLuigi1Iris :slidesPerView recommendation_type="recently_ordered" />
+    </div>
+
+    <div v-else-if="fieldValue.settings.products_data.type === 'luigi-last_seen'">
+        <RecommendersLuigi1Iris :slidesPerView recommendation_type="last_seen" />
+    </div>
+
+    <div v-else-if="fieldValue.settings.products_data.type === 'luigi-item_detail_alternatives'">
+        <RecommendersLuigi1Iris :slidesPerView recommendation_type="item_detail_alternatives" />
+    </div>
 
     <!-- Carousel with custom navigation -->
-    <div v-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {
+    <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {
       `sendMessageToParent('activeBlock', indexBlock)`
       sendMessageToParent('activeChildBlock', bKeys[0])
     }">
@@ -96,7 +115,8 @@ const compSwiperOptions = computed(() => {
           class="h-full">
           <div class="h-full">
             <div v-if="product" class="h-full flex flex-col">
-              <ProductRender :product="product" :productHasPortfolio="[]" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" />
+              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
             <div v-else>
             </div>

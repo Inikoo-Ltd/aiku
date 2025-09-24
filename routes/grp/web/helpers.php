@@ -6,18 +6,23 @@
  * Copyright (c) 2023, Inikoo LTD
  */
 
-use App\Actions\Helpers\RedirectAssetLink;
-use App\Actions\Helpers\RedirectCollectionsInProductCategoryLink;
-use App\Actions\Helpers\RedirectCustomersInShopFromDashboard;
-use App\Actions\Helpers\RedirectDeletedInvoicesInShopLink;
-use App\Actions\Helpers\RedirectDeliveryNotesLink;
-use App\Actions\Helpers\RedirectInvoicesInCustomerLink;
-use App\Actions\Helpers\RedirectInvoicesInShopFromDashboard;
-use App\Actions\Helpers\RedirectInvoicesInShopLink;
-use App\Actions\Helpers\RedirectPickingSessionLink;
-use App\Actions\Helpers\RedirectPortfolioItemLink;
-use App\Actions\Helpers\RedirectProductCategoryLink;
-use App\Actions\Helpers\RedirectShopInShopFromDashboard;
+use App\Actions\Helpers\Redirects\RedirectAssetLink;
+use App\Actions\Helpers\Redirects\RedirectCollectionsInProductCategoryLink;
+use App\Actions\Helpers\Redirects\RedirectCustomersInShopFromDashboard;
+use App\Actions\Helpers\Redirects\RedirectDeletedInvoicesInShopLink;
+use App\Actions\Helpers\Redirects\RedirectDeliveryNotesLink;
+use App\Actions\Helpers\Redirects\RedirectInvoicesInCustomerLink;
+use App\Actions\Helpers\Redirects\RedirectInvoicesInShopFromDashboard;
+use App\Actions\Helpers\Redirects\RedirectInvoicesInShopLink;
+use App\Actions\Helpers\Redirects\RedirectMasterProductCategoryLink;
+use App\Actions\Helpers\Redirects\RedirectMasterProductLink;
+use App\Actions\Helpers\Redirects\RedirectOrgStockLink;
+use App\Actions\Helpers\Redirects\RedirectOutboxLink;
+use App\Actions\Helpers\Redirects\RedirectOutboxWorkshopLink;
+use App\Actions\Helpers\Redirects\RedirectPickingSessionLink;
+use App\Actions\Helpers\Redirects\RedirectPortfolioItemLink;
+use App\Actions\Helpers\Redirects\RedirectProductCategoryLink;
+use App\Actions\Helpers\Redirects\RedirectShopInShopFromDashboard;
 use App\Actions\Helpers\Upload\DownloadUploads;
 use App\Actions\Helpers\Upload\UI\ShowUpload;
 use Illuminate\Support\Facades\Route;
@@ -28,6 +33,7 @@ Route::get('redirect-refunds-in-shop/{invoice:id}', RedirectInvoicesInShopLink::
 Route::get('redirect-invoice-in-customer/{invoice:id}', RedirectInvoicesInCustomerLink::class)->name('redirect_invoices_in_customer');
 
 Route::get('redirect-delivery-note/{deliveryNote:id}', RedirectDeliveryNotesLink::class)->name('redirect_delivery_notes');
+Route::get('redirect-org-stock/{orgStock:id}', RedirectOrgStockLink::class)->name('redirect_org_stock');
 
 
 Route::get('redirect-invoices-from-dashboard/{shop:id}', RedirectInvoicesInShopFromDashboard::class)->name('redirect_invoices_from_dashboard');
@@ -40,7 +46,12 @@ Route::get('redirect-product-category/{productCategory:slug}', RedirectProductCa
 Route::get('redirect-collections-in-product-category/{productCategory:slug}', RedirectCollectionsInProductCategoryLink::class)->name('redirect_collections_in_product_category');
 
 Route::get('redirect-picking-session/{pickingSession:id}', RedirectPickingSessionLink::class)->name('redirect_picking_session');
-;
+
+Route::get('redirect-master-product/{masterAsset:id}', RedirectMasterProductLink::class)->name('redirect_master_product');
+Route::get('redirect-master-product-category/{masterProductCategory:id}', RedirectMasterProductCategoryLink::class)->name('redirect_master_product_category');
+
+Route::get('redirect-outbox/{outbox:id}', RedirectOutboxLink::class)->name('redirect_outbox');
+Route::get('redirect-outbox-workshop/{outbox:id}', RedirectOutboxWorkShopLink::class)->name('redirect_outbox_workshop');
 
 
 Route::prefix('uploads/{upload}')->as('uploads.')->group(function () {

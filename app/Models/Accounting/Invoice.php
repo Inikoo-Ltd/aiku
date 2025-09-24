@@ -8,6 +8,7 @@
 
 namespace App\Models\Accounting;
 
+use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -43,8 +44,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -111,6 +110,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_sales_channel_id
  * @property int|null $delivery_address_id
  * @property int|null $delivery_country_id
+ * @property string|null $ulid
+ * @property int|null $master_shop_id
+ * @property InvoicePayDetailedStatusEnum|null $pay_detailed_status
+ * @property string $effective_total effective total to pay
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
@@ -140,7 +143,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Invoice newQuery()
  * @method static Builder<static>|Invoice onlyTrashed()
  * @method static Builder<static>|Invoice query()
- * @method static Builder<static>|Invoice withTrashed()
+ * @method static Builder<static>|Invoice withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Invoice withoutTrashed()
  * @mixin Eloquent
  */
@@ -155,18 +158,19 @@ class Invoice extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'type'              => InvoiceTypeEnum::class,
-        'pay_status'        => InvoicePayStatusEnum::class,
-        'data'              => 'array',
-        'payment_data'      => 'array',
-        'date'              => 'datetime',
-        'paid_at'           => 'datetime',
-        'tax_liability_at'  => 'datetime',
-        'fetched_at'        => 'datetime',
-        'last_fetched_at'   => 'datetime',
-        'grp_exchange'      => 'decimal:4',
-        'org_exchange'      => 'decimal:4',
-        'tax_number_status' => 'boolean',
+        'type'                => InvoiceTypeEnum::class,
+        'pay_status'          => InvoicePayStatusEnum::class,
+        'pay_detailed_status' => InvoicePayDetailedStatusEnum::class,
+        'data'                => 'array',
+        'payment_data'        => 'array',
+        'date'                => 'datetime',
+        'paid_at'             => 'datetime',
+        'tax_liability_at'    => 'datetime',
+        'fetched_at'          => 'datetime',
+        'last_fetched_at'     => 'datetime',
+        'grp_exchange'        => 'decimal:4',
+        'org_exchange'        => 'decimal:4',
+        'tax_number_status'   => 'boolean',
     ];
 
     protected $attributes = [

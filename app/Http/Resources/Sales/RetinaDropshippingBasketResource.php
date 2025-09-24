@@ -22,12 +22,15 @@ class RetinaDropshippingBasketResource extends JsonResource
             'id'                        => $order->id,
             'reference'                 => $order->reference,
             'slug'                      => $order->slug,
+            'is_premium_dispatch'       => $order->is_premium_dispatch,
+            'has_extra_packing'         => $order->has_extra_packing,
             'state'                     => $order->state->value,
             'state_label'               => $order->state->labels()[$order->state->value],
             'state_icon'                => $order->state->stateIcon()[$order->state->value],
             'customer_notes'            => $order->customer_notes,
             'shipping_notes'            => $order->shipping_notes,
             'public_notes'              => $order->public_notes,
+            'is_collection'             => (bool) $order->collection_address_id
         ];
     }
 }

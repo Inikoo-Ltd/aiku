@@ -17,7 +17,6 @@ trait WithWarehouseEditAuthorisation
         if ($this->asAction) {
             return true;
         }
-
         return $request->user()->authTo([
             "supervisor-locations.".$this->warehouse->id,
             'locations.'.$this->warehouse->id.'.edit',

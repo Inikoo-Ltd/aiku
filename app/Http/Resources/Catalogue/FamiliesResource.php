@@ -1,9 +1,9 @@
 <?php
 
 /*
- *  Author: Jonathan lopez <raul@inikoo.com>
- *  Created: Sat, 22 Oct 2022 18:53:15 British Summer Time, Sheffield, UK
- *  Copyright (c) 2022, inikoo
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 19 Jul 2024 16:42:55 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
 namespace App\Http\Resources\Catalogue;
@@ -33,7 +33,7 @@ class FamiliesResource extends JsonResource
 {
     public function toArray($request): array
     {
-
+        /** @var \App\Models\Catalogue\ProductCategory $department */
         $imageSources = null;
         $media        = Media::find($this->image_id);
         if ($media) {
@@ -63,17 +63,22 @@ class FamiliesResource extends JsonResource
                 'icon'    => $this->state->stateIcon()[$this->state->value]['icon'],
                 'class'   => $this->state->stateIcon()[$this->state->value]['class']
             ],
-            'code'                     => $this->code,
+            'code' => $this->code,
             'name'                     => $this->name,
             'description'              => $this->description,
             'created_at'               => $this->created_at,
             'updated_at'               => $this->updated_at,
             'number_current_products'  => $this->number_current_products,
             'collections'       => $collections,
-            'sales'                    => $this->sales_all,
-            'invoices'                 => $this->invoices_all,
+            'sales_all'                    => $this->sales_all,
+            'invoices_all'                 => $this->invoices_all,
             'organisation_name' => $this->organisation_name,
             'organisation_slug' => $this->organisation_slug,
+            'master_product_category_id'     => $this->master_product_category_id,
+            'is_name_reviewed' => $this->is_name_reviewed,
+            'is_description_title_reviewed' => $this->is_description_title_reviewed,
+            'is_description_reviewed' => $this->is_description_reviewed,
+            'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
         ];
     }
 }

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { faFilter } from "@fas";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getStyles } from "@/Composables/styles";
 import { ref, onMounted, watch, computed, toRaw, inject } from "vue";
 import axios from "axios";
@@ -15,14 +14,18 @@ import { debounce } from "lodash-es";
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import PureInput from "@/Components/Pure/PureInput.vue";
-import { useConfirm } from "primevue/useconfirm";
+// import { useConfirm } from "primevue/useconfirm";
 import { faSearch } from "@fal";
-import { faExclamationTriangle, faLayerGroup } from "@far";
-import ConfirmDialog from "primevue/confirmdialog";
+import { faExclamationTriangle } from "@far";
+// import ConfirmDialog from "primevue/confirmdialog";
 import { trans } from "laravel-vue-i18n"
-import FontSize from "tiptap-extension-font-size";
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faFileDownload } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+library.add(faFileDownload)
 
 const props = defineProps<{
     fieldValue: {
@@ -46,15 +49,24 @@ const props = defineProps<{
         container?: any
         model_type: string
         model_id: number
+        model_slug: string
     }
     webpageData?: any
     blockData?: Object
     screenType: "mobile" | "tablet" | "desktop"
 }>();
-
+console.log(props)
 const categoryId = props.fieldValue.model_id
 const layout = inject("layout", retinaLayoutStructure);
-const products = ref<any[]>(toRaw(props.fieldValue.products.data || []));
+const products = ref<any[]>(
+  props.fieldValue?.products?.meta?.last_page == 1
+    ? [
+        ...(props.fieldValue?.products?.data ?? []),
+        ...(props.fieldValue?.products_out_of_stock?.data ?? [])
+      ]
+    : [...(props.fieldValue?.products?.data ?? [])]
+);
+
 const loadingInitial = ref(false);
 const loadingMore = ref(false);
 const q = ref("");
@@ -67,7 +79,7 @@ const showAside = ref(false);
 const totalProducts = ref(props.fieldValue.products.meta.total);
 const settingPortfolio = ref(false);
 const isFetchingOutOfStock = ref(false);
-const confirm = useConfirm();
+// const confirm = useConfirm();
 const isNewArrivals = ref(false);
 
 
@@ -426,11 +438,11 @@ const responsiveGridClass = computed(() => {
 
 <template>
     <div id="products-1">
-        <ConfirmDialog>
+        <!-- <ConfirmDialog>
             <template #icon>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
             </template>
-        </ConfirmDialog>
+        </ConfirmDialog> -->
         <div class="flex flex-col lg:flex-row" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)
@@ -444,15 +456,17 @@ const responsiveGridClass = computed(() => {
             </transition>
 
             <!-- Main Content -->
-            <main class="flex-1">
+            <main class="flex-1 mt-4">
+
                 <!-- Search & Sort -->
-                <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
+                        
                         <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
                             aria-label="Open Filters" />
 
                         <!-- Sidebar Toggle for Desktop -->
-                        <div v-else class="py-4">
+                        <div v-else class="">
                             <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
                                 aria-label="Open Filters" />
                         </div>
@@ -461,15 +475,7 @@ const responsiveGridClass = computed(() => {
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
-                        <!-- <button @click="toggleNewArrivals"
-                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
-                            isNewArrivals
-                                ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                                : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                        ]">
-                            New Arrivals
-                        </button> -->
+                    <div class="flex items-center space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
@@ -482,6 +488,7 @@ const responsiveGridClass = computed(() => {
                         </button>
                     </div>
                 </div>
+
                 <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
@@ -498,10 +505,8 @@ const responsiveGridClass = computed(() => {
 
                     <div>
                         <ButtonAddCategoryToPortfolio
-                            xproduct="fieldValue.product"
                             :products
                             :categoryId
-                            xproductHasPortfolio="productExistenceInChannels"
                         />
                     </div>
                 </div>
@@ -534,7 +539,6 @@ const responsiveGridClass = computed(() => {
                 </div>
 
                 <!-- Load More -->
-                <!--  {{ page   }}{{ lastPage }} -->
                 <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4  mb-12">
                     <Button @click="loadMore" type="tertiary" :disabled="loadingMore"
                         :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">

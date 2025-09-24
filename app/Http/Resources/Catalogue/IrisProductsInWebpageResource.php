@@ -9,6 +9,8 @@
 namespace App\Http\Resources\Catalogue;
 
 use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -45,12 +47,25 @@ class IrisProductsInWebpageResource extends JsonResource
         }
         $url = '/'.$url.$this->url;
 
+        $favourite = false;
+        if ($request->user()) {
+            $customer = $request->user()->customer;
+            if ($customer) {
+                $favourite = $customer?->favourites()?->where('product_id', $this->id)->first();
+            }
+        }
 
+        $media = null;
+        if ($this->image_id) {
+            $media = Media::find($this->image_id);
+        }
 
         return [
             'id'         => $this->id,
             'image_id'   => $this->image_id,
+            'image'      => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'code'       => $this->code,
+            'luigi_identity' => $this->getLuigiIdentity(),
             'name'       => $this->name,
             'stock'      => $this->available_quantity,
             'price'      => $this->price,
@@ -63,7 +78,11 @@ class IrisProductsInWebpageResource extends JsonResource
             'unit'       => $this->unit,
             'url'        => $url,
             'top_seller' => $this->top_seller,
-            'web_images' => $this->web_images
+            'web_images' => $this->web_images,
+            'transaction_id' => $this->transaction_id ?? null,
+            'quantity_ordered' => (int) $this->quantity_ordered ?? 0,
+            'quantity_ordered_new' => (int) $this->quantity_ordered ?? 0,  // To editable in Frontend
+            'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
         ];
     }
 

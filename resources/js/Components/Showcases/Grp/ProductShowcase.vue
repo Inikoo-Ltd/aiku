@@ -1,32 +1,22 @@
 <script setup lang="ts">
-import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { notify } from "@kyvg/vue3-notification"
 import Image from "@/Components/Image.vue"
-import { Tab, TabGroup, TabList, TabPanel, TabPanels } from "@headlessui/vue"
-import { inject, ref, computed, watch } from "vue"
-import EmptyState from "@/Components/Utils/EmptyState.vue"
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTrash as falTrash, faEdit, faExternalLink } from "@fal"
-import { faCircle, faPlay, faTrash, faPlus } from "@fas"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
-import { useFormatTime } from "@/Composables/useFormatTime"
+import { ref, computed, inject } from "vue"
+import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
+import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
-import { Link, router } from "@inertiajs/vue3"
-import { useLocaleStore } from "@/Stores/locale"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import Dialog from 'primevue/dialog'
 import { faImage } from "@far"
-import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
-import { Fieldset, Select } from "primevue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import ProductSummary from "@/Components/Product/ProductSummary.vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import ReviewContent from "@/Components/ReviewContent.vue"
 
 
-library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus)
+library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
 
 const props = defineProps<{
 	taxonomy: any
@@ -36,6 +26,11 @@ const props = defineProps<{
 		attachImageRoute: routeType
 		deleteImageRoute: routeType
 		imagesUploadedRoutes: routeType
+		translation_box: {
+			title: string
+			languages: Record<string, string>
+			save_route: routeType
+		}
 		product: {
 			data: {
 				id: number
@@ -78,154 +73,87 @@ const props = defineProps<{
 			}
 			tags: {}[]
 			tags_selected_id: number[]
-		}[]
+		}[],
+		gpsr: {
+			acute_toxicity: boolean
+			corrosive: boolean
+			eu_responsible: string | null
+			explosive: boolean
+			flammable: boolean
+			gas_under_pressure: boolean
+			gpsr_class_category_danger: string | null
+			hazard_environment: boolean
+			health_hazard: boolean | null
+			how_to_use: string
+			manufacturer: null | string
+			oxidising: boolean
+			product_languages: string | null
+			warnings: string | null
+		}
+		images: {}
 	}
 }>()
-console.log('qqq', props.data.trade_units)
 
 const locale = inject("locale", aikuLocaleStructure)
-const selectedImage = ref(0)
-const isLoading = ref<string[] | number[]>([])
-const showAllImages = ref(false)
-const showAllStats = ref(false)
-const isModalGallery = ref(false)
-
-const images = computed(() => props.data?.product?.data?.images ?? [])
-
-const displayedImages = computed(() =>
-	showAllImages.value ? images.value : images.value.slice(0, 6)
+const imagesSetup = ref(
+	props.data.images
+		.filter(item => item.type === "image")
+		.map(item => ({
+			label: item.label,
+			column: item.column_in_db,
+			images: item.images,
+		}))
 )
 
-const displayedStats = computed(() => {
-	if (!props.data.stats) return []
-	const filtered = props.data.stats.filter(item => !item.name.toLowerCase().includes("all"))
-	return showAllStats.value ? filtered : filtered.slice(0, 6)
-})
-
-function changeSelectedImage(index: number) {
-	selectedImage.value = index
-}
-
-watch(images, (newVal) => {
-	if (!newVal?.length || selectedImage.value > newVal.length - 1) {
-		selectedImage.value = 0
-	}
-}, { immediate: true })
-
-const deleteImage = async (image, index: number) => {
-	router.delete(
-		route(props.data.deleteImageRoute.name, {
-			...props.data.deleteImageRoute.parameters,
-			media: image.id,
-		}),
-		{
-			onStart: () => isLoading.value.push(image.id),
-			onFinish: () =>
-				notify({ title: trans("Success"), text: trans("Image deleted"), type: "success" }),
-			onError: () =>
-				notify({
-					title: trans("Failed"),
-					text: trans("Cannot delete image"),
-					type: "error",
-				}),
-		}
-	)
-}
+const videoSetup = ref(
+	props.data.images.find(item => item.type === "video") || null
+)
 
 
-const onSubmitUpload = async (files: File[], refData = null) => {
-	const formData = new FormData()
-	files.forEach((file, index) => {
-		formData.append(`images[${index}]`, file)
-	})
-
-	
-	router.post(
-		route(props.data.uploadImageRoute.name, props.data.uploadImageRoute.parameters),
-		formData,
-		{
-			preserveScroll: true,
-			
-			onSuccess: () => {
-				notify({
-					title: trans('Success'),
-					text: trans('New image added'),
-					type: 'success',
-				})
-
-				
-				isModalGallery.value = false
-
-		
-			},
-			onError: () => {
-				
-				notify({
-					title: trans('Upload failed'),
-					text: trans('Failed to add new image'),
-					type: 'error',
-				})
-			},
-		
-		}
-	)
-}
-
-const selectedTradeUnit = ref(props.data.trade_units.length > 0 ? props.data.trade_units[0].tradeUnit.code : null)
-const compSelectedTradeUnit = computed(() => {
-	return props.data.trade_units.find((unit) => unit.tradeUnit.code === selectedTradeUnit.value)
-})
+const validImages = computed(() =>
+	imagesSetup.value
+		.filter(item => item.images) // only keep if images exist
+		.flatMap(item => {
+			const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
+			return images.map(img => ({
+				source: img,
+				thumbnail: img
+			}))
+		})
+)
 </script>
 
 <template>
-	<div class="grid md:grid-cols-2 gap-x-1 gap-y-4">
+	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
-		<div class="p-5 space-y-5 grid grid-cols-1 w-full md:max-w-[500px]">
+		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
-			<div class="relative">
-				<!-- Image Gallery -->
-				<ImageProducts
-					v-if="data.product.data.images?.length"
-					:images="data.product.data.images"
-					:breakpoints="{
-						0: {
-							slidesPerView: 5
-						},
-						640: {
-							slidesPerView: 4
-						},
-						1024: {
-							slidesPerView: 6
-						}
-					}"
-				>
+			<div class="bg-white   p-4 lg:p-5">
+				<ImageProducts v-if="validImages.length" :images="validImages" :breakpoints="{
+					0: { slidesPerView: 3 },
+					480: { slidesPerView: 4 },
+					640: { slidesPerView: 5 },
+					1024: { slidesPerView: 6 }
+				}" class="overflow-x-auto">
 					<template #image-thumbnail="{ image, index }">
-						<div class="aspect-square w-full overflow-hidden group relative">
+						<div
+							class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
 							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
-								class="block w-full h-full object-cover rounded-md border" />
-							<!-- Delete Button on Hover -->
-							<!-- <button @click.prevent="deleteImage(image, index)"
-								class="absolute top-1 right-1 bg-white border border-gray-300 text-gray-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-md hover:bg-red-500 hover:text-white">
-								<FontAwesomeIcon :icon="faTrash" class="text-sm" />
-							</button> -->
-
-							<ModalConfirmationDelete
-								:routeDelete="{
-									name: props.data.deleteImageRoute.name,
-									parameters: {
-										...props.data.deleteImageRoute.parameters,
-										media: image.id,
-									}
-								}"
-								:title="trans('Are you sure you want to delete the image?')"
-								:description="trans('This action cannot be undone.')"
-								isFullLoading
-								noLabel="Delete"
-								noIcon="fal fa-times"
-							>
-								<template #default="{ isOpenModal, changeModel }">
-									<div @click="changeModel" class="absolute top-1 right-1 hover:bg-red-100 ml-auto w-fit text-xs p-1 rounded text-red-500 hover:underline cursor-pointer">
-										<FontAwesomeIcon icon="fal fa-times" class="" fixed-width aria-hidden="true" />
+								class="block w-full h-full object-cover" />
+							<!-- Delete Icon -->
+							<ModalConfirmationDelete :routeDelete="{
+								name: props.data.deleteImageRoute.name,
+								parameters: {
+									...props.data.deleteImageRoute.parameters,
+									media: image.id,
+								}
+							}" :title="trans('Are you sure you want to delete the image?')"
+								:description="trans('This action cannot be undone.')" isFullLoading noLabel="Delete"
+								noIcon="fal fa-times">
+								<template #default="{ changeModel }">
+									<div @click="changeModel"
+										class="absolute top-2 right-2 bg-white shadow-md rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition cursor-pointer hover:bg-red-500 hover:text-white text-red-500">
+										<FontAwesomeIcon icon="fal fa-times" fixed-width />
 									</div>
 								</template>
 							</ModalConfirmationDelete>
@@ -235,196 +163,120 @@ const compSelectedTradeUnit = computed(() => {
 
 				<!-- Empty State -->
 				<div v-else
-					class="flex flex-col items-center justify-center text-gray-500 gap-2 py-8 border border-dashed border-gray-300 rounded-md">
-					<FontAwesomeIcon :icon="faImage" class="text-4xl" />
-					<p class="text-sm">No images uploaded yet</p>
-				</div>
-
-				<!-- Add Image Button -->
-				<div class="mt-3">
-					<Button type="dashed" full @click="isModalGallery = true" label="Add Images" :icon="faPlus" />
+					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
 				</div>
 			</div>
-
-
-			<!-- Product Summary -->
-			<section class="border border-gray-200 rounded-lg px-4 py-6">
-				<h2 class="text-lg font-medium">{{ trans("Product summary") }}</h2>
-				<dl class="mt-6 space-y-4 text-sm">
-					<div class="flex justify-between">
-						<dt>{{ trans("Added date") }}</dt>
-						<dd class="font-medium">{{ useFormatTime(data.product.data.created_at) }}</dd>
-					</div>
-					<div class="flex justify-between">
-						<dt>{{ trans("Stock") }}</dt>
-						<dd class="font-medium">
-							{{ data.product.data.stock }} {{ data.product.data.unit }}
-						</dd>
-					</div>
-					<!-- <div class="flex justify-between">
-						<dt>{{ trans("Cost") }}</dt>
-						<dd class="font-medium">--</dd>
-					</div> -->
-					<div class="flex justify-between">
-						<dt>{{ trans("Price") }}</dt>
-						<dd class="font-medium text-right">
-							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.price)
-							}}
-							<!-- <span class="font-light">margin (--)</span> -->
-						</dd>
-					</div>
-					
-					<!-- Field: RRP -->
-					<div class="flex justify-between">
-						<dt>RRP</dt>
-						<dd class="font-medium text-right">
-							{{ locale.currencyFormat(data.product.data.currency_code, data.product.data.rrp) }}
-							<span class="font-light">
-								({{
-									((data.product.data.rrp - data.product.data.price) / data.product.data.price * 100).toFixed(2)
-								}}%)
-							</span>
-						</dd>
-					</div>
-					
-					<!-- Field: Weight -->
-					<div class="flex justify-between">
-						<dt>{{ trans("Weight") }}</dt>
-						<dd class="font-medium text-right">
-							{{ locale.number(data.product.data.specifications.gross_weight) }} gr
-							<!-- <span class="font-light">margin (--)</span> -->
-						</dd>
-					</div>
-
-					<div class="flex flex-col">
-						<dt>{{ trans("Ingredients") }}</dt>
-						<ul class="xtext-right list-disc list-inside font-light" >
-							<li v-for="ingredient in data.product.data.specifications?.ingredients" :key="ingredient.id">
-								{{ ingredient }}
-							</li>
-						</ul>
-					</div>
-				</dl>
-			</section>
-		</div>
-		
-		<!-- <div>
-
-		</div> -->
-
-		<!-- Section: Trade Units -->
-		<div class="md:col-span-1 pr-6">
-			<Fieldset
-				class="p-5 space-y-5 h-fit w-full max-w-lg"
-				legend="Trade units"
-				xtoggleable
-				xcollapsed
-			>
-				<template #legend>
-					<div class="flex items-center gap-2 font-bold">
-						<FontAwesomeIcon icon="fal fa-atom" class="text-gray-400 text-lg" fixed-width aria-hidden="true" />
-						Trade units
-					</div>
-				</template>
-
-				<template #default>
-					<div class="px-4">
-						<div class="flex items-center gap-x-2 mb-4">
-							<template v-if="props.data.trade_units.length">
-								<Select
-									v-model="selectedTradeUnit"
-									:options="props.data.trade_units"
-									optionLabel="tradeUnit.name"
-									optionValue="tradeUnit.code"
-									placeholder="Select a City"
-									class="w-full md:w-80"
-								/>
-								<Link
-									v-if="compSelectedTradeUnit?.tradeUnit?.slug"
-									:href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
-									v-tooltip="trans('Open trade unit')"
-									class="text-gray-400 hover:text-gray-600 cursor-pointer"
-								>
-									<FontAwesomeIcon icon="fal fa-external-link" class="" fixed-width aria-hidden="true" />
-								</Link>
-							</template>
-							<div v-else class="text-gray-500 text-center mx-auto">
-								{{ trans("No trade units for this product") }}
-							</div>
-						</div>
-
-						<div v-if="compSelectedTradeUnit" class="">
-							<EditTradeUnit
-								:tags_selected_id="compSelectedTradeUnit.tags_selected_id"
-								:brand="compSelectedTradeUnit.brand"
-								:brand_routes="compSelectedTradeUnit.brand_routes"
-								:tags="compSelectedTradeUnit.tags"
-								:tag_routes="compSelectedTradeUnit.tag_routes"
-							/>
-						</div>
-					</div>
-				</template>
-			</Fieldset>
 		</div>
 
-		<!-- Revenue Stats -->
-		<div v-if="false && data.stats" class="pt-8 p-4 md:col-span-3">
-			<h3 class="text-lg font-semibold">
-				{{ trans("All Sales") }}:
-				{{ useLocaleStore().currencyFormat(data.product.data.currency_code || "usd", data?.stats?.[0]?.amount ??
-					0) }}
-			</h3>
+		<!-- Product Summary -->
+		<ProductSummary :data="data.product.data" :gpsr="data.gpsr" :properties="data.properties" :parts="data.parts"
+			:video="videoSetup.url" :hide="['price', 'rrp', 'stock']" />
 
-			<dl class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-4 bg-white">
-				<div v-for="item in displayedStats" :key="item.name"
-					class="px-4 py-5 border border-gray-200 rounded-md">
-					<dt class="text-base font-normal">{{ item.name }}</dt>
-					<dd class="mt-1 flex flex-col sm:flex-row items-baseline justify-between min-h-[48px]">
-						<div class="flex items-baseline text-2xl font-semibold text-indigo-600">
-							<span v-if="item.amount !== null && item.amount !== undefined">
-								{{ useLocaleStore().currencyFormat(data.product.data.currency_code || 'usd',
-									item.amount) }}
-							</span>
-							<span v-else>-</span>
-							<span class="ml-2 text-sm font-medium text-gray-500">
-								from
-								<span v-if="item.amount_ly !== null && item.amount_ly !== undefined">
-									{{ useLocaleStore().currencyFormat(data.product.data.currency_code || 'usd',
-										item.amount_ly)
-									}}
-								</span>
-								<span v-else>-</span>
-							</span>
-						</div>
-						<div class="flex items-center mt-2 md:mt-0">
-							<span class="text-sm font-mono pr-1">
-								<span v-if="item.percentage !== null && item.percentage !== undefined">
-									{{ item.percentage > 0 ? '+' : '' }}{{ item.percentage.toFixed(2) }}%
-								</span>
-								<span v-else>0.00%</span>
-							</span>
-							<FontAwesomeIcon v-if="item.percentage !== null && item.percentage !== undefined"
-								icon="fas fa-play"
-								:class="item.percentage < 0 ? 'text-red-500 rotate-90' : 'text-green-500 rotate-[-90deg]'"
-								class="text-xs opacity-60" />
-						</div>
+
+
+
+		<div class="bg-white h-fit mx-4  shadow-sm ">
+			<div class="my-4 ">
+				<ReviewContent  :data="data.product.data" />
+			</div>
+			<dl class="space-y-2 text-sm border border-gray-100 px-4 py-2 lg:p-6 lg:py-4 rounded">
+				<!-- Stock -->
+				<div class="flex justify-between items-center flex-wrap gap-2">
+					<dt class="text-gray-500">{{ trans("Stock") }}</dt>
+					<dd class="flex items-center gap-2 font-medium">
+						<FontAwesomeIcon :icon="['fas', 'circle']" :class="[
+							data.product.data?.stock > 20
+								? 'text-green-500'
+								: data.product.data?.stock > 0
+									? 'text-orange-500'
+									: 'text-red-500'
+						]" />
+						<span :class="[
+							data.product.data?.stock > 20
+								? 'text-green-600'
+								: data.product.data?.stock > 0
+									? 'text-orange-600'
+									: 'text-red-600 font-semibold'
+						]">
+							{{ data.product.data?.stock }} {{ data.product.data?.unit }}
+						</span>
+					</dd>
+				</div>
+
+				<hr class="border-gray-200" />
+
+				<!-- Cost -->
+				<div class="flex justify-between items-center flex-wrap gap-2">
+					<dt class="text-gray-500">{{ trans("Cost") }}</dt>
+					<dd class="font-medium text-blue-600">
+						{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.cost) || '-' }}
+					</dd>
+				</div>
+
+				<!-- Price -->
+				<div class="flex justify-between items-center flex-wrap gap-2">
+					<dt class="text-gray-500">{{ trans("Price") }}</dt>
+					<dd class="font-semibold text-green-600 text-lg">
+						{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.price) }}
+					</dd>
+				</div>
+
+				<!-- RRP -->
+				<div class="flex justify-between items-center flex-wrap gap-2">
+					<dt class="text-gray-500">RRP</dt>
+					<dd class="flex items-center gap-2 font-semibold text-gray-700">
+						<span>
+							{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.rrp) }}
+						</span>
+						<span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
+							({{ ((data.product.data?.rrp - data.product.data?.price) / data.product.data?.price *
+								100).toFixed(2) }}%)
+						</span>
 					</dd>
 				</div>
 			</dl>
 
-			<!-- Show more stats -->
-			<div v-if="props.data?.stats?.length > 6 && !showAllStats" @click="showAllStats = true"
-				class="cursor-pointer border border-dashed border-gray-300 rounded-md mt-3 flex justify-center items-center p-4 w-full sm:w-40 mx-auto">
-				<span class="text-sm font-medium">{{ trans("Show more") }}</span>
-			</div>
 		</div>
 	</div>
-
-	<!-- Gallery Dialog (PrimeVue) -->
-	<Dialog v-model:visible="isModalGallery" modal closable dismissableMask header="Gallery Management"
-		:style="{ width: '75vw' }" :pt="{ root: { class: 'rounded-xl shadow-xl' } }">
-		<GalleryManagement :multiple="true" :uploadRoute="data.uploadImageRoute" :submitUpload="(file,refDAta)=>onSubmitUpload(file,refDAta)"
-			:imagesUploadedRoutes="data.imagesUploadedRoutes" :attachImageRoute="data.attachImageRoute"
-			:stockImagesRoute="data.stockImagesRoute" @selectImage="(image) => console.log('Selected:', image)" />
-	</Dialog>
 </template>
+
+<style scoped>
+/* Add custom styles if needed for better text readability */
+.whitespace-pre-wrap {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}
+
+/* Remove all padding from accordion */
+:deep(.p-accordion) {
+	padding: 0;
+}
+
+:deep(.p-accordion-panel) {
+	border: none;
+}
+
+:deep(.p-accordionheader) {
+	padding: 10px 0;
+	background: #f8fafc;
+	border-radius: 0.5rem;
+	border: none;
+	background-color: #ffffff;
+}
+
+:deep(.p-accordionheader:hover) {
+	background: #e2e8f0;
+}
+
+:deep(.p-accordioncontent-content) {
+	padding: 0 !important;
+	border: none;
+}
+
+:deep(.p-accordionheader-text) {
+	padding: 0.75rem 1rem;
+	width: 100%;
+}
+</style>

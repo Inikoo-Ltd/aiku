@@ -8,9 +8,7 @@
 
 namespace App\Actions\Accounting\Invoice;
 
-use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\OrgAction;
-use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
 use Illuminate\Support\Arr;
@@ -19,33 +17,13 @@ class AttachPaymentToInvoice extends OrgAction
 {
     public function handle(Invoice $invoice, Payment $payment, array $modelData): void
     {
-        $paymentAmount = Arr::get($modelData, 'amount', $payment->amount);
-        $toPay         = $invoice->total_amount - $invoice->payment_amount;
-
-        $amountToCredit = 0;
-        $amount         = $paymentAmount;
-
-        if (!$invoice->original_invoice_id && $paymentAmount > $toPay) { // this invoice is not a refund
-            $amount         = $toPay;
-            $amountToCredit = $paymentAmount - $toPay;
-        }
+        $amount = Arr::get($modelData, 'amount', $payment->amount);
 
         $invoice->payments()->attach($payment, [
             'amount' => $amount,
         ]);
 
-        if ($amountToCredit != 0) {
-            StoreCreditTransaction::make()->action($invoice->customer, [
-                'amount'     => $amountToCredit,
-                'type'       => CreditTransactionTypeEnum::FROM_EXCESS,
-                'payment_id' => $payment->id,
-                'date'       => now()
-            ]);
-        }
-
-        $invoice->refresh();
-
-        SetInvoicePaymentState::run($invoice);
+        UpdateInvoicePaymentState::run($invoice);
     }
 
     public function rules(): array

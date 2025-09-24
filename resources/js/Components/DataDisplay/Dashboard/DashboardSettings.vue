@@ -11,30 +11,12 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCog } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
+import { Intervals, Settings } from "@/types/Components/Dashboard"
 library.add(faCog)
 
 const props = defineProps<{
-	intervals: {
-		options: {
-			label: string
-			value: string
-			labelShort: string
-		}[]
-		value: string
-	}
-	settings: {
-		[key: string]: {  // 'data_display_type' || 'model_state_type' || 'currency_type'
-			align: string
-			id: string
-			options: {
-				label: string
-				value: string
-				tooltip?: string
-			}[]
-			type: string
-			value: string
-		}
-	}
+	intervals: Intervals
+	settings: Settings
 	currentTab: string
 }>()
 
@@ -225,7 +207,7 @@ const updateDataDisplayType = (value: string) => {
 									v-slot="{ active, checked }"
 								>
 									<div :class="[
-											'cursor-pointer focus:outline-none flex items-center justify-center py-1 md:py-3 px-3 text-sm font-medium capitalize',
+											'cursor-pointer focus:outline-none flex items-center justify-center py-1 md:py-3 px-3 text-sm font-medium',
 											checked ? 'bg-indigo-500 text-white' : ' bg-white text-gray-700 hover:bg-gray-200',
 										]"
 										v-tooltip="option.tooltip"

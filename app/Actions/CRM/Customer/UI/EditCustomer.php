@@ -40,16 +40,6 @@ class EditCustomer extends OrgAction
 
     public function htmlResponse(Customer $customer, ActionRequest $request): Response
     {
-        $contactName = trim($customer->contact_name ?? '');
-        $firstName = '';
-        $lastName = '';
-
-        if ($contactName !== '') {
-            $parts = preg_split('/\s+/', $contactName, 2); // split into 2 parts only
-            $firstName = $parts[0];
-            $lastName = $parts[1] ?? ''; // in case there's no last name
-        }
-
 
         return Inertia::render(
             'EditModel',
@@ -106,7 +96,7 @@ class EditCustomer extends OrgAction
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
-                                    'vat'      => [
+                                'tax_number'      => [
                                     'type'    => 'tax_number',
                                     'label'   => __('Tax number'),
                                     'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
@@ -135,7 +125,7 @@ class EditCustomer extends OrgAction
         return ShowCustomer::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 
@@ -149,7 +139,6 @@ class EditCustomer extends OrgAction
         })->orderBy('slug', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName());
-
     }
 
     public function getNext(Customer $customer, ActionRequest $request): ?array

@@ -28,6 +28,12 @@ export default {
 					type: "text",
 				},
 				{
+					key: ["show"],
+					label: "Show Button",
+					type: "switch",
+				},
+
+				{
 					key: ["container", "properties", "text"],
 					type: "textProperty",
 					useIn: ["desktop", "tablet", "mobile"],

@@ -97,6 +97,8 @@ const shootMultipleConfetti = () => {
         setTimeout(() => shootConfetti(), 300)
     }, 500);
 }
+
+// Flash: Confetti
 watch(() => usePage().props?.flash?.confetti, (newVal) => {
     // console.log('confettixx ret', newVal)
     if (!newVal) return
@@ -109,7 +111,7 @@ watch(() => usePage().props?.flash?.confetti, (newVal) => {
 
 // Flash: GTM
 watch(() => usePage().props?.flash?.gtm, (newValue) => {
-    // console.log('gtm ret', newValue)
+    console.log('gtm ret', newValue)
     if (!newValue) return
 
     window.dataLayer = window.dataLayer || [];
@@ -141,34 +143,52 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     immediate: true
 })
 
+// Flash: Notification
+watch(() => usePage().props?.flash?.notification, (notification: Modal) => {
+    // console.log('ret', notification)
+    if (!notification) return
+
+    setTimeout(() => {
+        notify({
+            title: notification.title ?? trans("Something went wrong"),
+            text: notification.description || notification.message || trans("Please try again later or contact administrator."),
+            type: notification.type || notification.status,
+        })
+    }, 500);
+}, {
+    deep: true,
+    immediate: true
+})
+
 // Section: To open/close the mobile menu
 const isOpenMenuMobile = ref(false)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
 
 // Method: Hide the superchat widget
-// const hideSuperchatWidget = () => {
-//     const time = ref(0)
-//     const xxInterval = setInterval(() => {
-//         time.value += 150
-//         const _superchatWidget = document.querySelector('#superchat-widget')
-//         if (_superchatWidget) {
-//             _superchatWidget.style.display = 'none'
-//             clearInterval(xxInterval)
-//             console.log('Cleared interval')
-//         }
+const hideSuperchatWidget = () => {
+    const time = ref(0)
+    const xxInterval = setInterval(() => {
+        time.value += 150
+        // const _superchatWidget = document.querySelector('#superchat-widget')
+        const _superchatWidget = document.querySelector('#cookiescript_badge')
+        if (_superchatWidget) {
+            _superchatWidget.style.display = 'none'
+            clearInterval(xxInterval)
+            console.log('Cleared interval')
+        }
 
-//         // To safety if GTM exist but don't have superchat
-//         if (time.value > 10000) {
-//             clearInterval(xxInterval)
-//             console.log('Cleared interval due to timeout')
-//         }
-//     }, 150)
-// }
+        // To safety if GTM exist but don't have superchat
+        if (time.value > 7000) {
+            clearInterval(xxInterval)
+            console.log('Cleared interval due to timeout')
+        }
+    }, 900)
+}
 
 onMounted(() => {
     // if (layout.iris?.is_have_gtm) {
-    //     hideSuperchatWidget()
+        hideSuperchatWidget()
     // }
 })
 
@@ -293,7 +313,7 @@ const getBgColorDependsOnStatus = (status: string) => {
                 <div class="mt-5 sm:mt-6">
                     <Button
                         @click="() => isModalOpen = false"
-                        :label="trans('Ok, Get it')"
+                        :label="trans('Okay')"
                         full
                     />
                 </div>
@@ -342,6 +362,9 @@ const getBgColorDependsOnStatus = (status: string) => {
         @apply bg-gray-100 border-l-8 border border-slate-500  text-slate-500
     }
     &.error {
+        @apply bg-red-400 border-l-8 border border-red-600 text-white
+    }
+    &.failure {
         @apply bg-red-400 border-l-8 border border-red-600 text-white
     }
 }

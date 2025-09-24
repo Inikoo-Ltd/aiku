@@ -21,7 +21,6 @@ class GetRetinaPaymentAccountShopData
 
     public function handle(Order $order, PaymentAccountShop $paymentAccountShop, OrderPaymentApiPoint $orderPaymentApiPoint): ?array
     {
-
         if ($paymentAccountShop->type == PaymentAccountTypeEnum::CHECKOUT) {
             if (app()->environment('production')) {
                 $publicKey = Arr::get($paymentAccountShop->paymentAccount->data, 'credentials.public_key');
@@ -31,24 +30,27 @@ class GetRetinaPaymentAccountShopData
 
             return
                 [
-                    'label'       => __('Online payments'),
-                    'key'         => 'credit_card',
-                    'public_key'  => $publicKey,
-                    'environment' => app()->environment('production') ? 'production' : 'sandbox',
-                    'locale'      => $paymentAccountShop->shop->language->code,
-                    'icon'        => 'fal fa-credit-card-front',
-                    'data'        => GetRetinaPaymentAccountShopCheckoutComData::run($order, $paymentAccountShop, $orderPaymentApiPoint)
+                    'label'                   => __('Online payments'),
+                    'key'                     => 'credit_card',
+                    'public_key'              => $publicKey,
+                    'environment'             => app()->environment('production') ? 'production' : 'sandbox',
+                    'locale'                  => $paymentAccountShop->shop->language->code,
+                    'icon'                    => 'fal fa-credit-card-front',
+                    'data'                    => GetRetinaPaymentAccountShopCheckoutComData::run($order, $paymentAccountShop, $orderPaymentApiPoint),
+                    'order_payment_api_point' => $orderPaymentApiPoint->ulid
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::BANK) {
+
+
             return
                 [
                     'label' => __('Bank transfer'),
                     'key'   => 'bank_transfer',
                     'icon'  => 'fal fa-university',
                     'data'  => [
-                        'bank_name'      => 'AAA',
-                        'account_number' => 'xxxx',
-                        'iban'           => 'yyyy'
+                        'bank_name'      => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.name'),
+                        'account_number' => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.account'),
+                        'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
                     ]
                 ];
         }

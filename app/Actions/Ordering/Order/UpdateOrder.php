@@ -9,8 +9,8 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\Dispatching\DeliveryNote\CopyOrderNotesToDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
@@ -20,7 +20,10 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Events\UpdateOrderNotesEvent;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -47,7 +50,7 @@ class UpdateOrder extends OrgAction
         $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
-        if (Arr::has($changes, 'tax_category_id')) {
+        if (Arr::hasAny($changes, ['tax_category_id', 'collection_address_id'])) {
             CalculateOrderTotalAmounts::run($order);
         }
 
@@ -57,25 +60,50 @@ class UpdateOrder extends OrgAction
                 GroupHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->group, $intervalsExceptHistorical, []);
                 OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->organisation, $intervalsExceptHistorical, []);
                 ShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->shop, $intervalsExceptHistorical, []);
+                MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
             }
 
-            $deliveryNote = $order->deliveryNotes->first();
-            if (Arr::has($changes, 'customer_notes')) {
-                $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                        'customer_notes' => true,
-                ], true);
-            } elseif (Arr::has($changes, 'public_notes')) {
-                $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                        'public_notes' => true,
-                ], true);
-            } elseif (Arr::has($changes, 'internal_notes')) {
-                $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                        'internal_notes' => true,
-                ], true);
-            } elseif (Arr::has($changes, 'shipping_notes')) {
-                $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                        'shipping_notes' => true,
-                ], true);
+            $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
+            if ($deliveryNote) {
+
+                if (Arr::has($changes, 'collection_address_id') &&  !in_array($deliveryNote->state, [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
+                    $deliveryNote->update(
+                        [
+                            'collection_address_id' => $order->collection_address_id,
+                        ]
+                    );
+                }
+
+
+                if (Arr::has($changes, 'customer_notes')) {
+                    $deliveryNote->update(
+                        [
+                            'customer_notes' => $order->customer_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
+                } elseif (Arr::has($changes, 'public_notes')) {
+                    $deliveryNote->update(
+                        [
+                            'public_notes' => $order->public_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
+                } elseif (Arr::has($changes, 'internal_notes')) {
+                    $deliveryNote->update(
+                        [
+                            'internal_notes' => $order->internal_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
+                } elseif (Arr::has($changes, 'shipping_notes')) {
+                    $deliveryNote->update(
+                        [
+                            'shipping_notes' => $order->shipping_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
+                }
             }
 
 
@@ -114,9 +142,11 @@ class UpdateOrder extends OrgAction
                 ),
             ],
 
-            'in_warehouse_at'     => ['sometimes', 'date'],
-            'dispatched_at'       => ['sometimes', 'nullable', 'date'],
-            'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')],
+            'in_warehouse_at'       => ['sometimes', 'date'],
+            'dispatched_at'         => ['sometimes', 'nullable', 'date'],
+            'finalised_at'         => ['sometimes', 'nullable', 'date'],
+            'delivery_address_id'   => ['sometimes', Rule::exists('addresses', 'id')],
+            'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
             'shipping_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
             'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
             'public_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
@@ -129,7 +159,7 @@ class UpdateOrder extends OrgAction
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
-            'tax_category_id'     => ['sometimes', Rule::exists('tax_categories', 'id')],
+            'tax_category_id'       => ['sometimes', Rule::exists('tax_categories', 'id')],
         ];
 
 

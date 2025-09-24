@@ -84,6 +84,10 @@ class CreateWebpage extends OrgAction
                                         'name'       => 'org.websites.show.webpages.show' ,
                                         'parameters' => array_values($request->route()->originalParameters())
                                     ],
+                                    'grp.org.shops.show.web.blogs.create' => [
+                                        'name'       => 'grp.org.shops.show.web.blogs.index' ,
+                                        'parameters' => array_values($request->route()->originalParameters())
+                                    ],
                                     default => [
                                         'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                         'parameters' => array_values($request->route()->originalParameters())
@@ -98,8 +102,6 @@ class CreateWebpage extends OrgAction
                 ],
                 'formData'    => [
                     'blueprint' => [
-
-
                         [
                             'title'  => __('Id'),
                             'icon'   => ['fal', 'fa-fingerprint'],
@@ -116,37 +118,23 @@ class CreateWebpage extends OrgAction
                                     'value'    => '',
                                     'required' => true,
                                 ],
-//                                'type' => [
-//                                    'type'     => 'select',
-//                                    'label'    => __('type'),
-//                                    'options'  => Options::forEnum(WebpageTypeEnum::class),
-//                                    'value'    => '',
-//                                    'required' => true,
-//                                ],
-//                                'sub_type' => [
-//                                    'type'     => 'select',
-//                                    'label'    => __('sub type'),
-//                                    'options'  => Options::forEnum(WebpageSubTypeEnum::class),
-//                                    'value'    => '',
-//                                    'required' => true,
-//                                ],
                                 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),
                                     'label_no_capitalize' => true,
                                     'leftAddOn' => [
-                                        'label' => 'https://'.($parent instanceof Webpage ? $parent->website->domain : $parent->domain).'/'
+                                        'label' => 'https://' . ($parent instanceof Webpage ? $parent->website->domain : $parent->domain) . '/'
                                     ],
                                     'value'     => '',
                                     'required'  => true,
                                 ],
                                 'seo_structure_type' => [
-                                        'type'     => 'select',
-                                        'required'  => true,
-                                        'label'    => __('seo structure type'),
-                                        'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
-                                        'value'    => null,
-                                        'required' => false,
+                                    'type'     => 'select',
+                                    'required'  => true,
+                                    'label'    => __('seo structure type'),
+                                    'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
+                                    'value'    => null,
+                                    'required' => false,
                                 ],
 
                             ]
@@ -177,6 +165,18 @@ class CreateWebpage extends OrgAction
                     ]
                 ]
             ),
+            'grp.org.shops.show.web.blogs.create' =>
+            array_merge(
+                IndexBlogWebpages::make()->getBreadcrumbs('grp.org.shops.show.web.blogs.index', $routeParameters),
+                [
+                    [
+                        'type'          => 'creatingModel',
+                        'creatingModel' => [
+                            'label' => __("webpage"),
+                        ]
+                    ]
+                ]
+            ),
             'org.websites.show.webpages.create' =>
             array_merge(
                 IndexWebpages::make()->getBreadcrumbs($routeName, $routeParameters),
@@ -191,9 +191,5 @@ class CreateWebpage extends OrgAction
             ),
             default => []
         };
-
-
     }
-
-
 }

@@ -23,7 +23,7 @@ class FetchAuroraHistory extends FetchAurora
 
     protected function parseModel(): void
     {
-        //print_r($this->auroraModelData);
+
         //enum('sold_since','last_sold','first_sold','placed','wrote','deleted','edited','cancelled','charged','merged','created','associated','disassociate','register','login','logout','fail_login','password_request','password_reset','search')
         $event = match ($this->auroraModelData->{'Action'}) {
             'edited' => 'updated',

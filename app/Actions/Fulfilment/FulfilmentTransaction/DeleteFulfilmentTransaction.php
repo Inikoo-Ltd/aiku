@@ -17,7 +17,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
-use App\Models\Fulfilment\Pallet;
 use App\Models\Fulfilment\FulfilmentTransaction;
 use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
@@ -28,7 +27,6 @@ class DeleteFulfilmentTransaction extends OrgAction
     use WithFulfilmentShopEditAuthorisation;
 
 
-    private Pallet $palletDeliveryTransaction;
     private FulfilmentTransaction $fulfilmentTransaction;
 
     /**
@@ -58,7 +56,7 @@ class DeleteFulfilmentTransaction extends OrgAction
     public function afterValidator(Validator $validator, ActionRequest $request): void
     {
         $recurringBillTransaction = $this->fulfilmentTransaction->recurringBillTransaction;
-        if ($recurringBillTransaction and $recurringBillTransaction->recurringBill->status != RecurringBillStatusEnum::CURRENT) {
+        if ($recurringBillTransaction && $recurringBillTransaction->recurringBill->status != RecurringBillStatusEnum::CURRENT) {
             $validator->errors()->add('recurring_bill_state', 'Cannot delete transaction when associated recurring bill has been invoiced');
         }
     }
@@ -81,7 +79,6 @@ class DeleteFulfilmentTransaction extends OrgAction
      */
     public function action(FulfilmentTransaction $fulfilmentTransaction): void
     {
-
         $this->asAction              = true;
         $this->fulfilmentTransaction = $fulfilmentTransaction;
         $this->initialisationFromFulfilment($fulfilmentTransaction->fulfilment, []);

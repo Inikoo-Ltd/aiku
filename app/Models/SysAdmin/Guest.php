@@ -70,7 +70,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Guest newQuery()
  * @method static Builder<static>|Guest onlyTrashed()
  * @method static Builder<static>|Guest query()
- * @method static Builder<static>|Guest withTrashed()
+ * @method static Builder<static>|Guest withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Guest withoutTrashed()
  * @mixin Eloquent
  */
