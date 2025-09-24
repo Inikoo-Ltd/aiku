@@ -60,7 +60,7 @@ class RepairInvoiceFixTaxNumber
 
     public function asCommand(Command $command): void
     {
-        
+
         $count = Invoice::count();
 
         $command->info("pending: $count");
