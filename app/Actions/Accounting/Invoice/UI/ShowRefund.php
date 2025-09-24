@@ -17,6 +17,7 @@ use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Enums\UI\Accounting\RefundInProcessTabsEnum;
 use App\Enums\UI\Accounting\RefundTabsEnum;
@@ -25,6 +26,7 @@ use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Accounting\RefundInProcessTransactionsResource;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\RefundTransactionsResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -276,6 +278,10 @@ class ShowRefund extends OrgAction
                     RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value => $this->tab == RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value ?
                         fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))
                         : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))),
+                    
+                    RefundInProcessTabsEnum::HISTORY->value => $this->tab == RefundInProcessTabsEnum::HISTORY->value ?
+                        fn () => HistoryResource::collection(IndexHistory::run($refund))
+                        : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($refund))),
 
 
                 ]
@@ -294,6 +300,11 @@ class ShowRefund extends OrgAction
                     RefundTabsEnum::PAYMENTS->value => $this->tab == RefundTabsEnum::PAYMENTS->value ?
                         fn () => PaymentsResource::collection(IndexPayments::run($refund))
                         : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($refund))),
+
+                    RefundTabsEnum::HISTORY->value => $this->tab == RefundTabsEnum::HISTORY->value ?
+                        fn () => HistoryResource::collection(IndexHistory::run($refund))
+                        : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($refund))),
+                        
                     'invoiceExportOptions'          => $exportInvoiceOptions
                 ]
             );
@@ -307,9 +318,11 @@ class ShowRefund extends OrgAction
 
         if ($refund->in_process) {
             $inertia->table(IndexRefundTransactions::make()->tableStructure($refund, RefundInProcessTabsEnum::ITEMS->value))
+                ->table(IndexHistory::make()->tableStructure(prefix: RefundInProcessTabsEnum::HISTORY->value))
                 ->table(IndexRefundInProcessTransactions::make()->tableStructure($refund, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value));
         } else {
             $inertia->table(IndexPayments::make()->tableStructure($refund, [], RefundTabsEnum::PAYMENTS->value))
+                ->table(IndexHistory::make()->tableStructure(prefix: RefundTabsEnum::HISTORY->value))
                 ->table(IndexRefundTransactions::make()->tableStructure($refund, RefundTabsEnum::ITEMS->value));
         }
 
