@@ -24,6 +24,7 @@ const props = defineProps<{
         withQuantity?: boolean
         routeFetch: routeType
         key_quantity? : string
+        tabs:array
     }
 }>()
 
@@ -70,7 +71,7 @@ const updateFormValue = (newValue) => {
                 @update:modelValue="(e)=>updateFormValue(e)"
                 :key_quantity="fieldData.key_quantity"
                 :withQuantity="fieldData.withQuantity || false" :route-fetch="fieldData.routeFetch" 
-                class="mt-4" 
+                class="mt-4" :tabs="fieldData.tabs"
             />
         </div>
     </div>
