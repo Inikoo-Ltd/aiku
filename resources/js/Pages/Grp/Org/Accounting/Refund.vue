@@ -55,6 +55,7 @@ import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import invoice from "@/Pages/Grp/Org/Accounting/Invoice.vue";
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 
 
 library.add(
@@ -142,7 +143,7 @@ const component = computed(() => {
     items_in_process: TableInvoiceRefundsInProcessTransactions,
     payments: TablePayments,
     details: ModelDetails,
-    history: ModelChangelog
+    history: TableHistories
   };
 
   return components[currentTab.value];

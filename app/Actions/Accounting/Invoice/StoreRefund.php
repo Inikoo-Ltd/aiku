@@ -10,11 +10,13 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Accounting\Invoice;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -31,8 +33,11 @@ class StoreRefund extends OrgAction
      */
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
-        $count     = $invoice->refunds->count() + 1;
-        $reference = $invoice->reference.'-refund-'.$count;
+
+        $reference = GetSerialReference::run(
+            container: $this->shop,
+            modelType: SerialReferenceModelEnum::INVOICE
+        );
 
         data_set($modelData, 'reference', $reference);
         data_set($modelData, 'type', InvoiceTypeEnum::REFUND);
@@ -76,6 +81,7 @@ class StoreRefund extends OrgAction
 
         return DB::transaction(function () use ($invoice, $modelData) {
             /** @var Invoice $refund */
+            dd($modelData);
             $refund = $invoice->refunds()->create($modelData);
             $refund->stats()->create();
 

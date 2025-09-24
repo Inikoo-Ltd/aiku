@@ -34,6 +34,7 @@ import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
 import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
 import FormEditTradeUnit from '@/Components/Forms/Fields/FormEditTradeUnit.vue'
 import TagsTradeUnits from '@/Components/Forms/Fields/TagsTradeUnits.vue'
+import invoiceSerialReferences from '@/Components/Forms/Fields/invoiceSerialReferences.vue'
 
 
 const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
@@ -121,7 +122,8 @@ export const componentsList: {[key: string]: Component} = {
     'tags-trade-unit' : TagsTradeUnits,
     'brands-trade-unit' : BrandsTradeUnit,
     'multiselect-tags' : MultiselectTagsInfiniteScroll,
-    'input-dimension' : InputDimensions
+    'input-dimension' : InputDimensions,
+    'invoice_serial_references' : invoiceSerialReferences
 }
 
 export const getComponent = (componentName: string) => {

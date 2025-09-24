@@ -54,7 +54,7 @@ class OrderProductsResource extends JsonResource
             'quantity_ordered'          => $this->quantity_ordered ?? 0,
             'transaction_id'            => $this->transaction_id ?? null,
             'order_id'                  => $this->order_id ?? null,
-
+            'price'                     => $this->price,
             'deleteRoute'            => [
                 'name'       => 'grp.models.transaction.delete',
                 'parameters' => [

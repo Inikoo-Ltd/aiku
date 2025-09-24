@@ -13,8 +13,10 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Support\Arr;
@@ -37,6 +39,7 @@ class EditShop extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Shop
     {
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($shop);
     }
 
@@ -54,22 +57,34 @@ class EditShop extends OrgAction
             if (!in_array($item, $carry)) {
                 $carry[] = $item;
             }
+
             return $carry;
         }, []);
+
+
+        $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
+            ->where('container_type', 'Shop')
+            ->where('container_id', $shop->id)->first();
+
+
+
+        $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
+            ->where('container_type', 'Shop')
+            ->where('container_id', $shop->id)->first();
 
         return Inertia::render(
             'EditModel',
             [
-                'title'        => __('edit shop'),
-                'breadcrumbs'  => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
+                'title'       => __('edit shop'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
 
-                'pageHead'    => [
-                    'title'     => $shop->name,
-                    'icon'      => [
+                'pageHead' => [
+                    'title'   => $shop->name,
+                    'icon'    => [
                         'title' => __('Shop'),
                         'icon'  => 'fal fa-store-alt'
                     ],
-                    'actions'   => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -87,17 +102,17 @@ class EditShop extends OrgAction
                             'label'  => __('Shop details'),
                             'icon'   => 'fa-light fa-id-card',
                             'fields' => [
-                                'code' => [
-                                    'type'         => 'input',
-                                    'label'        => __('code'),
-                                    'value'        => $shop->code,
-                                    'required'     => true,
+                                'code'  => [
+                                    'type'     => 'input',
+                                    'label'    => __('code'),
+                                    'value'    => $shop->code,
+                                    'required' => true,
                                 ],
-                                'name' => [
-                                    'type'         => 'input',
-                                    'label'        => __('name'),
-                                    'value'        => $shop->name,
-                                    'required'     => true,
+                                'name'  => [
+                                    'type'     => 'input',
+                                    'label'    => __('name'),
+                                    'value'    => $shop->name,
+                                    'required' => true,
                                 ],
                                 "image" => [
                                     "type"  => "avatar",
@@ -105,17 +120,17 @@ class EditShop extends OrgAction
                                     "value" => $shop->imageSources(320, 320)
                                 ],
 
-                                'contact_name' => [
+                                'contact_name'        => [
                                     'type'  => 'input',
                                     'label' => __('contact name'),
                                     'value' => $shop->contact_name,
                                 ],
-                                'company_name' => [
+                                'company_name'        => [
                                     'type'  => 'input',
                                     'label' => __('company name'),
                                     'value' => $shop->company_name,
                                 ],
-                                'email'        => [
+                                'email'               => [
                                     'type'    => 'input',
                                     'label'   => __('email'),
                                     'value'   => $shop->email,
@@ -123,12 +138,12 @@ class EditShop extends OrgAction
                                         'inputType' => 'email'
                                     ]
                                 ],
-                                'phone'        => [
+                                'phone'               => [
                                     'type'  => 'phone',
                                     'label' => __('telephone'),
                                     'value' => $shop->phone,
                                 ],
-                                'address' => [
+                                'address'             => [
                                     'type'    => 'address',
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($shop->address)->getArray(),
@@ -136,12 +151,12 @@ class EditShop extends OrgAction
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
-                                'registration_number'        => [
+                                'registration_number' => [
                                     'type'  => 'input',
                                     'label' => __('registration number'),
                                     'value' => $shop->data['registration_number'] ?? '',
                                 ],
-                                'vat_number'        => [
+                                'vat_number'          => [
                                     'type'  => 'input',
                                     'label' => __('VAT number'),
                                     'value' => $shop->data['vat_number'] ?? '',
@@ -154,21 +169,21 @@ class EditShop extends OrgAction
                             'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 'country_id'  => [
-                                    'type'          => 'select',
-                                    'label'         => __('country'),
-                                    'placeholder'   => __('Select your country'),
-                                    'value'         => $shop->country_id,
-                                    'options'       => GetCountriesOptions::run(),
-                                    'searchable'    => true
+                                    'type'        => 'select',
+                                    'label'       => __('country'),
+                                    'placeholder' => __('Select your country'),
+                                    'value'       => $shop->country_id,
+                                    'options'     => GetCountriesOptions::run(),
+                                    'searchable'  => true
                                 ],
                                 'currency_id' => [
-                                    'type'          => 'select',
-                                    'label'         => __('currency'),
-                                    'placeholder'   => __('Select your currency'),
-                                    'required'      => true,
-                                    'value'         => $shop->currency_id,
-                                    'options'       => GetCurrenciesOptions::run(),
-                                    'searchable'    => true
+                                    'type'        => 'select',
+                                    'label'       => __('currency'),
+                                    'placeholder' => __('Select your currency'),
+                                    'required'    => true,
+                                    'value'       => $shop->currency_id,
+                                    'options'     => GetCurrenciesOptions::run(),
+                                    'searchable'  => true
                                 ],
                             ],
                         ],
@@ -184,26 +199,26 @@ class EditShop extends OrgAction
                             'icon'   => 'fa-light fa-money-bill',
                             'fields' => [
                                 'cost_price_ratio' => [
-                                    'type'          => 'input_number',
-                                    'bind' => [
+                                    'type'        => 'input_number',
+                                    'bind'        => [
                                         'maxFractionDigits' => 3
                                     ],
-                                    'label'         => __('pricing ratio'),
-                                    'placeholder'   => __('Cost price ratio'),
-                                    'required'      => true,
-                                    'value'         => $shop->cost_price_ratio,
-                                    'min'           => 0
+                                    'label'       => __('pricing ratio'),
+                                    'placeholder' => __('Cost price ratio'),
+                                    'required'    => true,
+                                    'value'       => $shop->cost_price_ratio,
+                                    'min'         => 0
                                 ],
-                                'price_rrp_ratio' => [
-                                    'type'          => 'input_number',
-                                    'bind' => [
+                                'price_rrp_ratio'  => [
+                                    'type'        => 'input_number',
+                                    'bind'        => [
                                         'maxFractionDigits' => 3
                                     ],
-                                    'label'         => __('rrp ratio'),
-                                    'placeholder'   => __('price rrp ratio'),
-                                    'required'      => true,
-                                    'value'         => $shop->price_rrp_ratio,
-                                    'min'           => 0
+                                    'label'       => __('rrp ratio'),
+                                    'placeholder' => __('price rrp ratio'),
+                                    'required'    => true,
+                                    'value'       => $shop->price_rrp_ratio,
+                                    'min'         => 0
                                 ]
                             ]
                         ],
@@ -219,13 +234,50 @@ class EditShop extends OrgAction
                             ],
                         ],
                         [
-                            'label'  => __('Invoicing'),
+                            'label'  => __('Invoice numbers'),
                             'icon'   => 'fal fa-file-invoice',
                             'fields' => [
-                                'stand_alone_invoice_numbers' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Standalone invoice numbers'),
-                                    'value' => Arr::get($shop->settings, 'invoicing.stand_alone_invoice_numbers', false),
+                                'invoice_serial_references' => [
+                                    'type'    => 'invoice_serial_references',
+                                    'options' => [
+                                            [
+                                                'type' => [
+                                                    'label' => __('Standalone invoice numbers'),
+                                                    'key_value' => 'stand_alone_invoice_numbers'
+                                                ],
+                                                'format' => [
+                                                    'label' => __('format'),
+                                                    'key_value' => 'stand_alone_invoice_numbers_format'
+                                                ],
+                                                'sequence' => [
+                                                    'label' => __('sequence'),
+                                                    'key_value' => 'stand_alone_invoice_numbers_serial'
+                                                ],
+                                            ],
+                                            [
+                                                'type' => [
+                                                    'label' => __('Standalone refunds numbers'),
+                                                    'key_value' => 'stand_alone_refund_numbers'
+                                                ],
+                                                'format' => [
+                                                    'label' => __('format'),
+                                                    'key_value' => 'stand_alone_refund_numbers_format'
+                                                ],
+                                                'sequence' => [
+                                                    'label' => __('sequence'),
+                                                    'key_value' => 'stand_alone_refund_numbers_serial'
+                                                ],
+                                            ],
+                                    ],
+                                    'label'   => __('Invoice numbers'),
+                                    'value'   => [
+                                        'stand_alone_invoice_numbers'        => Arr::get($shop->settings, 'invoicing.stand_alone_invoice_numbers', false),
+                                        'stand_alone_invoice_numbers_format' => $invoiceSerialReference->format,
+                                        'stand_alone_invoice_numbers_serial' => $invoiceSerialReference->serial,
+                                        'stand_alone_refund_numbers'         => Arr::get($shop->settings, 'invoicing.stand_alone_refund_numbers', false),
+                                        'stand_alone_refund_numbers_format'  => $refundSerialReference->format,
+                                        'stand_alone_refund_numbers_serial'  => $refundSerialReference->serial,
+                                    ]
                                 ],
                             ],
                         ],
@@ -233,11 +285,11 @@ class EditShop extends OrgAction
                             'label'  => __('invoices footer'),
                             'icon'   => 'fa-light fa-shoe-prints',
                             'fields' => [
-                                'invoice_footer'  => [
-                                    'type'        => 'textEditor',
-                                    'label'       => __('invoice footer'),
-                                    'full'      => true,
-                                    'value'       => $shop->invoice_footer
+                                'invoice_footer' => [
+                                    'type'  => 'textEditor',
+                                    'label' => __('invoice footer'),
+                                    'full'  => true,
+                                    'value' => $shop->invoice_footer
                                 ],
                             ],
                         ],
@@ -245,26 +297,26 @@ class EditShop extends OrgAction
                             'label'  => __('Languages'),
                             'icon'   => 'fa-light fa-language',
                             'fields' => [
-                                'language_id' => [
-                                    'type'          => 'select',
-                                    'label'         => __('Main language'),
-                                    'placeholder'   => __('Select your language'),
-                                    'required'      => true,
-                                    'value'         => $shop->language_id,
-                                    'options'       => GetLanguagesOptions::make()->all(),
-                                    'searchable'    => true
+                                'language_id'     => [
+                                    'type'        => 'select',
+                                    'label'       => __('Main language'),
+                                    'placeholder' => __('Select your language'),
+                                    'required'    => true,
+                                    'value'       => $shop->language_id,
+                                    'options'     => GetLanguagesOptions::make()->all(),
+                                    'searchable'  => true
                                 ],
                                 'extra_languages' => [
-                                    'type'          => 'select',
-                                    'label'         => __('Extra language'),
-                                    'placeholder'   => __('Select your language'),
-                                    'required'      => true,
-                                    'value'         => $shop->extra_languages,
-                                    'options'       => GetLanguagesOptions::make()->getExtraGroupLanguages($shop->group->extra_languages),
-                                    'searchable'    => true,
-                                    'mode'          => 'tags',
-                                    'labelProp'     => 'name',
-                                    'valueProp' => 'id',
+                                    'type'        => 'select',
+                                    'label'       => __('Extra language'),
+                                    'placeholder' => __('Select your language'),
+                                    'required'    => true,
+                                    'value'       => $shop->extra_languages,
+                                    'options'     => GetLanguagesOptions::make()->getExtraGroupLanguages($shop->group->extra_languages),
+                                    'searchable'  => true,
+                                    'mode'        => 'tags',
+                                    'labelProp'   => 'name',
+                                    'valueProp'   => 'id',
                                 ]
                             ],
                         ],
@@ -273,17 +325,17 @@ class EditShop extends OrgAction
                             'icon'   => 'fa-light fa-truck',
                             'fields' => [
                                 'forbidden_dispatch_countries' => [
-                                    'type'          => 'multiselect-tags',
-                                    'placeholder'   => __('Select countries'),
-                                    'information'   => __('Customer cannot submit order that delivered to these countries'),
-                                    'label'         => __('Forbidden Countries'),
-                                    'required'      => true,
-                                    'value'         => $result,
-                                    'options'       => GetCountriesOptions::run(),
-                                    'searchable'    => true,
-                                    'mode'          => 'tags',
-                                    'labelProp'     => 'label',
-                                    'valueProp'     => 'id'
+                                    'type'        => 'multiselect-tags',
+                                    'placeholder' => __('Select countries'),
+                                    'information' => __('Customer cannot submit order that delivered to these countries'),
+                                    'label'       => __('Forbidden Countries'),
+                                    'required'    => true,
+                                    'value'       => $result,
+                                    'options'     => GetCountriesOptions::run(),
+                                    'searchable'  => true,
+                                    'mode'        => 'tags',
+                                    'labelProp'   => 'label',
+                                    'valueProp'   => 'id'
                                 ]
                             ],
                         ],
@@ -325,7 +377,6 @@ class EditShop extends OrgAction
             default => []
         };
     }
-
 
 
 }
