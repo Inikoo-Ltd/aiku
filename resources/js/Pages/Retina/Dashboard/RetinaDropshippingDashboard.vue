@@ -1,17 +1,13 @@
 <script setup lang="ts">
-import BackgroundBox from '@/Components/BackgroundBox.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
-import Icon from '@/Components/Icon.vue'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import CountUp from 'vue-countup-v3'
 
 import { faArrowRight } from "@far"
-import { faUser, faBuilding, faEnvelope, faPhone } from "@fas"
+import { faReceipt, faUser, faBuilding, faEnvelope, faPhone } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link, router } from '@inertiajs/vue3'
-import { capitalize, inject, ref } from 'vue'
+import { inject, ref } from 'vue'
 import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 import { trans } from 'laravel-vue-i18n'
@@ -21,8 +17,8 @@ import { routeType } from '@/types/route'
 import Modal from '@/Components/Utils/Modal.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { notify } from '@kyvg/vue3-notification'
-import Tooltip from 'primevue/tooltip'
-library.add(faArrowRight, faUser, faBuilding, faEnvelope, faPhone)
+import TaxNumberDisplay from '@/Components/UI/TaxNumberDisplay.vue'
+library.add(faReceipt, faArrowRight, faUser, faBuilding, faEnvelope, faPhone)
 
 const props = defineProps<{
     data: {
@@ -95,60 +91,89 @@ const onSubmitCreateOrder = () => {
         }
     )
 }
+
 </script>
 
 <template>
     <div class="relative isolate overflow-hidden">
-        <!-- <pre>{{ data }}</pre> -->
-        <!-- <svg class="absolute inset-0 -z-10 size-full stroke-gray-200 [mask-image:radial-gradient(100%_100%_at_top_right,white,transparent)]"
-            aria-hidden="true">
-            <defs>
-                <pattern id="0787a7c5-978c-4f66-83c7-11c213f99cb7" width="200" height="200" x="50%" y="-1"
-                    patternUnits="userSpaceOnUse">
-                    <path d="M.5 200V.5H200" fill="none" />
-                </pattern>
-            </defs>
-            <rect width="100%" height="100%" stroke-width="0" fill="url(#0787a7c5-978c-4f66-83c7-11c213f99cb7)" />
-        </svg> -->
-            {{  }}
         <div class="mx-auto px-6 pb-12 pt-10 lg:flex lg:px-14 ">
             <div v-if="data.channels.length" class="w-full lg:shrink-0">
                 <div class="mx-auto xmax-w-2xl lg:mx-0 ">
-                    <!-- Customer Contact Information -->
+                    <!-- Section: Customer Contact Information -->
                     <div v-if="data.customer" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ trans("Customer Information") }}</h2>
+                        <div class=" flex justify-between items-center mb-3">
+                            <h2 class="text-lg font-semibold">{{ trans("Customer Information") }}</h2>
+                            <Link
+                                :href="route('retina.sysadmin.settings.edit')"
+                                class="underline text-xs text-gray-500 hover:text-gray-700"
+                            >
+                                <FontAwesomeIcon icon="fal fa-pencil" class="opacity-80" fixed-width aria-hidden="true" />
+                                {{ trans("Edit information") }}
+                            </Link>
+                            <!-- <ButtonWithLink
+                                :label="trans('Edit information')"
+                                :routeTarget="{
+                                    name: 'retina.sysadmin.settings.edit',
+                                    parameters: {
+                                        model: data.customer.id
+                                    }
+                                }"
+                            /> -->
+                        </div>
+                        
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <!-- Information: contact name -->
                             <div v-if="data.customer.contact_name" class="flex items-center">
-                                <FontAwesomeIcon 
+                                <FontAwesomeIcon
+                                    fixed-width 
                                     icon="fas fa-user" 
                                     class="text-gray-600 mr-2 w-4 h-4"
                                     v-tooltip="trans('Contact Name')"
                                 />
-                                <span class="text-gray-900">{{ data.customer.contact_name }}</span>
+                                <span class="">{{ data.customer.contact_name }}</span>
                             </div>
+
+                            <!-- Information: company name -->
                             <div v-if="data.customer.company_name" class="flex items-center">
-                                <FontAwesomeIcon 
+                                <FontAwesomeIcon
+                                    fixed-width 
                                     icon="fas fa-building" 
                                     class="text-gray-600 mr-2 w-4 h-4"
                                     v-tooltip="trans('Company Name')"
                                 />
-                                <span class="text-gray-900">{{ data.customer.company_name }}</span>
+                                <span class="">{{ data.customer.company_name }}</span>
                             </div>
+
+                            <!-- Information: email -->
                             <div v-if="data.customer.email" class="flex items-center">
-                                <FontAwesomeIcon 
+                                <FontAwesomeIcon
+                                    fixed-width 
                                     icon="fas fa-envelope" 
                                     class="text-gray-600 mr-2 w-4 h-4"
                                     v-tooltip="trans('Email')"
                                 />
-                                <span class="text-gray-900">{{ data.customer.email }}</span>
+                                <span class="">{{ data.customer.email }}</span>
                             </div>
+
+                            <!-- Information: phone -->
                             <div v-if="data.customer.phone" class="flex items-center">
-                                <FontAwesomeIcon 
+                                <FontAwesomeIcon
+                                    fixed-width 
                                     icon="fas fa-phone" 
                                     class="text-gray-600 mr-2 w-4 h-4"
                                     v-tooltip="trans('Phone')"
                                 />
-                                <span class="text-gray-900">{{ data.customer.phone }}</span>
+                                <span class="">{{ data.customer.phone }}</span>
+                            </div>
+
+                            <!-- Information: Tax Number -->
+                            <div v-if="data?.customer.tax_number && data.customer.tax_number.number" class="flex items-start w-full flex-none gap-x-1.5">
+                                <dt v-tooltip="trans('Tax Number')" class="flex-none xpt-1">
+                                    <span class="sr-only">Tax Number</span>
+                                    <FontAwesomeIcon icon="fas fa-receipt" class="text-gray-600" fixed-width aria-hidden="true"/>
+                                </dt>
+
+                                <TaxNumberDisplay :tax_number="data.customer.tax_number" />
                             </div>
                         </div>
                     </div>
@@ -168,7 +193,7 @@ const onSubmitCreateOrder = () => {
                             :stat="stat"
                         />
                         <div v-if="data.last_visited_channels?.length" class="overflow-hidden border border-gray-300 rounded-md mt-5 relative">
-                            <div class="sticky top-0 z-10 border-y border-b-gray-200 border-t-gray-100 bg-gray-50 px-3 py-1.5 text-sm/6 font-semibold text-gray-900">
+                            <div class="sticky top-0 z-10 border-y border-b-gray-200 border-t-gray-100 bg-gray-50 px-3 py-1.5 text-sm/6 font-semibold">
                                 <h3>{{ trans("Last visited Channels") }}</h3>
                             </div>
                             <ul role="list" class="divide-y divide-gray-100">
@@ -243,10 +268,10 @@ const onSubmitCreateOrder = () => {
                 </div> -->
 
                 <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
-                    Manage your orders and products
+                    {{ trans("Manage your orders and products") }}
                 </h1>
                 <p class="mt-8 text-pretty text-lg font-medium text-gray-500 sm:text-xl/8">
-                    Control your orders and products with our easy-to-use dashboard. You can manage your orders, products, and customers all in one place.
+                    {{ trans("Control your orders and products with our easy-to-use dashboard. You can manage your orders, products, and customers all in one place.") }}
                 </p>
                 <div class="mt-10 flex items-center gap-x-6">
                     <ButtonWithLink

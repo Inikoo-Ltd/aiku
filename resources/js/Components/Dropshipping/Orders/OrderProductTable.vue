@@ -1,41 +1,51 @@
 <script setup lang="ts">
-import { ref, reactive, inject } from 'vue'
+import { ref, reactive, inject, onBeforeUnmount } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
-import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { routeType } from '@/types/route'
 import { Table as TableTS } from '@/types/Table'
-import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faPencil, faTimes } from '@far'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash-es'
-import InputNumber from 'primevue/inputnumber'
-import { faXmark } from '@fortawesome/free-solid-svg-icons'
+import ModalProductList from "@/Components/Utils/ModalProductList.vue"
+
+type ProductRow = {
+  id: number
+  asset_code: string
+  asset_name: string
+  quantity_ordered: number
+  available_quantity?: number
+  product_slug?: string
+  updateRoute: routeType
+  deleteRoute?: routeType
+}
 
 const props = defineProps<{
-  data: any[] | TableTS
+  data: ProductRow[] | TableTS<ProductRow>
   tab: string
   updateRoute: routeType
   state?: string
   readonly?: boolean
+  modifyRoute?:routeType
 }>()
 
-// --- State ---
-// editingIds: tracks rows in edit mode
-const editingIds = ref<number[]>([])
-// createNewQty: map id -> cloned item (so original props.data stays unchanged)
-const createNewQty = reactive<Record<number, any>>({})
-const locale = inject('locale', retinaLayoutStructure)
+const layout = inject("layout", {});
+const locale = inject('locale', {})
+const editingIds = ref<Set<number>>(new Set())
+const createNewQty = reactive<Record<number, ProductRow>>({})
 const isLoading = ref<string | null>(null)
+const isModalProductListOpen = ref(false)
+const loadingsaveModify = ref(false)
 
-// Helper to get array of rows whether props.data is array or TableTS
+// Helper: get rows as array
 function rowsArray() {
-  if (Array.isArray(props.data)) return props.data as any[]
-  return (props.data as any).data || []
+  if (Array.isArray(props.data)) return props.data
+  return (props.data as TableTS<ProductRow>).data || []
 }
 
 // --- Utils ---
@@ -46,7 +56,7 @@ function formatQuantity(value: any): string | number {
   return parseFloat(value)
 }
 
-function productRoute(product: any) {
+function productRoute(product: ProductRow) {
   switch (route().current()) {
     case 'grp.org.shops.show.crm.customers.show.orders.show':
     case 'grp.org.shops.show.ordering.orders.show':
@@ -66,23 +76,20 @@ function productRoute(product: any) {
   }
 }
 
-// Start edit: create shallow clone and add to editingIds
-function startEdit(item: any) {
-  if (!editingIds.value.includes(item.id)) {
-    editingIds.value.push(item.id)
-    // create a new variable (clone) and store it — do NOT mutate original item
+// --- Editing Logic ---
+function startEdit(item: ProductRow) {
+  if (!editingIds.value.has(item.id)) {
+    editingIds.value.add(item.id)
     createNewQty[item.id] = { ...item }
   }
 }
 
-// Cancel editing for a row
-function onCancel(item: any) {
-  // remove clone and exit edit mode
+function onCancel(item: ProductRow) {
   delete createNewQty[item.id]
-  editingIds.value = editingIds.value.filter((id) => id !== item.id)
+  editingIds.value.delete(item.id)
 }
 
-// --- Update logic (per-row patch) ---
+// --- Update Logic ---
 const onUpdateQuantity = (
   routeUpdate: routeType,
   idTransaction: number,
@@ -107,6 +114,7 @@ const onUpdateQuantity = (
   )
 }
 
+// Debounced update
 const debounceUpdateQuantity = debounce(
   (routeUpdate: routeType, idTransaction: number, value: number) => {
     onUpdateQuantity(routeUpdate, idTransaction, value)
@@ -114,52 +122,71 @@ const debounceUpdateQuantity = debounce(
   500
 )
 
+onBeforeUnmount(() => {
+  debounceUpdateQuantity.cancel()
+})
+
 // --- Save all changes ---
-function onSave() {
-  // Build list of changed rows by comparing clone vs original
-  const changedItems = Object.entries(createNewQty)
-    .map(([id, clonedItem]) => {
-      const orig = rowsArray().find((x: any) => x.id === Number(id))
-      if (!orig) return null
-      const origQty = Number(orig.quantity_ordered)
+async function onSave() {
+  const changedItems = Object.entries(createNewQty).reduce(
+    (acc, [id, clonedItem]) => {
+      const orig = rowsArray().find(x => x.id === Number(id))
+      if (!orig) return acc
+
       const newQty = Number(clonedItem.quantity_ordered)
-      if (newQty === origQty) return null // skip unchanged
-      return {
-        id: orig.id,
-        newQty,
-      }
-    })
-    .filter(Boolean) as Array<{ id: number; updateRoute: routeType; newQty: number }>
+      if (newQty === Number(orig.quantity_ordered)) return acc
 
-  if (changedItems.length === 0) {
-    // nothing changed — keep edit state if you want, or clear; here we just return
-    return
-  }
+      acc[orig.id] = { newQty } // 👈 key by id
+      return acc
+    },
+    {} as Record<number, { newQty: number }>
+  )
 
-  // Submit each changed row (you can replace with a bulk request if desired)
-  console.log(changedItems)
+  if (Object.keys(changedItems).length === 0) return
 
-  // Clear clones & exit edit mode
-  Object.keys(createNewQty).forEach((k) => delete createNewQty[Number(k)])
-  editingIds.value = []
+   router.patch(
+    route(props.modifyRoute.name, props.modifyRoute.parameters),
+    { transaction: changedItems },
+    {
+      onStart: () => (loadingsaveModify.value = true),
+      onFinish: () => (loadingsaveModify.value = false),
+      onSuccess: () => {
+          Object.keys(createNewQty).forEach(k => delete createNewQty[Number(k)])
+          editingIds.value.clear()
+        notify({
+          title: trans('Success'),
+          text: trans('Quantities updated successfully'),
+          type: 'success',
+        })
+      },
+      onError: (e: any) => {
+        notify({
+          title: trans('Something went wrong'),
+          text: e.message,
+          type: 'error',
+        })
+      },
+      preserveScroll: true,
+    }
+  )
 }
+
+
+
 </script>
 
 <template>
   <Table :resource="data" :name="tab">
     <!-- Save All Button -->
     <template #add-on-button-in-before>
-      <Button
-        v-if="Object.keys(createNewQty).length > 0"
-        label="Save all new quantity"
-        @click="onSave"
-      />
+      <Button v-if="Object.keys(createNewQty).length > 0" label="Save all new quantity" @click="onSave" :loading="loadingsaveModify" />
+     <!--  <Button label="Add New" /> -->
     </template>
 
     <!-- Column: Code -->
     <template #cell(asset_code)="{ item }">
       <Link :href="productRoute(item)" class="primaryLink">
-        {{ item.asset_code }}
+      {{ item.asset_code }}
       </Link>
     </template>
 
@@ -167,12 +194,7 @@ function onSave() {
     <template #cell(asset_name)="{ item }">
       <div>
         <div>{{ item.asset_name }}</div>
-        <div
-          v-if="
-            typeof item.available_quantity !== 'undefined' &&
-            item.available_quantity < 1
-          "
-        >
+        <div v-if="item.available_quantity !== undefined && item.available_quantity < 1">
           <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
         </div>
         <div v-else class="text-gray-500 italic text-xs">
@@ -183,89 +205,88 @@ function onSave() {
 
     <!-- Column: Quantity Ordered -->
     <template #cell(quantity_ordered)="{ item }">
-      <div class="flex items-center justify-end">
-        <div v-if="state === 'creating' || state === 'xsubmitted'" class="w-fit">
-          <NumberWithButtonSave
-            :modelValue="item.quantity_ordered"
-            :routeSubmit="item.updateRoute"
-            :bindToTarget="{ min: 0 }"
-            isWithRefreshModel
-            keySubmit="quantity_ordered"
-            :isLoading="isLoading === 'quantity' + item.id"
-            :readonly="readonly"
-            @update:modelValue="
-              (e: number) =>
-                debounceUpdateQuantity(item.updateRoute, item.id, e)
-            "
-            noUndoButton
-            noSaveButton
-          />
+      <div class="flex items-center justify-end gap-2">
+        <!-- Editable when creating and not in edit mode -->
+        <div v-if="state === 'creating' && !editingIds.has(item.id)" class="w-fit">
+          <NumberWithButtonSave :modelValue="item.quantity_ordered" :routeSubmit="item.updateRoute"
+            :bindToTarget="{ min: 0 }" isWithRefreshModel keySubmit="quantity_ordered"
+            :isLoading="isLoading === 'quantity' + item.id" :readonly="readonly"
+            @update:modelValue="(e: number) => debounceUpdateQuantity(item.updateRoute, item.id, e)" noUndoButton
+            noSaveButton />
         </div>
-        <div v-else>{{ formatQuantity(item.quantity_ordered) }}</div>
+
+        <!-- Read-only display -->
+        <div v-else-if="!editingIds.has(item.id)">
+          {{ formatQuantity(item.quantity_ordered) }}
+        </div>
+
+        <!-- Inline edit mode with original quantity displayed -->
+        <div v-else class="items-center gap-2">
+          <span class="text-gray-500 italic text-sm">
+            original: {{ formatQuantity(item.quantity_ordered) }}
+          </span>
+          <NumberWithButtonSave v-model="createNewQty[item.id].quantity_ordered" :bindToTarget="{ min: 0 }" noUndoButton
+            noSaveButton class="w-24" />
+        </div>
       </div>
     </template>
 
-    <!-- Column: New Quantity -->
-    <template #cell(new_quantity)="{ item }">
-      <div v-if="editingIds.includes(item.id)" class="flex items-center gap-2">
-        <!-- Bind to the cloned item property so original item is untouched -->
-        <InputNumber
-          v-model="createNewQty[item.id].quantity_ordered"
-          :step="1"
-          showButtons
-          button-layout="horizontal"
-          inputClass="w-full text-xs"
-          :min="0"
-        >
-          <template #incrementbuttonicon>
-            <FontAwesomeIcon :icon="faPlus" />
-          </template>
-          <template #decrementbuttonicon>
-            <FontAwesomeIcon :icon="faMinus" />
-          </template>
-        </InputNumber>
-
-        <Button
-          type="negative"
-          v-tooltip="'Cancel'"
-          :icon="faXmark"
-          @click="onCancel(item)"
-          size="sm"
-          aria-label="Cancel edit"
-        />
-      </div>
-
-      <div v-else>
-        <Button
-          label="New quantity"
-          @click="() => startEdit(item)"
-          size="xs"
-        />
+    <template #cell(net_amount)="{ item }">
+      <div class="flex justify-end">
+        <div v-if="editingIds.has(item.id)" class="">
+          <!-- Original price tag -->
+          <div
+            class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm whitespace-nowrap my-2">
+            orig: {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
+          </div>
+          <!-- Estimated price tag -->
+          <div
+            class="bg-yellow-100 text-yellow-800 px-4 py-1.5 rounded-full text-sm font-medium shadow-sm whitespace-nowrap inline-flex items-center justify-center">
+            est: {{ locale.currencyFormat(item.currency_code, (item.price *
+              createNewQty[item.id].quantity_ordered).toFixed(2)) }}
+          </div>
+        </div>
+        <div v-else>
+          {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
+        </div>
       </div>
     </template>
 
     <!-- Column: Actions -->
     <template #cell(actions)="{ item }">
-      <div class="flex gap-2">
-        <Link
-          v-if="state === 'creating' || state === 'xsubmitted'"
-          :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
-          as="button"
-          :method="item.deleteRoute.method"
-          @start="() => (isLoading.value = 'unselect' + item.id)"
-          @finish="() => (isLoading.value = null)"
-          v-tooltip="trans('Unselect this product')"
-          :preserveScroll="true"
-        >
-          <Button
-            v-if="!readonly"
-            icon="fal fa-times"
-            type="negative"
-            size="xs"
-            :loading="isLoading === 'unselect' + item.id"
-          />
+      <div class="flex gap-2 items-center">
+        <!-- Delete / Unselect -->
+        <Link v-if="state === 'creating'" :href="route(item.deleteRoute.name, item.deleteRoute.parameters)" as="button"
+          :method="item.deleteRoute.method" @start="() => (isLoading.value = 'unselect' + item.id)"
+          @finish="() => (isLoading.value = null)" v-tooltip="trans('Unselect this product')" :preserveScroll="true">
+        <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
+          :loading="isLoading === 'unselect' + item.id" />
         </Link>
+
+        <!-- Edit / Cancel -->
+        <div v-if="state !== 'creating'">
+          <!-- Show edit button if not editing AND environment is local -->
+          <button v-if="!editingIds.has(item.id) && layout?.app?.environment === 'local'"
+            class="h-9 align-bottom text-center" @click="startEdit(item)" aria-label="Edit Product Order"
+            v-tooltip="'Edit Product Order'">
+            <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700" aria-hidden="true" />
+          </button>
+
+          <!-- Cancel button if editing -->
+          <Button v-else-if="editingIds.has(item.id)" type="negative" v-tooltip="'Cancel edit'" :icon="faTimes"
+            @click="onCancel(item)" size="sm" aria-label="Cancel edit" />
+        </div>
       </div>
     </template>
+
   </Table>
+
+  <!-- <ModalProductList 
+    v-model="isModalProductListOpen" 
+    :fetchRoute="routes.products_list" 
+    :action="currentAction"
+    :current="currentTab" 
+    v-model:currentTab="currentTab" 
+    :typeModel="'order'" 
+  /> -->
 </template>

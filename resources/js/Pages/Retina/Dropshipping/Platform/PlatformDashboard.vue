@@ -16,6 +16,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
+import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
 
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
@@ -178,10 +179,17 @@ const locale = inject('locale', aikuLocaleStructure)
             </div>
 
             <!-- Section: Alert if platform not connected yet -->
-            <PlatformWarningNotConnected
-                v-if="!can_connect_to_platform"
-                :customer_sales_channel="customer_sales_channel"
-            />
+            <template v-if="!can_connect_to_platform">
+                <PlatformWarningNotConnectedShopify
+                    v-if="platform.type === 'shopify'"
+                    :customer_sales_channel="customer_sales_channel"
+                />
+
+                <PlatformWarningNotConnected
+                    v-else
+                    :customer_sales_channel="customer_sales_channel"
+                />
+            </template>
 
             <div v-else>
                 <!-- Warning: Ebay seller -->

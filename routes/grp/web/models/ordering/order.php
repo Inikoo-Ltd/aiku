@@ -26,6 +26,7 @@ use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\SendOrderBackToBasket;
 use App\Actions\Ordering\Order\UpdateOrderDeliveryAddress;
 use App\Actions\Ordering\Order\DispatchOrder;
+use App\Actions\Ordering\Order\SaveOrderModification;
 use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
 use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
@@ -49,6 +50,7 @@ Route::name('order.')->prefix('order/{order:id}')->group(function () {
     Route::post('payment-account/{paymentAccount:id}/payment', PayOrder::class)->name('payment.store')->withoutScopedBindings();
     Route::post('delivery-note/replacement', StoreReplacementDeliveryNote::class)->name('replacement_delivery_note.store')->withoutScopedBindings();
     Route::patch('address/switch', SwitchOrderDeliveryAddress::class)->name('address.switch');
+    Route::patch('save-modifications', SaveOrderModification::class)->name('modification.save');
 
     Route::post('add-collection', StoreOrderAddressCollection::class)->name('basket.collection.store');
     Route::delete('delete-collection', DeleteOrderAddressCollection::class)->name('basket.collection.delete');

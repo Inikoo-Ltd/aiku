@@ -301,23 +301,24 @@ const taxNumberStatusText = computed(() => {
         </template>
         
         <template #wrapped-delete-booked-in="{ action }">
-            <div class="w-full">
-                <ModalConfirmationDelete
-                    :routeDelete="action.route"
-                    isFullLoading
-                    isWithMessage
-                    keyMessage="deleted_note"
-                >
-                    <template #default="{ isOpenModal, changeModel }">
-                        <Button
-                            icon="fal fa-trash-alt"
-                            @click="changeModel"
-                            :style="'delete'"
-                            full
-                        />
-                    </template>
-                </ModalConfirmationDelete>
-            </div>
+            <ModalConfirmationDelete
+                :routeDelete="action.route"
+                isFullLoading
+                isWithMessage
+                keyMessage="deleted_note"
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button
+                        icon="fal fa-trash-alt"
+                        @click="changeModel"
+                        :style="'edit'"
+                        :label="trans('Delete')"
+                        :injectStyle="{
+                            color: '#ef4444 !important'
+                        }"
+                    />
+                </template>
+            </ModalConfirmationDelete>
         </template>
     </PageHeading>
 
