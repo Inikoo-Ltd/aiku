@@ -238,10 +238,12 @@ const onDeleteNewRow = (index) => {
 
     <!-- Save All Button -->
     <template #add-on-button-in-before>
+      <div v-if="layout?.app?.environment === 'local'">
       <Button
         v-if="Object.keys(createNewQty).length > 0 || rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))"
         label="Save all changes" @click="onSave" :loading="loadingsaveModify" />
       <Button label="Add New" @click="openModal" />
+      </div>
     </template>
 
 
