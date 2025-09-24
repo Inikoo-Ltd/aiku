@@ -73,7 +73,8 @@ class StoreDeliveryNoteItem extends OrgAction
                     'required',
                     Rule::Exists('transactions', 'id')->where('shop_id', $this->shop->id)
                 ],
-            'quantity_required' => ['required', 'numeric']
+            'quantity_required' => ['required', 'numeric'],
+            'original_quantity_required' => ['sometimes', 'numeric']
         ];
 
         if (!$this->strict) {
