@@ -63,11 +63,13 @@ class EditShop extends OrgAction
 
 
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
-            ->where('container_type', $shop)
+            ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();
 
+
+
         $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
-            ->where('container_type', $shop)
+            ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();
 
         return Inertia::render(
