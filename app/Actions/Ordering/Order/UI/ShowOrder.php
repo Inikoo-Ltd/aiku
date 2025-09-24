@@ -300,6 +300,12 @@ class ShowOrder extends OrgAction
                             'order' => $order->id
                         ]
                     ],
+                    'products_list_modification'     => [
+                        'name'       => 'grp.json.order.products_for_modify',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
                     'delivery_note'     => $deliveryNoteRoute
                 ],
 
