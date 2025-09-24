@@ -13,8 +13,10 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Helpers\SerialReference;
 use App\Models\SysAdmin\Organisation;
 use Exception;
 use Illuminate\Support\Arr;
@@ -56,6 +58,15 @@ class EditShop extends OrgAction
             }
             return $carry;
         }, []);
+
+
+        $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
+            ->where('container_type', $shop)
+            ->where('container_id', $shop->id)->first();
+
+        $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
+            ->where('container_type', $shop)
+            ->where('container_id', $shop->id)->first();
 
         return Inertia::render(
             'EditModel',
@@ -219,13 +230,30 @@ class EditShop extends OrgAction
                             ],
                         ],
                         [
-                            'label'  => __('Invoicing'),
+                            'label'  => __('Invoice numbers'),
                             'icon'   => 'fal fa-file-invoice',
                             'fields' => [
-                                'stand_alone_invoice_numbers' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Standalone invoice numbers'),
-                                    'value' => Arr::get($shop->settings, 'invoicing.stand_alone_invoice_numbers', false),
+                                'invoice_serial_references' => [
+                                    'type'  => 'invoice_serial_references',
+                                    'options' => [
+                                        'labels' => [
+                                            __('Standalone invoice numbers'),
+                                            __('Standalone refunds numbers'),
+                                            __('format'),
+                                            __('sequence')
+                                        ],
+                                    ],
+                                    'label' => __('Invoice numbers'),
+                                    'value' => [
+                                        Arr::get($shop->settings, 'invoicing.stand_alone_invoice_numbers', false),
+                                        $invoiceSerialReference->format,
+                                        $invoiceSerialReference->serial,
+                                        Arr::get($shop->settings, 'invoicing.stand_alone_refund_numbers', false),
+                                        $refundSerialReference->format,
+                                        $refundSerialReference->serial,
+                                    ]
+
+
                                 ],
                             ],
                         ],
