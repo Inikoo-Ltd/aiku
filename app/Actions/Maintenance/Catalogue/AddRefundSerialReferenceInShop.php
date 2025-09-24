@@ -14,7 +14,7 @@ use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class AddInvoiceSerialReferenceInShop
+class AddRefundSerialReferenceInShop
 {
     use AsAction;
 
@@ -23,9 +23,9 @@ class AddInvoiceSerialReferenceInShop
         Shop::all()->each(function ($shop) {
             $shop->serialReferences()->create(
                 [
-                    'model'           => SerialReferenceModelEnum::INVOICE,
+                    'model'           => SerialReferenceModelEnum::REFUND,
                     'organisation_id' => $shop->organisation->id,
-                    'format'          => 'inv-'.$shop->slug.'-%04d'
+                    'format'          => 'ref-'.$shop->slug.'-%04d'
                 ]
             );
         });
@@ -35,7 +35,7 @@ class AddInvoiceSerialReferenceInShop
 
     public function getCommandSignature(): string
     {
-        return 'maintenance:add_invoice_serial_reference_in_shop';
+        return 'maintenance:add_refund_serial_reference_in_shop';
     }
 
     public function asCommand(Command $command): int

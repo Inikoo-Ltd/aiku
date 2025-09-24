@@ -228,6 +228,7 @@ class Order extends Model implements HasMedia, Auditable
     protected $attributes = [
         'data'         => '{}',
         'payment_data' => '{}',
+        'post_submit_modification_data' => '{}'
     ];
 
     protected $guarded = [];

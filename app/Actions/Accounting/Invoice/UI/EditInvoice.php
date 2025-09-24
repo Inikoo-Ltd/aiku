@@ -81,10 +81,23 @@ class EditInvoice extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
+                            'title'   => __('reference'),
+                            'label'   => __('reference'),
+                            'icon'    => 'fa-light fa-signature',
+                            'current' => true,
+                            'fields'  => [
+                                'reference' => [
+                                    'type'  => 'input',
+                                    'label' => __('reference'),
+                                    'value' => $invoice->reference
+                                ],
+                            ],
+                        ],
+                        [
                             'title'   => __('footer'),
                             'label'   => __('footer'),
                             'icon'    => 'fa-light fa-key',
-                            'current' => true,
+                            'current' => false,
                             'fields'  => [
                                 'footer' => [
                                     'type'  => 'textEditor',

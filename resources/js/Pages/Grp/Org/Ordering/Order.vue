@@ -80,7 +80,6 @@ import Icon from "@/Components/Icon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { ToggleSwitch } from "primevue"
-import ModalConfirmation from "@/Components/Utils/ModalConfirmation.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faPlus)
 
@@ -619,24 +618,6 @@ const toggleElipsis = (e: Event) => {
             </div>
         </template>
 
-        <!-- Button: rollback -->
-        <!-- <template #button-rollback="{ action }">
-            <div class="relative">
-
-                <ModalConfirmationDelete :routeDelete="action.route"
-                    :title="trans('Are you sure you want to rollback the Order??')"
-                    :description="trans('The state of the Order will go back to finalised state.')" isFullLoading
-                    :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
-                    <template #default="{ changeModel }">
-                        <Button @click="changeModel" type="negative" :label="trans('Undispatch')" icon="fas fa-undo"
-                            :tooltip="trans('Rollback the dispatch')" />
-                    </template>
-                </ModalConfirmationDelete>
-
-
-            </div>
-        </template> -->
-
         <template #button-group-upload-add="{ action }">
             <div class="relative">
                 <Button v-if="upload_excel" :style="action.button[0].style" :label="action.button[0].label"
@@ -645,48 +626,6 @@ const toggleElipsis = (e: Event) => {
                     :tooltip="action.button[0].tooltip" />
             </div>
         </template>
-
-        <!-- <template #otherBefore v-if="!props.readonly">
-            <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
-                <template #button="{ open }">
-                    <Button icon="fal fa-sticky-note" type="tertiary" label="Add notes" />
-                </template>
-                <template #content="{ close: closed }">
-                    <div class="w-[350px]">
-                        <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
-                        <div class="">
-                            <PureMultiselect v-model="noteToSubmit.selectedNote"
-                                @update:modelValue="() => errorNote = ''" :placeholder="trans('Select type note')"
-                                required
-                                :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
-                                valueProp="value" />
-                        </div>
-
-                        <div class="mt-3">
-                            <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
-                            <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
-                                @keydown.enter="() => onSubmitNote(closed)" />
-                        </div>
-
-                        <p v-if="errorNote" class="mt-2 text-sm text-red-600">
-                            *{{ errorNote }}
-                        </p>
-
-                        <div class="flex justify-end mt-3">
-                            <Button @click="() => onSubmitNote(closed)" :style="'save'"
-                                :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value" label="Save"
-                                full />
-                        </div>
-
-                        <div v-if="isLoadingButton === 'submitNote'"
-                            class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
-                                aria-hidden="true" />
-                        </div>
-                    </div>
-                </template>
-            </Popover>
-        </template> -->
 
         <template #other v-if="!props.readonly">
             <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
@@ -1132,7 +1071,7 @@ const toggleElipsis = (e: Event) => {
         @update:tab="handleTabUpdate" />
     <div class="pb-12">
         <component :is="component" :data="props[currentTab as keyof typeof props]" :tab="currentTab"
-            :updateRoute="routes.updateOrderRoute" :state="data?.data?.state"
+            :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
             :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
             :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
             @update:tab="handleTabUpdate" />

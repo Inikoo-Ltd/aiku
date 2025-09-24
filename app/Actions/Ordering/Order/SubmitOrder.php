@@ -60,6 +60,7 @@ class SubmitOrder extends OrgAction
             if ($transaction->submitted_at == null) {
                 data_set($transactionData, 'submitted_at', $date);
                 data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
+                data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered); //Copy quantity
             }
 
             $transaction->update($transactionData);
