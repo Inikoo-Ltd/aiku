@@ -56,6 +56,7 @@ import ModalAfterConfirmationDelete from "@/Components/Utils/ModalAfterConfirmat
 import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue";
 import Icon from "@/Components/Icon.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 
 
 library.add(faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird);
@@ -152,7 +153,7 @@ const component = computed(() => {
         grouped_fulfilment_invoice_transactions: TableInvoiceTransactions,
         itemized_fulfilment_invoice_transactions: TableInvoiceTransactions,
         payments: TablePayments,
-        history: ModelChangelog,
+        history: TableHistories,
         email: TableDispatchedEmails,
         refunds: TableRefunds
     };
