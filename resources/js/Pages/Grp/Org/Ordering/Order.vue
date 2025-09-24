@@ -15,7 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import {Popover as PopoverPrimevue} from 'primevue';
+import { Popover as PopoverPrimevue } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -227,6 +227,7 @@ const confirm = useConfirm();
 const currentTab = ref(props.tabs?.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
+
 const component = computed(() => {
     const components: Component = {
         transactions: OrderProductTable,
@@ -245,7 +246,7 @@ const isLoadingButton = ref<string | boolean>(false)
 const isModalAddress = ref<boolean>(false)
 
 // Tabs: Products
-const formProducts = useForm({historicAssetId: null, quantity_ordered: 1})
+const formProducts = useForm({ historicAssetId: null, quantity_ordered: 1 })
 const onSubmitAddProducts = (data: Action, closedPopover: Function) => {
     isLoadingButton.value = "addProducts"
 
@@ -254,7 +255,7 @@ const onSubmitAddProducts = (data: Action, closedPopover: Function) => {
             quantity_ordered: data.quantity_ordered
         }))
         .post(
-            route(data.route?.name || "#", {...data.route?.parameters, historicAsset: formProducts.historicAssetId}),
+            route(data.route?.name || "#", { ...data.route?.parameters, historicAsset: formProducts.historicAssetId }),
             {
                 preserveScroll: true,
                 onSuccess: () => {
@@ -282,7 +283,7 @@ const isLoadingFetch = ref(false)
 const fetchPaymentMethod = async () => {
     try {
         isLoadingFetch.value = true
-        const {data} = await axios.get(route(props.box_stats.products.payment.routes.fetch_payment_accounts.name, props.box_stats.products.payment.routes.fetch_payment_accounts.parameters))
+        const { data } = await axios.get(route(props.box_stats.products.payment.routes.fetch_payment_accounts.name, props.box_stats.products.payment.routes.fetch_payment_accounts.parameters))
         listPaymentMethod.value = data.data
     } catch (error) {
         notify({
@@ -304,6 +305,7 @@ const currentAction = ref(null)
 const isOpenModalPayment = ref(false)
 const isLoadingPayment = ref(false)
 const errorPaymentMethod = ref<null | unknown>(null)
+const _refComponents = ref(null)
 const onSubmitPayment = (isRefund?: boolean) => {
     try {
         router[props.box_stats.products.payment.routes.submit_payment.method || "post"](
@@ -352,10 +354,10 @@ const onSubmitNote = async (closePopup: Function) => {
 
     try {
         router.patch(route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters), {
-                [noteToSubmit.value.selectedNote]: noteToSubmit.value.value
-            },
+            [noteToSubmit.value.selectedNote]: noteToSubmit.value.value
+        },
             {
-                headers: {"Content-Type": "application/json"},
+                headers: { "Content-Type": "application/json" },
                 onStart: () => isLoadingButton.value = "submitNote",
                 onError: (error) => errorNote.value = error,
                 onFinish: () => {
@@ -537,7 +539,7 @@ const updateCollectionType = () => {
 const updateCollectionNotes = () => {
     router.patch(
         route(props.routes.updateOrderRoute.name, props.routes.updateOrderRoute.parameters),
-        {shipping_notes: textValue.value},
+        { shipping_notes: textValue.value },
         {
             preserveScroll: true,
             onSuccess: () => {
@@ -564,21 +566,21 @@ const onCreateReplacement = (action: any) => {
     router[action.route.method](
         route(action.route.name, action.route.parameters),
         {}, {
-            preserveScroll: true,
-            onStart: () => {
-                replacementLoading.value = true
-            },
-            onFinish: () => {
-                replacementLoading.value = false
-            },
-            onError: () => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to create replacement"),
-                    type: "error",
-                })
-            },
-        }
+        preserveScroll: true,
+        onStart: () => {
+            replacementLoading.value = true
+        },
+        onFinish: () => {
+            replacementLoading.value = false
+        },
+        onError: () => {
+            notify({
+                title: trans("Something went wrong"),
+                text: trans("Failed to create replacement"),
+                type: "error",
+            })
+        },
+    }
     )
 }
 
@@ -599,8 +601,10 @@ const toggleElipsis = (e: Event) => {
 
     <PageHeading :data="pageHead">
         <template #afterTitle2>
-            <FontAwesomeIcon v-if="data?.data.is_premium_dispatch" v-tooltip="trans('Priority dispatch')" icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="data?.data.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="data?.data.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
+                icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="data?.data.has_extra_packing" v-tooltip="trans('Extra packing')"
+                icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
         </template>
 
         <template #button-add-products="{ action }">
@@ -627,72 +631,86 @@ const toggleElipsis = (e: Event) => {
             </div>
         </template>
 
-        <template #other v-if="!props.readonly">
-            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
-                icon="upload" />
+        <template #other>
+            <div v-if="!props.readonly">
+                <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+                    icon="upload" />
 
-            <div
-                v-if="!notes?.note_list?.some(item => !!(item?.note?.trim())) || props.data?.data?.state === 'dispatched'">
-                <button @click="toggleElipsis" class="cursor-pointer " :class="'text-gray-400 hover:text-indigo-500'">
-                    <FontAwesomeIcon :icon="faEllipsisH" class="text-4xl" fixed-width aria-hidden="true" />
-                </button>
-                <PopoverPrimevue ref="ellipsis">
-                    <div class="flex flex-col gap-2">
-                        <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'" :routeDelete="routes.rollback_dispatch" :title="trans('Are you sure you want to rollback the Order??')"
-                            :description="trans('The state of the Order will go back to finalised state.')"
-                            isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
-                            <template #default="{ changeModel }">
-                                <Button @click="changeModel" type="negative" :label="trans('Undispatch')"
-                                    icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
-                            </template>
-                        </ModalConfirmationDelete>
+                <div
+                    v-if="!notes?.note_list?.some(item => !!(item?.note?.trim())) || props.data?.data?.state === 'dispatched'">
+                    <button @click="toggleElipsis" class="cursor-pointer "
+                        :class="'text-gray-400 hover:text-indigo-500'">
+                        <FontAwesomeIcon :icon="faEllipsisH" class="text-4xl" fixed-width aria-hidden="true" />
+                    </button>
+                    <PopoverPrimevue ref="ellipsis">
+                        <div class="flex flex-col gap-2">
+                            <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
+                                :routeDelete="routes.rollback_dispatch"
+                                :title="trans('Are you sure you want to rollback the Order??')"
+                                :description="trans('The state of the Order will go back to finalised state.')"
+                                isFullLoading :noLabel="trans('Yes, rollback')" noIcon="far fa-undo-alt">
+                                <template #default="{ changeModel }">
+                                    <Button @click="changeModel" type="negative" :label="trans('Undispatch')"
+                                        icon="fas fa-undo" :tooltip="trans('Rollback the dispatch')" />
+                                </template>
+                            </ModalConfirmationDelete>
 
-                        <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
-                            <template #button="{ open }">
-                                <Button icon="fal fa-sticky-note" type="tertiary" label="Add notes" />
-                            </template>
-                            <template #content="{ close: closed }">
-                                <div class="w-[350px]">
-                                    <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
-                                    <div class="">
-                                        <PureMultiselect v-model="noteToSubmit.selectedNote"
-                                            @update:modelValue="() => errorNote = ''"
-                                            :placeholder="trans('Select type note')" required
-                                            :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
-                                            valueProp="value" />
+                            <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
+                                <template #button="{ open }">
+                                    <Button icon="fal fa-sticky-note" type="tertiary" label="Add notes" />
+                                </template>
+                                <template #content="{ close: closed }">
+                                    <div class="w-[350px]">
+                                        <span class="text-xs px-1 my-2">{{ trans("Select type note") }}: </span>
+                                        <div class="">
+                                            <PureMultiselect v-model="noteToSubmit.selectedNote"
+                                                @update:modelValue="() => errorNote = ''"
+                                                :placeholder="trans('Select type note')" required
+                                                :options="[{ label: 'Public note', value: 'public_notes' }, { label: 'Private note', value: 'internal_notes' }]"
+                                                valueProp="value" />
+                                        </div>
+
+                                        <div class="mt-3">
+                                            <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
+                                            <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
+                                                @keydown.enter="() => onSubmitNote(closed)" />
+                                        </div>
+
+                                        <p v-if="errorNote" class="mt-2 text-sm text-red-600">
+                                            *{{ errorNote }}
+                                        </p>
+
+                                        <div class="flex justify-end mt-3">
+                                            <Button @click="() => onSubmitNote(closed)" :style="'save'"
+                                                :loading="isLoadingButton === 'submitNote'"
+                                                :disabled="!noteToSubmit.value" label="Save" full />
+                                        </div>
+
+                                        <div v-if="isLoadingButton === 'submitNote'"
+                                            class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                                            <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl"
+                                                fixed-width aria-hidden="true" />
+                                        </div>
                                     </div>
+                                </template>
+                            </Popover>
+                        </div>
+                    </PopoverPrimevue>
+                </div>
+            </div>
 
-                                    <div class="mt-3">
-                                        <span class="text-xs px-1 my-2">{{ trans("Note") }}: </span>
-                                        <PureTextarea v-model="noteToSubmit.value" :placeholder="trans('Note')"
-                                            @keydown.enter="() => onSubmitNote(closed)" />
-                                    </div>
-
-                                    <p v-if="errorNote" class="mt-2 text-sm text-red-600">
-                                        *{{ errorNote }}
-                                    </p>
-
-                                    <div class="flex justify-end mt-3">
-                                        <Button @click="() => onSubmitNote(closed)" :style="'save'"
-                                            :loading="isLoadingButton === 'submitNote'" :disabled="!noteToSubmit.value"
-                                            label="Save" full />
-                                    </div>
-
-                                    <div v-if="isLoadingButton === 'submitNote'"
-                                        class="bg-white/50 absolute inset-0 flex place-content-center items-center">
-                                        <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl"
-                                            fixed-width aria-hidden="true" />
-                                    </div>
-                                </div>
-                            </template>
-                        </Popover>
-                    </div>
-                </PopoverPrimevue>
+            <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents" class="flex gap-2">
+                <Button :style="'create'" :label="'Product'"  tooltip="put a new Product" @click="(e)=>{if(_refComponents)_refComponents.openModal()}"/>
+                 <Button v-if="
+                    Object.keys(_refComponents.createNewQty).length > 0 ||
+                    _refComponents.rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
+                " type="save" label="Save all changes" 
+                    :loading="_refComponents.loadingsaveModify" @click="()=>_refComponents.onSave()" />
             </div>
         </template>
 
         <template #button-replacement="{ action }">
-            <Button @click="() =>onCreateReplacement(action)" :label="trans('Replacement')" xsize="xs" type="secondary"
+            <Button @click="() => onCreateReplacement(action)" :label="trans('Replacement')" xsize="xs" type="secondary"
                 icon="fal fa-plus" key="1" :disabled="replacementLoading" :loading="replacementLoading"
                 v-tooltip="trans('Create replacement')" />
         </template>
@@ -788,7 +806,7 @@ const toggleElipsis = (e: Event) => {
                         </dt>
                         <a :href="`mailto:${box_stats?.customer.email}`" v-tooltip="'Click to send email'"
                             class="text-sm text-gray-500 hover:text-gray-700 truncate">{{
-                            box_stats?.customer.email
+                                box_stats?.customer.email
                             }}</a>
                     </dl>
 
@@ -893,46 +911,42 @@ const toggleElipsis = (e: Event) => {
 
                 <div class="xspace-y-0.5 pl-1">
                     <!-- Field: Billing -->
-                    <dl class="relative flex items-start w-full flex-none gap-x-1"    >
+                    <dl class="relative flex items-start w-full flex-none gap-x-1">
                         <dt class="flex-none pt-0.5 pl-1">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
                         </dt>
 
-                        <div   v-if="box_stats.products.payment.pay_status!= 'no_need' ">
+                        <div v-if="box_stats.products.payment.pay_status != 'no_need'">
                             <NeedToPay :totalAmount="box_stats.products.payment.total_amount"
                                 :paidAmount="box_stats.products.payment.paid_amount"
                                 :payAmount="box_stats.products.payment.pay_amount"
                                 xclass="[box_stats.products.payment.pay_amount ? 'hover:bg-gray-100 cursor-pointer' : '']"
-                                :currencyCode="currency.code"
-
-
-
-                            >
+                                :currencyCode="currency.code">
                                 <template #default>
                                     <!-- Pay: Invoice -->
-                                    <div v-if="box_stats.products.payment.pay_amount > 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled'   ) "
+                                    <div v-if="box_stats.products.payment.pay_amount > 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
                                         class="pt-1 border-t border-green-300 text-xxs">
                                         <Button @click.prevent="() => onClickPayInvoice()" :label="trans('Pay')"
                                             type="secondary" size="xxs" />
                                     </div>
 
                                     <!-- Pay: Refund -->
-                                    <div v-if="box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled'   )"
+                                    <div v-if="box_stats.products.payment.pay_amount < 0 && !(props.data?.data?.state === 'creating' || props.data?.data?.state === 'cancelled')"
                                         class="pt-1 border-t border-green-300 text-xxs">
                                         <Button @click="() => onClickPayRefund()" :label="trans('Refund money')"
                                             type="secondary" size="xxs" />
                                     </div>
 
                                     <!-- Pay: excesses balance -->
-                                    <div v-if="box_stats.products.excesses_payment?.amount > 0 "
+                                    <div v-if="box_stats.products.excesses_payment?.amount > 0"
                                         class="pt-1 border-t border-green-300 text-xxs">
                                         <p class="text-gray-500 mb-1 mt-2">
                                             {{ trans("The order is overpaid") }}:
                                             <span class="text-gray-700">
                                                 {{
-                                                locale.currencyFormat(currency.code,
-                                                Number(box_stats.products.excesses_payment?.amount))
+                                                    locale.currencyFormat(currency.code,
+                                                        Number(box_stats.products.excesses_payment?.amount))
                                                 }}
                                             </span>
                                         </p>
@@ -956,7 +970,7 @@ const toggleElipsis = (e: Event) => {
                         </div>
                         <div v-else class="text-gray-500">
                             <div class="border border-gray-300 rounded-md p-2 pr-4">
-                            {{ trans("Order cancelled, payments returned to balance") }}
+                                {{ trans("Order cancelled, payments returned to balance") }}
                             </div>
                         </div>
                     </dl>
@@ -1008,13 +1022,16 @@ const toggleElipsis = (e: Event) => {
                             class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
 
                             <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
-                                <FontAwesomeIcon :icon="faTruck" :class="note.type === 'replacement' ? 'text-red-500' : 'text-blue-500'" fixed-width />
+                                <FontAwesomeIcon :icon="faTruck"
+                                    :class="note.type === 'replacement' ? 'text-red-500' : 'text-blue-500'"
+                                    fixed-width />
                                 <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{
-                                note?.reference
+                                    note?.reference
                                 }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                                    {{ trans(note?.state?.tooltip) }} <Icon :data="note?.state" />
+                                    {{ trans(note?.state?.tooltip) }}
+                                    <Icon :data="note?.state" />
                                 </span>
                             </div>
 
@@ -1044,7 +1061,7 @@ const toggleElipsis = (e: Event) => {
                                 </ul>
                             </div>
 
-<!--                            <div v-else class="mt-1 text-xs italic text-gray-400">
+                            <!--                            <div v-else class="mt-1 text-xs italic text-gray-400">
                                 {{ trans('No shipments') }}
                             </div>-->
                         </div>
@@ -1074,7 +1091,7 @@ const toggleElipsis = (e: Event) => {
             :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
             :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
             :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
-            @update:tab="handleTabUpdate" />
+            @update:tab="handleTabUpdate" :ref="(e)=> _refComponents = e"  :routesProductsListModification="routes.products_list_modification"/>
     </div>
 
     <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
@@ -1120,9 +1137,9 @@ const toggleElipsis = (e: Event) => {
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to pay")
-                            }}: {{
-                            locale.currencyFormat(box_stats.order_summary.currency.code,
-                            box_stats.products.payment.pay_amount)
+                        }}: {{
+                                locale.currencyFormat(box_stats.order_summary.currency.code,
+                                    box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
                             :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
@@ -1145,7 +1162,7 @@ const toggleElipsis = (e: Event) => {
                 <Transition name="spin-to-down">
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
                         errorPaymentMethod
-                        }}</p>
+                    }}</p>
                 </Transition>
             </div>
         </div>
@@ -1181,9 +1198,9 @@ const toggleElipsis = (e: Event) => {
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to refund")
-                            }}: {{
-                            locale.currencyFormat(box_stats.order_summary.currency.code,
-                            box_stats.products.payment.pay_amount)
+                        }}: {{
+                                locale.currencyFormat(box_stats.order_summary.currency.code,
+                                    box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
                             :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"

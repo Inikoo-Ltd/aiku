@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, inject, onBeforeUnmount } from 'vue'
+import { ref, reactive, inject, onBeforeUnmount, defineExpose } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'
@@ -35,6 +35,7 @@ const props = defineProps<{
   readonly?: boolean
   modifyRoute?: routeType
   fetchRoute?: routeType
+  routesProductsListModification? : routeType
 }>()
 
 const layout = inject("layout", {});
@@ -237,6 +238,16 @@ const onDeleteNewRow = (index) => {
   props.data.data.splice(index, 1)
 }
 
+
+defineExpose({
+  openModal,
+  onSave,
+  rowsArray,
+  createNewQty,
+  loadingsaveModify
+
+})
+
 </script>
 
 <template>
@@ -249,25 +260,22 @@ const onDeleteNewRow = (index) => {
     }">
 
       <!-- Save All Button -->
-      <template #add-on-button-in-before>
+      <!-- <template #add-on-button-in-before>
         <div v-if="layout?.app?.environment === 'local'" class="flex items-center gap-2">
-          <!-- Add Product -->
           <Button type="create" label="Product" size="sm" @click="openModal" :injectStyle="{ borderRadius: '3px' }" />
 
-          <!-- Divider -->
           <div v-if="
             Object.keys(createNewQty).length > 0 ||
             rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
           " class="h-5 border-r"></div>
 
-          <!-- Save All Changes -->
           <Button v-if="
             Object.keys(createNewQty).length > 0 ||
             rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
           " type="save" label="Save all changes" size="sm" :injectStyle="{ borderRadius: '3px' }"
             :loading="loadingsaveModify" @click="onSave" />
         </div>
-      </template>
+      </template> -->
 
       <!-- Column: Code -->
       <template #cell(asset_code)="{ item }">
@@ -371,7 +379,7 @@ const onDeleteNewRow = (index) => {
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl">
       <ProductsSelectorAutoSelect
         :headLabel="trans('Add products to Order') + ' #' + (Array.isArray(props.data) ? '' : props.data?.reference)"
-        :routeFetch="props.fetchRoute" :isLoadingSubmit="false" :listLoadingProducts="false" withQuantity
+        :routeFetch="props.routesProductsListModification" :isLoadingSubmit="false" :listLoadingProducts="false" withQuantity
         @submit="addNewProduct" />
     </Modal>
   </div>
