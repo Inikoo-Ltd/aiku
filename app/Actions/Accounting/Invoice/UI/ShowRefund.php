@@ -130,6 +130,19 @@ class ShowRefund extends OrgAction
 
 
         $actions = [];
+        $actions[] = [
+            'type'  => 'button',
+            'style' => 'edit',
+            'icon'  => 'fal fa-pencil',
+            'label' => __('edit'),
+            'route' => [
+                'name'       => 'grp.org.accounting.invoices.edit',
+                'parameters' => [
+                    'organisation' => $refund->organisation->slug,
+                    'invoice' => $refund->slug
+                ]
+            ],
+        ];
 
         $actions[] = [
             'type'  => 'button',
