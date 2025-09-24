@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Order;
+use Carbon\Carbon;
 use Lorisleiva\Actions\ActionRequest;
 
 class SaveOrderModification extends OrgAction
@@ -27,6 +28,19 @@ class SaveOrderModification extends OrgAction
         dd("hahahahah");
         $this->orderHydrators($order);
 
+        $modificationData = [
+            'date' => Carbon::now()->toDateTimeString(),
+            'modified_by' => request()->user()->username,
+            'data' => $modelData
+        ];
+
+        $modifications = $order->post_submit_modification_data ?? [];
+        array_push($modifications, $modificationData);
+
+        $this->update($order, [
+            'post_submit_modification_data' => $modifications
+        ]);
+        
         return $order;
     }
 
