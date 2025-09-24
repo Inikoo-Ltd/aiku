@@ -17,16 +17,17 @@ import { useLocaleStore } from "@/Stores/locale"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
-import { Fieldset, Select } from "primevue"
+import { Fieldset, Message, Select } from "primevue"
 
 
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
+import { faExclamationTriangle } from "@fad"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
 import { Icon } from "@/types/Utils/Icon"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-library.add(faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
+library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{
     data: {
@@ -129,6 +130,19 @@ const compSelectedTradeUnit = computed(() => {
 
 
 <template>
+    <Message severity="error" class="mt-8 mx-4 md:mx-10 ">
+        <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-center w-full mx-auto">
+            <div class="">
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
+                <div class="inline ml-1 gap-x-2">
+                    {{
+                        trans("This feature is under development. Stock movements and adjustments will be available soon.")
+                    }}
+                </div>
+            </div>
+        </div>
+    </Message>
+    
     <div class="grid md:grid-cols-4 gap-x-1 gap-y-4 p-6">
         <!-- Sidebar -->
        <!--  <div class="p-5 space-y-5 grid grid-cols-1 max-w-[500px]">
@@ -174,13 +188,6 @@ const compSelectedTradeUnit = computed(() => {
             </section>
         </div> -->
 
-        <div class="bg-gray-200"></div>
-        <div class="md:col-span-3">
-            <StocksManagement
-                :stocks_management="data.stocks_management"
-            />
-        </div>
-
         <div class="md:col-span-2 pr-6">
             <Fieldset class="p-5 space-y-5 h-fit w-full max-w-lg" legend="Trade units" xtoggleable xcollapsed>
                 <template #legend>
@@ -219,6 +226,15 @@ const compSelectedTradeUnit = computed(() => {
                 </template>
             </Fieldset>
         </div>
+
+        <div class="md:col-span-2">
+            <StocksManagement
+                :stocks_management="data.stocks_management"
+            />
+
+            <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management }}</pre>
+        </div>
+
 
         <!-- Revenue Stats -->
         <div v-if="false && data.stats" class="pt-8 p-4 md:col-span-3">
@@ -272,6 +288,5 @@ const compSelectedTradeUnit = computed(() => {
             </div>
         </div>
         
-        <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management }}</pre>
     </div>
 </template>
