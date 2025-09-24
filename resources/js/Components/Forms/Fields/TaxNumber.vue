@@ -290,8 +290,8 @@ watch(
                                     <div class="p-1 max-w-xs">
                                         <div class="space-y-2">
                                             <div class="text-sm space-y-1">
-                                                <p><span class="font-medium">{{ trans('Country') }}:</span> {{ validationStatus.country.data.name }}</p>
-                                                <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ validationStatus.country.data.code }}</p>
+                                                <p><span class="font-medium">{{ trans('Country') }}:</span> {{ validationStatus.country?.data?.name }}</p>
+                                                <p><span class="font-medium">{{ trans('Country Code') }}:</span> {{ validationStatus.country?.data?.code }}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -300,7 +300,7 @@ watch(
 
                             <!-- Last checked date -->
                             <span
-                                v-tooltip="trans('Last checked :date', { date: formatDate(validationStatus?.checked_at) })"
+                                v-tooltip="trans('Last checked :date', { date: formatDate(validationStatus?.checked_at) || '-' })"
                                 class="ml-1 cursor-default hover:underline">
                                 {{ formatDate(validationStatus.checked_at) }}
                             </span>

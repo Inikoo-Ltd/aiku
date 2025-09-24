@@ -56,11 +56,9 @@ class StoreInvoice extends OrgAction
         data_set($modelData, 'pay_status', InvoicePayStatusEnum::UNPAID);
         data_set($modelData, 'pay_detailed_status', InvoicePayDetailedStatusEnum::UNPAID);
 
-
         if (!Arr::has($modelData, 'footer')) {
             data_set($modelData, 'footer', $this->shop->invoice_footer);
         }
-
 
         if (!Arr::has($modelData, 'reference')) {
             data_set(
