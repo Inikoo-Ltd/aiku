@@ -37,6 +37,7 @@ import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTabl
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
 import {ulid} from "ulid";
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
+import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
 
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
@@ -362,8 +363,15 @@ const key = ulid()
     </PageHeading>
 
     <!-- Section: Alert if platform not connected yet -->
-    <div v-if="!is_platform_connected && !isPlatformManual" class="px-2 md:px-6">
+    <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
+        <div v-if="platform_data.type === 'shopify'" class="px-2 md:px-6">
+            <PlatformWarningNotConnectedShopify
+                :customer_sales_channel="customer_sales_channel"
+            />
+        </div>
+
         <PlatformWarningNotConnected
+            v-else
             :customer_sales_channel="customer_sales_channel"
         />
     </div>
