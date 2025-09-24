@@ -34,10 +34,17 @@ class StoreRefund extends OrgAction
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
 
-        $reference = GetSerialReference::run(
-            container: $this->shop,
-            modelType: SerialReferenceModelEnum::INVOICE
-        );
+
+        if (Arr::get($invoice->shop->settings, 'invoicing.stand_alone_refund_numbers')) {
+            $reference = GetSerialReference::run(
+                container: $this->shop,
+                modelType: SerialReferenceModelEnum::REFUND
+            );
+        }else{
+            $count     = $invoice->refunds->count() + 1;
+            $reference = $invoice->reference.'-refund-'.$count;
+        }
+
 
         data_set($modelData, 'reference', $reference);
         data_set($modelData, 'type', InvoiceTypeEnum::REFUND);
@@ -81,7 +88,6 @@ class StoreRefund extends OrgAction
 
         return DB::transaction(function () use ($invoice, $modelData) {
             /** @var Invoice $refund */
-            dd($modelData);
             $refund = $invoice->refunds()->create($modelData);
             $refund->stats()->create();
 
