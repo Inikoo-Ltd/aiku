@@ -17,10 +17,16 @@ import MoveStock from './MoveStock.vue'
 import EditLocations from './EditLocations.vue'
 import { Icon as IconTS } from '@/types/Utils/Icon'
 import Icon from '@/Components/Icon.vue'
+import { routeType } from '@/types/route'
 library.add(faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle, faShoppingBasket, faStickyNote, faShoppingCart)
 
 const props = defineProps<{
     stocks_management: {
+        routes: {
+            fetch_locations: routeType
+            submit_audit_stocks: routeType
+            update_stocks_locations: routeType
+        }
         summary: {
             [key: string]: {
                 icon_state: IconTS

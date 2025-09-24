@@ -60,9 +60,18 @@ class GetOrgStockShowcase
                 ],
                 'stocks_management' => [
                     'routes'    => [
-                        'fetch_locations'               => [],  // TODO: Artha, fetch locations list in the warehouse
-                        'submit_audit_stocks'           => [],  // TODO: Artha, submit audit stocks
-                        'update_stocks_locations'      => [],  // TODO: Artha, attach and detach the stocks to locations
+                        'fetch_locations'               => [
+                            'name'  => 'xxxxxxxxxxxxxxxxxx',
+                            'parameters' => []
+                        ],  // TODO: Artha, fetch locations list in the warehouse
+                        'submit_audit_stocks'           => [
+                            'name'  => 'xxxxxxxxxxxxxxxxxx',
+                            'parameters' => []
+                        ],  // TODO: Artha, submit audit stocks
+                        'update_stocks_locations'      => [
+                            'name'  => 'xxxxxxxxxxxxxxxxxx',
+                            'parameters' => []
+                        ],  // TODO: Artha, attach and detach the stocks to locations
                     ],
                     'summary' => [
                         'current_on_hand_stock' => [
