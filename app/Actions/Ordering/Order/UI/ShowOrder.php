@@ -346,6 +346,12 @@ class ShowOrder extends OrgAction
                             'label' => 'Download template (.xlsx)'
                         ],
                         'route'           => [
+                            'modify'   => [
+                                'name' => 'grp.models.order.modification.save',
+                                'parameters' => [
+                                    'orders' => $order->id
+                                ]
+                            ],
                             'upload'   => [
                                 'name'       => 'grp.models.order.transaction.upload',
                                 'parameters' => [
