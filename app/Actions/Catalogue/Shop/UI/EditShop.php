@@ -240,14 +240,34 @@ class EditShop extends OrgAction
                                 'invoice_serial_references' => [
                                     'type'    => 'invoice_serial_references',
                                     'options' => [
-                                        'labels' => [
-                                            __('Standalone invoice numbers'),
-                                            __('format'),
-                                            __('sequence'),
-                                            __('Standalone refunds numbers'),
-                                            __('format'),
-                                            __('sequence')
-                                        ],
+                                            [
+                                                'type' => [
+                                                    'label' => __('Standalone invoice numbers'),
+                                                    'key_value' => 'stand_alone_invoice_numbers'
+                                                ],
+                                                'format' => [
+                                                    'label' => __('format'),
+                                                    'key_value' => 'stand_alone_invoice_numbers_format'
+                                                ],
+                                                'sequence' => [
+                                                    'label' => __('sequence'),
+                                                    'key_value' => 'stand_alone_invoice_numbers_serial'
+                                                ],
+                                            ],
+                                            [
+                                                'type' => [
+                                                    'label' => __('Standalone refunds numbers'),
+                                                    'key_value' => 'stand_alone_refund_numbers'
+                                                ],
+                                                'format' => [
+                                                    'label' => __('format'),
+                                                    'key_value' => 'stand_alone_refund_numbers_format'
+                                                ],
+                                                'sequence' => [
+                                                    'label' => __('sequence'),
+                                                    'key_value' => 'stand_alone_refund_numbers_serial'
+                                                ],
+                                            ],
                                     ],
                                     'label'   => __('Invoice numbers'),
                                     'value'   => [
@@ -258,8 +278,6 @@ class EditShop extends OrgAction
                                         'stand_alone_refund_numbers_format'  => $refundSerialReference->format,
                                         'stand_alone_refund_numbers_serial'  => $refundSerialReference->serial,
                                     ]
-
-
                                 ],
                             ],
                         ],
