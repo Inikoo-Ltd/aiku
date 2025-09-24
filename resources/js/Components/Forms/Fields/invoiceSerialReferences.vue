@@ -76,6 +76,7 @@ const props = defineProps<{
             v-model="form[fieldName][option.sequence.key_value]"
             :id="`${fieldName}-sequence-${index}`"
             input-class="w-full"
+            :min="0"
             placeholder="Enter sequence"
             showButtons
           />
