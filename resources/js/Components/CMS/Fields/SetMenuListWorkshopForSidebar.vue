@@ -16,6 +16,7 @@ import ConfirmPopup from "primevue/confirmpopup"
 import { faExclamationTriangle } from "@far";
 import { trans } from "laravel-vue-i18n"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
+import { set } from "lodash-es";
 
 const props = defineProps<{
     data: {
@@ -29,6 +30,7 @@ const props = defineProps<{
     }
     autosaveRoute: routeType
 }>()
+console.log('-- Menu list props.data', props.data)
 
 const emits = defineEmits<{
     (e: 'auto-save'): void
@@ -106,8 +108,14 @@ const addNavigation = (area: 'top' | 'bottom' = 'top') => {
     };
 
     if (area === 'top') {
+        if (!props.data.data) set(props.data, 'data', {});
+        if (!props.data.data.fieldValue) set(props.data.data, 'fieldValue', {});
+        if (!props.data.data.fieldValue.navigation) set(props.data.data.fieldValue, 'navigation', []);
         props.data.data.fieldValue.navigation.push(newNav);
     } else {
+        if (!props.data.data) set(props.data, 'data', {});
+        if (!props.data.data.fieldValue) set(props.data.data, 'fieldValue', {});
+        if (!props.data.data.fieldValue.navigation_bottom) set(props.data.data.fieldValue, 'navigation_bottom', []);
         props.data.data.fieldValue.navigation_bottom.push(newNav);
     }
 
