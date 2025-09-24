@@ -159,7 +159,7 @@ async function onSave() {
   router.patch(
     route(props.modifyRoute.name, props.modifyRoute.parameters),
     {
-      transaction: changedItems,
+      transactions: changedItems,
       products: newProducts,
     },
     {
