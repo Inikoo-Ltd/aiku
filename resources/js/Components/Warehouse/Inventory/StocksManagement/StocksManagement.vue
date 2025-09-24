@@ -267,16 +267,22 @@ const getQuestionTooltip = (locationId: number) => {
         <div class="border-t pt-2 gap-2 items-center text-gray-700">
             <KeepAlive>
                 <template v-if="isStockCheck">
-                    <StockCheck :part_locations="props.stocks_management.part_locations"
-                        @onClickBackground="isStockCheck = false" />
+                    <StockCheck
+                        :part_locations="props.stocks_management.part_locations"
+                        @onClickBackground="isStockCheck = false"
+                    />
                 </template>
                 <template v-else-if="isMoveStock">
-                    <MoveStock :part_locations="props.stocks_management.part_locations"
-                        @onClickBackground="isMoveStock = false" />
+                    <MoveStock
+                        :part_locations="props.stocks_management.part_locations"
+                        @onClickBackground="isMoveStock = false"
+                    />
                 </template>
                 <template v-else-if="isEditLocations">
-                    <EditLocations :part_locations="props.stocks_management.part_locations"
-                        @onClickBackground="isEditLocations = false" />
+                    <EditLocations
+                        :part_locations="props.stocks_management.part_locations"
+                        @onClickBackground="isEditLocations = false"
+                    />
                 </template>
                 <div v-else>
                     <div v-for="(loc, idx) in props.stocks_management.part_locations" :key="loc.id"

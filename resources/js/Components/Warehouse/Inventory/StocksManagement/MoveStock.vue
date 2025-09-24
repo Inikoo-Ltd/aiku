@@ -15,19 +15,29 @@ import { useForm } from '@inertiajs/vue3'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
 library.add(faDotCircle, fasDotCircle, faForklift, faTimes)
 
+const props = defineProps<{
+    part_locations: {
+        id: number
+        name: string
+        slug: string
+        stock: number
+        isAudited: boolean
+    }[]
+}>()
+
 const emits = defineEmits<{
     (e: "onClickBackground"): void
 }>()
 
 const layout = inject('layout', layoutStructure)
 
-const dummyData = ref([
-    { id: 1, name: 'E1', lastAudit: new Date(), stock: 45, isAudited: true },
-    { id: 2, name: 'E2', lastAudit: new Date(), stock: 30, isAudited: false },
-    { id: 3, name: 'E3', lastAudit: new Date(), stock: 60, isAudited: true },
-    { id: 4, name: 'E4', lastAudit: new Date(), stock: 20, isAudited: false },
-    { id: 5, name: 'E5', lastAudit: new Date(), stock: 80, isAudited: true }
-])
+// const dummyData = ref([
+//     { id: 1, name: 'E1', lastAudit: new Date(), stock: 45, isAudited: true },
+//     { id: 2, name: 'E2', lastAudit: new Date(), stock: 30, isAudited: false },
+//     { id: 3, name: 'E3', lastAudit: new Date(), stock: 60, isAudited: true },
+//     { id: 4, name: 'E4', lastAudit: new Date(), stock: 20, isAudited: false },
+//     { id: 5, name: 'E5', lastAudit: new Date(), stock: 80, isAudited: true }
+// ])
 
 // Move stock state
 const moveStock = ref({
@@ -38,7 +48,7 @@ const moveStock = ref({
 })
 
 const form = useForm({
-    stockCheck: dummyData.value.map(item => ({
+    stockCheck: props.part_locations.map(item => ({
         id: item.id,
         name: item.name,
         stock: item.stock,
@@ -239,12 +249,12 @@ const submitCheckStock = () => {
                         </span>
                     </div>
                     <!-- Original stock change indicator -->
-                    <div v-else-if="forrrmm.stock != dummyData[idx].stock">
-                        <span v-if="forrrmm.stock > dummyData[idx].stock" class="text-green-600">
-                            +{{ forrrmm.stock - dummyData[idx].stock }}
+                    <div v-else-if="forrrmm.stock != part_locations[idx].stock">
+                        <span v-if="forrrmm.stock > part_locations[idx].stock" class="text-green-600">
+                            +{{ forrrmm.stock - part_locations[idx].stock }}
                         </span>
                         <span v-else class="text-red-500">
-                            -{{ dummyData[idx].stock - forrrmm.stock }}
+                            -{{ part_locations[idx].stock - forrrmm.stock }}
                         </span>
                     </div>
                     <!-- <div v-else @click="() => forrrmm.isAudited = !forrrmm.isAudited" class="cursor-pointer" :class="forrrmm.isAudited ? 'text-green-500' : 'text-gray-400 hover:text-green-500'">

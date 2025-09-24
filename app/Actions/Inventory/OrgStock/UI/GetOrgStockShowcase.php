@@ -104,6 +104,9 @@ class GetOrgStockShowcase
                             'value'         => 2150  // TODO: Artha
                         ],
                     ],
+                    'locations'     => [
+
+                    ],
                     'part_locations' => [  // TODO: Artha all of this 
                         [
                             'id' => 1,
@@ -113,12 +116,26 @@ class GetOrgStockShowcase
                             'isAudited' => true
                         ],
                         [
+                            'id' => 44,
+                            'name' => 'GV-88',
+                            'last_audit' => now(),
+                            'stock' => 7,
+                            'isAudited' => true
+                        ],
+                        [
                             'id' => 2,
-                            'name' => 'E2',
+                            'name' => 'Loc 30-KBN',
                             'last_audit' => now(),
                             'stock' => 30,
                             'isAudited' => false
-                        ]
+                        ],
+                        [
+                            'id' => 5,
+                            'name' => 'Xyz 564',
+                            'last_audit' => now(),
+                            'stock' => 12,
+                            'isAudited' => false
+                        ],
                     ]
                 ]
             ]
