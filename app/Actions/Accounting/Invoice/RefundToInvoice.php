@@ -61,7 +61,7 @@ class RefundToInvoice extends OrgAction
                 'original_payment_id' => Arr::get($modelData, 'original_payment_id'),
             ]);
 
-            // for invoice refund
+
             AttachPaymentToInvoice::make()->action($refund, $paymentInRefund, []);
 
 
