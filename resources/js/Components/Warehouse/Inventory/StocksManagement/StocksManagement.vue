@@ -212,6 +212,7 @@ const getQuestionTooltip = (locationId: number) => {
 
 <template>
     <div class="max-w-xl mx-auto bg-white shadow-md rounded-lg p-4 space-y-4">
+        
         <!-- Header Section -->
         <div class="flex items-center justify-between">
             <h2 class="text-lg font-semibold flex items-center gap-2">
@@ -315,10 +316,10 @@ const getQuestionTooltip = (locationId: number) => {
                                                 class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
                                                 {{ trans('Cancel') }}
                                             </button>
-                                            <button @click="() => saveNote(loc.id)"
+                                            <!-- <button @click="() => saveNote(loc.id)"
                                                 class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                                 {{ trans('Save') }}
-                                            </button>
+                                            </button> -->
                                         </div>
                                     </div>
                                 </Popover>
@@ -405,10 +406,10 @@ const getQuestionTooltip = (locationId: number) => {
                                             class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
                                             {{ trans('Cancel') }}
                                         </button>
-                                        <button @click="() => saveMinMaxStock(loc.id)"
+                                        <!-- <button @click="() => saveMinMaxStock(loc.id)"
                                             class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
                                             {{ trans('Save') }}
-                                        </button>
+                                        </button> -->
                                     </div>
                                 </div>
                             </Popover>

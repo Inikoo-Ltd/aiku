@@ -25,6 +25,7 @@ import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faSticky
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
 import { Icon } from "@/types/Utils/Icon"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 library.add(faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{
@@ -95,7 +96,7 @@ const props = defineProps<{
     }
 }>()
 
-
+const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
 const selectedImage = ref(0)
 const showAllStats = ref(false)
@@ -271,6 +272,6 @@ const compSelectedTradeUnit = computed(() => {
             </div>
         </div>
         
-        <pre>{{ data.stocks_management }}</pre>
+        <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management }}</pre>
     </div>
 </template>

@@ -7,9 +7,10 @@ import { faDotCircle } from "@fal"
 import { faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber } from 'primevue'
-import { ref } from 'vue'
+import { inject, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useForm } from '@inertiajs/vue3'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
 library.add(faDotCircle, fasDotCircle)
 
 const props = defineProps<{
@@ -25,6 +26,8 @@ const props = defineProps<{
 const emits = defineEmits<{
     (e: "onClickBackground"): void
 }>()
+
+const layout = inject('layout', layoutStructure)
 
 // const dummyData = ref([
 //     { id: 1, name: 'E1', lastAudit: new Date(), stock: 45, isAudited: true },
@@ -122,6 +125,7 @@ const submitCheckStock = () => {
             />
 
             <Button
+                v-if="layout.app.environment === 'local'"
                 :disabled="!form.isDirty"
                 label="Save"
                 full
@@ -129,6 +133,8 @@ const submitCheckStock = () => {
             />
 
         </div>
-        <pre>{{ form }}</pre>
+        <div v-if="layout.app.environment === 'local'">
+            <pre>{{ form }}</pre>
+        </div>
     </div>
 </template>

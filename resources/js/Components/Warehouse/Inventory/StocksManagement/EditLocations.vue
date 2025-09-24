@@ -7,9 +7,10 @@ import { faDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedlin
 import { faDotCircle as fasDotCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { InputNumber, AutoComplete } from 'primevue'
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { useForm } from '@inertiajs/vue3'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
 library.add(faDotCircle, fasDotCircle, faUnlink, faExclamationTriangle, faUndo, faPlus, faSeedling, faTrash)
 
 const props = defineProps<{
@@ -25,6 +26,8 @@ const props = defineProps<{
 const emits = defineEmits<{
     (e: "onClickBackground"): void
 }>()
+
+const layout = inject('layout', layoutStructure)
 
 // Dummy data untuk autocomplete
 const availableLocations = ref([
@@ -248,9 +251,9 @@ const submitCheckStock = () => {
         <div class="relative flex gap-x-2 z-40 mt-4">
             <Button label="Cancel" type="cancel" key="2" class="bg-red-100" @click="() => emits('onClickBackground')" />
 
-            <Button :disabled="!form.isDirty" label="Save" full @click="() => submitCheckStock()" />
+            <Button v-if="layout.app.environment === 'local'" :disabled="!form.isDirty" label="Save" full @click="() => submitCheckStock()" />
         </div>
 
-        <pre>{{ { form: form, newLocations: newLocations } }}</pre>
+        <pre v-if="layout.app.environment === 'local'">{{ { form: form, newLocations: newLocations } }}</pre>
     </div>
 </template>
