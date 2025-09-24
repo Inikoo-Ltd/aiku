@@ -5,12 +5,9 @@
   -->
 
 <script setup lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref, computed, watch } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faTrash as falTrash, faEdit, faExternalLink } from "@fal"
-import { faCircle, faPlay, faTrash, faPlus } from "@fas"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
@@ -20,10 +17,17 @@ import { useLocaleStore } from "@/Stores/locale"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
-import { Fieldset, Select } from "primevue"
+import { Fieldset, Message, Select } from "primevue"
 
 
-library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus)
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote } from "@fal"
+import { faCircle, faPlay, faTrash, faPlus } from "@fas"
+import { faExclamationTriangle } from "@fad"
+import StocksManagement from "@/Components/Warehouse/Inventory/StocksManagement/StocksManagement.vue"
+import { Icon } from "@/types/Utils/Icon"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+library.add(faExclamationTriangle, faCircle, faTrash, falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote, faPlay, faPlus)
 
 const props = defineProps<{
     data: {
@@ -75,10 +79,25 @@ const props = defineProps<{
             tags: {}[]
             tags_selected_id: number[]
         }[]
+        stocks_management: {
+            summary: {
+                [key: string]: {
+                    icon_state: Icon
+                    value: number
+                }
+            }
+            part_locations: {
+                id: number
+                name: string
+                slug: string
+                stock: number
+                isAudited: boolean
+            }[]
+        }
     }
 }>()
 
-
+const layout = inject('layout', layoutStructure)
 const locale = inject("locale", aikuLocaleStructure)
 const selectedImage = ref(0)
 const showAllStats = ref(false)
@@ -111,7 +130,20 @@ const compSelectedTradeUnit = computed(() => {
 
 
 <template>
-    <div class="grid md:grid-cols-4 gap-x-1 gap-y-4">
+    <Message severity="error" class="mt-8 mx-4 md:mx-10 ">
+        <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-center w-full mx-auto">
+            <div class="">
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
+                <div class="inline ml-1 gap-x-2">
+                    {{
+                        trans("This feature is under development. Stock movements and adjustments will be available soon.")
+                    }}
+                </div>
+            </div>
+        </div>
+    </Message>
+    
+    <div class="grid md:grid-cols-4 gap-x-1 gap-y-4 p-6">
         <!-- Sidebar -->
        <!--  <div class="p-5 space-y-5 grid grid-cols-1 max-w-[500px]">
             <div class="relative">
@@ -156,10 +188,6 @@ const compSelectedTradeUnit = computed(() => {
             </section>
         </div> -->
 
-        <div></div>
-        <div>
-        </div>
-
         <div class="md:col-span-2 pr-6">
             <Fieldset class="p-5 space-y-5 h-fit w-full max-w-lg" legend="Trade units" xtoggleable xcollapsed>
                 <template #legend>
@@ -198,6 +226,15 @@ const compSelectedTradeUnit = computed(() => {
                 </template>
             </Fieldset>
         </div>
+
+        <div class="md:col-span-2">
+            <StocksManagement
+                :stocks_management="data.stocks_management"
+            />
+
+            <pre v-if="layout.app.environment === 'local'">{{ data.stocks_management }}</pre>
+        </div>
+
 
         <!-- Revenue Stats -->
         <div v-if="false && data.stats" class="pt-8 p-4 md:col-span-3">
@@ -250,5 +287,6 @@ const compSelectedTradeUnit = computed(() => {
                 <span class="text-sm font-medium">{{ trans("Show more") }}</span>
             </div>
         </div>
+        
     </div>
 </template>

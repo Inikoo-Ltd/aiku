@@ -51,8 +51,6 @@ class OrderProductsForModifyResource extends JsonResource
             'image_thumbnail'           => $product->imageSources(64, 64),
             'state'                     => $this->state,
             'available_quantity'        => $this->available_quantity,
-            'quantity_ordered'          => $this->quantity_ordered ?? 0,
-            'order_id'                  => $this->order_id ?? null,
             'price'                     => $this->price,
         ];
     }
