@@ -12,6 +12,7 @@ import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash-es'
+import ModalProductList from "@/Components/Utils/ModalProductList.vue"
 
 type ProductRow = {
   id: number
@@ -37,6 +38,7 @@ const locale = inject('locale', {})
 const editingIds = ref<Set<number>>(new Set())
 const createNewQty = reactive<Record<number, ProductRow>>({})
 const isLoading = ref<string | null>(null)
+const isModalProductListOpen = ref(false)
 
 // Helper: get rows as array
 function rowsArray() {
@@ -124,23 +126,30 @@ onBeforeUnmount(() => {
 
 // --- Save all changes ---
 async function onSave() {
-  const changedItems = Object.entries(createNewQty)
-    .map(([id, clonedItem]) => {
+  const changedItems = Object.entries(createNewQty).reduce(
+    (acc, [id, clonedItem]) => {
       const orig = rowsArray().find(x => x.id === Number(id))
-      if (!orig) return null
-      const newQty = Number(clonedItem.quantity_ordered)
-      if (newQty === Number(orig.quantity_ordered)) return null
-      return { id: orig.id, newQty}
-    })
-    .filter(Boolean) as Array<{ id: number; newQty: number; updateRoute: routeType }>
+      if (!orig) return acc
 
-  if (!changedItems.length) return
+      const newQty = Number(clonedItem.quantity_ordered)
+      if (newQty === Number(orig.quantity_ordered)) return acc
+
+      acc[orig.id] = { newQty } // 👈 key by id
+      return acc
+    },
+    {} as Record<number, { newQty: number }>
+  )
+
+  if (Object.keys(changedItems).length === 0) return
 
   console.log(changedItems)
 
   Object.keys(createNewQty).forEach(k => delete createNewQty[Number(k)])
   editingIds.value.clear()
 }
+
+
+
 </script>
 
 <template>
@@ -148,6 +157,7 @@ async function onSave() {
     <!-- Save All Button -->
     <template #add-on-button-in-before>
       <Button v-if="Object.keys(createNewQty).length > 0" label="Save all new quantity" @click="onSave" />
+      <Button label="Add New" />
     </template>
 
     <!-- Column: Code -->
@@ -188,7 +198,7 @@ async function onSave() {
         </div>
 
         <!-- Inline edit mode with original quantity displayed -->
-        <div v-else class="flex items-center gap-2">
+        <div v-else class="items-center gap-2">
           <span class="text-gray-500 italic text-sm">
             original: {{ formatQuantity(item.quantity_ordered) }}
           </span>
@@ -199,31 +209,31 @@ async function onSave() {
     </template>
 
     <template #cell(net_amount)="{ item }">
-        <div class="flex justify-end">
-          <div v-if="editingIds.has(item.id)" class="">
-              <!-- Original price tag -->
-              <div class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm whitespace-nowrap my-2">
-                orig:  {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
-              </div>
-              <!-- Estimated price tag -->
-              <div class="bg-yellow-100 text-yellow-800 px-4 py-1.5 rounded-full text-sm font-medium shadow-sm whitespace-nowrap inline-flex items-center justify-center">
-                  est: {{ locale.currencyFormat(item.currency_code, (item.price * createNewQty[item.id].quantity_ordered).toFixed(2)) }}
-              </div>
+      <div class="flex justify-end">
+        <div v-if="editingIds.has(item.id)" class="">
+          <!-- Original price tag -->
+          <div
+            class="bg-gray-100 text-gray-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm whitespace-nowrap my-2">
+            orig: {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
           </div>
-          <div v-else>
-            {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
+          <!-- Estimated price tag -->
+          <div
+            class="bg-yellow-100 text-yellow-800 px-4 py-1.5 rounded-full text-sm font-medium shadow-sm whitespace-nowrap inline-flex items-center justify-center">
+            est: {{ locale.currencyFormat(item.currency_code, (item.price *
+              createNewQty[item.id].quantity_ordered).toFixed(2)) }}
           </div>
+        </div>
+        <div v-else>
+          {{ locale.currencyFormat(item.currency_code, item.net_amount) }}
+        </div>
       </div>
     </template>
-
-
 
     <!-- Column: Actions -->
     <template #cell(actions)="{ item }">
       <div class="flex gap-2 items-center">
         <!-- Delete / Unselect -->
-        <Link v-if="state === 'creating' || state === 'xsubmitted'"
-          :href="route(item.deleteRoute.name, item.deleteRoute.parameters)" as="button"
+        <Link v-if="state === 'creating'" :href="route(item.deleteRoute.name, item.deleteRoute.parameters)" as="button"
           :method="item.deleteRoute.method" @start="() => (isLoading.value = 'unselect' + item.id)"
           @finish="() => (isLoading.value = null)" v-tooltip="trans('Unselect this product')" :preserveScroll="true">
         <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
@@ -231,17 +241,29 @@ async function onSave() {
         </Link>
 
         <!-- Edit / Cancel -->
-        <template v-if="!editingIds.has(item.id && layout?.app?.environment === 'local' )">
-          <button class="h-9 align-bottom text-center" @click="startEdit(item)" aria-label="Edit Product Order"
+        <div v-if="state !== 'creating'">
+          <!-- Show edit button if not editing AND environment is local -->
+          <button v-if="!editingIds.has(item.id) && layout?.app?.environment === 'local'"
+            class="h-9 align-bottom text-center" @click="startEdit(item)" aria-label="Edit Product Order"
             v-tooltip="'Edit Product Order'">
             <FontAwesomeIcon :icon="faPencil" class="h-5 text-gray-500 hover:text-gray-700" aria-hidden="true" />
           </button>
-        </template>
-        <template v-else>
-          <Button type="negative" v-tooltip="'Cancel edit'" :icon="faTimes" @click="onCancel(item)" size="sm"
-            aria-label="Cancel edit" />
-        </template>
+
+          <!-- Cancel button if editing -->
+          <Button v-else-if="editingIds.has(item.id)" type="negative" v-tooltip="'Cancel edit'" :icon="faTimes"
+            @click="onCancel(item)" size="sm" aria-label="Cancel edit" />
+        </div>
       </div>
     </template>
+
   </Table>
+
+  <!-- <ModalProductList 
+    v-model="isModalProductListOpen" 
+    :fetchRoute="routes.products_list" 
+    :action="currentAction"
+    :current="currentTab" 
+    v-model:currentTab="currentTab" 
+    :typeModel="'order'" 
+  /> -->
 </template>
