@@ -183,6 +183,7 @@ class Order extends Model implements HasMedia, Auditable
     protected $casts = [
         'data'         => 'array',
         'payment_data' => 'array',
+        'post_submit_modification_data' => 'array',
 
 
         'date'                   => 'datetime',

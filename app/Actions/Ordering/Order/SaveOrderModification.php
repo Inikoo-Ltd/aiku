@@ -8,6 +8,7 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Actions\OrgAction;
@@ -56,7 +57,17 @@ class SaveOrderModification extends OrgAction
                     ]);
 
                     if($order->state == OrderStateEnum::IN_WAREHOUSE && $order->deliveryNotes()->exists()) {
-                        //TODO:  do smthn for the dn items
+                        $deliveryNote = $order->deliveryNotes->first();    
+                        foreach ($product->orgStocks as $orgStock) {
+                            $quantity             = $orgStock->pivot->quantity * $transaction->quantity_ordered;
+                            $deliveryNoteItemData = [
+                                'org_stock_id'      => $orgStock->id,
+                                'transaction_id'    => $transaction->id,
+                                'quantity_required' => $quantity,
+                                'original_quantity_required' => $quantity
+                            ];
+                            StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
+                        }
                     }
                 }
             }
