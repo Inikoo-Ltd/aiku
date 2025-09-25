@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Country\UI;
 
+use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Country;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -16,12 +17,17 @@ class GetAddressData
 {
     use AsObject;
 
-    public function handle(): array
+    public function handle(?Shop $shop = null): array
     {
 
         $selectOptions = [];
+         if ($shop) {
+            $countries = Country::whereNotIn('id', $shop->forbidden_dispatch_countries)->get();
+        } else {
+            $countries = Country::all();
+        }
         /** @var Country $country */
-        foreach (Country::all() as $country) {
+        foreach ($countries as $country) {
             $fields = Arr::get($country->data, 'fields', []);
             // TODO: remove this if the column already exist in addresses table
             if (isset($fields['address_line_3'])) {

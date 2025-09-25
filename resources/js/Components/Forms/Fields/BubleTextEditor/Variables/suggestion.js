@@ -1,71 +1,76 @@
-import { VueRenderer } from '@tiptap/vue-3'
-import tippy from 'tippy.js'
+import { VueRenderer } from "@tiptap/vue-3"
+import tippy from "tippy.js"
 
-import MentionList from './MentionList.vue'
+import MentionList from "./MentionList.vue"
 
 export default {
-  items: ({ query }) => {
-    return [
-      'name', 'username', 'email', 'reference', 'favourites_count', 'cart_count',"cart_amount" ,
-    ].filter(item => item.toLowerCase().startsWith(query.toLowerCase())).slice(0, 5)
-  },
+	items: ({ query }) => {
+		const q = query?.toLowerCase() ?? "" // safe default
 
-  render: () => {
-    let component
-    let popup
+		return [
+			"name",
+			"username",
+			"email",
+			"reference",
+			"favourites_count",
+			"cart_count",
+			"cart_amount",
+		]
+			.filter((item) => item.toLowerCase().startsWith(q))
+			.slice(0, 5)
+	},
 
-    return {
-      onStart: props => {
-        component = new VueRenderer(MentionList, {
-          // using vue 2:
-          // parent: this,
-          // propsData: props,
-          // using vue 3:
-          props,
-          editor: props.editor,
-        })
+	render: () => {
+		let component
+		let popup
 
-        if (!props.clientRect) {
-          return
-        }
+		return {
+			onStart: (props) => {
+				component = new VueRenderer(MentionList, {
+					props,
+					editor: props.editor,
+				})
 
-        popup = tippy('body', {
-          getReferenceClientRect: props.clientRect,
-          appendTo: () => document.body,
-          content: component.element,
-          showOnCreate: true,
-          interactive: true,
-          trigger: 'manual',
-          placement: 'bottom-start',
-        })
-      },
+				if (!props.clientRect) {
+					return
+				}
 
-      onUpdate(props) {
-        component.updateProps(props)
+				popup = tippy("body", {
+					getReferenceClientRect: props.clientRect,
+					appendTo: () => document.body,
+					content: component.element,
+					showOnCreate: true,
+					interactive: true,
+					trigger: "manual",
+					placement: "bottom-start",
+				})
+			},
 
-        if (!props.clientRect) {
-          return
-        }
+			onUpdate(props) {
+				component.updateProps(props)
 
-        popup[0].setProps({
-          getReferenceClientRect: props.clientRect,
-        })
-      },
+				if (!props.clientRect) {
+					return
+				}
 
-      onKeyDown(props) {
-        if (props.event.key === 'Escape') {
-          popup[0].hide()
+				popup[0].setProps({
+					getReferenceClientRect: props.clientRect,
+				})
+			},
 
-          return true
-        }
+			onKeyDown(props) {
+				if (props.event.key === "Escape") {
+					popup[0].hide()
+					return true
+				}
 
-        return component.ref?.onKeyDown(props)
-      },
+				return component.ref?.onKeyDown(props)
+			},
 
-      onExit() {
-        popup[0].destroy()
-        component.destroy()
-      },
-    }
-  },
+			onExit() {
+				popup[0].destroy()
+				component.destroy()
+			},
+		}
+	},
 }
