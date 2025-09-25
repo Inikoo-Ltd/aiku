@@ -2,25 +2,24 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 15 May 2025 12:55:43 Central Indonesia Time, Sanur, Bali, Indonesia
+ * Created: Thu, 25 Sept 2025 12:47:55 Malaysia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Http\Resources\Dispatching;
+namespace App\Actions\Dispatching\Shipment;
 
-use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Dispatching\DeliveryNote;
-use Illuminate\Http\Resources\Json\JsonResource;
+use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShippingDropshippingDeliveryNoteResource extends JsonResource
+class GwtShippingDeliveryNoteData
 {
-    use HasSelfCall;
+    use AsAction;
 
-    public function toArray($request): array
+
+    public function handle(DeliveryNote $deliveryNote,$cascade=true): array
     {
-        /** @var DeliveryNote $deliveryNote */
-        $deliveryNote = $this->resource;
+
 
         $customer = $deliveryNote->customer;
         $shop     = $deliveryNote->shop;
@@ -59,33 +58,64 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
 
         $address = $deliveryNote->deliveryAddress;
 
-        $recipient = $deliveryNote->customerClient;
+        $toPhone = $deliveryNote->phone ?? '';
 
-        $toCompanyName = $recipient->company_name ?? '';
-        $contactName   = $recipient->contact_name ?? '';
-
-        $toFirstName = explode(' ', $contactName)[0];
-        $toLastName  = (str_contains($contactName, ' '))
-            ? substr($contactName, strpos($contactName, ' ') + 1)
-            : '-';
-
-        $toPhone = $recipient->phone ?? '';
-        $toEmail = $recipient->email ?? '';
-
-        // if from shopify/ebay/etc
-        if ($toCompanyName === '') {
-            $platform = $recipient?->salesChannel?->platform_user_type;
-            if ($platform) {
-                $toCompanyName = $recipient->contact_name ?? '';
+        if($cascade) {
+            if (!$toPhone) {
+                $toPhone = $customer->phone ?? '';
+            }
+            if (!$toPhone) {
+                $toPhone = $shop->phone;
             }
         }
 
-        if ($toEmail == '') {
-            $toEmail = $customer->email;
+        $toEmail = $deliveryNote->email ?? '';
+
+        if($cascade) {
+            if (!$toEmail) {
+                $toEmail = $customer->email;
+            }
+            if (!$toEmail) {
+                $toEmail = $shop->email;
+            }
         }
-        if ($toEmail == '') {
-            $toEmail = $shop->email;
+
+
+        $toCompanyName = $deliveryNote->company_name ?? '';
+
+        if($cascade) {
+            if (!$toCompanyName) {
+                $toCompanyName = $customer->company_name ?? '';
+            }
+            if (!$toCompanyName) {
+                $toCompanyName = $customer->name;
+            }
         }
+
+
+
+        $contactName   = $deliveryNote->contact_name ?? '';
+
+        if($cascade) {
+            if (!$contactName) {
+                $contactName = $customer->contact_name ?? '';
+            }
+        }
+
+
+        $toFirstName = '';
+        $toLastName = '';
+
+        if ($contactName) {
+            $exploded = explode(' ', $contactName);
+            $toFirstName = explode(' ', $contactName)[0];
+            if (count($exploded) > 1) {
+                $toLastName  = (str_contains($contactName, ' '))
+                    ? substr($contactName, strpos($contactName, ' ') + 1)
+                    : '-';
+            }
+        }
+
 
         return [
             'id'                 => $deliveryNote->id,
@@ -106,4 +136,5 @@ class ShippingDropshippingDeliveryNoteResource extends JsonResource
             'to_email'           => $toEmail,
         ];
     }
+
 }

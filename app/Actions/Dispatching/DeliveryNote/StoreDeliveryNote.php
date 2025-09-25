@@ -132,6 +132,8 @@ class StoreDeliveryNote extends OrgAction
             ],
             'email'                     => ['sometimes', 'nullable', $this->strict ? 'email' : 'string'],
             'phone'                     => ['sometimes', 'nullable', 'string'],
+            'company_name'              => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_name'              => ['sometimes', 'nullable', 'string', 'max:255'],
             'date'                      => ['required', 'date'],
             'warehouse_id'              => [
                 'required',
