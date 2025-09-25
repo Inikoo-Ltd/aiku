@@ -32,14 +32,7 @@ class FetchAuroraProducts extends FetchAuroraAction
             return null;
         }
 
-        //        $sourceData = explode(':', $productData['product']['source_id']);
-        //        $orgStocks  = $organisationSource->fetchProductHasOrgStock($sourceData[1])['org_stocks'];
-        //
-        //        data_set(
-        //            $productData,
-        //            'product.org_stocks',
-        //            $orgStocks
-        //        );
+
 
         /** @var Product $product */
         if ($product = Product::withTrashed()->where('source_id', $productData['product']['source_id'])->first()) {
@@ -68,6 +61,17 @@ class FetchAuroraProducts extends FetchAuroraAction
             }
         } else {
             try {
+
+                        $sourceData = explode(':', $productData['product']['source_id']);
+                        $orgStocks  = $organisationSource->fetchProductHasOrgStock($sourceData[1])['org_stocks'];
+
+                        data_set(
+                            $productData,
+                            'product.org_stocks',
+                            $orgStocks
+                        );
+
+
                 $product = StoreProduct::make()->action(
                     parent: $productData['parent'],
                     modelData: $productData['product'],
