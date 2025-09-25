@@ -7,6 +7,7 @@
  */
 
 use App\Actions\Accounting\Invoice\IrisPdfInvoice;
+use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
 use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\IndexIrisBlogWebpages;
@@ -32,6 +33,10 @@ Route::prefix("disclosure")
 Route::prefix("unsubscribe")
     ->name("unsubscribe.")
     ->group(__DIR__."/unsubscribe.php");
+
+
+Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscribe.aurora');
+
 
 Route::prefix("json")
     ->name("json.")
