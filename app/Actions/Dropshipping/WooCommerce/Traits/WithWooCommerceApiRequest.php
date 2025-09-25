@@ -130,7 +130,7 @@ trait WithWooCommerceApiRequest
                     'response' => $response->body(),
                 ]);
 
-                return [];
+                return $response->json();
             }
         } catch (ConnectionException $e) {
             Log::error('WooCommerce API Connection Error', [

@@ -10,11 +10,9 @@
 
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
+use App\Actions\Dispatching\Shipment\GwtShippingDeliveryNoteData;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
-use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
-use App\Http\Resources\Dispatching\ShippingDropshippingDeliveryNoteResource;
 use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
@@ -61,10 +59,8 @@ class CallApiPacketaShipping extends OrgAction
 
         if ($parent instanceof PalletReturn) {
             $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
-        } elseif ($parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
-            $parentResource = ShippingDropshippingDeliveryNoteResource::make($parent)->getArray();
         } else {
-            $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+            $parentResource = GwtShippingDeliveryNoteData::run($parent);
         }
 
         $parcels = $parent->parcels;
@@ -135,12 +131,15 @@ class CallApiPacketaShipping extends OrgAction
                 }
 
                 foreach ($faults as $fault) {
-                    if (in_array($fault->name, ['street', 'houseNumber', 'city', 'zip']) && !isset($errorData['address'])) {
+                    if (in_array($fault->name, ['street', 'houseNumber', 'city', 'zip','phone']) && !isset($errorData['address'])) {
                         $errorData['address'] = "Invalid address for fields: ";
                     } elseif (!isset($errorData['others'])) {
                         $errorData['others'] = 'Invalid field: ';
                     }
                     switch ($fault->name) {
+                        case 'phone':
+                            $errorData['address'] .= "phone: ".$fault->fault."  ,";
+                            break;
                         case 'street':
                             $errorData['address'] .= "address,";
                             break;

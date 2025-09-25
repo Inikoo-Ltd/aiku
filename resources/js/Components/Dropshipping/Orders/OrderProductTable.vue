@@ -351,8 +351,8 @@ defineExpose({
         <div class="flex gap-2 items-center">
           <!-- Delete / Unselect -->
           <Link v-if="state === 'creating'" :href="route(item.deleteRoute.name, item.deleteRoute.parameters)"
-            as="button" :method="item.deleteRoute.method" @start="() => (isLoading.value = 'unselect' + item.id)"
-            @finish="() => (isLoading.value = null)" v-tooltip="trans('Unselect this product')" :preserveScroll="true">
+            as="button" :method="item.deleteRoute.method" @start="() => (isLoading = 'unselect' + item.id)"
+            @finish="() => (isLoading = null)" v-tooltip="trans('Unselect this product')" :preserveScroll="true">
           <Button v-if="!readonly" icon="fal fa-times" type="negative" size="xs"
             :loading="isLoading === 'unselect' + item.id" />
           </Link>

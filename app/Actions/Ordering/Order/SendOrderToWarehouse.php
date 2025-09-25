@@ -14,6 +14,7 @@ use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
@@ -73,6 +74,10 @@ class SendOrderToWarehouse extends OrgAction
             'customer_client_id'        => $order->customer_client_id,
             'customer_sales_channel_id' => $order->customer_sales_channel_id,
             'platform_id'               => $order->platform_id,
+            'email'                     => $this->getEmail($order),
+            'phone'                     => $this->getPhone($order),
+            'company_name'              => $this->getCompanyName($order),
+            'contact_name'              => $this->getContactName($order),
         ];
 
         $deliveryNote = StoreDeliveryNote::make()->action($order, $deliveryNoteData);
@@ -85,9 +90,9 @@ class SendOrderToWarehouse extends OrgAction
             foreach ($product->orgStocks as $orgStock) {
                 $quantity             = $orgStock->pivot->quantity * $transaction->quantity_ordered;
                 $deliveryNoteItemData = [
-                    'org_stock_id'      => $orgStock->id,
-                    'transaction_id'    => $transaction->id,
-                    'quantity_required' => $quantity,
+                    'org_stock_id'               => $orgStock->id,
+                    'transaction_id'             => $transaction->id,
+                    'quantity_required'          => $quantity,
                     'original_quantity_required' => $quantity
                 ];
                 StoreDeliveryNoteItem::make()->action($deliveryNote, $deliveryNoteItemData);
@@ -100,6 +105,51 @@ class SendOrderToWarehouse extends OrgAction
 
         return $deliveryNote;
     }
+
+    public function getEmail(Order $order): ?string
+    {
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $email = $order->customerClient->email;
+        } else {
+            $email = $order->customer->email;
+        }
+
+        return $email;
+    }
+
+    public function getPhone(Order $order): ?string
+    {
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $phone = $order->customerClient->phone;
+        } else {
+            $phone = $order->customer->phone;
+        }
+
+        return $phone;
+    }
+
+    public function getCompanyName(Order $order): ?string
+    {
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $companyName = $order->customerClient->company_name;
+        } else {
+            $companyName = $order->customer->company_name;
+        }
+
+        return $companyName;
+    }
+
+    public function getContactName(Order $order): ?string
+    {
+        if ($order->shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $contactName = $order->customerClient->contact_name;
+        } else {
+            $contactName = $order->customer->contact_name;
+        }
+
+        return $contactName;
+    }
+
 
     public function rules(): array
     {
