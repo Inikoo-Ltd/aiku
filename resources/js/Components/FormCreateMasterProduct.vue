@@ -153,7 +153,7 @@ const getTableData = (data) => {
             )
 
             console.log("Response data:", response.data)
-            for (const item of response.data.shop_products) {
+            for (const item of response.data.shops) {
                 const index = tableData.value.data.findIndex((row: any) => row.id === item.id)
                 if (index !== -1) {
                     tableData.value.data[index].product = {
