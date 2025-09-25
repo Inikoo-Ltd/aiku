@@ -10,11 +10,9 @@
 
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
+use App\Actions\Dispatching\Shipment\GwtShippingDeliveryNoteData;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
-use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
-use App\Http\Resources\Dispatching\ShippingDropshippingDeliveryNoteResource;
 use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
@@ -60,11 +58,10 @@ class CallApiGlsSkShipping extends OrgAction
 
         if ($parent instanceof PalletReturn) {
             $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
-        } elseif ($parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
-            $parentResource = ShippingDropshippingDeliveryNoteResource::make($parent)->getArray();
         } else {
-            $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+            $parentResource = GwtShippingDeliveryNoteData::run($parent);
         }
+
         $parcels        = $parent->parcels;
 
         $shippingNotes = $parent->shipping_notes ?? '';

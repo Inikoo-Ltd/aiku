@@ -65,7 +65,7 @@ class GetOrderDeliveryAddressManagement
                 'isCannotSelect'                 => true,
                 'address_list'                   => $addressCollection,
                 'options'                        => [
-                    'countriesAddressData' => GetAddressData::run()
+                    'countriesAddressData' => GetAddressData::run($order->shop)
                 ],
                 'pinned_address_id'              => $order->customer->delivery_address_id,
                 'home_address_id'                => $order->customer->address_id,

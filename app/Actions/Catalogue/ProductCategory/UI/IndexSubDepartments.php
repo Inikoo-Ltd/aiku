@@ -14,6 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\UI\Catalogue\ProductCategoryTabsEnum;
 use App\Http\Resources\Catalogue\SubDepartmentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\ProductCategory;
@@ -41,7 +42,7 @@ class IndexSubDepartments extends OrgAction
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
 
         return $this->handle(parent: $shop);
     }
@@ -49,7 +50,7 @@ class IndexSubDepartments extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $department;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
 
         return $this->handle(parent: $department);
     }
@@ -203,6 +204,9 @@ class IndexSubDepartments extends OrgAction
             $subNavigation = $this->getDepartmentSubNavigation($this->parent);
         }
 
+        $navigation = ProductCategoryTabsEnum::navigation();
+        unset($navigation[ProductCategoryTabsEnum::SALES->value]);
+
         $title      = __('Sub-departments');
         $model      = '';
         $icon       = [
@@ -256,9 +260,22 @@ class IndexSubDepartments extends OrgAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
+                'tabs' => [
+                    'current'    => $this->tab,
+                    'navigation' => $navigation,
+                ],
                 'data'        => SubDepartmentsResource::collection($subDepartment),
+
+                 ProductCategoryTabsEnum::INDEX->value => $this->tab == ProductCategoryTabsEnum::INDEX->value ?
+                    fn () => SubDepartmentsResource::collection($subDepartment)
+                    : Inertia::lazy(fn () => SubDepartmentsResource::collection($subDepartment)),
+
+                ProductCategoryTabsEnum::NEED_REVIEW->value => $this->tab == ProductCategoryTabsEnum::NEED_REVIEW->value ?
+                    fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))
+                    : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartmentsNeedReviews::run($this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value))),
             ]
-        )->table($this->tableStructure($this->parent));
+        )->table($this->tableStructure($this->parent, prefix: ProductCategoryTabsEnum::INDEX->value))
+        ->table(IndexSubDepartmentsNeedReviews::make()->tableStructure(parent: $this->parent, prefix: ProductCategoryTabsEnum::NEED_REVIEW->value));
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array

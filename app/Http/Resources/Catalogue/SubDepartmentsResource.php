@@ -62,6 +62,10 @@ class SubDepartmentsResource extends JsonResource
             'updated_at'      => $this->updated_at,
             'number_families' => $this->number_families,
             'number_products' => $this->number_products,
+            'is_name_reviewed' => $this->is_name_reviewed,
+            'is_description_title_reviewed' => $this->is_description_title_reviewed,
+            'is_description_reviewed' => $this->is_description_reviewed,
+            'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
 
         ];
     }

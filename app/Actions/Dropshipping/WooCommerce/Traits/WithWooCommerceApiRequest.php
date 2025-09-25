@@ -97,10 +97,12 @@ trait WithWooCommerceApiRequest
         }
 
         try {
-            $response = Http::withBasicAuth(
-                $this->woocommerceConsumerKey,
-                $this->woocommerceConsumerSecret
-            );
+            $response = Http::timeout(30)
+                ->connectTimeout(30)
+                ->withBasicAuth(
+                    $this->woocommerceConsumerKey,
+                    $this->woocommerceConsumerSecret
+                );
 
             // Handle different HTTP methods
             $response = match ($method) {
@@ -128,7 +130,7 @@ trait WithWooCommerceApiRequest
                     'response' => $response->body(),
                 ]);
 
-                return [];
+                return $response->json();
             }
         } catch (ConnectionException $e) {
             Log::error('WooCommerce API Connection Error', [

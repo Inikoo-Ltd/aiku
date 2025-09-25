@@ -30,7 +30,8 @@ import {
 	faTransporter,
 	faDotCircle,
 	faFolderTree,
-	faAlbumCollection
+	faAlbumCollection,
+	faPenAlt
 } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -58,7 +59,8 @@ library.add(
 	faDotCircle,
 	faFolderTree,
 	faAlbumCollection,
-	faUndo
+	faUndo,
+	faPenAlt,
 )
 
 const layoutStore = inject("layout", layoutStructure)
