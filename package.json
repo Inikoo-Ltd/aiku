@@ -121,7 +121,7 @@
         "string-to-color": "^2.2.2",
         "swiper": "^11.0.5",
         "tiptap-extension-font-size": "^1.2.0",
-        "tiptap-extension-resize-image": "^1.2.1",
+        "tiptap-image-plus": "^1.0.5",
         "ulid": "^2.3.0",
         "uuid": "^9.0.0",
         "v-calendar": "^3.0.3",
