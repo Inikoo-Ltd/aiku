@@ -100,7 +100,7 @@ class StoreOrderFromEbay extends OrgAction
 
 
             $portfolioData = DB::table('portfolios')->select('item_id')->where('item_type', 'Product')->where('customer_sales_channel_id', $ebayUser->customer_sales_channel_id)
-                ->where('platform_product_id', $lineItem['legacyItemId'])->first();
+                ->where('platform_product_variant_id', $lineItem['legacyItemId'])->first();
             if ($portfolioData && $portfolioData->item_id) {
                 $product = Product::find($portfolioData->item_id);
                 if ($product) {
