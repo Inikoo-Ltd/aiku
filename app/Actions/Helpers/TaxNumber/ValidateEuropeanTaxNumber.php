@@ -14,7 +14,6 @@ use App\Models\Helpers\TaxNumber;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
-use phpDocumentor\Reflection\Exception;
 use SoapClient;
 use SoapFault;
 
@@ -51,8 +50,22 @@ class ValidateEuropeanTaxNumber
     public function handle(TaxNumber $taxNumber): TaxNumber
     {
         if ($taxNumber->type == TaxNumberTypeEnum::EU_VAT) {
+            if (!$taxNumber->number || strlen($taxNumber->number) < 7) {
+                $validationData = [
+                    'valid'              => false,
+                    'status'             => TaxNumberStatusEnum::INVALID,
+                    'checked_at'         => now(),
+                    'invalid_checked_at' => now()
+
+                ];
+                $taxNumber->update($validationData);
+                $taxNumber->refresh();
+
+                return $taxNumber;
+            }
+
             try {
-                $number  = preg_replace('/\s+/', '', (string)$taxNumber->number);
+                $number  = preg_replace('/\s+/', '', $taxNumber->number);
                 $country = strtoupper((string)$taxNumber->country_code);
                 if (strlen($number) >= 2 && strtoupper(substr($number, 0, 2)) === $country) {
                     $number = substr($number, 2);
@@ -76,27 +89,24 @@ class ValidateEuropeanTaxNumber
                     $validationData['invalid_checked_at'] = $validationDate;
                 } else {
                     $validationData['invalid_checked_at'] = null;
-                    $name    = trim(preg_replace('/\s+/', ' ', (string)$response->name));
-                    $address = trim(preg_replace('/\s+/', ' ', (string)$response->address));
+                    $name                                 = trim(preg_replace('/\s+/', ' ', (string)$response->name));
+                    $address                              = trim(preg_replace('/\s+/', ' ', (string)$response->address));
 
                     $validationData['data'] = [
-                        'name'               => $name,
-                        'address'            => $address,
+                        'name'    => $name,
+                        'address' => $address,
                     ];
                 }
 
 
                 $taxNumber->update($validationData);
             } catch (SoapFault $e) {
-                $validationDate = gmdate('Y-m-d H:i:s');
-
-
                 if (!preg_match('/INVALID_INPUT/i', $e->getMessage())) {
                     $validationData = [
                         'valid'              => false,
                         'status'             => TaxNumberStatusEnum::INVALID,
-                        'checked_at'         => $validationDate,
-                        'invalid_checked_at' => $validationDate
+                        'checked_at'         => now(),
+                        'invalid_checked_at' => now()
 
                     ];
                 } else {
@@ -113,8 +123,6 @@ class ValidateEuropeanTaxNumber
 
                 $taxNumber->update($validationData);
                 $taxNumber->refresh();
-
-                throw new Exception($e->getMessage(), $e->getCode());
             }
         }
 
