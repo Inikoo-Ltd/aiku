@@ -35,7 +35,7 @@ class StoreSubmittedOrder extends OrgAction
         return $order;
     }
 
-        public function htmlResponse(Order $order, ActionRequest $request): RedirectResponse
+    public function htmlResponse(Order $order, ActionRequest $request): RedirectResponse
     {
         $routeName = $request->route()->getName();
 

@@ -55,7 +55,7 @@ class SubmitOrder extends OrgAction
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
-        if($transactions->isNotEmpty()) {
+        if ($transactions->isNotEmpty()) {
             foreach ($transactions as $transaction) {
                 $transactionData = ['state' => TransactionStateEnum::SUBMITTED];
                 if ($transaction->submitted_at == null) {
