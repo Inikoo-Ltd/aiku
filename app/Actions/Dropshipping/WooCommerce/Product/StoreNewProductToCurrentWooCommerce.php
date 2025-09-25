@@ -28,8 +28,10 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction
         StoreWooCommerceProduct::run($wooCommerceUser, $portfolio);
     }
 
-    public function asController(WooCommerceUser $wooCommerceUser, Portfolio $portfolio, ActionRequest $request): void
+    public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
+        /** @var WooCommerceUser $wooCommerceUser */
+        $wooCommerceUser = $portfolio->customerSalesChannel->user;
         $this->initialisation($portfolio->organisation, $request);
 
         $this->handle($wooCommerceUser, $portfolio);
