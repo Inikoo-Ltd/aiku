@@ -20,6 +20,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { faCheck, faTimesCircle, faCheckCircle } from "@fal";
 
 library.add(faSeedling,faOctopusDeploy);
 
@@ -148,7 +149,9 @@ function masterDepartmentRoute(department: Department) {
 
 
 const isLoadingDetach = ref<string[]>([]);
-
+const dotClass = (filled: boolean) =>
+    filled ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600";
+const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle);
 </script>
 
 <template>
@@ -234,6 +237,38 @@ const isLoadingDetach = ref<string[]>([]);
                     :loading="isLoadingDetach.includes('detach' + item.id)"
                 />
             </Link>
+        </template>
+          <template #cell(is_name_reviewed)="{ item }">
+            <div >
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_name_reviewed),
+                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="'Review name'" />
+            </div>
+        </template>
+        <template #cell(is_description_reviewed)="{ item }">
+            <div>
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_description_reviewed),
+                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="'Review name'" />
+            </div>
+        </template>
+        <template #cell(is_description_title_reviewed)="{ item }">
+            <div>
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_description_title_reviewed),
+                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="'Review name'" />
+            </div>
+        </template>
+        <template #cell(is_description_extra_reviewed)="{ item }">
+            <div>
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_description_extra_reviewed),
+                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="'Review name'" />
+            </div>
         </template>
     </Table>
 </template>
