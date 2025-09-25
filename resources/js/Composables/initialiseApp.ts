@@ -23,20 +23,15 @@ export const initialiseApp = () => {
     const echoPersonal = useEchoGrpPersonal()
     const echoGeneral = useEchoGrpGeneral()
 
+    console.log('klklk', usePage())
     useLiveUsers().subscribe()  // Websockets: active users
     echoGeneral.subscribe(usePage().props.layout?.group?.id)  // Websockets: notification
 
 
-    console.log('init 11 User', usePage().props?.auth?.user)
     if (usePage().props?.auth?.user) {
         echoPersonal.subscribe(usePage().props.auth.user.id)
 
-        console.log('init route().query', route().query)
         router.on('navigate', (event) => {
-            console.log('init route().routeParams', route().routeParams)
-            console.log('init route().v().params', route().v().params)
-            console.log('init route().params', route().params)
-            console.log('init route().query', route().query)
             
             // To see Vue filename in console (component.vue)
             if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
@@ -45,12 +40,10 @@ export const initialiseApp = () => {
                 }
             }
 
-            // console.log('init layout env', layout.app.environment)
             layout.currentParams = route().routeParams  // current params
             layout.currentQuery = route().queryParams  // current query
             layout.currentRoute = route().current() || ''  // current route
 
-            console.log('init 44 layout.currentParams', layout.currentParams)
             const currentRouteSplit = layout.currentRoute.split('.')  // to handle grp with route grp.xxx.zzz with org with route grp.org.xxx.zzz
             layout.currentModule = currentRouteSplit[1] == 'org' ? layout.currentRoute.split('.')[2] : layout.currentRoute.split('.')[1]  // grp.org.xxx.yyy.zzz to xxx
 

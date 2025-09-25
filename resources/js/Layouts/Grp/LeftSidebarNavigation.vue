@@ -46,16 +46,6 @@ const iconList: { [key: string]: string } = {
 }
 
 
-console.log('LSN 00 layout.currentParams', layout.currentParams)
-console.log('LSN 11 layout', layout, layout.currentParams?.organisation)
-console.log('LSN 22 layout.navigation.org.aw', layout.navigation.org.aw)
-console.log('LSN 33 layout.navigation.org', get(layout, ['navigation', 'org', layout.currentParams?.organisation], false))
-console.log('LSN 40 route().queryParams', route().queryParams)
-console.log('LSN 4a route().query', route().query)
-console.log('LSN 4b route().v().query', route().v().query)
-console.log('LSN 5a route().v().params', route().v().params)
-console.log('LSN 55 route().routeParams', route().routeParams)
-console.log('LSN 66 route().params', route().params)
 </script>
 
 <template>
