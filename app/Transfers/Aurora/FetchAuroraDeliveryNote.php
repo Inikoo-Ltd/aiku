@@ -149,7 +149,9 @@ class FetchAuroraDeliveryNote extends FetchAurora
             'warehouse_id'     => $warehouse->id,
             'delivery_locked'  => $deliveryLocked,
             'fetched_at'       => now(),
-            'last_fetched_at'  => now()
+            'last_fetched_at'  => now(),
+            'contact_name'     => $this->auroraModelData->{'Delivery Note Customer Contact Name'},
+            'company_name'     => $this->auroraModelData->{'Delivery Note Customer Name'},
         ];
 
         if ($cancelled_at) {

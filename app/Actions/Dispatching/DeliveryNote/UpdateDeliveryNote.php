@@ -92,7 +92,7 @@ class UpdateDeliveryNote extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'reference'      => [
+            'reference'             => [
                 'sometimes',
                 'string',
                 'max:64',
@@ -104,22 +104,24 @@ class UpdateDeliveryNote extends OrgAction
                     ]
                 ),
             ],
-            'state'          => ['sometimes', 'required', new Enum(DeliveryNoteStateEnum::class)],
-            'email'          => ['sometimes', 'nullable', 'string', $this->strict ? 'email' : 'string'],
-            'phone'          => ['sometimes', 'nullable', 'string'],
-            'date'           => ['sometimes', 'date'],
-            'picker_id'      => ['sometimes'],
-            'packer_id'      => ['sometimes'],
-            'picker_user_id' => ['sometimes'],
-            'packer_user_id' => ['sometimes'],
+            'state'                 => ['sometimes', 'required', new Enum(DeliveryNoteStateEnum::class)],
+            'email'                 => ['sometimes', 'nullable', 'string', $this->strict ? 'email' : 'string'],
+            'phone'                 => ['sometimes', 'nullable', 'string'],
+            'company_name'          => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_name'          => ['sometimes', 'nullable', 'string', 'max:255'],
+            'date'                  => ['sometimes', 'date'],
+            'picker_id'             => ['sometimes'],
+            'packer_id'             => ['sometimes'],
+            'picker_user_id'        => ['sometimes'],
+            'packer_user_id'        => ['sometimes'],
             'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
-            'parcels'        => ['sometimes', 'array'],
-            'customer_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'public_notes'   => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'internal_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'shipping_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'dispatched_at'  => ['sometimes', 'nullable', 'date'],
-            'finalised_at'  => ['sometimes', 'nullable', 'date'],
+            'parcels'               => ['sometimes', 'array'],
+            'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'public_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'internal_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'shipping_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'dispatched_at'         => ['sometimes', 'nullable', 'date'],
+            'finalised_at'          => ['sometimes', 'nullable', 'date'],
         ];
 
         if (!$this->strict) {
