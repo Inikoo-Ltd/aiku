@@ -15,6 +15,7 @@ use App\Actions\CRM\Customer\UI\CreateCustomer;
 use App\Actions\CRM\Customer\UI\CreateCustomerClient;
 use App\Actions\CRM\Customer\UI\EditCustomer;
 use App\Actions\CRM\Customer\UI\EditCustomerClient;
+use App\Actions\CRM\Customer\UI\ExportCustomers;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
@@ -34,6 +35,7 @@ use App\Actions\Ordering\Order\UI\ShowOrder;
 
 Route::get('', IndexCustomers::class)->name('index');
 Route::get('create', CreateCustomer::class)->name('create');
+Route::get('export', [ExportCustomers::class, 'inShop'])->name('export');
 Route::get('{customer}/edit', EditCustomer::class)->name('edit');
 Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('', ShowCustomer::class);
