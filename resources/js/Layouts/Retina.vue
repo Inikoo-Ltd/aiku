@@ -442,11 +442,6 @@ const getBgColorDependsOnStatus = (status: string) => {
     width: 100%;
 }
 
-// Hide Checkout Apple Pay
-#flow-container #googlepayAccordionContainer {
-    display: none !important;
-}
-
 #retina-confetti {
     pointer-events: none;
 }
