@@ -40,7 +40,6 @@ import FontSize from 'tiptap-extension-font-size'
 import FontFamily from '@tiptap/extension-font-family'
 import Highlight from '@tiptap/extension-highlight'
 import UtilsColorPicker from '@/Components/Utils/ColorPicker.vue'
-/* import suggestion from './Variables/suggestion' */
 /* import ImageResize from 'tiptap-extension-resize-image'; */
 import { ImagePlus } from 'tiptap-image-plus';
 import Dialog from 'primevue/dialog';
@@ -86,6 +85,7 @@ import TiptapTableDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapT
 import TiptapImageDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapImageDialog.vue"
 import { Plugin } from "prosemirror-state"
 import Variabel from "./Variables/Variables"
+import suggestion from './Variables/suggestion'
 // import CustomLink from "./CustomLink/CustomLink.vue"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
@@ -361,12 +361,12 @@ const editorInstance = useEditor({
         Color.configure({
             types: ['textStyle'],
         }),
-       /*  Variabel.configure({
+        Variabel.configure({
             HTMLAttributes: {
                 class: 'mention',
             },
             suggestion,
-        }), */
+        }),
     ],
     onUpdate: ({ editor }) => {
         contentResult.value = editor.getHTML()
