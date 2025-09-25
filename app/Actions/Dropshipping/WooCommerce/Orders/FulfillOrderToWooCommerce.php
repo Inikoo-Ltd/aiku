@@ -34,6 +34,10 @@ class FulfillOrderToWooCommerce extends OrgAction
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $order->customerSalesChannel->user;
 
+        if (!$wooCommerceUser) {
+            return;
+        }
+
         /** @var DeliveryNote $deliveryNote */
         $deliveryNote = $order->deliveryNotes->first();
 

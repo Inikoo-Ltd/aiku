@@ -20,3 +20,9 @@ declare module "@vue/runtime-core" {
         route: typeof ziggyRouteFunction;
     }
 }
+
+declare module 'vue' {
+    interface ComponentCustomProperties {
+        route: typeof routeFn;
+    }
+}

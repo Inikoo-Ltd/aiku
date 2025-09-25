@@ -275,8 +275,8 @@ class EditShop extends OrgAction
                                         'stand_alone_invoice_numbers_format' => $invoiceSerialReference->format,
                                         'stand_alone_invoice_numbers_serial' => $invoiceSerialReference->serial,
                                         'stand_alone_refund_numbers'         => Arr::get($shop->settings, 'invoicing.stand_alone_refund_numbers', false),
-                                        'stand_alone_refund_numbers_format'  => $refundSerialReference->format,
-                                        'stand_alone_refund_numbers_serial'  => $refundSerialReference->serial,
+                                        'stand_alone_refund_numbers_format'  => $refundSerialReference?->format,
+                                        'stand_alone_refund_numbers_serial'  => $refundSerialReference?->serial,
                                     ]
                                 ],
                             ],

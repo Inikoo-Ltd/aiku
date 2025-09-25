@@ -45,12 +45,7 @@ const iconList: { [key: string]: string } = {
     fulfilment: 'fal fa-hand-holding-box',
 }
 
-/* console.log('layout 11', layout)
-console.log('layout', layout?.navigation?.org?.[layout.currentParams.organisation]) */
-console.log('00 LeftSidebar', layout.currentParams)
-console.log('11 LeftSidebar', layout, layout.currentParams?.organisation)
-console.log('22 LeftSidebar', layout.navigation.org.aw)
-console.log('33 LeftSidebar', get(layout, ['navigation', 'org', layout.currentParams?.organisation], false))
+
 </script>
 
 <template>

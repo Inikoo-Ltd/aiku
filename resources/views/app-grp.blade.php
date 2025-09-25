@@ -45,5 +45,11 @@
 </head>
 <body class="font-sans antialiased h-full text-slate-700">
 @inertia
+<script>
+    window.component = {
+        php: @json(str_replace('\\', '/', Route::currentRouteAction())),
+        vue: ''
+    }
+</script>
 </body>
 </html>
