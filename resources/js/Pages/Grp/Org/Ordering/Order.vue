@@ -247,34 +247,6 @@ const isModalAddress = ref<boolean>(false)
 
 // Tabs: Products
 const formProducts = useForm({ historicAssetId: null, quantity_ordered: 1 })
-const onSubmitAddProducts = (data: Action, closedPopover: Function) => {
-    isLoadingButton.value = "addProducts"
-
-    formProducts
-        .transform((data) => ({
-            quantity_ordered: data.quantity_ordered
-        }))
-        .post(
-            route(data.route?.name || "#", { ...data.route?.parameters, historicAsset: formProducts.historicAssetId }),
-            {
-                preserveScroll: true,
-                onSuccess: () => {
-                    closedPopover()
-                    formProducts.reset()
-                },
-                onError: (errors) => {
-                    notify({
-                        title: trans("Something went wrong."),
-                        text: trans("Failed to add service, please try again."),
-                        type: "error"
-                    })
-                },
-                onFinish: () => {
-                    isLoadingButton.value = false
-                }
-            }
-        )
-}
 
 
 // Section: Payment invoice
@@ -301,6 +273,8 @@ const paymentData = ref({
     payment_amount: 0 as number | null,
     payment_reference: ""
 })
+
+const layout = inject("layout", {});
 const currentAction = ref(null)
 const isOpenModalPayment = ref(false)
 const isLoadingPayment = ref(false)
@@ -631,6 +605,20 @@ const toggleElipsis = (e: Event) => {
             </div>
         </template>
 
+
+        <template #otherBefore v-if="!props.readonly && layout?.app?.environment === 'local'">
+            <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents"
+                class="flex gap-2">
+                <Button :style="'secondary'" :icon="faPlus" :label="'Product'" tooltip="put a new Product"
+                    @click="(e) => { if (_refComponents) _refComponents.openModal() }" />
+                <Button v-if="
+                    Object.keys(_refComponents.createNewQty).length > 0 ||
+                    _refComponents.rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
+                " type="save" label="Save all changes" :loading="_refComponents.loadingsaveModify"
+                    @click="() => _refComponents.onSave()" />
+            </div>
+        </template>
+
         <template #other>
             <div v-if="!props.readonly">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
@@ -699,14 +687,7 @@ const toggleElipsis = (e: Event) => {
                 </div>
             </div>
 
-            <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents" class="flex gap-2">
-                <Button :style="'create'" :label="'Product'"  tooltip="put a new Product" @click="(e)=>{if(_refComponents)_refComponents.openModal()}"/>
-                 <Button v-if="
-                    Object.keys(_refComponents.createNewQty).length > 0 ||
-                    _refComponents.rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
-                " type="save" label="Save all changes" 
-                    :loading="_refComponents.loadingsaveModify" @click="()=>_refComponents.onSave()" />
-            </div>
+
         </template>
 
         <template #button-replacement="{ action }">
@@ -806,7 +787,7 @@ const toggleElipsis = (e: Event) => {
                         </dt>
                         <a :href="`mailto:${box_stats?.customer.email}`" v-tooltip="'Click to send email'"
                             class="text-sm text-gray-500 hover:text-gray-700 truncate">{{
-                                box_stats?.customer.email
+                            box_stats?.customer.email
                             }}</a>
                     </dl>
 
@@ -945,8 +926,8 @@ const toggleElipsis = (e: Event) => {
                                             {{ trans("The order is overpaid") }}:
                                             <span class="text-gray-700">
                                                 {{
-                                                    locale.currencyFormat(currency.code,
-                                                        Number(box_stats.products.excesses_payment?.amount))
+                                                locale.currencyFormat(currency.code,
+                                                Number(box_stats.products.excesses_payment?.amount))
                                                 }}
                                             </span>
                                         </p>
@@ -1026,7 +1007,7 @@ const toggleElipsis = (e: Event) => {
                                     :class="note.type === 'replacement' ? 'text-red-500' : 'text-blue-500'"
                                     fixed-width />
                                 <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{
-                                    note?.reference
+                                note?.reference
                                 }}
                                 </Link>
                                 <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
@@ -1091,7 +1072,8 @@ const toggleElipsis = (e: Event) => {
             :updateRoute="routes.updateOrderRoute" :state="data?.data?.state" :modifyRoute="routes.modify"
             :detachRoute="attachmentRoutes.detachRoute" :fetchRoute="routes.products_list"
             :modalOpen="isModalUploadOpen" :action="currentAction" :readonly="props.readonly"
-            @update:tab="handleTabUpdate" :ref="(e)=> _refComponents = e"  :routesProductsListModification="routes.products_list_modification"/>
+            @update:tab="handleTabUpdate" :ref="(e)=> _refComponents = e"
+            :routesProductsListModification="routes.products_list_modification" />
     </div>
 
     <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
@@ -1137,9 +1119,9 @@ const toggleElipsis = (e: Event) => {
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to pay")
-                        }}: {{
-                                locale.currencyFormat(box_stats.order_summary.currency.code,
-                                    box_stats.products.payment.pay_amount)
+                            }}: {{
+                            locale.currencyFormat(box_stats.order_summary.currency.code,
+                            box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
                             :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"
@@ -1162,7 +1144,7 @@ const toggleElipsis = (e: Event) => {
                 <Transition name="spin-to-down">
                     <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
                         errorPaymentMethod
-                    }}</p>
+                        }}</p>
                 </Transition>
             </div>
         </div>
@@ -1198,9 +1180,9 @@ const toggleElipsis = (e: Event) => {
                     <div class="space-x-1">
                         <span class="text-xxs text-gray-500">{{
                             trans("Need to refund")
-                        }}: {{
-                                locale.currencyFormat(box_stats.order_summary.currency.code,
-                                    box_stats.products.payment.pay_amount)
+                            }}: {{
+                            locale.currencyFormat(box_stats.order_summary.currency.code,
+                            box_stats.products.payment.pay_amount)
                             }}</span>
                         <Button @click="() => paymentData.payment_amount = box_stats.products.payment.pay_amount"
                             :disabled="paymentData.payment_amount === box_stats.products.payment.pay_amount"

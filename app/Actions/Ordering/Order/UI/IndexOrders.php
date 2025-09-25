@@ -394,7 +394,7 @@ class IndexOrders extends OrgAction
                         'fullLoading' => true,
                         'route'       => [
                             'method'     => 'post',
-                            'name'       => 'grp.models.customer.order.store',
+                            'name'       => 'grp.models.customer.submitted_order.store',
                             'parameters' => [
                                 'customer' => $this->parent->id
                             ]
