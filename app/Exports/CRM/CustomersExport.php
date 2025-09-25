@@ -38,7 +38,7 @@ class CustomersExport implements FromQuery, WithMapping, ShouldAutoSize, WithHea
             $row->email,
             $row->phone,
             $row->contact_name,
-            $row->state,
+            $row->state->value,
             $row->company_name,
             $row->created_at
         ];

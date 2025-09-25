@@ -35,8 +35,8 @@ use App\Actions\Ordering\Order\UI\ShowOrder;
 
 Route::get('', IndexCustomers::class)->name('index');
 Route::get('create', CreateCustomer::class)->name('create');
-Route::get('{customer}/edit', EditCustomer::class)->name('edit');
 Route::get('export', [ExportCustomers::class, 'inShop'])->name('export');
+Route::get('{customer}/edit', EditCustomer::class)->name('edit');
 Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('', ShowCustomer::class);
     Route::get('/orders', [IndexOrders::class, 'inCustomer'])->name('.orders.index');
