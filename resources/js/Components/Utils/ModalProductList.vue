@@ -55,20 +55,6 @@ const searchQuery = ref("")
 const iconStates = ref<Record<number, { increment: string; decrement: string }>>({})
 const addedProductIds = ref(new Set<number>())
 const addedOrderIds = ref(new Set<number>())
-const currentTab = ref(props.current)
-
-const handleAction = (event: { type: string; value?: number }, slotProps: any) => {
-	switch (event.type) {
-		case "increment":
-		case "decrement":
-		case "save":
-			onSubmitAddProducts(action, slotProps)
-			break
-		case "undo":
-			onUndoClick(slotProps.data.id)
-			break
-	}
-}
 
 // Method: click Tab
 const onClickProduct = async (tabSlug: string) => {
@@ -76,34 +62,6 @@ const onClickProduct = async (tabSlug: string) => {
 	closeModal()
 }
 
-const resetIcons = (id: number) => {
-	const product = products.value.find((product) => product.id === id)
-
-	// Reset inputTriggered for the product
-	if (product) {
-		product.inputTriggered = false
-	}
-
-	iconStates.value[id] = {
-		increment: "fal fa-plus",
-		decrement: "fal fa-minus",
-	}
-}
-
-const onUndoClick = (id: number) => {
-	resetIcons(id)
-}
-
-const onManualInputChange = (value: number, slotProps: any) => {
-	slotProps.data.quantity_ordered = value
-
-	// Mark input as triggered and update icons
-	slotProps.data.inputTriggered = true
-	iconStates.value[slotProps.data.id] = {
-		increment: "fal fa-cloud",
-		decrement: "fal fa-undo",
-	}
-}
 
 const closeModal = () => {
 	model.value = false
@@ -182,41 +140,64 @@ const formProducts = useForm({
 	quantity_ordered: 0,
 })
 
+const notifySuccessProduct = () => {
+	notify({
+		title: trans("Success!"),
+		text: trans("Product successfully added or updated."),
+		type: "success",
+	})
+}
 const isXxLoading = ref<number | null>(null)
-const onSubmitAddProducts = async (data: any, slotProps: any) => {
-	const productId = slotProps.data.purchase_order_id
-	const orderId = slotProps.data.order_id
-	isXxLoading.value = slotProps.data.id
+const onSubmitAddProducts = async (data: any, product: any) => {
+	const productId = product.data.purchase_order_id
+	const orderId = product.data.order_id
+	isXxLoading.value = product.data.id
 	try {
-		if (slotProps.data.quantity_ordered > 0) {
+		if (product.data.quantity_ordered > 0) {
 			if (
 				(addedProductIds.value && addedProductIds.value.has(productId)) ||
 				(addedOrderIds.value && addedOrderIds.value.has(orderId))
 			) {
 				// Update product
-				if (slotProps.data.purchase_order_id || slotProps.data.order_id) {
-					await formProducts
+				if (product.data.purchase_order_id || product.data.order_id) {
+					formProducts
 						.transform(() => ({
-							quantity_ordered: slotProps.data.quantity_ordered,
+							quantity_ordered: product.data.quantity_ordered,
 						}))
 						.patch(
-							route(slotProps?.data?.updateRoute?.name || "#", {
-								...slotProps.data.updateRoute?.parameters,
+							route(product?.data?.updateRoute?.name || "#", {
+								...product.data.updateRoute?.parameters,
 							})
-						)
+						),
+						{
+							onError: (errors) => {
+								console.error("1111 Error adding product to order:", errors)
+							},
+							onSuccess: () => {
+								notifySuccessProduct()
+							}
+						}
 				}
 			} else if (props.typeModel === "purchase_order") {
 				// Add product ,
-				await formProducts
+				formProducts
 					.transform(() => ({
-						quantity_ordered: slotProps.data.quantity_ordered,
+						quantity_ordered: product.data.quantity_ordered,
 					}))
 					.post(
 						route(data.route?.name || "#", {
 							...data.route?.parameters,
-							historicSupplierProduct: slotProps.data.historic_id,
-							orgStock: slotProps.data.org_stock_id,
-						})
+							historicSupplierProduct: product.data.historic_id,
+							orgStock: product.data.org_stock_id,
+						}),
+						{
+							onError: (errors) => {
+								console.error("3333 Error adding product to order:", errors)
+							},
+							onSuccess: () => {
+								notifySuccessProduct()
+							}
+						}
 					)
 
 				// Refresh list and update addedProductIds
@@ -227,37 +208,59 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
 					decrement: "fal fa-undo",
 				}
 			} else if (props.typeModel === "order") {
-				await formProducts
+				formProducts
 					.transform(() => ({
-						quantity_ordered: slotProps.data.quantity_ordered,
+						quantity_ordered: product.data.quantity_ordered,
 					}))
 					.post(
 						route(data.route?.name || "#", {
 							...data.route?.parameters,
-							historicAsset: slotProps.data.historic_id,
-						})
+							historicAsset: product.data.historic_id,
+						}),
+						{
+							onError: (errors) => {
+								console.error("2222 Error adding product to order:", errors)
+							},
+							onSuccess: () => {
+								notifySuccessProduct()
+							}
+						}
 					)
 
 				// Refresh list and update addedProductIds
 				await fetchProductList()
-				addedProductIds.value.add(productId)
-				iconStates.value[productId] = {
-					increment: "fal fa-cloud",
-					decrement: "fal fa-undo",
+				if (productId) {
+					addedProductIds.value.add(productId)
+					iconStates.value[productId] = {
+						increment: "fal fa-cloud",
+						decrement: "fal fa-undo",
+					}
 				}
 			}
-			notify({
-				title: trans("Success!"),
-				text: trans("Product successfully added or updated."),
-				type: "success",
-			})
-		} else if (slotProps.data.quantity_ordered === 0) {
+			
+			
+		} else if (product.data.quantity_ordered === 0) {
 			// Handle delete
 			if (addedProductIds.value && addedProductIds.value.has(productId)) {
-				await formProducts.delete(
-					route(slotProps?.data?.deleteRoute?.name || "#", {
-						...slotProps.data.deleteRoute?.parameters,
-					})
+				formProducts.delete(
+					route(product?.data?.deleteRoute?.name || "#", {
+						...product.data.deleteRoute?.parameters,
+					}), {
+						onError: (errors) => {
+							notify({
+								title: trans("Something went wrong"),
+								text: errors.message || trans("Please try again later or contact administrator."),
+								type: "error",
+							})
+						},
+						onSuccess: () => {
+							notify({
+								title: trans("Success!"),
+								text: trans("Product successfully deleted."),
+								type: "success",
+							})
+						}
+					}
 				)
 
 				// Remove product ID from the addedProductIds set
@@ -265,13 +268,6 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
 
 				// Refresh the list to reflect changes
 				await fetchProductList()
-
-				// Notify success
-				notify({
-					title: trans("Success!"),
-					text: trans("Product successfully deleted."),
-					type: "success",
-				})
 			}
 		}
 	} catch (error) {
