@@ -39,7 +39,7 @@ const slidesPerView = computed(() => {
         desktop: perRow.desktop ?? 6,
         tablet: perRow.tablet ?? 4,
         mobile: perRow.mobile ?? 2,
-    }[props.screenType] ?? 1
+    }[props.screenType] ?? 5
 })
 
 const locale = inject('locale', aikuLocaleStructure)
