@@ -114,6 +114,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $master_shop_id
  * @property InvoicePayDetailedStatusEnum|null $pay_detailed_status
  * @property string $effective_total effective total to pay
+ * @property bool $is_cash_on_delivery
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress
