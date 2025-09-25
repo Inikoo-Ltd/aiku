@@ -147,11 +147,20 @@ const notifySuccessProduct = () => {
 		type: "success",
 	})
 }
+
+const notifyFailedProduct = () => {
+	notify({
+		title: trans("Something went wrong!"),
+		text: trans("Failed to add or update the quantity"),
+		type: "success",
+	})
+}
 const isXxLoading = ref<number | null>(null)
 const onSubmitAddProducts = async (data: any, product: any) => {
 	const productId = product.data.purchase_order_id
 	const orderId = product.data.order_id
 	isXxLoading.value = product.data.id
+
 	try {
 		if (product.data.quantity_ordered > 0) {
 			if (
@@ -167,16 +176,16 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 						.patch(
 							route(product?.data?.updateRoute?.name || "#", {
 								...product.data.updateRoute?.parameters,
-							})
-						),
-						{
-							onError: (errors) => {
-								console.error("1111 Error adding product to order:", errors)
-							},
-							onSuccess: () => {
-								notifySuccessProduct()
+							}),
+							{
+								onError: (errors) => {
+									notifyFailedProduct()
+								},
+								onSuccess: () => {
+									notifySuccessProduct()
+								}
 							}
-						}
+						)
 				}
 			} else if (props.typeModel === "purchase_order") {
 				// Add product ,
@@ -192,7 +201,7 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 						}),
 						{
 							onError: (errors) => {
-								console.error("3333 Error adding product to order:", errors)
+								notifyFailedProduct()
 							},
 							onSuccess: () => {
 								notifySuccessProduct()
@@ -219,7 +228,7 @@ const onSubmitAddProducts = async (data: any, product: any) => {
 						}),
 						{
 							onError: (errors) => {
-								console.error("2222 Error adding product to order:", errors)
+								notifyFailedProduct()
 							},
 							onSuccess: () => {
 								notifySuccessProduct()
