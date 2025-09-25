@@ -139,6 +139,20 @@ class ShowCustomer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ],
+                        $this->shop->type == ShopTypeEnum::B2B ? [
+                            'type'        => 'button',
+                            'style'       => 'create',
+                            'label'       => 'Add order',
+                            'key'         => 'add_order',
+                            'fullLoading' => true,
+                            'route'       => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.customer.submitted_order.store',
+                                'parameters' => [
+                                    'customer' => $this->parent->id
+                                ]
+                            ]
+                        ] : [],
                     ],
                     'subNavigation' => $subNavigation,
                 ],
