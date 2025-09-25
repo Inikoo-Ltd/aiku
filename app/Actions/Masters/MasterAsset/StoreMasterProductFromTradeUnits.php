@@ -59,6 +59,8 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'units'                   => Arr::get($modelData, 'units', 1),
                 'marketing_weight'        => Arr::get($modelData, 'marketing_weight', 0),
                 'gross_weight'            => Arr::get($modelData, 'gross_weight', 0),
+                'price'                   => Arr::get($modelData, 'price', 0),
+                'rrp'                     => Arr::get($modelData, 'rrp', 0),
                 'marketing_dimensions'    => Arr::get($modelData, 'marketing_dimensions', []),
                 'is_main' => true,
                 'type'    => MasterAssetTypeEnum::PRODUCT,
@@ -113,6 +115,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             'description_title'      => ['sometimes', 'string', 'nullable'],
             'description_extra'      => ['sometimes', 'string', 'nullable'],
             'price'                  => ['sometimes', 'numeric', 'min:0'],
+            'rrp'                    => ['sometimes', 'numeric', 'min:0'],
             'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
             'trade_units'            => [
                 'required',
