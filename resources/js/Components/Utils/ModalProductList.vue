@@ -287,6 +287,7 @@ const onSubmitAddProducts = async (data: any, slotProps: any) => {
 
 	isXxLoading.value = null
 }
+const debSubmitProducts = debounce(onSubmitAddProducts, 500)
 
 
 const onFetchNext = async () => {
@@ -390,7 +391,10 @@ onUnmounted(() => {
 												v-model="slotProps.data.quantity_ordered"
 												:min="1"
 												:isLoading="isXxLoading === slotProps.data.id"
-												@onSave="(e)=> onSubmitAddProducts(action, slotProps)"
+												aonSave="(e)=> onSubmitAddProducts(action, slotProps)"
+												@update:modelValue="(e) => (debSubmitProducts(action, slotProps))"
+												noUndoButton
+												noSaveButton
 											/>
 
 									</template>
