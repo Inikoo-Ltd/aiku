@@ -81,6 +81,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int|null $estimated_weight grams
  * @property string|null $platform_transaction_id
  * @property string|null $quantity_picked quantity picked for delivery
+ * @property string $submitted_quantity_ordered
  * @property-read Asset|null $asset
  * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE

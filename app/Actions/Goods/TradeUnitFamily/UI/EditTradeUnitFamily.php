@@ -84,7 +84,7 @@ class EditTradeUnitFamily extends GrpAction
 
     public function getBreadcrumbs(TradeUnitFamily $tradeUnitFamily, string $routeName, array $routeParameters): array
     {
-        return 
+        return
             ShowTradeUnitFamily::make()->getBreadcrumbs(
                 tradeUnitFamily: $tradeUnitFamily,
                 routeName: preg_replace('/create$/', 'index', $routeName),

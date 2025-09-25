@@ -11,9 +11,7 @@ namespace App\Actions\Maintenance\Ordering;
 
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Ordering\Order;
-use App\Models\Ordering\Transaction;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 
@@ -24,7 +22,7 @@ class RepairTransactionSubmittedQuantityOrdered
 
     public function handle(Order $order): void
     {
-        foreach($order->transactions as $transaction) {
+        foreach ($order->transactions as $transaction) {
             $transaction->update([
                 'submitted_quantity_ordered' => $transaction->quantity_ordered
             ]);
@@ -49,7 +47,7 @@ class RepairTransactionSubmittedQuantityOrdered
                     $bar->advance();
                 }
             });
-        
+
     }
 
 }

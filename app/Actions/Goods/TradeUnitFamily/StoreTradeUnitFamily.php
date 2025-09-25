@@ -20,7 +20,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreTradeUnitFamily extends GrpAction
 {
-
     public function handle(Group $group, array $modelData): TradeUnitFamily
     {
         /** @var TradeUnitFamily $tradeUnitFamily */
@@ -31,7 +30,7 @@ class StoreTradeUnitFamily extends GrpAction
         return $tradeUnitFamily;
     }
 
-    public function htmlResponse(TradeUnitFamily $tradeUnitFamily)
+    public function htmlResponse(TradeUnitFamily $tradeUnitFamily): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         return Redirect::route('grp.masters.trade-unit-families.show', [
             $tradeUnitFamily->slug
@@ -40,7 +39,7 @@ class StoreTradeUnitFamily extends GrpAction
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'code'                  => [
                 'required',
                 'max:64',
@@ -58,7 +57,6 @@ class StoreTradeUnitFamily extends GrpAction
             'description'           => ['sometimes', 'nullable', 'string', 'max:1024'],
         ];
 
-        return $rules;
     }
 
     public function asController(ActionRequest $request): TradeUnitFamily

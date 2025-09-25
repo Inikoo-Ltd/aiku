@@ -106,7 +106,7 @@ class TaxNumber extends Model
 
     public function getFormattedTaxNumber(): string
     {
-        if (!in_array($this->type,[TaxNumberTypeEnum::GB_VAT, TaxNumberTypeEnum::EU_VAT])) {
+        if (!in_array($this->type, [TaxNumberTypeEnum::GB_VAT, TaxNumberTypeEnum::EU_VAT])) {
             return $this->number;
         }
 

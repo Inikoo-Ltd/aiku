@@ -214,7 +214,7 @@ class ShowMasterProducts extends GrpAction
                     : Inertia::lazy(fn () => ProductsResource::collection(IndexProductsInMasterProduct::run($masterAsset))),
 
             ]
-        )->table(IndexProductsInMasterProduct::make()->tableStructure(masterAsset: $masterAsset, prefix: MasterAssetTabsEnum::PRODUCTS->value))
+        )->table(IndexProductsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::PRODUCTS->value))
         ->table(IndexMailshots::make()->tableStructure($masterAsset))
         ->table(IndexTradeUnitsInMasterProduct::make()->tableStructure(prefix: MasterAssetTabsEnum::TRADE_UNITS->value));
     }

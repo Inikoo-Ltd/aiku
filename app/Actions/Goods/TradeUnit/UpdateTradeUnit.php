@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
@@ -115,9 +114,9 @@ class UpdateTradeUnit extends GrpAction
                 ProductHydrateMarketingIngredientsFromTradeUnits::dispatch($product);
             }
         }
-        
-        if ($tradeUnit->wasChanged('trade_unit_family_id')) {   
-            if($oldTradeUnitFamily) {
+
+        if ($tradeUnit->wasChanged('trade_unit_family_id')) {
+            if ($oldTradeUnitFamily) {
                 TradeUnitFamilyHydrateTradeUnits::dispatch($oldTradeUnitFamily);
             }
             TradeUnitFamilyHydrateTradeUnits::dispatch($tradeUnit->tradeUnitFamily);

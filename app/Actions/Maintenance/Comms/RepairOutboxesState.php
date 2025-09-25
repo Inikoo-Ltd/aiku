@@ -45,7 +45,7 @@ class RepairOutboxesState
                     $outbox->refresh();
                     $email = $outbox->emailOngoingRun->email;
                 } else {
-                    dd($outbox->code,$outbox->shop->name,$emailTemplate);
+                    dd($outbox->code, $outbox->shop->name, $emailTemplate);
                 }
 
 
@@ -77,11 +77,13 @@ class RepairOutboxesState
 
         Outbox::orderBy('id')
             ->chunk(
-                1000, function ($outboxes) {
-                foreach ($outboxes as $outbox) {
-                    $this->handle($outbox);
+                1000,
+                function ($outboxes) {
+                    foreach ($outboxes as $outbox) {
+                        $this->handle($outbox);
+                    }
                 }
-            });
+            );
     }
 
 }

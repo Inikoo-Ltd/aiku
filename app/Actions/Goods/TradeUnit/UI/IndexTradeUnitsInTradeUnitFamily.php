@@ -9,17 +9,14 @@
 namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\GrpAction;
-use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitFamily;
-use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTradeUnitsInTradeUnitFamily extends GrpAction
@@ -40,7 +37,7 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.trade_unit_family_id', $tradeUnitFamily->id);
         $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
-        
+
 
 
         $queryBuilder
@@ -72,7 +69,7 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
         return TradeUnitsResource::collection($tradeUnit);
     }
 
-        public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure(?array $modelOperations = null, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $prefix) {
             if ($prefix) {
@@ -97,5 +94,5 @@ class IndexTradeUnitsInTradeUnitFamily extends GrpAction
                 ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
-    
+
 }

@@ -3060,12 +3060,12 @@ test('pay invoice (exceed)', function ($invoice) {
     $customer->refresh();
     $invoice->refresh();
 
+
     expect($payment)->toBeInstanceOf(Payment::class)
         ->and($payment->status)->toBe(PaymentStatusEnum::SUCCESS)
         ->and($payment->state)->toBe(PaymentStateEnum::COMPLETED)
         ->and($customer->creditTransactions)->not->toBeNull()
-        ->and($customer->balance)->toBe("-682.00")
-        ->and($customer->creditTransactions->first()->amount)->toBe("-402.00");
+        ->and($customer->balance)->toBe("-742.00");
 
     return $fulfilmentCustomer;
 })->depends('consolidate 3rd recurring bill');

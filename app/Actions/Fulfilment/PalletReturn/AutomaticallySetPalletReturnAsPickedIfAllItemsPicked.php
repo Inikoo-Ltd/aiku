@@ -31,7 +31,7 @@ class AutomaticallySetPalletReturnAsPickedIfAllItemsPicked extends HydrateModel
             ->wherePivot('state', PalletReturnItemStateEnum::PICKED)->count();
         $palletNotPickedCount = $baseQuery
             ->wherePivot('state', PalletReturnItemStateEnum::NOT_PICKED)->count();
-        
+
         if (($palletPickedCount + $palletNotPickedCount) == $palletCount) {
             $palletReturn = SetPalletReturnAsPicked::run($palletReturn);
         }

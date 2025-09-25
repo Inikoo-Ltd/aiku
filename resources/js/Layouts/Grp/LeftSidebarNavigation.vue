@@ -47,11 +47,17 @@ const iconList: { [key: string]: string } = {
 
 /* console.log('layout 11', layout)
 console.log('layout', layout?.navigation?.org?.[layout.currentParams.organisation]) */
+console.log('00 LeftSidebar', layout.currentParams)
+console.log('11 LeftSidebar', layout, layout.currentParams?.organisation)
+console.log('22 LeftSidebar', layout.navigation.org.aw)
+console.log('33 LeftSidebar', get(layout, ['navigation', 'org', layout.currentParams?.organisation], false))
 </script>
 
 <template>
     <nav class="text-white isolate relative flex flex-grow flex-col pt-3 pb-4 px-2 h-full overflow-y-auto custom-hide-scrollbar flex-1 gap-y-1.5" aria-label="Sidebar">
-        <!-- LeftSidebar: Org -->
+        <div class="hidden">
+            {{ get(layout, ['navigation', 'org', layout.currentParams?.organisation], false) }}
+        </div>
         <template v-if="get(layout, ['navigation', 'org', layout.currentParams?.organisation], false)">
             <template v-for="(orgNav, itemKey) in layout.navigation.org[layout.currentParams.organisation]" :key="itemKey" >
                 <!-- shops_index, warehouses_index, fulfilments_index -->

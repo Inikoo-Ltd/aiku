@@ -51,8 +51,8 @@ class UpdateShop extends OrgAction
 
     public function handle(Shop $shop, array $modelData): Shop
     {
-        if(Arr::has($modelData, 'invoice_serial_references')){
-            $shop=$this->updateInvoiceSerialReferences($shop,Arr::pull($modelData, 'invoice_serial_references'));
+        if (Arr::has($modelData, 'invoice_serial_references')) {
+            $shop = $this->updateInvoiceSerialReferences($shop, Arr::pull($modelData, 'invoice_serial_references'));
         }
 
         $oldMasterShop = $shop->masterShop;
@@ -150,7 +150,7 @@ class UpdateShop extends OrgAction
         return $shop;
     }
 
-    public function updateInvoiceSerialReferences(Shop $shop , array $modelData):Shop
+    public function updateInvoiceSerialReferences(Shop $shop, array $modelData): Shop
     {
 
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
@@ -158,10 +158,11 @@ class UpdateShop extends OrgAction
             ->where('container_id', $shop->id)->first();
 
         $invoiceSerialReference->updateQuietly(
-        [
+            [
             'format' => $modelData['stand_alone_invoice_numbers_format'],
             'serial' => $modelData['stand_alone_invoice_numbers_serial'],
-        ]);
+        ]
+        );
 
 
         $refundSerialReference = SerialReference::where('model', SerialReferenceModelEnum::REFUND)
@@ -172,11 +173,12 @@ class UpdateShop extends OrgAction
             [
                 'format' => $modelData['stand_alone_refund_numbers_format'],
                 'serial' => $modelData['stand_alone_refund_numbers_serial'],
-            ]);
+            ]
+        );
 
-        $settings=$shop->settings;
-        data_set($settings,'invoicing.stand_alone_invoice_numbers',$modelData['stand_alone_invoice_numbers']);
-        data_set($settings,'invoicing.stand_alone_refund_numbers',$modelData['stand_alone_refund_numbers']);
+        $settings = $shop->settings;
+        data_set($settings, 'invoicing.stand_alone_invoice_numbers', $modelData['stand_alone_invoice_numbers']);
+        data_set($settings, 'invoicing.stand_alone_refund_numbers', $modelData['stand_alone_refund_numbers']);
 
         $shop->updateQuietly([
             'settings' => $settings,

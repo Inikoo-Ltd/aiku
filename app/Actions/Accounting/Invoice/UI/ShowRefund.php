@@ -278,7 +278,7 @@ class ShowRefund extends OrgAction
                     RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value => $this->tab == RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value ?
                         fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))
                         : Inertia::lazy(fn () => RefundInProcessTransactionsResource::collection(IndexRefundInProcessTransactions::run($refund, $refund->originalInvoice, RefundInProcessTabsEnum::ITEMS_IN_PROCESS->value))),
-                    
+
                     RefundInProcessTabsEnum::HISTORY->value => $this->tab == RefundInProcessTabsEnum::HISTORY->value ?
                         fn () => HistoryResource::collection(IndexHistory::run($refund))
                         : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($refund))),
@@ -304,7 +304,7 @@ class ShowRefund extends OrgAction
                     RefundTabsEnum::HISTORY->value => $this->tab == RefundTabsEnum::HISTORY->value ?
                         fn () => HistoryResource::collection(IndexHistory::run($refund))
                         : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($refund))),
-                        
+
                     'invoiceExportOptions'          => $exportInvoiceOptions
                 ]
             );

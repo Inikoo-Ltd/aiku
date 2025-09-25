@@ -9,13 +9,8 @@
 namespace App\Actions\Goods\TradeUnitFamily;
 
 use App\Actions\GrpAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnitFamilies;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Goods\TradeUnitFamily;
-use App\Models\SysAdmin\Group;
-use App\Rules\AlphaDashDot;
-use App\Rules\IUnique;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTradeUnitFamily extends GrpAction
@@ -32,13 +27,12 @@ class UpdateTradeUnitFamily extends GrpAction
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'name'                  => ['sometimes', 'string', 'max:255'],
             'description'           => ['sometimes', 'nullable', 'string', 'max:1024'],
         ];
-
-        return $rules;
     }
+
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): TradeUnitFamily
     {
         $this->initialisation($tradeUnitFamily->group, $request);

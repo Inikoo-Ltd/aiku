@@ -8,15 +8,11 @@
 
 namespace App\Actions\Masters\MasterAsset\UI;
 
-use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Actions\GrpAction;
-use App\Models\Catalogue\Shop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
-use App\Models\Goods\TradeUnit;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
@@ -262,51 +258,51 @@ class EditMasterProduct extends GrpAction
                 ]
             ],
             [
-                'label' => __('Trade unit'),
-                'icon' => 'fa-light fa-atom',
-                'fields' => [
-                    'trade_units' => [
-                        'label'      => __('Trade Units'),
-                        'type' => 'edit-trade-unit-shop',
-                        'value' => null,
-                        'noSaveButton' => true,
-                        'trade_units' => $masterProduct->tradeUnits ? $this->getDataTradeUnit($masterProduct->tradeUnits) : []
-                    ]
+                    'label' => __('Trade unit'),
+                    'icon'  => 'fa-light fa-atom',
+                    'fields' => [
+                        'trade_units' => [
+                            'label'        => __('Trade Units'),
+                            'type'         => 'list-selector',
+                            'value'        => $masterProduct->tradeUnits,
+                            'key_quantity' => 'quantity',
+                            'withQuantity' => true,
+                            'tabs' => [
+                                [
+                                    'label' => __('To do'),
+                                    'routeFetch' => [
+                                        'name'       => 'grp.json.master-product-category.recommended-trade-units',
+                                        'parameters' => [
+                                            'masterProductCategory' => $masterProduct->masterFamily->slug,
+                                        ],
+                                    ],
+                                ],
+                                [
+                                    'label' => __('Done'),
+                                    'routeFetch' => [
+                                        'name'       => 'grp.json.master-product-category.taken-trade-units',
+                                        'parameters' => [
+                                            'masterProductCategory' => $masterProduct->masterFamily->slug,
+                                        ],
+                                    ],
+                                ],
+                                [
+                                    'label'   => __('All'),
+                                    'search'  => true,
+                                    'routeFetch' => [
+                                        'name'       => 'grp.json.master-product-category.all-trade-units',
+                                        'parameters' => [
+                                            'masterProductCategory' => $masterProduct->masterFamily->slug,
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
                 ],
-            ],
-            // [
-            //     'label'  => __('Family'),
-            //     'icon'   => 'fa-light fa-folder',
-            //     'fields' => [
-            //         'family_id' => [
-            //             'type'       => 'select_infinite',
-            //             'label'      => __('Family'),
-            //             'options'    => [
-            //                 $familyOptions
-            //             ],
-            //             'fetchRoute' => [
-            //                 'name'       => 'grp.json.shop.families',
-            //                 'parameters' => [
-            //                     'shop' => $masterProduct->shop->id
-            //                 ]
-            //             ],
-            //             'valueProp'  => 'id',
-            //             'labelProp'  => 'code',
-            //             'required'   => true,
-            //             'value'      => $masterProduct->family->id ?? null,
-            //             'type_label' => 'families'
-            //         ]
-            //     ],
-            // ],
         ];
     }
 
-    private function getDataTradeUnit($tradeUnits): array
-    {
-        return $tradeUnits->map(function (TradeUnit $tradeUnit) {
-            return GetTradeUnitShowcase::run($tradeUnit);
-        })->toArray();
-    }
 
     public function getBreadcrumbs(MasterAsset $masterAsset, string $routeName, array $routeParameters): array
     {

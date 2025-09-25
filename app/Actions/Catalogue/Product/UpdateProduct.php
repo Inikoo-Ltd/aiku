@@ -40,7 +40,6 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
-
         $oldHistoricProduct = $product->current_historic_asset_id;
 
         if (Arr::has($modelData, 'family_id')) {
@@ -54,7 +53,9 @@ class UpdateProduct extends OrgAction
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
 
+
             $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
+
             $orgStocksRaw = array_map(function ($item) {
                 $filtered             = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
                 $filtered['quantity'] = (float)$filtered['quantity']; // or (int) if you want integers
@@ -63,19 +64,13 @@ class UpdateProduct extends OrgAction
             }, $orgStocksRaw);
 
             $orgStocks = $orgStocksRaw;
-
-
         }
 
         if (Arr::has($modelData, 'well_formatted_org_stocks')) {
-
             $orgStocks = Arr::pull($modelData, 'well_formatted_org_stocks', []);
-
-
         }
 
         if ($orgStocks !== null) {
-
             $this->syncOrgStocks($product, $orgStocks);
         }
 
@@ -285,14 +280,15 @@ class UpdateProduct extends OrgAction
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
 
-            'org_stocks' => ['sometimes', 'present', 'array'],
-            'name_i8n' => ['sometimes', 'array'],
-            'description_title_i8n' => ['sometimes', 'array'],
-            'description_i8n' => ['sometimes', 'array'],
-            'description_extra_i8n' => ['sometimes', 'array'],
-            'gross_weight'                 => ['sometimes', 'numeric'],
-            'marketing_weight'             => ['sometimes', 'numeric'],
-            'marketing_dimensions'         => ['sometimes'],
+            'org_stocks'                => ['sometimes', 'present', 'array'],
+            'well_formatted_org_stocks' => ['sometimes', 'present', 'array'],
+            'name_i8n'                  => ['sometimes', 'array'],
+            'description_title_i8n'     => ['sometimes', 'array'],
+            'description_i8n'           => ['sometimes', 'array'],
+            'description_extra_i8n'     => ['sometimes', 'array'],
+            'gross_weight'              => ['sometimes', 'numeric'],
+            'marketing_weight'          => ['sometimes', 'numeric'],
+            'marketing_dimensions'      => ['sometimes'],
         ];
 
 

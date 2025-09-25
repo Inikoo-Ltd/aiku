@@ -246,6 +246,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\GroupTimeSeries> $timeSeries
  * @property-read LaravelCollection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read LaravelCollection<int, TopUp> $topUps
+ * @property-read LaravelCollection<int, TradeUnitFamily> $tradeUnitFamilies
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read LaravelCollection<int, Upload> $uploads
  * @property-read LaravelCollection<int, UserRequest> $userRequests

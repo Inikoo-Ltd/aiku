@@ -243,7 +243,7 @@ class ShowWebsite extends OrgAction
                     'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
                     'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
                 ],
-               
+
 
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(
                     WebsiteResource::make($website)->getArray(),

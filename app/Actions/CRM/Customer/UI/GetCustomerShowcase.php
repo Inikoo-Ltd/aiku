@@ -9,14 +9,12 @@
 namespace App\Actions\CRM\Customer\UI;
 
 use App\Http\Resources\CRM\CustomerResource;
-use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionReasonEnum;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
-use App\Http\Resources\Helpers\TaxNumberResource;
 
 class GetCustomerShowcase
 {
