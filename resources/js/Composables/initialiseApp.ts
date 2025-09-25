@@ -27,10 +27,14 @@ export const initialiseApp = () => {
     echoGeneral.subscribe(usePage().props.layout?.group?.id)  // Websockets: notification
 
 
+    console.log('11 User', usePage().props?.auth?.user)
     if (usePage().props?.auth?.user) {
         echoPersonal.subscribe(usePage().props.auth.user.id)
 
+        console.log('22 User inside')
         router.on('navigate', (event) => {
+            console.log('33 v params', route().v().params)
+            console.log('33 params', route().params)
             
             // To see Vue filename in console (component.vue)
             if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
@@ -44,6 +48,7 @@ export const initialiseApp = () => {
             layout.currentQuery = route().v().query  // current query
             layout.currentRoute = route().current()  // current route
 
+            console.log('44', layout.currentParams)
             const currentRouteSplit = layout.currentRoute.split('.')  // to handle grp with route grp.xxx.zzz with org with route grp.org.xxx.zzz
             layout.currentModule = currentRouteSplit[1] == 'org' ? layout.currentRoute.split('.')[2] : layout.currentRoute.split('.')[1]  // grp.org.xxx.yyy.zzz to xxx
 
