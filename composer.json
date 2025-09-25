@@ -26,7 +26,7 @@
     "aws/aws-sdk-php": "^3.255",
     "aws/aws-sdk-php-laravel": "^3.8",
     "carlos-meneses/laravel-mpdf": "^2.1",
-    "checkout/checkout-sdk-php": "^3.2",
+    "checkout/checkout-sdk-php": "^4",
     "cloudstudio/ollama-laravel": "^1.0",
     "commerceguys/addressing": "^2.2",
     "commerceguys/intl": "^2.0.7",

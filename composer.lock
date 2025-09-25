@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f7402b6f4a549e3d70717aa682dfebf8",
+    "content-hash": "7052b31efdea6778f9cae15d7679b47a",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -724,16 +724,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.356.24",
+            "version": "3.356.25",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "d897c1345496af3440b8d8a5979d5f47cce6c433"
+                "reference": "d78bd3b221890aac679ec3b6cb5abcb01fd42699"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/d897c1345496af3440b8d8a5979d5f47cce6c433",
-                "reference": "d897c1345496af3440b8d8a5979d5f47cce6c433",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/d78bd3b221890aac679ec3b6cb5abcb01fd42699",
+                "reference": "d78bd3b221890aac679ec3b6cb5abcb01fd42699",
                 "shasum": ""
             },
             "require": {
@@ -815,9 +815,9 @@
             "support": {
                 "forum": "https://github.com/aws/aws-sdk-php/discussions",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.356.24"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.356.25"
             },
-            "time": "2025-09-23T18:08:42+00:00"
+            "time": "2025-09-24T18:08:25+00:00"
         },
         {
             "name": "aws/aws-sdk-php-laravel",
@@ -1426,16 +1426,16 @@
         },
         {
             "name": "checkout/checkout-sdk-php",
-            "version": "3.3.0",
+            "version": "4.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/checkout/checkout-sdk-php.git",
-                "reference": "b5fc1bf2bfe90426f763cfb8a8a2207f91968b2d"
+                "reference": "e495cc35cb88afaa3a938626ec77cbbb06a74b6f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/checkout/checkout-sdk-php/zipball/b5fc1bf2bfe90426f763cfb8a8a2207f91968b2d",
-                "reference": "b5fc1bf2bfe90426f763cfb8a8a2207f91968b2d",
+                "url": "https://api.github.com/repos/checkout/checkout-sdk-php/zipball/e495cc35cb88afaa3a938626ec77cbbb06a74b6f",
+                "reference": "e495cc35cb88afaa3a938626ec77cbbb06a74b6f",
                 "shasum": ""
             },
             "require": {
@@ -1443,7 +1443,7 @@
                 "ext-json": "*",
                 "guzzlehttp/guzzle": "^6.5 || ^7.4",
                 "monolog/monolog": "^1.27 || ^2.4 || ^3.0.0",
-                "php": ">=5.6.0"
+                "php": ">=7.1.0"
             },
             "require-dev": {
                 "mockery/mockery": "^1.3 || ^1.4",
@@ -1488,9 +1488,9 @@
             ],
             "support": {
                 "issues": "https://github.com/checkout/checkout-sdk-php/issues",
-                "source": "https://github.com/checkout/checkout-sdk-php/tree/3.3.0"
+                "source": "https://github.com/checkout/checkout-sdk-php/tree/4.0.0"
             },
-            "time": "2025-06-06T11:42:26+00:00"
+            "time": "2025-06-23T15:15:05+00:00"
         },
         {
             "name": "chrisharrison/php-array-of",
@@ -4865,16 +4865,16 @@
         },
         {
             "name": "inertiajs/inertia-laravel",
-            "version": "v2.0.6",
+            "version": "v2.0.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/inertiajs/inertia-laravel.git",
-                "reference": "6d0afc3237c370036de4a703927b17a4e7b83298"
+                "reference": "a08aea5a16fed187dcf815c9037b62cc544ab809"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/inertiajs/inertia-laravel/zipball/6d0afc3237c370036de4a703927b17a4e7b83298",
-                "reference": "6d0afc3237c370036de4a703927b17a4e7b83298",
+                "url": "https://api.github.com/repos/inertiajs/inertia-laravel/zipball/a08aea5a16fed187dcf815c9037b62cc544ab809",
+                "reference": "a08aea5a16fed187dcf815c9037b62cc544ab809",
                 "shasum": ""
             },
             "require": {
@@ -4929,9 +4929,9 @@
             ],
             "support": {
                 "issues": "https://github.com/inertiajs/inertia-laravel/issues",
-                "source": "https://github.com/inertiajs/inertia-laravel/tree/v2.0.6"
+                "source": "https://github.com/inertiajs/inertia-laravel/tree/v2.0.7"
             },
-            "time": "2025-08-26T06:17:48+00:00"
+            "time": "2025-09-24T16:49:48+00:00"
         },
         {
             "name": "inspector-apm/inspector-laravel",
@@ -10210,16 +10210,16 @@
         },
         {
             "name": "paragonie/constant_time_encoding",
-            "version": "v3.1.2",
+            "version": "v3.1.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/paragonie/constant_time_encoding.git",
-                "reference": "5bd79e0e88e8757f23e757bcedd1e37fa818cf68"
+                "reference": "d5b01a39b3415c2cd581d3bd3a3575c1ebbd8e77"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/paragonie/constant_time_encoding/zipball/5bd79e0e88e8757f23e757bcedd1e37fa818cf68",
-                "reference": "5bd79e0e88e8757f23e757bcedd1e37fa818cf68",
+                "url": "https://api.github.com/repos/paragonie/constant_time_encoding/zipball/d5b01a39b3415c2cd581d3bd3a3575c1ebbd8e77",
+                "reference": "d5b01a39b3415c2cd581d3bd3a3575c1ebbd8e77",
                 "shasum": ""
             },
             "require": {
@@ -10275,7 +10275,7 @@
                 "issues": "https://github.com/paragonie/constant_time_encoding/issues",
                 "source": "https://github.com/paragonie/constant_time_encoding"
             },
-            "time": "2025-09-24T01:22:14+00:00"
+            "time": "2025-09-24T15:06:41+00:00"
         },
         {
             "name": "paragonie/random_compat",
