@@ -165,8 +165,9 @@ const props = defineProps<{
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
 const currentTab = ref<string | number>(
-    props.formData?.current || parseInt(Object.keys(props.formData?.blueprint)[0])
-) // if formData.current not exist, take first navigation
+    props.formData?.current || Object.keys(props.formData?.blueprint ?? {})[0]
+)
+ // if formData.current not exist, take first navigation
 const _buttonRefs = ref([]) // For click linked to Navigation
 const isMobile = ref(false)
 const tabActive: any = ref({})
@@ -296,7 +297,6 @@ const getSeverity = (type?: string) => {
         </Message>
 
     </div>
-
     <!-- If overflow-hidden, affect to Multiselect on Address -->
     <div class="rounded-lg shadow">
         <div v-if="!isMobile"
