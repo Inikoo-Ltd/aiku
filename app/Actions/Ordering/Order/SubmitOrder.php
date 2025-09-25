@@ -55,15 +55,17 @@ class SubmitOrder extends OrgAction
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
-        foreach ($transactions as $transaction) {
-            $transactionData = ['state' => TransactionStateEnum::SUBMITTED];
-            if ($transaction->submitted_at == null) {
-                data_set($transactionData, 'submitted_at', $date);
-                data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
-                data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered); //Copy quantity
-            }
+        if ($transactions->isNotEmpty()) {
+            foreach ($transactions as $transaction) {
+                $transactionData = ['state' => TransactionStateEnum::SUBMITTED];
+                if ($transaction->submitted_at == null) {
+                    data_set($transactionData, 'submitted_at', $date);
+                    data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
+                    data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered); //Copy quantity
+                }
 
-            $transaction->update($transactionData);
+                $transaction->update($transactionData);
+            }
         }
 
         $this->update($order, $modelData);
@@ -104,7 +106,7 @@ class SubmitOrder extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->order->state == OrderStateEnum::CREATING && !$this->order->transactions->count()) {
+        if ($this->order->state == OrderStateEnum::CREATING && !$this->order->transactions->count() && !$this->asAction) {
             $validator->errors()->add('state', __('Can not submit an order without any transactions'));
         } elseif ($this->order->state == OrderStateEnum::SUBMITTED) {
             $validator->errors()->add('state', __('Order is already submitted'));

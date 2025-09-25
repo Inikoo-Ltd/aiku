@@ -1076,8 +1076,14 @@ const toggleElipsis = (e: Event) => {
             :routesProductsListModification="routes.products_list_modification" />
     </div>
 
-    <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
-        :current="currentTab" v-model:currentTab="currentTab" :typeModel="'order'" />
+    <ModalProductList
+        v-model="isModalProductListOpen"
+        :fetchRoute="routes.products_list"
+        :action="currentAction"
+        :current="currentTab"
+        v-model:currentTab="currentTab"
+        :typeModel="'order'"
+    />
 
     <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-5xl">
         <DeliveryAddressManagementModal :address_modal_title="delivery_address_management.address_modal_title"

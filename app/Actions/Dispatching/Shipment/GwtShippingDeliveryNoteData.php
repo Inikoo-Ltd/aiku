@@ -17,7 +17,7 @@ class GwtShippingDeliveryNoteData
     use AsAction;
 
 
-    public function handle(DeliveryNote $deliveryNote,$cascade=true): array
+    public function handle(DeliveryNote $deliveryNote, $cascade = true): array
     {
 
 
@@ -60,7 +60,7 @@ class GwtShippingDeliveryNoteData
 
         $toPhone = $deliveryNote->phone ?? '';
 
-        if($cascade) {
+        if ($cascade) {
             if (!$toPhone) {
                 $toPhone = $customer->phone ?? '';
             }
@@ -71,7 +71,7 @@ class GwtShippingDeliveryNoteData
 
         $toEmail = $deliveryNote->email ?? '';
 
-        if($cascade) {
+        if ($cascade) {
             if (!$toEmail) {
                 $toEmail = $customer->email;
             }
@@ -83,7 +83,7 @@ class GwtShippingDeliveryNoteData
 
         $toCompanyName = $deliveryNote->company_name ?? '';
 
-        if($cascade) {
+        if ($cascade) {
             if (!$toCompanyName) {
                 $toCompanyName = $customer->company_name ?? '';
             }
@@ -96,7 +96,7 @@ class GwtShippingDeliveryNoteData
 
         $contactName   = $deliveryNote->contact_name ?? '';
 
-        if($cascade) {
+        if ($cascade) {
             if (!$contactName) {
                 $contactName = $customer->contact_name ?? '';
             }

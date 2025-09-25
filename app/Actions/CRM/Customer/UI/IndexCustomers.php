@@ -344,6 +344,26 @@ class IndexCustomers extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
+
+                'download_route' => [
+                    'xlsx'   => [
+                        'name'       => 'grp.org.shops.show.crm.customers.export',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                            'shop' => $this->shop->slug,
+                            'type' => 'xlsx'
+                        ]
+                    ],
+                    'csv'    => [
+                        'name'       => 'grp.org.shops.show.crm.customers.export',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                            'shop' => $this->shop->slug,
+                            'type' => 'csv'
+                        ]
+                    ]
+                ],
+
                 CustomersTabsEnum::DASHBOARD->value => $this->tab == CustomersTabsEnum::DASHBOARD->value ?
                     fn () => GetCustomersDashboard::run($this->parent, $request)
                     : Inertia::lazy(fn () => GetCustomersDashboard::run($this->parent, $request)),
