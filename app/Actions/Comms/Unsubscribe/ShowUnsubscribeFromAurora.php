@@ -37,10 +37,10 @@ class ShowUnsubscribeFromAurora extends IrisAction
 
     public function htmlResponse($modelData)
     {
-        return Inertia::render('Utils/UnsubscribeFromAurora', [
+        return Inertia::render('UnsubscribeFromAurora', [
             'title'   => __("Unsubscribe"),
             'keys'    => $modelData,
-            'route'   => [
+            'route_unsubscribe'   => [
                 'name' => 'retina.models.unsubscribe_aurora'
             ],
             'message' => [

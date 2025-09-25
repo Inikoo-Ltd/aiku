@@ -32,6 +32,7 @@ class OpenShopsInMasterShopResource extends JsonResource
             'currency'        => $this->currency_code,
             'organisation_id' => $this->organisation_id,
             'product' => [
+                'id'              => $this->id,
                 'stock' => 0,
                 'cost_price' => 0,
                 'margin' => 0,

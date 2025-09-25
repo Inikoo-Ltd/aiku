@@ -154,11 +154,12 @@ const getTableData = (data) => {
 
             console.log("Response data:", response.data)
             for (const item of response.data.shops) {
-                const index = tableData.value.data.findIndex((row: any) => row.id === item.id)
+                const index = tableData.value.data.findIndex((row: any) => row.id == item.id)
                 if (index !== -1) {
+                    console.log('sdfsdf',tableData.value.data[index].product,item)
                     tableData.value.data[index].product = {
                         ...tableData.value.data[index].product,
-                        ...item.org_stocks_data,
+                        ...item,
                     }
                 }
             }

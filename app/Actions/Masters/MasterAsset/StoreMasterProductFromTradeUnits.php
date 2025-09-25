@@ -113,6 +113,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             'description_title'      => ['sometimes', 'string', 'nullable'],
             'description_extra'      => ['sometimes', 'string', 'nullable'],
             'price'                  => ['sometimes', 'numeric', 'min:0'],
+            'rrp'                    => ['sometimes', 'numeric', 'min:0'],
             'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
             'trade_units'            => [
                 'required',
