@@ -42,7 +42,7 @@ class IndexSubDepartments extends OrgAction
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
 
         return $this->handle(parent: $shop);
     }
@@ -50,7 +50,7 @@ class IndexSubDepartments extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $department;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(ProductCategoryTabsEnum::values());
 
         return $this->handle(parent: $department);
     }
