@@ -40,7 +40,7 @@ import FontSize from 'tiptap-extension-font-size'
 import FontFamily from '@tiptap/extension-font-family'
 import Highlight from '@tiptap/extension-highlight'
 import UtilsColorPicker from '@/Components/Utils/ColorPicker.vue'
-import suggestion from './Variables/suggestion'
+/* import suggestion from './Variables/suggestion' */
 /* import ImageResize from 'tiptap-extension-resize-image'; */
 import { ImagePlus } from 'tiptap-image-plus';
 import Dialog from 'primevue/dialog';
@@ -151,10 +151,7 @@ const editorInstance = useEditor({
         Text,
         ImagePlus.configure({
         wrapperStyle: { cursor: 'pointer' },
-    }),
-        /* ImageResize.configure({
-            inline: true,
-        }), */
+        }),
         History,
         Placeholder.configure({
             placeholder: props.placeholder || "Start typing...",
@@ -364,12 +361,12 @@ const editorInstance = useEditor({
         Color.configure({
             types: ['textStyle'],
         }),
-        Variabel.configure({
+       /*  Variabel.configure({
             HTMLAttributes: {
                 class: 'mention',
             },
             suggestion,
-        }),
+        }), */
     ],
     onUpdate: ({ editor }) => {
         contentResult.value = editor.getHTML()
