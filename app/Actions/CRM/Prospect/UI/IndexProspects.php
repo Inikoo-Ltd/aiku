@@ -380,6 +380,24 @@ class IndexProspects extends OrgAction
                         'parameters' => []
                     ],
                 ],
+                'download_route' => [
+                    'xlsx'   => [
+                        'name'       => 'grp.org.shops.show.crm.prospects.export',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                            'shop' => $this->shop->slug,
+                            'type' => 'xlsx'
+                        ]
+                    ],
+                    'csv'    => [
+                        'name'       => 'grp.org.shops.show.crm.prospects.export',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                            'shop' => $this->shop->slug,
+                            'type'                 => 'csv'
+                        ]
+                    ]
+                ],
                 ...$tabs
 
             ]
