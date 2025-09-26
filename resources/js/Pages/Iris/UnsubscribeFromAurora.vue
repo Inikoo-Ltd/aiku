@@ -12,6 +12,9 @@ const props = defineProps<{
     successTitle: string
     successDescription: string
     error: string
+    invalidParamsTitle: string
+    invalidParamsDesc: string
+    backHome: string
   }
 }>()
 
@@ -33,7 +36,7 @@ async function unsubscribe() {
   errorMessage.value = null
 
   try {
-    const { data } = await axios.post(route('iris.unsubscribe.unsubscribe_aurora'), {
+    const { data } = await axios.post(route("iris.unsubscribe.unsubscribe_aurora"), {
       a: a.value,
       s: s.value,
     })
@@ -44,14 +47,16 @@ async function unsubscribe() {
       errorMessage.value = data.message || props.message.error
     }
   } catch (err: any) {
-    errorMessage.value =
-      err.response?.data?.message || props.message.error
+    errorMessage.value = err.response?.data?.message || props.message.error
   } finally {
     isProcessing.value = false
   }
 }
-</script>
 
+function goHome() {
+  window.location.href = "/"
+}
+</script>
 
 <template>
   <div class="page-wrapper">
@@ -62,10 +67,12 @@ async function unsubscribe() {
       <!-- Invalid Params -->
       <div v-if="isInvalidParams" class="state-wrapper">
         <div class="state-box error">
-          <h2>Unable to Continue</h2>
-          <p>You don’t have a valid ID to proceed with this request.</p>
+          <h2>{{ message.invalidParamsTitle }}</h2>
+          <p>{{ message.invalidParamsDesc }}</p>
         </div>
-        <a href="/" class="btn-primary">Back to Home</a>
+
+        <Button @click="goHome" full :label="message.backHome">
+        </Button>
       </div>
 
       <!-- Success -->
@@ -86,8 +93,8 @@ async function unsubscribe() {
           @click="unsubscribe"
           :loading="isProcessing"
           full
+          :label="message.button"
         >
-          <span>{{ message.button }}</span>
         </Button>
 
         <p v-if="errorMessage" class="state-box error small">
@@ -143,3 +150,4 @@ async function unsubscribe() {
   @apply text-base font-medium text-gray-700;
 }
 </style>
+
