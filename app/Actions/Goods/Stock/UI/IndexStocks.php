@@ -233,7 +233,7 @@ class IndexStocks extends OrgAction
                 'action'      => $this->canEdit && $parent->goodsStats->number_stock_families == 0 ? [
                     'type'    => 'button',
                     'style'   => 'create',
-                    'tooltip' => __('new naster SKUs family'),
+                    'tooltip' => __('New master SKUs family'),
                     'label'   => __('Master SKUs family'),
                     'route'   => [
                         'name'       => 'grp.goods.stock-families.create',

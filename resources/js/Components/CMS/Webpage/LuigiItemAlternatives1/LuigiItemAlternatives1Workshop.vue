@@ -142,7 +142,7 @@ onMounted(()=> {
 
                 <div v-else class="h-64 flex text-lg font-semibold flex-col items-center justify-center  w-full bg-gray-200">
                     <div>{{ trans("No products recommendation to show") }}</div>
-                    <div class="text-sm italic text-gray-400">{{ trans("If no recommendations found, this webblock will not be shown in live website") }}</div>
+                    <div class="text-sm italic text-gray-400">{{ trans("If no recommendations found, this web block will not be shown in live website") }}</div>
                 </div>
             </Swiper>
         </div>

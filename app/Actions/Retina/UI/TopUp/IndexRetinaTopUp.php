@@ -67,9 +67,9 @@ class IndexRetinaTopUp extends RetinaAction
             'Dropshipping/TopUp/TopUps',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Topups'),
+                'title'       => __('Top ups'),
                 'pageHead'    => [
-                    'title' => __('Topups'),
+                    'title' => __('Top ups'),
                     'icon'  => 'fal fa-shopping-basket'
                 ],
 
@@ -116,7 +116,7 @@ class IndexRetinaTopUp extends RetinaAction
                             'route' => [
                                 'name' => 'retina.top_up.index'
                             ],
-                            'label'  => __('Topup'),
+                            'label'  => __('Top up'),
                         ]
                     ]
                 ]
