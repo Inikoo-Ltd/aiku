@@ -39,7 +39,7 @@ const selectedTab = ref(null)
 
 // Method: parameter to string '&organisation=aw&fulfilment=idf'
 const paramsToString = () => {
-    return route().v().params ? '&' + Object.entries(route().v().params).map(([key, value]) => `${key}=${value}`).join('&') : ''
+    return route().routeParams ? '&' + Object.entries(route().routeParams).map(([key, value]) => `${key}=${value}`).join('&') : ''
 }
 
 

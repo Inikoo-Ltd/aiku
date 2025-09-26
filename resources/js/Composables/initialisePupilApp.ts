@@ -37,7 +37,7 @@ export const initialisePupilApp = () => {
 
         router.on('navigate', (event) => {
             // console.log('layout env', layout.app.environment)
-            layout.currentParams = route().v().params  // current params
+            layout.currentParams = route().routeParams  // current params
             layout.currentRoute = route().current()  // current route
 
             if (layout.currentRoute?.includes('retina.dropshipping.platforms')) {

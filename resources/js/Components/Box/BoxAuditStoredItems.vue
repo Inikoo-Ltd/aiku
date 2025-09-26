@@ -54,7 +54,7 @@ const locale = inject('locale', aikuLocaleStructure)
 
 
 onMounted(() => {
-    JsBarcode('#palletDeliveryBarcode', route().v().params.storedItemAudit, {
+    JsBarcode('#palletDeliveryBarcode', route().routeParams.storedItemAudit, {
         lineColor: "rgb(41 37 36)",
         width: 2,
         height: 50,

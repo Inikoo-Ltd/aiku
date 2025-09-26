@@ -8,9 +8,13 @@
 
 namespace App\Http\Resources\Goods;
 
+use App\Http\Resources\Catalogue\BrandResource;
+use App\Http\Resources\Catalogue\TagsResource;
 use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $code
@@ -30,6 +34,13 @@ class TradeUnitsForMasterResource extends JsonResource
         if ($this->image_id) {
             $media = Media::find($this->image_id);
         }
+        // $tags = DB::table('model_has_tags')->where('model_type', 'TradeUnit')->where('model_id', $this->id)
+        //         ->pluck('tag_id')->toArray();
+
+        // $brands = DB::table('model_has_brands')->where('model_type', 'TradeUnit')->where('model_id', $this->id)
+        //         ->pluck('brand_id')->toArray();
+
+        $tradeUnit = TradeUnit::find($this->id);
 
         return [
             'slug'                    => $this->slug,
@@ -48,7 +59,9 @@ class TradeUnitsForMasterResource extends JsonResource
             'number_current_products' => $this->number_current_products,
             'id'                      => $this->id,
             'image'                   => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'cost_price'              => $this->cost_price ?? 0
+            'cost_price'              => $this->cost_price ?? 0,
+            'tags'                    => TagsResource::collection($tradeUnit->tags)->resolve(),
+            'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
         ];
     }
 }
