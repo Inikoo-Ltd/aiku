@@ -22,6 +22,7 @@ use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
+use App\Http\Resources\Goods\TradeUnitResource;
 use App\Models\Goods\TradeUnit;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
@@ -236,6 +237,11 @@ class UpdateTradeUnit extends GrpAction
         }
 
         return $rules;
+    }
+
+    public function jsonResponse(TradeUnit $tradeUnit)
+    {
+        return TradeUnitResource::make($tradeUnit);
     }
 
     public function action(TradeUnit $tradeUnit, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): TradeUnit

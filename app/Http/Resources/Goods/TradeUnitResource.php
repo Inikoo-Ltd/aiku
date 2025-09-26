@@ -9,6 +9,8 @@
 namespace App\Http\Resources\Goods;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\ImageResource;
+use App\Http\Resources\Catalogue\BrandResource;
+use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -53,6 +55,8 @@ class TradeUnitResource extends JsonResource
             'description_title_i8n' => $tradeUnit->getTranslations('description_title_i8n'),
             'description_extra_i8n' => $tradeUnit->getTranslations('description_extra_i8n'),
             'specifications'        => $specifications,
+            'brands'                => BrandResource::collection($tradeUnit->brands)->resolve(),
+            'tags'                  => TagsResource::collection($tradeUnit->tags)->resolve()
         );
     }
 
