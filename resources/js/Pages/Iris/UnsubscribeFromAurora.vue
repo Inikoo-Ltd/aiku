@@ -56,8 +56,8 @@ async function unsubscribe() {
 
     if (data.api_response_status == 200) {
       isSuccess.value = true
-      recipientEmail.value = data.api_response_data.recipient_email ?? null
-      recipientName.value = data.api_response_data.recipient_name ?? null
+      recipientEmail.value = data?.api_response_data?.recipient_email ?? null
+      recipientName.value = data?.api_response_data?.recipient_name ?? null
     } else {
       errorMessage.value = data.message || props.message.error
     }
