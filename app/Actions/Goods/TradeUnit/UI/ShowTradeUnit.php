@@ -157,9 +157,9 @@ class ShowTradeUnit extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.goods.trade-units.show' =>
+            'grp.trade_units.units.show' =>
             array_merge(
-                ShowGoodsDashboard::make()->getBreadcrumbs(),
+                ShowTradeUnitsDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     $tradeUnit,
                     [
@@ -201,7 +201,7 @@ class ShowTradeUnit extends GrpAction
 
 
         return match ($routeName) {
-            'grp.goods.trade-units.show' => [
+            'grp.trade_units.units.show' => [
                 'label' => $tradeUnit->name,
                 'route' => [
                     'name'       => $routeName,
