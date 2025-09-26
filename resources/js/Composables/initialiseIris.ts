@@ -27,7 +27,7 @@ export const initialiseIrisApp = () => {
         }
 
         console.log('on nav')
-        layout.currentParams = route().v().params  // current params
+        layout.currentParams = route().routeParams  // current params
         layout.currentQuery = route().v().query  // current query
         layout.currentRoute = route().current()  // current route
     })

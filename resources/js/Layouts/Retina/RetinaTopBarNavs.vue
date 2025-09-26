@@ -46,7 +46,7 @@ const layout = useLayoutStore()
                 <span v-if="menu.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ menu.label }}</span>
 
                 <!-- The line appear on hover and active state -->
-                <div :class="[route(layout.currentRoute, route().v().params).includes(route(menu.route.name)) ? 'bottomNavigationActiveCustomer' : 'bottomNavigationCustomer']" />
+                <div :class="[route(layout.currentRoute, route().routeParams).includes(route(menu.route.name)) ? 'bottomNavigationActiveCustomer' : 'bottomNavigationCustomer']" />
             </Link>
         </template>
 
@@ -62,7 +62,7 @@ const layout = useLayoutStore()
                     aria-hidden="true"/>
                 <span v-if="menu.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ trans(menu.label) }}</span>
                 <!-- The line appear on hover and active state -->
-                <div :class="[route(layout.currentRoute, route().v().params).includes(route(menu.route.name)) ? 'bottomNavigationActiveCustomer' : 'bottomNavigationCustomer']" />
+                <div :class="[route(layout.currentRoute, route().routeParams).includes(route(menu.route.name)) ? 'bottomNavigationActiveCustomer' : 'bottomNavigationCustomer']" />
             </Link>
         </template>
         <template v-else>
@@ -78,7 +78,7 @@ const layout = useLayoutStore()
                     aria-hidden="true"/>
                 <span v-if="menu.label" class="hidden lg:inline capitalize whitespace-nowrap">{{ trans(menu.label) }}</span>
                 <!-- The line appear on hover and active state -->
-                <div :class="[route(layout.currentRoute, route().v().params).includes(route(menu.route.name)) ? 'bottomNavigationActiveCustomer' : 'bottomNavigationCustomer']" />
+                <div :class="[route(layout.currentRoute, route().routeParams).includes(route(menu.route.name)) ? 'bottomNavigationActiveCustomer' : 'bottomNavigationCustomer']" />
             </Link>
         </template>
 
