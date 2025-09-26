@@ -221,10 +221,24 @@ const onSaveAddress = (submitShipment: Function) => {
             },
             onSuccess: () => {
                 emits("editAddressSuccsess", { ...copyDeliveryAddress.value })
-                submitShipment()
+                // submitShipment()
+                isModalShipment.value = false
+                isModalErrorShipment.value = false // Close the error modal
+                formTrackingNumber.reset()
             },
             onError: (e) => {
                 console.log('error updating address', e)
+                if (e) {
+                    const zzz = Object.values(e || {})[0]
+                    if (zzz) {
+                        shipmentErrorMessage.value = zzz
+                    }
+                }
+                notify({
+                    title: trans("Something went wrong"),
+                    text: Object.values(e || {})[0] || trans("Failed to update the address, try again."),
+                    type: "error"
+                })
             }
         }
     )
@@ -614,7 +628,7 @@ const copyDeliveryAddress = ref(props.shipping_fields
                 <!-- Button: Save -->
                 <div class="flex justify-end mt-3">
                     <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'try again'"
-                            :disabled="!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
+                            :disabled="isLoadingButton || !formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
                             " full
                             @click="() => onSubmitAddressThenShipment()" />
                 </div>
