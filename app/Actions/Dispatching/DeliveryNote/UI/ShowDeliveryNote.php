@@ -480,7 +480,10 @@ class ShowDeliveryNote extends OrgAction
             ],
             'shipping_fields_update_route' => [
                 'name'          =>'grp.models.delivery_note.update_shipping_fields_retry_store_shipping',
-                'parameters'    => [$deliveryNote->id]
+                'parameters'    => [
+                    'deliveryNote' => $deliveryNote->id,
+                    'shipper_id'    => null
+                ]
 
             ],
         ];

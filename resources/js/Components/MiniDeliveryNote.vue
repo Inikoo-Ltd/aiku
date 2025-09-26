@@ -301,7 +301,9 @@ onMounted(() => {
                         @deleteSuccsess="getDataShipment()"
                         :shipping_fields_update_route="{
                             name: 'grp.models.delivery_note.update_shipping_fields_retry_store_shipping',
-                            parameters: { deliveryNote: props.deliveryNote.delivery_note_id }
+                            parameters: {
+                                deliveryNote: props.deliveryNote.delivery_note_id
+                            }
                         }"
                     />
                 </div>

@@ -203,10 +203,14 @@ const onSaveAddress = (submitShipment: Function) => {
     delete filterDataAddress.id
     delete filterDataAddress.can_edit
     delete filterDataAddress.can_delete
-    filterDataAddress.shipper_id = formTrackingNumber.shipping_id?.id
+    // filterDataAddress.shipper_id = formTrackingNumber.shipping_id?.id
 
+    // console.log('filterDataAddress', props.shipping_fields_update_route)
     router.patch(
-        route(props.shipping_fields_update_route.name, props.shipping_fields_update_route.parameters),
+        route(props.shipping_fields_update_route.name, {
+            ...props.shipping_fields_update_route.parameters,
+            shipper_id: formTrackingNumber.shipping_id?.id
+        }),
         filterDataAddress,
         {
             preserveScroll: true,
