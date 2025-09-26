@@ -466,6 +466,23 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
+            'shipping_fields'              => [
+                'company_name' => $deliveryNote->company_name,
+                'contact_name' => $deliveryNote->contact_name,
+                'phone'        => $deliveryNote->phone,
+                'email'        => $deliveryNote->email,
+                'address'      => [
+                    'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
+                    'options'  => [
+                        'countriesAddressData' => GetAddressData::run()
+                    ]
+                ]
+            ],
+            'shipping_fields_update_route' => [
+                'name'          =>'grp.models.delivery_note.update_shipping_fields_retry_store_shipping',
+                'parameters'    => [$deliveryNote->id]
+
+            ],
         ];
     }
 
@@ -598,23 +615,6 @@ class ShowDeliveryNote extends OrgAction
                 'options'  => [
                     'countriesAddressData' => GetAddressData::run()
                 ]
-            ],
-            'shipping_fields'              => [
-                'company_name' => $deliveryNote->company_name,
-                'contact_name' => $deliveryNote->contact_name,
-                'phone'        => $deliveryNote->phone,
-                'email'        => $deliveryNote->email,
-                'address'      => [
-                    'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
-                    'options'  => [
-                        'countriesAddressData' => GetAddressData::run()
-                    ]
-                ]
-            ],
-            'shipping_fields_update_route' => [
-                'name'=>'grp.models.delivery_note.update_shipping_fields_retry_store_shipping',
-                'parameters' => [$deliveryNote->id]
-
             ],
 
 

@@ -2,7 +2,7 @@
 import BoxStatPallet from "@/Components/Pallet/BoxStatPallet.vue"
 import ShipmentSection from "@/Components/Warehouse/DeliveryNotes/ShipmentSection.vue"
 import { trans } from "laravel-vue-i18n"
-import { Address } from "@/types/PureComponent/Address"
+import { Address, AddressOptions } from "@/types/PureComponent/Address"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faBarcodeRead, faMapMarkerAlt } from "@fal"
@@ -93,6 +93,17 @@ const props = defineProps<{
             delete_route: routeType
         }
         shipping_notes?: string
+        shipping_fields: {
+            company_name: string
+            contact_name: string
+            phone: string
+            email: string
+            address: {
+                delivery: Address
+                options: AddressOptions
+            }
+        }
+        shipping_fields_update_route: routeType
     }
     routes: {
         pickers_list: routeType
@@ -451,8 +462,12 @@ const updateCollection = async (e: Event) => {
                                 aria-hidden="true" class="text-gray-500" />
                         </dt>
                         <dd class="text-gray-500 w-full">
-                            <ShipmentSection :shipments="boxStats.shipments"
-                                :shipments_routes="boxStats.shipments_routes" :address="boxStats.address"
+                            <ShipmentSection
+                                :shipping_fields="boxStats.shipping_fields"
+                                :shipping_fields_update_route="boxStats.shipping_fields_update_route"
+                                :shipments="boxStats.shipments"
+                                :shipments_routes="boxStats.shipments_routes"
+                                :address="boxStats.address"
                                 :updateAddressRoute="{
 									name:'grp.models.delivery_note.update_address',
 									parameters: {

@@ -36,7 +36,7 @@ async function unsubscribe() {
   errorMessage.value = null
 
   try {
-    const { data } = await axios.post(route("iris.unsubscribe.unsubscribe_aurora"), {
+    const { data } = await axios.post(route('iris.models.unsubscribe_aurora'), {
       a: a.value,
       s: s.value,
     })

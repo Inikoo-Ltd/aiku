@@ -127,16 +127,12 @@ use App\Actions\Retina\SysAdmin\StoreRetinaWebUser;
 use App\Actions\Retina\SysAdmin\UpdateRetinaCustomer;
 use App\Actions\Retina\SysAdmin\UpdateRetinaWebUser;
 use App\Actions\Retina\UI\Profile\UpdateRetinaProfile;
-use App\Actions\Retina\UnsubscribeAurora;
 use App\Actions\Retina\Woo\CreateRetinaNewAllPortfoliosToWoo;
 use App\Actions\Retina\Woo\CreateRetinaNewBulkPortfoliosToWoo;
 use App\Actions\Retina\Woo\MatchRetinaBulkNewProductToCurrentWooCommerce;
 use App\Actions\Retina\Woo\MatchRetinaPortfolioToCurrentWooProduct;
 use App\Actions\Retina\Woo\StoreRetinaNewProductToCurrentWoo;
 use Illuminate\Support\Facades\Route;
-
-Route::post('unsubscribe-aurora', UnsubscribeAurora::class)->name('unsubscribe_aurora');
-
 
 Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place-order-pay-by-bank');
 Route::post('top-up-payment-api-point', StoreTopUpPaymentApiPoint::class)->name('top_up_payment_api_point.store');

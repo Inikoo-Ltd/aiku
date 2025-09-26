@@ -26,6 +26,7 @@ import { faExclamationCircle } from '@fal'
 import { useConfirm } from "primevue/useconfirm";
 import { twBreakPoint } from '@/Composables/useWindowSize'
 import { RadioButton } from 'primevue'
+import { Address, AddressOptions } from '@/types/PureComponent/Address'
 
 const props = defineProps<{
     shipments: {
@@ -47,10 +48,21 @@ const props = defineProps<{
         delete_route: routeType
     }
     address: {
-
+        delivery: Address
+        options: AddressOptions
     }
-
     updateAddressRoute: routeType
+    shipping_fields: {
+        company_name: string
+        contact_name: string
+        phone: string
+        email: string
+        address: {
+            delivery: Address
+            options: AddressOptions
+        }
+    }
+    shipping_fields_update_route: routeType
 }>()
 
 const emits = defineEmits<{
@@ -61,35 +73,6 @@ const emits = defineEmits<{
 
 // Shipment deletion
 const isDeleteShipment = ref<number | null>(null)
-// const onDeleteShipment = (idShipment: number) => {
-//     router.delete(route(props.deleteRoute.name, {
-//         ...props.deleteRoute.parameters,
-//         shipment: idShipment,
-//     }),
-//         {
-//             preserveScroll: true,
-//             onStart: () => {
-//                 isDeleteShipment.value = idShipment
-//             },
-//             onSuccess: () => {
-//                 notify({
-//                     title: trans("Success!"),
-//                     text: trans("Shipment has deleted."),
-//                     type: "success",
-//                 })
-//             },
-//             onError: (errors) => {
-//                 notify({
-//                     title: trans("Something went wrong."),
-//                     text: trans("Failed to delete shipment. Please try again or contact administrator."),
-//                     type: "error",
-//                 })
-//             },
-//             onFinish: () => {
-//                 isDeleteShipment.value = null
-//             },
-//         })
-// }
 
 // PDF conversion
 const base64ToPdf = (base: string) => {
@@ -187,11 +170,17 @@ const onSubmitShipment = () => {
             onSuccess: () => {
                 emits('addSuccsess', null)
                 isModalShipment.value = false;
+                isModalErrorShipment.value = false; // Close the error modal
                 formTrackingNumber.reset();
             },
             onError: (errors) => {
                 // TODO: Make condition if the error related to delivery address then set to true
-                // set(listError.value, 'box_stats_delivery_address', true) // To make the Box stats delivery address error
+                // set(listError.value, 'box_stats_address', true) // To make the Box stats delivery address error
+                if (errors.address) {
+                    shipmentErrorMessage.value = errors.address
+                    isModalErrorShipment.value = true; // Open the modal if the error related to address
+                }
+                
                 notify({
                     title: trans("Something went wrong."),
                     text: errors.message,
@@ -205,9 +194,9 @@ const onSubmitShipment = () => {
 }
 
 const onSaveAddress = (submitShipment: Function) => {
-    if (!props.updateAddressRoute?.name) return
+    if (!props.shipping_fields_update_route?.name) return
 
-    const filterDataAddress = { ...xxxCopyAddress.value }
+    const filterDataAddress = { ...copyDeliveryAddress.value }
     delete filterDataAddress.formatted_address
     delete filterDataAddress.country
     delete filterDataAddress.country_code
@@ -216,7 +205,7 @@ const onSaveAddress = (submitShipment: Function) => {
     delete filterDataAddress.can_delete
 
     router.patch(
-        route(props.updateAddressRoute.name, props.updateAddressRoute.parameters),
+        route(props.shipping_fields_update_route.name, props.shipping_fields_update_route.parameters),
         {
             address: filterDataAddress
         },
@@ -228,7 +217,7 @@ const onSaveAddress = (submitShipment: Function) => {
 
             },
             onSuccess: () => {
-                emits('editAddressSuccsess', { ...xxxCopyAddress.value })
+                emits('editAddressSuccsess', { ...copyDeliveryAddress.value })
                 submitShipment()
             },
             onError: () => notify({
@@ -245,10 +234,10 @@ const onSubmitAddressThenShipment = () => {
     onSaveAddress(onSubmitShipment)
 }
 
-const DeleteShipment = (index) => {
-    isModalShipment.value = false  // ✅ Close the modal after delete
-    emits('deleteSuccsess', index)
-}
+// const DeleteShipment = (index) => {
+//     isModalShipment.value = false  // ✅ Close the modal after delete
+//     emits('deleteSuccsess', index)
+// }
 
 const confirm = useConfirm("confirm-delete");
 
@@ -301,21 +290,37 @@ const confirmdelete = (event: MouseEvent, shipment) => {
 };
 
 
-const xxxCopyAddress = ref({ ...props.address?.delivery })
 
 function handleShipmentClick(shipment: number) {
-  if (isLoadingButton.value === 'addTrackingNumber') return
+    if (isLoadingButton.value === 'addTrackingNumber') return
 
-  formTrackingNumber.shipping_id = shipment
+    formTrackingNumber.shipping_id = shipment
 
-  if (formTrackingNumber?.errors?.address) {
-    onSubmitAddressThenShipment()
-  } else {
-    onSubmitShipment()
-  }
+    if (formTrackingNumber?.errors?.address) {
+        onSubmitAddressThenShipment()
+    } else {
+        onSubmitShipment()
+    }
 }
 
 const selectedShipment = ref('create_label')
+
+
+// Section: Shipment Error
+const isModalErrorShipment = ref(false)
+const shipmentErrorMessage = ref('')
+const addressOptions = props.shipping_fields?.address?.options || props.address?.options
+const copyDeliveryAddress = ref(props.shipping_fields
+    ? { 
+        company_name: props.shipping_fields.company_name,
+        contact_name: props.shipping_fields.contact_name,
+        phone: props.shipping_fields.phone,
+        email: props.shipping_fields.email,
+        address: props.shipping_fields.address.delivery,
+    } : {
+        address: { ...props.address.delivery }
+    }
+)
 </script>
 
 <template>
@@ -419,7 +424,7 @@ const selectedShipment = ref('create_label')
 
         <!-- Modal: Shipment -->
         <Modal xv-if="['packed', 'finalised', 'dispatched'].includes(delivery_note_state.value)"
-            :isOpen="isModalShipment" @onClose="isModalShipment = false" width="w-full max-w-2xl">
+            :isOpen="isModalShipment" @onClose="!isModalErrorShipment ? isModalShipment = false : null" width="w-full max-w-2xl">
             <div>
                 <!-- <div class="text-center font-bold mb-4">
                     {{ trans("Add shipment") }}
@@ -464,24 +469,23 @@ const selectedShipment = ref('create_label')
                         </div>
                         
                         <!-- Field: Address -->
-                        <template v-if="formTrackingNumber?.errors?.address">
+                        <!-- <template v-if="formTrackingNumber?.errors?.address">
                             <div class="relative my-3 p-2 rounded bg-gray-100"
                                 :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
-                                <PureAddress v-model="xxxCopyAddress" :options="address?.options" xfieldLabel />
+                                <PureAddress v-model="copyDeliveryAddress" :options="address?.options" xfieldLabel />
                                 <div v-if="isLoadingButton"
                                     class="absolute inset-0 bg-black/40 text-white flex place-content-center items-center text-4xl">
                                     <LoadingIcon />
                                 </div>
                             </div>
                             
-                            <!-- Button: Save -->
                             <div class="flex justify-end mt-3">
                                 <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'save'"
                                     :disabled="!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
                                         " full
                                     @click="() => onSubmitAddressThenShipment()" />
                             </div>
-                        </template>
+                        </template> -->
                     </div>
                 </div>
                 
@@ -539,24 +543,6 @@ const selectedShipment = ref('create_label')
                             {{ errorx }}
                         </p>
                     </div>
-
-                    <!-- Field: Address -->
-                    <div v-if="formTrackingNumber?.errors?.address" class="relative my-3 p-2 rounded bg-gray-100"
-                        :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
-                        <PureAddress v-model="xxxCopyAddress" :options="address?.options" xfieldLabel />
-                        <div v-if="isLoadingButton"
-                            class="absolute inset-0 bg-black/40 text-white flex place-content-center items-center text-4xl">
-                            <LoadingIcon />
-                        </div>
-                    </div>
-
-                    <!-- Button: Save -->
-                    <div class="flex justify-end mt-3">
-                        <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'save'"
-                            :disabled="!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
-                                " full
-                            @click="() => formTrackingNumber?.errors?.address ? onSubmitAddressThenShipment() : onSubmitShipment()" />
-                    </div>
                 </div>
 
                 <!-- Loading: fetching service list -->
@@ -569,6 +555,75 @@ const selectedShipment = ref('create_label')
         </Modal>
     </div>
 
+    <!-- Modal: Error Modal -->
+    <Modal
+        :isOpen="isModalErrorShipment" @onClose="() => isModalErrorShipment = false" width="w-full max-w-xl" closeButton>
+        <div>
+            <div class="text-center font-bold mb-4 text-xl text-red-600">
+                {{ trans("Error on save create label") }}
+            </div>
+
+            <div class="bg-red-100 border border-red-300 text-red-500 rounded px-4 py-2">
+                {{ shipmentErrorMessage }}
+            </div>
+
+            <!-- Section: Create label -->
+            <div class="w-full mt-3">
+
+                <div  class="relative">
+                    <!-- Field: Address -->
+                    <div class="relative my-3 p-2 rounded bg-gray-100"
+                        :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
+                        <div class="col-span-2 mb-2">
+                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                                {{ trans('Company Name') }}
+                            </label>
+                            <PureInput v-model="copyDeliveryAddress.company_name" placeholder="Enter company name" />
+                        </div>
+                        <div class="col-span-2 mb-2">
+                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                                {{ trans('Contact Name') }}
+                            </label>
+                            <PureInput v-model="copyDeliveryAddress.contact_name" placeholder="Enter phone number" />
+                        </div>
+                        <div class="col-span-2 mb-2">
+                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                                {{ trans('phone') }}
+                            </label>
+                            <PureInput v-model="copyDeliveryAddress.phone" placeholder="Enter phone number" />
+                        </div>
+                        <div class="col-span-2 mb-2">
+                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                                {{ trans('email') }}
+                            </label>
+                            <PureInput v-model="copyDeliveryAddress.email" placeholder="Enter phone number" />
+                        </div>
+                        <PureAddress v-model="copyDeliveryAddress.address" :options="addressOptions" />
+                        <div v-if="isLoadingButton"
+                            class="absolute inset-0 bg-black/40 text-white flex place-content-center items-center text-4xl">
+                            <LoadingIcon />
+                        </div>
+                    </div>
+                    
+                    <!-- Button: Save -->
+                    <div class="flex justify-end mt-3">
+                        <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'try again'"
+                            :disabled="!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
+                                " full
+                            @click="() => onSubmitAddressThenShipment()" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading: fetching service list -->
+            <div v-if="isLoadingData === 'addTrackingNumber'"
+                class="bg-white/50 absolute inset-0 flex place-content-center items-center">
+                <FontAwesomeIcon icon="fad fa-spinner-third" class="animate-spin text-5xl" fixed-width
+                    aria-hidden="true" />
+            </div>
+        </div>
+    </Modal>
+    
     <ConfirmDialog :group="'confirm-delete'">
         <template #icon>
             <FontAwesomeIcon :icon="faExclamationCircle" class="text-yellow-500" />

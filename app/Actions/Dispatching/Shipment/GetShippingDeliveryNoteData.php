@@ -69,7 +69,7 @@ class GetShippingDeliveryNoteData
             }
         }
 
-        //$toPhone='dadasd';
+        // $toPhone='dadasd';
 
         $toEmail = $deliveryNote->email ?? '';
 

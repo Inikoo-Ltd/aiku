@@ -17,7 +17,10 @@ use App\Actions\Iris\Portfolio\StoreIrisPortfolioFavourites;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToAllChannels;
 use App\Actions\Iris\Portfolio\StoreIrisPortfolioToMultiChannels;
 use App\Actions\Iris\Portfolio\UpdateIrisBackInStockReminder;
+use App\Actions\Retina\UnsubscribeAurora;
 use Illuminate\Support\Facades\Route;
+
+Route::post('unsubscribe-aurora', UnsubscribeAurora::class)->name('unsubscribe_aurora');
 
 Route::post('portfolio-all-channels', StoreIrisPortfolioToAllChannels::class)->name('all_channels.portfolio.store');
 Route::post('portfolio-multi-channels', StoreIrisPortfolioToMultiChannels::class)->name('multi_channels.portfolio.store');
