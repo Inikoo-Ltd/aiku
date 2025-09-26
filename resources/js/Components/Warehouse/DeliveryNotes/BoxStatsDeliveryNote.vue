@@ -468,12 +468,7 @@ const updateCollection = async (e: Event) => {
                                 :shipments="boxStats.shipments"
                                 :shipments_routes="boxStats.shipments_routes"
                                 :address="boxStats.address"
-                                :updateAddressRoute="{
-									name:'grp.models.delivery_note.update_address',
-									parameters: {
-										deliveryNote: props.deliveryNote.id,
-									},
-								}" />
+                            />
                         </dd>
                     </dl>
 

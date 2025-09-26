@@ -172,6 +172,11 @@ const onOpenModalDetail = (deliveryNote) => {
     DeliveryNoteInModal.value = deliveryNote
 }
 
+const innerWidth = ref(0)
+onMounted(() => {
+    innerWidth.value = window.innerWidth
+})
+
 // console.log("props", props.pickingSession)
 
 // Section: Note
@@ -599,6 +604,12 @@ const onOpenModalDetail = (deliveryNote) => {
 
                 <div v-if="!itemValue.locations.every(location => { return location.quantity > 0 })" class="">
                 </div>
+            </div>
+
+            <div v-else-if="pickingSession.state == 'handling'">
+                <ButtonWithLink v-if="!itemValue.is_handled" type="negative" tooltip="Set as not picked"
+                    icon="fal fa-debug" :size="innerWidth > 768 ? undefined : 'lg'"
+                    :routeTarget="itemValue.not_picking_route" :bindToLink="{preserveScroll: true}" />
             </div>
 
 

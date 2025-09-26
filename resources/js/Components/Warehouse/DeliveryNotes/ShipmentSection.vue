@@ -51,8 +51,7 @@ const props = defineProps<{
         delivery: Address
         options: AddressOptions
     }
-    updateAddressRoute: routeType
-    shipping_fields: {
+    shipping_fields?: {
         company_name: string
         contact_name: string
         phone: string
@@ -178,6 +177,7 @@ const onSubmitShipment = () => {
                 // set(listError.value, 'box_stats_address', true) // To make the Box stats delivery address error
                 if (errors.address) {
                     shipmentErrorMessage.value = errors.address
+                    isModalShipment.value = false
                     isModalErrorShipment.value = true; // Open the modal if the error related to address
                 }
                 
@@ -203,12 +203,11 @@ const onSaveAddress = (submitShipment: Function) => {
     delete filterDataAddress.id
     delete filterDataAddress.can_edit
     delete filterDataAddress.can_delete
+    filterDataAddress.shipper_id = formTrackingNumber.shipping_id?.id
 
     router.patch(
         route(props.shipping_fields_update_route.name, props.shipping_fields_update_route.parameters),
-        {
-            address: filterDataAddress
-        },
+        filterDataAddress,
         {
             preserveScroll: true,
             onStart: () => isLoadingButton.value = true,
@@ -311,7 +310,7 @@ const isModalErrorShipment = ref(false)
 const shipmentErrorMessage = ref('')
 const addressOptions = props.shipping_fields?.address?.options || props.address?.options
 const copyDeliveryAddress = ref(props.shipping_fields
-    ? { 
+    ? {
         company_name: props.shipping_fields.company_name,
         contact_name: props.shipping_fields.contact_name,
         phone: props.shipping_fields.phone,
@@ -555,7 +554,7 @@ const copyDeliveryAddress = ref(props.shipping_fields
         </Modal>
     </div>
 
-    <!-- Modal: Error Modal -->
+    <!-- Modal: Error Modal edit address -->
     <Modal
         :isOpen="isModalErrorShipment" @onClose="() => isModalErrorShipment = false" width="w-full max-w-xl" closeButton>
         <div>
@@ -569,49 +568,54 @@ const copyDeliveryAddress = ref(props.shipping_fields
 
             <!-- Section: Create label -->
             <div class="w-full mt-3">
+                <!-- Field: Address -->
+                <div class="relative my-3 p-2 rounded bg-gray-100 max-h-[500px] overflow-y-auto"
+                    :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
+                    <!-- Field Address: Company Name -->
+                    <div v-if="shipping_fields" class="col-span-2 mb-2">
+                        <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                            {{ trans('Company Name') }}
+                        </label>
+                        <PureInput v-model="copyDeliveryAddress.company_name" placeholder="Enter company name" />
+                    </div>
 
-                <div  class="relative">
-                    <!-- Field: Address -->
-                    <div class="relative my-3 p-2 rounded bg-gray-100"
-                        :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
-                        <div class="col-span-2 mb-2">
-                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
-                                {{ trans('Company Name') }}
-                            </label>
-                            <PureInput v-model="copyDeliveryAddress.company_name" placeholder="Enter company name" />
-                        </div>
-                        <div class="col-span-2 mb-2">
-                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
-                                {{ trans('Contact Name') }}
-                            </label>
-                            <PureInput v-model="copyDeliveryAddress.contact_name" placeholder="Enter phone number" />
-                        </div>
-                        <div class="col-span-2 mb-2">
-                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
-                                {{ trans('phone') }}
-                            </label>
-                            <PureInput v-model="copyDeliveryAddress.phone" placeholder="Enter phone number" />
-                        </div>
-                        <div class="col-span-2 mb-2">
-                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
-                                {{ trans('email') }}
-                            </label>
-                            <PureInput v-model="copyDeliveryAddress.email" placeholder="Enter phone number" />
-                        </div>
-                        <PureAddress v-model="copyDeliveryAddress.address" :options="addressOptions" />
-                        <div v-if="isLoadingButton"
-                            class="absolute inset-0 bg-black/40 text-white flex place-content-center items-center text-4xl">
-                            <LoadingIcon />
-                        </div>
+                    <!-- Field Address: Contact Name -->
+                    <div v-if="shipping_fields" class="col-span-2 mb-2">
+                        <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                            {{ trans('Contact Name') }}
+                        </label>
+                        <PureInput v-model="copyDeliveryAddress.contact_name" placeholder="Enter phone number" />
                     </div>
-                    
-                    <!-- Button: Save -->
-                    <div class="flex justify-end mt-3">
-                        <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'try again'"
-                            :disabled="!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
-                                " full
-                            @click="() => onSubmitAddressThenShipment()" />
+
+                    <!-- Field Address: Phone -->
+                    <div v-if="shipping_fields" class="col-span-2 mb-2">
+                        <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                            {{ trans('Phone') }}
+                        </label>
+                        <PureInput v-model="copyDeliveryAddress.phone" placeholder="Enter phone number" />
                     </div>
+
+                    <!-- Field Address: Email -->
+                    <div v-if="shipping_fields" class="col-span-2 mb-2">
+                        <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                            {{ trans('Email') }}
+                        </label>
+                        <PureInput v-model="copyDeliveryAddress.email" placeholder="Enter email address" />
+                    </div>
+
+                    <PureAddress v-model="copyDeliveryAddress.address" :options="addressOptions" />
+                    <div v-if="isLoadingButton"
+                        class="absolute inset-0 bg-black/40 text-white flex place-content-center items-center text-4xl">
+                        <LoadingIcon />
+                    </div>
+                </div>
+                
+                <!-- Button: Save -->
+                <div class="flex justify-end mt-3">
+                    <Button :style="'save'" :loading="isLoadingButton == 'addTrackingNumber'" :label="'try again'"
+                        :disabled="!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)
+                            " full
+                        @click="() => onSubmitAddressThenShipment()" />
                 </div>
             </div>
 

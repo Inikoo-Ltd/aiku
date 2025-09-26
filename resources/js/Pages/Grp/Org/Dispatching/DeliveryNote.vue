@@ -239,7 +239,7 @@ const onSaveAddress = (submitShipment: Function) => {
     delete filterDataAddress.can_delete
 
     const updateRoute = {
-        name: 'grp.models.delivery_note.update_address',
+        name: 'grp.models.delivery_note.update_shipping_fields_retry_store_shipping',
         parameters: {deliveryNote: props.delivery_note.id}
     }
     router.patch(

@@ -60,7 +60,7 @@ const blueprint = [
 ]
 
 onMounted(() => {
-    JsBarcode('#locationBarcode', route().v().params.location, {
+    JsBarcode('#locationBarcode', route().routeParams.location, {
         lineColor: "rgb(41 37 36)",
         width: 2,
         height: 70,
@@ -90,7 +90,7 @@ onMounted(() => {
 
         <!-- Section: Barcode -->
         <div class="flex justify-end gap-4 sm:gap-6 lg:gap-8">
-            <svg id="locationBarcode" class="bg-gray-100" />
+            <svg id="locationBarcode" class="bg-gray-100"></svg>
         </div>
     </div>
 </template>
