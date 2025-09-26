@@ -33,7 +33,7 @@ class GetMasterProductShowcase
         })->unique()->values()->all();
 
         $properties = [
-            'country_of_origin' => NaturalLanguage::make()->country($masterAsset->tradeUnits()->first()->country_of_origin),
+            'country_of_origin' => NaturalLanguage::make()->country($masterAsset->tradeUnits()->first()?->country_of_origin),
             'ingredients'       => $ingredients,
         ];
 
