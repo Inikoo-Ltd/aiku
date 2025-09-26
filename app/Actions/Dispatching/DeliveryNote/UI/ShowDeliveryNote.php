@@ -163,13 +163,13 @@ class ShowDeliveryNote extends OrgAction
         $cancelActions = [];
         if ($showCancel) {
             $cancelActions = [
-                'type' => 'button',
+                'type'  => 'button',
                 'style' => 'cancel',
-                'key' => 'cancel',
+                'key'   => 'cancel',
                 'label' => __('Cancel'),
                 'route' => [
-                    'method' => 'patch',
-                    'name' => 'grp.models.delivery_note.state.cancel',
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.cancel',
                     'parameters' => [
                         'deliveryNote' => $deliveryNote->id
                     ]
@@ -274,11 +274,11 @@ class ShowDeliveryNote extends OrgAction
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Finalised'),
-                    'label' => match (true) {
+                    'label'   => match (true) {
                         $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => __('Dispatch'),
                         $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT && $deliveryNote->collection_address_id => __('set as collected'),
                         $deliveryNote->type !== DeliveryNoteTypeEnum::REPLACEMENT && !$deliveryNote->collection_address_id => __('Finalise and Dispatch'),
-                        (bool) $deliveryNote->collection_address_id => __('Finalise and set as Collected'),
+                        (bool)$deliveryNote->collection_address_id => __('Finalise and set as Collected'),
                         default => __('Finalise and Dispatch')
                     },
                     'key'     => 'action',
@@ -338,20 +338,20 @@ class ShowDeliveryNote extends OrgAction
                             ]
                         ]
                     ] : [],
-                  [
-                      'type'    => 'button',
-                      'style'   => 'cancel',
-                      'tooltip' => __('Undispatch'),
-                      'label'   => __('Undispatch'),
-                      'key'     => 'undispatch',
-                      'route'   => [
-                          'method'     => 'patch',
-                          'name'       => 'grp.models.delivery_note.state.rollback',
-                          'parameters' => [
-                              'deliveryNote' => $deliveryNote->id
-                          ]
-                      ]
-                  ],
+                [
+                    'type'    => 'button',
+                    'style'   => 'cancel',
+                    'tooltip' => __('Undispatch'),
+                    'label'   => __('Undispatch'),
+                    'key'     => 'undispatch',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.rollback',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ]
+                ],
             ],
             default => []
         };
@@ -395,8 +395,8 @@ class ShowDeliveryNote extends OrgAction
             'state'            => $deliveryNote->state,
             'state_icon'       => DeliveryNoteStateEnum::stateIcon()[$deliveryNote->state->value],
             'state_label'      => $deliveryNote->state->labels()[$deliveryNote->state->value],
-            'is_collection'    =>  (bool)$deliveryNote->collection_address_id,
-            'is_replacement' => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT,
+            'is_collection'    => (bool)$deliveryNote->collection_address_id,
+            'is_replacement'   => $deliveryNote->type === DeliveryNoteTypeEnum::REPLACEMENT,
             'customer'         => array_merge(
                 CustomerResource::make($deliveryNote->customer)->getArray(),
                 [
@@ -593,12 +593,30 @@ class ShowDeliveryNote extends OrgAction
             ],
             'delivery_note' => DeliveryNoteResource::make($deliveryNote)->toArray(request()),
 
-            'address' => [
+            'address'                      => [
                 'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
                 'options'  => [
                     'countriesAddressData' => GetAddressData::run()
                 ]
             ],
+            'shipping_fields'              => [
+                'company_name' => $deliveryNote->company_name,
+                'contact_name' => $deliveryNote->contact_name,
+                'phone'        => $deliveryNote->phone,
+                'email'        => $deliveryNote->email,
+                'address'      => [
+                    'delivery' => AddressResource::make($deliveryNote->deliveryAddress ?? new Address()),
+                    'options'  => [
+                        'countriesAddressData' => GetAddressData::run()
+                    ]
+                ]
+            ],
+            'shipping_fields_update_route' => [
+                'name'=>'grp.models.delivery_note.update',
+                'parameters' => [$deliveryNote->id]
+
+            ],
+
 
             'timelines'           => $this->getTimeline($deliveryNote),
             'box_stats'           => $this->getBoxStats($deliveryNote),
@@ -697,23 +715,23 @@ class ShowDeliveryNote extends OrgAction
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED || $deliveryNote->state == DeliveryNoteStateEnum::QUEUED) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
+                    fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))
+                    : Inertia::lazy(fn() => DeliveryNoteItemsStateUnassignedResource::collection(IndexDeliveryNoteItemsStateUnassigned::run($deliveryNote))),
 
             ];
         } elseif ($deliveryNote->state == DeliveryNoteStateEnum::HANDLING) {
             return [
                 DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                    fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))
-                    : Inertia::lazy(fn () => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))),
+                    fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))
+                    : Inertia::lazy(fn() => DeliveryNoteItemsStateHandlingResource::collection(IndexDeliveryNoteItemsStateHandling::run($deliveryNote))),
 
             ];
         }
 
         return [
             DeliveryNoteTabsEnum::ITEMS->value => $this->tab == DeliveryNoteTabsEnum::ITEMS->value ?
-                fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
-                : Inertia::lazy(fn () => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
+                fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))
+                : Inertia::lazy(fn() => DeliveryNoteItemsResource::collection(IndexDeliveryNoteItems::run($deliveryNote))),
 
         ];
     }

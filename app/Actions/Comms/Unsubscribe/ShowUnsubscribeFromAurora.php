@@ -32,14 +32,15 @@ class ShowUnsubscribeFromAurora extends IrisAction
         return Inertia::render('UnsubscribeFromAurora', [
             'title'   => __("Unsubscribe"),
             'message' => [
-                'confirmationTitle' => __("Are you sure to unsubscribe?"),
-
-                'button'             => __('Click here to unsubscribe'),
-                'successTitle'       => __("Unsubscription successful"),
-                'successDescription' => __("You have been unsubscribed, sorry for any inconvenience caused."),
-                'error'              => __("Something went wrong, call us."),
-
-            ]
+                'confirmationTitle'   => __("Are you sure you want to unsubscribe?"),
+                'button'              => __("Click here to unsubscribe"),
+                'successTitle'        => __("Unsubscription successful"),
+                'successDescription'  => __("You have been unsubscribed successfully. We're sorry for any inconvenience caused."),
+                'error'               => __("Something went wrong, please contact our support."),
+                'invalidParamsTitle'  => __("Unable to Continue"),
+                'invalidParamsDesc'   => __("You don’t have a valid ID to proceed with this request."),
+                'backHome'            => __("Back to Home"),
+            ],
         ]);
     }
 }
