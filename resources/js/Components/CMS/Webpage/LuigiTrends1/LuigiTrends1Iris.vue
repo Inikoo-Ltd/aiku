@@ -65,7 +65,7 @@ const fetchRecommenders = async () => {
                     "item_ids": [],
                     "recommendation_type": "trends",
                     "recommender_client_identifier": "trends",
-                    "size": 7,
+                    "size": 12,
                     "user_id": layout.iris?.user_auth?.customer_id?.toString(),
                     "category": undefined,
                     "brand": undefined,
@@ -113,7 +113,7 @@ onMounted(() => {
             </div>
             
             <div class="py-4" id="LuigiTrends1">
-                <Swiper :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
+                <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"
                     :pagination="{ clickable: true }"
@@ -132,7 +132,7 @@ onMounted(() => {
                         <SwiperSlide
                             v-for="(product, index) in listProducts"
                             :key="index"
-                            class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded !grid h-full min-h-full"
+                            class="w-full cursor-grab relative !grid h-full min-h-full"
                         >
                             <RecommendationSlideIris
                                 :product

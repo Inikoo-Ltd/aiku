@@ -67,7 +67,7 @@ const fetchRecommenders = async () => {
                     "item_ids": [],
                     "recommendation_type": "last_seen",
                     "recommender_client_identifier": "last_seen",
-                    "size": 7,
+                    "size": 12,
                     "user_id": layout.iris?.user_auth?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
@@ -103,7 +103,7 @@ onMounted(() => {
         ...getStyles(fieldValue.container?.properties, screenType),
         width: 'auto'
     }">
-        <template v-if="!isFetched || listProducts?.length">
+        <template v-if="!isFetched || listProducts?.length > 3">
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
                 <div class="text-3xl font-semibold">
@@ -112,7 +112,7 @@ onMounted(() => {
             </div>
             
             <div class="py-4">
-                <Swiper :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
+                <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"
                     :pagination="{ clickable: true }"
@@ -131,7 +131,7 @@ onMounted(() => {
                         <SwiperSlide
                             v-for="(product, index) in listProducts"
                             :key="index"
-                            class="w-full cursor-grab relative hover:bg-gray-500/10 px-4 py-3 rounded !grid h-full min-h-full"
+                            class="w-full cursor-grab relative !grid h-full min-h-full"
                         >
                             <RecommendationSlideIris
                                 :product
