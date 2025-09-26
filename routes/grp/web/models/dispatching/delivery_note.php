@@ -28,7 +28,8 @@ use Illuminate\Support\Facades\Route;
 Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(function () {
     Route::patch('update', UpdateDeliveryNote::class)->name('update');
     Route::patch('update-address', UpdateDeliveryNoteDeliveryAddress::class)->name('update_address');
-    Route::patch('update-shipping-fields-retry-store-shipping', SaveDeliveryNoteShippingFieldsAndRetryStoreShipping::class)->name('update_shipping_fields_retry_store_shipping');
+    Route::patch('update-shipping-fields-retry-store-shipping/{shipper:id}', SaveDeliveryNoteShippingFieldsAndRetryStoreShipping::class)
+        ->name('update_shipping_fields_retry_store_shipping')->withoutScopedBindings();
 
     Route::post('shipment-from-warehouse', CreateShipmentInDeliveryNoteInWarehouse::class)->name('shipment.store');
     Route::patch('employee-pick', PickDeliveryNoteAsEmployee::class)->name('employee.pick');
