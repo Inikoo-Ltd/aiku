@@ -23,7 +23,7 @@ class GetTaxCategory
     public function handle(Country $country, ?TaxNumber $taxNumber, Address $billingAddress, ?Address $deliveryAddress): TaxCategory
     {
         return match ($country->code) {
-            'GB'    => $this->gbTaxCategory($billingAddress, $deliveryAddress),
+            'GB' => $this->gbTaxCategory($billingAddress, $deliveryAddress),
             default => IsEuropeanUnion::run($country->code)
                 ?
                 $this->euTaxCategory($country, $billingAddress, $deliveryAddress, $taxNumber)
@@ -38,7 +38,7 @@ class GetTaxCategory
         $gbCountryId      = Country::where('code', 'GB')->first()->id;
         $taxableCountries = ['GB', 'IM'];
 
-        if (in_array($billingAddress->country_code, $taxableCountries) || in_array($deliveryAddress->country_code, $taxableCountries)) {
+        if (in_array($billingAddress->country_code, $taxableCountries) && in_array($deliveryAddress->country_code, $taxableCountries)) {
             return TaxCategory::where('type', TaxCategoryTypeEnum::STANDARD)->where('country_id', $gbCountryId)->where('status', true)->first();
         }
 
@@ -48,7 +48,6 @@ class GetTaxCategory
 
     protected function euTaxCategory(Country $country, Address $billingAddress, ?Address $deliveryAddress, ?TaxNumber $taxNumber, bool $isRe = false): TaxCategory
     {
-
         if ($billingAddress->country_code == $country->code || $deliveryAddress->country->code == $country->code) {
             if ($country->code == 'ES') {
                 $esCountryId = Country::where('code', 'ES')->first()->id;
@@ -70,10 +69,10 @@ class GetTaxCategory
         }
 
 
-        if (IsEuropeanUnion::run($billingAddress->country->code)  &&
-            IsEuropeanUnion::run($deliveryAddress->country->code) &&
-            $taxNumber                                           &&
-            $taxNumber->valid
+        if (IsEuropeanUnion::run($billingAddress->country->code)
+            && IsEuropeanUnion::run($deliveryAddress->country->code)
+            && $taxNumber
+            && $taxNumber->valid
         ) {
             return $this->getEuValidTaxNumber();
         }
@@ -108,18 +107,12 @@ class GetTaxCategory
 
     protected function getOutsideTaxCategory(): TaxCategory
     {
-        /** @var TaxCategory $taxCategory */
-        $taxCategory = TaxCategory::find(1);
-
-        return $taxCategory;
+        return TaxCategory::find(1);
     }
 
     protected function getEuValidTaxNumber(): TaxCategory
     {
-        /** @var TaxCategory $taxCategory */
-        $taxCategory = TaxCategory::find(2);
-
-        return $taxCategory;
+        return TaxCategory::find(2);
     }
 
 }
