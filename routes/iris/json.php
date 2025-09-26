@@ -9,6 +9,7 @@
 
 use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisInStockProductsInProductCategory;
+use App\Actions\Catalogue\Product\Json\GetIrisLastOrderedProducts;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInCollection;
 use App\Actions\Catalogue\Product\Json\GetIrisOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetIrisPortfoliosInCollection;
@@ -31,6 +32,7 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('tags', GetIrisTags::class)->name('tags.index');
     Route::get('brands', GetIrisBrands::class)->name('brands.index');
+    Route::get('product-category/{productCategory:id}/last-ordered-products', GetIrisLastOrderedProducts::class)->name('product_category.last-ordered-products.index');
     Route::get('product-category/{productCategory:id}/products', GetIrisProductsInProductCategory::class)->name('product_category.products.index');
     Route::get('product-category/{productCategory:id}/in-stock-products', GetIrisInStockProductsInProductCategory::class)->name('product_category.in_stock_products.index');
     Route::get('product-category/{productCategory:id}/out-of-stock-products', GetIrisOutOfStockProductsInProductCategory::class)->name('product_category.out_of_stock_products.index');
