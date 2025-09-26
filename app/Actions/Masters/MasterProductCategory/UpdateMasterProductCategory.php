@@ -32,8 +32,6 @@ class UpdateMasterProductCategory extends OrgAction
 
     public function handle(MasterProductCategory $masterProductCategory, array $modelData): MasterProductCategory
     {
-
-
         $originalImageId = $masterProductCategory->image_id;
         if (Arr::has($modelData, 'master_department_id')) {
             $departmentId = Arr::pull($modelData, 'master_department_id');
@@ -102,15 +100,15 @@ class UpdateMasterProductCategory extends OrgAction
 
         $changed = Arr::except($masterProductCategory->getChanges(), ['updated_at']);
 
-        if (Arr::hasAny($changed, ['code', 'name', 'description', 'description_title','description_extra', 'rrp'])) {
+        if (Arr::hasAny($changed, ['code', 'name', 'description', 'description_title', 'description_extra', 'rrp'])) {
             foreach ($masterProductCategory->productCategories as $productCategory) {
                 UpdateProductCategory::make()->action($productCategory, [
-                    'code' => $masterProductCategory->code,
-                    'name' => $masterProductCategory->name,
-                    'description' => $masterProductCategory->description,
+                    'code'              => $masterProductCategory->code,
+                    'name'              => $masterProductCategory->name,
+                    'description'       => $masterProductCategory->description,
                     'description_title' => $masterProductCategory->description_title,
                     'description_extra' => $masterProductCategory->description_extra,
-                    'rrp' => $masterProductCategory->rrp
+                    'rrp'               => $masterProductCategory->rrp
                 ]);
             }
         }
@@ -159,22 +157,22 @@ class UpdateMasterProductCategory extends OrgAction
             'name'                     => ['sometimes', 'max:250', 'string'],
             'image_id'                 => ['sometimes', 'required', Rule::exists('media', 'id')->where('group_id', $this->group->id)],
             'status'                   => ['sometimes', 'required', 'boolean'],
-            'description'      => ['sometimes', 'max:1500'],
-            'description_title' => ['sometimes', 'nullable', 'max:255'],
-            'description_extra' => ['sometimes', 'nullable', 'max:65500'],
+            'description'              => ['sometimes', 'max:65500'],
+            'description_title'        => ['sometimes', 'nullable', 'max:255'],
+            'description_extra'        => ['sometimes', 'nullable', 'max:65500'],
             'master_department_id'     => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
             'master_sub_department_id' => ['sometimes', 'nullable', 'exists:master_product_categories,id'],
             'show_in_website'          => ['sometimes', 'boolean'],
-            'image'                      => [
+            'image'                    => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'name_i8n' => ['sometimes', 'array'],
-            'description_title_i8n' => ['sometimes', 'array'],
-            'description_i8n' => ['sometimes', 'array'],
-            'description_extra_i8n' => ['sometimes', 'array'],
+            'name_i8n'                 => ['sometimes', 'array'],
+            'description_title_i8n'    => ['sometimes', 'array'],
+            'description_i8n'          => ['sometimes', 'array'],
+            'description_extra_i8n'    => ['sometimes', 'array'],
             'cost_price_ratio'         => ['sometimes', 'numeric', 'min:0']
         ];
 

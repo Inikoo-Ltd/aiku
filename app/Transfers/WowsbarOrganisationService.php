@@ -496,16 +496,6 @@ class WowsbarOrganisationService implements SourceOrganisationService
         return null;
     }
 
-    public function fetchMasterDepartment($id): ?array
-    {
-        return null;
-    }
-
-    public function fetchMasterFamily($id): ?array
-    {
-        return null;
-    }
-
     public function fetchInvoiceCategory($id): ?array
     {
         return null;

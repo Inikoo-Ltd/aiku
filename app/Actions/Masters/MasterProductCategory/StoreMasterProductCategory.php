@@ -20,8 +20,10 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Helpers\SendSlackNotification;
+use App\Models\Catalogue\Shop;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
@@ -43,13 +45,11 @@ class StoreMasterProductCategory extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
+    public function handle(MasterProductCategory|MasterShop $parent, array $modelData, bool $createChildren = true): MasterProductCategory
     {
-
         $imageData = ['image' => Arr::pull($modelData, 'image')];
         data_set($modelData, 'group_id', $parent->group_id);
         if ($parent instanceof MasterProductCategory) {
-
             data_set($modelData, 'master_shop_id', $parent->master_shop_id);
             data_set($modelData, 'master_parent_id', $parent->id);
 
@@ -63,8 +63,7 @@ class StoreMasterProductCategory extends GrpAction
             data_set($modelData, 'master_shop_id', $parent->id);
         }
 
-        $masterProductCategory = DB::transaction(function () use ($parent, $modelData) {
-
+        $masterProductCategory = DB::transaction(function () use ($parent, $modelData, $createChildren) {
             $masterProductCategory = MasterProductCategory::create($modelData);
 
             $masterProductCategory->stats()->create();
@@ -77,7 +76,7 @@ class StoreMasterProductCategory extends GrpAction
             $masterProductCategory->refresh();
 
             $collection = null;
-            if ($masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY) { //FOR NOW ONLY FAMILY SUPPORT Selection Feature, just ignore this; everything will still work
+            if ($createChildren && $masterProductCategory->type != MasterProductCategoryTypeEnum::FAMILY) { //FOR NOW ONLY FAMILY SUPPORT Selection Feature, just ignore this; everything will still work
                 if ($parent instanceof MasterShop) {
                     $collection = $parent->shops;
                 } elseif ($parent instanceof MasterProductCategory) {
@@ -85,7 +84,7 @@ class StoreMasterProductCategory extends GrpAction
                 }
 
                 if ($collection && $collection->isNotEmpty()) {
-                    $type = match (Arr::get($modelData, 'type')) {
+                    $type       = match (Arr::get($modelData, 'type')) {
                         MasterProductCategoryTypeEnum::DEPARTMENT => ProductCategoryTypeEnum::DEPARTMENT,
                         MasterProductCategoryTypeEnum::FAMILY => ProductCategoryTypeEnum::FAMILY,
                         MasterProductCategoryTypeEnum::SUB_DEPARTMENT => ProductCategoryTypeEnum::SUB_DEPARTMENT,
@@ -93,13 +92,20 @@ class StoreMasterProductCategory extends GrpAction
                     $actionData = array_merge(
                         Arr::except($modelData, ['status', 'type']),
                         [
-                            'type' => $type,
+                            'type'                       => $type,
                             'master_product_category_id' => $masterProductCategory->id
                         ]
                     );
 
                     foreach ($collection as $item) {
-                        StoreProductCategory::make()->action($item, $actionData);
+                        if ($item instanceof Shop) {
+                            $shop = $item;
+                        } else {
+                            $shop = $item->shop;
+                        }
+                        if ($shop->state != ShopStateEnum::CLOSED) {
+                            StoreProductCategory::make()->action($item, $actionData);
+                        }
                     }
                 }
             }
@@ -173,7 +179,7 @@ class StoreMasterProductCategory extends GrpAction
     /**
      * @throws \Throwable
      */
-    public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true): MasterProductCategory
+    public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $createChildren = true): MasterProductCategory
     {
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
@@ -188,7 +194,7 @@ class StoreMasterProductCategory extends GrpAction
 
         $this->initialisation($group, $modelData);
 
-        return $this->handle($parent, $this->validatedData);
+        return $this->handle($parent, $this->validatedData, $createChildren);
     }
 
 

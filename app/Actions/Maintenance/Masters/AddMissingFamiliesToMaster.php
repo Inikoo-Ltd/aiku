@@ -8,7 +8,6 @@
 
 namespace App\Actions\Maintenance\Masters;
 
-use App\Actions\Catalogue\CloneCatalogueStructure;
 use App\Actions\Masters\MasterProductCategory\StoreMasterProductCategory;
 use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -30,9 +29,9 @@ class AddMissingFamiliesToMaster
      */
     public function handle(Shop $fromShop, MasterShop $shop): void
     {
-
-
-        $categoriesToAdd = $fromShop->productCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
+        $categoriesToAdd = $fromShop->productCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)
+            ->where('state', ProductCategoryStateEnum::ACTIVE)
+            ->get();
 
         foreach ($categoriesToAdd as $categoryToAdd) {
             $this->upsertMasterFamily($shop, $categoryToAdd);
@@ -45,7 +44,6 @@ class AddMissingFamiliesToMaster
     public function upsertMasterFamily(MasterShop $masterShop, ProductCategory $family): ?MasterProductCategory
     {
         $code = $family->code;
-
 
         $foundMasterFamilyData = DB::table('master_product_categories')
             ->where('master_shop_id', $masterShop->id)
@@ -63,13 +61,14 @@ class AddMissingFamiliesToMaster
 
 
             $foundMasterFamily = StoreMasterProductCategory::make()->action(
-                $masterParent,
-                [
+                parent: $masterParent,
+                modelData: [
                     'code'        => $family->code,
                     'name'        => $family->name,
                     'description' => $family->description,
                     'type'        => MasterProductCategoryTypeEnum::FAMILY,
-                ]
+                ],
+                createChildren: false
             );
         } else {
             $foundMasterFamily = MasterProductCategory::find($foundMasterFamilyData->id);
@@ -127,22 +126,39 @@ class AddMissingFamiliesToMaster
      */
     public function getMasterParent(MasterShop $masterShop, ProductCategory $family): ?MasterProductCategory
     {
-        $parent = null;
-        if ($family->department) {
-            $masterDepartment = CloneCatalogueStructure::make()
-                ->upsertMasterDepartment($masterShop, $family->department);
-
-
-            if ($family->subDepartment) {
-                $parent = CloneCatalogueStructure::make()
-                    ->upsertMasterSubDepartment($masterDepartment, $family->subDepartment);
-            } else {
-                $parent = $masterDepartment;
+        if ($family->subDepartment) {
+            $code                         = $family->subDepartment->code;
+            $foundMasterSubDepartmentData = DB::table('master_product_categories')
+                ->where('master_shop_id', $masterShop->id)
+                ->where('type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT->value)
+                ->where('deleted_at', null)
+                ->whereRaw("lower(code) = lower(?)", [$code])->first();
+            if ($foundMasterSubDepartmentData) {
+                $masterSubDepartment = MasterProductCategory::find($foundMasterSubDepartmentData->id);
+                if ($masterSubDepartment) {
+                    return $masterSubDepartment;
+                }
             }
         }
 
 
-        return $parent;
+        if ($family->department) {
+            $code                      = $family->department->code;
+            $foundMasterDepartmentData = DB::table('master_product_categories')
+                ->where('master_shop_id', $masterShop->id)
+                ->where('type', MasterProductCategoryTypeEnum::DEPARTMENT->value)
+                ->where('deleted_at', null)
+                ->whereRaw("lower(code) = lower(?)", [$code])->first();
+            if ($foundMasterDepartmentData) {
+                $masterDepartment = MasterProductCategory::find($foundMasterDepartmentData->id);
+                if ($masterDepartment) {
+                    return $masterDepartment;
+                }
+            }
+        }
+
+
+        return null;
     }
 
     public function getCommandSignature(): string

@@ -193,10 +193,6 @@ interface SourceOrganisationService
 
     public function fetchSubscriptionEvent($id);
 
-    public function fetchMasterDepartment($id);
-
-    public function fetchMasterFamily($id);
-
     public function fetchInvoiceCategory($id);
 
     public function fetchCollection($id);

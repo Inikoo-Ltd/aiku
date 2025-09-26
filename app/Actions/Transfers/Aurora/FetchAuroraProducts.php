@@ -62,14 +62,14 @@ class FetchAuroraProducts extends FetchAuroraAction
         } else {
             try {
 
-                        $sourceData = explode(':', $productData['product']['source_id']);
-                        $orgStocks  = $organisationSource->fetchProductHasOrgStock($sourceData[1])['org_stocks'];
+                $sourceData = explode(':', $productData['product']['source_id']);
+                $orgStocks  = $organisationSource->fetchProductHasOrgStock($sourceData[1])['org_stocks'];
 
-                        data_set(
-                            $productData,
-                            'product.org_stocks',
-                            $orgStocks
-                        );
+                data_set(
+                    $productData,
+                    'product.org_stocks',
+                    $orgStocks
+                );
 
 
                 $product = StoreProduct::make()->action(

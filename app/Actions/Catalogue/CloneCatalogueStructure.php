@@ -352,14 +352,18 @@ class CloneCatalogueStructure
 
         if (!$foundMasterDepartmentData) {
             $foundMasterDepartment = StoreMasterProductCategory::make()->action(
-                $masterShop,
-                [
+                parent: $masterShop,
+                modelData: [
                     'code'        => $department->code,
                     'name'        => $department->name,
                     'description' => $department->description,
                     'type'        => MasterProductCategoryTypeEnum::DEPARTMENT
-                ]
+                ],
+                createChildren: false
             );
+
+            print "Creating master product category " . $department->name . "\n";
+
         } else {
             $foundMasterDepartment = MasterProductCategory::find($foundMasterDepartmentData->id);
 
@@ -501,13 +505,15 @@ class CloneCatalogueStructure
 
 
             $toSubDepartment = StoreMasterSubDepartment::make()->action(
-                $masterDepartment,
-                [
+                masterDepartment: $masterDepartment,
+                modelData: [
                     'code'        => $toSubDepartment->code,
                     'name'        => $toSubDepartment->name,
                     'description' => $toSubDepartment->description,
-                ]
+                ],
+                createChildren: false
             );
+            print "Creating master sub department " . $toSubDepartment->name . "\n";
         } else {
             $foundMasterSubDepartment = MasterProductCategory::find($foundMasterSubDepartmentData->id);
             $dataToUpdate             = [
