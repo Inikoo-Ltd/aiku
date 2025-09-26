@@ -30,12 +30,12 @@ class EditAppointment extends InertiaAction
                     $request->route()->getName(),
                     $request->route()->parameters
                 ),
-                'title'    => __('edit appointment'),
+                'title'    => __('Edit appointment'),
                 'pageHead' => [
-                    'title' => __('edit appointment'),
+                    'title' => __('Edit appointment'),
                     'icon'  => [
                         'icon'  => ['fal', 'fa-handshake'],
-                        'title' => __('appointment')
+                        'title' => __('Appointment')
                     ],
                     'actions' => [
                         [

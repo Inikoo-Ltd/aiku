@@ -59,7 +59,7 @@ class ShowTradeUnit extends GrpAction
                 ],
                 'pageHead'         => [
                     'icon'    => [
-                        'title' => __('trade unit'),
+                        'title' => __('Trade unit'),
                         'icon'  => 'fal fa-atom'
                     ],
                     'title'   => $tradeUnit->code,

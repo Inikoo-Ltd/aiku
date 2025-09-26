@@ -172,7 +172,7 @@ class IndexShops extends OrgAction
                     'title'   => __('shops'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-store-alt'],
-                        'title' => __('shop')
+                        'title' => __('Shop')
                     ],
                     'actions' => [
                         $this->canEdit ? [

@@ -187,11 +187,11 @@ class IndexWarehouses extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('warehouses'),
+                'title'       => __('Warehouses'),
                 'pageHead'    => [
                     'title'   => __('warehouses'),
                     'icon'    => [
-                        'title' => __('warehouses'),
+                        'title' => __('Warehouses'),
                         'icon'  => 'fal fa-warehouse'
                     ],
                     'actions' => [

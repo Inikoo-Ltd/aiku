@@ -138,7 +138,7 @@ class CreateEmployee extends OrgAction
                                             'value'       => EmployeeTypeEnum::TEMPORAL_WORKER->value
                                         ],
                                         [
-                                            'title'       => __('work experience'),
+                                            'title'       => __('Work experience'),
                                             'value'       => EmployeeTypeEnum::WORK_EXPERIENCE->value
                                         ],
 

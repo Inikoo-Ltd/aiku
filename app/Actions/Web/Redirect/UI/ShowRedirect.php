@@ -78,7 +78,7 @@ class ShowRedirect extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-concierge-bell'],
-                            'title' => __('redirect')
+                            'title' => __('Redirect')
                         ],
                     'actions' => [
                         $this->canEdit ? [

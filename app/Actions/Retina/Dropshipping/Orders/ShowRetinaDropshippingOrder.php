@@ -81,7 +81,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     'model'   => __('Order'),
                     'icon'    => [
                         'icon'  => 'fal fa-shopping-cart',
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
                     'actions' => $action,
                 ],

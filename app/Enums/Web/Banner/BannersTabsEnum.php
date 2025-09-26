@@ -23,10 +23,10 @@ enum BannersTabsEnum: string
     {
         return match ($this) {
             BannersTabsEnum::BANNERS => [
-                'title' => __('banners'),
+                'title' => __('Banners'),
             ],
             BannersTabsEnum::CHANGELOG => [
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

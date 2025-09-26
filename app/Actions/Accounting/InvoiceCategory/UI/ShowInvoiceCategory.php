@@ -66,14 +66,14 @@ class ShowInvoiceCategory extends OrgAction
                     'model'     => __('Invoice Category'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-sitemap'],
-                        'title' => __('invoice category')
+                        'title' => __('Invoice category')
                     ],
                     'title'     => $invoiceCategory->name,
                     'actions' => [
                         [
                             'type'    => 'button',
                             'style'   => 'edit',
-                            'tooltip' => __('edit invoice category'),
+                            'tooltip' => __('Edit invoice category'),
                             'label'   => __('Edit Invoice Category'),
                             'route'   => [
                                 'name' => 'grp.org.accounting.invoice-categories.edit',

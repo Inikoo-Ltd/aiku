@@ -80,7 +80,7 @@ class ShowMailshot extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('workshop'),
+                            'label' => __('Workshop'),
                             'icon'  => ["fal", "fa-drafting-compass"],
                             'route' => [
                                 'name'       => "grp.org.shops.show.marketing.mailshots.workshop",
@@ -94,7 +94,7 @@ class ShowMailshot extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('edit'),
+                            'label' => __('Edit'),
                             'icon'  => ["fal", "fa-sliders-h"],
                             'route' => [
                                 'name'       => "grp.org.shops.show.marketing.mailshots.edit",

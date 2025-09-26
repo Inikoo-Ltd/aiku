@@ -63,7 +63,7 @@ class EditPoll extends OrgAction
                     'title'   => $poll->name,
                     'model'   => __('Edit Poll'),
                     'icon'    => [
-                        'title' => __('polls'),
+                        'title' => __('Polls'),
                         'icon'  => 'fal fa-poll'
                     ],
                     'actions' => [
@@ -81,7 +81,7 @@ class EditPoll extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit poll'),
+                            'title'  => __('Edit poll'),
                             'label'  => __('Basic Information'),
                             'fields' => [
                                 'name'                     => [

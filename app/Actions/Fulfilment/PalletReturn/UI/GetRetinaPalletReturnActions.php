@@ -39,8 +39,8 @@ class GetRetinaPalletReturnActions
                     [
                         'type'    => 'button',
                         'style'   => 'delete',
-                        'tooltip' => __('delete'),
-                        'label'   => __('delete'),
+                        'tooltip' => __('Delete'),
+                        'label'   => __('Delete'),
                         'key'     => 'delete_return',
                         'ask_why' => false,
                         'route'   => [

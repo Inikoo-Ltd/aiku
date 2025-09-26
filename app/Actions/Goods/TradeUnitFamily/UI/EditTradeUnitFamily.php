@@ -30,7 +30,7 @@ class EditTradeUnitFamily extends GrpAction
                 ),
                 'title'       => __('Edit Trade Unit Family'),
                 'pageHead'    => [
-                    'title'        => __('edit trade family'),
+                    'title'        => __('Edit trade family'),
                     'actions'      => [
                         [
                             'type'  => 'button',

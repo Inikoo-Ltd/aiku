@@ -24,17 +24,17 @@ enum PaymentTabsEnum: string
     {
         return match ($this) {
             PaymentTabsEnum::HISTORY_NOTES => [
-                'title' => __('history, notes'),
+                'title' => __('History, notes'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             PaymentTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fas fa-info-circle',
             ],
             PaymentTabsEnum::REFUNDS => [
-                'title' => __('refunds'),
+                'title' => __('Refunds'),
                 'icon'  => 'fas fa-undo'
             ]
         };

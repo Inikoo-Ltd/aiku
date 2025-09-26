@@ -189,7 +189,7 @@ class IndexCharges extends OrgAction
                     'title'   => __('charges'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('charges')
+                        'title' => __('Charges')
                     ],
                     'actions' => [
                         $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.billables.charges.index' ? [

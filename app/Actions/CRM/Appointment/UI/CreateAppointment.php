@@ -36,7 +36,7 @@ class CreateAppointment extends InertiaAction
                     'title'   => __('new appointment'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-handshake'],
-                        'title' => __('appointment')
+                        'title' => __('Appointment')
                     ],
                     'actions' => [
                         [

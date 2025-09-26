@@ -73,7 +73,7 @@ class ShowSpace extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-parking'],
-                            'title' => __('space')
+                            'title' => __('Space')
                         ],
                     'actions' => $actions
                 ],

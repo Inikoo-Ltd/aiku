@@ -83,7 +83,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                     'model'      => $this->platform->name,
                     'icon'       => [
                         'icon'  => 'fal fa-shopping-basket',
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
                     'afterTitle' => [
                         'label' => __('Basket')

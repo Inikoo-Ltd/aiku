@@ -238,7 +238,7 @@ class IndexRefunds extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-file-minus'],
-            'title' => __('refunds')
+            'title' => __('Refunds')
         ];
 
         $afterTitle = null;
@@ -265,7 +265,7 @@ class IndexRefunds extends OrgAction
             $title      = $this->parent->name;
             $icon       = [
                 'icon'  => ['fal', 'fa-user'],
-                'title' => __('customer')
+                'title' => __('Customer')
             ];
         } elseif ($this->parent instanceof Invoice) {
             $afterTitle = [

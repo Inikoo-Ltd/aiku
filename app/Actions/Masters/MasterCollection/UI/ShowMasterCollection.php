@@ -110,7 +110,7 @@ class ShowMasterCollection extends GrpAction
                     'model'   => '',
                     'icon'    => [
                         'icon'  => ['fal', 'fa-layer-group'],
-                        'title' => __('master collection')
+                        'title' => __('Master collection')
                     ],
                     'actions' => [],
                 ],

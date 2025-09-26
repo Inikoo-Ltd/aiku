@@ -36,7 +36,7 @@ class ShowGroupOverviewHub extends GrpAction
                 'pageHead'    => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-mountains'],
-                        'title' => __('overview')
+                        'title' => __('Overview')
                     ],
                     'title'     => __('overview'),
                 ],

@@ -24,7 +24,7 @@ enum BlogWebpageTabsEnum: string
     {
         return match ($this) {
             BlogWebpageTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

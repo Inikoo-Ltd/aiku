@@ -80,7 +80,7 @@ class EditCharge extends OrgAction
                     'blueprint' => [
                         [
                             'label'  => __('Properties'),
-                            'title'  => __('edit charge'),
+                            'title'  => __('Edit charge'),
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
@@ -102,7 +102,7 @@ class EditCharge extends OrgAction
                         ],
                         [
                             'label'  => __('Pricing'),
-                            'title'  => __('edit charge'),
+                            'title'  => __('Edit charge'),
                             'fields' => $hasRules ? [
                                 'min_order' => [
                                     'type'  => 'input_number',

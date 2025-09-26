@@ -93,7 +93,7 @@ class ShowClocking extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-clock'],
-                            'title' => __('clocking')
+                            'title' => __('Clocking')
                         ],
                     'title'   => $clocking->clocked_at,
                     'actions' => [

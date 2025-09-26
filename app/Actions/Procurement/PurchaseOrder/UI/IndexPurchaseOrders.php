@@ -202,7 +202,7 @@ class IndexPurchaseOrders extends OrgAction
 
         $icon       = [
             'icon'  => ['fal', 'fa-clipboard-list'],
-            'title' => __('purchase orders')
+            'title' => __('Purchase orders')
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -227,7 +227,7 @@ class IndexPurchaseOrders extends OrgAction
 
             $icon       = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('purchase orders')
+                'title' => __('Purchase orders')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-clipboard-list',
@@ -257,7 +257,7 @@ class IndexPurchaseOrders extends OrgAction
 
             $icon       = [
                 'icon'  => ['fal', 'fa-users-class'],
-                'title' => __('purchase orders')
+                'title' => __('Purchase orders')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-clipboard-list',
@@ -287,7 +287,7 @@ class IndexPurchaseOrders extends OrgAction
 
             $icon       = [
                 'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('purchase orders')
+                'title' => __('Purchase orders')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-clipboard-list',

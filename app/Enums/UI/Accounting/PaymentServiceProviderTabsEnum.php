@@ -28,19 +28,19 @@ enum PaymentServiceProviderTabsEnum: string
     {
         return match ($this) {
             PaymentServiceProviderTabsEnum::STATS             => [
-                'title' => __('stats'),
+                'title' => __('Stats'),
                 'icon'  => 'fal fa-chart-line',
             ],
             PaymentServiceProviderTabsEnum::PAYMENT_ACCOUNTS => [
-                'title' => __('payment accounts'),
+                'title' => __('Payment accounts'),
                 'icon'  => 'fal fa-money-check-alt',
             ],
             PaymentServiceProviderTabsEnum::PAYMENTS     => [
-                'title' => __('payments'),
+                'title' => __('Payments'),
                 'icon'  => 'fal fa-coins',
             ],
             PaymentServiceProviderTabsEnum::DATA     => [
-                'title' => __('data'),
+                'title' => __('Data'),
                 'icon'  => 'fal fa-database',
                 'type'  => 'icon',
                 'align' => 'right',
@@ -52,7 +52,7 @@ enum PaymentServiceProviderTabsEnum: string
                 'align'  => 'right',
             ],
             PaymentServiceProviderTabsEnum::SHOWCASE => [
-                'title' => __('payment service provider'),
+                'title' => __('Payment service provider'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

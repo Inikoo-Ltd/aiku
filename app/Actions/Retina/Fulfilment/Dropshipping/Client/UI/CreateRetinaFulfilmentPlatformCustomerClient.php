@@ -30,7 +30,7 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                     'title'   => __('new client'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('client')
+                        'title' => __('Client')
                     ],
                     'actions' => [
                         [

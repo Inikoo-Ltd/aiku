@@ -189,7 +189,7 @@ class ShowOrdersBacklog extends OrgAction
                 ),
                 'title'       => __('orders backlog'),
                 'pageHead'    => [
-                    'title' => __('orders backlog'),
+                    'title' => __('Orders backlog'),
 
                 ],
 

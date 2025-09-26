@@ -102,7 +102,7 @@ class IndexPlatforms extends OrgAction
         $model      = __('Platforms');
         $icon       = [
             'icon'  => ['fal', 'fa-route'],
-            'title' => __('platforms')
+            'title' => __('Platforms')
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -112,7 +112,7 @@ class IndexPlatforms extends OrgAction
             $model      = __('platforms');
             $icon       = [
                 'icon'  => ['fal', 'fa-route'],
-                'title' => __('platforms')
+                'title' => __('Platforms')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-route',

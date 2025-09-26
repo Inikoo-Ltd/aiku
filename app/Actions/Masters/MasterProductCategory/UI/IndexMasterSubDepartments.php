@@ -135,7 +135,7 @@ class IndexMasterSubDepartments extends GrpAction
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-store-alt'],
-            'title' => __('master shop')
+            'title' => __('Master shop')
         ];
         $afterTitle = [
             'label' => __('Master Sub Departments')

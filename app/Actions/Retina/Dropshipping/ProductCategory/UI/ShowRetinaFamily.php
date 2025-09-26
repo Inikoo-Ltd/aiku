@@ -53,7 +53,7 @@ class ShowRetinaFamily extends RetinaAction
                     'model'        => __('Family'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder'],
-                        'title' => __('family')
+                        'title' => __('Family')
                     ],
                     'iconRight' => $family->state->stateIcon()[$family->state->value],
                     'actions' => [

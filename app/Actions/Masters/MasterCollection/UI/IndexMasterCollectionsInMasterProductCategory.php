@@ -127,7 +127,7 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
 
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('collections')
+            'title' => __('Collections')
         ];
 
 
@@ -144,13 +144,13 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
         if ($masterProductCategory->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
             $icon          = [
                 'icon'  => ['fal', 'fa-folder-tree'],
-                'title' => __('master department')
+                'title' => __('Master department')
             ];
             $subNavigation = $this->getMasterDepartmentSubNavigation($masterProductCategory);
         } elseif ($masterProductCategory->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $icon          = [
                 'icon'  => ['fal', 'fa-dot-circle'],
-                'title' => __('master sub department')
+                'title' => __('Master sub department')
             ];
             $subNavigation = $this->getMasterSubDepartmentSubNavigation($masterProductCategory);
         }
@@ -174,8 +174,8 @@ class IndexMasterCollectionsInMasterProductCategory extends GrpAction
                     [
                         'type'    => 'button',
                         'style'   => 'create',
-                        'tooltip' => __('new collection'),
-                        'label'   => __('collection'),
+                        'tooltip' => __('New collection'),
+                        'label'   => __('Collection'),
                         'route'   => [
                             'name'       => $routes[$currentRoute],
                             'parameters' => $request->route()->originalParameters()

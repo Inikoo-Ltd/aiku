@@ -125,7 +125,7 @@ class IndexRetinaRentals extends RetinaAction
                 'pageHead'    => [
                     'icon'    => [
                         'icon'  => ['fal', 'fa-garage'],
-                        'title' => __('rentals')
+                        'title' => __('Rentals')
                     ],
                     'model'    => __('Pricing'),
                     'title'         => __('rentals'),

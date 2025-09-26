@@ -56,7 +56,7 @@ class ShowCharge extends OrgAction
                     ],
                     'pageHead'    => [
                         'icon'    => [
-                            'title' => __('charge'),
+                            'title' => __('Charge'),
                             'icon'  => 'fal fa-charging-station'
                         ],
                         'title'   => $charge->name,

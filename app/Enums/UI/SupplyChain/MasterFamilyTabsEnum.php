@@ -31,28 +31,28 @@ enum MasterFamilyTabsEnum: string
         return match ($this) {
 
             MasterFamilyTabsEnum::SALES => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
             MasterFamilyTabsEnum::FAMILIES => [
-                'title' => __('families in shop'),
+                'title' => __('Families in shop'),
                 'icon'  => 'fal fa-store',
             ],
 
             MasterFamilyTabsEnum::IMAGES => [
-                'title' => __('media'),
+                'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             MasterFamilyTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             MasterFamilyTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

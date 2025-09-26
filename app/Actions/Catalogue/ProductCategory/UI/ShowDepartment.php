@@ -101,7 +101,7 @@ class ShowDepartment extends OrgAction
                     'model'        => __('Department'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('department')
+                        'title' => __('Department')
                     ],
                     'iconRight' => $department->state->stateIcon()[$department->state->value],
                     'actions'       => [

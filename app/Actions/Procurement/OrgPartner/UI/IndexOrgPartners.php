@@ -76,7 +76,7 @@ class IndexOrgPartners extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title' => __('no partners found'),
+                        'title' => __('No partners found'),
                     ]
                 )
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)

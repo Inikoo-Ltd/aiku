@@ -148,7 +148,7 @@ trait IsInvoiceUI
                     'type'       => 'button',
                     'label' => __('Delete'),
                     'style'      => 'red_outline',
-                    'tooltip'    => __('delete'),
+                    'tooltip'    => __('Delete'),
                     'icon'       => $trashIcon,
                     'key'        => 'delete_booked_in',
                     'ask_why'    => true,
@@ -190,8 +190,8 @@ trait IsInvoiceUI
                     'type'       => 'button',
                     'style'      => 'edit',
                     'class' =>  ['color' => 'red !important'],
-                    'tooltip'    => __('delete'),
-                    'label'      => __('delete'),
+                    'tooltip'    => __('Delete'),
+                    'label'      => __('Delete'),
                     'icon'       => $trashIcon,
                     'key'        => 'delete_booked_in',
                     'ask_why'    => true,
@@ -210,7 +210,7 @@ trait IsInvoiceUI
                 'type'  => 'button',
                 'style' => 'edit',
                 'icon'  => 'fal fa-pencil',
-                'label' => __('edit'),
+                'label' => __('Edit'),
                 'route' => [
                     'name'       => 'grp.org.accounting.invoices.edit',
                     'parameters' => $request->route()->originalParameters()
@@ -220,7 +220,7 @@ trait IsInvoiceUI
             $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
-                'label' => __('edit'),
+                'label' => __('Edit'),
                 'route' => [
                     'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.edit',
                     'parameters' => $request->route()->originalParameters()

@@ -205,7 +205,7 @@ class ShowFamily extends OrgAction
                     'model'     => __('Family'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-folder'],
-                        'title' => __('department')
+                        'title' => __('Department')
                     ],
                     'iconRight' => $family->state->stateIcon()[$family->state->value],
                     'actions'   => $this->getActions($family, $request),

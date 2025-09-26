@@ -141,7 +141,7 @@ class IndexFulfilmentPhysicalGoods extends OrgAction
                 'pageHead'    => [
                     'icon'    => [
                         'icon'  => ['fal', 'fa-cube'],
-                        'title' => __('physical goods')
+                        'title' => __('Physical goods')
                     ],
                     'title'         => __('Physical goods'),
                     'actions'       => $actions

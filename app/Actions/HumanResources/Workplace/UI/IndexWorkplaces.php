@@ -131,7 +131,7 @@ class IndexWorkplaces extends OrgAction
             'Org/HumanResources/Workplaces',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('working places'),
+                'title'       => __('Working places'),
                 'pageHead'    => [
                     'icon'    => ['fal', 'building'],
                     'title'   => __('Working places'),

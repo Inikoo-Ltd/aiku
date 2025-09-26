@@ -63,7 +63,7 @@ class EditProduction extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'                            => __('edit production'),
+                'title'                            => __('Edit production'),
                 'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'                       => [
                     'previous' => $this->getPrevious($production, $request),

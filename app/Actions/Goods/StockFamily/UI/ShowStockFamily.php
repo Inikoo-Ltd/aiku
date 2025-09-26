@@ -53,7 +53,7 @@ class ShowStockFamily extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-boxes-alt'],
-                            'title' => __('stock family')
+                            'title' => __('Stock family')
                         ],
                     'title'   => $stockFamily->name,
                     'actions' => [

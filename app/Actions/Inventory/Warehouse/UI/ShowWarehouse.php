@@ -55,7 +55,7 @@ class ShowWarehouse extends OrgAction
         return Inertia::render(
             'Org/Warehouse/Warehouse',
             [
-                'title'       => __('warehouse'),
+                'title'       => __('Warehouse'),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'  => [
                     'previous' => $this->getPrevious($warehouse, $request),
@@ -65,7 +65,7 @@ class ShowWarehouse extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'warehouse'],
-                            'title' => __('warehouse')
+                            'title' => __('Warehouse')
                         ],
                     'title'   => $warehouse->name,
                     'model'   => __('Warehouse'),
@@ -74,8 +74,8 @@ class ShowWarehouse extends OrgAction
                             [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new location'),
-                                'label'   => __('new location'),
+                                'tooltip' => __('New location'),
+                                'label'   => __('New location'),
                                 'route'   => [
                                     'name'       => 'grp.org.warehouses.show.infrastructure.locations.create',
                                     'parameters' => $request->route()->originalParameters()

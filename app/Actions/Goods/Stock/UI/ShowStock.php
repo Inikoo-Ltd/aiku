@@ -70,7 +70,7 @@ class ShowStock extends OrgAction
                 ],
                 'pageHead'                     => [
                     'icon'    => [
-                        'title' => __('skus'),
+                        'title' => __('Skus'),
                         'icon'  => 'fal fa-box'
                     ],
                     'title'   => $stock->slug,

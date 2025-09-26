@@ -64,7 +64,7 @@ class ShowFulfilmentLocation extends OrgAction
                 'pageHead'    => [
                     'model'     => __('location'),
                     'icon'      => [
-                        'title' => __('locations'),
+                        'title' => __('Locations'),
                         'icon'  => 'fal fa-inventory'
                     ],
                     'title' => $location->slug,

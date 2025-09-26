@@ -25,20 +25,20 @@ enum TopUpTabsEnum: string
     {
         return match ($this) {
             TopUpTabsEnum::DATA => [
-                'title' => __('data'),
+                'title' => __('Data'),
                 'icon'  => 'fal fa-database',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
 
             TopUpTabsEnum::HISTORY_NOTES => [
-                'title' => __('history, notes'),
+                'title' => __('History, notes'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             TopUpTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

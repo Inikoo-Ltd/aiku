@@ -25,11 +25,11 @@ enum TradeUnitFamilyTabsEnum: string
     {
         return match ($this) {
             TradeUnitFamilyTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             TradeUnitFamilyTabsEnum::TRADE_UNITS => [
-                'title' => __('trade units'),
+                'title' => __('Trade units'),
                 'icon'  => 'fal fa-atom',
             ],
 

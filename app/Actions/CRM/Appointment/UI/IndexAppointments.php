@@ -141,15 +141,15 @@ class IndexAppointments extends OrgAction
                     'container' => $container,
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-handshake'],
-                        'title' => __('appointment')
+                        'title' => __('Appointment')
                     ],
                     'actions'   =>
                         [
                             $this->canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new appointment'),
-                                'label'   => __('appointment'),
+                                'tooltip' => __('New appointment'),
+                                'label'   => __('Appointment'),
                                 'route'   => [
                                     'name'       => 'org.crm.shop.appointments.create',
                                     'parameters' => array_values($this->originalParameters)

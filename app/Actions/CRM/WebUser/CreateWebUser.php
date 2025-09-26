@@ -53,7 +53,7 @@ class CreateWebUser extends OrgAction
                     'title' => __('Create web user'),
                     'icon'  => [
                         'icon'  => 'fal fa-terminal',
-                        'title' => __('web user')
+                        'title' => __('Web user')
                     ],
                     'actions' => [
                         [

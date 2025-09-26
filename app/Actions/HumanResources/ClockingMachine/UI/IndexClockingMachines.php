@@ -190,7 +190,7 @@ class IndexClockingMachines extends OrgAction
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'fa-chess-clock'],
-                            'title' => __('clocking machines')
+                            'title' => __('Clocking machines')
                         ],
                     'title'         => __('Clocking machines'),
                     'actions'       => $actions,

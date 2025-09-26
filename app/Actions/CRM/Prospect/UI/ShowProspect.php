@@ -59,7 +59,7 @@ class ShowProspect extends OrgAction
                     'icon'      =>
                         [
                             'icon'  => ['fal', 'fa-user-plus'],
-                            'title' => __('prospect')
+                            'title' => __('Prospect')
                         ],
                     'subNavigation' => $subNavigation,
                 ],

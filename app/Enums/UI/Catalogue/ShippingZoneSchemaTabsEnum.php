@@ -26,15 +26,15 @@ enum ShippingZoneSchemaTabsEnum: string
         return match ($this) {
 
             // ShippingZoneSchemaTabsEnum::SHOWCASE => [
-            //     'title' => __('details'),
+            //     'title' => __('Details'),
             //     'icon'  => 'fal fa-shopping-cart',
             // ],
             ShippingZoneSchemaTabsEnum::ZONES => [
-                'title' => __('zones'),
+                'title' => __('Zones'),
                 'icon'  => 'fal fa-map',
             ],
             ShippingZoneSchemaTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

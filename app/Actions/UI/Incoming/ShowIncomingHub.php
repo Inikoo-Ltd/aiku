@@ -52,7 +52,7 @@ class ShowIncomingHub extends OrgAction
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-arrow-to-bottom'],
-                        'title' => __('incoming')
+                        'title' => __('Incoming')
                     ],
                     'title' => __('Incoming Hub'),
                 ],

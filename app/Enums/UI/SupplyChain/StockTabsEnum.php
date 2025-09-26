@@ -32,46 +32,46 @@ enum StockTabsEnum: string
     {
         return match ($this) {
             StockTabsEnum::SALES => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-dollar-sign',
             ],
 
             StockTabsEnum::FEEDBACKS => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('issues'),
+                'title' => __('Issues'),
                 'icon'  => 'fal fa-poop',
             ],
 
             StockTabsEnum::ATTACHMENTS => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
 
             ],
             StockTabsEnum::IMAGES => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('images'),
+                'title' => __('Images'),
                 'icon'  => 'fal fa-camera-retro',
             ],
             StockTabsEnum::HISTORY => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
 
             ],
             StockTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
 
             StockTabsEnum::TRADE_UNITS => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('trade units'),
+                'title' => __('Trade units'),
                 'icon'  => 'fal fa-cubes',
             ],
         };

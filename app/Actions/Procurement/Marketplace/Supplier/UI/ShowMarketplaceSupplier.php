@@ -69,7 +69,7 @@ class ShowMarketplaceSupplier extends InertiaAction
                     'icon'  =>
                         [
                             'icon'  => ['fal', 'person-dolly'],
-                            'title' => __('supplier')
+                            'title' => __('Supplier')
                         ],
                     'title'   => $supplier->name,
                     'actions' => [

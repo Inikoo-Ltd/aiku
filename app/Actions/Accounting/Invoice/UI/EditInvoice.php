@@ -54,7 +54,7 @@ class EditInvoice extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('edit invoice'),
+                'title'       => __('Edit invoice'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),

@@ -70,7 +70,7 @@ class ShowMasterFamilyWorkshop extends GrpAction
                     'model'   => '',
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder'],
-                        'title' => __('department')
+                        'title' => __('Department')
                     ],
                     'actions' => [
                         $this->canEdit ? [

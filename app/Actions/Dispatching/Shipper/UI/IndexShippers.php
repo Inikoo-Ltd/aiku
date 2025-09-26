@@ -121,7 +121,7 @@ class IndexShippers extends OrgAction
             $table->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title' => __('no shippers exist'),
+                        'title' => __('No shippers exist'),
                         'count' => 0,
                     ]
                 )

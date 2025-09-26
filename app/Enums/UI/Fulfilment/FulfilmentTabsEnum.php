@@ -25,12 +25,12 @@ enum FulfilmentTabsEnum: string
     {
         return match ($this) {
             FulfilmentTabsEnum::DASHBOARD => [
-                'title' => __('dashboard'),
+                'title' => __('Dashboard'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],
 
             FulfilmentTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

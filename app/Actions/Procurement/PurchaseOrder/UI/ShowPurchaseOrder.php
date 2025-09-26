@@ -151,7 +151,7 @@ class ShowPurchaseOrder extends OrgAction
                         'style'   => 'secondary',
                         'icon'    => 'fal fa-plus',
                         'key'     => 'add-products',
-                        'label'   => __('add products'),
+                        'label'   => __('Add products'),
                         'tooltip' => __('Add products'),
                         'route'   => [
                             'name'       => 'grp.models.purchase-order.transaction.store',
@@ -274,7 +274,7 @@ class ShowPurchaseOrder extends OrgAction
                     'icon'  =>
                     [
                         'icon'  => ['fal', 'clipboard-list'],
-                        'title' => __('purchase order')
+                        'title' => __('Purchase order')
                     ],
                     'title' => $purchaseOrder->reference,
                     'afterTitle'    => [

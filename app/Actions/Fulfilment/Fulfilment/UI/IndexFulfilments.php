@@ -121,7 +121,7 @@ class IndexFulfilments extends OrgAction
                     'title'   => __('fulfilment shops'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-store-alt'],
-                        'title' => __('fulfilment')
+                        'title' => __('Fulfilment')
                     ],
                     'actions' => [
                         $this->canEdit ? [

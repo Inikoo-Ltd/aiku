@@ -23,7 +23,7 @@ enum CustomerClientTabsEnum: string
     {
         return match ($this) {
             CustomerClientTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

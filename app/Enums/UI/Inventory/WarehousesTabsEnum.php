@@ -23,11 +23,11 @@ enum WarehousesTabsEnum: string
     {
         return match ($this) {
             WarehousesTabsEnum::WAREHOUSES => [
-                'title' => __('warehouses'),
+                'title' => __('Warehouses'),
                 'icon'  => 'fal fa-warehouse-alt',
             ],
             WarehousesTabsEnum::WAREHOUSES_HISTORIES => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

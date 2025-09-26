@@ -69,7 +69,7 @@ class ShowWebsiteWorkshopPreview extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('workshop'),
+                            'label' => __('Workshop'),
                             'icon'  => ["fal", "fa-drafting-compass"],
                             'route' => [
                                 'name'       => str_replace('preview', 'workshop', $request->route()->getName()),

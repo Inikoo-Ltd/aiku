@@ -38,51 +38,51 @@ enum OrderTabsEnum: string
         return match ($this) {
 
             OrderTabsEnum::TRANSACTIONS => [
-                'title' => __('transactions'),
+                'title' => __('Transactions'),
                 'icon'  => 'fal fa-bars',
             ],
             OrderTabsEnum::PAYMENTS => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('payments'),
+                'title' => __('Payments'),
                 'icon'  => 'fal fa-dollar-sign',
             ],
 
             // OrderTabsEnum::SENT_EMAILS => [
-            //     'title' => __('sent emails'),
+            //     'title' => __('Sent emails'),
             //     'icon'  => 'fal fa-envelope',
             //     'type'  => 'icon',
             //     'align' => 'right',
 
             // ],
             // OrderTabsEnum::DISCOUNTS => [
-            //     'title' => __('discounts'),
+            //     'title' => __('Discounts'),
             //     'icon'  => 'fal fa-tag',
             //     'type'  => 'icon',
             //     'align' => 'right',
 
             // ],
             OrderTabsEnum::INVOICES => [
-                'title' => __('invoices'),
+                'title' => __('Invoices'),
                 'icon'  => 'fal fa-file-invoice-dollar',
                 'type'  => 'icon',
                 'align' => 'right',
 
             ],
             OrderTabsEnum::DELIVERY_NOTES => [
-                'title' => __('delivery notes'),
+                'title' => __('Delivery notes'),
                 'icon'  => 'fal fa-truck',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             OrderTabsEnum::ATTACHMENTS => [
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             //OrderTabsEnum::HISTORY => [
-            //     'title' => __('history'),
+            //     'title' => __('History'),
             //     'icon'  => 'fal fa-clock',
             //     'type'  => 'icon',
             //     'align' => 'right',

@@ -132,7 +132,7 @@ class IndexOrganisations extends OrgAction
                 'pageHead'    => [
                     'icon'    => [
                         'icon'  => ['fal', 'fa-building'],
-                        'title' => __('organisations')
+                        'title' => __('Organisations')
                     ],
                     'title'   => __('organisations'),
                     'actions' => [

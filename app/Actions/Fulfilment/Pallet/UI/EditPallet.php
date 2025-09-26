@@ -63,7 +63,7 @@ class EditPallet extends OrgAction
             ],
             'customer_reference' => [
                 'type'    => 'input',
-                'placeholder'   => __('add customer reference'),
+                'placeholder'   => __('Add customer reference'),
                 'label'   => __('customer_reference'),
                 'value'   => $pallet->customer_reference,
                 'required' => true
@@ -111,7 +111,7 @@ class EditPallet extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('edit pallet'),
+                'title'       => __('Edit pallet'),
                 'pageHead'    => [
                     'icon'      => 'fal fa-pallet',
                     'model'     => __('Edit Pallet'),

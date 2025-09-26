@@ -110,7 +110,7 @@ class IndexBlueprintDepartment extends OrgAction
                 'pageHead'    => [
                     'title'    => 'blueprint',
                     'icon'     => [
-                        'title' => __('blueprint'),
+                        'title' => __('Blueprint'),
                         'icon'  => 'fal fa-file-code'
                     ],
                 ],

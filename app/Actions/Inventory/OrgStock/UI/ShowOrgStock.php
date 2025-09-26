@@ -77,7 +77,7 @@ class ShowOrgStock extends OrgAction
                 ],
                 'pageHead'                        => [
                     'icon'  => [
-                        'title' => __('sku'),
+                        'title' => __('Sku'),
                         'icon'  => 'fal fa-box'
                     ],
                     'model' => __('SKU'),

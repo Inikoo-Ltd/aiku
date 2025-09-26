@@ -26,21 +26,21 @@ enum PaymentAccountTabsEnum: string
     {
         return match ($this) {
             PaymentAccountTabsEnum::STATS             => [
-                'title' => __('stats'),
+                'title' => __('Stats'),
                 'icon'  => 'fal fa-chart-line',
             ],
             // PaymentAccountTabsEnum::PAYMENTS     => [
-            //     'title' => __('payments'),
+            //     'title' => __('Payments'),
             //     'icon'  => 'fal fa-coins',
             // ],
             PaymentAccountTabsEnum::HISTORY     => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             PaymentAccountTabsEnum::OVERVIEW => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],
         };

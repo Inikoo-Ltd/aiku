@@ -330,14 +330,14 @@ class ShowWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('webpage'),
+                'title'       => __('Webpage'),
                 'pageHead'    => [
                     'title'         => $webpage->code,
                     'afterTitle'    => [
                         'label' => '../'.$webpage->url,
                     ],
                     'icon'          => [
-                        'title' => __('webpage'),
+                        'title' => __('Webpage'),
                         'icon'  => 'fal fa-browser'
                     ],
                     'iconRight'     => $webpage->state->stateIcon()[$webpage->state->value],

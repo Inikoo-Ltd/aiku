@@ -42,7 +42,7 @@ class CreatePoll extends OrgAction
                 'pageHead'    => [
                     'title'   => __('new poll'),
                     'icon'    => [
-                        'title' => __('polls'),
+                        'title' => __('Polls'),
                         'icon'  => 'fal fa-cube'
                     ],
                     'actions' => [

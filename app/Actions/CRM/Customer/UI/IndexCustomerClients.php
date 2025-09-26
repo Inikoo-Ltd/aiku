@@ -138,8 +138,8 @@ class IndexCustomerClients extends OrgAction
                             'action'      => [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new client'),
-                                'label'   => __('client'),
+                                'tooltip' => __('New client'),
+                                'label'   => __('Client'),
                                 'route'   => match (class_basename($parent)) {
                                     'Customer' => [
                                         'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.create',
@@ -172,7 +172,7 @@ class IndexCustomerClients extends OrgAction
         $icon       = ['fal', 'fa-user'];
         $iconRight  = [
             'icon'  => ['fal', 'fa-user-friends'],
-            'title' => __('customer client')
+            'title' => __('Customer client')
         ];
         $afterTitle = [
 

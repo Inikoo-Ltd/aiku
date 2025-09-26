@@ -142,7 +142,7 @@ class IndexRefundsInGroup extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-file-minus'],
-            'title' => __('refunds')
+            'title' => __('Refunds')
         ];
 
         $afterTitle = [

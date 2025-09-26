@@ -43,7 +43,7 @@ class IndexShopsInGroup extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'title'       => __('shops'),
                 'pageHead'    => [
-                    'title' => __('shops'),
+                    'title' => __('Shops'),
                     'icon'  => [
                         'icon'       => ['fal', 'fa-store-alt'],
                         'title'      => __('shop'),

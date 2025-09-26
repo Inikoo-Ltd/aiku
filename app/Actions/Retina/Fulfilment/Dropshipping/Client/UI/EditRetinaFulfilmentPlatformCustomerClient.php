@@ -31,12 +31,12 @@ class EditRetinaFulfilmentPlatformCustomerClient extends RetinaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('edit client'),
+                'title'       => __('Edit client'),
                 'pageHead'    => [
-                    'title'        => __('edit client'),
+                    'title'        => __('Edit client'),
                     'icon'         => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('client')
+                        'title' => __('Client')
                     ],
                     'actions'      => [
                         [

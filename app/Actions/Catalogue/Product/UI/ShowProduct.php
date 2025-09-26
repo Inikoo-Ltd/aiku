@@ -284,7 +284,7 @@ class ShowProduct extends OrgAction
                     'icon'       =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
-                            'title' => __('product')
+                            'title' => __('Product')
                         ],
                     'afterTitle' => [
                         'label' => $product->name

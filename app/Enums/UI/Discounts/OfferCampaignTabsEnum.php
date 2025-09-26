@@ -25,15 +25,15 @@ enum OfferCampaignTabsEnum: string
     {
         return match ($this) {
             OfferCampaignTabsEnum::OVERVIEW => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-info-circle',
             ],
             OfferCampaignTabsEnum::OFFERS => [
-                'title' => __('offers'),
+                'title' => __('Offers'),
                 'icon'  => 'fal fa-badge-percent',
             ],
             OfferCampaignTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon-only',
                 'align' => 'right',

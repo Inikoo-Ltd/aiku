@@ -32,7 +32,7 @@ class CreateProspect extends OrgAction
                     'title'   => __('new prospect'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-transporter'],
-                        'title' => __('prospect')
+                        'title' => __('Prospect')
                     ],
                     'actions' => [
                         [

@@ -128,7 +128,7 @@ class IndexRetinaServices extends RetinaAction
                 'pageHead'    => [
                     'icon'    => [
                         'icon'  => ['fal', 'fa-concierge-bell'],
-                        'title' => __('services')
+                        'title' => __('Services')
                     ],
                     'model'    => __('Pricing'),
                     'title'         => __('services'),

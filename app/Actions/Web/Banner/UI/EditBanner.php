@@ -104,7 +104,7 @@ class EditBanner extends OrgAction
                     'action' => [
                         'type'  => 'button',
                         'style' => 'delete',
-                        'label' => __('delete banner'),
+                        'label' => __('Delete banner'),
                         'route' => [
                             'method' => 'delete',
                             'name'       => 'grp.models.shop.website.banner.delete',
@@ -176,7 +176,7 @@ class EditBanner extends OrgAction
         return ShowBanner::make()->getBreadcrumbs(
             $routeName,
             $routeParameters,
-            suffix: '('.__('editing').')'
+            suffix: '('.__('Editing').')'
         );
     }
 

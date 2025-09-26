@@ -32,14 +32,14 @@ enum PalletReturnTabsEnum: string
     {
         return match ($this) {
             PalletReturnTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             PalletReturnTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon'
             ],

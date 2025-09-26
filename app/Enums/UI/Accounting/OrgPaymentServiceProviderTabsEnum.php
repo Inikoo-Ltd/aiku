@@ -27,15 +27,15 @@ enum OrgPaymentServiceProviderTabsEnum: string
     {
         return match ($this) {
             OrgPaymentServiceProviderTabsEnum::PAYMENT_ACCOUNTS => [
-                'title' => __('payment accounts'),
+                'title' => __('Payment accounts'),
                 'icon'  => 'fal fa-money-check-alt',
             ],
             OrgPaymentServiceProviderTabsEnum::PAYMENTS     => [
-                'title' => __('payments'),
+                'title' => __('Payments'),
                 'icon'  => 'fal fa-coins',
             ],
             OrgPaymentServiceProviderTabsEnum::INVOICES     => [
-                'title' => __('invoices'),
+                'title' => __('Invoices'),
                 'icon'  => 'fal fa-file-invoice-dollar',
             ],
             OrgPaymentServiceProviderTabsEnum::HISTORY     => [
@@ -45,7 +45,7 @@ enum OrgPaymentServiceProviderTabsEnum: string
                 'align'  => 'right',
             ],
             OrgPaymentServiceProviderTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

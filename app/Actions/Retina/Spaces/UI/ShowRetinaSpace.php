@@ -52,7 +52,7 @@ class ShowRetinaSpace extends RetinaAction
                     'icon'      =>
                         [
                             'icon'  => ['fal', 'fa-parking'],
-                            'title' => __('space')
+                            'title' => __('Space')
                         ],
                 ],
                 'tabs' => [

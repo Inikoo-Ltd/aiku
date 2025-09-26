@@ -72,7 +72,7 @@ class IndexFulfilmentRefunds extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            'title' => __('refunds')
+            'title' => __('Refunds')
         ];
 
         $afterTitle = null;
@@ -100,7 +100,7 @@ class IndexFulfilmentRefunds extends OrgAction
             $model = __('customer client');
             $icon  = [
                 'icon'  => ['fal', 'fa-folder'],
-                'title' => __('customer client')
+                'title' => __('Customer client')
             ];
         } elseif ($this->parent instanceof Customer) {
             $iconRight  = $icon;
@@ -110,7 +110,7 @@ class IndexFulfilmentRefunds extends OrgAction
             $title      = $this->parent->name;
             $icon       = [
                 'icon'  => ['fal', 'fa-user'],
-                'title' => __('customer')
+                'title' => __('Customer')
             ];
         } elseif ($this->parent instanceof Invoice) {
 

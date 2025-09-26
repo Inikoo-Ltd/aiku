@@ -58,7 +58,7 @@ class ShowShippingZoneSchema extends OrgAction
                 ],
                 'pageHead'                               => [
                     'icon'          => [
-                        'title' => __('trade unit'),
+                        'title' => __('Trade unit'),
                         'icon'  => 'fal fa-atom'
                     ],
                     'title'         => $shippingZoneSchema->name,

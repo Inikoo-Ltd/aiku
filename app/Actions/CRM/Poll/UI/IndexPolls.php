@@ -138,7 +138,7 @@ class IndexPolls extends OrgAction
         $model      = __('Poll');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('polls')
+            'title' => __('Polls')
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -148,7 +148,7 @@ class IndexPolls extends OrgAction
             $model      = __('poll');
             $icon       = [
                 'icon'  => ['fal', 'fa-cube'],
-                'title' => __('poll')
+                'title' => __('Poll')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-cube',

@@ -185,7 +185,7 @@ class IndexRetinaFulfilmentCustomerClientsInCustomerSalesChannel extends RetinaA
                     'title'      => $title,
                     'icon'       => [
                         'icon'  => ['fal', 'fa-user-friends'],
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
                     'actions'    => $actions
 

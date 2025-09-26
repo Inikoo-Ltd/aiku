@@ -154,7 +154,7 @@ class IndexCollectionsInProductCategory extends OrgAction
 
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('collections')
+            'title' => __('Collections')
         ];
 
 
@@ -169,13 +169,13 @@ class IndexCollectionsInProductCategory extends OrgAction
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $icon          = [
                 'icon'  => ['fal', 'fa-folder-tree'],
-                'title' => __('department')
+                'title' => __('Department')
             ];
             $subNavigation = $this->getDepartmentSubNavigation($productCategory);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $icon          = [
                 'icon'  => ['fal', 'fa-dot-circle'],
-                'title' => __('sub department')
+                'title' => __('Sub department')
             ];
             $subNavigation = $this->getSubDepartmentSubNavigation($productCategory);
         }

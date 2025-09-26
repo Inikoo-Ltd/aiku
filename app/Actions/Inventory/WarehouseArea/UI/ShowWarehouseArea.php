@@ -70,7 +70,7 @@ class ShowWarehouseArea extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-map-signs'],
-                            'title' => __('warehouse area')
+                            'title' => __('Warehouse area')
                         ],
                     'title'   => $warehouseArea->name,
                     'actions' => [
@@ -78,8 +78,8 @@ class ShowWarehouseArea extends OrgAction
                             [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new location'),
-                                'label'   => __('new location'),
+                                'tooltip' => __('New location'),
+                                'label'   => __('New location'),
                                 'route'   => [
                                     'name'       => $request->route()->getName().'.locations.create',
                                     'parameters' => $request->route()->originalParameters()
@@ -98,7 +98,7 @@ class ShowWarehouseArea extends OrgAction
                             ],
                             'leftIcon' => [
                                 'icon'    => 'fal fa-inventory',
-                                'tooltip' => __('locations')
+                                'tooltip' => __('Locations')
                             ]
                         ]
                     ]

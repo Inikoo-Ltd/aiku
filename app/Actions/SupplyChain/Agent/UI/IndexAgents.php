@@ -173,7 +173,7 @@ class IndexAgents extends GrpAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-people-arrows'],
-                            'title' => __('agents')
+                            'title' => __('Agents')
                         ],
                     'title'  => __("agents"),
 

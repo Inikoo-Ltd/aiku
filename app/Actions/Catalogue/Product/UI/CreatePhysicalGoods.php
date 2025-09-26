@@ -28,7 +28,7 @@ class CreatePhysicalGoods extends OrgAction
                 ),
                 'title'    => __('new goods'),
                 'pageHead' => [
-                    'title' => __('new goods')
+                    'title' => __('New goods')
                 ],
                 'formData' => [
                     'fullLayout' => true,

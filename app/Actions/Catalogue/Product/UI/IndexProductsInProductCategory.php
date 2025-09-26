@@ -189,7 +189,7 @@ class IndexProductsInProductCategory extends OrgAction
         $title      = __('products');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('product')
+            'title' => __('Product')
         ];
         $afterTitle = null;
         $iconRight  = null;

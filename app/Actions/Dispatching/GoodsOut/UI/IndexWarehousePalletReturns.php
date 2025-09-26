@@ -308,7 +308,7 @@ class IndexWarehousePalletReturns extends OrgAction
         unset($navigation[PalletReturnsTabsEnum::UPLOADS->value]);
 
 
-        $title      = __('returns');
+        $title      = __('Returns');
         $afterTitle = null;
 
 

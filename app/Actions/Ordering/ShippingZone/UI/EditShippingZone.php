@@ -80,7 +80,7 @@ class EditShippingZone extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit schema'),
+                            'title'  => __('Edit schema'),
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',

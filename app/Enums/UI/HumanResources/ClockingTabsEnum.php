@@ -28,7 +28,7 @@ enum ClockingTabsEnum: string
     {
         return match ($this) {
             ClockingTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
@@ -36,11 +36,11 @@ enum ClockingTabsEnum: string
             ClockingTabsEnum::DATA => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('data'),
+                'title' => __('Data'),
                 'icon'  => 'fal fa-database',
             ],
             ClockingTabsEnum::SHOWCASE => [
-                'title' => __('clocking'),
+                'title' => __('Clocking'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

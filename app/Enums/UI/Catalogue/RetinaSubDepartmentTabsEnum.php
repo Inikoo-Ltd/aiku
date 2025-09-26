@@ -31,21 +31,21 @@ enum RetinaSubDepartmentTabsEnum: string
 
         return match ($this) {
             RetinaSubDepartmentTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             RetinaSubDepartmentTabsEnum::FAMILIES => [
-                'title' => __('families'). " ({$families})",
+                'title' => __('Families'). " ({$families})",
                 'icon'  => 'fal fa-folder',
                 'type'  => 'icon',
             ],
             RetinaSubDepartmentTabsEnum::PRODUCTS => [
-                'title' => __('products'). " ({$products})",
+                'title' => __('Products'). " ({$products})",
                 'icon'  => 'fal fa-cube',
                 'type'  => 'icon',
             ],
             RetinaSubDepartmentTabsEnum::COLLECTIONS => [
-                'title' => __('collections'). " ({$collection})",
+                'title' => __('Collections'). " ({$collection})",
                 'icon'  => 'fal fa-album-collection',
                 'type'  => 'icon',
             ],

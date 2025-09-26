@@ -257,7 +257,7 @@ class ShowOrder extends OrgAction
                     'model'      => __('Order'),
                     'icon'       => [
                         'icon'  => 'fal fa-shopping-cart',
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
                     'afterTitle' => [
                         'label' => $order->state->labels()[$order->state->value],

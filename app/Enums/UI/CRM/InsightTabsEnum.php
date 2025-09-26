@@ -25,11 +25,11 @@ enum InsightTabsEnum: string
     {
         return match ($this) {
             InsightTabsEnum::DATA => [
-                'title' => __('data'),
+                'title' => __('Data'),
                 'icon'  => 'fal fa-database',
             ],
             InsightTabsEnum::POOL_OPTIONS => [
-                'title' => __('pool options'),
+                'title' => __('Pool options'),
                 'icon'  => 'fal fa-dollar-sign',
             ],
         };

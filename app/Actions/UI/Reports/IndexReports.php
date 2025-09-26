@@ -70,7 +70,7 @@ class IndexReports extends OrgAction
                 'pageHead' => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-chart-line'],
-                        'title' => __('reports')
+                        'title' => __('Reports')
                     ],
                     'title'     => __('reports'),
                     'container' => $container

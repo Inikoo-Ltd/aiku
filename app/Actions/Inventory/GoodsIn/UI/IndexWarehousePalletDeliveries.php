@@ -204,7 +204,7 @@ class IndexWarehousePalletDeliveries extends OrgAction
         $subNavigation = [];
 
         $icon       = ['fal', 'fa-truck-couch'];
-        $title      = __('fulfilment deliveries');
+        $title      = __('Fulfilment deliveries');
         $afterTitle = null;
         $iconRight  = null;
 

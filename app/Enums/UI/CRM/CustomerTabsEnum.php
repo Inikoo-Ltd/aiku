@@ -33,50 +33,50 @@ enum CustomerTabsEnum: string
         return match ($this) {
             CustomerTabsEnum::PAYMENTS => [
                 'align' => 'right',
-                'title' => __('payments'),
+                'title' => __('Payments'),
                 'icon'  => 'fal fa-money-bill',
                 'type'  => 'icon',
             ],
             CustomerTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             CustomerTabsEnum::TIMELINE => [
-                'title' => __('timeline'),
+                'title' => __('Timeline'),
                 'icon'  => 'fal fa-code-branch',
             ],
             CustomerTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon'
             ],
             CustomerTabsEnum::DISPATCHED_EMAILS => [
                 'align' => 'right',
-                'title' => __('dispatched emails'),
+                'title' => __('Dispatched emails'),
                 'icon'  => 'fal fa-paper-plane',
                 'type'  => 'icon',
             ],
             CustomerTabsEnum::CREDIT_TRANSACTIONS => [
                 'align' => 'right',
-                'title' => __('credit transactions'),
+                'title' => __('Credit transactions'),
                 'icon'  => 'fal fa-piggy-bank',
                 'type'  => 'icon',
             ],
             CustomerTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             CustomerTabsEnum::REMINDERS => [
-                'title' => __('reminders'),
+                'title' => __('Reminders'),
                 'icon'  => 'fal fa-bell',
                 'align' => 'right',
                 'type'  => 'icon',
             ],
             CustomerTabsEnum::FAVOURITES => [
-                'title' => __('favourites'),
+                'title' => __('Favourites'),
                 'icon'  => 'fal fa-heart',
                 'type'  => 'icon',
                 'align' => 'right',

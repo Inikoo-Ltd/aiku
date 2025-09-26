@@ -23,13 +23,13 @@ enum OrgTabsEnum: string
     {
         return match ($this) {
             OrgTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             OrgTabsEnum::SHOWCASE => [
-                'title' => __('organisation'),
+                'title' => __('Organisation'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

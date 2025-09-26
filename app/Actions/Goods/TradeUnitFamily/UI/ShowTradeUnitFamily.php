@@ -54,7 +54,7 @@ class ShowTradeUnitFamily extends GrpAction
                 ],
                 'pageHead'         => [
                     'icon'    => [
-                        'title' => __('trade unit family'),
+                        'title' => __('Trade unit family'),
                         'icon'  => 'fal fa-atom'
                     ],
                     'title'   => $tradeUnitFamily->code,

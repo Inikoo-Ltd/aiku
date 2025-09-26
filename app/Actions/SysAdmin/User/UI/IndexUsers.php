@@ -174,19 +174,19 @@ class IndexUsers extends OrgAction
         $title         = __('Active users');
         $icon          = [
             'icon'  => ['fal', 'fa-user-circle'],
-            'title' => __('active users')
+            'title' => __('Active users')
         ];
         if ($this->scope == 'suspended') {
             $title = __('Suspended users');
             $icon  = [
                 'icon'  => ['fal', 'fa-user-slash'],
-                'title' => __('suspended users')
+                'title' => __('Suspended users')
             ];
         } elseif ($this->scope == 'all') {
             $title = __('Users');
             $icon  = [
                 'icon'  => ['fal', 'fa-users'],
-                'title' => __('all users')
+                'title' => __('All users')
             ];
         }
 

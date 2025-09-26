@@ -84,7 +84,7 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'box-usd'],
-                            'title' => __('supplier product marketplaces')
+                            'title' => __('Supplier product marketplaces')
                         ],
                     'title' => $supplierProduct->name,
 

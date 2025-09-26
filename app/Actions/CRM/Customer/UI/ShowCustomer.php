@@ -120,7 +120,7 @@ class ShowCustomer extends OrgAction
                     'title'         => $customer->name,
                     'icon'          => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('customer')
+                        'title' => __('Customer')
                     ],
                     'afterTitle'    => [
                         'label' => '#' . $customer->reference,

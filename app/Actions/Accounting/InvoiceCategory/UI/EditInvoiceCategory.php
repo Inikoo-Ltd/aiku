@@ -30,9 +30,9 @@ class EditInvoiceCategory extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('edit invoice category'),
+                'title'    => __('Edit invoice category'),
                 'pageHead' => [
-                    'title'        => __('edit invoice category'),
+                    'title'        => __('Edit invoice category'),
                     'actions'      => [
                         [
                             'type'  => 'button',

@@ -195,7 +195,7 @@ class IndexSuppliers extends GrpAction
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-person-dolly'],
-            'title' => __('suppliers')
+            'title' => __('Suppliers')
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -218,7 +218,7 @@ class IndexSuppliers extends GrpAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('suppliers')
+                'title' => __('Suppliers')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-person-dolly',

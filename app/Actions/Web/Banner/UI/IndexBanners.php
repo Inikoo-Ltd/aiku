@@ -211,7 +211,7 @@ class IndexBanners extends OrgAction
                     'title'     => __('banners'),
                     'container' => $container,
                     'iconRight' => [
-                        'title' => __('banner'),
+                        'title' => __('Banner'),
                         'icon'  => 'fal fa-sign'
                     ],
                     'actions'   => $actions,

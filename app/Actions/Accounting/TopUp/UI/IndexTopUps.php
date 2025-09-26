@@ -101,7 +101,7 @@ class IndexTopUps extends OrgAction
             $table->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title' => __('no topups'),
+                        'title' => __('No topups'),
                         'count' => 0,
                     ]
                 )

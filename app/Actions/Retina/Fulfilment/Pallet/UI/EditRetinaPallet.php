@@ -40,7 +40,7 @@ class EditRetinaPallet extends RetinaAction
                     $pallet,
                     $request->route()->getName()
                 ),
-                'title'       => __('edit pallet'),
+                'title'       => __('Edit pallet'),
                 'pageHead'    => [
                     'icon'      => 'fal fa-pallet',
                     'model'     => __('Edit Pallet'),

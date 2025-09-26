@@ -288,7 +288,7 @@ class IndexInvoices extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            'title' => __('invoices')
+            'title' => __('Invoices')
         ];
 
         $afterTitle = null;
@@ -327,14 +327,14 @@ class IndexInvoices extends OrgAction
             $title      = $this->parent->name;
             $icon       = [
                 'icon'  => ['fal', 'fa-user'],
-                'title' => __('customer')
+                'title' => __('Customer')
             ];
         } elseif ($this->parent instanceof InvoiceCategory) {
             $model = __('Invoices');
             $title = $this->parent->name;
             $icon  = [
                 'icon'  => ['fal', 'fa-file-invoice-dollar'],
-                'title' => __('invoice category')
+                'title' => __('Invoice category')
             ];
         } elseif ($this->parent instanceof Organisation) {
             $afterTitle = [

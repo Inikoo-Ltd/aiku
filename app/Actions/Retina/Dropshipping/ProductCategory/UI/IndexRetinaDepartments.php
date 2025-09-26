@@ -139,7 +139,7 @@ class IndexRetinaDepartments extends RetinaAction
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-folder-tree'],
-            'title' => __('departments')
+            'title' => __('Departments')
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -149,7 +149,7 @@ class IndexRetinaDepartments extends RetinaAction
             $model      = __('collection');
             $icon       = [
                 'icon'  => ['fal', 'fa-cube'],
-                'title' => __('collection')
+                'title' => __('Collection')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-folder-tree',

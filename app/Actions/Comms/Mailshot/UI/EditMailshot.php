@@ -109,7 +109,7 @@ class EditMailshot extends OrgAction
                 ),
                 'title'       => __('Edit mailshot'),
                 'pageHead'    => [
-                    'title' => __('edit mailshot')
+                    'title' => __('Edit mailshot')
                 ],
                 'formData'    => [
                     'fullLayout' => true,

@@ -148,7 +148,7 @@ class IndexJobPositions extends OrgAction
 
             $icon = [
                 'icon'  => ['fal', 'fa-user-hard-hat'],
-                'title' => __('employee')
+                'title' => __('Employee')
             ];
         }
 

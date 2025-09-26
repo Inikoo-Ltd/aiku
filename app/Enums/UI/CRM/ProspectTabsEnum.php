@@ -29,17 +29,17 @@ enum ProspectTabsEnum: string
     {
         return match ($this) {
             ProspectTabsEnum::ITEMS => [
-                'title' => __('data'),
+                'title' => __('Data'),
                 'icon'  => 'fal fa-database',
             ],
             ProspectTabsEnum::PAYMENTS => [
-                'title' => __('subcategories'),
+                'title' => __('Subcategories'),
             ],
             ProspectTabsEnum::PROPERTIES_OPERATIONS => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],ProspectTabsEnum::CHANGELOG => [
-                'title' => __('customers'),
+                'title' => __('Customers'),
                 'icon'  => 'fal fa-user',
             ],
         };

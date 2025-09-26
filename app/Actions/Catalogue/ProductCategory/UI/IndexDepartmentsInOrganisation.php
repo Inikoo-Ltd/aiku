@@ -39,7 +39,7 @@ class IndexDepartmentsInOrganisation extends OrgAction
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-folder-tree'],
-            'title' => __('departments')
+            'title' => __('Departments')
         ];
         $afterTitle = [
             'label' => '@ '.__('organisation').' '.$this->organisation->code,

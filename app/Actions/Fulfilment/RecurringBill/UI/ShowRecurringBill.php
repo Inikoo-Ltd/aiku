@@ -108,7 +108,7 @@ class ShowRecurringBill extends OrgAction
                     'style'   => 'secondary',
                     'icon'    => 'fal fa-plus',
                     'key'     => 'add-service',
-                    'label'   => __('add service'),
+                    'label'   => __('Add service'),
                     'tooltip' => __('Add single service'),
                     'route'   => [
                         'name'       => 'grp.models.recurring-bill.transaction.store',
@@ -122,7 +122,7 @@ class ShowRecurringBill extends OrgAction
                     'style'   => 'secondary',
                     'icon'    => 'fal fa-plus',
                     'key'     => 'add_physical_good',
-                    'label'   => __('add physical good'),
+                    'label'   => __('Add physical good'),
                     'tooltip' => __('Add physical good'),
                     'route'   => [
                         'name'       => 'grp.models.recurring-bill.transaction.store',
@@ -153,7 +153,7 @@ class ShowRecurringBill extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => 'fal fa-receipt',
-                            'title' => __('recurring bill')
+                            'title' => __('Recurring bill')
                         ],
                     'model'   => __('Recurring Bill'),
                     'title'   => $recurringBill->slug,

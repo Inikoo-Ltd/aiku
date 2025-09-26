@@ -42,7 +42,7 @@ class GetWarehouseShowcase
                     ],
                     'icon' => [
                         'icon'    => 'fal fa-inventory',
-                        'tooltip' => __('locations')
+                        'tooltip' => __('Locations')
                     ]
                 ]
             ],

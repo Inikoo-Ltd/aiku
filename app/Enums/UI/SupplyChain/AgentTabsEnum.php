@@ -28,7 +28,7 @@ enum AgentTabsEnum: string
         return match ($this) {
 
             AgentTabsEnum::HISTORY     => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

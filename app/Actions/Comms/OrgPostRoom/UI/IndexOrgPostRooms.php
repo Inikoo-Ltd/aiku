@@ -145,7 +145,7 @@ class IndexOrgPostRooms extends OrgAction
         $title = __('Post Room');
         $icon  = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('post rooms')
+            'title' => __('Post rooms')
         ];
         $afterTitle = null;
         $iconRight = null;

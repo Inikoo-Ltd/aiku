@@ -63,7 +63,7 @@ class ShowGuest extends GrpAction
                     'model'     => __('guest'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-user-alien'],
-                        'title' => __('guest')
+                        'title' => __('Guest')
                     ],
                     'actions'   => [
                         $this->canEdit ? [

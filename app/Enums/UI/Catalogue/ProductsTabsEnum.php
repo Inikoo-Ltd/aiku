@@ -24,11 +24,11 @@ enum ProductsTabsEnum: string
     {
         return match ($this) {
             ProductsTabsEnum::INDEX => [
-                'title' => __('index'),
+                'title' => __('Index'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             ProductsTabsEnum::SALES => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
         };

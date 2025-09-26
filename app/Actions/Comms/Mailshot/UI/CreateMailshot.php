@@ -118,7 +118,7 @@ class CreateMailshot extends OrgAction
                 ),
                 'title'    => __('new mailshot'),
                 'pageHead' => [
-                    'title' => __('new mailshot')
+                    'title' => __('New mailshot')
                 ],
                 'formData' => [
                     'fullLayout' => true,

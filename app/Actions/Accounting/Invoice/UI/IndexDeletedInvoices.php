@@ -197,7 +197,7 @@ class IndexDeletedInvoices extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            'title' => __('deleted invoices')
+            'title' => __('Deleted invoices')
         ];
 
         $afterTitle = null;

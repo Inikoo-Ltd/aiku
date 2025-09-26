@@ -59,7 +59,7 @@ class ShowRetinaDepartment extends RetinaAction
                     'model'        => __('Department'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('department')
+                        'title' => __('Department')
                     ],
                     'iconRight' => $department->state->stateIcon()[$department->state->value],
                     'exports' => [

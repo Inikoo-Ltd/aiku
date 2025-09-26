@@ -138,7 +138,7 @@ class IndexOrgSupplierProducts extends OrgAction
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-box-usd'],
-            'title' => __('supplier products')
+            'title' => __('Supplier products')
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -149,7 +149,7 @@ class IndexOrgSupplierProducts extends OrgAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('supplier products')
+                'title' => __('Supplier products')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-box-usd',
@@ -164,7 +164,7 @@ class IndexOrgSupplierProducts extends OrgAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('supplier products')
+                'title' => __('Supplier products')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-box-usd',

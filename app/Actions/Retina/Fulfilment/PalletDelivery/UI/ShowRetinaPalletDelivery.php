@@ -203,8 +203,8 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 [
                     'type'        => 'button',
                     'style'       => 'delete',
-                    'tooltip'     => __('delete'),
-                    'label'       => __('delete'),
+                    'tooltip'     => __('Delete'),
+                    'label'       => __('Delete'),
                     'key'         => 'delete_delivery',
                     'ask_why'     => false,
                     'title'       => __('Are you sure you want to delete this delivery'),

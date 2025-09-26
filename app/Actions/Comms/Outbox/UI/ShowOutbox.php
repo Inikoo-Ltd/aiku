@@ -129,7 +129,7 @@ class ShowOutbox extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-inbox-out'],
-                            'title' => __('outbox')
+                            'title' => __('Outbox')
                         ],
                     'iconRight' => $outbox->state->icon()[$outbox->state->value],
                     'actions' => $actions,

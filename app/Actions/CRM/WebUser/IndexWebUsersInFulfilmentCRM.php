@@ -78,7 +78,7 @@ class IndexWebUsersInFulfilmentCRM extends OrgAction
     public function htmlResponse(LengthAwarePaginator $webUsers, ActionRequest $request): Response
     {
         $icon       = ['fal', 'fa-terminal'];
-        $title      = __('web users');
+        $title      = __('Web users');
         $afterTitle = null;
         $iconRight  = null;
 
@@ -104,7 +104,7 @@ class IndexWebUsersInFulfilmentCRM extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'       => __('web users'),
+                'title'       => __('Web users'),
                 'pageHead'    => [
                     'title'         => $title,
                     'afterTitle'    => $afterTitle,

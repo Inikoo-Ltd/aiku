@@ -82,7 +82,7 @@ class EditWebUser extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('web user'),
+                'title'       => __('Web user'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

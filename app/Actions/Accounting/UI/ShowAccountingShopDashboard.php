@@ -70,7 +70,7 @@ class ShowAccountingShopDashboard extends OrgAction
                     ],
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('dashboard')
+                        'title' => __('Dashboard')
                     ],
                     'title'         => __('Accounting dashboard'),
                     'subNavigation' => $subNavigation,

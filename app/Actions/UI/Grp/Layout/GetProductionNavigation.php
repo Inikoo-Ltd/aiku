@@ -32,7 +32,7 @@ class GetProductionNavigation
         )) {
             $navigation["crafts"] = [
                 "root"  => "grp.org.productions.show.crafts.",
-                "label" => __("crafts"),
+                "label" => __("Crafts"),
                 "icon"  => ['fal', 'fa-flask-potion'],
                 "route" => [
                     "name"       => "grp.org.productions.show.crafts.dashboard",

@@ -135,7 +135,7 @@ class IndexDispatchedEmails extends OrgAction
                 ),
                 'title'       => __('dispatched emails'),
                 'pageHead'    => [
-                    'title' => __('dispatched emails'),
+                    'title' => __('Dispatched emails'),
                     'icon'  => ['fal', 'fa-paper-plane'],
                 ],
                 ...array_merge(

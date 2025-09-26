@@ -188,7 +188,7 @@ class ShowWebsite extends OrgAction
                     'title'     => $website->name,
                     'model'     => __('Website'),
                     'icon'      => [
-                        'title' => __('website'),
+                        'title' => __('Website'),
                         'icon'  => 'fal fa-globe'
                     ],
                     'iconRight' => $website->state->stateIcon()[$website->state->value],

@@ -50,7 +50,7 @@ class EditOutbox extends OrgAction
                 ),
                 'title' => __('Edit outbox'),
                 'pageHead' => [
-                    'title' => __('edit outbox'),
+                    'title' => __('Edit outbox'),
                     'actions' => [
                         [
                             'type' => 'button',

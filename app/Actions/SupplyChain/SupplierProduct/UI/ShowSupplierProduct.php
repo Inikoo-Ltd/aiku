@@ -64,7 +64,7 @@ class ShowSupplierProduct extends InertiaAction
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'box-usd'],
-                            'title' => __('agent')
+                            'title' => __('Agent')
                         ],
                     'title' => $supplierProduct->name,
                     /*

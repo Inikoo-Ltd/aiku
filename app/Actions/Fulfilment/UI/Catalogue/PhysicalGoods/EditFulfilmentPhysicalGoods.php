@@ -56,7 +56,7 @@ class EditFulfilmentPhysicalGoods extends OrgAction
                     'icon'     =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
-                            'title' => __('goods')
+                            'title' => __('Goods')
                         ],
                     'actions'  => [
                         [

@@ -26,17 +26,17 @@ enum WarehouseAreaTabsEnum: string
     {
         return match ($this) {
             WarehouseAreaTabsEnum::LOCATIONS             => [
-                'title' => __('locations'),
+                'title' => __('Locations'),
                 'icon'  => 'fal fa-inventory',
             ],
             WarehouseAreaTabsEnum::HISTORY     => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
             ],
             WarehouseAreaTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

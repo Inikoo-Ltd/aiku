@@ -59,7 +59,7 @@ class ShowOfferCampaign extends OrgAction
                     'icon'  =>
                         [
                             'icon'  => ['fal', 'comment-dollar'],
-                            'title' => __('offer campaign')
+                            'title' => __('Offer campaign')
                         ],
                     'title'         => $offerCampaign->name,
                     'model'         => __('Offer Campaign'),

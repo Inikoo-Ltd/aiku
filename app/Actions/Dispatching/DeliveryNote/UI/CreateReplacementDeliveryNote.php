@@ -326,7 +326,7 @@ class CreateReplacementDeliveryNote extends OrgAction
                 'model'      => __('Replacement'),
                 'icon'       => [
                     'icon'  => 'fal fa-truck',
-                    'title' => __('replacement')
+                    'title' => __('Replacement')
                 ],
                 'actions'    => $actions,
                 $this->getInvoiceButton($deliveryNote)

@@ -65,13 +65,13 @@ class ShowProcurementDashboard extends OrgAction
                 'pageHead'     => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-box-usd'],
-                        'title' => __('procurement')
+                        'title' => __('Procurement')
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('procurement')
+                        'title' => __('Procurement')
                     ],
-                    'title' => __('procurement'),
+                    'title' => __('Procurement'),
                 ],
                 'flatTreeMaps' => [
 

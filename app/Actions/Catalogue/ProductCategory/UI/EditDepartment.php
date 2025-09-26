@@ -85,7 +85,7 @@ class EditDepartment extends OrgAction
                     'icon'     =>
                         [
                             'icon'  => ['fal', 'fa-folder-tree'],
-                            'title' => __('department')
+                            'title' => __('Department')
                         ],
                     'actions'  => [
                         [

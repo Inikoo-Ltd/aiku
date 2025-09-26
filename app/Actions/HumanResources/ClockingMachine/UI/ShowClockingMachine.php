@@ -63,7 +63,7 @@ class ShowClockingMachine extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-chess-clock'],
-                            'title' => __('clocking machines')
+                            'title' => __('Clocking machines')
                         ],
                     'title'   => $clockingMachine->name,
                     'model'   => __('clocking machine'),

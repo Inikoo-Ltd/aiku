@@ -66,7 +66,7 @@ class GetFulfilmentNavigation
                         ],
 
                         [
-                            'label'   => __('deliveries'),
+                            'label'   => __('Deliveries'),
                             'tooltip' => __('Deliveries'),
                             'icon'    => ['fal', 'fa-truck-couch'],
                             'root'    => 'grp.org.fulfilments.show.operations.pallet-deliveries.',
@@ -76,7 +76,7 @@ class GetFulfilmentNavigation
                             ],
                         ],
                         [
-                            'label'   => __('returns'),
+                            'label'   => __('Returns'),
                             'tooltip' => __('Returns'),
                             'icon'    => ['fal', 'fa-sign-out'],
                             'root'    => 'grp.org.fulfilments.show.operations.pallet-returns.',
@@ -96,7 +96,7 @@ class GetFulfilmentNavigation
                             ],
                         ],
                         [
-                            'label'   => __('invoices'),
+                            'label'   => __('Invoices'),
                             'tooltip' => __('Invoices'),
                             'icon'    => ['fal', 'fa-file-invoice-dollar'],
                             'root'    => 'grp.org.fulfilments.show.operations.invoices.',
@@ -125,7 +125,7 @@ class GetFulfilmentNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label' => __('rentals'),
+                            'label' => __('Rentals'),
                             'icon'  => ['fal', 'fa-garage'],
                             'root'  => 'grp.org.fulfilments.show.catalogue.rentals.',
                             'route' => [
@@ -134,7 +134,7 @@ class GetFulfilmentNavigation
                             ],
                         ],
                         [
-                            'label' => __('services'),
+                            'label' => __('Services'),
                             'icon'  => ['fal', 'fa-concierge-bell'],
                             'root'  => 'grp.org.fulfilments.show.catalogue.services.',
                             'route' => [
@@ -143,7 +143,7 @@ class GetFulfilmentNavigation
                             ],
                         ],
                         [
-                            'label' => __('goods'),
+                            'label' => __('Goods'),
                             'icon'  => ['fal', 'fa-cube'],
                             'root'  => 'grp.org.fulfilments.show.catalogue.physical_goods.',
                             'route' => [

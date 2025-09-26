@@ -32,36 +32,36 @@ enum TradeUnitTabsEnum: string
             TradeUnitTabsEnum::FEEDBACKS => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('issues'),
+                'title' => __('Issues'),
                 'icon'  => 'fal fa-poop',
             ],
 
             TradeUnitTabsEnum::ATTACHMENTS => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
 
             ],
             TradeUnitTabsEnum::IMAGES => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('media'),
+                'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
             ],
             TradeUnitTabsEnum::HISTORY => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
 
             ],
             TradeUnitTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             TradeUnitTabsEnum::PRODUCTS => [
-                'title' => __('products'),
+                'title' => __('Products'),
                 'icon'  => 'fal fa-cube',
             ],
             TradeUnitTabsEnum::STOCKS => [

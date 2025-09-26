@@ -335,7 +335,7 @@ class IndexOrders extends OrgAction
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-shopping-cart'],
-            'title' => __('orders')
+            'title' => __('Orders')
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -346,7 +346,7 @@ class IndexOrders extends OrgAction
             $model      = __('customer client');
             $icon       = [
                 'icon'  => ['fal', 'fa-folder'],
-                'title' => __('customer client')
+                'title' => __('Customer client')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-shopping-cart',
@@ -375,7 +375,7 @@ class IndexOrders extends OrgAction
 
             $icon       = [
                 'icon'  => ['fal', 'fa-user'],
-                'title' => __('customer')
+                'title' => __('Customer')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-shopping-cart',

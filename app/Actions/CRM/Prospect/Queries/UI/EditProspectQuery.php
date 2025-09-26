@@ -33,12 +33,12 @@ class EditProspectQuery extends InertiaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('edit prospect list'),
+                'title'       => __('Edit prospect list'),
                 'pageHead'    => [
-                    'title'   => __('edit prospect list'),
+                    'title'   => __('Edit prospect list'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-code-branch'],
-                        'title' => __('prospect list')
+                        'title' => __('Prospect list')
                     ],
                     'actions' => [
                         [

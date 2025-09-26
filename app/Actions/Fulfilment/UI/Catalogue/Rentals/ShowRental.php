@@ -53,7 +53,7 @@ class ShowRental extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-garage'],
-                            'title' => __('rental')
+                            'title' => __('Rental')
                         ],
                     'actions' => [
                         $this->canEdit ? [

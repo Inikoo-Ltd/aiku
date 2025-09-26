@@ -31,47 +31,47 @@ enum OrgSupplierProductTabsEnum: string
     {
         return match ($this) {
             OrgSupplierProductTabsEnum::SHOWCASE => [
-                'title' => __('supplier product'),
+                'title' => __('Supplier product'),
                 'icon'  => 'fas fa-info-circle',
             ],
             OrgSupplierProductTabsEnum::PURCHASE_SALES => [
-                'title' => __('purchases/sales'),
+                'title' => __('Purchases/sales'),
                 'icon'  => 'fal fa-money-bill',
             ],
             OrgSupplierProductTabsEnum::SUPPLIER_PRODUCTS => [
-                'title' => __('products'),
+                'title' => __('Products'),
                 'icon'  => 'fal fa-box-usd',
             ],
 
             OrgSupplierProductTabsEnum::PURCHASE_ORDERS => [
-                'title' => __('purchase orders'),
+                'title' => __('Purchase orders'),
                 'icon'  => 'fal fa-clipboard',
             ],
             OrgSupplierProductTabsEnum::DELIVERIES => [
-                'title' => __('deliveries'),
+                'title' => __('Deliveries'),
                 'icon'  => 'fal fa-truck',
             ],
 
             OrgSupplierProductTabsEnum::FEEDBACKS => [
-                'title' => __('issues'),
+                'title' => __('Issues'),
                 'icon'  => 'fal fa-poop',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             OrgSupplierProductTabsEnum::IMAGES => [
-                'title' => __('images'),
+                'title' => __('Images'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             OrgSupplierProductTabsEnum::ATTACHMENTS => [
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             OrgSupplierProductTabsEnum::HISTORY => [
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

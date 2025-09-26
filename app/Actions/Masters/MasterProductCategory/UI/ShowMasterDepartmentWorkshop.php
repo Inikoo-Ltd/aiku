@@ -77,7 +77,7 @@ class ShowMasterDepartmentWorkshop extends GrpAction
                     'title' => $masterDepartment->name,
                     'icon'  => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('department')
+                        'title' => __('Department')
                     ],
                 ],
 

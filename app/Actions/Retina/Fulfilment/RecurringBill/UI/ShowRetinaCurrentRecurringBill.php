@@ -53,7 +53,7 @@ class ShowRetinaCurrentRecurringBill extends RetinaAction
                     'icon'  =>
                         [
                             'icon'  => ['fa', 'fa-receipt'],
-                            'title' => __('recurring bill')
+                            'title' => __('Recurring bill')
                         ],
                     'model' => __('Bill'),
                     'title' => $recurringBill->slug,

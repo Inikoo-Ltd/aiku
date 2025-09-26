@@ -599,7 +599,7 @@ class ShowDeliveryNote extends OrgAction
                 'model'      => $model,
                 'icon'       => [
                     'icon'  => 'fal fa-truck',
-                    'title' => __('delivery note')
+                    'title' => __('Delivery note')
                 ],
                 'afterTitle' => [
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],

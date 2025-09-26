@@ -109,7 +109,7 @@ class IndexRentalAgreementClauses extends OrgAction
                     'title'     => __('agreed prices'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('agreed prices')
+                        'title' => __('Agreed prices')
                     ],
                 ],
                 'data'        => RentalAgreementClausesResource::collection($clauses),

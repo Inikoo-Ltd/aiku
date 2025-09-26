@@ -85,7 +85,7 @@ class ShowOrgSupplierProduct extends OrgAction
                     'icon'  =>
                         [
                             'icon'  => ['fal', 'box-usd'],
-                            'title' => __('agent')
+                            'title' => __('Agent')
                         ],
                     'title' => $orgSupplierProduct->supplierProduct->name,
                 ],

@@ -136,7 +136,7 @@ class ShowRefund extends OrgAction
             'type'  => 'button',
             'style' => 'edit',
             'icon'  => 'fal fa-pencil',
-            'label' => __('edit'),
+            'label' => __('Edit'),
             'route' => [
                 'name'       => 'grp.org.accounting.invoices.edit',
                 'parameters' => [

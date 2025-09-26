@@ -105,7 +105,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
                         __('Portfolio'),
                         [
                             'icon'  => ['fal', 'fa-bookmark'],
-                            'title' => __('portfolios')
+                            'title' => __('Portfolios')
                         ]
                     ),
                     'actions' => [

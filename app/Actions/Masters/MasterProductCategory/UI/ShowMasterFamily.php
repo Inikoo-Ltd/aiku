@@ -176,7 +176,7 @@ class ShowMasterFamily extends GrpAction
                     'model'         => __('Master Family'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder'],
-                        'title' => __('department')
+                        'title' => __('Department')
                     ],
                     'actions'       => [
                         $this->canEdit ? [

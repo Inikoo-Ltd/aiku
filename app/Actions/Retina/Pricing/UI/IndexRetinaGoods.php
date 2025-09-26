@@ -121,7 +121,7 @@ class IndexRetinaGoods extends RetinaAction
                 'pageHead'    => [
                     'icon'    => [
                         'icon'  => ['fal', 'fa-cube'],
-                        'title' => __('goods')
+                        'title' => __('Goods')
                     ],
                     'model'    => __('Pricing'),
                     'title'         => __('goods'),

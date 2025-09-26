@@ -58,7 +58,7 @@ class EditStock extends OrgAction
                 'pageHead'    => [
                     'title'   => $stock->name,
                     'icon'    => [
-                        'title' => __('skus'),
+                        'title' => __('Skus'),
                         'icon'  => 'fal fa-box'
                     ],
                     'actions' => [
@@ -76,7 +76,7 @@ class EditStock extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit sku'),
+                            'title'  => __('Edit sku'),
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',

@@ -127,12 +127,12 @@ class IndexFulfilmentLocations extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('locations'),
+                'title'       => __('Locations'),
                 'pageHead'    => [
-                    'title'     => __('locations'),
+                    'title'     => __('Locations'),
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-inventory'],
-                        'title' => __('locations')
+                        'title' => __('Locations')
                     ],
                 ],
 

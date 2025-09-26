@@ -142,7 +142,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                     'model'     => __('Storage'),
                     'icon' => [
                         'icon'  => ['fal', 'fa-truck-ramp'],
-                        'title' => __('return')
+                        'title' => __('Return')
                     ],
                     'actions'       => $actions
                 ],

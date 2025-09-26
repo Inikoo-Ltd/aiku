@@ -39,7 +39,7 @@ class EditMasterShop extends OrgAction
                  ),
                 'title'       => __('Edit Master Shop'),
                 'pageHead'    => [
-                    'title'   => __('edit master shop'),
+                    'title'   => __('Edit master shop'),
                     'actions' => [
                         [
                             'type'  => 'button',

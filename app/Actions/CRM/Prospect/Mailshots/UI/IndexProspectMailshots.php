@@ -102,8 +102,8 @@ class IndexProspectMailshots extends InertiaAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new mailshot'),
-                            'label'   => __('mailshot'),
+                            'tooltip' => __('New mailshot'),
+                            'label'   => __('Mailshot'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.show.crm.prospects.mailshots.create',
                                 'parameters' => array_values($this->originalParameters)

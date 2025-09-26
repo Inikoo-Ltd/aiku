@@ -95,7 +95,7 @@ class EditMasterFamily extends OrgAction
                  ),
                 'title'       => __('Edit Master Family'),
                 'pageHead'    => [
-                    'title'   => __('edit master family'),
+                    'title'   => __('Edit master family'),
                     'actions' => [
                         [
                             'type'  => 'button',

@@ -39,7 +39,7 @@ enum MasterAssetTabsEnum: string
             MasterAssetTabsEnum::HISTORY => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
 
             ],
@@ -47,15 +47,15 @@ enum MasterAssetTabsEnum: string
             MasterAssetTabsEnum::IMAGES => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('media'),
+                'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
             ],
             MasterAssetTabsEnum::PRODUCTS => [
-                'title' => __('products in shop'),
+                'title' => __('Products in shop'),
                 'icon'  => 'fal fa-store',
             ],
             MasterAssetTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

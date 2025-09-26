@@ -156,7 +156,7 @@ class IndexShippingZoneSchemas extends OrgAction
         $title      = __('Shipping');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('shipping')
+            'title' => __('Shipping')
         ];
         $afterTitle = null;
         $iconRight  = null;

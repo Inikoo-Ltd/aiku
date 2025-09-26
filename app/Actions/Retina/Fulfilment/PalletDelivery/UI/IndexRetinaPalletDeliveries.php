@@ -170,7 +170,7 @@ class IndexRetinaPalletDeliveries extends RetinaAction
                     'title'   => __('Goods In'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-truck'],
-                        'title' => __('delivery')
+                        'title' => __('Delivery')
                     ],
                     'actions' => array_filter($actions)
                 ],

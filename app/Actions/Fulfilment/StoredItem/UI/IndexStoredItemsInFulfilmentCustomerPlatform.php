@@ -102,7 +102,7 @@ class IndexStoredItemsInFulfilmentCustomerPlatform extends OrgAction
         $title         = $this->customerSalesChannel->customer->name;
         $iconRight     = [
             'icon'  => ['fal', 'fa-user-friends'],
-            'title' => __('portfolios')
+            'title' => __('Portfolios')
         ];
         $afterTitle    = [
 

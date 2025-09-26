@@ -75,7 +75,7 @@ class EditShop extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('edit shop'),
+                'title'       => __('Edit shop'),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
 
                 'pageHead' => [

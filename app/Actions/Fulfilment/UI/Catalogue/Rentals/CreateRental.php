@@ -34,7 +34,7 @@ class CreateRental extends OrgAction
                 ),
                 'title'       => __('new rental'),
                 'pageHead'    => [
-                    'title' => __('new rental')
+                    'title' => __('New rental')
                 ],
                 'formData'    => [
                     'fullLayout' => true,

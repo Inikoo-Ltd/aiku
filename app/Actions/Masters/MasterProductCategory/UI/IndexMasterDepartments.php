@@ -150,7 +150,7 @@ class IndexMasterDepartments extends OrgAction
 
             $icon       = [
                 'icon'  => ['fal', 'fa-store-alt'],
-                'title' => __('master shop')
+                'title' => __('Master shop')
             ];
             $afterTitle = [
                 'label' => __('Master Departments')

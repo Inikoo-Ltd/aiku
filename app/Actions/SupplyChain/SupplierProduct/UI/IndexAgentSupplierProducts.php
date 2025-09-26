@@ -145,7 +145,7 @@ class IndexAgentSupplierProducts extends OrgAction
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-people-arrows'],
-            'title' => __('supplier products')
+            'title' => __('Supplier products')
         ];
         $iconRight  = [
             'icon' => 'fal fa-box-usd',

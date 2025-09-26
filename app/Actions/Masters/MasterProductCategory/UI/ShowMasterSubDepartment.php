@@ -112,7 +112,7 @@ class ShowMasterSubDepartment extends GrpAction
                     'model'   => __('master sub-department'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('master sub-department')
+                        'title' => __('Master sub-department')
                     ],
                     'actions' => [
                         $this->canEdit ? [

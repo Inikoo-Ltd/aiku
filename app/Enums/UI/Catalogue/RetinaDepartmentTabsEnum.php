@@ -33,26 +33,26 @@ enum RetinaDepartmentTabsEnum: string
 
         return match ($this) {
             RetinaDepartmentTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             RetinaDepartmentTabsEnum::SUB_DEPARTMENTS => [
-                'title' => __('sub departments'). " ({$subDepartments})",
+                'title' => __('Sub departments'). " ({$subDepartments})",
                 'icon'  => 'fal fa-dot-circle',
                 'type'  => 'icon',
             ],
             RetinaDepartmentTabsEnum::FAMILIES => [
-                'title' => __('families'). " ({$families})",
+                'title' => __('Families'). " ({$families})",
                 'icon'  => 'fal fa-folder',
                 'type'  => 'icon',
             ],
             RetinaDepartmentTabsEnum::PRODUCTS => [
-                'title' => __('products'). " ({$products})",
+                'title' => __('Products'). " ({$products})",
                 'icon'  => 'fal fa-cube',
                 'type'  => 'icon',
             ],
             RetinaDepartmentTabsEnum::COLLECTIONS => [
-                'title' => __('collections'). " ({$collection})",
+                'title' => __('Collections'). " ({$collection})",
                 'icon'  => 'fal fa-album-collection',
                 'type'  => 'icon',
             ],

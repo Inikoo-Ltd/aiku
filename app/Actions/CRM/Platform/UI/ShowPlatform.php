@@ -64,7 +64,7 @@ class ShowPlatform extends OrgAction
                     'icon'  =>
                         [
                             'icon'  => ['fal', 'fa-code-branch'],
-                            'title' => __('platform')
+                            'title' => __('Platform')
                         ]
                 ],
                 'tabs'        => [

@@ -55,7 +55,7 @@ class IndexWebsitesHeader extends InertiaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('websites header'),
+                'title'       => __('Websites header'),
                 'pageHead'    => [
                     'title'  => __('websites header'),
                 ],

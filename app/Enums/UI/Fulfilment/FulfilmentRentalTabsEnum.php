@@ -29,7 +29,7 @@ enum FulfilmentRentalTabsEnum: string
                 'icon'  => 'fas fa-info-circle',
             ],
             FulfilmentRentalTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

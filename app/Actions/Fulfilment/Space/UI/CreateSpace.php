@@ -39,7 +39,7 @@ class CreateSpace extends OrgAction
                     'title'   => __('new space'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('space')
+                        'title' => __('Space')
                     ],
                     'actions' => [
                         [

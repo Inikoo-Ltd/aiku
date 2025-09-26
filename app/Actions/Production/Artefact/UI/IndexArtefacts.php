@@ -190,7 +190,7 @@ class IndexArtefacts extends OrgAction
                     'title'     => __('artefacts'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-hamsa'],
-                        'title' => __('artefacts'),
+                        'title' => __('Artefacts'),
                     ],
                     'actions'   => [
                         $this->canEdit && $this->parent instanceof Production ? [

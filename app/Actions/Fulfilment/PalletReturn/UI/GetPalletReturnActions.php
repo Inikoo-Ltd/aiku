@@ -326,7 +326,7 @@ class GetPalletReturnActions
                     'type'    => 'button',
                     'style'   => 'delete',
                     'label'   => '',
-                    'tooltip' => __('delete return'),
+                    'tooltip' => __('Delete return'),
                     'key'     => 'delete_return',
                     'route'   => [
                         'method'     => 'patch',

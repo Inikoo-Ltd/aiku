@@ -31,7 +31,7 @@ trait WithLayoutNavigation
                 'topMenu' => [
                     'links' => [
                         [
-                            'label'   => __('dashboard'),
+                            'label'   => __('Dashboard'),
                             'tooltip' => __('Dashboard'),
                         ]
                     ]
@@ -165,7 +165,7 @@ trait WithLayoutNavigation
                         ],
 
                         [
-                            'tooltip' => __('working place'),
+                            'tooltip' => __('Working place'),
                             'icon'    => ['fal', 'fa-building'],
                             'root'    => 'grp.org.hr.workplaces.',
                             'route'   => [
@@ -189,7 +189,7 @@ trait WithLayoutNavigation
 
 
                         [
-                            'label' => __('employees'),
+                            'label' => __('Employees'),
                             'icon'  => ['fal', 'fa-user-hard-hat'],
                             'root'  => 'grp.org.hr.employees.',
                             'route' => [
@@ -199,7 +199,7 @@ trait WithLayoutNavigation
                             ]
                         ],
                         // [
-                        //     'label' => __('calendar'),
+                        //     'label' => __('Calendar'),
                         //     'icon'  => ['fal', 'fa-calendar'],
                         //     'root'  => 'grp.org.hr.calendars.',
                         //     'route' => [
@@ -210,7 +210,7 @@ trait WithLayoutNavigation
                         // ],
 
                         [
-                            'label' => __('clocking machines'),
+                            'label' => __('Clocking machines'),
                             'icon'  => ['fal', 'fa-chess-clock'],
                             'root'  => 'grp.org.hr.clocking_machines.',
                             'route' => [
@@ -220,7 +220,7 @@ trait WithLayoutNavigation
                             ]
                         ],
                         [
-                            'label' => __('timesheets'),
+                            'label' => __('Timesheets'),
                             'icon'  => ['fal', 'fa-stopwatch'],
                             'root'  => 'grp.org.hr.timesheets.',
                             'route' => [
@@ -292,7 +292,7 @@ trait WithLayoutNavigation
         if ($user->hasPermissionTo("locations.$warehouse->id.view")) {
             $navigation["warehouse"] = [
                 "root"    => "grp.org.warehouses.show.infrastructure.",
-                "label"   => __("locations"),
+                "label"   => __("Locations"),
                 "icon"    => ["fal", "fa-inventory"],
                 "route"   => [
                     "name"       => "grp.org.warehouses.show.infrastructure.dashboard",
@@ -312,7 +312,7 @@ trait WithLayoutNavigation
                         ],
                         [
                             "root"    => "grp.org.warehouses.show.infrastructure.warehouse_areas.",
-                            "label"   => __("areas"),
+                            "label"   => __("Areas"),
                             "tooltip" => __("Warehouse Areas"),
                             "icon"    => ["fal", "fa-map-signs"],
                             "route"   => [
@@ -323,7 +323,7 @@ trait WithLayoutNavigation
                         ],
                         [
                             "root"    => "grp.org.warehouses.show.infrastructure.locations.",
-                            "label"   => __("locations"),
+                            "label"   => __("Locations"),
                             "tooltip" => __("Locations"),
                             "icon"    => ["fal", "fa-inventory"],
                             "route"   => [

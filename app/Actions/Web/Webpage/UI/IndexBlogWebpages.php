@@ -246,13 +246,13 @@ class IndexBlogWebpages extends OrgAction
                     $routeName,
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('webpages'),
+                'title'       => __('Webpages'),
                 'pageHead'    => [
                     'model'         => __('webpages'),
                     'title'         => ucfirst($this->bucket),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
-                        'title' => __('webpage')
+                        'title' => __('Webpage')
                     ],
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions,

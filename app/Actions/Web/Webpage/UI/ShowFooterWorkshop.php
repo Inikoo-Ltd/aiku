@@ -49,7 +49,7 @@ class ShowFooterWorkshop extends OrgAction
                     'subNavigation' => $this->getFooterSubNavigation($website),
                     'title'         => $website->code,
                     'icon'          => [
-                        'title' => __('footer'),
+                        'title' => __('Footer'),
                         'icon'  => 'fal fa-browser'
                     ],
                     'actions'       => $this->getActions($website, 'grp.models.website.publish.footer')

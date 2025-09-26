@@ -45,9 +45,9 @@ class ShowSupplyChainDashboard extends GrpAction
                 'pageHead'     => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-box-usd'],
-                        'title' => __('supply chain')
+                        'title' => __('Supply chain')
                     ],
-                    'title' => __('supply chain'),
+                    'title' => __('Supply chain'),
                 ],
                 'flatTreeMaps' => [
 

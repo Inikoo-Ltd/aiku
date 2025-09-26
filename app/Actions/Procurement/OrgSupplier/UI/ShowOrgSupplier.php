@@ -82,7 +82,7 @@ class ShowOrgSupplier extends OrgAction
                 'pageHead'    => [
                     'icon'    => [
                         'icon'  => 'fal fa-person-dolly',
-                        'title' => __('supplier')
+                        'title' => __('Supplier')
                     ],
                     'title'   => $orgSupplier->supplier->name,
                     'model'     => __('Supplier'),

@@ -31,22 +31,22 @@ enum MasterSubDepartmentTabsEnum: string
             MasterSubDepartmentTabsEnum::HISTORY => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
 
             ],
             MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS => [
-                'title' => __('sub departments in shop'),
+                'title' => __('Sub departments in shop'),
                 'icon'  => 'fal fa-store',
             ],
 
             MasterSubDepartmentTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
 
             MasterSubDepartmentTabsEnum::IMAGES => [
-                'title' => __('media'),
+                'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',

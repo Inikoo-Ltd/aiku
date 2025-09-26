@@ -41,7 +41,7 @@ class CreateCustomerClient extends OrgAction
                     'title'   => __('new client'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('client')
+                        'title' => __('Client')
                     ],
                     'actions' => [
                         [

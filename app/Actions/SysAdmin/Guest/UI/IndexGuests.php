@@ -157,13 +157,13 @@ class IndexGuests extends GrpAction
             $title = __('Inactive');
             $icon  = [
                 'icon'  => ['fal', 'fa-user-slash'],
-                'title' => __('inactive guests')
+                'title' => __('Inactive guests')
             ];
         } elseif ($this->scope == 'all') {
             $title = __('All');
             $icon  = [
                 'icon'  => ['fal', 'fa-users'],
-                'title' => __('all guests')
+                'title' => __('All guests')
             ];
         }
         return Inertia::render(

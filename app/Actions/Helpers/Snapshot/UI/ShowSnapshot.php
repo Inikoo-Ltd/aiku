@@ -67,7 +67,7 @@ class ShowSnapshot extends OrgAction
                         'label' => '../'.$snapshot->parent->url,
                     ],
                     'icon'          => [
-                        'title' => __('snapshot'),
+                        'title' => __('Snapshot'),
                         'icon'  => 'fal fa-browser'
                     ],
                     'actions'       => $actions,

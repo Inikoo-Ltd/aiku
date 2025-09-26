@@ -171,7 +171,7 @@ class ShowMasterProducts extends GrpAction
                     'model'   => '',
                     'icon'    => [
                         'icon'  => ['fal', 'fa-cube'],
-                        'title' => __('master asset')
+                        'title' => __('Master asset')
                     ],
                     'actions' => [
                         [

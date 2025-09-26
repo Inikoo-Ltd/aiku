@@ -26,16 +26,16 @@ enum DeliveryNotesTabsEnum: string
         return match ($this) {
 
             DeliveryNotesTabsEnum::DELIVERY_NOTES => [
-                'title' => __('delivery notes'),
+                'title' => __('Delivery notes'),
                 'icon'  => 'fal fa-shopping-cart',
             ],
             DeliveryNotesTabsEnum::STATS => [
-                'title' => __('stats'),
+                'title' => __('Stats'),
                 'icon'  => 'fal fa-chart-pie',
             ],
 
             DeliveryNotesTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

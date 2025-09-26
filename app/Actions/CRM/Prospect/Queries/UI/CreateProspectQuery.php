@@ -31,7 +31,7 @@ class CreateProspectQuery extends InertiaAction
                     'title'   => __('new prospect list'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-code-branch'],
-                        'title' => __('prospect list')
+                        'title' => __('Prospect list')
                     ],
                     'actions' => [
                         [

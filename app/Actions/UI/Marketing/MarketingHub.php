@@ -59,7 +59,7 @@ class MarketingHub extends InertiaAction
                 ),
                 'title'       => __('marketing'),
                 'pageHead'    => [
-                    'title' => __('marketing'),
+                    'title' => __('Marketing'),
                 ],
 
 

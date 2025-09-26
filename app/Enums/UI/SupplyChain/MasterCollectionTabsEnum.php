@@ -37,7 +37,7 @@ enum MasterCollectionTabsEnum: string
             MasterCollectionTabsEnum::HISTORY => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
 
             ],
@@ -58,7 +58,7 @@ enum MasterCollectionTabsEnum: string
                 'icon'  => 'fal fa-cube',
             ],
             MasterCollectionTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

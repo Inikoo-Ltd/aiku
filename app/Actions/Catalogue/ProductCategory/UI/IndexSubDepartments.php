@@ -220,7 +220,7 @@ class IndexSubDepartments extends OrgAction
             $title     = $this->parent->name;
             $icon      = [
                 'icon'  => ['fal', 'fa-folder-tree'],
-                'title' => __('department')
+                'title' => __('Department')
             ];
             $iconRight = $this->parent->state->stateIcon()[$this->parent->state->value];
 

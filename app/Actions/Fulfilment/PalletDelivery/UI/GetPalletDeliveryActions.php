@@ -116,7 +116,7 @@ class GetPalletDeliveryActions
                         'type'    => 'button',
                         'style'   => 'secondary',
                         'icon'    => $this->addIcon,
-                        'label'   => __('add storage'),
+                        'label'   => __('Add storage'),
                         'key'     => 'add-pallet',
                         'tooltip' => __('Add carton, pallet, or oversize goods'),
                         'route'   => [

@@ -187,7 +187,7 @@ class ShowShop extends OrgAction
         return Inertia::render(
             'Org/Catalogue/Shop',
             [
-                'title'       => __('shop'),
+                'title'       => __('Shop'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),

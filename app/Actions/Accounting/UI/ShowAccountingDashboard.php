@@ -44,11 +44,11 @@ class ShowAccountingDashboard extends OrgAction
                 'pageHead'    => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-abacus'],
-                        'title' => __('accounting')
+                        'title' => __('Accounting')
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('accounting')
+                        'title' => __('Accounting')
                     ],
                     'title'     => __('accounting'),
 

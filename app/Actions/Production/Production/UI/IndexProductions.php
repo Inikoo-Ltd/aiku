@@ -133,7 +133,7 @@ class IndexProductions extends OrgAction
                 'pageHead'    => [
                     'title'   => __('Production plants'),
                     'icon'    => [
-                        'title' => __('factories'),
+                        'title' => __('Factories'),
                         'icon'  => 'fal fa-industry'
                     ],
                     'actions' => [

@@ -79,7 +79,7 @@ class IndexOrgAgents extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title' => __('no agents'),
+                        'title' => __('No agents'),
                         'count' => $organisation->procurementStats->number_org_agents,
 
                     ]
@@ -137,7 +137,7 @@ class IndexOrgAgents extends OrgAction
                     'model'   => __('Procurement'),
                     'title'   => __('agents'),
                     'icon'    => [
-                        'title' => __('website'),
+                        'title' => __('Website'),
                         'icon'  => 'fal fa-people-arrows'
                     ],
                     'actions' => [

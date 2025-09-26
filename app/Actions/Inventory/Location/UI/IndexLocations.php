@@ -160,7 +160,7 @@ class IndexLocations extends OrgAction
                             'action'      => $this->canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new location'),
+                                'tooltip' => __('New location'),
                                 'label'   => __('location'),
                                 'route'   => [
                                     'name'       => 'grp.org.warehouses.show.infrastructure.warehouse_areas.show.locations.create',
@@ -245,13 +245,13 @@ class IndexLocations extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-inventory'],
-            'title' => __('locations')
+            'title' => __('Locations')
         ];
 
         if ($scope instanceof Group) {
             $icon = [
                 'icon'  => ['fal', 'fa-location-arrow'],
-                'title' => __('locations')
+                'title' => __('Locations')
             ];
         }
 
@@ -262,9 +262,9 @@ class IndexLocations extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'            => __('locations'),
+                'title'            => __('Locations'),
                 'pageHead'         => [
-                    'title'     => __('locations'),
+                    'title'     => __('Locations'),
                     'container' => $container,
                     'icon'      => $icon,
                     'actions'   => $this->getActions($request)

@@ -44,9 +44,9 @@ class ShowOrganisationOverviewHub extends OrgAction
                 'pageHead'        => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-mountains'],
-                        'title' => __('overview')
+                        'title' => __('Overview')
                     ],
-                    'title' => __('overview'),
+                    'title' => __('Overview'),
                 ],
                 'dashboard_stats' => [
                     'setting' => [

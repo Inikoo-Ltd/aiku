@@ -63,7 +63,7 @@ class EditMasterSubDepartment extends OrgAction
                  ),
                 'title'       => __('Edit Master Sub-department'),
                 'pageHead'    => [
-                    'title'   => __('edit master Sub-department'),
+                    'title'   => __('Edit master Sub-department'),
                     'actions' => [
                         [
                             'type'  => 'button',

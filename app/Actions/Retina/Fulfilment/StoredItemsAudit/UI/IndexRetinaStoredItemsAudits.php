@@ -75,7 +75,7 @@ class IndexRetinaStoredItemsAudits extends RetinaAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-narwhal'],
-                            'title' => __('stored item audit')
+                            'title' => __('Stored item audit')
                         ],
                     'model'   => __('stored item'),
                     'title'   => __('stored item audits')

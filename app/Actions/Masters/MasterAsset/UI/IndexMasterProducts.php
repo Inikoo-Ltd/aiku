@@ -198,7 +198,7 @@ class IndexMasterProducts extends GrpAction
             $model         = '';
             $icon          = [
                 'icon'  => ['fal', 'fa-store-alt'],
-                'title' => __('master shop')
+                'title' => __('Master shop')
             ];
             $afterTitle    = [
                 'label' => __('Master Products')
@@ -217,7 +217,7 @@ class IndexMasterProducts extends GrpAction
                 $model         = '';
                 $icon          = [
                     'icon'  => ['fal', 'fa-store-alt'],
-                    'title' => __('master shop')
+                    'title' => __('Master shop')
                 ];
                 $afterTitle    = [
                     'label' => __('Master Products')
@@ -258,7 +258,7 @@ class IndexMasterProducts extends GrpAction
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('Add a master product to this family'),
-                            'label'   => __('master product'),
+                            'label'   => __('Master product'),
                         ],
                     ] : [],
                 ],

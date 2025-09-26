@@ -51,7 +51,7 @@ class EditMasterDepartment extends OrgAction
                  ),
                 'title'       => __('Edit Master Department'),
                 'pageHead'    => [
-                    'title'   => __('edit master department'),
+                    'title'   => __('Edit master department'),
                     'actions' => [
                         [
                             'type'  => 'button',

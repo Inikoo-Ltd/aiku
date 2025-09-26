@@ -35,7 +35,7 @@ class GetOrganisationNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label'   => __('dashboard'),
+                            'label'   => __('Dashboard'),
                             'tooltip' => __('Dashboard'),
                         ]
                     ]
@@ -66,7 +66,7 @@ class GetOrganisationNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label'   => __('dashboard'),
+                            'label'   => __('Dashboard'),
                             'tooltip' => __('Dashboard'),
                         ]
                     ]
@@ -84,12 +84,12 @@ class GetOrganisationNavigation
 
         $navigation['shops_fulfilments_navigation'] = [
             'shops_navigation'       => [
-                'label'      => __('shop'),
+                'label'      => __('Shop'),
                 'icon'       => "fal fa-store-alt",
                 'navigation' => $shops_navigation
             ],
             'fulfilments_navigation' => [
-                'label'      => __('fulfilment'),
+                'label'      => __('Fulfilment'),
                 'icon'       => "fal fa-hand-holding-box",
                 'navigation' => $fulfilments_navigation
             ]
@@ -108,7 +108,7 @@ class GetOrganisationNavigation
         if ($user->authTo("procurement.$organisation->id.view")) {
             $navigation['procurement'] = [
                 'root'    => 'grp.org.procurement',
-                'label'   => __('procurement'),
+                'label'   => __('Procurement'),
                 'icon'    => ['fal', 'fa-box-usd'],
                 'route'   => [
                     'name'       => 'grp.org.procurement.dashboard',
@@ -125,7 +125,7 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __('agents'),
+                            'label' => __('Agents'),
                             'icon'  => ['fal', 'fa-people-arrows'],
                             'root'  => 'grp.org.procurement.org_agents.',
                             'route' => [
@@ -135,7 +135,7 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __('suppliers'),
+                            'label' => __('Suppliers'),
                             'icon'  => ['fal', 'fa-person-dolly'],
                             'root'  => 'grp.org.procurement.org_suppliers.',
                             'route' => [
@@ -144,7 +144,7 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __('partners'),
+                            'label' => __('Partners'),
                             'icon'  => ['fal', 'fa-users-class'],
                             'root'  => 'grp.org.procurement.org_partners.',
                             'route' => [
@@ -153,7 +153,7 @@ class GetOrganisationNavigation
                             ]
                         ],
                         [
-                            'label' => __('purchase orders'),
+                            'label' => __('Purchase orders'),
                             'icon'  => ['fal', 'fa-clipboard-list'],
                             'root'  => 'grp.org.procurement.purchase_orders.',
                             'route' => [

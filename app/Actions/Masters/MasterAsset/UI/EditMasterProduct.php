@@ -83,7 +83,7 @@ class EditMasterProduct extends GrpAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
-                            'title' => __('master product'),
+                            'title' => __('Master product'),
                         ],
                     'actions' => [
                         [

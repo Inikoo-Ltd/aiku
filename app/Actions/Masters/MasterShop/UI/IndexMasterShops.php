@@ -113,7 +113,7 @@ class IndexMasterShops extends GrpAction
                     'title' => __('Master Shops'),
                     'icon'  => [
                         'icon'  => ['fal', 'fa-store-alt'],
-                        'title' => __('master shops')
+                        'title' => __('Master shops')
                     ],
                 ],
                 'data'        => MasterShopsResource::collection($masterShops),

@@ -32,25 +32,25 @@ enum ProductTabsEnum: string
     {
         return match ($this) {
             ProductTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             //            ProductTabsEnum::VARIATIONS => [
-            //                'title' => __('variations'),
+            //                'title' => __('Variations'),
             //                'icon'  => 'fal fa-stream',
             //            ],
             ProductTabsEnum::SALES => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
             ProductTabsEnum::ORDERS => [
-                'title' => __('orders'),
+                'title' => __('Orders'),
                 'icon'  => 'fal fa-shopping-cart',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             ProductTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
@@ -69,19 +69,19 @@ enum ProductTabsEnum: string
                 'align' => 'right',
             ],
             ProductTabsEnum::IMAGES => [
-                'title' => __('media'),
+                'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             ProductTabsEnum::REMINDERS => [
-                'title' => __('reminders'),
+                'title' => __('Reminders'),
                 'icon'  => 'fal fa-bell',
                 'align' => 'right',
                 'type'  => 'icon',
             ],
             ProductTabsEnum::FAVOURITES => [
-                'title' => __('favourites'),
+                'title' => __('Favourites'),
                 'icon'  => 'fal fa-heart',
                 'align' => 'right',
                 'type'  => 'icon',

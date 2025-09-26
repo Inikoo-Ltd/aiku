@@ -192,7 +192,7 @@ class IndexManufactureTasks extends OrgAction
                     'title'     => __('Manufacture tasks'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-code-merge'],
-                        'title' => __('manufacture_tasks'),
+                        'title' => __('Manufacture_tasks'),
                     ],
                     'actions'   => [
                         $this->canEdit && $this->parent instanceof Production ? [

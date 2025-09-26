@@ -31,7 +31,7 @@ class CreateShipper extends OrgAction
                     'title'   => __('new shipper'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-shipping-fast'],
-                        'title' => __('shipper')
+                        'title' => __('Shipper')
                     ],
                     'actions' => [
                         [
