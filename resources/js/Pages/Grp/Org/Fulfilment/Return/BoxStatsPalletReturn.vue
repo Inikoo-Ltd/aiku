@@ -58,7 +58,7 @@ const props = defineProps<{
 }>()
 
 onMounted(() => {
-	JsBarcode("#palletReturnBarcode", route().v().params.palletReturn, {
+	JsBarcode("#palletReturnBarcode", route().routeParams.palletReturn, {
 		lineColor: "rgb(41 37 36)",
 		width: 2,
 		height: 50,

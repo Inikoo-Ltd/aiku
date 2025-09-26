@@ -16,6 +16,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dispatching\Shipper;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class SaveDeliveryNoteShippingFieldsAndRetryStoreShipping extends OrgAction
@@ -24,37 +25,74 @@ class SaveDeliveryNoteShippingFieldsAndRetryStoreShipping extends OrgAction
 
     private DeliveryNote $deliveryNote;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(DeliveryNote $deliveryNote, Shipper $shipper, array $modelData): Shipment
     {
         $addressData = Arr::get($modelData, 'address', []);
-        UpdateAddress::run($deliveryNote->deliveryAddress, $addressData);
+
+        $this->updateDeliveryAddress($deliveryNote, $addressData);
 
         $deliveryNote = $this->update($deliveryNote, Arr::only($modelData, ['email', 'phone', 'company_name', 'contact_name']));
+        $deliveryNote->refresh();
 
-        return StoreShipment::run($deliveryNote, $shipper, [], false);
+        try {
+            return StoreShipment::run($deliveryNote, $shipper, [], false);
+        } catch (\Throwable $e) {
+            throw ValidationException::withMessages(
+                [$e->getMessage()]
+            );
+        }
+    }
+
+
+    public function updateDeliveryAddress(DeliveryNote $deliveryNote, $addressData): void
+    {
+        $addressData = Arr::only($addressData, [
+            'address_line_1',
+            'address_line_2',
+            'sorting_code',
+            'postal_code',
+            'locality',
+            'dependent_locality',
+            'administrative_area',
+            'country_id'
+
+        ]);
+        UpdateAddress::run($deliveryNote->deliveryAddress, $addressData);
+        $deliveryNote->update(
+            [
+                'delivery_country_id' => $addressData['country_id'],
+            ]
+
+        );
     }
 
     public function rules(): array
     {
         return [
 
-            'email'        => ['required', 'nullable', 'string'],
-            'phone'        => ['required', 'nullable', 'string'],
-            'company_name' => ['required', 'nullable', 'string', 'max:255'],
-            'contact_name' => ['required', 'nullable', 'string', 'max:255'],
-            'address'      => ['required', 'array'],
+            'email'        => ['sometimes', 'nullable', 'string'],
+            'phone'        => ['sometimes', 'nullable', 'string'],
+            'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
+            'address'      => ['sometimes', 'array'],
 
 
         ];
     }
 
 
-    public function asController(DeliveryNote $deliveryNote, Shipper $hipper, ActionRequest $request, int $hydratorsDelay = 0): Shipment
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function asController(DeliveryNote $deliveryNote, Shipper $shipper, ActionRequest $request, int $hydratorsDelay = 0): Shipment
     {
         $this->deliveryNote   = $deliveryNote;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
-        return $this->handle($deliveryNote, $hipper, $this->validatedData);
+        return $this->handle($deliveryNote, $shipper, $this->validatedData);
     }
 }
