@@ -12,7 +12,7 @@ use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class GwtShippingDeliveryNoteData
+class GetShippingDeliveryNoteData
 {
     use AsAction;
 

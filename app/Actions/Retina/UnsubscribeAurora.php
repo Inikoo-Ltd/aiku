@@ -16,6 +16,7 @@ class UnsubscribeAurora extends RetinaAction
     public function handle(array $modelData): bool
     {
 
+        dd($modelData);
         return true;
 
     }

@@ -10,7 +10,7 @@
 
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
-use App\Actions\Dispatching\Shipment\GwtShippingDeliveryNoteData;
+use App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
 use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
@@ -67,7 +67,7 @@ class CallApiApcGbShipping extends OrgAction
         if ($parent instanceof PalletReturn) {
             $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
         } else {
-            $parentResource = GwtShippingDeliveryNoteData::run($parent);
+            $parentResource = GetShippingDeliveryNoteData::run($parent);
         }
 
         $parcels = $parent->parcels;
