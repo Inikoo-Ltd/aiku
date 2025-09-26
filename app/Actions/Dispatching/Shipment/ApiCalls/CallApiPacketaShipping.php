@@ -51,50 +51,50 @@ class CallApiPacketaShipping extends OrgAction
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, bool $cascade = true): array
     {
         $accessToken = $this->getAccessToken($shipper);
         $apiPassword = Arr::get($accessToken, 'api_password');
-        $url = $this->getBaseUrl() . '/api/soap.wsdl';
+        $url         = $this->getBaseUrl().'/api/soap.wsdl';
 
         if ($parent instanceof PalletReturn) {
             $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
         } else {
-            $parentResource = GetShippingDeliveryNoteData::run($parent);
+            $parentResource = GetShippingDeliveryNoteData::run($parent, $cascade);
         }
 
-        $parcels = $parent->parcels;
-        $weight = collect($parcels)->sum('weight') ?? 0;
-        $order = $parent->orders->first();
+        $parcels     = $parent->parcels;
+        $weight      = collect($parcels)->sum('weight') ?? 0;
+        $order       = $parent->orders->first();
         $countryCode = Arr::get($parentResource, 'to_address.country.code', 'CZ');
-        $addressId = $this->getAddressIdByCountryCode($countryCode, $weight);
+        $addressId   = $this->getAddressIdByCountryCode($countryCode, $weight);
         if (is_null($addressId)) {
             return [
-                'status' => 'fail',
+                'status'    => 'fail',
                 'errorData' => [
                     'message' => "No address ID found for country code $countryCode and weight $weight kg.",
                 ],
                 'modelData' => [],
             ];
         }
-        $value = $this->getInsuranceValueByCountryCode($countryCode, $weight, !empty($parent->cash_on_delivery));
+        $value            = $this->getInsuranceValueByCountryCode($countryCode, $weight, !empty($parent->cash_on_delivery));
         $packetAttributes = [
-            'number' => Str::limit($parent->reference, 30),
-            'name' => Arr::get($parentResource, 'to_first_name'),
-            'surname' => Arr::get($parentResource, 'to_last_name'),
-            'company' => Arr::get($parentResource, 'to_company_name'),
-            'email' => Arr::get($parentResource, 'to_email'),
-            'phone' => Arr::get($parentResource, 'to_phone'),
-            'addressId' => $addressId,
-            'value' => $value,
-            'currency' => $order->currency?->code ?? 'EUR',
-            'eshop' => Arr::get($parentResource, 'from_company_name'),
-            'weight' => $weight, // in kg
-            'street' => Arr::get($parentResource, 'to_address.address_line_1'),
+            'number'      => Str::limit($parent->reference, 30),
+            'name'        => Arr::get($parentResource, 'to_first_name'),
+            'surname'     => Arr::get($parentResource, 'to_last_name'),
+            'company'     => Arr::get($parentResource, 'to_company_name'),
+            'email'       => Arr::get($parentResource, 'to_email'),
+            'phone'       => Arr::get($parentResource, 'to_phone'),
+            'addressId'   => $addressId,
+            'value'       => $value,
+            'currency'    => $order->currency?->code ?? 'EUR',
+            'eshop'       => Arr::get($parentResource, 'from_company_name'),
+            'weight'      => $weight, // in kg
+            'street'      => Arr::get($parentResource, 'to_address.address_line_1'),
             'houseNumber' => Arr::get($parentResource, 'to_address.address_line_2'),
-            'city' => Arr::get($parentResource, 'to_address.locality'),
-            'zip' => Arr::get($parentResource, 'to_address.postal_code'),
-            'note' => $parent->shipping_notes,
+            'city'        => Arr::get($parentResource, 'to_address.locality'),
+            'zip'         => Arr::get($parentResource, 'to_address.postal_code'),
+            'note'        => $parent->shipping_notes,
         ];
 
         // Add COD (Cash on Delivery) if applicable
@@ -105,20 +105,20 @@ class CallApiPacketaShipping extends OrgAction
         $errorData = [];
         $modelData = [];
         try {
-            $client = new SoapClient($url);
-            $apiResponse = $client->createPacket($apiPassword, $packetAttributes);
+            $client          = new SoapClient($url);
+            $apiResponse     = $client->createPacket($apiPassword, $packetAttributes);
             $apiResponseData = json_decode(json_encode($apiResponse), true);
 
-            $modelData = [
+            $modelData                   = [
                 'api_response' => $apiResponseData,
             ];
-            $status = 'success';
-            $id = $apiResponse->id ?? '';
-            $modelData['label']      = $this->getLabel($id, $shipper);
-            $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
+            $status                      = 'success';
+            $id                          = $apiResponse->id ?? '';
+            $modelData['label']          = $this->getLabel($id, $shipper);
+            $modelData['label_type']     = ShipmentLabelTypeEnum::PDF;
             $modelData['number_parcels'] = $parcels ? count($parcels) : 1;
-            $modelData['trackings'] = [$id];
-            $modelData['tracking_urls'] = [];
+            $modelData['trackings']      = [$id];
+            $modelData['tracking_urls']  = [];
 
             $modelData['tracking'] = $apiResponse->id;
         } catch (SoapFault $e) {
@@ -131,7 +131,7 @@ class CallApiPacketaShipping extends OrgAction
                 }
 
                 foreach ($faults as $fault) {
-                    if (in_array($fault->name, ['street', 'houseNumber', 'city', 'zip','phone']) && !isset($errorData['address'])) {
+                    if (in_array($fault->name, ['street', 'houseNumber', 'city', 'zip', 'phone']) && !isset($errorData['address'])) {
                         $errorData['address'] = "Invalid address for fields: ";
                     } elseif (!isset($errorData['others'])) {
                         $errorData['others'] = 'Invalid field: ';
@@ -169,7 +169,7 @@ class CallApiPacketaShipping extends OrgAction
                 $errorData['others'] = rtrim($errorData['others'], ',');
             }
 
-            $errorData['message'] =  $errorData['address'] ?? $errorData['others'];
+            $errorData['message'] = $errorData['address'] ?? $errorData['others'];
         }
 
         return [
@@ -186,15 +186,16 @@ class CallApiPacketaShipping extends OrgAction
         }
         $accessToken = $this->getAccessToken($shipper);
         $apiPassword = Arr::get($accessToken, 'api_password');
-        $url = $this->getBaseUrl() . '/api/soap.wsdl';
-        $format = 'A6 on A6';
-        $offset = 0;
+        $url         = $this->getBaseUrl().'/api/soap.wsdl';
+        $format      = 'A6 on A6';
+        $offset      = 0;
         try {
             $client = new SoapClient($url);
             $result = $client->packetLabelPdf($apiPassword, $labelID, $format, $offset);
+
             return base64_encode($result);
         } catch (SoapFault $e) {
-            return 'Could not retrieve label: ' . $e->getMessage();
+            return 'Could not retrieve label: '.$e->getMessage();
         }
     }
 
@@ -206,7 +207,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'BG' => [
                 [
-                    'id' => 26066,
+                    'id'     => 26066,
                     'ranges' => [
                         [0, 1],
                         [1, 2],
@@ -227,7 +228,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'HR' => [
                 [
-                    'id' => 10618,
+                    'id'     => 10618,
                     'ranges' => [
                         [0, 1],
                         [1, 2],
@@ -246,7 +247,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'CZ' => [
                 [
-                    'id' => 106,
+                    'id'     => 106,
                     'ranges' => [
                         [0, 1],
                         [1, 2],
@@ -263,7 +264,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'EE' => [
                 [
-                    'id' => 25980,
+                    'id'     => 25980,
                     'ranges' => [
                         [0, 2],   // €8.60
                         [2, 5],   // €9.40
@@ -274,7 +275,7 @@ class CallApiPacketaShipping extends OrgAction
                     ]
                 ],
                 [
-                    'id' => 5060,
+                    'id'     => 5060,
                     'ranges' => [
                         [5, 10],  // €11.90
                         [10, 15], // €12.70
@@ -289,7 +290,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'FR' => [
                 [
-                    'id' => 4309,
+                    'id'     => 4309,
                     'ranges' => [
                         [0, 0.25],  // 0-0.25 kg
                         [2, 5],     // 2-5 kg
@@ -302,7 +303,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'GR' => [
                 [
-                    'id' => 17465,
+                    'id'     => 17465,
                     'ranges' => [
                         [0, 1],    // €6.10
                         [1, 2],    // €6.80
@@ -323,7 +324,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'HU' => [
                 [
-                    'id' => 4159,
+                    'id'     => 4159,
                     'ranges' => [
                         [0, 1],   // 0-1 kg
                         [1, 2],   // 1-2 kg
@@ -334,7 +335,7 @@ class CallApiPacketaShipping extends OrgAction
                     ]
                 ],
                 [
-                    'id' => 3828,
+                    'id'     => 3828,
                     'ranges' => [
                         [2, 5],   // 2-5 kg
                         [5, 10],  // 5-10 kg
@@ -347,7 +348,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'IE' => [
                 [
-                    'id' => 9990,
+                    'id'     => 9990,
                     'ranges' => [
                         [2, 5], // 2-5 kg
                     ],
@@ -358,7 +359,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'IT' => [
                 [
-                    'id' => 9103,
+                    'id'     => 9103,
                     'ranges' => [
                         [0, 2],   // 0-2 kg
                         [2, 5],   // 2-5 kg
@@ -371,7 +372,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'LV' => [
                 [
-                    'id' => 25981,
+                    'id'     => 25981,
                     'ranges' => [
                         [0, 2],   // 0-2 kg
                         [2, 5],   // 2-5 kg
@@ -382,7 +383,7 @@ class CallApiPacketaShipping extends OrgAction
                     ]
                 ],
                 [
-                    'id' => 18807,
+                    'id'     => 18807,
                     'ranges' => [
                         [5, 10],   // 5-10 kg
                         [10, 15],  // 10-15 kg
@@ -397,7 +398,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'LT' => [
                 [
-                    'id' => 25982,
+                    'id'     => 25982,
                     'ranges' => [
                         [0, 2],   // 0-2 kg
                         [2, 5],   // 2-5 kg
@@ -408,7 +409,7 @@ class CallApiPacketaShipping extends OrgAction
                     ]
                 ],
                 [
-                    'id' => 18808,
+                    'id'     => 18808,
                     'ranges' => [
                         [5, 10],   // 5-10 kg
                         [10, 30],  // 10-30 kg
@@ -421,7 +422,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'PL' => [
                 [
-                    'id' => 4162,
+                    'id'     => 4162,
                     'ranges' => [
                         [0, 1],    // 0-1 kg
                         [1, 2],    // 1-2 kg
@@ -442,7 +443,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'PT' => [
                 [
-                    'id' => 4655,
+                    'id'     => 4655,
                     'ranges' => [
                         [0, 2],    // 0-2 kg
                         [2, 5],    // 2-5 kg
@@ -459,7 +460,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'RO' => [
                 [
-                    'id' => 7397,
+                    'id'     => 7397,
                     'ranges' => [
                         [2, 5], // 2-5 kg
                     ],
@@ -470,7 +471,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'SK' => [
                 [
-                    'id' => 131,
+                    'id'     => 131,
                     'ranges' => [
                         [0, 1],    // 0-1 kg
                         [1, 2],    // 1-2 kg
@@ -489,7 +490,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'SI' => [
                 [
-                    'id' => 19515,
+                    'id'     => 19515,
                     'ranges' => [
                         [0, 2],    // 0-2 kg
                         [2, 5],    // 2-5 kg
@@ -502,7 +503,7 @@ class CallApiPacketaShipping extends OrgAction
                     ]
                 ],
                 [
-                    'id' => 25004,
+                    'id'     => 25004,
                     'ranges' => [
                         [5, 10],   // 5-10 kg
                         [10, 15],  // 10-15 kg
@@ -515,7 +516,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'ES' => [
                 [
-                    'id' => 4653,
+                    'id'     => 4653,
                     'ranges' => [
                         [0, 2],    // 0-2 kg
                         [2, 5],    // 2-5 kg
@@ -532,7 +533,7 @@ class CallApiPacketaShipping extends OrgAction
             ],
             'SE' => [
                 [
-                    'id' => 4827,
+                    'id'     => 4827,
                     'ranges' => [
                         [2, 5],   // 2-5 kg
                         [5, 10],  // 5-10 kg
@@ -555,43 +556,43 @@ class CallApiPacketaShipping extends OrgAction
     public function rolesLimitValueByTOS(): array
     {
         return [
-            'BE' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'BG' => ['cod' => 1500,    'cod_currency' => 'BGN', 'max' => 1500,     'max_currency' => 'BGN'],
-            'CZ' => ['cod' => 20000,   'cod_currency' => 'CZK', 'max' => 20000,    'max_currency' => 'CZK'],
-            'DK' => ['cod' => 5200,    'cod_currency' => 'DKK', 'max' => 5200,     'max_currency' => 'DKK'],
-            'EE' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'FI' => ['cod' => 500,     'cod_currency' => 'EUR', 'max' => 500,      'max_currency' => 'EUR'],
-            'FR' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'HR' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'IE' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'IT' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'IL' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'QA' => ['cod' => 500,     'cod_currency' => 'USD', 'max' => 800,      'max_currency' => 'USD'],
-            'CY' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'LT' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'LV' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'LU' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'HU' => ['cod' => 250000,  'cod_currency' => 'HUF', 'max' => 250000,   'max_currency' => 'HUF'],
-            'DE' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'NL' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'OM' => ['cod' => 500,     'cod_currency' => 'USD', 'max' => 800,      'max_currency' => 'USD'],
-            'PL' => ['cod' => 3000,    'cod_currency' => 'PLN', 'max' => 3000,     'max_currency' => 'PLN'],
-            'PT' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'AT' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'RO' => ['cod' => 3500,    'cod_currency' => 'RON', 'max' => 3500,     'max_currency' => 'RON'],
-            'RU' => ['cod' => 52000,   'cod_currency' => 'RUB', 'max' => 52000,    'max_currency' => 'RUB'],
-            'GR' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'SA' => ['cod' => 500,     'cod_currency' => 'USD', 'max' => 800,      'max_currency' => 'USD'],
-            'SK' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'SI' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'AE' => ['cod' => 700,     'cod_currency' => 'AED', 'max' => 700,      'max_currency' => 'AED'],
-            'GB' => ['cod' => 630,     'cod_currency' => 'GBP', 'max' => 630,      'max_currency' => 'GBP'],
-            'US' => ['cod' => 500,     'cod_currency' => 'USD', 'max' => 800,      'max_currency' => 'USD'],
-            'ES' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'SE' => ['cod' => 7500,    'cod_currency' => 'SEK', 'max' => 7500,     'max_currency' => 'SEK'],
-            'CH' => ['cod' => 800,     'cod_currency' => 'CHF', 'max' => 800,      'max_currency' => 'CHF'],
-            'TR' => ['cod' => 700,     'cod_currency' => 'EUR', 'max' => 700,      'max_currency' => 'EUR'],
-            'UA' => ['cod' => 20500,   'cod_currency' => 'UAH', 'max' => 20500,    'max_currency' => 'UAH'],
+            'BE' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'BG' => ['cod' => 1500, 'cod_currency' => 'BGN', 'max' => 1500, 'max_currency' => 'BGN'],
+            'CZ' => ['cod' => 20000, 'cod_currency' => 'CZK', 'max' => 20000, 'max_currency' => 'CZK'],
+            'DK' => ['cod' => 5200, 'cod_currency' => 'DKK', 'max' => 5200, 'max_currency' => 'DKK'],
+            'EE' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'FI' => ['cod' => 500, 'cod_currency' => 'EUR', 'max' => 500, 'max_currency' => 'EUR'],
+            'FR' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'HR' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'IE' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'IT' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'IL' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'QA' => ['cod' => 500, 'cod_currency' => 'USD', 'max' => 800, 'max_currency' => 'USD'],
+            'CY' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'LT' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'LV' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'LU' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'HU' => ['cod' => 250000, 'cod_currency' => 'HUF', 'max' => 250000, 'max_currency' => 'HUF'],
+            'DE' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'NL' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'OM' => ['cod' => 500, 'cod_currency' => 'USD', 'max' => 800, 'max_currency' => 'USD'],
+            'PL' => ['cod' => 3000, 'cod_currency' => 'PLN', 'max' => 3000, 'max_currency' => 'PLN'],
+            'PT' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'AT' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'RO' => ['cod' => 3500, 'cod_currency' => 'RON', 'max' => 3500, 'max_currency' => 'RON'],
+            'RU' => ['cod' => 52000, 'cod_currency' => 'RUB', 'max' => 52000, 'max_currency' => 'RUB'],
+            'GR' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'SA' => ['cod' => 500, 'cod_currency' => 'USD', 'max' => 800, 'max_currency' => 'USD'],
+            'SK' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'SI' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'AE' => ['cod' => 700, 'cod_currency' => 'AED', 'max' => 700, 'max_currency' => 'AED'],
+            'GB' => ['cod' => 630, 'cod_currency' => 'GBP', 'max' => 630, 'max_currency' => 'GBP'],
+            'US' => ['cod' => 500, 'cod_currency' => 'USD', 'max' => 800, 'max_currency' => 'USD'],
+            'ES' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'SE' => ['cod' => 7500, 'cod_currency' => 'SEK', 'max' => 7500, 'max_currency' => 'SEK'],
+            'CH' => ['cod' => 800, 'cod_currency' => 'CHF', 'max' => 800, 'max_currency' => 'CHF'],
+            'TR' => ['cod' => 700, 'cod_currency' => 'EUR', 'max' => 700, 'max_currency' => 'EUR'],
+            'UA' => ['cod' => 20500, 'cod_currency' => 'UAH', 'max' => 20500, 'max_currency' => 'UAH'],
         ];
     }
 

@@ -33,7 +33,7 @@ class StoreShipment extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData, bool $cascade = true): Shipment
     {
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
@@ -54,7 +54,7 @@ class StoreShipment extends OrgAction
                 'apc-gb' => CallApiApcGbShipping::run($parent, $shipper),
                 'gls-sk' => CallApiGlsSkShipping::run($parent, $shipper),
                 'gls-es' => CallApiGlsEsShipping::run($parent, $shipper),
-                'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper),
+                'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper, $cascade),
                 'dpd-gb' => CallApiDpdGbShipping::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),
                 default => [

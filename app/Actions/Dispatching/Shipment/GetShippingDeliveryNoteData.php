@@ -69,7 +69,6 @@ class GetShippingDeliveryNoteData
             }
         }
 
-        // $toPhone='dadasd';
 
         $toEmail = $deliveryNote->email ?? '';
 
@@ -98,10 +97,8 @@ class GetShippingDeliveryNoteData
 
         $contactName   = $deliveryNote->contact_name ?? '';
 
-        if ($cascade) {
-            if (!$contactName) {
+        if ($cascade && !$contactName) {
                 $contactName = $customer->contact_name ?? '';
-            }
         }
 
 
