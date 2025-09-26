@@ -12,6 +12,7 @@ namespace App\Actions\Dispatching\PickingSession;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\PickingSession\PickingSessionStateEnum;
+use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\PickingSession;
 
 class AutoFinishPickingPickingSession extends OrgAction
@@ -19,15 +20,10 @@ class AutoFinishPickingPickingSession extends OrgAction
     use WithActionUpdate;
     public function handle(PickingSession $pickingSession): PickingSession
     {
-        $numberHandled = $pickingSession->deliveryNotes()
-            ->with('deliveryNoteItems')
-            ->get()
-            ->flatMap(function ($deliveryNote) {
-                return $deliveryNote->deliveryNoteItems;
-            })
-            ->where('is_handled', true)
-            ->count();
 
+        $numberHandled=DeliveryNoteItem::where('picking_session_id', $pickingSession->id)
+            ->where('is_handled',true)
+            ->count();
         if ($numberHandled == $pickingSession->number_items) {
             $this->update($pickingSession, [
                 'state' => PickingSessionStateEnum::PICKING_FINISHED
@@ -42,4 +38,7 @@ class AutoFinishPickingPickingSession extends OrgAction
 
         return $this->handle($pickingSession);
     }
+
+
+
 }
