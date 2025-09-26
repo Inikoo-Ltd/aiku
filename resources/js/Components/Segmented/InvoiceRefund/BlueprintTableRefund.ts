@@ -19,6 +19,11 @@ export const blueprintTable = [
         width : "36vh",
     },
     {
+        header : 'Reference',
+        key : 'reference',
+        width : "36vh",
+    },
+    {
         header : 'Refund',
         key : 'refund',
         width : "10vh",

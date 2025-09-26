@@ -22,6 +22,7 @@ import Row from "primevue/row";
 import Column from "primevue/column";
 import { useLocaleStore } from "@/Stores/locale";
 import ActionCell from "./ActionCell.vue";
+import { InputText } from "primevue"
 
 library.add(faCheck, faSave, faPlus, faMinus, faArrowRight);
 
@@ -199,6 +200,7 @@ const onSubmitPaymentRefund = () => {
 };
 
 const onSubmitRefundToPaymentsMethod = (form, data: any) => {
+    console.log('ffform', data);
     let url, finalData;
     if (paymentRefund.value.payment_method === "invoice_payment_method") {
         url = route("grp.models.refund.refund_to_payment_account", {
@@ -207,8 +209,10 @@ const onSubmitRefundToPaymentsMethod = (form, data: any) => {
         });
         finalData = {
             amount: form.refund_amount,
-            original_payment_id: data.id
+            original_payment_id: data.id,
+            reference: data.reference
         };
+        console.log('fffozzzzrm', finalData);
 
         router.post(
             url, finalData,
@@ -504,7 +508,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
         </dl>
 
         <!-- Modal: Pay Invoice -->
-        <Dialog v-model:visible="isOpenModalInvoice" :style="{ width: '600px'}" modal dismissableMask>
+        <Dialog v-model:visible="isOpenModalInvoice" :style="{ width: '100%', maxWidth: '800px'}" modal dismissableMask>
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans("Invoice Payment") }}</h2>
@@ -589,7 +593,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
         </Dialog>
 
         <!-- Modal: Pay refund -->
-        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '48vw', position: 'relative' }" maximizable modal
+        <Dialog v-model:visible="isOpenModalRefund" :style="{ width: '100%', maxWidth: '1000px', position: 'relative' }" maximizable modal
                 :draggable="false" :dismissableMask="true">
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
@@ -699,6 +703,13 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                 <template #refunded="{ data }">
                                     <div class="text-gray-500">
                                         {{ useLocaleStore().currencyFormat(data.currency_code, data.refunded) }}
+                                    </div>
+                                </template>
+
+                                <!-- Reference Column -->
+                                <template #reference="{ data }">
+                                    <div class="text-gray-500">
+                                        <InputText v-model="data.reference" class="bg-transparent border-0 p-0"/>
                                     </div>
                                 </template>
 
