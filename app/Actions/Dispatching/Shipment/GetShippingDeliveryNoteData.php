@@ -69,6 +69,8 @@ class GetShippingDeliveryNoteData
             }
         }
 
+        //$toPhone='dadasd';
+
         $toEmail = $deliveryNote->email ?? '';
 
         if ($cascade) {
