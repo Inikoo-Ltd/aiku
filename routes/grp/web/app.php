@@ -76,6 +76,9 @@ Route::middleware(["auth"])->group(function () {
     Route::prefix("masters")
         ->name("masters.")
         ->group(__DIR__."/masters.php");
+    Route::prefix("trade-units")
+        ->name("trade_units.")
+        ->group(__DIR__."/trade_units.php");
     Route::prefix("goods")
         ->name("goods.")
         ->group(__DIR__."/goods.php");

@@ -31,6 +31,10 @@ class GetGroupNavigation
 
         ];
 
+        if ($user->hasPermissionTo('goods.view')) {
+            $groupNavigation['trade-units'] = $this->getTradeUnitsNavs();
+        }
+
         if ($user->hasPermissionTo('masters.view')) {
             $groupNavigation['masters'] = $this->getMastersNavs();
         }
@@ -229,12 +233,51 @@ class GetGroupNavigation
 
                         ]
                     ],
+                    // [
+                    //     'label' => 'Trade Units',
+                    //     'icon'  => ['fal', 'fa-atom'],
+                    //     'root'  => 'grp.goods.trade-units.',
+                    //     'route' => [
+                    //         'name'       => 'grp.goods.trade-units.active',
+                    //         'parameters' => []
+
+                    //     ]
+                    // ],
+                    // [
+                    //     'label' => 'Trade Unit Families',
+                    //     'icon'  => ['fal', 'fa-atom'],
+                    //     'root'  => 'grp.goods.trade-unit-families.',
+                    //     'route' => [
+                    //         'name'       => 'grp.goods.trade-unit-families.index',
+                    //         'parameters' => []
+
+                    //     ]
+                    // ],
+
+
+                ]
+            ]
+
+        ];
+    }
+
+    private function getTradeUnitsNavs(): array
+    {
+        return [
+            'label'   => __('Trade Units'),
+            'icon'    => ['fal', 'fa-atom'],
+            'root'    => 'grp.trade_units.',
+            'route'   => [
+                'name' => 'grp.trade_units.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
                     [
                         'label' => 'Trade Units',
                         'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.goods.trade-units.',
+                        'root'  => 'grp.trade_units.units.',
                         'route' => [
-                            'name'       => 'grp.goods.trade-units.active',
+                            'name'       => 'grp.trade_units.units.active',
                             'parameters' => []
 
                         ]
@@ -242,9 +285,9 @@ class GetGroupNavigation
                     [
                         'label' => 'Trade Unit Families',
                         'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.goods.trade-unit-families.',
+                        'root'  => 'grp.trade_units.families.',
                         'route' => [
-                            'name'       => 'grp.goods.trade-unit-families.index',
+                            'name'       => 'grp.trade_units.families.index',
                             'parameters' => []
 
                         ]
@@ -288,26 +331,26 @@ class GetGroupNavigation
 
                         ]
                     ],
-                    [
-                        'label' => 'Trade Units',
-                        'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.goods.trade-units.',
-                        'route' => [
-                            'name'       => 'grp.masters.trade-units.active',
-                            'parameters' => []
+                    // [
+                    //     'label' => 'Trade Units',
+                    //     'icon'  => ['fal', 'fa-atom'],
+                    //     'root'  => 'grp.goods.trade-units.',
+                    //     'route' => [
+                    //         'name'       => 'grp.masters.trade-units.active',
+                    //         'parameters' => []
 
-                        ]
-                    ],
-                    [
-                        'label' => 'Trade Unit Families',
-                        'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.masters.trade-unit-families.',
-                        'route' => [
-                            'name'       => 'grp.masters.trade-unit-families.index',
-                            'parameters' => []
+                    //     ]
+                    // ],
+                    // [
+                    //     'label' => 'Trade Unit Families',
+                    //     'icon'  => ['fal', 'fa-atom'],
+                    //     'root'  => 'grp.masters.trade-unit-families.',
+                    //     'route' => [
+                    //         'name'       => 'grp.masters.trade-unit-families.index',
+                    //         'parameters' => []
 
-                        ]
-                    ],
+                    //     ]
+                    // ],
 
 
                 ]
