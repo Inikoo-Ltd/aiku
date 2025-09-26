@@ -204,7 +204,22 @@ class ShowWarehouseStoredItemReturn extends OrgAction
                 //         $palletReturn->id
                 //     ]
                 // ],
-
+                'attachmentRoutes' => [
+                    'attachRoute' => [
+                        'name'       => 'grp.models.pallet-return.attachment.attach',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'post'
+                    ],
+                    'detachRoute' => [
+                        'name'       => 'grp.models.pallet-return.attachment.detach',
+                        'parameters' => [
+                            'palletReturn' => $palletReturn->id,
+                        ],
+                        'method'     => 'delete'
+                    ]
+                ],
                 'can_edit_transactions' => false,
                 'option_attach_file'    => [
                     [
