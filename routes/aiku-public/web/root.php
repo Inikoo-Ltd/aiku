@@ -7,7 +7,6 @@
  */
 
 use App\Actions\UI\AikuPublic\ShowHome;
-use App\Actions\UI\AikuPublic\ShowUnsubscribe;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowHome::class)->name('home');

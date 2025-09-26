@@ -28,7 +28,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $delivery_note_item_id
  * @property PickingNotPickedReasonEnum $not_picked_reason
  * @property string|null $not_picked_note
- * @property string|null $quantity
+ * @property string $quantity
  * @property int|null $org_stock_movement_id
  * @property int $org_stock_id
  * @property int|null $picker_user_id

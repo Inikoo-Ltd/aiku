@@ -19,7 +19,6 @@ use App\Actions\Helpers\Tag\UI\EditTag;
 use App\Actions\Helpers\Tag\UI\IndexTags;
 use Illuminate\Support\Facades\Route;
 
-
 Route::get('/dashboard', ShowTradeUnitsDashboard::class)->name('dashboard');
 Route::prefix('units')->as('units.')->group(function () {
     Route::get('/all', IndexTradeUnits::class)->name('index');

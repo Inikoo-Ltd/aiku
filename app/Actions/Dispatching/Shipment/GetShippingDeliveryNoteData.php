@@ -98,7 +98,7 @@ class GetShippingDeliveryNoteData
         $contactName   = $deliveryNote->contact_name ?? '';
 
         if ($cascade && !$contactName) {
-                $contactName = $customer->contact_name ?? '';
+            $contactName = $customer->contact_name ?? '';
         }
 
 

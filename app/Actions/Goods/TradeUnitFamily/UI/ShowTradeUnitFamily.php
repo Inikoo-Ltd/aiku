@@ -10,7 +10,6 @@ namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInTradeUnitFamily;
 use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
-use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\UI\SupplyChain\TradeUnitFamilyTabsEnum;
@@ -173,7 +172,7 @@ class ShowTradeUnitFamily extends GrpAction
 
 
         return match ($routeName) {
-            'grp.trade_units.families.show',=> [
+            'grp.trade_units.families.show', => [
                 'label' => $tradeUnitFamily->name,
                 'route' => [
                     'name'       => $routeName,

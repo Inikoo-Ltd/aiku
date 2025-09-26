@@ -65,7 +65,6 @@ class SaveDeliveryNoteShippingFieldsAndRetryStoreShipping extends OrgAction
             [
                 'delivery_country_id' => $addressData['country_id'],
             ]
-
         );
     }
 

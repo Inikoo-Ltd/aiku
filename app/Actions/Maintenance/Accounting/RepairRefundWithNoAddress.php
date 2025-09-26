@@ -20,13 +20,13 @@ class RepairRefundWithNoAddress
     protected function handle(Invoice $refund): void
     {
 
-        $invoice=$refund->originalInvoice;
+        $invoice = $refund->originalInvoice;
 
-        if(!$invoice) {
-            $invoice=Invoice::withTrashed()->find($refund->original_invoice_id);
+        if (!$invoice) {
+            $invoice = Invoice::withTrashed()->find($refund->original_invoice_id);
         }
 
-        if($invoice) {
+        if ($invoice) {
             $refund->updateQuietly(
                 [
                     'address_id'         => $invoice->address_id,
@@ -45,11 +45,11 @@ class RepairRefundWithNoAddress
     public function asCommand(Command $command): void
     {
 
-        $count = Invoice::withTrashed()->where('type',InvoiceTypeEnum::REFUND)->whereNull('address_id')->count();
+        $count = Invoice::withTrashed()->where('type', InvoiceTypeEnum::REFUND)->whereNull('address_id')->count();
 
         $command->info("pending: $count");
 
-        Invoice::withTrashed()->where('type',InvoiceTypeEnum::REFUND)->whereNull('address_id')->orderBy('date', 'desc')
+        Invoice::withTrashed()->where('type', InvoiceTypeEnum::REFUND)->whereNull('address_id')->orderBy('date', 'desc')
             ->chunk(1000, function ($invoices) {
                 foreach ($invoices as $invoice) {
                     $this->handle($invoice);

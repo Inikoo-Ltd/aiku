@@ -21,8 +21,8 @@ class AutoFinishPickingPickingSession extends OrgAction
     public function handle(PickingSession $pickingSession): PickingSession
     {
 
-        $numberHandled=DeliveryNoteItem::where('picking_session_id', $pickingSession->id)
-            ->where('is_handled',true)
+        $numberHandled = DeliveryNoteItem::where('picking_session_id', $pickingSession->id)
+            ->where('is_handled', true)
             ->count();
         if ($numberHandled == $pickingSession->number_items) {
             $this->update($pickingSession, [

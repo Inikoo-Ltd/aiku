@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Fri, 26 Sept 2025 14:02:26 Malaysia Time, Kuala Lumpur, Malaysia
@@ -8,9 +9,7 @@
 namespace App\Actions\CRM\Customer;
 
 use App\Actions\Dispatching\Picking\WithAuroraApi;
-use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\Dispatching\Picking;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Http;
@@ -34,7 +33,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
     public function handle(Customer $customer): void
     {
 
-        if($customer->source_id){
+        if ($customer->source_id) {
             return;
         }
 

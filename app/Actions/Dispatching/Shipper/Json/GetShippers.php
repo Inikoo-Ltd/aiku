@@ -24,16 +24,10 @@ class GetShippers extends OrgAction
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($organisation, $request);
-
-        // return Shipper::where('organisation_id', $organisation->id)
-        //     ->where('status', true)
-        //     ->orderBy('api_shipper')
-        //     ->get();
-
         return $this->handle($organisation);
     }
 
-    
+
     public function handle(Organisation $organisation, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
