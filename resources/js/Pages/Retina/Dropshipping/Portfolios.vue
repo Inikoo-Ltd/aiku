@@ -441,7 +441,7 @@ const key = ulid()
     </Message>
 
     <!-- retina.models.dropshipping.ebay.batch_upload -->
-    <div v-if="is_platform_connected">
+    <div v-if="is_platform_connected || isPlatformManual">
         <div v-if="props.product_count < 1"
             class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
             <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
