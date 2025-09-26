@@ -2,6 +2,7 @@
 import { ref, computed } from "vue"
 import axios from "axios"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { trans } from "laravel-vue-i18n"
 
 // Props dari Laravel
 const props = defineProps<{
@@ -22,12 +23,24 @@ const isProcessing = ref(false)
 const isSuccess = ref(false)
 const errorMessage = ref<string | null>(null)
 
+// Recipient details (nullable)
+const recipientEmail = ref<string | null>(null)
+const recipientName = ref<string | null>(null)
+
 // Ambil params dari URL
 const urlParams = new URLSearchParams(window.location.search)
 const a = ref(urlParams.get("a"))
 const s = ref(urlParams.get("s"))
 
 const isInvalidParams = computed(() => !a.value || !s.value)
+
+// Dynamic page title
+const pageTitle = computed(() => {
+  if (isInvalidParams.value) return props.message.invalidParamsTitle
+  if (isSuccess.value) return props.message.successTitle
+  if (errorMessage.value) return props.message.error
+  return props.title
+})
 
 async function unsubscribe() {
   if (isInvalidParams.value) return
@@ -36,18 +49,20 @@ async function unsubscribe() {
   errorMessage.value = null
 
   try {
-    const { data } = await axios.post(route('iris.models.unsubscribe_aurora'), {
+    const { data } = await axios.post(route("iris.models.unsubscribe_aurora"), {
       a: a.value,
       s: s.value,
     })
 
-    if (data.success) {
+    if (data.api_response_status == 200) {
       isSuccess.value = true
+      recipientEmail.value = data.api_response_data.recipient_email ?? null
+      recipientName.value = data.api_response_data.recipient_name ?? null
     } else {
       errorMessage.value = data.message || props.message.error
     }
   } catch (err: any) {
-    errorMessage.value = err.response?.data?.message || props.message.error
+    errorMessage.value = err.response?.data?.message || 'failed to unsubscribe'
   } finally {
     isProcessing.value = false
   }
@@ -61,26 +76,41 @@ function goHome() {
 <template>
   <div class="page-wrapper">
     <div class="card">
-      <!-- Title -->
-      <h1 class="page-title">{{ title }}</h1>
+      <!-- Dynamic Title -->
+      <h1
+        class="page-title"
+        :class="[isSuccess ? 'text-green-600' : 'text-gray-900'  ]"
+      >
+        {{ pageTitle }}
+      </h1>
 
       <!-- Invalid Params -->
       <div v-if="isInvalidParams" class="state-wrapper">
         <div class="state-box error">
-          <h2>{{ message.invalidParamsTitle }}</h2>
           <p>{{ message.invalidParamsDesc }}</p>
         </div>
 
-        <Button @click="goHome" full :label="message.backHome">
-        </Button>
+        <Button @click="goHome" full :label="message.backHome" />
       </div>
 
       <!-- Success -->
       <div v-else-if="isSuccess" class="state-wrapper">
-        <div class="state-box success">
-          <h2>{{ message.successTitle }}</h2>
-          <p>{{ message.successDescription }}</p>
-        </div>
+        <!-- Success description -->
+        <p class="success-desc">{{ message.successDescription }}</p>
+
+        <!-- Recipient info -->
+        <table class="info-table">
+          <tbody>
+            <tr>
+              <td class="label">{{ trans("Recipient Email") }}</td>
+              <td class="value">{{ recipientEmail }}</td>
+            </tr>
+            <tr>
+              <td class="label">{{ trans("Name") }}</td>
+              <td class="value">{{ recipientName }}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
       <!-- Confirmation -->
@@ -94,8 +124,7 @@ function goHome() {
           :loading="isProcessing"
           full
           :label="message.button"
-        >
-        </Button>
+        />
 
         <p v-if="errorMessage" class="state-box error small">
           {{ errorMessage }}
@@ -107,7 +136,7 @@ function goHome() {
 
 <style scoped>
 .page-wrapper {
-  @apply min-h-screen flex  justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-6;
+  @apply min-h-screen flex justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-6;
 }
 
 .card {
@@ -115,7 +144,7 @@ function goHome() {
 }
 
 .page-title {
-  @apply mb-2 text-3xl font-extrabold text-gray-900 tracking-tight;
+  @apply mb-4 text-3xl font-extrabold  tracking-tight transition-colors;
 }
 
 .state-wrapper {
@@ -126,10 +155,6 @@ function goHome() {
   @apply p-6 rounded-2xl border text-sm leading-relaxed;
 }
 
-.state-box.success {
-  @apply border-green-200 bg-green-50 text-green-700;
-}
-
 .state-box.error {
   @apply border-red-200 bg-red-50 text-red-700;
 }
@@ -138,16 +163,33 @@ function goHome() {
   @apply text-xs p-4;
 }
 
-.btn-primary {
-  @apply inline-block px-6 py-3 rounded-xl font-medium transition bg-blue-600 text-white hover:bg-blue-700;
-}
-
-.btn-danger {
-  @apply !rounded-xl;
-}
-
 .confirm-title {
   @apply text-base font-medium text-gray-700;
 }
-</style>
 
+/* Success description */
+.success-desc {
+  @apply text-base text-green-700 leading-relaxed mb-4;
+}
+
+/* Table for recipient info */
+.info-table {
+  @apply w-full mt-2 border border-gray-200 rounded-lg overflow-hidden text-sm;
+}
+
+.info-table td {
+  @apply px-4 py-2 border-b border-gray-100;
+}
+
+.info-table .label {
+  @apply font-medium text-gray-700 bg-gray-50 w-1/3;
+}
+
+.info-table .value {
+  @apply text-gray-900;
+}
+
+.info-table tr:last-child td {
+  @apply border-b-0;
+}
+</style>
