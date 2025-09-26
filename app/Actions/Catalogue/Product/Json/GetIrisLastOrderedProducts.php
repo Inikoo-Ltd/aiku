@@ -68,7 +68,7 @@ class GetIrisLastOrderedProducts extends IrisAction
                 'products.slug',
                 'products.available_quantity'
             ])
-            ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
+             ->limit(10);
 
 
         return $queryBuilder->allowedSorts(['code', 'name'])
