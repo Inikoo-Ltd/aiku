@@ -45,7 +45,7 @@ const emit = defineEmits<{
 const locale = inject("locale", aikuLocaleStructure);
 
 function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
-    console.log(deliveryNoteItem.org_stock_slug)
+    // console.log(deliveryNoteItem.org_stock_slug)
     switch (route().current()) {
         case "grp.org.warehouses.show.dispatching.delivery_notes.show":
             return route(

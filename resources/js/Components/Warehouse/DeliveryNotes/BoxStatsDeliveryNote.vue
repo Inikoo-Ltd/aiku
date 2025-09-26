@@ -86,12 +86,16 @@ const props = defineProps<{
             logo: string
             name: string
         }
-        address: {}
+        address: {
+            delivery: Address
+            options: AddressOptions
+        }
         shipments_routes: {
             submit_route: routeType
             fetch_route: routeType
             delete_route: routeType
         }
+        shop_type: string  // 'dropshipping', 'b2b'
         shipping_notes?: string
         shipping_fields: {
             company_name: string
@@ -468,6 +472,7 @@ const updateCollection = async (e: Event) => {
                                 :shipments="boxStats.shipments"
                                 :shipments_routes="boxStats.shipments_routes"
                                 :address="boxStats.address"
+                                :customer="boxStats?.shop_type === 'dropshipping' ? boxStats.customer : undefined"
                             />
                         </dd>
                     </dl>

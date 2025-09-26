@@ -27,6 +27,7 @@ import { useConfirm } from "primevue/useconfirm"
 import { twBreakPoint } from "@/Composables/useWindowSize"
 import { RadioButton } from "primevue"
 import { Address, AddressOptions } from "@/types/PureComponent/Address"
+import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 
 const props = defineProps<{
     shipments: {
@@ -62,6 +63,13 @@ const props = defineProps<{
         }
     }
     shipping_fields_update_route: routeType
+    customer?: {
+        contact_name: string
+        company_name: string
+        phone: string
+        email: string
+        address: Address
+    }
 }>()
 
 const emits = defineEmits<{
@@ -335,6 +343,21 @@ const copyDeliveryAddress = ref(props.shipping_fields
         address: { ...props.address.delivery }
     }
 )
+
+const onCopyDataCustomer = (field: string) => {
+    if (field === 'contact_name' && props.customer?.contact_name) {
+        copyDeliveryAddress.value.contact_name = props.customer.contact_name
+    }
+    if (field === 'company_name' && props.customer?.company_name) {
+        copyDeliveryAddress.value.company_name = props.customer.company_name
+    }
+    if (field === 'phone' && props.customer?.phone) {
+        copyDeliveryAddress.value.phone = props.customer.phone
+    }
+    if (field === 'email' && props.customer?.email) {
+        copyDeliveryAddress.value.email = props.customer.email
+    }
+}
 </script>
 
 <template>
@@ -474,7 +497,8 @@ const copyDeliveryAddress = ref(props.shipping_fields
                                 <!-- <div class="text-xs text-gray-500 italic">
                                     {{ shipment.tracking_url }}
                                 </div> -->
-                                <FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print"
+                                <LoadingIcon v-if="formTrackingNumber.shipping_id?.id == shipment.id && isLoadingButton == 'addTrackingNumber'" class="text-gray-500 absolute top-3 right-3" />
+                                <FontAwesomeIcon v-else v-tooltip="trans('Barcode print')" icon="fal fa-print"
                                                  class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
                                 <div v-if="isLoadingButton == 'addTrackingNumber'"
                                      class="bg-black/40 rounded-md absolute inset-0 z-10">
@@ -577,44 +601,78 @@ const copyDeliveryAddress = ref(props.shipping_fields
                 {{ trans("Error on save create label") }}
             </div>
 
-            <div class="bg-red-100 border border-red-300 text-red-500 rounded px-4 py-2">
+            <div v-if="shipmentErrorMessage" class="bg-red-100 border border-red-300 text-red-500 rounded px-4 py-2">
                 {{ shipmentErrorMessage }}
             </div>
 
             <!-- Section: Create label -->
             <div class="w-full mt-3">
+
                 <!-- Field: Address -->
-                <div class="relative my-3 p-2 rounded bg-gray-100 max-h-[500px] overflow-y-auto"
-                     :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
+                <div class="relative my-3 p-2 pr-4 rounded bg-gray-100 max-h-[450px] overflow-y-auto"
+                    :class="formTrackingNumber?.errors?.address ? 'errorShake' : ''">
+                    <!-- <div class="flex justify-center mb-2">
+                        <Button @click="() => onCopyDataCustomer()" type="tertiary" size="xxs" key="1" icon="fal fa-user" :label="'Use customer data'">
+                        </Button>
+                    </div> -->
+
                     <!-- Field Address: Company Name -->
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
-                        <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
-                            {{ trans("Company Name") }}
-                        </label>
+                        <div class="flex justify-between items-center">
+                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                                {{ trans("Company Name") }}
+                            </label>
+
+                            <div v-if="customer?.company_name" @click="() => onCopyDataCustomer('company_name')" class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
+                                {{ trans("Copy Customer's Company") }}
+                                <InformationIcon :information="customer?.company_name" class="opacity-100" />
+                            </div>
+                        </div>
                         <PureInput v-model="copyDeliveryAddress.company_name" placeholder="Enter company name" />
                     </div>
 
                     <!-- Field Address: Contact Name -->
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
-                        <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
-                            {{ trans("Contact Name") }}
-                        </label>
+                        <div class="flex justify-between items-center">
+                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                                {{ trans("Contact Name") }}
+                            </label>
+
+                            <div v-if="customer?.contact_name" @click="() => onCopyDataCustomer('contact_name')" class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
+                                {{ trans("Copy Customer's name") }}
+                                <InformationIcon :information="customer?.contact_name" class="opacity-100" />
+                            </div>
+                        </div>
                         <PureInput v-model="copyDeliveryAddress.contact_name" placeholder="Enter phone number" />
                     </div>
 
                     <!-- Field Address: Phone -->
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
-                        <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
-                            {{ trans("Phone") }}
-                        </label>
+                        <div class="flex justify-between items-center">
+                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                                {{ trans("Company Name") }}
+                            </label>
+
+                            <div v-if="customer?.phone" @click="() => onCopyDataCustomer('phone')" class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
+                                {{ trans("Copy Customer's phone") }}
+                                <InformationIcon :information="customer?.phone" class="opacity-100" />
+                            </div>
+                        </div>
                         <PureInput v-model="copyDeliveryAddress.phone" placeholder="Enter phone number" />
                     </div>
 
                     <!-- Field Address: Email -->
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
-                        <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
-                            {{ trans("Email") }}
-                        </label>
+                        <div class="flex justify-between items-center">
+                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                                {{ trans("Company Name") }}
+                            </label>
+
+                            <div v-if="customer?.email" @click="() => onCopyDataCustomer('email')" class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
+                                {{ trans("Copy Customer's email") }}
+                                <InformationIcon :information="customer?.email" class="opacity-100" />
+                            </div>
+                        </div>
                         <PureInput v-model="copyDeliveryAddress.email" placeholder="Enter email address" />
                     </div>
 

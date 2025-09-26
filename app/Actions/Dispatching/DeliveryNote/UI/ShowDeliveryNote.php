@@ -466,6 +466,7 @@ class ShowDeliveryNote extends OrgAction
                     ]
                 ],
             ],
+            'shop_type'       => $deliveryNote->shop->type,
             'shipping_fields'              => [
                 'company_name' => $deliveryNote->company_name,
                 'contact_name' => $deliveryNote->contact_name,
