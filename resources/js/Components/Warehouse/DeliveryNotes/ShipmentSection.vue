@@ -223,11 +223,9 @@ const onSaveAddress = (submitShipment: Function) => {
                 emits("editAddressSuccsess", { ...copyDeliveryAddress.value })
                 submitShipment()
             },
-            onError: () => notify({
-                title: trans("Something went wrong"),
-                text: trans("Failed to update the address, try again."),
-                type: "error"
-            })
+            onError: (e) => {
+                console.log('error updating address', e)
+            }
         }
     )
 }
