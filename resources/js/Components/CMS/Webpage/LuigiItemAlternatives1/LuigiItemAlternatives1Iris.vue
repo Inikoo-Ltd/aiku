@@ -69,7 +69,7 @@ const fetchRecommenders = async () => {
                     "item_ids": [],
                     "recommendation_type": "item_detail_alternatives",
                     "recommender_client_identifier": "item_detail_alternatives",
-                    "size": 7,
+                    "size": 12,
                     "user_id": layout.iris?.user_auth?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,  // Customer ID or Cookie _lb
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
@@ -114,7 +114,7 @@ onMounted(() => {
             </div>
             
             <div class="py-4">
-                <Swiper :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
+                <Swiper :slides-per-view="slidesPerView ? slidesPerView : 4"
                     :loop="false"
                     :autoplay="false"
                     :pagination="{ clickable: true }"
