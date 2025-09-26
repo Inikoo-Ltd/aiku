@@ -21,60 +21,35 @@ use App\Models\Ordering\Order;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class GetIrisLastOrderedProducts extends IrisAction
 {
-    use WithCatalogueAuthorisation;
-
-
-    public function handle(ProductCategory $productCategory, $prefix = null): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, $prefix = null)
     {
-        $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where(function ($query) use ($value) {
-                $query->whereAnyWordStartWith('products.name', $value)
-                    ->orWhereStartWith('products.code', $value);
-            });
-        });
+        $families = DB::table('products')
+            ->select('products.*', 'transactions.submitted_at', 'transactions.id as transaction_id')
+            ->where('products.family_id', $productCategory->id)
+            ->join('transactions', function ($join) {
+                $join->on('transactions.model_id', '=', 'products.id')
+                    ->where('transactions.model_type', '=', 'Product')
+                    ->where('transactions.state', '=', TransactionStateEnum::SUBMITTED)
+                    ->whereRaw('transactions.submitted_at = (
+                        SELECT MAX(t2.submitted_at) 
+                        FROM transactions t2 
+                        WHERE t2.model_id = products.id 
+                            AND t2.model_type = ? 
+                            AND t2.state = ?
+                    )', ['Product', TransactionStateEnum::SUBMITTED]);
+            })
+            ->orderBy('transactions.submitted_at', 'desc')
+            ->limit(10)
+            ->get();
+            
+        return $families;
 
-        $queryBuilder = QueryBuilder::for(Product::class);
-        $queryBuilder->where('products.family_id'. $productCategory->id);
-        $queryBuilder->leftJoin('transactions', function ($join) {
-            $join->on('transactions.model_id', '=', 'products.id')
-                ->where('transactions.model_type', 'Product')
-                ->where('transactions.state', TransactionStateEnum::SUBMITTED)
-                ->whereRaw('transactions.submitted_at = (
-                    SELECT MAX(t2.submitted_at) 
-                    FROM transactions t2 
-                    WHERE t2.model_id = products.id 
-                    AND t2.model_type = "Product" 
-                    AND t2.state = ?
-                )', [TransactionStateEnum::SUBMITTED]);
-        });
-       
-        $queryBuilder
-            ->defaultSort('products.code')
-            ->select([
-                'products.id',
-                'products.current_historic_asset_id',
-                'products.asset_id',
-                'products.code',
-                'products.name',
-                'products.state',
-                'products.created_at',
-                'products.updated_at',
-                'products.price',
-                'products.slug',
-                'products.available_quantity'
-            ])
-             ->limit(10);
-
-
-        return $queryBuilder->allowedSorts(['code', 'name'])
-            ->allowedFilters([$globalSearch])
-            ->withPaginator($prefix)
-            ->withQueryString();
     }
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
@@ -82,7 +57,7 @@ class GetIrisLastOrderedProducts extends IrisAction
         return LastOrderedProductsResource::collection($products);
     }
 
-    public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
+    public function asController(ProductCategory $productCategory, ActionRequest $request)
     {
         $this->initialisation($request);
 
