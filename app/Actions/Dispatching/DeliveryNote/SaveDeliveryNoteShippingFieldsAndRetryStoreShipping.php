@@ -25,23 +25,48 @@ class SaveDeliveryNoteShippingFieldsAndRetryStoreShipping extends OrgAction
 
     private DeliveryNote $deliveryNote;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(DeliveryNote $deliveryNote, Shipper $shipper, array $modelData): Shipment
     {
         $addressData = Arr::get($modelData, 'address', []);
-        //dd($addressData);
-       // UpdateAddress::run($deliveryNote->deliveryAddress, $addressData);
+
+        $this->updateDeliveryAddress($deliveryNote, $addressData);
 
         $deliveryNote = $this->update($deliveryNote, Arr::only($modelData, ['email', 'phone', 'company_name', 'contact_name']));
         $deliveryNote->refresh();
 
         try {
             return StoreShipment::run($deliveryNote, $shipper, [], false);
-
-        }catch (\Throwable $e){
+        } catch (\Throwable $e) {
             throw ValidationException::withMessages(
-             [  $e->getMessage()]
+                [$e->getMessage()]
             );
         }
+    }
+
+
+    public function updateDeliveryAddress(DeliveryNote $deliveryNote, $addressData): void
+    {
+        $addressData = Arr::only($addressData, [
+            'address_line_1',
+            'address_line_2',
+            'sorting_code',
+            'postal_code',
+            'locality',
+            'dependent_locality',
+            'administrative_area',
+            'country_id'
+
+        ]);
+        UpdateAddress::run($deliveryNote->deliveryAddress, $addressData);
+        $deliveryNote->update(
+            [
+                'delivery_country_id' => $addressData['country_id'],
+            ]
+
+        );
     }
 
     public function rules(): array
@@ -59,6 +84,9 @@ class SaveDeliveryNoteShippingFieldsAndRetryStoreShipping extends OrgAction
     }
 
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(DeliveryNote $deliveryNote, Shipper $shipper, ActionRequest $request, int $hydratorsDelay = 0): Shipment
     {
         $this->deliveryNote   = $deliveryNote;
