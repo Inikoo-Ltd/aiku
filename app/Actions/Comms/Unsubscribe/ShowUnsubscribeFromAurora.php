@@ -19,31 +19,18 @@ class ShowUnsubscribeFromAurora extends IrisAction
     use WithActionUpdate;
 
 
-    public function rules(): array
-    {
-        return [
-            's' => ['required', 'string'],
-            'a' => ['required', 'string'],
-        ];
-    }
-
-
 
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation($request);
 
-        return $this->htmlResponse($this->validatedData);
+        return $this->htmlResponse();
     }
 
-    public function htmlResponse($modelData)
+    public function htmlResponse(): \Illuminate\Http\Response|Response
     {
         return Inertia::render('UnsubscribeFromAurora', [
             'title'   => __("Unsubscribe"),
-            'keys'    => $modelData,
-            'route_unsubscribe'   => [
-                'name' => 'retina.models.unsubscribe_aurora'
-            ],
             'message' => [
                 'confirmationTitle' => __("Are you sure to unsubscribe?"),
 

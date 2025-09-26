@@ -11,4 +11,3 @@ use App\Actions\UI\AikuPublic\ShowUnsubscribe;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowHome::class)->name('home');
-Route::get('/unsubscribe', ShowUnsubscribe::class)->name('aurora_unsubscribe');
