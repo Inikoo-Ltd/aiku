@@ -19,14 +19,14 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-    <div class="flex w-full">
+    <div class="flex w-full px-4 py-3 rounded border hover:border-black/40">
         <div class="w-full">
             <!-- Image -->
             <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
                 :href="product.attributes.web_url?.[0]"
                 class="block rounded aspect-[5/4] w-full overflow-hidden">
                 <img :src="product.attributes.image_link" :alt="product.attributes.title"
-                    class="w-full h-full object-contain bg-gray-50 text-center text-xxs text-gray-400/70 italic font-normal">
+                    class="w-full h-full object-contain text-center text-xxs text-gray-400/70 italic font-normal">
             </component>
 
             <!-- Title -->
