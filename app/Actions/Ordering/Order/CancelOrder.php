@@ -95,7 +95,7 @@ class CancelOrder extends OrgAction
 
         $deliveryNotes = $order->deliveryNotes;
         foreach ($deliveryNotes as $deliveryNote) {
-            CancelDeliveryNote::make()->action($deliveryNote, true);
+            CancelDeliveryNote::make()->action($deliveryNote, false);
         }
 
 

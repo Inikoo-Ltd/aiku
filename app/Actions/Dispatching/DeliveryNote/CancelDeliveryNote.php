@@ -24,6 +24,7 @@ use App\Enums\Dispatching\Picking\PickingNotPickedReasonEnum;
 use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Inventory\LocationOrgStock;
+use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -32,7 +33,7 @@ class CancelDeliveryNote extends OrgAction
     use WithActionUpdate;
 
 
-    public function handle(DeliveryNote $deliveryNote, $fromOrder = false): DeliveryNote
+    public function handle(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
     {
         $cancelledRef = $deliveryNote->reference.'-CANCELLED';
 
@@ -95,7 +96,7 @@ class CancelDeliveryNote extends OrgAction
         }
 
 
-        if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER && !$fromOrder) {
+        if ($deliveryNote->type == DeliveryNoteTypeEnum::ORDER && $modifyOrder) {
             $order = $deliveryNote->orders->first();
             RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
         }
@@ -114,10 +115,48 @@ class CancelDeliveryNote extends OrgAction
         return $this->handle($deliveryNote);
     }
 
-    public function action(DeliveryNote $deliveryNote, $fromOrder = false): DeliveryNote
+    public function action(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
     {
         $this->initialisationFromShop($deliveryNote->shop, []);
 
-        return $this->handle($deliveryNote, $fromOrder);
+        return $this->handle($deliveryNote, $modifyOrder);
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'delivery_note:cancel {delivery_note : ID, slug or reference of the delivery note} {--modifyOrder : Rollback the order}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $identifier = (string)$command->argument('delivery_note');
+
+        $deliveryNote=null;
+
+        if(is_numeric($identifier)) {
+            $deliveryNote = DeliveryNote::query()->find($identifier);
+        }
+
+        if (!$deliveryNote) {
+            $deliveryNote = DeliveryNote::query()->where('slug', $identifier)->first();
+        }
+
+
+        if (!$deliveryNote) {
+            $command->error("Delivery note '$identifier' not found (searched by id, slug, reference).");
+
+            return 1;
+        }
+
+        $modifyOrder = (bool)$command->option('modifyOrder');
+
+
+        // Run the action
+        $this->initialisationFromShop($deliveryNote->shop, []);
+        $this->handle($deliveryNote, $modifyOrder);
+
+        $command->info("Cancelled delivery note {$deliveryNote->reference}");
+
+        return 0;
     }
 }
