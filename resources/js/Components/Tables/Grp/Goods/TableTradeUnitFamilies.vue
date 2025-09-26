@@ -23,7 +23,7 @@ function tradeUniFamilyRoute(tradeUnitFamily: {}) {
             )
         default: 
             return route(
-                "grp.goods.trade-unit-families.show",
+                "grp.trade_units.families.show",
                 [tradeUnitFamily.slug]
             )
      }

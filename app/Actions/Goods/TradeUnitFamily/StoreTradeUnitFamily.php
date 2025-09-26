@@ -32,7 +32,7 @@ class StoreTradeUnitFamily extends GrpAction
 
     public function htmlResponse(TradeUnitFamily $tradeUnitFamily): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
-        return Redirect::route('grp.masters.trade-unit-families.show', [
+        return Redirect::route('grp.trade_units.families.show', [
             $tradeUnitFamily->slug
         ]);
     }

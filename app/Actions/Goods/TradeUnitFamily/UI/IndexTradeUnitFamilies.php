@@ -8,6 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
+use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
@@ -158,7 +159,7 @@ class IndexTradeUnitFamilies extends GrpAction
         };
 
         return array_merge(
-            ShowGoodsDashboard::make()->getBreadcrumbs(),
+            ShowTradeUnitsDashboard::make()->getBreadcrumbs(),
             $headCrumb(
                 [
                     'name'       => $routeName,

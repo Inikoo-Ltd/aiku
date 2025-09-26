@@ -8,9 +8,7 @@
 
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeMailshot;
 use App\Actions\Comms\Unsubscribe\UnsubscribeMailshot;
-use App\Actions\Retina\UnsubscribeAurora;
 use Illuminate\Support\Facades\Route;
 
 Route::get('{dispatchedEmail:ulid}', ShowUnsubscribeMailshot::class)->name('show');
 Route::post('{dispatchedEmail:ulid}', UnsubscribeMailshot::class)->name('update');
-Route::post('unsubscribe-aurora', UnsubscribeAurora::class)->name('unsubscribe_aurora');

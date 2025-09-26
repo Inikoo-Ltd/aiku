@@ -9,6 +9,7 @@
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Goods\TradeUnit\UI\IndexTradeUnitsInTradeUnitFamily;
+use App\Actions\Goods\TradeUnit\UI\ShowTradeUnitsDashboard;
 use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
@@ -128,10 +129,9 @@ class ShowTradeUnitFamily extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.goods.trade-unit-families.show',
-            'grp.masters.trade-unit-families.show' =>
+            'grp.trade_units.families.show' =>
             array_merge(
-                ShowGoodsDashboard::make()->getBreadcrumbs(),
+                ShowTradeUnitsDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     $tradeUnitFamily,
                     [
@@ -173,8 +173,7 @@ class ShowTradeUnitFamily extends GrpAction
 
 
         return match ($routeName) {
-            'grp.goods.trade-unit-families.show',
-            'grp.masters.trade-unit-families.show' => [
+            'grp.trade_units.families.show',=> [
                 'label' => $tradeUnitFamily->name,
                 'route' => [
                     'name'       => $routeName,

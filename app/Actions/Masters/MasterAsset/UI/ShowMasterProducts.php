@@ -107,7 +107,7 @@ class ShowMasterProducts extends GrpAction
                 'mini_breadcrumbs' => array_filter(
                     [
                         $masterAsset->master_family_id ? [
-                            'label' => $masterAsset->masterDepartment->name,
+                            'label' => $masterAsset->masterDepartment ?  $masterAsset->masterDepartment->name : 'department',
                             'to'    => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show',
                                 'parameters' => [
@@ -119,7 +119,7 @@ class ShowMasterProducts extends GrpAction
                             'icon' => ['fal', 'folder-tree']
                         ] : [],
                         $masterAsset->master_sub_department_id ? [
-                            'label' => $masterAsset->masterSubDepartment->name,
+                            'label' => $masterAsset->masterSubDepartment ? $masterAsset->masterSubDepartment->name : 'sub department',
                             'to'    => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
                                 'parameters' => [
@@ -132,7 +132,7 @@ class ShowMasterProducts extends GrpAction
                             'icon' => ['fal', 'folder-tree']
                         ] : [],
                         $masterAsset->master_family_id ? [
-                            'label' => $masterAsset->masterFamily->name,
+                            'label' => $masterAsset->masterFamily ?  $masterAsset->masterFamily->name : 'family',
                             'to'    => [
                                 'name'       => $masterAsset->master_sub_department_id ? 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show' : 'grp.masters.master_shops.show.master_departments.show.master_families.show',
                                 'parameters' =>  $masterAsset->master_sub_department_id ? [
@@ -150,7 +150,7 @@ class ShowMasterProducts extends GrpAction
                             'icon' => ['fal', 'folder-tree']
                         ] : [],
                         [
-                            'label' => $masterAsset->masterFamily->name,
+                            'label' => $masterAsset->masterFamily ? $masterAsset->masterFamily->name : 'family',
                             'to'    => [
                                 'name'       => 'grp.masters.master_shops.show.master_products.show',
                                 'parameters' => [

@@ -223,7 +223,7 @@ class IndexTradeUnits extends GrpAction
         };
 
         return array_merge(
-            ShowGoodsDashboard::make()->getBreadcrumbs(),
+            ShowTradeUnitsDashboard::make()->getBreadcrumbs(),
             $headCrumb(
                 [
                     'name'       => $routeName,
@@ -240,37 +240,37 @@ class IndexTradeUnits extends GrpAction
 
             [
                 'label'  => __('Active'),
-                'root'   => 'grp.goods.trade-units.active',
+                'root'   => 'grp.trade_units.units.active',
                 'route'  => [
-                    'name'       => 'grp.goods.trade-units.active',
+                    'name'       => 'grp.trade_units.units.active',
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units_status_active
             ],
             [
                 'label'  => __('In process'),
-                'root'   => 'grp.goods.trade-units.in_process',
+                'root'   => 'grp.trade_units.units.in_process',
                 'route'  => [
-                    'name'       => 'grp.goods.trade-units.in_process',
+                    'name'       => 'grp.trade_units.units.in_process',
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units_status_in_process
             ],
             [
                 'label'  => __('Discontinued'),
-                'root'   => 'grp.goods.trade-units.discontinued',
+                'root'   => 'grp.trade_units.units.discontinued',
                 'route'  => [
-                    'name'       => 'grp.goods.trade-units.discontinued',
+                    'name'       => 'grp.trade_units.units.discontinued',
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units_status_discontinued
             ],
             [
                 'label'  => __('Anomality'),
-                'root'   => 'grp.goods.trade-units.anomality',
+                'root'   => 'grp.trade_units.units.anomality',
                 'align'  => 'right',
                 'route'  => [
-                    'name'       => 'grp.goods.trade-units.anomality',
+                    'name'       => 'grp.trade_units.units.anomality',
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units_status_anomality
@@ -278,10 +278,10 @@ class IndexTradeUnits extends GrpAction
             [
                 'label'  => __('All'),
                 'icon'   => 'fal fa-bars',
-                'root'   => 'grp.goods.trade-units.index',
+                'root'   => 'grp.trade_units.units.index',
                 'align'  => 'right',
                 'route'  => [
-                    'name'       => 'grp.goods.trade-units.index',
+                    'name'       => 'grp.trade_units.units.index',
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units
