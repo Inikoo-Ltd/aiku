@@ -28,15 +28,4 @@ class SendCustomerWelcomeEmail extends OrgAction
         return $this->sendCustomerOutboxEmail($customer, OutboxCodeEnum::REGISTRATION);
     }
 
-    public function getCommandSignature(): string
-    {
-        return 'caca:caca';
-    }
-    public function asCommand(): int
-    {
-        $customer = Customer::find(684056);
-        $this->handle($customer);
-        return 0;
-    }
-
 }
