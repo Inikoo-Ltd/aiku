@@ -15,6 +15,46 @@ if (!function_exists('group')) {
     }
 }
 
+if (!function_exists('cleanUtf8')) {
+    /**
+     * Normalize arbitrary input to valid UTF-8.
+     * - If already UTF-8, drop any stray invalid sequences.
+     * - Otherwise, try to detect and convert from common legacy encodings.
+     */
+    function cleanUtf8(?string $text): ?string
+    {
+        if ($text === null) {
+            return null;
+        }
+
+        // If it’s already valid UTF-8, strip stray invalid sequences (rare edge cases)
+        if (mb_detect_encoding($text, 'UTF-8', true) === 'UTF-8') {
+
+            //  $text = iconv('UTF-8', 'UTF-8//IGNORE', $text);
+
+            if (class_exists(\Normalizer::class)) {
+                $text = \Normalizer::normalize($text, \Normalizer::FORM_C);
+            }
+            return $text;
+        }
+
+        // Try common legacy encodings that show up in email templates/copy-paste
+        $fromEnc = mb_detect_encoding($text, ['Windows-1251', 'Windows-1252', 'ISO-8859-1', 'ISO-8859-2', 'UTF-8'], true) ?: 'Windows-1251';
+        $converted = @iconv($fromEnc, 'UTF-8//IGNORE', $text);
+
+        if ($converted === false) {
+            // Fallback: best-effort conversion
+            $converted = mb_convert_encoding($text, 'UTF-8', $fromEnc);
+        }
+
+        if (class_exists(\Normalizer::class)) {
+            $converted = \Normalizer::normalize($converted, \Normalizer::FORM_C);
+        }
+
+        return $converted;
+    }
+}
+
 
 if (!function_exists('percentage')) {
     function percentage($quantity, $total, int $fixed = 1, ?string $errorMessage = null, $percentageSign = '%', $plusSing = false): string

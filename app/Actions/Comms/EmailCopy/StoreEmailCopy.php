@@ -19,8 +19,13 @@ class StoreEmailCopy extends OrgAction
 
     public function handle(DispatchedEmail $dispatchedEmail, array $modelData): EmailCopy
     {
+
+        $modelData['body']    = base64_encode($modelData['body'] ?? '');
+        $modelData['is_body_encoded'] = true;
+
         /** @var EmailCopy $emailCopy */
-        return $dispatchedEmail->emailCopy()->create($modelData);
+        $emailCopy = $dispatchedEmail->emailCopy()->create($modelData);
+        return $emailCopy;
     }
 
     public function rules(): array
@@ -46,4 +51,6 @@ class StoreEmailCopy extends OrgAction
 
         return $this->handle($dispatchedEmail, $this->validatedData);
     }
+
+
 }
