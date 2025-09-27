@@ -113,7 +113,7 @@ test('UI Index calendar', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'employees')
+                        ->where('title', 'Employees')
                         ->etc()
             )
             ->has('data');
@@ -152,7 +152,7 @@ test('UI Index clockings', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'clockings')
+                        ->where('title', 'Clockings')
                         ->etc()
             )
             ->has('data');
@@ -238,7 +238,7 @@ test('UI Index employees', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'employees')
+                        ->where('title', 'Employees')
                         ->etc()
             )
             ->has('data');

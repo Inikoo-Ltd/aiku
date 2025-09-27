@@ -117,7 +117,7 @@ class IndexRetinaRentals extends RetinaAction
         return Inertia::render(
             'Pricing/RetinaRentals',
             [
-                'title'       => __('rentals'),
+                'title'       => __('Rentals'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
@@ -128,7 +128,7 @@ class IndexRetinaRentals extends RetinaAction
                         'title' => __('Rentals')
                     ],
                     'model'    => __('Pricing'),
-                    'title'         => __('rentals'),
+                    'title'         => __('Rentals'),
                     'subNavigation' => $this->getPricingNavigation($this->fulfilment),
                 ],
 

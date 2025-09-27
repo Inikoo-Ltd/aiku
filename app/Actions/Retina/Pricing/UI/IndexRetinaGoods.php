@@ -113,7 +113,7 @@ class IndexRetinaGoods extends RetinaAction
         return Inertia::render(
             'Pricing/RetinaGoods',
             [
-                'title'       => __('goods'),
+                'title'       => __('Goods'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
@@ -124,7 +124,7 @@ class IndexRetinaGoods extends RetinaAction
                         'title' => __('Goods')
                     ],
                     'model'    => __('Pricing'),
-                    'title'         => __('goods'),
+                    'title'         => __('Goods'),
                     'subNavigation' => $this->getPricingNavigation($this->fulfilment),
                 ],
 

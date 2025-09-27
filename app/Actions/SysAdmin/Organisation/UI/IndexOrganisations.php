@@ -96,7 +96,7 @@ class IndexOrganisations extends OrgAction
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New organisation'),
-                            'label'   => __('organisation'),
+                            'label'   => __('Organisation'),
                             'route'   => [
                                 'name'       => 'grp.organisations.create',
                                 'parameters' => array_values(request()->route()->originalParameters())
@@ -107,7 +107,7 @@ class IndexOrganisations extends OrgAction
                 ->column(key: 'type', label: '', canBeHidden: false, sortable: false, searchable: false, type: 'icon')
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'number_employees_state_working', label: __('employees'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'number_employees_state_working', label: __('Employees'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_shops_state_open', label: __('shops'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'action', label: __('action'), canBeHidden: false, sortable: false, searchable: false)
                 ->defaultSort('code');
@@ -128,18 +128,18 @@ class IndexOrganisations extends OrgAction
             'Organisations/Organisations',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('organisations'),
+                'title'       => __('Organisations'),
                 'pageHead'    => [
                     'icon'    => [
                         'icon'  => ['fal', 'fa-building'],
                         'title' => __('Organisations')
                     ],
-                    'title'   => __('organisations'),
+                    'title'   => __('Organisations'),
                     'actions' => [
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('organisation'),
+                            'label' => __('Organisation'),
                             'route' => [
                                 'name'       => 'grp.organisations.create',
                                 'parameters' => []

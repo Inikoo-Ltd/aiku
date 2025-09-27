@@ -54,7 +54,7 @@ class CreateClocking extends OrgAction
                             'fields' => [
                                 'generator_id' => [
                                     'type'        => 'select',
-                                    'label'       => __('employee'),
+                                    'label'       => __('Employee'),
                                     'placeholder' => __('Select a employee'),
                                     'options'     => Options::forModels(Employee::class, 'contact_name', 'id'),
                                     'required'    => true,

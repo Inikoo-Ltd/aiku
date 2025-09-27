@@ -317,7 +317,7 @@ test('UI create payment', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'new payment')
+                    ->where('title', 'New payment')
                     ->etc()
             )
             ->has('formData');
@@ -1006,7 +1006,7 @@ test('UI create payment account', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'new payment account')
+                    ->where('title', 'New payment account')
                     ->has('actions')
                     ->etc()
             )

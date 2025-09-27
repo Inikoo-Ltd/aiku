@@ -155,7 +155,7 @@ class IndexEmployees extends OrgAction
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('New employee'),
-                            'label'   => __('employee'),
+                            'label'   => __('Employee'),
                             'route'   => [
                                 'name'       => 'grp.org.hr.employees.create',
                                 'parameters' => [
@@ -193,14 +193,14 @@ class IndexEmployees extends OrgAction
             'Org/HumanResources/Employees',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('employees'),
+                'title'       => __('Employees'),
                 'pageHead'    => [
                     'icon'    => [
                         'title' => __('Employee'),
                         'icon'  => 'fal fa-user-hard-hat'
                     ],
                     'model'   => __('Human Resources'),
-                    'title'   => __('employees'),
+                    'title'   => __('Employees'),
                     'actions' =>
                         $this->canEdit ? [
                             [
@@ -213,7 +213,7 @@ class IndexEmployees extends OrgAction
                             [
                                 'type'  => 'button',
                                 'style' => 'create',
-                                'label' => __('employee'),
+                                'label' => __('Employee'),
                                 'route' => [
                                     'name'       => 'grp.org.hr.employees.create',
                                     'parameters' => $request->route()->originalParameters()

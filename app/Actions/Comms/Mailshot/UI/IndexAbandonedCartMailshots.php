@@ -134,7 +134,7 @@ class IndexAbandonedCartMailshots extends OrgAction
             [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('mailshot'),
+                'label' => __('Mailshot'),
                 'route' => [
                     'name'       => 'grp.org.shops.show.marketing.mailshots.create',
                     'parameters' => array_values($request->route()->originalParameters())
@@ -142,10 +142,10 @@ class IndexAbandonedCartMailshots extends OrgAction
             ]
         ];
 
-        $title = __('mailshots');
+        $title = __('Mailshots');
         if ($this->parent instanceof Group) {
             $actions = [];
-            $title   = __('abandoned cart mailshots');
+            $title   = __('Abandoned cart mailshots');
         }
 
         return Inertia::render(

@@ -134,7 +134,7 @@ class IndexFulfilmentRefunds extends OrgAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('invoices'),
+                'title'       => __('Invoices'),
                 'pageHead'    => [
 
                     'title'         => $title,

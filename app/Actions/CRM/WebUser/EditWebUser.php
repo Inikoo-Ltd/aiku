@@ -110,7 +110,7 @@ class EditWebUser extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'   => __('credentials'),
+                            'title'   => __('Credentials'),
                             'label'   => __('credentials'),
                             'icon'    => 'fa-light fa-key',
                             'current' => true,

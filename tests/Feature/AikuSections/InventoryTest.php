@@ -476,7 +476,7 @@ test("UI Index locations", function () {
             ->has("breadcrumbs", 3)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "locations")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "Locations")->etc()
             )
             ->has("data");
     });
@@ -598,7 +598,7 @@ test("UI Index fulfilment locations", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "locations")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "Locations")->etc()
             )
             ->has("data");
     });
@@ -908,7 +908,7 @@ test("UI Create stock family", function () {
             ->has("breadcrumbs", 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", "new SKU family")->etc()
+                fn (AssertableInertia $page) => $page->where("title", "New SKU family")->etc()
             )
             ->has("formData");
     });

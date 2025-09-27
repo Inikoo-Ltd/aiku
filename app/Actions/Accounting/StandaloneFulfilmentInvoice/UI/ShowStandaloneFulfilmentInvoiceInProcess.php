@@ -151,7 +151,7 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
         return Inertia::render(
             'Org/Accounting/InvoiceManual',
             [
-                'title'       => __('invoice'),
+                'title'       => __('Invoice'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

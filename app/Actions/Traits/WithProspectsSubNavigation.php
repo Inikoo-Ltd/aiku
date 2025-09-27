@@ -54,7 +54,7 @@ trait WithProspectsSubNavigation
                 'label'    => __('Mailshots'),
                 'leftIcon' => [
                     'icon'    => 'fal fa-mail-bulk',
-                    'tooltip' => __('mailshots')
+                    'tooltip' => __('Mailshots')
                 ]
             ];
         }

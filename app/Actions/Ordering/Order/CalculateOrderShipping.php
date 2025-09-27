@@ -62,9 +62,15 @@ class CalculateOrderShipping
 
         if (!$shippingZoneSchema) {
             if ($order->shipping_engine == OrderShippingEngineEnum::AUTO) {
-                $order->update([
-                    'shipping_engine' => OrderShippingEngineEnum::MANUAL,
-                ]);
+
+                UpdateOrder::run($order,
+                    [
+                        'shipping_engine' => OrderShippingEngineEnum::MANUAL,
+                        'shipping_zone_schema_id'=>null,
+                        'shipping_zone_id'=>null,
+                    ]
+                );
+
             }
 
             return $order;
@@ -86,6 +92,14 @@ class CalculateOrderShipping
         } else {
             $this->storeShippingTransaction($order, $shippingZone, $shippingAmount);
         }
+
+
+        UpdateOrder::run($order,
+            [
+                'shipping_zone_schema_id'=>$shippingZoneSchema->id,
+                'shipping_zone_id'=>$shippingZone->id,
+            ]
+        );
 
 
 

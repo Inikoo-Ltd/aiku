@@ -8,18 +8,13 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref, computed, watch } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Images } from "@/types/Images"
-import { Link, router } from "@inertiajs/vue3"
+import { Link } from "@inertiajs/vue3"
 import { useLocaleStore } from "@/Stores/locale"
-import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import { faImage } from "@far"
 import EditTradeUnit from "@/Components/Goods/EditTradeUnit.vue"
 import { Fieldset, Message, Select } from "primevue"
-
-
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faTrash as falTrash, faShoppingBasket, faEdit, faExternalLink, faStickyNote } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus } from "@fas"
@@ -206,7 +201,7 @@ const compSelectedTradeUnit = computed(() => {
                                     optionLabel="tradeUnit.name" optionValue="tradeUnit.code"
                                     placeholder="Select a City" class="w-full md:w-80" />
                                 <Link v-if="compSelectedTradeUnit?.tradeUnit?.slug"
-                                    :href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
+                                    :href="route('grp.trade_units.units.show', compSelectedTradeUnit?.tradeUnit.slug)"
                                     v-tooltip="trans('Open trade unit')"
                                     class="text-gray-400 hover:text-gray-600 cursor-pointer">
                                 <FontAwesomeIcon icon="fal fa-external-link" class="" fixed-width aria-hidden="true" />

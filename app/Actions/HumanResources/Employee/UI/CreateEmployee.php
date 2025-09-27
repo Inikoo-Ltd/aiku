@@ -126,7 +126,7 @@ class CreateEmployee extends OrgAction
                                     'value'     => EmployeeTypeEnum::EMPLOYEE->value,
                                     'options'   => [
                                         [
-                                            'title'       => __('employee'),
+                                            'title'       => __('Employee'),
                                             'value'       => EmployeeTypeEnum::EMPLOYEE->value
                                         ],
                                         [

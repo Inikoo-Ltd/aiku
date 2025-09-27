@@ -72,7 +72,7 @@ class ShowBanner extends OrgAction
                 'pageHead'    => [
                     'title'     => $banner->name,
                     'icon'      => [
-                        'tooltip' => __('banner'),
+                        'tooltip' => __('Banner'),
                         'icon'    => 'fal fa-sign'
                     ],
                     'container' => [

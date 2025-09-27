@@ -71,7 +71,7 @@ const compSelectedTradeUnit = computed(() => {
                                 optionLabel="tradeUnit.name" optionValue="tradeUnit.code" placeholder="Select a City"
                                 class="w-full sm:w-80" />
                             <Link v-if="compSelectedTradeUnit?.tradeUnit?.slug"
-                                :href="route('grp.goods.trade-units.show', compSelectedTradeUnit?.tradeUnit.slug)"
+                                :href="route('grp.trade_units.units.show', compSelectedTradeUnit?.tradeUnit.slug)"
                                 v-tooltip="trans('Open trade unit')"
                                 class="text-gray-400 hover:text-gray-600 text-center sm:text-left">
                             <FontAwesomeIcon icon="fal fa-external-link" fixed-width />

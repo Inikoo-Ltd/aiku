@@ -189,7 +189,7 @@ class IndexWarehouses extends OrgAction
                 ),
                 'title'       => __('Warehouses'),
                 'pageHead'    => [
-                    'title'   => __('warehouses'),
+                    'title'   => __('Warehouses'),
                     'icon'    => [
                         'title' => __('Warehouses'),
                         'icon'  => 'fal fa-warehouse'

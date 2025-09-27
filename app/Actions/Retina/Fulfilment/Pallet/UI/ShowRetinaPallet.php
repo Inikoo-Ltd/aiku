@@ -112,7 +112,7 @@ class ShowRetinaPallet extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPallet',
             [
-                'title'                         => __('goods'),
+                'title'                         => __('Goods'),
                 'breadcrumbs'                   => $this->getBreadcrumbs(
                     $pallet,
                     request()->route()->getName(),

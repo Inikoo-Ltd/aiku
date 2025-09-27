@@ -135,7 +135,7 @@ class IndexOrgAgents extends OrgAction
                 'title'       => __('agents'),
                 'pageHead'    => [
                     'model'   => __('Procurement'),
-                    'title'   => __('agents'),
+                    'title'   => __('Agents'),
                     'icon'    => [
                         'title' => __('Website'),
                         'icon'  => 'fal fa-people-arrows'

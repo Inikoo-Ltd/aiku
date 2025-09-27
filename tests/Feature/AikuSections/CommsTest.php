@@ -258,7 +258,7 @@ test('UI index mail outboxes', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'outboxes')
+                    ->where('title', 'Outboxes')
                     ->etc()
             )
             ->has('data')
@@ -333,7 +333,7 @@ test('UI Index MMarketing Mailshots', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'mailshots')
+                    ->where('title', 'Mailshots')
                     ->etc()
             )
             ->has('data')
@@ -388,7 +388,7 @@ test('UI Index Outboxes Overview', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'outboxes')
+                    ->where('title', 'Outboxes')
                     ->etc()
             )
             ->has('data')
@@ -424,7 +424,7 @@ test('UI Index Marketing Mailshots Overview', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'marketing mailshots')
+                    ->where('title', 'Marketing mailshots')
                     ->etc()
             )
             ->has('data')
@@ -442,7 +442,7 @@ test('UI Index Invite Marketing Overview', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'invite mailshots')
+                    ->where('title', 'Invite mailshots')
                     ->etc()
             )
             ->has('data')
@@ -460,7 +460,7 @@ test('UI Index Abandoned Cart Mailshots Overview', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'abandoned cart mailshots')
+                    ->where('title', 'Abandoned cart mailshots')
                     ->etc()
             )
             ->has('data')
@@ -515,7 +515,7 @@ test('UI Index Dispatched Emails Overview', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'dispatched emails')
+                    ->where('title', 'Dispatched emails')
                     ->etc()
             )
             ->has('data')
@@ -533,7 +533,7 @@ test('UI show dispatched emails', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'dispatched emails')
+                    ->where('title', 'Dispatched emails')
                     ->etc()
             )
             ->has('data')

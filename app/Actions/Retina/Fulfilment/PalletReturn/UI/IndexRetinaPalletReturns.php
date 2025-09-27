@@ -136,7 +136,7 @@ class IndexRetinaPalletReturns extends RetinaAction
             'Storage/RetinaPalletReturns',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'    => __('goods out'),
+                'title'    => __('Goods out'),
                 'pageHead' => [
                     'title'     => __('Goods Out'),
                     'model'     => __('Storage'),

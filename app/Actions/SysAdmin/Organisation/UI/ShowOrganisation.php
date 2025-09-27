@@ -46,9 +46,9 @@ class ShowOrganisation extends GrpAction
             'Organisations/Organisation',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('organisation'),
+                'title'       => __('Organisation'),
                 'pageHead'    => [
-                    'model'   => __('organisation'),
+                    'model'   => __('Organisation'),
                     'title'   => $organisation->name,
                     'actions' => [
                         [

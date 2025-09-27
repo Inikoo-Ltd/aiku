@@ -469,7 +469,7 @@ test('UI create agent', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'new agent')
+                    ->where('title', 'New agent')
                     ->etc()
             )
             ->has('formData');

@@ -116,9 +116,9 @@ class IndexFulfilments extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('fulfilment shops'),
+                'title'       => __('Fulfilment shops'),
                 'pageHead'    => [
-                    'title'   => __('fulfilment shops'),
+                    'title'   => __('Fulfilment shops'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-store-alt'],
                         'title' => __('Fulfilment')

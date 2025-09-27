@@ -73,7 +73,7 @@ class ShowSupplyChainDashboard extends GrpAction
 
                         ],
                         [
-                            'name'      => __('supplier products'),
+                            'name'      => __('Supplier products'),
                             'shortName' => __('products'),
                             'icon'      => ['fal', 'fa-box-usd'],
                             'route'      => ['name' => 'grp.supply-chain.supplier_products.index'],
@@ -116,7 +116,7 @@ class ShowSupplyChainDashboard extends GrpAction
 
                                         ],
                                         [
-                                            'name'      => __('supplier products'),
+                                            'name'      => __('Supplier products'),
                                             'shortName' => __('products'),
                                             'icon'      => ['fal', 'fa-box-usd'],
                                             'route'      => ['name' => 'grp.supply-chain.supplier_products.index'],

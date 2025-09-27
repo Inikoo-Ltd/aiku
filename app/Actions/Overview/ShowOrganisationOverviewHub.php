@@ -40,7 +40,7 @@ class ShowOrganisationOverviewHub extends OrgAction
                 'breadcrumbs'     => $this->getBreadcrumbs(
                     $routeParameters
                 ),
-                'title'           => __('overview'),
+                'title'           => __('Overview'),
                 'pageHead'        => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-mountains'],

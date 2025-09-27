@@ -198,8 +198,8 @@ class ShowTradeUnit extends GrpAction
             return null;
         }
 
-
         return match ($routeName) {
+
             'grp.trade_units.units.show' => [
                 'label' => $tradeUnit->name,
                 'route' => [

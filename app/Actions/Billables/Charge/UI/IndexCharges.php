@@ -186,7 +186,7 @@ class IndexCharges extends OrgAction
                 ),
                 'title'       => __('Charges'),
                 'pageHead'    => [
-                    'title'   => __('charges'),
+                    'title'   => __('Charges'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => __('Charges')

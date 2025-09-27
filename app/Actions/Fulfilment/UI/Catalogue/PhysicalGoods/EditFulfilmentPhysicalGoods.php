@@ -42,7 +42,7 @@ class EditFulfilmentPhysicalGoods extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('goods'),
+                'title'       => __('Goods'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

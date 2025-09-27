@@ -41,7 +41,7 @@ class ShowIngredient extends GrpAction
         return Inertia::render(
             'Goods/Ingredient',
             [
-                'title'       => __('ingredient'),
+                'title'       => __('Ingredient'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $ingredient,
                     $request->route()->getName(),

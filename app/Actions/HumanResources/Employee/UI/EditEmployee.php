@@ -280,7 +280,7 @@ class EditEmployee extends OrgAction
                         'class' => 'text-gray-300'
                     ],
                 ],
-                'title'       => __('employee'),
+                'title'       => __('Employee'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $employee,
                     $request->route()->originalParameters()

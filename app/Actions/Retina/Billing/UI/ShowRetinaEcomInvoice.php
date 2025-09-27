@@ -51,7 +51,7 @@ class ShowRetinaEcomInvoice extends RetinaAction
         return Inertia::render(
             'Billing/RetinaInvoice',
             [
-                'title'       => __('invoice'),
+                'title'       => __('Invoice'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),

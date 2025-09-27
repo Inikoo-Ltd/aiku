@@ -74,7 +74,7 @@ class CreateBanner extends OrgAction
                 ),
                 'title'       => __('New banner'),
                 'pageHead'    => [
-                    'title'   => __('banner'),
+                    'title'   => __('Banner'),
                     'actions' => [
                         [
                             'type'  => 'button',

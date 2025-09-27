@@ -110,7 +110,7 @@ class ShowMailshotWorkshop extends OrgAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('mailshots')
+                            'label' => __('Mailshots')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

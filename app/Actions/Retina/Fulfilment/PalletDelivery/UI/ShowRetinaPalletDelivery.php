@@ -224,7 +224,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPalletDelivery',
             [
-                'title'       => __('goods in').' '.$palletDelivery->reference,
+                'title'       => __('Goods in').' '.$palletDelivery->reference,
                 'breadcrumbs' => $this->getBreadcrumbs($palletDelivery),
                 'navigation'  => [
                     'previous' => $this->getPrevious($palletDelivery, $request),

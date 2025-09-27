@@ -779,7 +779,7 @@ test('index pricing (goods)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'goods')
+                    ->where('title', 'Goods')
                     ->etc()
             )
             ->has('data');
@@ -797,7 +797,7 @@ test('index pricing (services)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'services')
+                    ->where('title', 'Services')
                     ->etc()
             )
             ->has('data');
@@ -815,7 +815,7 @@ test('index pricing (rentals)', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'rentals')
+                    ->where('title', 'Rentals')
                     ->etc()
             )
             ->has('data');

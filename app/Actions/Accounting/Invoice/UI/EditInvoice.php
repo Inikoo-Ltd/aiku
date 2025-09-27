@@ -82,8 +82,8 @@ class EditInvoice extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'   => __('footer'),
-                            'label'   => __('footer'),
+                            'title'   => __('Footer'),
+                            'label'   => __('Footer'),
                             'icon'    => 'fa-light fa-key',
                             'current' => true,
                             'fields'  => [
@@ -95,8 +95,8 @@ class EditInvoice extends OrgAction
                             ],
                         ],
                         [
-                            'title'   => __('reference'),
-                            'label'   => __('reference'),
+                            'title'   => __('Reference'),
+                            'label'   => __('Reference'),
                             'icon'    => 'fa-light fa-fingerprint',
                             'fields'  => [
                                 'reference' => [

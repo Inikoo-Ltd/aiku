@@ -178,7 +178,7 @@ class IndexSupplierProducts extends GrpAction
     public function htmlResponse(LengthAwarePaginator $supplier_products, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('supplier products');
+        $title = __('Supplier products');
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-box-usd'],
@@ -254,7 +254,7 @@ class IndexSupplierProducts extends GrpAction
                     $request->route()->originalParameters(),
                     $this->scope
                 ),
-                'title'       => __('supplier products'),
+                'title'       => __('Supplier products'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,

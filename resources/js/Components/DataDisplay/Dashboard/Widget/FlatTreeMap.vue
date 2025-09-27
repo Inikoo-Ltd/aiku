@@ -7,9 +7,7 @@
 import { Link } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faEmptySet, faStar, faWrench, faWarehouse, faStore, faCashRegister, faMoneyCheckAlt, faTasks } from '@fal'
-import { useLocaleStore } from '@/Stores/locale'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { capitalize } from "@/Composables/capitalize"
 import { routeType } from '@/types/route'
@@ -19,8 +17,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 library.add(faEmptySet, faStar, faWrench, faWarehouse, faStore, faCashRegister, faMoneyCheckAlt, faTasks)
 
 
-// Props for dynamic behavior
-const props = defineProps<{
+defineProps<{
     widget: {
         nodes: {
             index?: {
@@ -81,7 +78,7 @@ const isLoading = ref<string | boolean>(false)
 
 //                         ],
 //                         [
-//                             'name'      => __('supplier products'),
+//                             'name'      => __('Supplier products'),
 //                             'shortName' => __('products'),
 //                             'icon'      => ['fal', 'fa-box-usd'],
 //                             'route'      => ['name' => 'grp.supply-chain.supplier_products.index'],

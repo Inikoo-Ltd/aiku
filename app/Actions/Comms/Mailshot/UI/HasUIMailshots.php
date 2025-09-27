@@ -28,7 +28,7 @@ trait HasUIMailshots
                     'route'           => $routeName,
                     'routeParameters' => $routeParameters,
                     'modelLabel'      => [
-                        'label' => __('mailshot')
+                        'label' => __('Mailshot')
                     ],
                     'suffix'         => $suffix,
                 ],

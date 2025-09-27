@@ -62,7 +62,7 @@ class JobPositionRecordSearch
                     $jobPosition->stats->number_employees_currently_working > 0 ?
                     [
                         'type'   => 'number',
-                        'label' => __('employees') . ": ",
+                        'label' => __('Employees') . ": ",
                         'number'   => $jobPosition->stats->number_employees_currently_working,
                     ] : [],
                     $jobPosition->stats->number_guests_status_active > 0 ?

@@ -158,7 +158,7 @@ class IndexClockings extends OrgAction
                 ),
                 'title'       => __('Clockings'),
                 'pageHead'    => [
-                    'title'   => __('clockings'),
+                    'title'   => __('Clockings'),
                     'actions' => [
                         $this->canEdit
                         && (

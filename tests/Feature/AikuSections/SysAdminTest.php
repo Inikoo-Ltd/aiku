@@ -548,12 +548,12 @@ test('UI index overview org', function (User $user) {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Overview/OverviewHub')
-            ->where('title', 'overview')
+            ->where('title', 'Overview')
             ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'overview')
+                    ->where('title', 'Overview')
                     ->etc()
             )->has('dashboard_stats');
     });
@@ -1031,13 +1031,13 @@ test('UI index organisation', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Organisations/Organisations')
-            ->where('title', 'organisations')
+            ->where('title', 'Organisations')
             ->has('breadcrumbs', 2)
             ->has('data')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'organisations')
+                    ->where('title', 'Organisations')
                     ->etc()
             );
     });
@@ -1058,7 +1058,7 @@ test('UI edit organisation', function () {
     $response->assertInertia(function (AssertableInertia $page) use ($organisation) {
         $page
             ->component('EditModel')
-            ->where('title', 'organisation')
+            ->where('title', 'Organisation')
             ->has('breadcrumbs', 3)
             ->has('formData')
             ->has(
@@ -1227,12 +1227,12 @@ test('UI index overview group', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Overview/OverviewHub')
-            ->where('title', 'overview')
+            ->where('title', 'Overview')
             ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'overview')
+                    ->where('title', 'Overview')
                     ->etc()
             )->has('dashboard_stats');
     });
@@ -1306,7 +1306,7 @@ test('UI show goods dashboard group', function () {
         $page
             ->component('Goods/GoodsDashboard')
             ->has('breadcrumbs', 2)
-            ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', 'goods strategy')->etc())
+            ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', 'Goods strategy')->etc())
             ->has('flatTreeMaps');
     });
 });

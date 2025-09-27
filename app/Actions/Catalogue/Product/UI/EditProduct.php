@@ -102,7 +102,7 @@ class EditProduct extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('goods'),
+                'title'       => __('Goods'),
                 'warning' => $product->masterProduct ? [
                     'type'  =>  'warning',
                     'title' =>  'warning',

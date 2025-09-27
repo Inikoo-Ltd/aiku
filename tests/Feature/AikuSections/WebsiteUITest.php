@@ -486,11 +486,11 @@ test('create banner', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->where('title', 'new banner')
+            ->where('title', 'New banner')
             ->has('breadcrumbs', 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'banner')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'Banner')->etc()
             )
             ->has('formData');
     });

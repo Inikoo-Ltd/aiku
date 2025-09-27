@@ -166,7 +166,7 @@ test("UI Show Goods Dashboard", function () {
             ->has(
                 "pageHead",
                 fn (AssertableInertia $page) =>
-                $page->where("title", 'goods strategy')
+                $page->where("title", 'Goods strategy')
                     ->etc()
             )
             ->has("flatTreeMaps");
@@ -268,9 +268,10 @@ test("UI Index Trade Units", function () {
 });
 
 test("UI Show TradeUnit", function () {
+    $this->withoutExceptionHandling();
     $tradeUnit = TradeUnit::first();
     $response  = get(
-        route("grp.goods.trade-units.show", [$tradeUnit->slug])
+        route("grp.trade_units.units.show", [$tradeUnit->slug])
     );
     $response->assertInertia(function (AssertableInertia $page) use ($tradeUnit) {
         $page
@@ -292,7 +293,7 @@ test("UI Create Stock in Group", function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component("CreateModel")
-            ->where("title", "new stock")
+            ->where("title", "New stock")
             ->has("breadcrumbs", 4)
             ->has('icon')
             ->has('formData', fn (AssertableInertia $page) => $page->where("route", [
@@ -301,7 +302,7 @@ test("UI Create Stock in Group", function () {
             ])->etc())
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'new SKU')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'New SKU')->etc()
             );
     });
 });
@@ -343,7 +344,7 @@ test('UI show goods ingredients', function (Ingredient $ingredient) {
     $response->assertInertia(function (AssertableInertia $page) use ($ingredient) {
         $page
             ->component('Goods/Ingredient')
-            ->where('title', 'ingredient')
+            ->where('title', 'Ingredient')
             ->has('breadcrumbs', 3)
             ->has('tabs')
             ->has(
@@ -387,7 +388,7 @@ test("UI Create Stock in Stock Family Group", function () {
     $response->assertInertia(function (AssertableInertia $page) use ($stockFamily) {
         $page
             ->component("CreateModel")
-            ->where("title", "new stock")
+            ->where("title", "New stock")
             ->has("breadcrumbs", 5)
             ->has('icon')
             ->has('formData', fn (AssertableInertia $page) => $page->where("route", [
@@ -398,7 +399,7 @@ test("UI Create Stock in Stock Family Group", function () {
             ])->etc())
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'new SKU')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'New SKU')->etc()
             );
     });
 });
