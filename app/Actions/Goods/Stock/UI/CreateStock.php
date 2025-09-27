@@ -47,19 +47,19 @@ class CreateStock extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new stock'),
+                'title'    => __('New stock'),
                 'icon'     =>
                     [
                         'icon'  => ['fal', 'fa-box'],
                         'title' => __('SKU')
                     ],
                 'pageHead' => [
-                    'title'        => __('new SKU'),
+                    'title'        => __('New SKU'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => str_replace('create', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -70,7 +70,7 @@ class CreateStock extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('new SKU'),
+                            'title'  => __('New SKU'),
                             'fields' => [
                                 'code' => [
                                     'type'     => 'input',

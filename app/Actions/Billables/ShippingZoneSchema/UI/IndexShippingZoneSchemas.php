@@ -2,22 +2,22 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 06 Sept 2024 12:47:29 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Sat, 27 Sept 2025 11:59:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\ShippingZoneSchema\UI;
+namespace App\Actions\Billables\ShippingZoneSchema\UI;
 
+use App\Actions\Billables\ShippingZoneSchema\WithShippingZoneSchemaSubNavigation;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
-use App\Actions\Ordering\ShippingZoneSchema\WithShippingZoneSchemaSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Catalogue\ShippingZoneSchemasResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
-use App\Models\Ordering\ShippingZoneSchema;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -91,9 +91,9 @@ class IndexShippingZoneSchemas extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Shop $parent, ?array $modelOperations = null, $prefix = null, $canEdit = false): Closure
+    public function tableStructure(Group|Shop $parent, ?array $modelOperations = null, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix, $canEdit) {
+        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -110,25 +110,8 @@ class IndexShippingZoneSchemas extends OrgAction
                         ],
                         default => null
                     }
-
-                    /*
-                    [
-                        'title'       => __('no products'),
-                        'description' => $canEdit ? __('Get started by creating a new product.') : null,
-                        'count'       => $this->organisation->stats->number_products,
-                        'action'      => $canEdit ? [
-                            'type'    => 'button',
-                            'style'   => 'create',
-                            'tooltip' => __('new product'),
-                            'label'   => __('product'),
-                            'route'   => [
-                                'name'       => 'shops.products.create',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ] : null
-                    ]*/
                 );
-            $table->column(key: 'state_icon', label: '', canBeHidden: false, sortable: false, searchable: false, type: 'icon');
+            $table->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
             $table->column(key: 'slug', label: __('code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
@@ -136,8 +119,8 @@ class IndexShippingZoneSchemas extends OrgAction
                         ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->column(key: 'zones', label: __('zones'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'first_used', label: __('first used'), canBeHidden: false, sortable: false, searchable: false);
-            $table->column(key: 'last_used', label: __('last used'), canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'first_used', label: __('first used'), canBeHidden: false);
+            $table->column(key: 'last_used', label: __('last used'), canBeHidden: false);
             $table->column(key: 'number_customers', label: __('customers'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_orders', label: __('orders'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
@@ -153,20 +136,20 @@ class IndexShippingZoneSchemas extends OrgAction
     {
         $subNavigation = null;
 
-        $title      = __('Shipping');
+        $title      = __('Shipping Schemas');
         $icon       = [
-            'icon'  => ['fal', 'fa-cube'],
-            'title' => __('Shipping')
+            'icon'  => ['fal', 'fa-shipping-fast'],
+            'title' => __('Shipping Schemas')
         ];
         $afterTitle = null;
         $iconRight  = null;
-        $model      = null;
+
         $actions =  [
             [
                 'type'    => 'button',
                 'style'   => 'create',
-                'tooltip' => __('new shipping schema'),
-                'label'   => __('shipping schema'),
+                'tooltip' => __('New shipping schema'),
+                'label'   => __('Shipping schema'),
                 'route'   => [
                     'name'       => str_replace('index', 'create', $request->route()->getName()),
                     'parameters' => $request->route()->originalParameters()
@@ -175,7 +158,7 @@ class IndexShippingZoneSchemas extends OrgAction
         ];
 
         if ($this->parent instanceof Shop) {
-            $model = __('billables');
+
             $subNavigation = $this->getShippingZoneSchemaSubNavigation($this->parent);
         } elseif ($this->parent instanceof Group) {
             $actions = null;
@@ -187,29 +170,21 @@ class IndexShippingZoneSchemas extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('shipping'),
+                'title'       => __('Shipping'),
                 'pageHead'    => array_filter([
                     'title'         => $title,
-                    'model'         => $model,
                     'icon'          => $icon,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'actions'       => $actions,
                     'subNavigation' => $subNavigation,
                 ]),
-                // 'tabs'        => [
-                //     'current'    => $this->tab,
-                //     'navigation' => ShippingTabsEnum::navigation(),
-                // ],
                 'data'        => ShippingZoneSchemasResource::collection($shippingZoneSchemas),
 
-                // ShippingTabsEnum::SCHEMAS->value => $this->tab == ShippingTabsEnum::SCHEMAS->value ?
-                //     fn () => ShippingZoneSchemasResource::collection($shippingZoneSchemas)
-                //     : Inertia::lazy(fn () => ShippingZoneSchemasResource::collection($shippingZoneSchemas)),
+
 
             ]
         )->table($this->tableStructure($this->parent));
-        // )->table($this->tableStructure(parent: $this->parent, prefix: ShippingTabsEnum::SCHEMAS->value));
     }
 
     public function inGroup(ActionRequest $request): LengthAwarePaginator
@@ -259,7 +234,7 @@ class IndexShippingZoneSchemas extends OrgAction
             ),
             'grp.overview.billables.shipping.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs($routeParameters),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,

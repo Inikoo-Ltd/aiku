@@ -97,7 +97,7 @@ class IndexProductions extends OrgAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new production plant'),
+                            'tooltip' => __('New production plant'),
                             'label'   => __('production plant'),
                             'route'   => [
                                 'name'       => 'grp.org.productions.create',

@@ -266,7 +266,7 @@ class IndexFamilies extends OrgAction
                                 [
                                     'type'    => 'button',
                                     'style'   => 'create',
-                                    'tooltip' => __('new shop'),
+                                    'tooltip' => __('New shop'),
                                     'label'   => __('shop'),
                                     'route'   => [
                                         'name'       => 'grp.org.shops.show.catalogue.families.create',

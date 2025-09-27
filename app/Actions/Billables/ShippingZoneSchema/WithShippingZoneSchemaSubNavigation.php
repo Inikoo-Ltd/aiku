@@ -1,13 +1,12 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 18-10-2024-13h-39m
- * github: https://github.com/KirinZero0
- * copyright 2024
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 27 Sept 2025 11:59:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Ordering\ShippingZoneSchema;
+namespace App\Actions\Billables\ShippingZoneSchema;
 
 use App\Models\Catalogue\Shop;
 
@@ -25,12 +24,12 @@ trait WithShippingZoneSchemaSubNavigation
                     ],
                     'leftIcon' => [
                         'icon'    => ['fal', 'fa-shipping-fast'],
-                        'tooltip' => __('Schemas')
+                        'tooltip' => __('Shipping Schemas')
                         ]
             ],
         ];
         if ($shop->currentShippingZoneSchema) {
-            $current = [
+            $current      = [
                 'label'    => __('Current'),
                 'route'     => [
                     'name'       => 'grp.org.shops.show.billables.shipping.show',
@@ -41,11 +40,11 @@ trait WithShippingZoneSchemaSubNavigation
                     'tooltip' => __('Current Schema')
                 ]
                 ];
-            array_push($navigation, $current);
+            $navigation[] = $current;
         }
 
         if ($shop->discountShippingZoneSchema) {
-            $discount = [
+            $discount     = [
                 'label'    => __('Discount'),
                 'route'     => [
                     'name'       => 'grp.org.shops.show.billables.shipping.show',
@@ -56,7 +55,7 @@ trait WithShippingZoneSchemaSubNavigation
                     'tooltip' => __('Discount Schema')
                 ]
                 ];
-            array_push($navigation, $discount);
+            $navigation[] = $discount;
         }
 
         return $navigation;

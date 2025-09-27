@@ -29,9 +29,9 @@ class CreateManufactureTask extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new manufacture task'),
+                'title'       => __('New manufacture task'),
                 'pageHead'    => [
-                    'title'        => __('new manufacture task'),
+                    'title'        => __('New manufacture task'),
                     'icon'         => [
                         'title' => __('Create manufacture task'),
                         'icon'  => 'fal fa-industry'
@@ -40,7 +40,7 @@ class CreateManufactureTask extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.index',
                                 'parameters' => $request->route()->originalParameters()

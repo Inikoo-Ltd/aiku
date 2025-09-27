@@ -59,12 +59,12 @@ class CreateMasterCollection extends OrgAction
                 ),
                 'title'       => __('New Master Collection'),
                 'pageHead'    => [
-                    'title'   => __('new master collection'),
+                    'title'   => __('New master collection'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

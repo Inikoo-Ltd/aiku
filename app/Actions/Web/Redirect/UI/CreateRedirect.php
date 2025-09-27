@@ -62,7 +62,7 @@ class CreateRedirect extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/redirect.create$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

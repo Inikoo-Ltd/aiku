@@ -24,14 +24,14 @@ class CreatePurchaseOrder extends OrgAction
         return Inertia::render(
             'CreateModel',
             [
-                'title'    => __('new purchase order'),
+                'title'    => __('New purchase order'),
                 'pageHead' => [
-                    'title'   => __('new purchase order'),
+                    'title'   => __('New purchase order'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.procurement.org_suppliers.show.purchase_orders.index',
                                 'parameters' => array_values($request->route()->originalParameters())

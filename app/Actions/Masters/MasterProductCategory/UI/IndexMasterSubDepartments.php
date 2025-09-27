@@ -163,7 +163,7 @@ class IndexMasterSubDepartments extends GrpAction
                         [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new master Sub-department'),
+                            'tooltip' => __('New master Sub-department'),
                             'label'   => __('Sub-department'),
                             'route'   => match ($this->parent::class) {
                                 MasterProductCategory::class => [

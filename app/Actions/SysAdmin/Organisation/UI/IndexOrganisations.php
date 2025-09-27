@@ -95,7 +95,7 @@ class IndexOrganisations extends OrgAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new organisation'),
+                            'tooltip' => __('New organisation'),
                             'label'   => __('organisation'),
                             'route'   => [
                                 'name'       => 'grp.organisations.create',

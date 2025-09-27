@@ -46,12 +46,12 @@ class CreateMasterDepartment extends OrgAction
                  ),
                 'title'       => __('New Master department'),
                 'pageHead'    => [
-                    'title'   => __('new master department'),
+                    'title'   => __('New master department'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.index',
                                 'parameters' => array_values($request->route()->originalParameters())

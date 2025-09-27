@@ -121,7 +121,7 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('supplier product marketplaces')
+                            'label' => __('Supplier product marketplaces')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

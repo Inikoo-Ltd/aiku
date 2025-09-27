@@ -206,7 +206,7 @@ class ShowShop extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label' => __('settings'),
+                            'label' => __('Settings'),
                             'icon'  => 'fal fa-sliders-h',
                             'route' => [
                                 'name'       => 'grp.org.shops.show.settings.edit',

@@ -205,7 +205,7 @@ class IndexCollectionsInProductCategory extends OrgAction
                     [
                         'type'    => 'button',
                         'style'   => 'create',
-                        'tooltip' => __('new collection'),
+                        'tooltip' => __('New collection'),
                         'label'   => __('collection'),
                         'route'   => [
                             'name'       => $routes[$currentRoute],

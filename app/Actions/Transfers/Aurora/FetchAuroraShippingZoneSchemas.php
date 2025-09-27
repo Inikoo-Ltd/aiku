@@ -8,9 +8,9 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\Ordering\ShippingZoneSchema\StoreShippingZoneSchema;
-use App\Actions\Ordering\ShippingZoneSchema\UpdateShippingZoneSchema;
-use App\Models\Ordering\ShippingZoneSchema;
+use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
+use App\Actions\Billables\ShippingZoneSchema\UpdateShippingZoneSchema;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Transfers\SourceOrganisationService;
 use Exception;
 use Illuminate\Database\Query\Builder;

@@ -195,7 +195,7 @@ class IndexCharges extends OrgAction
                         $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.billables.charges.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new charge'),
+                            'tooltip' => __('New charge'),
                             'label'   => __('charge'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.show.billables.charges.create',

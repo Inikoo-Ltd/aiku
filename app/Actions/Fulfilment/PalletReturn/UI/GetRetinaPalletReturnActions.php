@@ -65,7 +65,7 @@ class GetRetinaPalletReturnActions
                 'type'    => 'button',
                 'style'   => 'negative',
                 'icon'    => 'fal fa-times',
-                'tooltip' => __('cancel'),
+                'tooltip' => __('Cancel'),
                 'label'   => __('cancel return'),
                 'key'     => 'action',
                 'route'   => [

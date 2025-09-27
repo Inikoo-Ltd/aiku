@@ -32,14 +32,14 @@ class CreateCollection extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new collection'),
+                'title'       => __('New collection'),
                 'pageHead'    => [
-                    'title'   => __('new collection'),
+                    'title'   => __('New collection'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/.create/', '.index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

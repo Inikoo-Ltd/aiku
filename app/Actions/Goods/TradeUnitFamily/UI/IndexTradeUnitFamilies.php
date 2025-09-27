@@ -110,7 +110,7 @@ class IndexTradeUnitFamilies extends GrpAction
         $actions[] = [
                     'type'    => 'button',
                     'style'   => 'create',
-                    'tooltip' => __('new trade unit family'),
+                    'tooltip' => __('New trade unit family'),
                     'label'   => __('trade unit family'),
                     'route'   => [
                         'name'       => preg_replace('/index$/', 'create', $request->route()->getName()),

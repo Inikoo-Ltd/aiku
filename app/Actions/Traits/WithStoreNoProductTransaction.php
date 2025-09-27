@@ -9,8 +9,8 @@
 namespace App\Actions\Traits;
 
 use App\Models\Billables\Charge;
+use App\Models\Billables\ShippingZone;
 use App\Models\Ordering\Adjustment;
-use App\Models\Ordering\ShippingZone;
 
 trait WithStoreNoProductTransaction
 {

@@ -41,14 +41,14 @@ class CreateShop extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('new shop'),
+                'title'       => __('New shop'),
                 'pageHead'    => [
-                    'title'   => __('new shop'),
+                    'title'   => __('New shop'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.shops.index',
                                 'parameters' => $request->route()->originalParameters()

@@ -252,7 +252,7 @@ class IndexProductsInProductCategory extends OrgAction
                         && $productCategory->type == ProductCategoryTypeEnum::FAMILY ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new product'),
+                            'tooltip' => __('New product'),
                             'label'   => __('product'),
                             'route'   => [
                                 'name'       => str_replace('index', 'create', $request->route()->getName()),

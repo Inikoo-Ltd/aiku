@@ -47,7 +47,7 @@ class CreateLocation extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => $routeName,
                                 'parameters' => $request->route()->originalParameters()

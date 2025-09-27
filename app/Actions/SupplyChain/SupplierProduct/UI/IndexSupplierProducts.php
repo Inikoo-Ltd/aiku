@@ -223,8 +223,8 @@ class IndexSupplierProducts extends GrpAction
                 [
                     'type'    =>    'button',
                                     'style'   => 'create',
-                                    'tooltip' => __('new supplier product'),
-                                    'label'   => __('new supplier product'),
+                                    'tooltip' => __('New supplier product'),
+                                    'label'   => __('New supplier product'),
                                     'route'   => [
                                         'name'       => 'grp.supply-chain.suppliers.supplier_products.create',
                                         'parameters' => $request->route()->originalParameters()
@@ -279,7 +279,7 @@ class IndexSupplierProducts extends GrpAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('supplier products'),
+                        'label' => __('Supplier products'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],

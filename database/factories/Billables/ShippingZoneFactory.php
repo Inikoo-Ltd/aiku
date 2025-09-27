@@ -2,16 +2,16 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 11 May 2024 22:13:37 British Summer Time, Sheffield, UK
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Sat, 27 Sept 2025 12:24:31 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace Database\Factories\Ordering;
+namespace Database\Factories\Billables;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Ordering\ShippingZone>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Billables\ShippingZone>
  */
 class ShippingZoneFactory extends Factory
 {

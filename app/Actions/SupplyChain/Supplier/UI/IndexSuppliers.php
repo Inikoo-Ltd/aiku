@@ -125,7 +125,7 @@ class IndexSuppliers extends GrpAction
                             'action'      => $this->canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new supplier'),
+                                'tooltip' => __('New supplier'),
                                 'label'   => __('supplier'),
                                 'route'   => [
                                     'name'       => 'grp.supply-chain.suppliers.create',
@@ -140,7 +140,7 @@ class IndexSuppliers extends GrpAction
                             'action'      => $canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new supplier'),
+                                'tooltip' => __('New supplier'),
                                 'label'   => __('supplier'),
                                 'route'   => [
                                     'name'       => 'grp.supply-chain.agent.show.suppliers.create',

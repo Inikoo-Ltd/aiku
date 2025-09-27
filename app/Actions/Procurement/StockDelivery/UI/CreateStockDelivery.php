@@ -25,9 +25,9 @@ class CreateStockDelivery extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new supplier delivery'),
+                'title'       => __('New supplier delivery'),
                 'pageHead'    => [
-                    'title'        => __('new supplier delivery'),
+                    'title'        => __('New supplier delivery'),
                     'cancelCreate' => [
                         'route' => [
                             'name'       => 'grp.org.procurement.stock_deliveries.index',

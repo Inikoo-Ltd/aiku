@@ -37,7 +37,7 @@ class EditInvoiceCategory extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.accounting.invoice-categories.show',
                                 'parameters' => array_values($request->route()->originalParameters())

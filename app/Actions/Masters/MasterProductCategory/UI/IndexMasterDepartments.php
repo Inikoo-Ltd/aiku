@@ -179,7 +179,7 @@ class IndexMasterDepartments extends OrgAction
                 [
                     'type'    => 'button',
                     'style'   => 'create',
-                    'tooltip' => __('new master department'),
+                    'tooltip' => __('New master department'),
                     'label'   => __('master department'),
                     'route'   => match ($this->parent::class) {
                         MasterProductCategory::class => [

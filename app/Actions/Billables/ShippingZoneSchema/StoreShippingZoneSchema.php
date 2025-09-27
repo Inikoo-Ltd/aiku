@@ -1,16 +1,16 @@
 <?php
 
 /*
- * Author: Artha <artha@aw-advantage.com>
- * Created: Tue, 18 Apr 2023 15:08:02 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 27 Sept 2025 11:59:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\ShippingZoneSchema;
+namespace App\Actions\Billables\ShippingZoneSchema;
 
 use App\Actions\OrgAction;
 use App\Enums\Ordering\ShippingZoneSchema\ShippingZoneSchemaStateEnum;
-use App\Models\Ordering\ShippingZoneSchema;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;

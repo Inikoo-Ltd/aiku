@@ -144,7 +144,7 @@ class IndexWarehouses extends OrgAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new warehouse'),
+                            'tooltip' => __('New warehouse'),
                             'label'   => __('warehouse'),
                             'route'   => [
                                 'name'       => 'grp.org.warehouses.create',

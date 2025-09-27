@@ -53,9 +53,9 @@ class CreateBlogWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new blog'),
+                'title'       => __('New blog'),
                 'pageHead'    => [
-                    'title'   => __('new blog'),
+                    'title'   => __('New blog'),
                     'actions' => [
                         [
                             'type'  => 'button',

@@ -31,9 +31,9 @@ class CreateStockFamily extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('new SKU family'),
+                'title'       => __('New SKU family'),
                 'pageHead'    => [
-                    'title'        => __('new SKU family'),
+                    'title'        => __('New SKU family'),
                     'icon'         => [
                         'title' => __("stock's families"),
                         'icon'  => 'fal fa-boxes-alt'
@@ -42,7 +42,7 @@ class CreateStockFamily extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => str_replace('create', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -53,7 +53,7 @@ class CreateStockFamily extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('new family'),
+                            'title'  => __('New family'),
                             'fields' => [
                                 'code' => [
                                     'type'      => 'input',

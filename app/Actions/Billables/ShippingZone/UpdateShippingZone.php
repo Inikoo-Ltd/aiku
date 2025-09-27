@@ -1,17 +1,17 @@
 <?php
 
 /*
- * Author: Artha <artha@aw-advantage.com>
- * Created: Mon, 17 Apr 2023 10:48:24 Central Indonesia Time, Sanur, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sat, 27 Sept 2025 11:59:04 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\ShippingZone;
+namespace App\Actions\Billables\ShippingZone;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Ordering\ShippingZoneResource;
-use App\Models\Ordering\ShippingZone;
+use App\Models\Billables\ShippingZone;
 use App\Rules\IUnique;
 use Lorisleiva\Actions\ActionRequest;
 

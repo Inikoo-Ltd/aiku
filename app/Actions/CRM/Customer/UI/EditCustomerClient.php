@@ -46,7 +46,7 @@ class EditCustomerClient extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
                                     'shops.show.customers.create' => 'shops.show.customers.index',

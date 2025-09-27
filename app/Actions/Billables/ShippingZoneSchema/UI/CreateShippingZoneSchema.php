@@ -2,11 +2,11 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 06 Sept 2024 12:47:29 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Sat, 27 Sept 2025 11:59:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\ShippingZoneSchema\UI;
+namespace App\Actions\Billables\ShippingZoneSchema\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
@@ -29,9 +29,9 @@ class CreateShippingZoneSchema extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new schema'),
+                'title'       => __('New schema'),
                 'pageHead'    => [
-                    'title'        => __('new schema'),
+                    'title'        => __('New schema'),
                     'icon'         => [
                         'icon'  => ['fal', 'fa-shipping-fast'],
                         'title' => __('Shipping Zone Schema')
@@ -40,7 +40,7 @@ class CreateShippingZoneSchema extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

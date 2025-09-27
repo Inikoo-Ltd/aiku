@@ -150,7 +150,7 @@ class IndexManufactureTasks extends OrgAction
                             'action'      => $canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new manufacture task'),
+                                'tooltip' => __('New manufacture task'),
                                 'label'   => __('manufacture task'),
                                 'route'   => [
                                     'name'       => 'grp.org.productions.show.crafts.manufacture_tasks.create',

@@ -116,7 +116,7 @@ class IndexTransactions extends OrgAction
 
             $table->column(key: 'quantity_ordered', label: __('Quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
             /*  if (app()->environment('local')) {
-                 $table->column(key: 'new_quantity', label: __('new quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+                 $table->column(key: 'new_quantity', label: __('New quantity'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
              } */
             $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             if ($parent instanceof Order &&

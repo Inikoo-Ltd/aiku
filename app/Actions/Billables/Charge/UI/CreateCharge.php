@@ -33,9 +33,9 @@ class CreateCharge extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new charge'),
+                'title'       => __('New charge'),
                 'pageHead'    => [
-                    'title'        => __('new charge'),
+                    'title'        => __('New charge'),
                     'icon'         => [
                         'icon'  => ['fal', 'fa-charging-station'],
                         'title' => __('Charge')
@@ -44,7 +44,7 @@ class CreateCharge extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

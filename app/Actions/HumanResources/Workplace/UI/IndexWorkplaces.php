@@ -99,7 +99,7 @@ class IndexWorkplaces extends OrgAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new working place'),
+                            'tooltip' => __('New working place'),
                             'label'   => __('working place'),
                             'route'   => [
                                 'name'       => 'grp.org.hr.workplaces.create',

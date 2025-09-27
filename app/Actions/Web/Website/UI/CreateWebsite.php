@@ -86,7 +86,7 @@ class CreateWebsite extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     routeParameters: $request->route()->originalParameters()
                 ),
-                'title'       => __('new website'),
+                'title'       => __('New website'),
                 'pageHead'    => [
                     'title'        => __('website'),
                     'container'    => $container,

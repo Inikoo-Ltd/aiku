@@ -31,9 +31,9 @@ class CreateAppointment extends InertiaAction
                     $request->route()->getName(),
                     $request->route()->parameters
                 ),
-                'title'       => __('new appointment'),
+                'title'       => __('New appointment'),
                 'pageHead'    => [
-                    'title'   => __('new appointment'),
+                    'title'   => __('New appointment'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-handshake'],
                         'title' => __('Appointment')
@@ -42,7 +42,7 @@ class CreateAppointment extends InertiaAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
                                     'shops.show.appointments.create' => 'org.shops.appointments.index',

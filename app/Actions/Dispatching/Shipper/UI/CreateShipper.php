@@ -26,9 +26,9 @@ class CreateShipper extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new shipper'),
+                'title'       => __('New shipper'),
                 'pageHead'    => [
-                    'title'   => __('new shipper'),
+                    'title'   => __('New shipper'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-shipping-fast'],
                         'title' => __('Shipper')
@@ -37,7 +37,7 @@ class CreateShipper extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.warehouses.show.dispatching.shippers.current.index',
                                 'parameters' => array_values($request->route()->originalParameters())

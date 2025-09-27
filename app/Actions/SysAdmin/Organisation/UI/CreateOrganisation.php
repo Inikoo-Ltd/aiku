@@ -29,14 +29,14 @@ class CreateOrganisation extends InertiaAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('new organisation'),
+                'title'       => __('New organisation'),
                 'pageHead'    => [
-                    'title'        => __('new organisation'),
+                    'title'        => __('New organisation'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.sysadmin.guests.index'
                             ],

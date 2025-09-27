@@ -35,9 +35,9 @@ class CreateEmployee extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('new employee'),
+                'title'       => __('New employee'),
                 'pageHead'    => [
-                    'title'   => __('new employee'),
+                    'title'   => __('New employee'),
                     'actions' => [
                         [
                             'type'  => 'button',

@@ -28,14 +28,14 @@ class CreateInvoiceCategory extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new invoice category'),
+                'title'    => __('New invoice category'),
                 'pageHead' => [
-                    'title'        => __('new invoice category'),
+                    'title'        => __('New invoice category'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.accounting.invoice-categories.index',
                                 'parameters' => array_values($request->route()->originalParameters())

@@ -248,7 +248,7 @@ class IndexSubDepartments extends OrgAction
                         $this->canEdit && is_null($this->shop->master_shop_id) && $request->route()->getName() == 'grp.org.shops.show.catalogue.departments.show.sub_departments.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new Sub-department'),
+                            'tooltip' => __('New Sub-department'),
                             'label'   => __('Sub-department'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.create',

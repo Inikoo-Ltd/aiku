@@ -160,7 +160,7 @@ class IndexDepartments extends OrgAction
                             'action'      => $canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new department'),
+                                'tooltip' => __('New department'),
                                 'label'   => __('department'),
                                 'route'   => [
                                     'name'       => 'grp.org.shops.show.departments.create',
@@ -283,7 +283,7 @@ class IndexDepartments extends OrgAction
                         && is_null($this->shop->masterShop) ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new department'),
+                            'tooltip' => __('New department'),
                             'label'   => __('department'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.create',

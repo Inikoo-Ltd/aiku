@@ -71,9 +71,9 @@ class CreateWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new webpage'),
+                'title'       => __('New webpage'),
                 'pageHead'    => [
-                    'title'   => __('new webpage'),
+                    'title'   => __('New webpage'),
                     'actions' => [
                         [
                             'type'  => 'button',

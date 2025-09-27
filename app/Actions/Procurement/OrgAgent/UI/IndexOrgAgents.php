@@ -144,7 +144,7 @@ class IndexOrgAgents extends OrgAction
                         $this->canEdit && $request->route()->getName() == 'grp.org.procurement.org_agents.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new agent'),
+                            'tooltip' => __('New agent'),
                             'label'   => __('agent'),
                             'route'   => [
                                 'name'       => 'grp.org.procurement.org_agents.create',

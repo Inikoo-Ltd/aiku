@@ -27,9 +27,9 @@ class CreateProspect extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new prospect'),
+                'title'       => __('New prospect'),
                 'pageHead'    => [
-                    'title'   => __('new prospect'),
+                    'title'   => __('New prospect'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-transporter'],
                         'title' => __('Prospect')
@@ -38,7 +38,7 @@ class CreateProspect extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

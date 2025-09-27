@@ -26,7 +26,7 @@ class CreatePhysicalGoods extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new goods'),
+                'title'    => __('New goods'),
                 'pageHead' => [
                     'title' => __('New goods')
                 ],

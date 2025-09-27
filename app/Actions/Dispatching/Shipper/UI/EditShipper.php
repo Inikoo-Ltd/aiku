@@ -29,9 +29,9 @@ class EditShipper extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new shipper'),
+                'title'       => __('New shipper'),
                 'pageHead'    => [
-                    'title'   => __('new shipper'),
+                    'title'   => __('New shipper'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-shipping-fast'],
                         'title' => __('Shipper')

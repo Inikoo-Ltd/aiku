@@ -2,11 +2,11 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 11 May 2024 23:34:49 British Summer Time, Sheffield, UK
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Sat, 27 Sept 2025 11:56:51 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Models\Ordering;
+namespace App\Models\Billables;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Ordering\ShippingZoneSchema\ShippingZoneSchemaStateEnum;
@@ -25,7 +25,7 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- * App\Models\Ordering\ShippingZoneSchema
+ * App\Models\Billables\ShippingZoneSchema
  *
  * @property int $id
  * @property int $group_id
@@ -47,10 +47,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\SysAdmin\Organisation $organisation
- * @property-read Collection<int, \App\Models\Ordering\ShippingZone> $shippingZones
+ * @property-read Collection<int, \App\Models\Billables\ShippingZone> $shippingZones
  * @property-read \App\Models\Catalogue\Shop $shop
- * @property-read \App\Models\Ordering\ShippingZoneSchemaStats|null $stats
- * @method static \Database\Factories\Ordering\ShippingZoneSchemaFactory factory($count = null, $state = [])
+ * @property-read \App\Models\Billables\ShippingZoneSchemaStats|null $stats
+ * @method static \Database\Factories\Billables\ShippingZoneSchemaFactory factory($count = null, $state = [])
  * @method static Builder<static>|ShippingZoneSchema newModelQuery()
  * @method static Builder<static>|ShippingZoneSchema newQuery()
  * @method static Builder<static>|ShippingZoneSchema onlyTrashed()

@@ -98,7 +98,7 @@ class IndexClockingMachines extends OrgAction
                         'action' => [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new clocking machine'),
+                            'tooltip' => __('New clocking machine'),
                             'label'   => __('clocking machine'),
                             'route'   => [
                                 'name'       => 'grp.org.hr.workplaces.show.clocking_machines.create',

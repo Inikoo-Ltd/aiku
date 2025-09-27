@@ -32,14 +32,14 @@ class CreateClocking extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new clocking'),
+                'title'    => __('New clocking'),
                 'pageHead' => [
-                    'title'        => __('new clocking'),
+                    'title'        => __('New clocking'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.hr.workplaces.show.clockings.index',
                                 'parameters' => $request->route()->originalParameters()

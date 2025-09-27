@@ -154,7 +154,7 @@ class IndexEmployees extends OrgAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new employee'),
+                            'tooltip' => __('New employee'),
                             'label'   => __('employee'),
                             'route'   => [
                                 'name'       => 'grp.org.hr.employees.create',

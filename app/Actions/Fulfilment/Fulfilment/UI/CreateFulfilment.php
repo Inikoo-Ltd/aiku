@@ -40,14 +40,14 @@ class CreateFulfilment extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('new fulfilment shop'),
+                'title'       => __('New fulfilment shop'),
                 'pageHead'    => [
-                    'title'   => __('new fulfilment shop'),
+                    'title'   => __('New fulfilment shop'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.fulfilments.index',
                                 'parameters' => $request->route()->originalParameters()

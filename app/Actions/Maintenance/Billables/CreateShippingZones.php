@@ -8,8 +8,8 @@
 
 namespace App\Actions\Maintenance\Billables;
 
-use App\Actions\Ordering\ShippingZone\StoreShippingZone;
-use App\Models\Ordering\ShippingZoneSchema;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 

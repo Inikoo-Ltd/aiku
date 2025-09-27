@@ -122,7 +122,7 @@ class IndexGuests extends GrpAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new guest'),
+                            'tooltip' => __('New guest'),
                             'label'   => __('guest'),
                             'route'   => [
                                 'name'       => 'grp.sysadmin.guests.create',

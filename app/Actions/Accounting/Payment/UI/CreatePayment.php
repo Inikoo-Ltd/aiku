@@ -24,9 +24,9 @@ class CreatePayment extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), array_values($request->route()->originalParameters())),
-                'title'       => __('new payment'),
+                'title'       => __('New payment'),
                 'pageHead'    => [
-                    'title'        => __('new payment'),
+                    'title'        => __('New payment'),
                     'cancelCreate' => [
                         'route' => [
                             'name' => match ($request->route()->getName()) {

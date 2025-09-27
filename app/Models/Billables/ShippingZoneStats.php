@@ -2,11 +2,11 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Mon, 02 Sept 2024 16:55:10 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2024, Raul A Perusquia Flores
+ * Created: Sat, 27 Sept 2025 11:57:52 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Models\Ordering;
+namespace App\Models\Billables;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $grp_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Ordering\ShippingZone $shippingZone
+ * @property-read \App\Models\Billables\ShippingZone $shippingZone
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShippingZoneStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShippingZoneStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShippingZoneStats query()

@@ -233,7 +233,7 @@ trait IsInvoiceUI
             [
                 'type'  => 'button',
                 'style' => 'edit',
-                'label' => __('send invoice'),
+                'label' => __('Send invoice'),
                 'icon'  => 'fal fa-envelope',
                 'key'   => 'send-invoice',
                 'route' => [

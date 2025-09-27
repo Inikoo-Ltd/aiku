@@ -59,7 +59,7 @@ class CreateWebUser extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name' => match (class_basename($this->parent)) {
                                     'Customer'           => 'grp.org.shops.show.crm.customers.show',

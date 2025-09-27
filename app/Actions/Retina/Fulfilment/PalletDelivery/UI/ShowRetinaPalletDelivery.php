@@ -125,7 +125,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                                     'style' => 'secondary',
                                     'icon'  => 'fal fa-plus',
                                     'key'   => 'storage',
-                                    'label' => __('storage'),
+                                    'label' => __('Storage'),
                                     'route' => [
                                         'name'       => 'retina.models.pallet-delivery.pallet.store',
                                         'parameters' => [
@@ -137,7 +137,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                                     'type'  => 'button',
                                     'style' => 'secondary',
                                     'icon'  => 'fal fa-plus',
-                                    'label' => __('service'),
+                                    'label' => __('Service'),
                                     'route' => [
                                         'name'       => 'retina.models.pallet-delivery.transaction.store',
                                         'parameters' => [

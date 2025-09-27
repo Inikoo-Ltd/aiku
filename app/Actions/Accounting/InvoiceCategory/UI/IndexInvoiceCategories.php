@@ -111,7 +111,7 @@ class IndexInvoiceCategories extends OrgAction
                         [
                             'type'    =>    'button',
                                             'style'   => 'create',
-                                            'tooltip' => __('new invoice category'),
+                                            'tooltip' => __('New invoice category'),
                                             'label'   => __('invoice category'),
                                             'route'   => [
                                                 'name'       => 'grp.org.accounting.invoice-categories.create',

@@ -26,9 +26,9 @@ class CreateProspectQuery extends InertiaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new prospect list'),
+                'title'       => __('New prospect list'),
                 'pageHead'    => [
-                    'title'   => __('new prospect list'),
+                    'title'   => __('New prospect list'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-code-branch'],
                         'title' => __('Prospect list')
@@ -37,7 +37,7 @@ class CreateProspectQuery extends InertiaAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_merge(

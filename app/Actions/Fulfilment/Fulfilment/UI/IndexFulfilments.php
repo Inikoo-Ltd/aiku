@@ -127,7 +127,7 @@ class IndexFulfilments extends OrgAction
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new fulfilment shop'),
+                            'tooltip' => __('New fulfilment shop'),
                             'label'   => __('Fulfilment Shop'),
                             'route'   => [
                                 'name'       => 'grp.org.fulfilments.create',

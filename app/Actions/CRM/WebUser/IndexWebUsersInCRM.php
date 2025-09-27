@@ -168,7 +168,7 @@ class IndexWebUsersInCRM extends OrgAction
                                 [
                                     'type'    => 'button',
                                     'style'   => 'create',
-                                    'tooltip' => __('new website user'),
+                                    'tooltip' => __('New website user'),
                                     'label'   => __('website user'),
                                     'route'   => [
                                         'name'       => 'grp.org.shops.show.crm.customers.show.web_users.create',

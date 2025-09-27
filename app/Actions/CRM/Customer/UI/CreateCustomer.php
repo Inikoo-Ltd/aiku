@@ -32,9 +32,9 @@ class CreateCustomer extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new customer'),
+                'title'       => __('New customer'),
                 'pageHead'    => [
-                    'title'        => __('new customer'),
+                    'title'        => __('New customer'),
                     'icon'         => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('Customer')
@@ -43,7 +43,7 @@ class CreateCustomer extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => match ($request->route()->getName()) {
                                     'shops.show.customers.create' => 'shops.show.customers.index',

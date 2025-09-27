@@ -282,7 +282,7 @@ class ShowWebpage extends OrgAction
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('new article'),
+                'label' => __('New article'),
                 'route' => [
                     'name'       => 'org.websites.show.blog.article.create',
                     'parameters' => [
@@ -294,7 +294,7 @@ class ShowWebpage extends OrgAction
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('new webpage'),
+                'label' => __('New webpage'),
                 'route' => [
                     'name'       => 'org.websites.show.webpages.show.webpages.create',
                     'parameters' => [

@@ -188,7 +188,7 @@ class IndexStockFamilies extends OrgAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new stock family'),
+                            'tooltip' => __('New stock family'),
                             'label'   => __('stock family'),
                             'route'   => [
                                 'name'       => 'grp.goods.stock-families.create',
@@ -296,7 +296,7 @@ class IndexStockFamilies extends OrgAction
                         $this->canEdit && $request->route()->getName() == 'grp.goods.stock-families.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new master SKU family'),
+                            'tooltip' => __('New master SKU family'),
                             'label'   => __('Master SKU family'),
                             'route'   => [
                                 'name'       => 'grp.goods.stock-families.create',

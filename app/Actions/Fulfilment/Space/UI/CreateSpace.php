@@ -34,9 +34,9 @@ class CreateSpace extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new space'),
+                'title'       => __('New space'),
                 'pageHead'    => [
-                    'title'   => __('new space'),
+                    'title'   => __('New space'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('Space')
@@ -45,7 +45,7 @@ class CreateSpace extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

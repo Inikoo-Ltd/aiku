@@ -178,7 +178,7 @@ class GetPalletDeliveryActions
                 'style'   => 'negative',
                 'icon'    => 'fal fa-times',
                 'tooltip' => __('Cancel the delivery'),
-                'label'   => __('cancel'),
+                'label'   => __('Cancel'),
                 'key'     => 'action',
                 'route'   => [
                     'method'     => 'post',
