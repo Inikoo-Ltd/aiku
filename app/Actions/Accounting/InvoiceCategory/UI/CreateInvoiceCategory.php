@@ -60,7 +60,6 @@ class CreateInvoiceCategory extends OrgAction
                                         'label'    => __('type'),
                                         'required' => true,
                                         'options'  => Options::forEnum(InvoiceCategoryTypeEnum::class),
-                                        'required' => true,
                                     ],
                                 ]
                             ]

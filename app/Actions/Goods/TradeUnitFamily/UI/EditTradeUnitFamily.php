@@ -10,7 +10,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class EditTradeUnitFamily extends GrpAction
 {
-    /** @noinspection PhpUnusedParameterInspection */
     public function asController(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): Response
     {
         $this->initialisation(group(), $request);

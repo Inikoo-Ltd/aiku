@@ -35,7 +35,6 @@ use App\Actions\Transfers\Aurora\FetchAuroraInvoiceCategories;
 use App\Actions\Transfers\Aurora\FetchAuroraInvoices;
 use App\Actions\Transfers\Aurora\FetchAuroraLocations;
 use App\Actions\Transfers\Aurora\FetchAuroraMailshots;
-use App\Actions\Transfers\Aurora\FetchAuroraMasterFamilies;
 use App\Actions\Transfers\Aurora\FetchAuroraOfferCampaigns;
 use App\Actions\Transfers\Aurora\FetchAuroraOfferComponents;
 use App\Actions\Transfers\Aurora\FetchAuroraOffers;
@@ -441,16 +440,6 @@ trait WithAuroraParsers
         return $family;
     }
 
-    public function parseMasterFamily(string $sourceId): ?MasterProductCategory
-    {
-        $masterFamily = MasterProductCategory::where('type', MasterProductCategoryTypeEnum::FAMILY)->where('source_family_id', $sourceId)->first();
-        if (!$masterFamily) {
-            $sourceData = explode(':', $sourceId);
-            $masterFamily     = FetchAuroraMasterFamilies::run($this->organisationSource, $sourceData[1]);
-        }
-
-        return $masterFamily;
-    }
 
 
     public function parseCustomer(string $sourceId): ?Customer

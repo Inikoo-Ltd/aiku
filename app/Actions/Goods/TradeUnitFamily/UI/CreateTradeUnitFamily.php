@@ -9,7 +9,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class CreateTradeUnitFamily extends GrpAction
 {
-    /** @noinspection PhpUnusedParameterInspection */
     public function asController(ActionRequest $request): Response
     {
         $this->initialisation(group(), $request);

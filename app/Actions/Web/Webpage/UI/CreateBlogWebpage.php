@@ -115,7 +115,6 @@ class CreateBlogWebpage extends OrgAction
                                 ],
                                 'seo_structure_type' => [
                                         'type'     => 'select',
-                                        'required'  => true,
                                         'label'    => __('seo structure type'),
                                         'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
                                         'value'    => '',

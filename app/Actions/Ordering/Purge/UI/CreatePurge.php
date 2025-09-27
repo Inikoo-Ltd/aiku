@@ -56,7 +56,6 @@ class CreatePurge extends OrgAction
                                         'label'    => __('type'),
                                         'required' => true,
                                         'options'  => Options::forEnum(PurgeTypeEnum::class),
-                                        'required' => true,
                                     ],
                                     'scheduled_at' => [
                                         'type'     => 'date',
