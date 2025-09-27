@@ -28,6 +28,7 @@ class RepairInvoicesShippingZones
         /** @var InvoiceTransaction $shippingTransaction */
         $shippingTransaction = InvoiceTransaction::where('invoice_id', $invoice->id)
             ->where('model_type', 'ShippingZone')
+            ->whereNotNull('model_id')
             ->first();
 
         if ($shippingTransaction) {

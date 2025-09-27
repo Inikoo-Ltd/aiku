@@ -25,6 +25,7 @@ class RepairOrdersShippingZones
     {
         $shippingTransaction = Transaction::where('order_id', $order->id)
             ->where('model_type', 'ShippingZone')
+            ->whereNotNull('model_id')
             ->first();
 
         if ($shippingTransaction) {
