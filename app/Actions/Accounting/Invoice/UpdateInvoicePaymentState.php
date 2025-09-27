@@ -96,7 +96,8 @@ class UpdateInvoicePaymentState extends OrgAction
                 'pay_status'          => $payStatus,
                 'paid_at'             => $paymentAt,
                 'pay_detailed_status' => $payDetailedStatus,
-                'payment_amount'      => $runningPaymentsAmount
+                'payment_amount'      => $runningPaymentsAmount,
+                'effective_total'     => $invoice->effective_total - $runningPaymentsAmount,
             ]
         );
 

@@ -171,7 +171,8 @@ class StoreInvoice extends OrgAction
 
                 $invoice->updateQuietly(
                     [
-                        'delivery_country_id' => $invoice->deliveryAddress->country_id
+                        'delivery_country_id' => $invoice->deliveryAddress->country_id,
+                        'effective_total' => $invoice->total_amount
                     ]
                 );
             }
