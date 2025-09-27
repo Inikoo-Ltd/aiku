@@ -251,7 +251,7 @@ trait IsInvoiceUI
                     'type'  => 'button',
                     'style' => 'edit',
                     'icon' => 'fal fa-plus',
-                    'label' => __('create refund'),
+                    'label' => __('Create refund'),
                     'route' => [
                         'method'     => 'post',
                         'name'       => 'grp.models.refund.create',

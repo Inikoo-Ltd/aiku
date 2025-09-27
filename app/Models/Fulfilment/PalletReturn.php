@@ -99,6 +99,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $deleted_by
  * @property array<array-key, mixed>|null $parcels
  * @property int|null $customer_sales_channel_id
+ * @property int|null $shipping_zone_schema_id
+ * @property int|null $shipping_zone_id
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses

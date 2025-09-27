@@ -11,6 +11,8 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
+use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
+use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
@@ -199,6 +201,15 @@ class StoreInvoice extends OrgAction
             SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);
         }
 
+        if (!$invoice->in_procexss) {
+            if ($invoice->shipping_zone_id) {
+                ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($this->hydratorsDelay);
+            }
+            if ($invoice->shipping_zone_schema_id) {
+                ShippingZoneSchemaHydrateUsageInInvoices::dispatch($invoice->shipping_zone_schema_id)->delay($this->hydratorsDelay);
+            }
+        }
+
         return $invoice;
     }
 
@@ -279,6 +290,10 @@ class StoreInvoice extends OrgAction
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
+
+            'shipping_zone_schema_id'   => ['sometimes', 'nullable'],
+            'shipping_zone_id'          => ['sometimes', 'nullable'],
+
         ];
 
 

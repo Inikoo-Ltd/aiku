@@ -8,6 +8,7 @@
 
 /** @noinspection PhpUnhandledExceptionInspection */
 
+use App\Actions\Billables\ShippingZone\HydrateShippingZones;
 use App\Actions\Billables\ShippingZone\StoreShippingZone;
 use App\Actions\Billables\ShippingZone\UpdateShippingZone;
 use App\Actions\Billables\ShippingZoneSchema\HydrateShippingZoneSchemas;
@@ -73,8 +74,14 @@ test('update shipping zone', function ($shippingZone) {
 })->depends('create shipping zone');
 
 
-test('shipping zone hydrators', function () {
+test('shipping zone schemas hydrators', function () {
     $shippingZoneSchema = ShippingZoneSchema::first();
     HydrateShippingZoneSchemas::run($shippingZoneSchema);
     $this->artisan('hydrate:shipping_zone_schemas')->assertExitCode(0);
+});
+
+test('shipping zone hydrators', function () {
+    $shippingZone = ShippingZone::first();
+    HydrateShippingZones::run($shippingZone);
+    $this->artisan('hydrate:shipping_zones')->assertExitCode(0);
 });

@@ -145,6 +145,8 @@ class StoreDeliveryNote extends OrgAction
             'customer_client_id'        => ['sometimes', 'nullable'],
             'customer_sales_channel_id' => ['sometimes', 'nullable'],
             'platform_id'               => ['sometimes', 'nullable'],
+            'shipping_zone_schema_id'   => ['sometimes', 'nullable'],
+            'shipping_zone_id'          => ['sometimes', 'nullable'],
         ];
 
         if (!$this->strict) {

@@ -10,6 +10,8 @@ namespace App\Models\Billables;
 
 use App\Actions\Utils\Abbreviate;
 use App\Enums\Ordering\ShippingZoneSchema\ShippingZoneSchemaStateEnum;
+use App\Models\Accounting\Invoice;
+use App\Models\Ordering\Order;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\InShop;
 use Eloquent;
@@ -46,6 +48,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
+ * @property-read Collection<int, Invoice> $invoices
+ * @property-read Collection<int, Order> $orders
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Collection<int, \App\Models\Billables\ShippingZone> $shippingZones
  * @property-read \App\Models\Catalogue\Shop $shop
@@ -116,4 +120,15 @@ class ShippingZoneSchema extends Model implements Auditable
     {
         return $this->hasOne(ShippingZoneSchemaStats::class);
     }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
 }

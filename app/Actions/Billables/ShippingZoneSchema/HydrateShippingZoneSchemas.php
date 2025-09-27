@@ -9,6 +9,8 @@
 namespace App\Actions\Billables\ShippingZoneSchema;
 
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateShippingZones;
+use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
+use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInOrders;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Billables\ShippingZoneSchema;
 
@@ -26,6 +28,8 @@ class HydrateShippingZoneSchemas
     public function handle(ShippingZoneSchema $shippingZoneSchema): void
     {
         ShippingZoneSchemaHydrateShippingZones::run($shippingZoneSchema);
+        ShippingZoneSchemaHydrateUsageInOrders::run($shippingZoneSchema->id);
+        ShippingZoneSchemaHydrateUsageInInvoices::run($shippingZoneSchema->id);
     }
 
 }

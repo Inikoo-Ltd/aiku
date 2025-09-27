@@ -12,6 +12,8 @@ use App\Actions\Accounting\Invoice\Search\InvoiceRecordSearch;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
+use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
+use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
@@ -45,10 +47,12 @@ class UpdateInvoice extends OrgAction
 
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
+        $oldShippingZoneSchemaId = $invoice->shipping_zone_schema_id;
+        $oldShippingZoneId       = $invoice->shipping_zone_id;
+
         $billingAddressData = Arr::pull($modelData, 'billing_address');
 
         $deliveryAddressData = Arr::pull($modelData, 'delivery_address');
-
 
 
         $invoice = $this->update($invoice, $modelData, ['data']);
@@ -69,7 +73,6 @@ class UpdateInvoice extends OrgAction
 
 
         if ($deliveryAddressData) {
-
             $this->updateFixedAddress(
                 $invoice,
                 $invoice->deliveryAddress,
@@ -82,7 +85,6 @@ class UpdateInvoice extends OrgAction
             $invoice->update([
                 'delivery_country_id' => $invoice->deliveryAddress->country_id,
             ]);
-
         }
 
 
@@ -130,6 +132,26 @@ class UpdateInvoice extends OrgAction
             }
         }
 
+        if (Arr::has($changes, 'shipping_zone_schema_id')) {
+            if ($oldShippingZoneSchemaId) {
+                ShippingZoneSchemaHydrateUsageInInvoices::dispatch($oldShippingZoneSchemaId)->delay($this->hydratorsDelay);
+            }
+
+            if ($invoice->shipping_zone_schema_id) {
+                ShippingZoneSchemaHydrateUsageInInvoices::dispatch($invoice->shipping_zone_schema_id)->delay($this->hydratorsDelay);
+            }
+        }
+
+        if (Arr::has($changes, 'shipping_zone_id')) {
+            if ($oldShippingZoneId) {
+                ShippingZoneHydrateUsageInInvoices::dispatch($oldShippingZoneId)->delay($this->hydratorsDelay);
+            }
+
+            if ($invoice->shipping_zone_id) {
+                ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($this->hydratorsDelay);
+            }
+        }
+
         return $invoice;
     }
 
@@ -152,18 +174,20 @@ class UpdateInvoice extends OrgAction
             'payment_amount' => ['sometimes', 'numeric'],
 
 
-            'date'             => ['sometimes', 'date'],
-            'tax_liability_at' => ['sometimes', 'date'],
-            'footer'           => ['sometimes', 'string'],
-            'billing_address'  => ['sometimes', 'required', new ValidAddress()],
-            'delivery_address' => ['sometimes', 'required', new ValidAddress()],
-            'sales_channel_id' => [
+            'date'                    => ['sometimes', 'date'],
+            'tax_liability_at'        => ['sometimes', 'date'],
+            'footer'                  => ['sometimes', 'string'],
+            'billing_address'         => ['sometimes', 'required', new ValidAddress()],
+            'delivery_address'        => ['sometimes', 'required', new ValidAddress()],
+            'sales_channel_id'        => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
+            'shipping_zone_schema_id' => ['sometimes', 'nullable'],
+            'shipping_zone_id'        => ['sometimes', 'nullable'],
 
         ];
 

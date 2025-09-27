@@ -78,6 +78,9 @@ class SendOrderToWarehouse extends OrgAction
             'phone'                     => $this->getPhone($order),
             'company_name'              => $this->getCompanyName($order),
             'contact_name'              => $this->getContactName($order),
+            'shipping_zone_schema_id'   => $order->shipping_zone_schema_id,
+            'shipping_zone_id'          => $order->shipping_zone_id,
+
         ];
 
         $deliveryNote = StoreDeliveryNote::make()->action($order, $deliveryNoteData);

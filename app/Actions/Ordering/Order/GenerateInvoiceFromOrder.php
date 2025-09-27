@@ -78,7 +78,9 @@ class GenerateInvoiceFromOrder extends OrgAction
                 'tax_amount'                => Arr::get($updatedData, 'tax_amount', $order->tax_amount),
                 'customer_sales_channel_id' => $order->customer_sales_channel_id,
                 'platform_id'               => $order->platform_id,
-                'footer'                    => $order->shop->invoice_footer ?? ''
+                'footer'                    => $order->shop->invoice_footer ?? '',
+                'shipping_zone_schema_id'   => $order->shipping_zone_schema_id,
+                'shipping_zone_id'          => $order->shipping_zone_id,
             ];
 
             $shop = $order->shop;
@@ -123,8 +125,7 @@ class GenerateInvoiceFromOrder extends OrgAction
             }
 
 
-
-            $totalPaid      = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->sum('payments.amount');
+            $totalPaid = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->sum('payments.amount');
 
             if ($totalPaid > $invoice->total_amount) {
                 $amountToCredit = $totalPaid - $invoice->total_amount;
@@ -137,7 +138,6 @@ class GenerateInvoiceFromOrder extends OrgAction
                     'type'                    => PaymentTypeEnum::REFUND,
                     'payment_account_shop_id' => $paymentAccountShop->id
                 ];
-
 
 
                 $creditPayment = StorePayment::make()->action($order->customer, $paymentAccountShop->paymentAccount, $paymentData);

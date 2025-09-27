@@ -38,9 +38,6 @@ class CalculateOrderShipping
 
 
         if ($order->stats->number_item_transactions == 0) {
-
-
-
             DB::table('transactions')->where('order_id', $order->id)
                 ->where('model_type', 'ShippingZone')
                 ->delete();
@@ -63,11 +60,12 @@ class CalculateOrderShipping
         if (!$shippingZoneSchema) {
             if ($order->shipping_engine == OrderShippingEngineEnum::AUTO) {
 
-                UpdateOrder::run($order,
+                UpdateOrder::run(
+                    $order,
                     [
                         'shipping_engine' => OrderShippingEngineEnum::MANUAL,
-                        'shipping_zone_schema_id'=>null,
-                        'shipping_zone_id'=>null,
+                        'shipping_zone_schema_id' => null,
+                        'shipping_zone_id' => null,
                     ]
                 );
 
@@ -94,10 +92,11 @@ class CalculateOrderShipping
         }
 
 
-        UpdateOrder::run($order,
+        UpdateOrder::run(
+            $order,
             [
-                'shipping_zone_schema_id'=>$shippingZoneSchema->id,
-                'shipping_zone_id'=>$shippingZone->id,
+                'shipping_zone_schema_id' => $shippingZoneSchema->id,
+                'shipping_zone_id' => $shippingZone->id,
             ]
         );
 

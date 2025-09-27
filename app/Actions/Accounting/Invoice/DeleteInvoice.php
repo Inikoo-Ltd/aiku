@@ -10,6 +10,8 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
+use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
+use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Comms\Email\SendInvoiceDeletedNotification;
@@ -20,7 +22,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use Exception;
 use Illuminate\Console\Command;
@@ -49,11 +50,18 @@ class DeleteInvoice extends OrgAction
                 return $invoice;
             });
 
-            if ($invoice->type === InvoiceTypeEnum::INVOICE) {
+            if (!$invoice->in_process) {
                 StoreDeletedInvoiceHistory::run(invoice: $invoice);
                 SendInvoiceDeletedNotification::dispatch($invoice);
                 $this->postDeleteInvoiceHydrators($invoice);
             }
+
+
+
+
+
+
+
         } catch (Throwable) {
             //
         }
@@ -64,7 +72,7 @@ class DeleteInvoice extends OrgAction
     public function htmlResponse(): RedirectResponse
     {
         return Redirect::route('grp.org.accounting.invoices.index', [
-             $this->organisation->slug
+            $this->organisation->slug
         ]);
     }
 
@@ -83,6 +91,13 @@ class DeleteInvoice extends OrgAction
             $invoiceCategory->refresh();
             InvoiceCategoryHydrateInvoices::dispatch($invoiceCategory);
         }
+        if ($invoice->shipping_zone_id) {
+            ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($this->hydratorsDelay);
+        }
+        if ($invoice->shipping_zone_schema_id) {
+            ShippingZoneSchemaHydrateUsageInInvoices::dispatch($invoice->shipping_zone_schema_id)->delay($this->hydratorsDelay);
+        }
+
     }
 
     public function rules(): array

@@ -133,6 +133,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $company_name recipient company name
  * @property string|null $contact_name recipient contact name
  * @property bool $is_cash_on_delivery
+ * @property int|null $shipping_zone_schema_id
+ * @property int|null $shipping_zone_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

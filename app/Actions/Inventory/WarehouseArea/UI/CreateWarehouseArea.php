@@ -31,8 +31,8 @@ class CreateWarehouseArea extends OrgAction
                 ),
                 'title'       => __('create warehouse area'),
                 'pageHead'    => [
-                    'model'        => __('warehouse area'),
-                    'title'        => __('create'),
+                    'model'        => __('Warehouse area'),
+                    'title'        => __('Create'),
                     'icon'         => 'fal fa-map-signs',
                     'actions'      => [
                         [

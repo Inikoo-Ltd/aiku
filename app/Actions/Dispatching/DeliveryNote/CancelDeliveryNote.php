@@ -131,9 +131,9 @@ class CancelDeliveryNote extends OrgAction
     {
         $identifier = (string)$command->argument('delivery_note');
 
-        $deliveryNote=null;
+        $deliveryNote = null;
 
-        if(is_numeric($identifier)) {
+        if (is_numeric($identifier)) {
             $deliveryNote = DeliveryNote::query()->find($identifier);
         }
 
