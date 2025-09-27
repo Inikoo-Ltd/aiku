@@ -25,12 +25,16 @@ class RepairDeliveryNotesRecipientFields
         $order = $deliveryNote->orders()->first();
 
         if ($order) {
-            $deliveryNote->update([
-                'email'        => SendOrderToWarehouse::make()->getEmail($order),
-                'phone'        => SendOrderToWarehouse::make()->getPhone($order),
-                'contact_name' => SendOrderToWarehouse::make()->getContactName($order),
-                'company_name' => SendOrderToWarehouse::make()->getCompanyName($order)
-            ]);
+            try {
+                $deliveryNote->update([
+                    'email'        => SendOrderToWarehouse::make()->getEmail($order),
+                    'phone'        => SendOrderToWarehouse::make()->getPhone($order),
+                    'contact_name' => SendOrderToWarehouse::make()->getContactName($order),
+                    'company_name' => SendOrderToWarehouse::make()->getCompanyName($order)
+                ]);
+            } catch (\Exception $exception) {
+                print $exception->getMessage();
+            }
         }
     }
 
