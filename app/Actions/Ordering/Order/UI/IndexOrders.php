@@ -244,6 +244,7 @@ class IndexOrders extends OrgAction
                 'orders.internal_notes',
                 'orders.public_notes',
                 'orders.shipping_notes',
+                'orders.to_be_paid_by'
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status']) // Ensure `id` is the first sort column
