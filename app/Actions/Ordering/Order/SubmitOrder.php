@@ -20,6 +20,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Ordering\Order;
@@ -89,7 +90,7 @@ class SubmitOrder extends OrgAction
         SendNewOrderEmailToSubscribers::dispatch($order->id);
         SendNewOrderEmailToCustomer::dispatch($order->id);
 
-        if ($order->pay_status == OrderPayStatusEnum::PAID) {
+        if ($order->pay_status == OrderPayStatusEnum::PAID || $order->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
             SendOrderToWarehouse::make()->action($order, []);
         }
 

@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 07-05-2025-15h-53m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Sun, 28 Sept 2025 22:13:01 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Retina\Accounting\Payment;
 
@@ -16,7 +15,7 @@ use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
 
-class PlaceOrderPayByBank extends RetinaAction
+class PlaceOrderPayByCashOnDelivery extends RetinaAction
 {
     use WithBasketStateWarning;
     use WithRetinaOrderPlacedRedirection;
@@ -27,7 +26,7 @@ class PlaceOrderPayByBank extends RetinaAction
      */
     public function handle(Customer $customer): array
     {
-        return $this->placeOrderByPaymentMethod($customer, OrderToBePaidByEnum::BANK);
+        return $this->placeOrderByPaymentMethod($customer, OrderToBePaidByEnum::CASH_ON_DELIVERY);
     }
 
     /**
@@ -36,7 +35,6 @@ class PlaceOrderPayByBank extends RetinaAction
     public function asController(ActionRequest $request): array
     {
         $this->initialisation($request);
-
         return $this->handle($this->customer);
     }
 

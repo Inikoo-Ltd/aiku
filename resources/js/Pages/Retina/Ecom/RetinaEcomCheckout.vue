@@ -1,20 +1,13 @@
 <script setup lang="ts">
 import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import { faPaypal } from "@fortawesome/free-brands-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import type { Component } from "vue"
-import { data } from "autoprefixer";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { trans } from "laravel-vue-i18n"
-
 import CheckoutPaymentBankTransfer from "@/Components/Retina/Ecom/CheckoutPaymentBankTransfer.vue"
 import CheckoutPaymentCard from "@/Components/Retina/Ecom/CheckoutPaymentCard.vue"
-import Button from "@/Components/Elements/Buttons/Button.vue"
-import Modal from "@/Components/Utils/Modal.vue"
-
-
 import { faArrowLeft, faCreditCardFront, faUniversity } from "@fal"
 import { faExclamationTriangle } from "@fas"
 import { Head } from "@inertiajs/vue3"
@@ -23,6 +16,7 @@ import { routeType } from "@/types/route"
 import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
+import CheckoutPaymentCashOnDelivery from "@/Components/Retina/Ecom/CheckoutPaymentCashOnDelivery.vue"
 
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
@@ -50,8 +44,6 @@ const props = defineProps<{
     }
 }>()
 
-// console.log('prporpor', props)
-
 const currentTab = ref({
     index: 0,
     key: props.paymentMethods?.[0]?.key
@@ -63,30 +55,14 @@ const component = computed(() => {
     const components: Component = {
         credit_card: CheckoutPaymentCard,
         bank_transfer: CheckoutPaymentBankTransfer,
+        cash_on_delivery: CheckoutPaymentCashOnDelivery,
 
     };
 
     return components[currentTab.value.key];
 })
 
-// const isModalConfirmationOrder = ref(false)
-// const onProcessOrder = () => {
-//     console.log('onProcessOrder')
-//     isModalConfirmationOrder.value = false
-//     // router.post(route('retina.models.top_up_payment_api_point.store'), {
-//     //     amount: amount.value,
-//     //     // notes: privateNote.value,
-//     // }, {
-//     //     preserveState: true,
-//     //     preserveScroll: true,
-//     //     onStart: () => {
-//     //         isLoading.value = true
-//     //     },
-//     //     onFinish: () => {
-//     //         isLoading.value = false
-//     //     }
-//     // })
-// }
+
 onMounted(() => {
     layout.root_active = 'retina.ecom.basket.'
 })
@@ -96,7 +72,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <!-- paymentMethods: <pre>{{ total_amount }}</pre> -->
+
     <Head title="Checkout" />
     <PageHeading
         :data="pageHead"
@@ -107,10 +83,7 @@ onUnmounted(() => {
     </div>
 
     <div v-else class="w-full px-4 xmt-8">
-        <!-- <div class="px-4 text-xl">
-            <span class="text-gray-500">{{ trans("Order number") }}</span> <span class="font-bold">#{{ order.reference }}</span>
-        </div> -->
-        
+
         <EcomCheckoutSummary
             :summary
             :balance
@@ -200,7 +173,7 @@ onUnmounted(() => {
         </div>
 
 
-        <div class="xflex xjustify-end gap-x-4 mt-4 md:px-10">
+        <div class="gap-x-4 mt-4 md:px-10">
             <ButtonWithLink
                 :icon="faArrowLeft"
                 type="tertiary"
@@ -209,34 +182,6 @@ onUnmounted(() => {
             />
         </div>
 
-        <!-- <Modal
-            :isOpen="isModalConfirmationOrder"
-            @close="() => isModalConfirmationOrder = false"
-            width="w-full max-w-lg"
-        >
-            <div class="px-3">
-                <div>
-                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-amber-100">
-                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-600 text-xl" fixed-width aria-hidden="true" />
-                    </div>
-                    <div class="mt-3 text-center sm:mt-2">
-                        <div as="h3" class="text-base font-semibold">
-                            Final confirmation
-                        </div>
-                        <div class="mt-2">
-                            <p class="text-sm text-gray-500">
-                                
-                            </p>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="mt-5 sm:mt-6 flex gap-x-4">
-                    <Button @click="isModalConfirmationOrder = false" label="cancel" type="tertiary" />
-                    <Button @click="onProcessOrder" label="Yes, process order" icon="" full />
-                </div>
-            </div>
-
-        </Modal> -->
     </div>
 </template>

@@ -40,8 +40,6 @@ class GetRetinaPaymentAccountShopData
                     'order_payment_api_point' => $orderPaymentApiPoint->ulid
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::BANK) {
-
-
             return
                 [
                     'label' => __('Bank transfer'),
@@ -52,6 +50,15 @@ class GetRetinaPaymentAccountShopData
                         'account_number' => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.account'),
                         'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
                     ]
+                ];
+        } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {
+            return
+                [
+                    'label' => __('Cash on delivery'),
+                    'key'   => 'cash_on_delivery',
+                    'icon'  => 'fal fa-hand-holding-usd',
+                    'content' => $paymentAccountShop->data
+
                 ];
         }
 

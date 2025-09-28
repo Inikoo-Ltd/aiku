@@ -15,6 +15,7 @@ use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
@@ -136,6 +137,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_cash_on_delivery
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
+ * @property OrderToBePaidByEnum|null $to_be_paid_by
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -185,8 +187,8 @@ class Order extends Model implements HasMedia, Auditable
 
 
     protected $casts = [
-        'data'         => 'array',
-        'payment_data' => 'array',
+        'data'                          => 'array',
+        'payment_data'                  => 'array',
         'post_submit_modification_data' => 'array',
 
 
@@ -227,12 +229,13 @@ class Order extends Model implements HasMedia, Auditable
         'pay_status'          => OrderPayStatusEnum::class,
         'pay_detailed_status' => OrderPayDetailedStatusEnum::class,
         'shipping_engine'     => OrderShippingEngineEnum::class,
-        'charges_engine'      => OrderChargesEngineEnum::class
+        'charges_engine'      => OrderChargesEngineEnum::class,
+        'to_be_paid_by'       => OrderToBePaidByEnum::class
     ];
 
     protected $attributes = [
-        'data'         => '{}',
-        'payment_data' => '{}',
+        'data'                          => '{}',
+        'payment_data'                  => '{}',
         'post_submit_modification_data' => '{}'
     ];
 
