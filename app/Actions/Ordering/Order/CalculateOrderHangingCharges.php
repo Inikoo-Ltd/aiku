@@ -31,6 +31,7 @@ class CalculateOrderHangingCharges
             return $order;
         }
 
+        /** @var Charge $charge */
         $charge = $order->shop->charges()->where('type', ChargeTypeEnum::HANGING)->where('state', ChargeStateEnum::ACTIVE)->first();
 
 

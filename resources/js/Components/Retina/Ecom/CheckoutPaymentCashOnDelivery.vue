@@ -38,9 +38,9 @@ const onSubmitPlaceOrder = () => {
 <template>
     <div class="relative w-full max-w-xl mx-auto my-8 overflow-hidden">
         <div class="mx-auto max-w-md ">
-            <div class="flex flex-col gap-x-4 rounded-xl border border-gray-300 bg-gray-100 p-6 ring-1 ring-inset ring-white/10">
+            <div  v-if="data.content.charges" class="flex flex-col gap-x-4 rounded-xl border border-gray-300 bg-gray-100 p-6 ring-1 ring-inset ring-white/10">
 
-               {{data.content.info.body}}
+               {{data.content.charges}}
             </div>
 
             <Button

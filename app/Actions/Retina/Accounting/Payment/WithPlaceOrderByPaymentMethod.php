@@ -9,9 +9,16 @@
 namespace App\Actions\Retina\Accounting\Payment;
 
 use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Ordering\Transaction\StoreTransaction;
+use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
+use App\Models\Billables\Charge;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
 trait WithPlaceOrderByPaymentMethod
@@ -34,6 +41,10 @@ trait WithPlaceOrderByPaymentMethod
         }
 
         $order = DB::transaction(function () use ($order, $method) {
+            if ($method == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
+                $order = $this->addCashOnDeliveryCharges($order);
+            }
+
             $order->updateQuietly([
                 'to_be_paid_by' => $method,
             ]);
@@ -47,4 +58,63 @@ trait WithPlaceOrderByPaymentMethod
             'order'   => $order,
         ];
     }
+
+    public function addCashOnDeliveryCharges(Order $order): Order
+    {
+        /** @var Charge $charge */
+        $charge = $order->shop->charges()->where('type', ChargeTypeEnum::COD)->where('state', ChargeStateEnum::ACTIVE)->first();
+
+        $cashOnDeliveryTransaction   = null;
+        $cashOnDeliveryTransactionID = DB::table('transactions')->where('order_id', $order->id)
+            ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
+            ->where('model_type', 'Charge')->where('charges.type', ChargeTypeEnum::COD->value)->value('transactions.id');
+
+        if ($cashOnDeliveryTransactionID) {
+            $cashOnDeliveryTransaction = Transaction::find($cashOnDeliveryTransactionID);
+        }
+
+        $chargeAmount = Arr::get($charge->settings, 'amount');
+        if ($cashOnDeliveryTransaction) {
+            $this->updateChargeTransaction($cashOnDeliveryTransaction, $charge, $chargeAmount);
+        } else {
+            $this->storeChargeTransaction($order, $charge, $chargeAmount);
+        }
+
+        $order->refresh();
+
+        return $order;
+    }
+
+    private function storeChargeTransaction(Order $order, Charge $charge, $chargeAmount): Transaction
+    {
+        return StoreTransaction::run(
+            $order,
+            $charge->historicAsset,
+            [
+                'quantity_ordered' => 1,
+                'gross_amount'     => $chargeAmount,
+                'net_amount'       => $chargeAmount,
+
+            ],
+            false
+        );
+    }
+
+
+    private function updateChargeTransaction(Transaction $transaction, Charge $charge, $chargeAmount): Transaction
+    {
+        return UpdateTransaction::run(
+            $transaction,
+            [
+                'model_id'          => $charge->id,
+                'asset_id'          => $charge->asset_id,
+                'historic_asset_id' => $charge->historicAsset->id,
+                'gross_amount'      => $chargeAmount ?? 0,
+                'net_amount'        => $chargeAmount ?? 0,
+            ],
+            false
+        );
+    }
+
+
 }

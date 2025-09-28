@@ -24,6 +24,7 @@ use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Billables\Charge;
 use App\Models\Catalogue\Shop;
 use App\Rules\IUnique;
+use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +45,29 @@ class StoreCharge extends OrgAction
         if (Arr::get($modelData, 'state') == ChargeStateEnum::ACTIVE) {
             $status = true;
         }
+
+
+        $type = Arr::get($modelData, 'type');
+        if (in_array($type, [ChargeTypeEnum::HANGING, ChargeTypeEnum::HANGING->value])) {
+            data_set($modelData, 'trigger', ChargeTriggerEnum::ORDER);
+        } elseif (in_array($type, [
+            ChargeTypeEnum::COD,
+            ChargeTypeEnum::COD->value,
+            ChargeTypeEnum::PAYMENT,
+            ChargeTypeEnum::PAYMENT->value
+        ])) {
+            data_set($modelData, 'trigger', ChargeTriggerEnum::PAYMENT_ACCOUNT);
+        } elseif (in_array($type, [
+            ChargeTypeEnum::PACKING,
+            ChargeTypeEnum::PACKING->value,
+            ChargeTypeEnum::PREMIUM,
+            ChargeTypeEnum::PREMIUM->value,
+            ChargeTypeEnum::INSURANCE,
+            ChargeTypeEnum::INSURANCE->value
+        ])) {
+            data_set($modelData, 'trigger', ChargeTriggerEnum::SELECTED_BY_CUSTOMER);
+        }
+
         data_set($modelData, 'status', $status);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
         data_set($modelData, 'group_id', $shop->group_id);
@@ -173,6 +197,30 @@ class StoreCharge extends OrgAction
             'shop'         => $charge->shop->slug,
             'charge'       => $charge->slug
         ]);
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'charge:create {shop} {type} {code} {name} {description}';
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): int
+    {
+        $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
+        $this->handle(
+            $shop,
+            [
+                'code'        => $command->argument('code'),
+                'name'        => $command->argument('name'),
+                'description' => $command->argument('description'),
+                'type'        => $command->argument('type'),
+            ]
+        );
+
+        return 0;
     }
 
 

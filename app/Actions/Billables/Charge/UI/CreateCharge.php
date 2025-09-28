@@ -10,8 +10,6 @@ namespace App\Actions\Billables\Charge\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
-use App\Enums\Catalogue\Charge\ChargeStateEnum;
-use App\Enums\Catalogue\Charge\ChargeTriggerEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -24,6 +22,9 @@ class CreateCharge extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
+    /**
+     * @throws \Exception
+     */
     public function handle(Shop $shop, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -35,12 +36,12 @@ class CreateCharge extends OrgAction
                 ),
                 'title'       => __('New charge'),
                 'pageHead'    => [
-                    'title'        => __('New charge'),
-                    'icon'         => [
+                    'title'   => __('New charge'),
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-charging-station'],
                         'title' => __('Charge')
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -58,34 +59,22 @@ class CreateCharge extends OrgAction
                             [
                                 'title'  => __('contact'),
                                 'fields' => [
-                                    'code' => [
+                                    'code'        => [
                                         'type'     => 'input',
                                         'label'    => __('code'),
                                         'required' => true,
                                     ],
-                                    'name' => [
+                                    'name'        => [
                                         'type'     => 'input',
                                         'label'    => __('name'),
                                         'required' => true,
                                     ],
                                     'description' => [
-                                        'type'        => 'textarea',
-                                        'label'       => __('description'),
-                                        'required'    => true,
-                                    ],
-                                    'state' => [
-                                        'type'     => 'select',
-                                        'label'    => __('state'),
+                                        'type'     => 'textarea',
+                                        'label'    => __('description'),
                                         'required' => true,
-                                        'options'  => Options::forEnum(ChargeStateEnum::class),
                                     ],
-                                    'trigger' => [
-                                        'type'     => 'select',
-                                        'label'    => __('trigger'),
-                                        'required' => true,
-                                        'options'  => Options::forEnum(ChargeTriggerEnum::class),
-                                    ],
-                                    'type' => [
+                                    'type'        => [
                                         'type'     => 'select',
                                         'label'    => __('type'),
                                         'required' => true,
@@ -96,10 +85,10 @@ class CreateCharge extends OrgAction
                             ]
                         ],
                     'route'     => [
-                        'name'      => 'grp.models.billables.charges.store',
+                        'name'       => 'grp.models.billables.charges.store',
                         'parameters' => [
-                            'shop'         => $shop->id
-                            ]
+                            'shop' => $shop->id
+                        ]
                     ]
                 ]
 
@@ -107,9 +96,13 @@ class CreateCharge extends OrgAction
         );
     }
 
+    /**
+     * @throws \Exception
+     */
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Response
     {
         $this->initialisationFromShop($shop, $request);
+
         return $this->handle($shop, $request);
     }
 
@@ -124,7 +117,7 @@ class CreateCharge extends OrgAction
                 [
                     'type'          => 'creatingModel',
                     'creatingModel' => [
-                        'label' => __('Creating schema'),
+                        'label' => __('Creating charge'),
                     ]
                 ]
             ]

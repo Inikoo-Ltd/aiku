@@ -9,8 +9,11 @@
 namespace App\Actions\Accounting\PaymentAccountShop\UI;
 
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
+use App\Models\Billables\Charge;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Illuminate\Support\Arr;
@@ -52,12 +55,22 @@ class GetRetinaPaymentAccountShopData
                     ]
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {
+
+            /** @var Charge $charge */
+            $charge      = $order->shop->charges()->where('type', ChargeTypeEnum::COD)
+                ->where('state', ChargeStateEnum::ACTIVE)
+                ->first();
+            $chargesInfo = $charge?->description;
+
+
             return
                 [
-                    'label' => __('Cash on delivery'),
-                    'key'   => 'cash_on_delivery',
-                    'icon'  => 'fal fa-hand-holding-usd',
-                    'content' => $paymentAccountShop->data
+                    'label'   => __('Cash on delivery'),
+                    'key'     => 'cash_on_delivery',
+                    'icon'    => 'fal fa-hand-holding-usd',
+                    'content' => [
+                        'charges' => $chargesInfo
+                    ]
 
                 ];
         }
