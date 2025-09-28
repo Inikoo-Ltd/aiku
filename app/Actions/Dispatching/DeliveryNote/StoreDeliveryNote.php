@@ -19,7 +19,9 @@ use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -45,6 +47,10 @@ class StoreDeliveryNote extends OrgAction
     {
         if (!Arr::has($modelData, 'delivery_address')) {
             $modelData['delivery_address'] = $order->deliveryAddress;
+        }
+
+        if ($order->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
+            data_set($modelData, 'is_cash_on_delivery', true);
         }
 
         $deliveryAddress = Arr::pull($modelData, 'delivery_address');
@@ -188,6 +194,7 @@ class StoreDeliveryNote extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if (!$this->has('warehouse_id')) {
+            /** @var Warehouse $warehouse */
             $warehouse = $this->shop->organisation->warehouses()->first();
             $this->set('warehouse_id', $warehouse->id);
         }

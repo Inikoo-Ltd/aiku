@@ -134,7 +134,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $is_premium_dispatch
  * @property bool|null $has_extra_packing
  * @property array<array-key, mixed>|null $post_submit_modification_data
- * @property bool $is_cash_on_delivery
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
  * @property OrderToBePaidByEnum|null $to_be_paid_by

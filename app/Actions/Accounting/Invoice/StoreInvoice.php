@@ -26,6 +26,7 @@ use App\Enums\Accounting\Invoice\InvoicePayDetailedStatusEnum;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\RecurringBill;
@@ -78,6 +79,10 @@ class StoreInvoice extends OrgAction
         } elseif (class_basename($parent) == 'RecurringBill') {
             $customer = $parent->fulfilmentCustomer->customer;
         } else {
+            if ($parent->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
+                data_set($modelData, 'is_cash_on_delivery', true);
+            }
+
             $customer = $parent->customer;
         }
 
@@ -291,8 +296,8 @@ class StoreInvoice extends OrgAction
                 })
             ],
 
-            'shipping_zone_schema_id'   => ['sometimes', 'nullable'],
-            'shipping_zone_id'          => ['sometimes', 'nullable'],
+            'shipping_zone_schema_id' => ['sometimes', 'nullable'],
+            'shipping_zone_id'        => ['sometimes', 'nullable'],
 
         ];
 

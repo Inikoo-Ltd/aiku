@@ -53,7 +53,7 @@ class OrdersResource extends JsonResource
     public function toArray($request): array
     {
         $payDetailedStatus = '';
-        $payDetailedStatusTooltip='';
+        $payDetailedStatusTooltip = '';
 
         if ($this->pay_detailed_status == OrderPayDetailedStatusEnum::UNPAID && $this->to_be_paid_by) {
             if ($this->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
