@@ -55,6 +55,9 @@ class GetRetinaPaymentAccountShopData
                     ]
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {
+            if (!in_array($order->deliveryAddress->country_id, Arr::get($paymentAccountShop->paymentAccount->data, 'countries', []))) {
+                return null;
+            }
 
             /** @var Charge $charge */
             $charge      = $order->shop->charges()->where('type', ChargeTypeEnum::COD)
