@@ -31,8 +31,6 @@ trait WithCommsSubNavigation
 
             [
                 "isAnchor" => true,
-                "label"    => __("Comms Dashboard"),
-
                 "route"    => [
                     "name"       => "grp.org.shops.show.dashboard.comms.dashboard",
                     "parameters" => [$shop->organisation->slug, $shop->slug],
@@ -43,26 +41,16 @@ trait WithCommsSubNavigation
                 ],
             ],
             [
-                "label"    => __("Post Rooms"),
-                "route"    => [
-                    "name"       => "grp.org.shops.show.dashboard.comms.post-rooms.index",
-                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-inbox-out"],
-                    "tooltip" => __("Post Rooms"),
-                ],
-            ],
-            [
-                "label"    => __("Outboxes"),
+                "label"    => __("All"),
                 "route"    => [
                     "name"       => "grp.org.shops.show.dashboard.comms.outboxes.index",
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-inbox-out"],
-                    "tooltip" => __("Outboxes"),
+                    "tooltip" => __("All"),
                 ],
+                'align'  => 'right'
             ],
 
         ];

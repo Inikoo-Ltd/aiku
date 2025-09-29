@@ -75,13 +75,14 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         if (in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK])) {
             if ($availableQuantity == 0) {
                 $status = ProductStatusEnum::OUT_OF_STOCK;
+                $dataToUpdate['out_of_stock_since'] = now();
             } else {
                 $status = ProductStatusEnum::FOR_SALE;
             }
-
             $dataToUpdate['status'] = $status;
         }
 
+    
 
         UpdateProduct::run($product, $dataToUpdate);
     }
