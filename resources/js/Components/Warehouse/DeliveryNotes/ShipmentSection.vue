@@ -581,6 +581,17 @@ const onCopyDataCustomer = (field: string) => {
                             {{ errorx }}
                         </p>
                     </div>
+
+                    <div class="flex justify-end mt-3">
+                        <Button
+                            :style="'save'"
+                            :loading="isLoadingButton == 'addTrackingNumber'"
+                            :label="trans('Save')"
+                            :disabled="!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)"
+                            full
+                            @click="() => onSubmitShipment()"
+                        />
+                    </div>
                 </div>
 
                 <!-- Loading: fetching service list -->
@@ -650,7 +661,7 @@ const onCopyDataCustomer = (field: string) => {
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
                         <div class="flex justify-between items-center">
                             <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
-                                {{ trans("Company Name") }}
+                                {{ trans("Phone") }}
                             </label>
 
                             <div v-if="customer?.phone" @click="() => onCopyDataCustomer('phone')" class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
