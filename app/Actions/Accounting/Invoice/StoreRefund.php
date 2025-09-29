@@ -69,6 +69,8 @@ class StoreRefund extends OrgAction
         data_set($modelData, 'address_id', $invoice->address_id);
         data_set($modelData, 'billing_country_id', $invoice->billing_country_id);
         data_set($modelData, 'tax_liability_at', $invoice->tax_liability_at);
+        data_set($modelData, 'order_id', $invoice->order_id);
+
 
 
         $date = now();
