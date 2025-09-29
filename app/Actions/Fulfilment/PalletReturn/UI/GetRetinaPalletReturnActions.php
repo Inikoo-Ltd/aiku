@@ -103,8 +103,8 @@ class GetRetinaPalletReturnActions
                 [
                     'type'     => 'button',
                     'style'    => 'save',
-                    'tooltip'  => !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('submit'),
-                    'label'    => __('submit'),
+                    'tooltip'  => !($palletReturn->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit'),
+                    'label'    => __('Submit'),
                     'key'      => 'action',
                     'disabled' => !($palletReturn->estimated_delivery_date),
                     'route'    => [
@@ -121,7 +121,7 @@ class GetRetinaPalletReturnActions
                     'type'     => 'button',
                     'style'    => 'save',
                     'tooltip'  => __('Add pallet to pick before submit'),
-                    'label'    => __('submit'),
+                    'label'    => __('Submit'),
                     'icon'     => 'fad fa-save',
                     'key'      => 'action',
                     'disabled' => true,

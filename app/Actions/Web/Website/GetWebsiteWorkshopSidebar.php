@@ -18,15 +18,26 @@ class GetWebsiteWorkshopSidebar
 
     public function handle(Website $website): array
     {
+        $sidebarDummy = [
+            'data'  => [
+                'fieldValue' => [
+                    'navigation' => array_values([]),
+                    'navigation_bottom' => array_values([]),
+                ]
+            ],
+            'status' => true
+        ];
+
         if (!Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar')) {
 
             return [
-                'sidebar'    => Arr::get($website->published_layout, 'sidebar', [])
+                'sidebar'    => Arr::get($website->published_layout, 'sidebar', $sidebarDummy)
             ];
         }
 
+
         return [
-            'sidebar'    => Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar', [])
+            'sidebar'    => Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar', $sidebarDummy)
         ];
     }
 }

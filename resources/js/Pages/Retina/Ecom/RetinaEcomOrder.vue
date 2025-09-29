@@ -21,6 +21,7 @@ import '@vuepic/vue-datepicker/dist/main.css'
 import '@/Composables/Icon/PalletDeliveryStateEnum'
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
+import EcomTableOrderTransactions from "@/Components/Retina/Ecom/EcomTableOrderTransactions.vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
@@ -137,7 +138,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: Component = {
-        transactions: OrderProductTable,
+        transactions: EcomTableOrderTransactions,
         delivery_notes: TableDeliveryNotes,
         attachments: TableAttachments,
         invoices: TableInvoices,

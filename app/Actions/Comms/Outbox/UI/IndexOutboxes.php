@@ -15,6 +15,7 @@ use App\Actions\Fulfilment\Fulfilment\UI\EditFulfilment;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Http\Resources\Mail\OutboxesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -41,7 +42,7 @@ class IndexOutboxes extends OrgAction
     private Group|Shop|Organisation|PostRoom|Website|Fulfilment $parent;
 
 
-    public function handle(Group|Shop|Organisation|PostRoom|OrgPostRoom|Website|Fulfilment $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Shop|Organisation|PostRoom|OrgPostRoom|Website|Fulfilment $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -73,6 +74,10 @@ class IndexOutboxes extends OrgAction
             $queryBuilder->where('outboxes.org_post_room_id', $parent->id);
         } else {
             $queryBuilder->where('outboxes.organisation_id', $parent->id);
+        }
+
+        if($bucket != 'all') {
+            $queryBuilder->where('outboxes.type', $bucket);
         }
 
         $queryBuilder->where('outboxes.is_applicable', true);
