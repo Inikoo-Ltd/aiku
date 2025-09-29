@@ -166,6 +166,10 @@ const props = defineProps<{
             reference: string
             route: routeType
         }
+        invoices: {
+            reference: string
+            route: routeType
+        }[]
         products: {
             payment: {
                 routes: {
@@ -958,7 +962,7 @@ const toggleElipsis = (e: Event) => {
 
                     <!-- Field: weight -->
                     <dl class="mt-1 flex items-center w-full flex-none gap-x-1.5">
-                        <dt class="flex-none pl-1">
+                        <dt v-tooltip="trans('Weight')" class="flex-none pl-1">
                             <FontAwesomeIcon icon="fal fa-weight" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
                         </dt>
@@ -968,25 +972,33 @@ const toggleElipsis = (e: Event) => {
                     </dl>
 
 
-                    <div v-if="box_stats?.invoice" class="mt-1 flex items-center w-full flex-none justify-between">
-                        <Link
-                            :href="route(box_stats?.invoice?.routes?.show?.name, box_stats?.invoice?.routes?.show.parameters)"
-                            class="flex items-center gap-3 gap-x-1.5 primaryLink cursor-pointer">
-                        <div class="flex-none">
+                    <!-- Field: Invoices -->
+                    <div v-if="props.box_stats?.invoices" class="pl-1 mt-1 flex items-start w-full flex-none justify-between gap-x-1">
+                        <div v-tooltip="trans('Invoices')" class="flex-none mt-1">
                             <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
                         </div>
-                        <div class="text-gray-500 " v-tooltip="trans('Invoice')">
-                            {{ box_stats?.invoice?.reference }}
-                        </div>
-                        </Link>
 
-                        <a v-if="box_stats?.invoice?.routes?.download?.name"
-                            :href="route(box_stats?.invoice?.routes?.download?.name, box_stats?.invoice?.routes?.download.parameters)"
-                            as="a" target="_blank" class="flex items-center text-gray-400 hover:text-orange-600">
-                            <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
-                        </a>
+                        <ul class="w-full list-inside list-disc">
+                            <li v-for="(invoice, index) in box_stats?.invoices" :key="index" class="flex justify-between">
+                                <div
+                                    class="flex items-center gap-3 gap-x-1.5  cursor-pointer">
+                                    <Link
+                                        :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)" class="text-gray-500 primaryLink" v-tooltip="trans('Invoice')">
+                                        {{ invoice?.reference }}
+                                    </Link>
+                                </div>
+
+                                <a v-if="invoice?.routes?.download?.name"
+                                    :href="route(invoice?.routes?.download?.name, invoice?.routes?.download.parameters)"
+                                    as="a" target="_blank" class="flex items-center text-gray-400 hover:text-orange-600">
+                                    <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
+                                </a>
+                            </li>
+                        </ul>
                     </div>
+
+                    
 
 
                     <div v-if="box_stats?.delivery_notes?.length"

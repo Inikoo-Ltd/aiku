@@ -125,6 +125,7 @@ class ShowRefund extends OrgAction
 
     public function htmlResponse(Invoice $refund, ActionRequest $request): Response
     {
+
         $subNavigation = [];
         if ($this->parent instanceof FulfilmentCustomer) {
             $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
@@ -259,7 +260,7 @@ class ShowRefund extends OrgAction
             'box_stats'        => array_merge($this->getBoxStats($refund), [
                 'refund_id' => $refund->id
             ]),
-            ...$this->getPayBoxData($refund->originalInvoice),
+            ...$this->getPayBoxData($refund),
             'original_invoice' => $refund->originalInvoice ? InvoiceResource::make($refund->originalInvoice) : null,
             'invoice_refund'   => RefundResource::make($refund),
 
