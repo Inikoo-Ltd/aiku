@@ -15,49 +15,52 @@ use App\Models\CRM\Customer;
 use App\Models\Ordering\Transaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreEcomBasketTransaction extends IrisAction
 {
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
+     */
     public function handle(Customer $customer, Product $product, array $modelData): Transaction
     {
         $order = $customer->orderInBasket;
 
         if (!$order) {
-            $order = StoreEcomBasket::make()->action($customer);
+            $order = StoreEcomOrder::make()->action($customer);
         }
 
         $historicAsset = $product->currentHistoricProduct;
 
-        if ($order) {
-            $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAsset->id)->first();
-            if ($existingTransaction) {
-                throw ValidationException::withMessages(
-                    [
-                       'message' => [
-                           'transaction' => 'Product already exist in basket',
-                       ]
-                    ]
-                );
-            }
-
+        $existingTransaction = $order->transactions()->where('historic_asset_id', $historicAsset->id)->first();
+        if ($existingTransaction) {
+            return UpdateEcomBasketTransaction::run(
+                $existingTransaction,
+                [
+                    'quantity_ordered' => Arr::get($modelData, 'quantity')
+                ]
+            );
         }
 
-        $transaction = StoreTransaction::make()->action($order, $historicAsset, [
+
+        return StoreTransaction::make()->action($order, $historicAsset, [
             'quantity_ordered' => Arr::get($modelData, 'quantity')
         ]);
-
-        return $transaction;
     }
 
     public function rules(): array
     {
         return [
-            'quantity'          => ['required', 'numeric', 'min:0'],
+            'quantity' => ['required', 'numeric', 'min:0'],
         ];
     }
 
+
+    /**
+     * @throws \Throwable
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(Product $product, ActionRequest $request): Transaction
     {
         $customer = $request->user()->customer;
@@ -74,8 +77,8 @@ class StoreEcomBasketTransaction extends IrisAction
     public function jsonResponse(Transaction $transaction): array
     {
         return [
-            'transaction_id'    => $transaction->id,
-            'quantity_ordered'  => (int) $transaction->quantity_ordered
+            'transaction_id' => $transaction->id,
+            'quantity_ordered' => (int)$transaction->quantity_ordered
         ];
     }
 }

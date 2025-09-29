@@ -18,7 +18,7 @@ use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreEcomBasket extends IrisAction
+class StoreEcomOrder extends IrisAction
 {
     use AsAction;
     use WithAttributes;
@@ -36,6 +36,9 @@ class StoreEcomBasket extends IrisAction
         return $order;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(Customer $customer): Order
     {
         return $this->handle($customer);

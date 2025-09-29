@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrganisationsArgument;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 
@@ -77,7 +78,13 @@ class CalculateOrderTotalAmounts extends OrgAction
         }
 
 
-        if ($calculateShipping && in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::IN_WAREHOUSE]) && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
+        if ($calculateShipping
+            && in_array($order->state, [
+                OrderStateEnum::CREATING,
+                OrderStateEnum::SUBMITTED,
+                OrderStateEnum::IN_WAREHOUSE,
+            ])
+            && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
             CalculateOrderShipping::run($order);
             CalculateOrderHangingCharges::run($order);
         }
@@ -90,7 +97,9 @@ class CalculateOrderTotalAmounts extends OrgAction
         $exitCode = 0;
         if (!$command->option('slugs')) {
             if ($command->argument('organisations')) {
-                $this->organisation = $this->getOrganisations($command)->first();
+                /** @var Organisation $organisation */
+                $organisation       = $this->getOrganisations($command)->first();
+                $this->organisation = $organisation;
             }
 
             $this->loopAll($command);
