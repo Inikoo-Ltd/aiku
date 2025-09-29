@@ -115,7 +115,7 @@ modelValue.value.data.forEach((item) => {
 
         // default rrp
         if (!item.product.rrp) {
-            item.product.rrp = Math.round(Number(item.product.price) * 2.4);
+            item.product.rrp = roundDown2(Number(item.product.price) * 2.4);
         }
 
         // watcher untuk auto mode
@@ -123,7 +123,7 @@ modelValue.value.data.forEach((item) => {
             () => item.product!.price,
             (newPrice) => {
                 if (!item.product!.useCustomRrp) {
-                    item.product!.rrp = Math.round(Number(newPrice) * 2.4);
+                    item.product!.rrp = roundDown2(Number(newPrice) * 2.4);
                     emits("change", modelValue.value);
                 }
             },
@@ -131,6 +131,11 @@ modelValue.value.data.forEach((item) => {
         );
     }
 });
+
+function roundDown2(num: number) {
+    return Math.floor(num * 100) / 100;
+}
+
 </script>
 
 <template>
@@ -209,7 +214,7 @@ modelValue.value.data.forEach((item) => {
                                 <span v-else class="text-gray-700 text-xs font-medium whitespace-nowrap">
                                     {{ locale.currencyFormat(
                                         item?.product?.org_currency || item.currency,
-                                        Math.round(Number(item.product?.price) * 2.4)
+                                        roundDown2(Number(item.product?.price) * 2.4)
                                     ) }}
                                 </span>
 
