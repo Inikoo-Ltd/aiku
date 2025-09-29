@@ -12,6 +12,7 @@ import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
 import Image from '@/Components/Image.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import SwitchLanguage from '@/Components/Iris/SwitchLanguage.vue'
+import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -71,17 +72,6 @@ const isModalOpen = ref(false)
 const emits = defineEmits<{
     (e: 'setPanelActive', value: string | number): void
 }>()
-
-// Method: generate url for Login
-const urlLoginWithRedirect = () => {
-    if (layout.currentRoute !== "retina.login.show" && layout.currentRoute !== "retina.register") {
-        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${
-            window?.location.search ? encodeURIComponent(window?.location.search) : ""
-        }`
-    } else {
-        return "/app/login"
-    }
-}
 
 </script>
 

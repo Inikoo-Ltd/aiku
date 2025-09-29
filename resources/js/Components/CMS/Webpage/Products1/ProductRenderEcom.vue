@@ -13,6 +13,7 @@ import { Image as ImageTS } from '@/types/Image'
 import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
 import { getStyles } from "@/Composables/styles";
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle } from "@fal"
@@ -114,15 +115,6 @@ const onUnselectFavourite = (product: ProductResource) => {
 
 
 
-// Method: generate url for Login
-const urlLoginWithRedirect = () => {
-    if (route()?.current() !== "retina.login.show" && route()?.current() !== "retina.register") {
-        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${window?.location.search ? encodeURIComponent(window?.location.search) : ""
-            }`
-    } else {
-        return "/app/login"
-    }
-}
 </script>
 
 <template>

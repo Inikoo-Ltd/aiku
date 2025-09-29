@@ -10,6 +10,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 import { trans } from "laravel-vue-i18n"
 import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
+import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -61,16 +62,6 @@ const model = defineModel<ModelTopbar1>()
 const isLoggedIn = inject("isPreviewLoggedIn", false)
 const layout = inject("layout", {})
 
-
-// Method: generate url for Login
-const urlLoginWithRedirect = () => {
-    if (route()?.current() !== "retina.login.show" && route()?.current() !== "retina.register") {
-        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${window?.location.search ? encodeURIComponent(window?.location.search) : ""
-            }`
-    } else {
-        return "/app/login"
-    }
-}
 
 
 </script>

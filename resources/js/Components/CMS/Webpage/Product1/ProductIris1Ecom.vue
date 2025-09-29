@@ -17,6 +17,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import ButtonAddToBasket from "@/Components/Iris/Products/ButtonAddToBasket.vue"
 import { faEnvelope } from "@far"
 
@@ -146,16 +147,6 @@ onMounted(() => {
 
 const toggleExpanded = () => {
     expanded.value = !expanded.value
-}
-
-// Method: generate url for Login
-const urlLoginWithRedirect = () => {
-    if (route()?.current() !== "retina.login.show" && route()?.current() !== "retina.register") {
-        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${window?.location.search ? encodeURIComponent(window?.location.search) : ""
-            }`
-    } else {
-        return "/app/login"
-    }
 }
 
 
