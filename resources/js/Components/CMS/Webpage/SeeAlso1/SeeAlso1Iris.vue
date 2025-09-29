@@ -71,7 +71,7 @@ console.log('see also',props)
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
     width: 'auto'
-  }">
+  }" :dropdown-type="props.fieldValue?.settings?.products_data?.type">
     <!-- Title -->
     <div class="px-3 py-6 pb-2">
       <div class="text-3xl font-semibold text-gray-800">
@@ -79,20 +79,9 @@ console.log('see also',props)
       </div>
     </div>
 
-    <div v-if="fieldValue.settings.products_data.type === 'luigi-trends'">
-        <RecommendersLuigi1Iris :slidesPerView recommendation_type="trends" />
-    </div>
-
-    <div v-else-if="fieldValue.settings.products_data.type === 'luigi-recently_ordered'">
-        <RecommendersLuigi1Iris :slidesPerView recommendation_type="recently_ordered" />
-    </div>
-
-    <div v-else-if="fieldValue.settings.products_data.type === 'luigi-last_seen'">
-        <RecommendersLuigi1Iris :slidesPerView recommendation_type="last_seen" />
-    </div>
-
-    <div v-else-if="fieldValue.settings.products_data.type === 'luigi-item_detail_alternatives'">
-        <RecommendersLuigi1Iris :slidesPerView recommendation_type="item_detail_alternatives" />
+    <div v-if="['luigi-trends', 'luigi-recently_ordered', 'luigi-last_seen', 'luigi-item_detail_alternatives'].includes(fieldValue.settings.products_data.type)">
+      <!-- Render nothing due to deprecated -->
+        <!-- <RecommendersLuigi1Iris :slidesPerView recommendation_type="trends" /> -->
     </div>
 
     <!-- Carousel with custom navigation -->
