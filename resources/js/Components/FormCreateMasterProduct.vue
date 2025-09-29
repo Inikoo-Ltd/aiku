@@ -382,7 +382,7 @@ const successEditTradeUnit = (data) => {
 
                                 <!-- Brands -->
                                 <div v-if="data.brands?.length" class="flex flex-wrap gap-1 mt-1">
-                                    <span v-for="brand in data.brands" :key="brand.id"
+                                    <span v-for="brand in data.brands" :key="brand.id" v-tooltip="'brand'"
                                         class="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-100">
                                         {{ brand.name }}
                                     </span>
@@ -390,7 +390,7 @@ const successEditTradeUnit = (data) => {
 
                                 <!-- Tags -->
                                 <div v-if="data.tags?.length" class="flex flex-wrap gap-1 mt-1">
-                                    <span v-for="tag in data.tags" :key="tag.id"
+                                    <span v-for="tag in data.tags" :key="tag.id"  v-tooltip="'tag'"
                                         class="px-2 py-0.5 rounded-full text-xs bg-green-50 text-green-600 border border-green-100">
                                         {{ tag.name }}
                                     </span>
@@ -398,8 +398,6 @@ const successEditTradeUnit = (data) => {
                             </div>
                         </div>
                     </template>
-
-
                 </ListSelector>
                 <small v-if="form.errors.trade_units" class="text-red-500 text-xs mt-1 flex items-center gap-1">
                     <FontAwesomeIcon :icon="faCircleExclamation" />
