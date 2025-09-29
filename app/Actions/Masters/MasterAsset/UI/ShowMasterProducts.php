@@ -106,7 +106,7 @@ class ShowMasterProducts extends GrpAction
                 ],
                 'mini_breadcrumbs' => array_filter(
                     [
-                        $masterAsset->master_family_id ? [
+                        $masterAsset->masterFamily && $masterAsset->masterDepartment ? [
                             'label' => $masterAsset->masterDepartment ? $masterAsset->masterDepartment->name : 'department',
                             'to'    => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show',
@@ -118,7 +118,7 @@ class ShowMasterProducts extends GrpAction
                             'tooltip' => 'Master Department',
                             'icon' => ['fal', 'folder-tree']
                         ] : [],
-                        $masterAsset->master_sub_department_id ? [
+                        $masterAsset->masterSubDepartment && $masterAsset->masterDepartment ? [
                             'label' => $masterAsset->masterSubDepartment ? $masterAsset->masterSubDepartment->name : 'sub department',
                             'to'    => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
@@ -131,7 +131,7 @@ class ShowMasterProducts extends GrpAction
                             'tooltip' => __('Master Sub-Department'),
                             'icon' => ['fal', 'folder-tree']
                         ] : [],
-                        $masterAsset->master_family_id ? [
+                        $masterAsset->masterFamily && $masterAsset->masterDepartment ? [
                             'label' => $masterAsset->masterFamily ? $masterAsset->masterFamily->name : 'family',
                             'to'    => [
                                 'name'       => $masterAsset->master_sub_department_id ? 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show' : 'grp.masters.master_shops.show.master_departments.show.master_families.show',
