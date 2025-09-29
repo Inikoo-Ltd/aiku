@@ -21,7 +21,7 @@ import { routeType } from "@/types/route";
 import OrderSummary from "@/Components/Summary/OrderSummary.vue";
 import { FieldOrderSummary } from "@/types/Pallet";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
-import InvoiceRefundPay from "@/Components/Segmented/InvoiceRefund/InvoiceRefundPay.vue";
+import RefundPay from "@/Components/Segmented/InvoiceRefund/RefundPay.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
@@ -392,7 +392,7 @@ console.log(props.pageHead);
           </dd>
         </dl>
 
-        <InvoiceRefundPay
+        <RefundPay
           v-if="!invoice_refund?.in_process && invoice_pay "
           :invoice_pay
           :routes="{

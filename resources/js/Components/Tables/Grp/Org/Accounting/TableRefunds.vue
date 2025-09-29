@@ -81,10 +81,10 @@ function refundRoute(refund: Invoice) {
                       refund.slug
                     ])
             } else {
-                return null
+                return ''
             }
         default:
-            return null
+            return ''
     }
 }
 
