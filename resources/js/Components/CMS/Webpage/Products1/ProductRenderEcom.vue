@@ -7,7 +7,7 @@ import { Link, router, usePage } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { faHeart } from '@far'
+import { faEnvelope, faHeart } from '@far'
 import { faCircle, faStar, faHeart as fasHeart, faEllipsisV, faMedal } from '@fas'
 import { Image as ImageTS } from '@/types/Image'
 import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
@@ -136,7 +136,7 @@ const urlLoginWithRedirect = () => {
                     'text-[#C0C0C0] bg-[#C0C0C033] border-[#C0C0C0]': product.top_seller === 2, // Silver
                     'text-[#CD7F32] bg-[#CD7F3222] border-[#CD7F32]': product.top_seller === 3  // Bronze
                 }">
-                <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2" fixed-width s/>
+                <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2" fixed-width s />
 
                 <span class="hidden md:inline">{{ trans("BESTSELLER") }}</span>
             </div>
@@ -177,6 +177,14 @@ const urlLoginWithRedirect = () => {
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton v-if="product.stock > 0" :product="product" :key="product" />
+                    <button
+                        v-else-if="layout?.app?.environment === 'local'"
+                        @click.prevent="()=>null"
+                        class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        v-tooltip="trans('Remind me when back in stock')"
+                    >
+                        <FontAwesomeIcon :icon="faEnvelope" fixed-width class="text-gray-600" />
+                    </button>
                 </div>
             </component>
 
@@ -208,7 +216,8 @@ const urlLoginWithRedirect = () => {
                                         :class="product.stock > 0 ? 'animate-pulse' : ''" />
                                     <span>({{ product.stock > 0 ? product.stock : 0 }} {{ trans('available') }})</span>
                                 </div>
-                                <div v-else class="bg-red-500/20 px-2 xpy-1 rounded text-xs text-red-500 border border-red-500/50">
+                                <div v-else
+                                    class="bg-red-500/20 px-2 xpy-1 rounded text-xs text-red-500 border border-red-500/50">
                                     {{ trans("Out of stock") }}
                                 </div>
                             </div>
@@ -232,8 +241,7 @@ const urlLoginWithRedirect = () => {
                             <div v-else class="relative" v-tooltip="trans('Add To Favourite')">
                                 <!-- <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
                                     fixed-width /> -->
-                                <FontAwesomeIcon :icon="faHeart" class="inline text-pink-300"
-                                    fixed-width />
+                                <FontAwesomeIcon :icon="faHeart" class="inline text-pink-300" fixed-width />
                             </div>
 
                         </div>
