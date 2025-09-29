@@ -223,7 +223,7 @@ class RepairPalletDeliveriesAndReturns
                 $originalStartDate = $currentStartDay;
                 /** @var Pallet $pallet */
                 $pallet = $transaction->item;
-                if ($pallet->received_at and $pallet->received_at->startOfDay()->isAfter($currentStartDay)) {
+                if ($pallet && $pallet->received_at &&  $pallet->received_at->startOfDay()->isAfter($currentStartDay)) {
                     $currentStartDay = $pallet->received_at->startOfDay();
                 }
 
@@ -245,6 +245,10 @@ class RepairPalletDeliveriesAndReturns
             foreach ($transactions as $transaction) {
                 /** @var Pallet $pallet */
                 $pallet = $transaction->item;
+                if(!$pallet){
+                    continue;
+                }
+
                 if ($pallet->dispatched_at) {
                     if (!$transaction->end_date) {
                         print '***PED: Trans'.$transaction->id.' add   pallet id  '.$pallet->id.'  end day '.$pallet->dispatched_at->format('Y-m-d')."\n";
