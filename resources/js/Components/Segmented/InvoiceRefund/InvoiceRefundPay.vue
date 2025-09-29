@@ -386,48 +386,8 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                 </dd>
             </div>
 
-            <!-- Link to Invoice -->
-            <!-- <div v-if="Number(invoice_pay.total_need_to_pay) < 0" class="border-b border-gray-300 ">
-                <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium ">
-                        <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-file-invoice-dollar" class="text-gray-400" fixed-width aria-hidden="true" />
-                        <Link :href="generateInvoiceRoute(invoice_pay.invoice_slug)" class="secondaryLink">
-                            {{ invoice_pay.invoice_reference }}
-                        </Link>
-                    </dt>
-                    <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
-                    </dd>
-                </div>
-            </div> -->
-
-            <!-- Link to refunds -->
-            <div v-if="Number(invoice_pay.total_need_to_pay) > 0" class="border-b border-gray-300">
-                <div v-for="refund in invoice_pay.list_refunds.data"
-                        class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium ">
-                        <FontAwesomeIcon v-tooltip="trans('Invoice')" icon="fal fa-arrow-circle-left" class="text-gray-400" fixed-width aria-hidden="true" />
-                        <Link :href="generateRefundRoute(refund.slug)" class="secondaryLink">
-                            {{ refund.reference }}
-                        </Link>
-                    </dt>
-                    <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(refund.total_amount)) }}
-                    </dd>
-                </div>
-            </div>
 
 
-
-            <!-- I+R total -->
-            <!-- <div v-if="Number(invoice_pay.total_refunds) < 0"
-                class="border-b border-gray-300 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                <dt class="text-sm/6 font-medium ">I+R total</dt>
-                <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right"
-                    :class="Number(invoice_pay.total_balance) > 0 ? '' : Number(invoice_pay.total_balance) < 0 ? '' : ''">
-                    {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_balance)) }}
-                </dd>
-            </div> -->
 
 
             <!-- Field: Excess payment -->
@@ -459,15 +419,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                     </dd>
                 </div>
                 
-                <!-- Pay out -->
-                <div v-if="Number(invoice_pay.total_refunds) < 0" class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium">Payed back</dt>
-                    <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{
-                            locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_out))
-                        }}
-                    </dd>
-                </div>
+
             </div>
 
             <!-- Total to pay -->

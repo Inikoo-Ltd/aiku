@@ -96,6 +96,7 @@ trait WithInvoicePayBox
         return
             [
                 'invoice_pay' => [
+                    'type'                 => $invoice->type,
                     'order_reference'      => $orderReference,
                     'order_slug'           => $orderSlug,
                     'shop_slug'            => $invoice->shop->slug,
