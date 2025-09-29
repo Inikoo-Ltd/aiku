@@ -42,7 +42,8 @@ import {
   faStarHalfAlt,
   faArrowCircleLeft,
   faFileInvoiceDollar, 
-  faShoppingCart
+  faShoppingCart,
+  faAddressCard
 } from "@fal";
 import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft, faOmega, faHockeyPuck, faExclamationCircle, faCheckCircle } from "@fas";
 import { faCheck, faTrashAlt } from "@far";
@@ -345,7 +346,6 @@ console.log(props);
   <div class="grid grid-cols-8 divide-x divide-gray-300 border-b border-gray-200">
     <!-- Box: Customer -->
     <BoxStatPallet class="col-span-2 py-2 px-3" icon="fal fa-user">
-
       <!-- Field: Registration Number -->
       <dl>
         <Link as="a" v-if="box_stats?.customer.reference"
@@ -362,22 +362,22 @@ console.log(props);
       </dl>
 
       <!-- Field: Customer name -->
-      <dl v-if="box_stats?.customer.name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+      <dl v-if="original_invoice.name" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="trans('Customer name')" class="flex-none">
           <span class="sr-only">{{trans('Customer name')}}</span>
           <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
-        <dd class="text-base text-gray-500">{{ box_stats?.customer.name }}</dd>
+        <dd class="text-base text-gray-500">{{ original_invoice?.name }}</dd>
       </dl>
 
 
       <!-- Field: Contact name -->
-      <dl v-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+      <dl v-if="original_invoice.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="'Contact name'" class="flex-none">
           <span class="sr-only">Contact name</span>
-          <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
+          <FontAwesomeIcon :icon="faAddressCard" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
-        <dd class="text-base text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
+        <dd class="text-base text-gray-500">{{ original_invoice.contact_name }}</dd>
       </dl>
 
       <!-- Field: Company name -->
