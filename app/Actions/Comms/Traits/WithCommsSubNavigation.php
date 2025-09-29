@@ -41,6 +41,95 @@ trait WithCommsSubNavigation
                 ],
             ],
             [
+                "label"    => __("Newsletter"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.comms.newsletter_outboxes.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-newspaper"],
+                    "tooltip" => __("Newsletter"),
+                ],
+            ],
+            [
+                "label"    => __("Marketing"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.comms.marketing_outboxes.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-bullhorn"],
+                    "tooltip" => __("Marketing"),
+                ],
+            ],
+            [
+                "label"    => __("Marketing Notifications"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.comms.marketing_notification_outboxes.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-radio"],
+                    "tooltip" => __("Marketing Notifications"),
+                ],
+            ],
+            [
+                "label"    => __("Customer Notifications"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.comms.customer_notification_outboxes.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-sort-alt"],
+                    "tooltip" => __("Customer Notifications"),
+                ],
+            ],
+            [
+                "label"    => __("Cold Emails"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.comms.cold_email_outboxes.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-phone-volume"],
+                    "tooltip" => __("Cold Emails"),
+                ],
+            ],
+            [
+                "label"    => __("User Notifications"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.comms.user_notification_outboxes.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-bell"],
+                    "tooltip" => __("User Notifications"),
+                ],
+            ],
+            [
+                "label"    => __("Push"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.comms.push_outboxes.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-project-diagram"],
+                    "tooltip" => __("Push"),
+                ],
+            ],
+            [
+                "label"    => __("Test"),
+                "route"    => [
+                    "name"       => "grp.org.shops.show.dashboard.comms.test_outboxes.index",
+                    "parameters" => [$shop->organisation->slug, $shop->slug],
+                ],
+                "leftIcon" => [
+                    "icon"    => ["fal", "fa-vial"],
+                    "tooltip" => __("Test"),
+                ],
+                'align'  => 'right'
+            ],
+            [
                 "label"    => __("All"),
                 "route"    => [
                     "name"       => "grp.org.shops.show.dashboard.comms.outboxes.index",
