@@ -43,7 +43,7 @@ class GetRefundOriginalInvoicePayments extends OrgAction
         $queryBuilder
             ->where('payments.type', PaymentTypeEnum::PAYMENT)
             ->leftJoin('model_has_payments', 'payments.id', 'model_has_payments.payment_id')
-            ->where('model_has_payments.model_id', $refund->id)
+            ->where('model_has_payments.model_id', $refund->original_invoice_id)
             ->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT)
             ->where('model_has_payments.model_type', 'Invoice')
             ->leftJoin('payments as refund_payments', 'refund_payments.original_payment_id', 'payments.id');
