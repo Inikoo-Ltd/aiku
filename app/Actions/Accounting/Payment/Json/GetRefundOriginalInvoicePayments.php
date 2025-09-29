@@ -21,7 +21,6 @@ use App\Models\Accounting\Payment;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -60,6 +59,7 @@ class GetRefundOriginalInvoicePayments extends OrgAction
                 'payments.id',
                 'payments.reference',
                 'payments.status',
+                'payments.total_refund as refunded',
                 'payments.date',
                 'payments.amount',
                 'payment_accounts.code as payment_account_code',
