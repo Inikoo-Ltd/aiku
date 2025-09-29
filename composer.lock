@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2a71faed23dc22fef8d3fcc59da2c6c9",
+    "content-hash": "f3ce2c32b69f2cd872444d00eaf6166a",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -198,31 +198,45 @@
             "time": "2025-04-18T09:09:46+00:00"
         },
         {
-            "name": "alibabacloud/darabonba-openapi",
-            "version": "0.2.17",
+            "name": "alibabacloud/darabonba",
+            "version": "v1.0.2",
             "source": {
                 "type": "git",
-                "url": "https://github.com/alibabacloud-sdk-php/darabonba-openapi.git",
-                "reference": "051cd22db3da16ab7d0110feb3fc45dd0f999f92"
+                "url": "https://github.com/alibabacloud-sdk-php/darabonba.git",
+                "reference": "ccd9e9f096e0449d6cc9c20d1d2e462f49fd799c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/alibabacloud-sdk-php/darabonba-openapi/zipball/051cd22db3da16ab7d0110feb3fc45dd0f999f92",
-                "reference": "051cd22db3da16ab7d0110feb3fc45dd0f999f92",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/darabonba/zipball/ccd9e9f096e0449d6cc9c20d1d2e462f49fd799c",
+                "reference": "ccd9e9f096e0449d6cc9c20d1d2e462f49fd799c",
                 "shasum": ""
             },
             "require": {
-                "alibabacloud/credentials": "^1.2.2",
-                "alibabacloud/gateway-spi": "^1",
-                "alibabacloud/openapi-util": "^0.1.10|^0.2.1",
-                "alibabacloud/tea-utils": "^0.2.21",
-                "alibabacloud/tea-xml": "^0.2",
-                "php": ">5.5"
+                "adbario/php-dot-notation": "^2.4",
+                "alibabacloud/tea": "^3.2",
+                "ext-curl": "*",
+                "ext-json": "*",
+                "ext-libxml": "*",
+                "ext-mbstring": "*",
+                "ext-openssl": "*",
+                "ext-simplexml": "*",
+                "ext-xmlwriter": "*",
+                "guzzlehttp/guzzle": "^6.3|^7.0",
+                "php": ">=5.5",
+                "psr/http-message": "^0.11.0|^1.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^4.8.35|^5.4.3|^9.3",
+                "symfony/dotenv": "^3.4",
+                "symfony/var-dumper": "^3.4"
+            },
+            "suggest": {
+                "ext-sockets": "To use client-side monitoring"
             },
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "Darabonba\\OpenApi\\": "src"
+                    "AlibabaCloud\\Dara\\": "src"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -232,38 +246,42 @@
             "authors": [
                 {
                     "name": "Alibaba Cloud SDK",
-                    "email": "sdk-team@alibabacloud.com"
+                    "email": "sdk-team@alibabacloud.com",
+                    "homepage": "http://www.alibabacloud.com"
                 }
             ],
-            "description": "Alibaba Cloud OpenApi Client",
+            "description": "Client of Darabonba for PHP",
+            "homepage": "https://www.alibabacloud.com/",
+            "keywords": [
+                "alibabacloud",
+                "client",
+                "cloud",
+                "tea"
+            ],
             "support": {
-                "issues": "https://github.com/alibabacloud-sdk-php/darabonba-openapi/issues",
-                "source": "https://github.com/alibabacloud-sdk-php/darabonba-openapi/tree/0.2.17"
+                "issues": "https://github.com/aliyun/tea-php/issues",
+                "source": "https://github.com/aliyun/tea-php"
             },
-            "time": "2025-07-04T09:26:04+00:00"
+            "time": "2025-07-30T08:40:27+00:00"
         },
         {
             "name": "alibabacloud/dm-20151123",
-            "version": "1.5.0",
+            "version": "1.6.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/alibabacloud-sdk-php/dm-20151123.git",
-                "reference": "e0eb3ca64e7d5f6f16757250e12007a2ea3dab3b"
+                "reference": "25fa3eacf634fa236f7a4d0094fb9105e5fe9f96"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/alibabacloud-sdk-php/dm-20151123/zipball/e0eb3ca64e7d5f6f16757250e12007a2ea3dab3b",
-                "reference": "e0eb3ca64e7d5f6f16757250e12007a2ea3dab3b",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/dm-20151123/zipball/25fa3eacf634fa236f7a4d0094fb9105e5fe9f96",
+                "reference": "25fa3eacf634fa236f7a4d0094fb9105e5fe9f96",
                 "shasum": ""
             },
             "require": {
                 "alibabacloud/credentials": "^1.2.2",
-                "alibabacloud/darabonba-openapi": "^0.2.15",
-                "alibabacloud/endpoint-util": "^0.1.0",
-                "alibabacloud/openapi-util": "^0.1.10|^0.2.1",
-                "alibabacloud/tea-fileform": "^0.3.0",
-                "alibabacloud/tea-utils": "^0.2.21",
-                "alibabacloud/tea-xml": "^0.2",
+                "alibabacloud/darabonba": "^1.0.0",
+                "alibabacloud/openapi-core": "^1.0.0",
                 "php": ">5.5"
             },
             "type": "library",
@@ -284,51 +302,9 @@
             ],
             "description": "Alibaba Cloud Dm (20151123) SDK Library for PHP",
             "support": {
-                "source": "https://github.com/alibabacloud-sdk-php/dm-20151123/tree/1.5.0"
+                "source": "https://github.com/alibabacloud-sdk-php/dm-20151123/tree/1.6.2"
             },
-            "time": "2025-07-28T17:32:23+00:00"
-        },
-        {
-            "name": "alibabacloud/endpoint-util",
-            "version": "0.1.1",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/alibabacloud-sdk-php/endpoint-util.git",
-                "reference": "f3fe88a25d8df4faa3b0ae14ff202a9cc094e6c5"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/alibabacloud-sdk-php/endpoint-util/zipball/f3fe88a25d8df4faa3b0ae14ff202a9cc094e6c5",
-                "reference": "f3fe88a25d8df4faa3b0ae14ff202a9cc094e6c5",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">5.5"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^4.8.35|^5.4.3"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "AlibabaCloud\\Endpoint\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "Apache-2.0"
-            ],
-            "authors": [
-                {
-                    "name": "Alibaba Cloud SDK",
-                    "email": "sdk-team@alibabacloud.com"
-                }
-            ],
-            "description": "Alibaba Cloud Endpoint Library for PHP",
-            "support": {
-                "source": "https://github.com/alibabacloud-sdk-php/endpoint-util/tree/0.1.1"
-            },
-            "time": "2020-06-04T10:57:15+00:00"
+            "time": "2025-09-03T17:10:08+00:00"
         },
         {
             "name": "alibabacloud/gateway-spi",
@@ -371,32 +347,34 @@
             "time": "2022-07-14T05:31:35+00:00"
         },
         {
-            "name": "alibabacloud/openapi-util",
-            "version": "0.2.1",
+            "name": "alibabacloud/openapi-core",
+            "version": "1.0.7",
             "source": {
                 "type": "git",
-                "url": "https://github.com/alibabacloud-sdk-php/openapi-util.git",
-                "reference": "f31f7bcd835e08ca24b6b8ba33637eb4eceb093a"
+                "url": "https://github.com/alibabacloud-sdk-php/openapi-core.git",
+                "reference": "abbb087be7385f0339426c1607c8566174d516da"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/alibabacloud-sdk-php/openapi-util/zipball/f31f7bcd835e08ca24b6b8ba33637eb4eceb093a",
-                "reference": "f31f7bcd835e08ca24b6b8ba33637eb4eceb093a",
+                "url": "https://api.github.com/repos/alibabacloud-sdk-php/openapi-core/zipball/abbb087be7385f0339426c1607c8566174d516da",
+                "reference": "abbb087be7385f0339426c1607c8566174d516da",
                 "shasum": ""
             },
             "require": {
-                "alibabacloud/tea": "^3.1",
-                "alibabacloud/tea-utils": "^0.2",
-                "lizhichao/one-sm": "^1.5",
+                "alibabacloud/credentials": "^1.2.2",
+                "alibabacloud/darabonba": "^1",
+                "alibabacloud/gateway-spi": "^1",
                 "php": ">5.5"
             },
             "require-dev": {
-                "phpunit/phpunit": "*"
+                "phpunit/phpunit": "^4.8.35|^5.4.3|^9.3",
+                "symfony/dotenv": "^3.4",
+                "symfony/var-dumper": "^3.4"
             },
             "type": "library",
             "autoload": {
                 "psr-4": {
-                    "AlibabaCloud\\OpenApiUtil\\": "src"
+                    "Darabonba\\OpenApi\\": "src"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -409,12 +387,12 @@
                     "email": "sdk-team@alibabacloud.com"
                 }
             ],
-            "description": "Alibaba Cloud OpenApi Util",
+            "description": "Alibaba Cloud OpenApi Client Core",
             "support": {
-                "issues": "https://github.com/alibabacloud-sdk-php/openapi-util/issues",
-                "source": "https://github.com/alibabacloud-sdk-php/openapi-util/tree/0.2.1"
+                "issues": "https://github.com/alibabacloud-sdk-php/openapi-core/issues",
+                "source": "https://github.com/alibabacloud-sdk-php/openapi-core/tree/1.0.7"
             },
-            "time": "2023-01-10T09:10:10+00:00"
+            "time": "2025-08-11T06:12:49+00:00"
         },
         {
             "name": "alibabacloud/tea",
@@ -482,134 +460,6 @@
             "time": "2023-05-16T06:43:41+00:00"
         },
         {
-            "name": "alibabacloud/tea-fileform",
-            "version": "0.3.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/alibabacloud-sdk-php/tea-fileform.git",
-                "reference": "4bf0c75a045c8115aa8cb1a394bd08d8bb833181"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/alibabacloud-sdk-php/tea-fileform/zipball/4bf0c75a045c8115aa8cb1a394bd08d8bb833181",
-                "reference": "4bf0c75a045c8115aa8cb1a394bd08d8bb833181",
-                "shasum": ""
-            },
-            "require": {
-                "alibabacloud/tea": "^3.0",
-                "php": ">5.5"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "^4.8.35|^5.4.3"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "AlibabaCloud\\Tea\\FileForm\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "Apache-2.0"
-            ],
-            "authors": [
-                {
-                    "name": "Alibaba Cloud SDK",
-                    "email": "sdk-team@alibabacloud.com"
-                }
-            ],
-            "description": "Alibaba Cloud Tea File Library for PHP",
-            "support": {
-                "issues": "https://github.com/alibabacloud-sdk-php/tea-fileform/issues",
-                "source": "https://github.com/alibabacloud-sdk-php/tea-fileform/tree/0.3.4"
-            },
-            "time": "2020-12-01T07:24:35+00:00"
-        },
-        {
-            "name": "alibabacloud/tea-utils",
-            "version": "0.2.21",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/alibabacloud-sdk-php/tea-utils.git",
-                "reference": "5039e45714c6456186d267f5d81a4b260a652495"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/alibabacloud-sdk-php/tea-utils/zipball/5039e45714c6456186d267f5d81a4b260a652495",
-                "reference": "5039e45714c6456186d267f5d81a4b260a652495",
-                "shasum": ""
-            },
-            "require": {
-                "alibabacloud/tea": "^3.1",
-                "php": ">5.5"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "AlibabaCloud\\Tea\\Utils\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "Apache-2.0"
-            ],
-            "authors": [
-                {
-                    "name": "Alibaba Cloud SDK",
-                    "email": "sdk-team@alibabacloud.com"
-                }
-            ],
-            "description": "Alibaba Cloud Tea Utils for PHP",
-            "support": {
-                "issues": "https://github.com/aliyun/tea-util/issues",
-                "source": "https://github.com/aliyun/tea-util"
-            },
-            "time": "2024-07-05T06:05:54+00:00"
-        },
-        {
-            "name": "alibabacloud/tea-xml",
-            "version": "0.2.4",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/alibabacloud-sdk-php/tea-xml.git",
-                "reference": "3e0c000bf536224eebbac913c371bef174c0a16a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/alibabacloud-sdk-php/tea-xml/zipball/3e0c000bf536224eebbac913c371bef174c0a16a",
-                "reference": "3e0c000bf536224eebbac913c371bef174c0a16a",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">5.5"
-            },
-            "require-dev": {
-                "phpunit/phpunit": "*",
-                "symfony/var-dumper": "*"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "AlibabaCloud\\Tea\\XML\\": "src"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "Apache-2.0"
-            ],
-            "authors": [
-                {
-                    "name": "Alibaba Cloud SDK",
-                    "email": "sdk-team@alibabacloud.com"
-                }
-            ],
-            "description": "Alibaba Cloud Tea XML Library for PHP",
-            "support": {
-                "source": "https://github.com/alibabacloud-sdk-php/tea-xml/tree/0.2.4"
-            },
-            "time": "2022-08-02T04:12:58+00:00"
-        },
-        {
             "name": "aws/aws-crt-php",
             "version": "v1.2.7",
             "source": {
@@ -665,25 +515,25 @@
         },
         {
             "name": "aws/aws-php-sns-message-validator",
-            "version": "1.10.0",
+            "version": "1.9.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-php-sns-message-validator.git",
-                "reference": "d92d199179cbbf4d99601d4f23f61b9b8cc5da28"
+                "reference": "80850e8d93fb57889ce609e113895dd2f1d7eed6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-php-sns-message-validator/zipball/d92d199179cbbf4d99601d4f23f61b9b8cc5da28",
-                "reference": "d92d199179cbbf4d99601d4f23f61b9b8cc5da28",
+                "url": "https://api.github.com/repos/aws/aws-php-sns-message-validator/zipball/80850e8d93fb57889ce609e113895dd2f1d7eed6",
+                "reference": "80850e8d93fb57889ce609e113895dd2f1d7eed6",
                 "shasum": ""
             },
             "require": {
                 "ext-openssl": "*",
-                "php": ">=8.1",
-                "psr/http-message": "^2.0"
+                "php": ">=7.2.5",
+                "psr/http-message": "^1.0 || ^2.0"
             },
             "require-dev": {
-                "guzzlehttp/psr7": "^2.4.5",
+                "guzzlehttp/psr7": "^1.9.1 || ^2.4.5",
                 "phpunit/phpunit": "^5.6.3 || ^8.5 || ^9.5",
                 "squizlabs/php_codesniffer": "^2.3",
                 "yoast/phpunit-polyfills": "^1.0"
@@ -718,9 +568,9 @@
             "support": {
                 "forum": "https://forums.aws.amazon.com/forum.jspa?forumID=80",
                 "issues": "https://github.com/aws/aws-sns-message-validator/issues",
-                "source": "https://github.com/aws/aws-php-sns-message-validator/tree/1.10.0"
+                "source": "https://github.com/aws/aws-php-sns-message-validator/tree/1.9.1"
             },
-            "time": "2025-03-05T22:22:58+00:00"
+            "time": "2025-02-25T22:19:51+00:00"
         },
         {
             "name": "aws/aws-sdk-php",
@@ -7406,60 +7256,6 @@
             "time": "2024-12-08T08:18:47+00:00"
         },
         {
-            "name": "lizhichao/one-sm",
-            "version": "1.10",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/lizhichao/sm.git",
-                "reference": "687a012a44a5bfd4d9143a0234e1060543be455a"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/lizhichao/sm/zipball/687a012a44a5bfd4d9143a0234e1060543be455a",
-                "reference": "687a012a44a5bfd4d9143a0234e1060543be455a",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.6"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-4": {
-                    "OneSm\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "Apache-2.0"
-            ],
-            "authors": [
-                {
-                    "name": "tanszhe",
-                    "email": "1018595261@qq.com"
-                }
-            ],
-            "description": "国密sm3",
-            "keywords": [
-                "php",
-                "sm3"
-            ],
-            "support": {
-                "issues": "https://github.com/lizhichao/sm/issues",
-                "source": "https://github.com/lizhichao/sm/tree/1.10"
-            },
-            "funding": [
-                {
-                    "url": "https://www.vicsdf.com/img/w.jpg",
-                    "type": "custom"
-                },
-                {
-                    "url": "https://www.vicsdf.com/img/z.jpg",
-                    "type": "custom"
-                }
-            ],
-            "time": "2021-05-26T06:19:22+00:00"
-        },
-        {
             "name": "lorisleiva/laravel-actions",
             "version": "v2.9.1",
             "source": {
@@ -8828,20 +8624,20 @@
         },
         {
             "name": "mpdf/psr-http-message-shim",
-            "version": "v2.0.1",
+            "version": "1.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/mpdf/psr-http-message-shim.git",
-                "reference": "f25a0153d645e234f9db42e5433b16d9b113920f"
+                "reference": "3206e6b80b6d2479e148ee497e9f2bebadc919db"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mpdf/psr-http-message-shim/zipball/f25a0153d645e234f9db42e5433b16d9b113920f",
-                "reference": "f25a0153d645e234f9db42e5433b16d9b113920f",
+                "url": "https://api.github.com/repos/mpdf/psr-http-message-shim/zipball/3206e6b80b6d2479e148ee497e9f2bebadc919db",
+                "reference": "3206e6b80b6d2479e148ee497e9f2bebadc919db",
                 "shasum": ""
             },
             "require": {
-                "psr/http-message": "^2.0"
+                "psr/http-message": "^1.0"
             },
             "type": "library",
             "autoload": {
@@ -8870,9 +8666,9 @@
             "description": "Shim to allow support of different psr/message versions.",
             "support": {
                 "issues": "https://github.com/mpdf/psr-http-message-shim/issues",
-                "source": "https://github.com/mpdf/psr-http-message-shim/tree/v2.0.1"
+                "source": "https://github.com/mpdf/psr-http-message-shim/tree/1.0.0"
             },
-            "time": "2023-10-02T14:34:03+00:00"
+            "time": "2023-09-01T05:59:47+00:00"
         },
         {
             "name": "mpdf/psr-log-aware-trait",
@@ -9830,16 +9626,16 @@
         },
         {
             "name": "openai-php/client",
-            "version": "v0.13.0",
+            "version": "v0.16.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/openai-php/client.git",
-                "reference": "399229860cea244843753bf1d9c28aee0e74c3a6"
+                "reference": "7a59e4d896d83f8c923e0b3a5ebae0a5cddad2d6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/openai-php/client/zipball/399229860cea244843753bf1d9c28aee0e74c3a6",
-                "reference": "399229860cea244843753bf1d9c28aee0e74c3a6",
+                "url": "https://api.github.com/repos/openai-php/client/zipball/7a59e4d896d83f8c923e0b3a5ebae0a5cddad2d6",
+                "reference": "7a59e4d896d83f8c923e0b3a5ebae0a5cddad2d6",
                 "shasum": ""
             },
             "require": {
@@ -9854,7 +9650,7 @@
             "require-dev": {
                 "guzzlehttp/guzzle": "^7.9.3",
                 "guzzlehttp/psr7": "^2.7.1",
-                "laravel/pint": "^1.22.0",
+                "laravel/pint": "^1.24.0",
                 "mockery/mockery": "^1.6.12",
                 "nunomaduro/collision": "^8.8.0",
                 "pestphp/pest": "^3.8.2|^4.0.0",
@@ -9901,7 +9697,7 @@
             ],
             "support": {
                 "issues": "https://github.com/openai-php/client/issues",
-                "source": "https://github.com/openai-php/client/tree/v0.13.0"
+                "source": "https://github.com/openai-php/client/tree/v0.16.1"
             },
             "funding": [
                 {
@@ -9917,7 +9713,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-05-14T21:43:59+00:00"
+            "time": "2025-09-04T14:32:16+00:00"
         },
         {
             "name": "owen-it/laravel-auditing",
@@ -11608,26 +11404,27 @@
         },
         {
             "name": "predis/predis",
-            "version": "v2.4.0",
+            "version": "v3.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/predis/predis.git",
-                "reference": "f49e13ee3a2a825631562aa0223ac922ec5d058b"
+                "reference": "9e9deec4dfd3ebf65d32eb368f498c646ba2ecd8"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/predis/predis/zipball/f49e13ee3a2a825631562aa0223ac922ec5d058b",
-                "reference": "f49e13ee3a2a825631562aa0223ac922ec5d058b",
+                "url": "https://api.github.com/repos/predis/predis/zipball/9e9deec4dfd3ebf65d32eb368f498c646ba2ecd8",
+                "reference": "9e9deec4dfd3ebf65d32eb368f498c646ba2ecd8",
                 "shasum": ""
             },
             "require": {
-                "php": "^7.2 || ^8.0"
+                "php": "^7.2 || ^8.0",
+                "psr/http-message": "^1.0|^2.0"
             },
             "require-dev": {
                 "friendsofphp/php-cs-fixer": "^3.3",
                 "phpstan/phpstan": "^1.9",
                 "phpunit/phpcov": "^6.0 || ^8.0",
-                "phpunit/phpunit": "^8.0 || ^9.4"
+                "phpunit/phpunit": "^8.0 || ~9.4.4"
             },
             "suggest": {
                 "ext-relay": "Faster connection with in-memory caching (>=0.6.2)"
@@ -11658,7 +11455,7 @@
             ],
             "support": {
                 "issues": "https://github.com/predis/predis/issues",
-                "source": "https://github.com/predis/predis/tree/v2.4.0"
+                "source": "https://github.com/predis/predis/tree/v3.2.0"
             },
             "funding": [
                 {
@@ -11666,7 +11463,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-04-30T15:16:02+00:00"
+            "time": "2025-08-06T06:41:24+00:00"
         },
         {
             "name": "propaganistas/laravel-phone",
@@ -12048,16 +11845,16 @@
         },
         {
             "name": "psr/http-message",
-            "version": "2.0",
+            "version": "1.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-fig/http-message.git",
-                "reference": "402d35bcb92c70c026d1a6a9883f06b2ead23d71"
+                "reference": "cb6ce4845ce34a8ad9e68117c10ee90a29919eba"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-fig/http-message/zipball/402d35bcb92c70c026d1a6a9883f06b2ead23d71",
-                "reference": "402d35bcb92c70c026d1a6a9883f06b2ead23d71",
+                "url": "https://api.github.com/repos/php-fig/http-message/zipball/cb6ce4845ce34a8ad9e68117c10ee90a29919eba",
+                "reference": "cb6ce4845ce34a8ad9e68117c10ee90a29919eba",
                 "shasum": ""
             },
             "require": {
@@ -12066,7 +11863,7 @@
             "type": "library",
             "extra": {
                 "branch-alias": {
-                    "dev-master": "2.0.x-dev"
+                    "dev-master": "1.1.x-dev"
                 }
             },
             "autoload": {
@@ -12081,7 +11878,7 @@
             "authors": [
                 {
                     "name": "PHP-FIG",
-                    "homepage": "https://www.php-fig.org/"
+                    "homepage": "http://www.php-fig.org/"
                 }
             ],
             "description": "Common interface for HTTP messages",
@@ -12095,9 +11892,9 @@
                 "response"
             ],
             "support": {
-                "source": "https://github.com/php-fig/http-message/tree/2.0"
+                "source": "https://github.com/php-fig/http-message/tree/1.1"
             },
-            "time": "2023-04-04T09:54:51+00:00"
+            "time": "2023-04-04T09:50:52+00:00"
         },
         {
             "name": "psr/log",
@@ -19262,30 +19059,34 @@
         },
         {
             "name": "theodo-group/llphant",
-            "version": "0.9.12",
+            "version": "0.11.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/LLPhant/LLPhant.git",
-                "reference": "2b37713fd93909564d72e40b62a4059fc9bdd551"
+                "reference": "33315cf4e250bc238c3fb7efb90df63a3503c6b2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/LLPhant/LLPhant/zipball/2b37713fd93909564d72e40b62a4059fc9bdd551",
-                "reference": "2b37713fd93909564d72e40b62a4059fc9bdd551",
+                "url": "https://api.github.com/repos/LLPhant/LLPhant/zipball/33315cf4e250bc238c3fb7efb90df63a3503c6b2",
+                "reference": "33315cf4e250bc238c3fb7efb90df63a3503c6b2",
                 "shasum": ""
             },
             "require": {
                 "guzzlehttp/guzzle": "^7.4.5",
                 "guzzlehttp/psr7": "^2.7",
-                "openai-php/client": "^v0.13.0",
+                "openai-php/client": "^v0.16.1",
                 "php": "^8.1.0",
+                "php-http/discovery": "^1.20.0",
+                "php-http/multipart-stream-builder": "^1.4.2",
                 "phpoffice/phpword": "^1.4.0",
-                "psr/http-message": "^2.0",
+                "psr/http-client": "^1.0.3",
+                "psr/http-message": "^1.0 || ^2.0",
                 "psr/log": "^3.0",
-                "smalot/pdfparser": "^2.11"
+                "smalot/pdfparser": "^2.11",
+                "yethee/tiktoken": "^0.10.0"
             },
             "require-dev": {
-                "codewithkyrian/chromadb-php": "^0.3.0",
+                "codewithkyrian/chromadb-php": "dev-main",
                 "doctrine/orm": "^2.20.0",
                 "elasticsearch/elasticsearch": "^8.15",
                 "hkulekci/qdrant": "^v0.5.7",
@@ -19341,9 +19142,9 @@
             ],
             "support": {
                 "issues": "https://github.com/LLPhant/LLPhant/issues",
-                "source": "https://github.com/LLPhant/LLPhant/tree/0.10.2"
+                "source": "https://github.com/LLPhant/LLPhant/tree/0.11.7"
             },
-            "time": "2025-06-13T10:20:04+00:00"
+            "time": "2025-09-27T20:10:39+00:00"
         },
         {
             "name": "tightenco/ziggy",
@@ -20220,6 +20021,60 @@
                 "source": "https://github.com/webmozarts/assert/tree/1.11.0"
             },
             "time": "2022-06-03T18:03:27+00:00"
+        },
+        {
+            "name": "yethee/tiktoken",
+            "version": "0.10.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/yethee/tiktoken-php.git",
+                "reference": "59a93e34b90469021a4b8ed3a98765e8dc23f3cc"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/yethee/tiktoken-php/zipball/59a93e34b90469021a4b8ed3a98765e8dc23f3cc",
+                "reference": "59a93e34b90469021a4b8ed3a98765e8dc23f3cc",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "symfony/service-contracts": "^2.5 || ^3.0"
+            },
+            "require-dev": {
+                "doctrine/coding-standard": "^13",
+                "mikey179/vfsstream": "^1.6.11",
+                "phpbench/phpbench": "^1.2",
+                "phpunit/phpunit": "^10.5.45",
+                "psalm/plugin-phpunit": "^0.19.2",
+                "vimeo/psalm": "6.10.0"
+            },
+            "suggest": {
+                "ext-ffi": "To allow use LibEncoder"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Yethee\\Tiktoken\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "PHP version of tiktoken",
+            "keywords": [
+                "bpe",
+                "decode",
+                "encode",
+                "openai",
+                "tiktoken",
+                "tokenizer"
+            ],
+            "support": {
+                "issues": "https://github.com/yethee/tiktoken-php/issues",
+                "source": "https://github.com/yethee/tiktoken-php/tree/0.10.0"
+            },
+            "time": "2025-04-19T13:47:00+00:00"
         },
         {
             "name": "zircote/swagger-php",
