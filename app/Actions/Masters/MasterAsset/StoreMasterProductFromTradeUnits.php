@@ -135,6 +135,11 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'numeric',
                 'min:0'
             ],
+            'shop_products.*.rrp'       => [
+                'required',
+                'numeric',
+                'min:0'
+            ],
             'image' => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"],
             'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
             'gross_weight'           => ['sometimes', 'numeric', 'min:0'],

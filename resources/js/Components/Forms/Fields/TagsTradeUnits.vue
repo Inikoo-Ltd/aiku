@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import MultiSelect from 'primevue/multiselect'
+import Dialog from 'primevue/dialog'
 import { onMounted, ref, computed, watch } from 'vue'
-import Modal from '@/Components/Utils/Modal.vue'
 import { trans } from 'laravel-vue-i18n'
 import { router } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -32,7 +32,7 @@ const props = defineProps<{
     }
 }>()
 
-// Modal create new tag
+// Dialog create new tag
 const isModalTag = ref(false)
 const _multiselect_tags = ref(null)
 const newTagImg = ref<File | null>(null)
@@ -225,16 +225,12 @@ onMounted(() => {
         </div>
     </div>
 
-    <!-- Modal: create new tag -->
-    <Modal :isOpen="isModalTag" @onClose="isModalTag = false" width="w-[600px]">
+    <!-- Dialog: create new tag -->
+    <Dialog v-model:visible="isModalTag" modal header="Create new tag" :style="{ width: '600px' }">
         <div class="isolate bg-white px-6 lg:px-8">
-            <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new tag') }}</h2>
-            </div>
-
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
-                    <label for="first-name" class="block text-sm font-medium leading-6">
+                    <label class="block text-sm font-medium leading-6">
                         {{ trans('Image') }}
                     </label>
                     <div class="mt-1">
@@ -243,14 +239,13 @@ onMounted(() => {
                 </div>
 
                 <div class="col-span-2">
-                    <label for="first-name" class="block text-sm font-medium leading-6">
+                    <label class="block text-sm font-medium leading-6">
                         <span class="text-red-500">*</span> {{ trans('Name') }}
                     </label>
                     <div class="mt-1">
                         <PureInput v-model="newTagName" placeholder="1-64 characters" />
                     </div>
                 </div>
-
             </div>
 
             <div class="mt-6 mb-4 relative">
@@ -258,17 +253,11 @@ onMounted(() => {
                     :loading="isLoadingCreateTag" full />
             </div>
         </div>
-    </Modal>
+    </Dialog>
 
-    <!-- Modal: edit tag -->
-    <Modal :isOpen="isModalUpdateTag" @onClose="isModalUpdateTag = false" width="w-[600px]">
+    <!-- Dialog: edit tag -->
+    <Dialog v-model:visible="isModalUpdateTag" modal header="Edit tag" :style="{ width: '600px' }">
         <div class="isolate bg-white px-6 lg:px-8">
-            <div class="mx-auto max-w-2xl text-center">
-                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
-                    {{ trans('Edit tag') }}
-                </h2>
-            </div>
-
             <div class="mt-7 grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
                 <div class="col-span-2">
                     <label class="block text-sm font-medium leading-6">{{trans('Image')}}</label>
@@ -295,5 +284,5 @@ onMounted(() => {
                     :loading="isLoadingUpdateTag" full />
             </div>
         </div>
-    </Modal>
+    </Dialog>
 </template>

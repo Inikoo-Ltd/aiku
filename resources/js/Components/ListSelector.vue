@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref, computed, onMounted, onUnmounted } from 'vue'
+import { inject, ref, computed, onMounted, onUnmounted, defineExpose } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from './Elements/Buttons/Button.vue'
 import axios from 'axios'
@@ -18,6 +18,8 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faTrashAlt } from '@far'
+import { ulid } from 'ulid'
+import { data } from 'autoprefixer'
 
 library.add(faCheckCircle, faTimes)
 
@@ -192,6 +194,41 @@ const deleteFormCommited = (item) => {
   committedProducts.value = committedProducts.value.filter(p => p.id !== item.id); emits('update:modelValue', [...committedProducts.value]), emits('after-delete')
 }
 
+const updateProduct = (updated: Portfolio) => {
+  console.log('sss', updated, committedProducts.value)
+  committedProducts.value = committedProducts.value.map(p => {
+    if (p.id === updated.id) {
+      console.log("✅ Match found:", p);
+
+      const merged = {
+        ...p,
+        ...updated
+      };
+
+      console.log("🔹 After merge:", merged);
+
+      return merged;
+    }
+
+    return p;
+  });
+
+  console.log("🔹 After update (committedProducts):", committedProducts.value);
+
+  emits("update:modelValue", [...committedProducts.value]);
+  console.log("📤 Emitted updated modelValue:", [...committedProducts.value]);
+};
+
+
+
+
+defineExpose({
+  updateProduct,
+  committedProducts
+})
+
+
+
 </script>
 
 <template>
@@ -208,33 +245,39 @@ const deleteFormCommited = (item) => {
         </div>
       </div>
 
-      <div v-if="committedProducts.length" class=" rounded-md overflow-hidden">
-        <slot name="committed-list" :list="committedProducts" :deleteFormCommited="deleteFormCommited" >
-          <div v-for="item in committedProducts" :key="item.id"
+      <div v-if="committedProducts.length" class="border rounded-md overflow-hidden">
+
+        <slot name="committed-list" :committedProducts="committedProducts" :deleteFormCommited="deleteFormCommited">
+          <div v-for="item in committedProducts" :key="item.id + '-'"
             class="flex items-center justify-between gap-4 p-2 border-b last:border-b-0 bg-white hover:bg-gray-50">
 
             <!-- Info -->
-            <div class="flex items-center gap-3">
-              <Image v-if="item.image" :src="item.image.thumbnail" class="w-12 h-12 rounded object-cover" />
-              <div>
-                <div class="font-medium leading-none">{{ item.name }}</div>
-                <div class="flex justify-beetween mt-1 gap-5">
-                  <div class="text-xs text-gray-500">{{ item.code || '-' }}</div>
-                  <div v-if="item.value" class="text-xs text-gray-500">
-                    {{ locale.currencyFormat(layout.app?.currency?.code, item.value || 0) }}
+            <slot name="info" :data="item" :key="item.id + '-'">
+              <div class="flex items-center gap-3">
+                <Image v-if="item.image" :src="item.image.thumbnail" class="w-12 h-12 rounded object-cover" />
+                <div>
+                  <div class="font-medium leading-none">{{ item.name }}</div>
+                  <div class="flex justify-beetween mt-1 gap-5">
+                    <div class="flex justify-between mt-1 text-xs text-gray-500">
+                      <span>{{ item.code || '-' }}</span>
+                      <slot name="after-title" :data="item">
+                      </slot>
+                    </div>
+                    <div v-if="item.value" class="text-xs text-gray-500">
+                      {{ locale.currencyFormat(layout.app?.currency?.code, item.value || 0) }}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </slot>
 
             <!-- Quantity + Delete -->
-            <div  class="flex items-center gap-2">
+            <div class="flex items-center gap-2">
               <NumberWithButtonSave v-if="withQuantity" :key="item.id + '-' + (item[props.key_quantity] || 1)"
                 :modelValue="item[props.key_quantity] || 1" :bindToTarget="{ min: 1 }"
                 @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
                 noUndoButton noSaveButton parentClass="w-min" />
-              <button class="text-red-500 hover:text-red-700 px-4"
-                @click="()=>deleteFormCommited(item)">
+              <button class="text-red-500 hover:text-red-700 px-4" @click="() => deleteFormCommited(item)">
                 <FontAwesomeIcon :icon="faTrashAlt" />
               </button>
             </div>

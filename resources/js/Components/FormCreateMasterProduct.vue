@@ -17,6 +17,8 @@ import TableSetPriceProduct from "@/Components/TableSetPriceProduct.vue";
 import axios from "axios";
 import SideEditorInputHTML from "./CMS/Fields/SideEditorInputHTML.vue";
 import PureInputDimension from "./Pure/PureInputDimension.vue";
+import Dialog from 'primevue/dialog';
+import EditTradeUnit from "@/Components/EditTradeUnit.vue";
 // FontAwesome
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
@@ -42,6 +44,7 @@ import { cloneDeep } from "lodash";
 import PureInputNumber from "./Pure/PureInputNumber.vue";
 import Image from "./Image.vue";
 import search from "@/Pages/Iris/Search.vue"
+import { faPencil } from "@fal";
 
 library.add(
     faShapes,
@@ -79,6 +82,10 @@ const key = ref(ulid())
 const layout = inject('layout', {});
 const currency = props.masterCurrency ? props.masterCurrency : layout.group.currency;
 const loading = ref(null)
+const modalTradeUnit = ref(false)
+const dataTradeUnitEdit = ref(null)
+const listSelectorRef = ref<InstanceType<typeof ListSelector> | null>(null)
+
 
 // Inertia form
 const form = useForm({
@@ -93,8 +100,8 @@ const form = useForm({
     description: "",
     description_title: "",
     description_extra: "",
-    gross_weight : 0,
-    net_weight : 0,
+    gross_weight: 0,
+    net_weight: 0,
     marketing_dimensions: {
         h: 0,
         l: 0,
@@ -156,7 +163,6 @@ const getTableData = (data) => {
             for (const item of response.data.shops) {
                 const index = tableData.value.data.findIndex((row: any) => row.id == item.id)
                 if (index !== -1) {
-                    console.log('sdfsdf',tableData.value.data[index].product,item)
                     tableData.value.data[index].product = {
                         ...tableData.value.data[index].product,
                         ...item,
@@ -172,18 +178,18 @@ const getTableData = (data) => {
 }
 
 const ListSelectorChange = (value) => {
-    console.log('selector',value)
+    console.log('selector', value)
     if (value.length >= 1) {
         form.name = value[0].name
         form.code = value[0].code
-        form.unit = value[0].type
+        form.unit = value.length > 1 ? 'bundle' : value[0].type
         form.image = value[0]?.image?.source || null
         form.marketing_weight = value[0].marketing_weight || 0
         form.net_weight = value[0].net_weight
         form.description = value[0].description
         form.description_title = value[0].description_title
         form.description_extra = value[0].description_extra
-        form.units = value[0]?.units || 1
+        form.units = value.length > 1 ? 1 : value[0]?.quantity || 1
         form.gross_weight = value[0]?.gross_weight || 0
         form.marketing_dimensions = value[0]?.dimensions || null
     }
@@ -194,7 +200,7 @@ const submitForm = async (redirect = true) => {
     form.processing = true
     form.errors = {}
 
-    if(redirect) loading.value = 'save'
+    if (redirect) loading.value = 'save'
     else loading.value = 'create'
 
     const finalDataTable: Record<number, { price: number | string }> = {}
@@ -245,7 +251,7 @@ const submitForm = async (redirect = true) => {
             if (form.errors.code || form.errors.unit || form.errors.name) {
                 detailsVisible.value = true
             }
-             notify({
+            notify({
                 title: trans("Something went wrong"),
                 text: error.response.data.message || trans("Please try again"),
                 type: 'error'
@@ -296,6 +302,35 @@ const drawerVisible = computed({
 const toggleFull = () => {
     isFull.value = !isFull.value;
 };
+
+
+const openModalTradeUnit = (dataTradeUnit: null) => {
+    modalTradeUnit.value = true
+    dataTradeUnitEdit.value = dataTradeUnit
+}
+
+const onCanceleditTradeUnit = () => {
+    modalTradeUnit.value = false
+    dataTradeUnitEdit.value = null
+}
+
+const successEditTradeUnit = (data) => {
+    modalTradeUnit.value = false
+    dataTradeUnitEdit.value = null
+
+    const index = form.trade_units.findIndex((item) => item.id == data.id)
+    if (index !== -1) {
+        form.trade_units[index].data = { ...form.trade_units[index].data, ...data }
+    }
+
+    // Update the list selector
+    if (listSelectorRef.value) {
+        listSelectorRef.value?.updateProduct?.(data.data)
+    }
+
+    key.value = ulid()
+}
+
 </script>
 
 <template>
@@ -314,12 +349,56 @@ const toggleFull = () => {
         <div class="p-4 pt-0 space-y-6 overflow-y-auto">
             <!-- Trade Unit Selector -->
             <div>
-                <ListSelector :key="key" v-model="form.trade_units" :withQuantity="true" :tabs="selectorTab"
-                    head_label="Select Trade Units" @update:model-value="ListSelectorChange" key_quantity="quantity"
-                    :routeFetch="{
+                <ListSelector :key="key" ref="listSelectorRef" v-model="form.trade_units" :withQuantity="true"
+                    :tabs="selectorTab" head_label="Select Trade Units" @update:model-value="ListSelectorChange"
+                    key_quantity="quantity" :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }
-                    }" />
+                    }">
+                    <template #info="{ data }">
+                        <div class="flex items-start gap-3 p-2 rounded-lg hover:bg-gray-50 transition">
+                            <!-- Product Image -->
+                            <Image v-if="data.image" :src="data.image.thumbnail" alt="Product image"
+                                class="w-12 h-12 rounded-lg object-cover border border-gray-200 shadow-sm" />
+
+                            <!-- Product Details -->
+                            <div class="flex flex-col flex-1 min-w-0">
+                                <!-- Name & Edit -->
+                                <div class="flex items-center gap-2 text-sm font-semibold text-gray-800">
+                                    <span class="truncate">
+                                        {{ data.name }}
+                                        <span class="font-mono text-gray-500">({{ data.code || '-' }})</span>
+                                    </span>
+                                    <button type="button" class="text-gray-400 hover:text-gray-600 transition"
+                                        title="Edit" @click="() => openModalTradeUnit(data)">
+                                        <FontAwesomeIcon :icon="faPencil" class="w-3.5 h-3.5 text-blue-500" />
+                                    </button>
+                                </div>
+
+                                <!-- Price -->
+                                <div v-if="data.value" class="mt-0.5 text-xs font-medium text-gray-700">
+                                    {{ locale.currencyFormat(layout.app?.currency?.code, data.value) }}
+                                </div>
+
+                                <!-- Brands -->
+                                <div v-if="data.brands?.length" class="flex flex-wrap gap-1 mt-1">
+                                    <span v-for="brand in data.brands" :key="brand.id" v-tooltip="'brand'"
+                                        class="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-100">
+                                        {{ brand.name }}
+                                    </span>
+                                </div>
+
+                                <!-- Tags -->
+                                <div v-if="data.tags?.length" class="flex flex-wrap gap-1 mt-1">
+                                    <span v-for="tag in data.tags" :key="tag.id"  v-tooltip="'tag'"
+                                        class="px-2 py-0.5 rounded-full text-xs bg-green-50 text-green-600 border border-green-100">
+                                        {{ tag.name }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </ListSelector>
                 <small v-if="form.errors.trade_units" class="text-red-500 text-xs mt-1 flex items-center gap-1">
                     <FontAwesomeIcon :icon="faCircleExclamation" />
                     {{ form.errors.trade_units }}
@@ -340,15 +419,15 @@ const toggleFull = () => {
 
                     <div class="flex">
                         <div class="relative w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center bg-gray-50 hover:bg-gray-100 cursor-pointer transition shadow-sm"
-                            @click="(e)=> form.trade_units.length > 1 ?  chooseImage(e) : null">
+                            @click="(e) => form.trade_units.length > 1 ? chooseImage(e) : null">
 
                             <!-- Gambar baru (upload preview) -->
                             <img v-if="previewUrl" :src="previewUrl" alt="Preview"
                                 class="w-full h-full object-cover rounded-xl" />
 
                             <!-- Gambar lama dari DB (string link) -->
-                            <Image v-else-if="form.image" :src="form.image"
-                                alt="Existing" class="w-full h-full object-cover rounded-xl" />
+                            <Image v-else-if="form.image" :src="form.image" alt="Existing"
+                                class="w-full h-full object-cover rounded-xl" />
 
                             <!-- Kalau kosong -->
                             <div v-else class="flex flex-col items-center text-gray-400 text-xs">
@@ -357,14 +436,16 @@ const toggleFull = () => {
                             </div>
 
                             <!-- Tombol remove -->
-                            <button v-if="previewUrl || form.image && form.trade_units.length > 1 " @click.stop="resetImage"
+                            <button v-if="previewUrl || form.image && form.trade_units.length > 1"
+                                @click.stop="resetImage"
                                 class="absolute top-1 right-1 bg-white text-gray-500 rounded-full p-1 shadow hover:text-red-500">
                                 <FontAwesomeIcon :icon="faXmark" class="w-3 h-3" />
                             </button>
                         </div>
 
 
-                        <input type="file" v-if="form.trade_units.length > 1" accept="image/*" ref="fileInput" class="hidden" @change="previewImage" />
+                        <input type="file" v-if="form.trade_units.length > 1" accept="image/*" ref="fileInput"
+                            class="hidden" @change="previewImage" />
                     </div>
 
                     <!-- Form Fields -->
@@ -424,8 +505,7 @@ const toggleFull = () => {
                         <div v-if="form.trade_units.length > 1">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Net Weight</label>
                             <PureInputNumber v-model="form.net_weight"
-                                @update:model-value="form.errors.net_weight = null" class="w-full"
-                                :suffix="'g'" />
+                                @update:model-value="form.errors.net_weight = null" class="w-full" :suffix="'g'" />
                             <small v-if="form.errors.marketing_weight"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
@@ -436,8 +516,7 @@ const toggleFull = () => {
                         <div v-if="form.trade_units.length > 1">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Gross Weight</label>
                             <PureInputNumber v-model="form.gross_weight"
-                                @update:model-value="form.errors.gross_weight = null" class="w-full"
-                                :suffix="'g'" />
+                                @update:model-value="form.errors.gross_weight = null" class="w-full" :suffix="'g'" />
                             <small v-if="form.errors.marketing_weight"
                                 class="text-red-500 text-xs flex items-center gap-1 mt-1">
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
@@ -446,7 +525,7 @@ const toggleFull = () => {
                         </div>
 
 
-                         <div v-if="form.trade_units.length > 1">
+                        <div v-if="form.trade_units.length > 1">
                             <label class="block text-xs font-medium text-gray-600 mb-1">Dimension</label>
                             <PureInputDimension :rows="4" v-model="form.marketing_dimensions"
                                 @update:model-value="form.errors.marketing_dimensions = null" class="w-full" />
@@ -503,7 +582,7 @@ const toggleFull = () => {
                 </button>
 
                 <div v-if="tableVisible" class="mt-4">
-                    <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form"  />
+                    <TableSetPriceProduct v-model="tableData" :key="key" :currency="currency.code" :form="form" />
                     <small v-if="form.errors.shop_products" class="text-red-500 flex items-center gap-1">
                         {{ form.errors.shop_products.join(", ") }}
                     </small>
@@ -522,6 +601,13 @@ const toggleFull = () => {
             </div>
         </template>
     </Drawer>
+
+
+    <!-- Add after Drawer in your <template> -->
+    <Dialog v-model:visible="modalTradeUnit" modal header="Edit Trade Unit" :style="{ width: '500px' }">
+        <EditTradeUnit :data="dataTradeUnitEdit" @cancel="onCanceleditTradeUnit" @save-success="successEditTradeUnit" />
+    </Dialog>
+
 </template>
 
 <style scoped>
