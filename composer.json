@@ -32,7 +32,6 @@
     "commerceguys/intl": "^2.0.7",
     "darkaonline/l5-swagger": "^9.0",
     "deepseek-php/deepseek-php-client": "^2.0",
-    "doctrine/dbal": "^3.5",
     "elasticsearch/elasticsearch": "^8.8",
     "google/apiclient": "^2.15.0",
     "guzzlehttp/guzzle": "^7.2",
