@@ -365,12 +365,12 @@ const onClickRefundPayments = () => {
 
 const listPaymentRefund = computed(() => [
     {
-        label: trans("Refund money to customer's credit balance"),
+        label: trans("Refund all to customer's credit balance"),
         value: "credit_balance",
         disable: false
     },
     {
-        label: trans("Refund money to payment method of the invoice"),
+        label: trans("Refund to original payment method"),
         value: "invoice_payment_method",
         disable: Number(props.invoice_pay.total_need_to_refund_in_payment_method) >= 0
     }
