@@ -15,7 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-
+import { router } from "@inertiajs/vue3"
 import {
     faMicrophoneAltSlash,
     faImage,
@@ -60,7 +60,6 @@ import { faExclamationTriangle } from "@fas"
 import { faBan } from "@far"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
-import { router } from "@inertiajs/vue3"
 import Message from 'primevue/message';
 
 library.add(
@@ -161,11 +160,11 @@ const props = defineProps<{
     }
 }>()
 
-
+const paramsSection = route().params['section'] || 0
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
 const currentTab = ref<string | number>(
-    props.formData?.current || Object.keys(props.formData?.blueprint ?? {})[0]
+    props.formData?.current || paramsSection
 )
  // if formData.current not exist, take first navigation
 const _buttonRefs = ref([]) // For click linked to Navigation
@@ -185,6 +184,7 @@ const handleIntersection = (element: Element, index: number) => (entries) => {
 
 const switchTab = (key: string) => {
     currentTab.value = key
+    console.log(key)
 
     // Update URL with query parameter
     router.visit('', {
