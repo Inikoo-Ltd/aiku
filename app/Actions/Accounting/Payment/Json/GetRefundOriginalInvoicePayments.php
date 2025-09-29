@@ -21,7 +21,6 @@ use App\Models\Accounting\Payment;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -60,22 +59,14 @@ class GetRefundOriginalInvoicePayments extends OrgAction
                 'payments.id',
                 'payments.reference',
                 'payments.status',
+                'payments.total_refund as refunded',
                 'payments.date',
                 'payments.amount',
-                'payment_accounts.type as payment_account_type',
                 'payment_accounts.code as payment_account_code',
                 'payment_accounts.name as payment_account_name',
                 'payment_accounts.slug as payment_account_slug',
                 'payment_service_providers.slug as payment_service_providers_slug',
                 'currencies.code as currency_code',
-                DB::raw('ABS(SUM(refund_payments.amount)) as refunded'),
-            ])
-            ->groupBy([
-                'payments.id',
-                'payment_account_name',
-                'payment_account_slug',
-                'payment_service_providers_slug',
-                'currency_code'
             ])
             ->leftJoin('payment_accounts', 'payments.payment_account_id', 'payment_accounts.id')
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')

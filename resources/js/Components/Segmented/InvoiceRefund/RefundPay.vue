@@ -3,8 +3,6 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { trans } from "laravel-vue-i18n"
 import { inject, computed, watch, ref } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
-import PureInput from "@/Components/Pure/PureInput.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
@@ -12,7 +10,7 @@ import { Link, router } from "@inertiajs/vue3"
 import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faSave } from "@far"
-import { faPlus, faMinus, faArrowRight } from "@fal"
+import { faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import BluePrintTableRefund from "@/Components/Segmented/InvoiceRefund/BlueprintTableRefund"
 import PureTable from "@/Components/Pure/PureTable/PureTable.vue"
@@ -23,8 +21,9 @@ import Column from "primevue/column"
 import { useLocaleStore } from "@/Stores/locale"
 import ActionCell from "./ActionCell.vue"
 import { InputText } from "primevue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
-library.add(faCheck, faSave, faPlus, faMinus, faArrowRight)
+library.add(faCheck, faSave, faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank)
 
 
 const props = defineProps<{
@@ -59,14 +58,16 @@ const emits = defineEmits<{
     (e: "onPayInOnClick"): void
 }>()
 
+const layout = inject('layout', layoutStructure)
+
 const _formCell = ref({})
 const locale = inject("locale", aikuLocaleStructure)
 const _PureTable = ref(null)
-const errorInvoicePayment = ref({
-    payment_method: null,
-    payment_amount: null,
-    payment_reference: null
-})
+// const errorInvoicePayment = ref({
+//     payment_method: null,
+//     payment_amount: null,
+//     payment_reference: null
+// })
 
 const paymentData = ref({
     payment_method: null as number | null,
@@ -96,45 +97,45 @@ const fetchPaymentMethod = async () => {
 }
 const isLoadingPayment = ref(false)
 const errorPaymentMethod = ref<null | unknown>(null)
-const onSubmitPayment = () => {
-    router[props.routes.submit_route.method || "post"](
-        route(props.routes.submit_route.name, {
-            ...props.routes.submit_route.parameters,
-            paymentAccount: paymentData.value.payment_method
-        }),
-        {
-            amount: paymentData.value.payment_amount,
-            reference: paymentData.value.payment_reference,
-            status: "success",
-            state: "completed"
-        },
-        {
-            onStart: () => isLoadingPayment.value = true,
-            onFinish: () => {
-                isLoadingPayment.value = false
-            },
-            onSuccess: () => {
-                paymentData.value.payment_method = null,
-                    paymentData.value.payment_amount = 0,
-                    paymentData.value.payment_reference = ""
-                isOpenModalInvoice.value = false
-                notify({
-                    title: trans("Success"),
-                    text: "Successfully add payment invoice",
-                    type: "success"
-                })
-            },
-            onError: (error) => {
-                errorPaymentMethod.value = error
-                notify({
-                    title: trans("Something went wrong"),
-                    text: error.message,
-                    type: "error"
-                })
-            }
-        }
-    )
-}
+// const onSubmitPayment = () => {
+//     router[props.routes.submit_route.method || "post"](
+//         route(props.routes.submit_route.name, {
+//             ...props.routes.submit_route.parameters,
+//             paymentAccount: paymentData.value.payment_method
+//         }),
+//         {
+//             amount: paymentData.value.payment_amount,
+//             reference: paymentData.value.payment_reference,
+//             status: "success",
+//             state: "completed"
+//         },
+//         {
+//             onStart: () => isLoadingPayment.value = true,
+//             onFinish: () => {
+//                 isLoadingPayment.value = false
+//             },
+//             onSuccess: () => {
+//                 paymentData.value.payment_method = null,
+//                     paymentData.value.payment_amount = 0,
+//                     paymentData.value.payment_reference = ""
+//                 isOpenModalInvoice.value = false
+//                 notify({
+//                     title: trans("Success"),
+//                     text: "Successfully add payment invoice",
+//                     type: "success"
+//                 })
+//             },
+//             onError: (error) => {
+//                 errorPaymentMethod.value = error
+//                 notify({
+//                     title: trans("Something went wrong"),
+//                     text: error.message,
+//                     type: "error"
+//                 })
+//             }
+//         }
+//     )
+// }
 
 watch(paymentData, () => {
     if (errorPaymentMethod.value) {
@@ -253,80 +254,80 @@ watch(paymentRefund, () => {
     }
 })
 
-const generateRefundRoute = (refundSlug: string) => {
+// const generateRefundRoute = (refundSlug: string) => {
 
-    if (route().current() === 'grp.org.fulfilments.show.crm.customers.show.invoices.show') {
-        return route("grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show", {
-            fulfilment: route().params?.fulfilment,
-            fulfilmentCustomer: route().params?.fulfilmentCustomer,
-            organisation: route().params?.organisation,
-            shop: route().params?.shop,
-            refund: refundSlug,
-            invoice: props.invoice_pay.invoice_slug
-        })
-    }
-
-
-    if (route().params?.fulfilment) {
-        return route("grp.org.fulfilments.show.operations.invoices.show.refunds.show", {
-            organisation: route().params?.organisation,
-            fulfilment: route().params?.fulfilment,
-            invoice: props.invoice_pay.invoice_slug,
-            refund: refundSlug
-        })
-    } else {
-        return route("grp.org.accounting.invoices.show.refunds.show", {
-            organisation: route().params?.organisation,
-            invoice: props.invoice_pay.invoice_slug,
-            refund: refundSlug
-        })
-    }
-
-}
+//     if (route().current() === 'grp.org.fulfilments.show.crm.customers.show.invoices.show') {
+//         return route("grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show", {
+//             fulfilment: route().params?.fulfilment,
+//             fulfilmentCustomer: route().params?.fulfilmentCustomer,
+//             organisation: route().params?.organisation,
+//             shop: route().params?.shop,
+//             refund: refundSlug,
+//             invoice: props.invoice_pay.invoice_slug
+//         })
+//     }
 
 
-const generateInvoiceRoute = () => {
-    if (route().current() === 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show') {
-        return route("grp.org.fulfilments.show.crm.customers.show.invoices.show", {
-            fulfilment: route().params?.fulfilment,
-            fulfilmentCustomer: route().params?.fulfilmentCustomer,
-            organisation: route().params?.organisation,
-            shop: route().params?.shop,
-            invoice: props.invoice_pay.invoice_slug
-        })
-    }
+//     if (route().params?.fulfilment) {
+//         return route("grp.org.fulfilments.show.operations.invoices.show.refunds.show", {
+//             organisation: route().params?.organisation,
+//             fulfilment: route().params?.fulfilment,
+//             invoice: props.invoice_pay.invoice_slug,
+//             refund: refundSlug
+//         })
+//     } else {
+//         return route("grp.org.accounting.invoices.show.refunds.show", {
+//             organisation: route().params?.organisation,
+//             invoice: props.invoice_pay.invoice_slug,
+//             refund: refundSlug
+//         })
+//     }
+
+// }
 
 
-    if (route().params?.fulfilment) {
-        return route("grp.org.fulfilments.show.operations.invoices.show", {
-            organisation: route().params?.organisation,
-            fulfilment: route().params?.fulfilment,
-            invoice: props.invoice_pay.invoice_slug
-        })
-    } else {
-        switch (route().current()) {
-            case 'grp.org.shops.show.dashboard.invoices.refunds.show':
-                return route("grp.org.shops.show.dashboard.invoices.show", {
-                    organisation: route().params?.organisation,
-                    shop: route().params?.shop,
-                    invoice: props.invoice_pay.invoice_slug
-                })
-            default:
-                return route("grp.org.accounting.invoices.show", {
-                    organisation: route().params?.organisation,
-                    invoice: props.invoice_pay.invoice_slug
-                })
-        }
-    }
-}
+// const generateInvoiceRoute = () => {
+//     if (route().current() === 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show') {
+//         return route("grp.org.fulfilments.show.crm.customers.show.invoices.show", {
+//             fulfilment: route().params?.fulfilment,
+//             fulfilmentCustomer: route().params?.fulfilmentCustomer,
+//             organisation: route().params?.organisation,
+//             shop: route().params?.shop,
+//             invoice: props.invoice_pay.invoice_slug
+//         })
+//     }
 
-const generateShowOrderRoute = () => {
-    return route("grp.org.shops.show.ordering.orders.show", {
-        organisation: route().params?.organisation,
-        shop: props.invoice_pay.shop_slug,
-        order: props.invoice_pay.order_slug
-    })
-}
+
+//     if (route().params?.fulfilment) {
+//         return route("grp.org.fulfilments.show.operations.invoices.show", {
+//             organisation: route().params?.organisation,
+//             fulfilment: route().params?.fulfilment,
+//             invoice: props.invoice_pay.invoice_slug
+//         })
+//     } else {
+//         switch (route().current()) {
+//             case 'grp.org.shops.show.dashboard.invoices.refunds.show':
+//                 return route("grp.org.shops.show.dashboard.invoices.show", {
+//                     organisation: route().params?.organisation,
+//                     shop: route().params?.shop,
+//                     invoice: props.invoice_pay.invoice_slug
+//                 })
+//             default:
+//                 return route("grp.org.accounting.invoices.show", {
+//                     organisation: route().params?.organisation,
+//                     invoice: props.invoice_pay.invoice_slug
+//                 })
+//         }
+//     }
+// }
+
+// const generateShowOrderRoute = () => {
+//     return route("grp.org.shops.show.ordering.orders.show", {
+//         organisation: route().params?.organisation,
+//         shop: props.invoice_pay.shop_slug,
+//         order: props.invoice_pay.order_slug
+//     })
+// }
 
 const totalAmount = computed(() => {
     return _PureTable.value ? _PureTable.value?.data.reduce((sum, item) => sum + Number(item.amount || 0), 0) : 0
@@ -369,14 +370,116 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
         _formCell.value[index].form.refund_amount = -value
 };
 
+const listLoadingIconActions = ref<string[]>([])
+const onClickManual = (paymentMethod) => {
+    router[paymentMethod.balance_refund_route.method || 'patch'](
+        route(paymentMethod.manual_refund_route.name, paymentMethod.manual_refund_route.parameters),
+        {
+            data: 'qqq'
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                listLoadingIconActions.value.push(paymentMethod.id)
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set location"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== paymentMethod.id)
+            },
+        }
+    )
+    console.log('Manual clicked', paymentMethod)
+}
 
+const onClickBalance = (paymentMethod, loadingKey: string) => {
+    router[paymentMethod.balance_refund_route.method || 'patch'](
+        route(paymentMethod.balance_refund_route.name, paymentMethod.balance_refund_route.parameters),
+        {
+            data: 'qqq'
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                listLoadingIconActions.value.push(`${paymentMethod.id}-${loadingKey}`)
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set location"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
+            },
+        }
+    )
+    console.log('Manual clicked', paymentMethod)
+}
+
+const onClickAutomatic = (paymentMethod, loadingKey: string) => {
+    router[paymentMethod.balance_refund_route.method || 'patch'](
+        route(paymentMethod.api_refund_route.name, paymentMethod.api_refund_route.parameters),
+        {
+            data: 'qqq'
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                listLoadingIconActions.value.push(`${paymentMethod.id}-${loadingKey}`)
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set location"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
+            },
+        }
+    )
+    console.log('Manual clicked', paymentMethod)
+}
 </script>
 
 <template>
     <dd class="relative w-full flex flex-col border rounded-md border-gray-300 overflow-hidden">
         <dl class="">
 
-            <div v-if="invoice_pay.order_reference"
+            <!-- Field: Total -->
+            <!-- <div v-if="invoice_pay.order_reference"
                 class="border-b border-gray-300 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt v-tooltip="invoice?.reference ? trans('Total of invoice :invoice', { invoice: invoice?.reference }) : ''"
                     class="text-sm/6 font-medium ">
@@ -385,10 +488,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                     {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
                 </dd>
-            </div>
-
-
-
+            </div> -->
 
 
             <!-- Field: Excess payment -->
@@ -443,7 +543,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                     <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
                         v-tooltip="trans('No need to pay anything')" icon="far fa-check" class="text-green-500"
                         fixed-width aria-hidden="true" />
-                    <span :class="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">
+                    <span class="ml-2" xclass="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">
                         {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay)) }}
                     </span>
                 </dd>
@@ -521,7 +621,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
 
                     <div v-if="paymentRefund.payment_method == 'invoice_payment_method'" class="col-span-2">
                         <!-- Title & Refund Summary -->
-                        <div class="mb-4 border-b border-gray-300 pb-3">
+                        <!-- <div class="mb-4 border-b border-gray-300 pb-3">
                             <h3 class="text-xl font-semibold text-gray-800">Refund Details</h3>
                             <div class="mt-2 flex items-center text-lg">
                                 <span class="text-gray-600 font-medium">Need to Refund Outside AWF Account:</span>
@@ -533,7 +633,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                     }}
                                 </span>
                             </div>
-                        </div>
+                        </div> -->
 
                         <!-- Table Container -->
                         <div class="overflow-x-auto border-t border-gray-300">
@@ -563,6 +663,23 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                                 <template #refunded="{ data }">
                                     <div class="text-gray-500">
                                         {{ useLocaleStore().currencyFormat(data.currency_code, data.refunded) }}
+                                    </div>
+                                </template>
+
+                                <!-- Column: Actions -->
+                                <template #actions="{ data }">
+                                    <div v-if="layout.app.environment === 'local'" class="text-gray-500 flex gap-x-2">
+                                        <div @click="() => onClickManual(data, 'manual')" class="hover:text-blue-700 cursor-pointer">
+                                            <FontAwesomeIcon icon="fal fa-digging" class="" fixed-width aria-hidden="true" />
+                                        </div>
+
+                                        <div @click="() => onClickBalance(data, 'balance')" class="hover:text-blue-700 cursor-pointer">
+                                            <FontAwesomeIcon icon="fal fa-piggy-bank" class="" fixed-width aria-hidden="true" />
+                                        </div>
+
+                                        <div v-if="data.api_refund" @click="() => onClickAutomatic(data, 'automatic')" class="hover:text-blue-700 cursor-pointer">
+                                            <FontAwesomeIcon icon="fal fa-robot" class="" fixed-width aria-hidden="true" />
+                                        </div>
                                     </div>
                                 </template>
 
@@ -605,14 +722,15 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                     </div>
                 </div>
 
+                <!-- Button: Submit -->
                 <div class="mt-6 mb-4 relative flex justify-end">
                     <Button v-if="paymentRefund.payment_method == 'credit_balance'"
                         @click="() => onSubmitPaymentRefund()" label="Submit" :loading="isLoadingPayment"
                         :icon="faSave" />
                     <Transition name="spin-to-down">
-                        <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{
-                            errorPaymentMethod
-                        }}</p>
+                        <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">
+                            *{{ errorPaymentMethod }}
+                        </p>
                     </Transition>
                 </div>
             </div>

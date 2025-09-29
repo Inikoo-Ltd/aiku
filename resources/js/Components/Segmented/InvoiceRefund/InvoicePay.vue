@@ -377,7 +377,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
         <dl class="">
 
             <!-- Field: Total -->
-            <div v-if="invoice_pay.order_reference"
+            <!-- <div v-if="invoice_pay.order_reference"
                 class="border-b border-gray-300 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt v-tooltip="invoice?.reference ? trans('Total of invoice :invoice', { invoice: invoice?.reference }) : ''" class="text-sm/6 font-medium ">
                     {{ trans("Total") }}
@@ -385,7 +385,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                     {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
                 </dd>
-            </div>
+            </div> -->
 
             <!-- Field: Excess payment -->
             <div v-if="Number(invoice_pay.total_excess_payment) > 0" class="border-b border-gray-300">
