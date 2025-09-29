@@ -210,6 +210,13 @@ const taxNumberStatusText = computed(() => {
     return trans('Pending')
 })
 
+const generateShowOrderRoute = () => {
+    return route("grp.org.shops.show.ordering.orders.show", {
+        organisation: route().params?.organisation,
+        shop: props.invoice_pay.shop_slug,
+        order: props.invoice_pay.order_slug
+    });
+};
 </script>
 
 
@@ -426,14 +433,25 @@ const taxNumberStatusText = computed(() => {
                     </component>
                 </dl>
 
-                <dl v-tooltip="trans('Invoice date')"
+                <dl
                     class="flex items-center flex-none gap-x-2 w-fit">
-                    <dt class="flex-none">
-                        <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true"
-                                         class="text-gray-500"/>
+                    <dt v-tooltip="trans('Invoice date')" class="flex-none">
+                        <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" class="text-gray-500"/>
                     </dt>
-                    <dd class="text-base text-gray-500" :class='"ff"'>
+                    <dd class="text-base text-gray-500">
                         {{ useFormatTime(props.invoice.date) }}
+                    </dd>
+                </dl>
+
+                <dl
+                    class="flex items-center flex-none gap-x-2 w-fit">
+                    <dt v-tooltip="trans('Order')" class="flex-none">
+                        <FontAwesomeIcon icon="fal fa-shopping-cart" fixed-width aria-hidden="true" class="text-gray-500"/>
+                    </dt>
+                    <dd class="text-base text-gray-500 -ml-1">
+                        <Link :href="generateShowOrderRoute()" class="secondaryLink">
+                            {{ invoice_pay.order_reference }}
+                        </Link>
                     </dd>
                 </dl>
 

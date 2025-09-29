@@ -375,13 +375,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
             <div v-if="invoice_pay.order_reference"
                  class="border-b border-gray-300 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium ">
-                    <FontAwesomeIcon v-tooltip="trans('Invoice')" icon="fal fa-shopping-cart"
-                                     class="text-gray-400" fixed-width aria-hidden="true"/>
-                    <!--   {{ invoice_pay.invoice_reference }} -->
-                    <Link :href="generateShowOrderRoute()" class="secondaryLink">{{
-                            invoice_pay.order_reference
-                        }}
-                    </Link>
+                    {{ trans("Total") }}
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                     {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
