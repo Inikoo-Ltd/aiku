@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import Modal from '@/Components/Utils/Modal.vue'
+import { onMounted, ref } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { router } from '@inertiajs/vue3'
+import Dialog from 'primevue/dialog'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -77,6 +77,7 @@ const onCreateNewBrand = () => {
 const isModalUpdateBrand = ref(false)
 const isLoadingUpdateBrand = ref(false)
 const selectedBrandToUpdate = ref<any>(null)
+const _PureMultiselectInfiniteScroll = ref(null)
 const onEditBrand = () => {
     router[props.fieldData?.brand_routes.update_brand.method || 'patch'](
         route(props.fieldData?.brand_routes.update_brand.name, {
@@ -114,12 +115,18 @@ const onEditBrand = () => {
         }
     )
 }
+
+onMounted(()=>{
+    if(_PureMultiselectInfiniteScroll.value)_PureMultiselectInfiniteScroll.value.fetchProductList()
+})
+
 </script>
 
 <template>
     <div v-if="props.fieldData?.brand_routes?.index_brand" class="w-full max-w-md py-4 gap-x-3 ">
         <div class="w-full">
             <PureMultiselectInfiniteScroll
+                ref="_PureMultiselectInfiniteScroll"
                 v-model="form[fieldName]"
                 @update:modelValue="(e) => set(form, [fieldName], e)"
                 :fetchRoute="props.fieldData.brand_routes.index_brand"
@@ -127,8 +134,10 @@ const onEditBrand = () => {
                 valueProp="id"
                 :initOptions="form[fieldName] ? form[fieldName] : undefined"
             >
-                <template #singlelabel="{ value }">
-                    <div class="w-full text-left pl-4">{{ value.name }}</div>
+               <template #singlelabel="{ value }">
+                    <div class="w-full text-left pl-4">
+                        {{ value?.name || `#${value?.id}` }}
+                    </div>
                 </template>
 
                 <template #option="{ option }">
@@ -172,8 +181,8 @@ const onEditBrand = () => {
         </div>
     </div>
 
-    <!-- Modal: create new brand -->
-    <Modal :isOpen="isModalBrand" @onClose="isModalBrand = false" width="w-[600px]">
+    <!-- Dialog: create new brand -->
+    <Dialog v-model:visible="isModalBrand" modal :style="{ width: '600px' }" :closable="true">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
                 <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Create new brand') }}</h2>
@@ -213,10 +222,10 @@ const onEditBrand = () => {
                     :loading="isLoadingCreateBrand" full />
             </div>
         </div>
-    </Modal>
+    </Dialog>
 
-    <!-- Modal: Edit brand -->
-    <Modal :isOpen="isModalUpdateBrand" @onClose="isModalUpdateBrand = false" width="w-[600px]">
+    <!-- Dialog: Edit brand -->
+    <Dialog v-model:visible="isModalUpdateBrand" modal :style="{ width: '600px' }" :closable="true">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center">
                 <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans('Edit brand') }}</h2>
@@ -262,5 +271,5 @@ const onEditBrand = () => {
                     :loading="isLoadingUpdateBrand" full />
             </div>
         </div>
-    </Modal>
+    </Dialog>
 </template>

@@ -33,7 +33,8 @@ interface ProductItem {
         org_currency?: string;
         stock?: number;
         price?: number;
-        has_org_stocks?: boolean; // keep consistent with your v-model usage
+        rrp?: number;
+        has_org_stocks?: boolean; 
     };
 }
 
@@ -72,6 +73,16 @@ function getMargin(item: ProductItem) {
     return Number((((p - cost) / p) * 100).toFixed(1));
 }
 
+// helper for RRP margin
+function getRrpMargin(item: ProductItem) {
+    const rrp = Number(item.product?.rrp);
+    const cost = Number(item.product?.org_cost);
+
+    if (isNaN(rrp) || rrp === 0) return 0.000;
+    if (isNaN(cost) || cost === 0) return 100.000;
+
+    return Number((((rrp - cost) / rrp) * 100).toFixed(1));
+}
 
 // computed for "check all"
 const allChecked = computed({
@@ -103,27 +114,18 @@ const allChecked = computed({
                 <thead>
                     <tr class="bg-gray-50 text-left font-medium text-gray-600 border-b border-gray-200">
                         <th class="px-2 py-1">Shop</th>
-                        <th class="px-2 py-1 text-center">
-                            <div class="flex items-center justify-center gap-1">
-                                <span>Stock</span>
-                            </div>
-                        </th>
+                        <th class="px-2 py-1 text-center">Stock</th>
                         <th class="px-2 py-1 text-center">
                             <div class="flex items-center justify-center gap-1">
                                 <span>Create Webpage?</span>
-                                <InformationIcon :information="trans('If checked, will create the product webpage')" />
                                 <input type="checkbox" v-model="allChecked" />
                             </div>
                         </th>
-                        <th class="px-2 py-1">
-                            <div class="flex justify-center items-center">Org cost</div>
-                        </th>
+                        <th class="px-2 py-1 text-center">Org cost</th>
                         <th class="px-2 py-1">Price</th>
+                        <th class="px-2 py-1 text-center">Margin</th>
                         <th class="px-2 py-1">Rrp</th>
-                        <th class="px-2 py-1 text-center">
-                            <div class="flex justify-center items-center">Margin</div>
-                        </th>
-                       
+                        <th class="px-2 py-1 text-center">Rrp Margin</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -131,45 +133,24 @@ const allChecked = computed({
                         <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
                             {{ item.name }}
                         </td>
-                        <td class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
-                            <div class="flex justify-center items-end">
-                                {{ item.product?.stock }}
-                            </div>
+                        <td class="px-2 py-1 border-b border-gray-100 text-center">
+                            {{ item.product?.stock }}
                         </td>
-                        <td class="px-2 py-1 border-b border-gray-100">
-                            <div class="flex justify-center items-center">
-                                <input type="checkbox" v-model="item.product.has_org_stocks"
-                                    @change="emits('change', modelValue)" />
-                            </div>
+                        <td class="px-2 py-1 border-b border-gray-100 text-center">
+                            <input type="checkbox" v-model="item.product.has_org_stocks"
+                                @change="emits('change', modelValue)" />
                         </td>
-                        <td class="px-2 py-1 border-b border-gray-100">
-                            <div class="flex justify-center items-center">
-                                {{ locale.currencyFormat(item.product?.org_currency || currency,
-                                item.product?.org_cost)}}
-                            </div>
+                        <td class="px-2 py-1 border-b border-gray-100 text-center">
+                            {{ locale.currencyFormat(item.product?.org_currency || currency, item.product?.org_cost) }}
                         </td>
                         <td class="px-2 py-1 border-b w-48">
-                            <div class="flex items-center gap-2">
-                                <InputNumber v-model="item.product.price" mode="currency"
-                                    :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
-                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs"
-                                    @input="emits('change', modelValue)" />
-                            </div>
-                             <small v-if="form?.errors[`shop_products.${item.id}.price`]"
-                                    class="text-red-500 flex items-center gap-1">
-                                    {{ form.errors[`shop_products.${item.id}.price`].join(", ") }}
-                            </small>
-                        </td>
-                        <td class="px-2 py-1 border-b w-48">
-                            <div class="flex items-center gap-2">
-                                <InputNumber v-model="item.product.rrp" mode="currency"
-                                    :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
-                                    :step="0.25" :showButtons="true" inputClass="w-full text-xs"
-                                    @input="emits('change', modelValue)" />
-                            </div>
-                            <small v-if="form?.errors[`shop_products.${item.id}.rrp`]"
-                                    class="text-red-500 flex items-center gap-1">
-                                    {{ form.errors[`shop_products.${item.id}.rrp`].join(", ") }}
+                            <InputNumber v-model="item.product.price" mode="currency"
+                                :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
+                                :step="0.25" :showButtons="true" inputClass="w-full text-xs"
+                                @input="emits('change', modelValue)" />
+                            <small v-if="form?.errors[`shop_products.${item.id}.price`]"
+                                class="text-red-500 flex items-center gap-1">
+                                {{ form.errors[`shop_products.${item.id}.price`].join(", ") }}
                             </small>
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100 text-center">
@@ -180,6 +161,25 @@ const allChecked = computed({
                             }" class="whitespace-nowrap text-xs inline-block w-16">
                                 {{ getMargin(item) + '%' }}
                             </span>
+                        </td>
+                        <td class="px-2 py-1 border-b w-48">
+                            <InputNumber v-model="item.product.rrp" mode="currency"
+                                :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
+                                :step="0.25" :showButtons="true" inputClass="w-full text-xs"
+                                @input="emits('change', modelValue)" />
+                            <small v-if="form?.errors[`shop_products.${item.id}.rrp`]"
+                                class="text-red-500 flex items-center gap-1">
+                                {{ form.errors[`shop_products.${item.id}.rrp`].join(", ") }}
+                            </small>
+                        </td>
+                        <td class="px-2 py-1 border-b border-gray-100 text-center">
+                                <span :class="{
+                                    'text-green-600 font-medium': getRrpMargin(item) > 0,
+                                    'text-red-600 font-medium': getRrpMargin(item) < 0,
+                                    'text-gray-500': getRrpMargin(item) === 0
+                                }" class="whitespace-nowrap text-xs inline-block w-16">
+                                    {{ getRrpMargin(item) + '%' }}
+                                </span>
                         </td>
                     </tr>
                 </tbody>
