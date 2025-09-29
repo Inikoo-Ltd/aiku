@@ -11,11 +11,11 @@ namespace App\Actions\Fulfilment;
 use App\Actions\Fulfilment\RecurringBill\ConsolidateRecurringBill;
 use App\Enums\Fulfilment\RecurringBill\RecurringBillStatusEnum;
 use App\Models\Fulfilment\RecurringBill;
-use Lorisleiva\Actions\Concerns\AsCommand;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class ConsolidateRecurringBills
 {
-    use AsCommand;
+    use AsAction;
 
     public string $commandSignature = 'current_recurring_bills:consolidate';
 

@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
+use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
 use App\Actions\Helpers\Intervals\ResetDailyIntervals;
@@ -138,6 +139,11 @@ class Kernel extends ConsoleKernel
         $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'SaveWebsitesSitemap',
         );
+
+        $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'ConsolidateRecurringBills',
+        );
+
     }
 
 
