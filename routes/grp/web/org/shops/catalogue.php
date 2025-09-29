@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Collection\UI\ShowCollection;
 use App\Actions\Catalogue\Product\GetProductUploadedImages;
 use App\Actions\Catalogue\Product\UI\CreateProduct;
 use App\Actions\Catalogue\Product\UI\EditProduct;
+use App\Actions\Catalogue\Product\UI\IndexOutOfStockProducts;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCatalogue;
 use App\Actions\Catalogue\Product\UI\IndexProductsInCollection;
 use App\Actions\Catalogue\Product\UI\IndexProductsInProductCategory;
@@ -53,6 +54,16 @@ Route::prefix('products')->as('products.')
 
         Route::prefix('orphan')->as('orphan_products.')->group(function () {
             Route::get('', IndexProductsWithNoFamily::class)->name('index');
+            Route::get('create', CreateProduct::class)->name('create');
+            Route::prefix('{product}')->group(function () {
+                Route::get('', ShowProduct::class)->name('show');
+                Route::get('images', GetProductUploadedImages::class)->name('images');
+                Route::get('edit', [EditProduct::class, 'inShop'])->name('edit');
+            });
+        });
+
+        Route::prefix('out-of-stock')->as('out_of_stock_products.')->group(function () {
+            Route::get('', IndexOutOfStockProducts::class)->name('index');
             Route::get('create', CreateProduct::class)->name('create');
             Route::prefix('{product}')->group(function () {
                 Route::get('', ShowProduct::class)->name('show');

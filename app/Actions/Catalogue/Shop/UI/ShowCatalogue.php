@@ -435,6 +435,20 @@ class ShowCatalogue extends OrgAction
                         "backgroundColor" => "#ff000011",
                         'value'           => $shop->stats->number_products_no_family,
                     ],
+                    [
+                        'label'           => __('Out Of Stock Products'),
+                        'is_negative'     => true,
+                        'route'           => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.out_of_stock_products.index',
+                            'parameters' => [
+                                'organisation' => $shop->organisation->slug,
+                                'shop'         => $shop->slug
+                            ]
+                        ],
+                        'icon'            => 'fal fa-cube',
+                        "backgroundColor" => "#ff000011",
+                        'value'           => $shop->stats->number_products_status_out_of_stock,
+                    ],
                 ]
 
             ]
