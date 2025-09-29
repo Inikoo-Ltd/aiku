@@ -29,7 +29,7 @@ const emit = defineEmits<{
 // ✅ Initialize inertia form dari props
 const form = useForm({
     tags: props.data?.tags?.map((item) => item.id) || [],
-    brands: props.data?.brands ? props.data?.brands[0].id : null,
+    brands: props.data?.brands[0] ? props.data?.brands[0].id : null,
 })
 
 const submit = async () => {

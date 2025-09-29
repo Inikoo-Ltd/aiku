@@ -231,8 +231,7 @@ const validImages = computed(() =>
 							{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.rrp) }}
 						</span>
 						<span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-							({{ ((data.product.data?.rrp - data.product.data?.price) / data.product.data?.price *
-								100).toFixed(2) }}%)
+							({{ (((data.product.data?.rrp - data.product.data?.price) / data.product.data?.rrp) * 100).toFixed(2) }}%)
 						</span>
 					</dd>
 				</div>

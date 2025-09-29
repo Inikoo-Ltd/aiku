@@ -9,6 +9,7 @@ import { useFormatTime } from "@/Composables/useFormatTime"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
+import { faTag } from "@far"
 
 interface Stats {
 	amount: number | null
@@ -81,22 +82,22 @@ interface PropsData {
 }
 
 const props = withDefaults(
-  defineProps<{
-    data: PropsData
-    gpsr?: Gpsr
-    parts?: { id: number; name: string }[]
-    type: string
-	video?: string
-	hide?:string[]
-    properties?: {
-      country_of_origin?: { code: string; name: string }
-      tariff_code?: string
-      duty_rate?: string
-    }
-  }>(),
-  {
-    type: "product", // default type is 'product' (alternative: 'trade_unit')
-  }
+	defineProps<{
+		data: PropsData
+		gpsr?: Gpsr
+		parts?: { id: number; name: string }[]
+		type: string
+		video?: string
+		hide?: string[]
+		properties?: {
+			country_of_origin?: { code: string; name: string }
+			tariff_code?: string
+			duty_rate?: string
+		}
+	}>(),
+	{
+		type: "product", // default type is 'product' (alternative: 'trade_unit')
+	}
 )
 
 library.add(
@@ -168,21 +169,21 @@ const getActiveHazards = () => {
 
 // --- Normalize video URL to embed form ---
 function normalizeVideoUrl(url: string): string {
-  if (!url) return ""
+	if (!url) return ""
 
-  // YouTube
-  const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)
-  if (ytMatch) {
-    return `https://www.youtube.com/embed/${ytMatch[1]}`
-  }
+	// YouTube
+	const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)
+	if (ytMatch) {
+		return `https://www.youtube.com/embed/${ytMatch[1]}`
+	}
 
-  // Vimeo
-  const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
-  if (vimeoMatch) {
-    return `https://player.vimeo.com/video/${vimeoMatch[1]}`
-  }
+	// Vimeo
+	const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
+	if (vimeoMatch) {
+		return `https://player.vimeo.com/video/${vimeoMatch[1]}`
+	}
 
-  return url // fallback
+	return url // fallback
 }
 
 const embedUrl = computed(() => normalizeVideoUrl(props.video || ""))
@@ -209,42 +210,44 @@ console.log('product summary : ', props)
 						<dt class="text-gray-500">{{ trans("Code") }}</dt>
 						<dd class="font-medium">{{ data?.code }}</dd>
 					</div>
-					<div v-if="!hide?.includes('code')"  class="flex justify-between flex-wrap gap-1">
+					<div v-if="!hide?.includes('code')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Product Name") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.name }}</dd>
 					</div>
-					<div  v-if="!hide?.includes('cpnp')" class="flex justify-between flex-wrap gap-1">
+					<div v-if="!hide?.includes('cpnp')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
 						<dd class="font-medium">-</dd>
 					</div>
-					<div  v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
+					<div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("UFI (Poison Centres)") }}</dt>
 						<dd class="font-medium">-</dd>
 					</div>
-					<div  v-if="!hide?.includes('created_at')" class="flex justify-between flex-wrap gap-1">
+					<div v-if="!hide?.includes('created_at')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Added date") }}</dt>
 						<dd class="font-medium">{{ useFormatTime(data?.created_at) }}</dd>
 					</div>
-					<div  v-if="!hide?.includes('stock')" class="flex justify-between flex-wrap gap-1">
+					<div v-if="!hide?.includes('stock')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Stock") }}</dt>
 						<dd class="font-medium">
 							{{ data?.stock }} {{ data?.unit }}
 						</dd>
 					</div>
-					<div v-if="type == 'product' && !hide?.includes('price')" class="flex justify-between flex-wrap gap-1">
+					<div v-if="type == 'product' && !hide?.includes('price')"
+						class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Price") }}</dt>
 						<dd class="font-semibold text-green-600">
 							{{ locale.currencyFormat(data?.currency_code, data?.price) }}
 						</dd>
 					</div>
-					<div v-if="type == 'product' && !hide?.includes('rrp')" class="flex justify-between flex-wrap gap-1">
+					<div v-if="type == 'product' && !hide?.includes('rrp')"
+						class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">RRP</dt>
 						<dd class="font-semibold">
 							{{ locale.currencyFormat(data?.currency_code, data?.rrp) }}
 							<span class="ml-1 text-xs text-gray-500">
 								({{
-								((data?.rrp - data?.price) /
-								data?.price * 100).toFixed(2)
+									((data?.rrp - data?.price) /
+										data?.price * 100).toFixed(2)
 								}}%)
 							</span>
 						</dd>
@@ -263,17 +266,19 @@ console.log('product summary : ', props)
 					</div>
 
 					<!-- Combined Description -->
-					<div v-if="data?.description_title || data?.description || data?.description_extra" class="space-y-2">
+					<div v-if="data?.description_title || data?.description || data?.description_extra"
+						class="space-y-2">
 						<dt class="text-gray-500">{{ trans("Description") }}</dt>
 						<dd class="font-medium">
 							<div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
 								<div v-if="!showFullDescription && data?.description_extra">
 									<!-- Show title and description, hide extra -->
-									<div v-if="data?.description_title" class="text-base font-semibold text-gray-700 leading-relaxed mb-3" 
-										 v-html="data?.description_title">
+									<div v-if="data?.description_title"
+										class="text-base font-semibold text-gray-700 leading-relaxed mb-3"
+										v-html="data?.description_title">
 									</div>
-									<div v-if="data?.description" class="text-sm text-gray-700 leading-relaxed" 
-										 v-html="data?.description">
+									<div v-if="data?.description" class="text-sm text-gray-700 leading-relaxed"
+										v-html="data?.description">
 									</div>
 									<button @click="showFullDescription = true"
 										class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-2">
@@ -283,17 +288,17 @@ console.log('product summary : ', props)
 								</div>
 								<div v-else>
 									<!-- Show all content -->
-									<div v-if="data?.description_title" class="text-base font-semibold text-gray-700 leading-relaxed mb-3" 
-										 v-html="data?.description_title">
+									<div v-if="data?.description_title"
+										class="text-base font-semibold text-gray-700 leading-relaxed mb-3"
+										v-html="data?.description_title">
 									</div>
-									<div v-if="data?.description" class="text-sm text-gray-700 leading-relaxed mb-3" 
-										 v-html="data?.description">
+									<div v-if="data?.description" class="text-sm text-gray-700 leading-relaxed mb-3"
+										v-html="data?.description">
 									</div>
-									<div v-if="data?.description_extra" class="text-sm text-gray-700 leading-relaxed" 
-										 v-html="data?.description_extra">
+									<div v-if="data?.description_extra" class="text-sm text-gray-700 leading-relaxed"
+										v-html="data?.description_extra">
 									</div>
-									<button v-if="data?.description_extra"
-										@click="showFullDescription = false"
+									<button v-if="data?.description_extra" @click="showFullDescription = false"
 										class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center gap-1 mt-2">
 										<FontAwesomeIcon icon="fal fa-chevron-up" />
 										{{ trans("Read less") }}
@@ -345,7 +350,48 @@ console.log('product summary : ', props)
 								</div>
 							</AccordionContent>
 						</AccordionPanel>
-						<AccordionPanel v-if="!hide?.includes('outer')" value="2">
+						<AccordionPanel v-if="!hide?.includes('brands_tags') && type == 'trade_unit'" value="2">
+							<AccordionHeader>
+								<div class="flex items-center gap-2">
+									<span class="font-medium text-base">{{ trans("Brands & Tags") }}</span>
+									<FontAwesomeIcon :icon="faTag" class="text-orange-500" />
+								</div>
+							</AccordionHeader>
+							<AccordionContent>
+								<div class="space-y-3 py-2">
+									<!-- Brands -->
+									<div class="flex justify-between items-start gap-3">
+										<dt class="text-gray-500 whitespace-nowrap">{{ trans("Brands") }}</dt>
+										<dd class="font-medium flex flex-wrap gap-1">
+											<span
+												v-for="brand in data.brands"
+												:key="brand.id"
+												v-tooltip="'brand'"
+												class="px-2 py-0.5 rounded-full text-xs bg-blue-50 text-blue-600 border border-blue-100"
+											>
+												{{ brand.name }}
+											</span>
+										</dd>
+									</div>
+
+									<!-- Tags -->
+									<div class="flex justify-between items-start gap-3">
+										<dt class="text-gray-500 whitespace-nowrap">{{ trans("Tags") }}</dt>
+										<dd class="font-medium flex flex-wrap gap-1">
+											<span
+												v-for="tag in data.tags"
+												:key="tag.id"
+												v-tooltip="'tag'"
+												class="px-2 py-0.5 rounded-full text-xs bg-green-100 bg-green-50 border border-blue-100"
+											>
+												{{ tag.name }}
+											</span>
+										</dd>
+									</div>
+								</div>
+							</AccordionContent>
+						</AccordionPanel>
+						<AccordionPanel v-if="!hide?.includes('outer')" value="3">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("Outer") }}</span>
@@ -375,7 +421,7 @@ console.log('product summary : ', props)
 								</div>
 							</AccordionContent>
 						</AccordionPanel>
-						<AccordionPanel v-if="!hide?.includes('properties')" value="3">
+						<AccordionPanel v-if="!hide?.includes('properties')" value="4">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("Properties") }}</span>
@@ -401,7 +447,7 @@ console.log('product summary : ', props)
 													:src="'/flags/' + properties?.country_of_origin.code.toLowerCase() + '.png'"
 													:alt="`Bendera ${'us'}`" loading="lazy" />
 												<span class="ml-2">{{ properties.country_of_origin.name
-													}}</span>
+												}}</span>
 											</div>
 											<span v-else>-</span>
 										</dd>
@@ -432,7 +478,7 @@ console.log('product summary : ', props)
 								</div>
 							</AccordionContent>
 						</AccordionPanel>
-						<AccordionPanel  v-if="!hide?.includes('health')" value="4">
+						<AccordionPanel v-if="!hide?.includes('health')" value="5">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("Health & Safety") }}</span>
@@ -474,11 +520,11 @@ console.log('product summary : ', props)
 								</div>
 							</AccordionContent>
 						</AccordionPanel>
-						<AccordionPanel value="5" v-if="gpsr">
+						<AccordionPanel value="6" v-if="gpsr">
 							<AccordionHeader>
 								<div class="flex items-center gap-2">
 									<span class="font-medium text-base">{{ trans("GPSR (if empty will use Part GPSR)")
-										}}</span>
+									}}</span>
 									<FontAwesomeIcon icon="fal fa-shield-alt" class="text-blue-500" />
 								</div>
 							</AccordionHeader>
@@ -491,7 +537,7 @@ console.log('product summary : ', props)
 												<dt class="text-gray-500 text-sm">{{ trans("Manufacturer") }}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
 													<span v-if="gpsr?.manufacturer">{{
-														gpsr?.manufacturer}}</span>
+														gpsr?.manufacturer }}</span>
 													<FontAwesomeIcon v-else icon="fal fa-info-circle"
 														class="text-gray-400"
 														v-tooltip="trans('No manufacturer specified')" />
@@ -511,7 +557,7 @@ console.log('product summary : ', props)
 
 											<div class="flex justify-between items-start">
 												<dt class="text-gray-500 text-sm">{{ trans("Class & category of danger")
-													}}</dt>
+												}}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
 													<span v-if="gpsr?.gpsr_class_category_danger">{{
 														gpsr?.gpsr_class_category_danger }}</span>
@@ -523,7 +569,7 @@ console.log('product summary : ', props)
 
 											<div class="flex justify-between items-start">
 												<dt class="text-gray-500 text-sm">{{ trans("Product GPSR Languages")
-													}}</dt>
+												}}</dt>
 												<dd class="font-medium text-sm text-right flex-1 ml-2">
 													<span v-if="gpsr?.product_languages">{{
 														gpsr?.product_languages }}</span>
