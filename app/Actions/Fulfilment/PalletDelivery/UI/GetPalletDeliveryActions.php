@@ -135,7 +135,7 @@ class GetPalletDeliveryActions
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Submit'),
-                    'label'   => __('submit'),
+                    'label'   => __('Submit'),
                     'key'     => 'action',
                     'route'   => [
                         'method'     => 'post',

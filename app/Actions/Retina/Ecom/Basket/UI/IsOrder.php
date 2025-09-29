@@ -42,9 +42,48 @@ trait IsOrder
             ];
         }
 
+        $invoicesData=[];
+        foreach ($order->invoices as $invoice) {
+            if (request()->routeIs('retina.*')) {
+                $routeShow     = [
+                    'name'       => 'retina.dropshipping.invoices.show',
+                    'parameters' => [
+                        'invoice' => $invoice->slug,
+                    ]
+                ];
+                $routeDownload = null;
+            }
+            else {
+                $routeShow = [
+                    'name'       => 'grp.org.accounting.invoices.show',
+                    'parameters' => [
+                        'organisation' => $order->organisation->slug,
+                        'invoice'      => $invoice->slug,
+                    ]
+                ];
+
+                $routeDownload = [
+                    'name'       => 'grp.org.accounting.invoices.download',
+                    'parameters' => [
+                        'organisation' => $order->organisation->slug,
+                        'invoice'      => $invoice->slug,
+                    ]
+                ];
+            }
+
+            $invoicesData[] = [
+                'reference' => $invoice->reference,
+                'routes'    => [
+                    'show'     => $routeShow,
+                    'download' => $routeDownload,
+                ]
+            ];
+        }
+
         $invoiceData = null;
         $invoice     = $order->invoices->first();
 
+        //todo vika delete this
         if ($invoice) {
             if (request()->routeIs('retina.*')) {
                 $routeShow     = [
@@ -54,7 +93,8 @@ trait IsOrder
                     ]
                 ];
                 $routeDownload = null;
-            } else {
+            }
+            else {
                 $routeShow = [
                     'name'       => 'grp.org.accounting.invoices.show',
                     'parameters' => [
@@ -80,7 +120,7 @@ trait IsOrder
                 ]
             ];
         }
-
+        // ----------- end todo
         $customerClientData = null;
 
         if ($order->customerClient) {
@@ -143,7 +183,10 @@ trait IsOrder
                 ]
             ),
             'customer_channel' => $customerChannel,
-            'invoice'          => $invoiceData,
+            'invoice'          => $invoiceData,   //todo vika delete this
+            'invoices'          => $invoicesData,
+
+
             'order_properties' => [
                 'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],

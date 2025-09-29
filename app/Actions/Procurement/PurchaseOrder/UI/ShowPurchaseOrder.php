@@ -164,8 +164,8 @@ class ShowPurchaseOrder extends OrgAction
                         [
                             'type'    => 'button',
                             'style'   => 'save',
-                            'tooltip' => __('submit'),
-                            'label'   => __('submit'),
+                            'tooltip' => __('Submit'),
+                            'label'   => __('Submit'),
                             'key'     => 'action',
                             'route'   => [
                                 'method'     => 'patch',
