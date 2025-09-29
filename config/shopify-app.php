@@ -617,7 +617,7 @@ return [
     | No changes are made for Vue.js and Blade.
     |
     */
-    'frontend_engine'                => env('SHOPIFY_FRONTEND_ENGINE', 'VUE'),
+    'frontend_type' => env('SHOPIFY_FRONTEND_TYPE', 'SPA'),
 
     'iframe_ancestors' => '',
 ];
