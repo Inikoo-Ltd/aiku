@@ -71,7 +71,7 @@ const compSwiperOptions = computed(() => {
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(modelValue.container?.properties, screenType),
     width: 'auto'
-  }">
+  }" :dropdown-type="props.modelValue?.settings?.products_data?.type">
     <!-- Title -->
     <div class="px-4 py-6 pb-2">
       <div class="text-3xl font-semibold text-gray-800">
