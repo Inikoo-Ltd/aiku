@@ -77,22 +77,22 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'FetchOrdersInBasket',
         );
 
-        $schedule->command('fetch:stock_locations aw')->everySixHours()
+        $schedule->command('fetch:stock_locations aw')->dailyAt('17:30')
             ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockLocationsAW',
             );
 
-        $schedule->command('fetch:stock_locations sk')->everySixHours()
+        $schedule->command('fetch:stock_locations sk')->dailyAt('17:30')
             ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockLocationsSK',
             );
 
-        $schedule->command('fetch:stock_locations es')->everySixHours()
+        $schedule->command('fetch:stock_locations es')->dailyAt('17:30')
             ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockLocationsES',
             );
 
-        $schedule->command('fetch:stock_locations aroma')->everySixHours()
+        $schedule->command('fetch:stock_locations aroma')->dailyAt('17:30')
             ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
                 monitorSlug: 'FetchAuroraStockLocationsAroma',
             );
