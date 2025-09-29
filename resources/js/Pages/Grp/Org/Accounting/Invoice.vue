@@ -457,6 +457,7 @@ const generateShowOrderRoute = () => {
 
                 <div class="relative flex items-start w-full flex-none gap-x-2 mt-2">
                     <InvoiceRefundPay
+                        :invoice
                         :invoice_pay
                         @onPayInOnClick="onPayInOnClick"
                         :routes="{

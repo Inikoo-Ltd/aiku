@@ -28,6 +28,10 @@ library.add(faCheck, faSave, faPlus, faMinus, faArrowRight);
 
 
 const props = defineProps<{
+    invoice?: {
+        slug: string
+        reference: string
+    }
     invoice_pay: {
         currency_code: string
         total_invoice: number
@@ -374,7 +378,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
 
             <div v-if="invoice_pay.order_reference"
                  class="border-b border-gray-300 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                <dt class="text-sm/6 font-medium ">
+                <dt v-tooltip="invoice.reference ? trans('Total of invoice :invoice', { invoice: invoice.reference }) : ''" class="text-sm/6 font-medium ">
                     {{ trans("Total") }}
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
