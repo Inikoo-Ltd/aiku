@@ -11,13 +11,13 @@
 namespace App\Actions\Accounting\Payment\Json;
 
 use App\Actions\OrgAction;
+use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Http\Resources\Accounting\RefundPaymentsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
-use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -25,9 +25,9 @@ use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class GetRefundPayments extends OrgAction
+class GetRefundOriginalInvoicePayments extends OrgAction
 {
-    public function handle(Invoice $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Invoice $refund, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -41,20 +41,16 @@ class GetRefundPayments extends OrgAction
 
 
         $queryBuilder = QueryBuilder::for(Payment::class);
-        if (class_basename($parent) == 'Invoice') {
-            $queryBuilder
+        $queryBuilder
             ->where('payments.type', PaymentTypeEnum::PAYMENT)
             ->leftJoin('model_has_payments', 'payments.id', 'model_has_payments.payment_id')
-            ->where('model_has_payments.model_id', $parent->id)
+            ->where('model_has_payments.model_id', $refund->original_invoice_id)
+            ->where('payments.status', PaymentStatusEnum::SUCCESS)
             ->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT)
             ->where('model_has_payments.model_type', 'Invoice')
             ->leftJoin('payments as refund_payments', 'refund_payments.original_payment_id', 'payments.id');
-        } else {
-            abort(422);
-        }
 
-        // $queryBuilder->leftjoin('organisations', 'payments.organisation_id', '=', 'organisations.id');
-        // $queryBuilder->leftjoin('shops', 'payments.shop_id', '=', 'shops.id');
+
         $queryBuilder->leftJoin('currencies', 'payments.currency_id', 'currencies.id');
 
 
@@ -66,6 +62,8 @@ class GetRefundPayments extends OrgAction
                 'payments.status',
                 'payments.date',
                 'payments.amount',
+                'payment_accounts.type as payment_account_type',
+                'payment_accounts.code as payment_account_code',
                 'payment_accounts.name as payment_account_name',
                 'payment_accounts.slug as payment_account_slug',
                 'payment_service_providers.slug as payment_service_providers_slug',
@@ -88,19 +86,9 @@ class GetRefundPayments extends OrgAction
             ->withQueryString();
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        }
-        $this->canEdit = $request->user()->authTo("accounting.{$this->organisation->id}.edit");
-
-        return $request->user()->authTo("accounting.{$this->organisation->id}.view");
-    }
 
     public function asController(Invoice $invoice, ActionRequest $request): LengthAwarePaginator
     {
-        $this->parent = $invoice;
         $this->initialisationFromShop($invoice->shop, $request);
 
         return $this->handle($invoice);

@@ -23,31 +23,61 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $payment_service_providers_slug
  * @property string $payment_accounts_slug
  * @property mixed $id
+ * @property mixed $refunded
+ * @property mixed $payment_account_name
+ * @property mixed $payment_account_slug
+ * @property mixed $amount
+ * @property mixed $organisation_slug
+ * @property mixed $currency_code
+ * @property mixed $payment_account_type
+ * @property mixed $payment_account_code
  *
  */
 class RefundPaymentsResource extends JsonResource
 {
     public function toArray($request): array
     {
+
+        $apiRefund=false;
+        if($this->payment_account_code=='checkout-v2'){
+            $apiRefund=true;
+        }
+
         return array(
-            'id'         => $this->id,
-            'status'     => $this->status,
-            'refunded'   => $this->refunded,
+            'id'                   => $this->id,
+            'status'               => $this->status,
+            'refunded'             => $this->refunded,
             'payment_account_name' => $this->payment_account_name,
             'payment_account_slug' => $this->payment_account_slug,
-            'date'       => $this->date,
-            'reference'  => $this->reference,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'amount'     => $this->amount,
-            'route' => [
-                'name' => 'grp.org.accounting.payments.show',
+            'payment_account_type' => $this->payment_account_type,
+            'date'                 => $this->date,
+            'reference'            => $this->reference,
+            'created_at'           => $this->created_at,
+            'updated_at'           => $this->updated_at,
+            'amount'               => $this->amount,
+            'manual_refund_route'                => [
+                'name'   => 'grp.org.accounting.payments.show',
                 'params' => [
                     'organisation' => $this->organisation_slug,
-                    'payment' => $this->id
+                    'payment'      => $this->id
                 ]
             ],
-            'currency_code' => $this->currency_code,
+            'api_refund_route'                => [
+                'name'   => 'grp.org.accounting.payments.show',
+                'params' => [
+                    'organisation' => $this->organisation_slug,
+                    'payment'      => $this->id
+                ]
+            ],
+            'balance_refund_route'                => [
+                'name'   => 'grp.org.accounting.payments.show',
+                'params' => [
+                    'organisation' => $this->organisation_slug,
+                    'payment'      => $this->id
+                ]
+            ],
+            'currency_code'        => $this->currency_code,
+            'api_refund'=>$apiRefund
         );
     }
 }

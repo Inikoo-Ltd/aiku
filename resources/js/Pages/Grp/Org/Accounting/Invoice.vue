@@ -51,7 +51,7 @@ import {InvoiceResource} from "@/types/invoice";
 import EmptyState from "@/Components/Utils/EmptyState.vue";
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue";
 import TableRefunds from "@/Components/Tables/Grp/Org/Accounting/TableRefunds.vue";
-import InvoiceRefundPay from "@/Components/Segmented/InvoiceRefund/InvoiceRefundPay.vue";
+import InvoicePay from "@/Components/Segmented/InvoiceRefund/InvoicePay.vue";
 import ModalAfterConfirmationDelete from "@/Components/Utils/ModalAfterConfirmationDelete.vue";
 import ModalSupervisorList from "@/Components/Utils/ModalSupervisorList.vue";
 import Icon from "@/Components/Icon.vue"
@@ -456,7 +456,7 @@ const generateShowOrderRoute = () => {
                 </dl>
 
                 <div class="relative flex items-start w-full flex-none gap-x-2 mt-2">
-                    <InvoiceRefundPay
+                    <InvoicePay
                         :invoice
                         :invoice_pay
                         @onPayInOnClick="onPayInOnClick"
