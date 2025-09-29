@@ -230,13 +230,13 @@ const onOpen = () => {
 /* For Multiselect */
 :deep(.multiselect-option.is-selected),
 :deep(.multiselect-option.is-selected.is-pointed) {
-    background-color: v-bind('layout?.app?.theme[4]') !important;
-    color: v-bind('layout?.app?.theme[5]') !important;
+    background-color: var(--theme-color-4) !important;
+    color: var(--theme-color-5) !important;
 }
 
 :deep(.multiselect-option.is-pointed) {
-	background-color: v-bind('layout?.app?.theme[4] + "15"') !important;
-    color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4]} 50%, black)`') !important;
+	background-color: color-mix(in srgb, var(--theme-color-4) 10%, transparent) !important;
+    color: color-mix(in srgb, var(--theme-color-4) 50%, black) !important;
 }
 
 :deep(.multiselect-option.is-disabled) {

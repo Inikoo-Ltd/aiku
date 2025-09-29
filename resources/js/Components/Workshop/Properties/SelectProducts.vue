@@ -637,7 +637,7 @@ const listType = [
 
 <style lang="scss">
 .p-select-option.p-select-option-selected {
-    background: color-mix(in srgb, var(--grp-color-0) 85%, #00000000) !important; /* cc = 80% opacity in hex */
-    color: var(--grp-color-1) !important;
+    background: color-mix(in srgb, var(--theme-color-0) 85%, #00000000) !important; /* cc = 80% opacity in hex */
+    color: var(--theme-color-1) !important;
 }
 </style>
