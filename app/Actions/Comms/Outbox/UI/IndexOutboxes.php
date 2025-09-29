@@ -176,6 +176,70 @@ class IndexOutboxes extends OrgAction
 
         return $this->handle($shop);
     }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopNewsletter(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::NEWSLETTER->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopMarketing(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::MARKETING->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopMarketingNotification(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::MARKETING_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopCustomerNotification(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::CUSTOMER_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopColdEmail(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::COLD_EMAIL->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopUserNotification(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::USER_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopPush(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::PUSH->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopTest(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::TEST->value);
+    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inWebsite(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
@@ -193,6 +257,70 @@ class IndexOutboxes extends OrgAction
         $this->initialisationFromFulfilment($fulfilment, $request);
 
         return $this->handle($fulfilment);
+    }
+        /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentNewsletter(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::NEWSLETTER->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentMarketing(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::MARKETING->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentMarketingNotification(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::MARKETING_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentCustomerNotification(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::CUSTOMER_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentColdEmail(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::COLD_EMAIL->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentUserNotification(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::USER_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentPush(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::PUSH->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentTest(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::TEST->value);
     }
 
 
@@ -222,6 +350,110 @@ class IndexOutboxes extends OrgAction
                 $headCrumb(
                     [
                         'name'       => 'grp.org.shops.show.dashboard.comms.outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.newsletter_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.newsletter_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.marketing_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.marketing_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.marketing_notification_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.marketing_notification_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.customer_notification_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.customer_notification_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.cold_email_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.cold_email_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.user_notification_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.user_notification_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.push_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.push_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.test_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.test_outboxes.index',
                         'parameters' => $routeParameters
                     ]
                 )
