@@ -24,6 +24,11 @@ export const blueprintTable = [
         width : "36vh",
     },
     {
+        header : 'Actions',
+        key : 'actions',
+        width : "",
+    },
+    {
         header : 'Refund',
         key : 'refund',
         width : "10vh",
