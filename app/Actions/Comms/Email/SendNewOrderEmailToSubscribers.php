@@ -14,7 +14,6 @@ use App\Actions\Comms\Traits\WithSendSubscribersOutboxEmail;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Comms\Outbox;
 use App\Models\Helpers\Currency;
@@ -28,7 +27,6 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
     public function handle(int $orderID): void
     {
-
         $order = Order::find($orderID);
         if (!$order) {
             return;
@@ -41,52 +39,48 @@ class SendNewOrderEmailToSubscribers extends OrgAction
 
         $transactions = $order->transactions()->where('model_type', 'Product')->get();
 
-        $paymentAccount = $order->payments()->first()->paymentAccount;
+        $balance = 'Customer Balance: '.$order->shop->currency->symbol.$order->customer->balance;
 
-        $balance = '';
-
-        if ($paymentAccount->type == PaymentAccountTypeEnum::ACCOUNT) {
-            $balance = 'Customer Balance: '.$order->shop->currency->symbol.$order->customer->balance;
-        }
 
         $this->sendOutboxEmailToSubscribers(
             $outbox,
             additionalData: [
-                'shop_name'     => $order->shop->name,
-                'currency'      => $order->shop->currency->symbol,
-                'customer_name' => $customer->name,
-                'order_reference' => $order->reference,
-                'order_total'   => $order->total_amount,
-                'goods_amount'   => $order->goods_amount,
-                'charges_amount'   => $order->charges_amount,
-                'shipping_amount'   => $order->shipping_amount,
-                'net_amount'   => $order->net_amount,
-                'tax_amount'   => $order->tax_amount,
-                'payment_amount' => $order->payment_amount,
-                'payment_type' => $order->payments()->first()->paymentAccount->name ?? 'N/A',
+                'shop_name'                    => $order->shop->name,
+                'currency'                     => $order->shop->currency->symbol,
+                'customer_name'                => $customer->name,
+                'order_reference'              => $order->reference,
+                'order_total'                  => $order->total_amount,
+                'goods_amount'                 => $order->goods_amount,
+                'charges_amount'               => $order->charges_amount,
+                'shipping_amount'              => $order->shipping_amount,
+                'net_amount'                   => $order->net_amount,
+                'tax_amount'                   => $order->tax_amount,
+                'payment_amount'               => $order->payment_amount,
+                'payment_type'                 => $order->payments()->first()->paymentAccount->name ?? 'N/A',
                 'blade_new_order_transactions' => $this->generateOrderTransactionsHtml($transactions, $order->shop->currency),
-                'date' => $order->submitted_at->format('F jS, Y'),
-                'order_link' => route('grp.org.shops.show.crm.customers.show.orders.show', [
+                'date'                         => $order->submitted_at->format('F jS, Y'),
+                'order_link'                   => route('grp.org.shops.show.crm.customers.show.orders.show', [
                     $order->organisation->slug,
                     $order->shop->slug,
                     $order->customer->slug,
                     $order->slug
                 ]),
-                'customer_link' => $customer->shop->fulfilment ? route('grp.org.fulfilments.show.crm.customers.show', [
-                    $customer->organisation->slug,
-                    $customer->shop->fulfilment->slug,
-                    $customer->fulfilmentCustomer->slug
-                ]) : route('grp.org.shops.show.crm.customers.show', [
-                    $customer->organisation->slug,
-                    $customer->shop->slug,
-                    $customer->slug
-                ]),
-                'platform' => $order->customerSalesChannel?->platform?->name ?? '',
-                'balance' => $balance,
+                'customer_link'                => $customer->shop->fulfilment
+                    ? route('grp.org.fulfilments.show.crm.customers.show', [
+                        $customer->organisation->slug,
+                        $customer->shop->fulfilment->slug,
+                        $customer->fulfilmentCustomer->slug
+                    ])
+                    : route('grp.org.shops.show.crm.customers.show', [
+                        $customer->organisation->slug,
+                        $customer->shop->slug,
+                        $customer->slug
+                    ]),
+                'platform'                     => $order->customerSalesChannel?->platform?->name ?? '',
+                'balance'                      => $balance,
             ]
         );
     }
-
 
 
     private function generateOrderTransactionsHtml($transactions, Currency $currency): string
@@ -97,12 +91,12 @@ class SendNewOrderEmailToSubscribers extends OrgAction
         if (is_string($transactions)) {
             $transactions = json_decode($transactions, true);
         }
-        $html = '';
+        $html           = '';
         $currencySymbol = $currency->symbol ?? '£';
 
         foreach ($transactions as $transaction) {
             $historicAsset = $transaction->historicAsset;
-            $html .= sprintf(
+            $html          .= sprintf(
                 '<tr style="border-bottom: 1px solid #e9e9e9;">
                     <td style="font-family: \'Helvetica Neue\',Helvetica,Arial,sans-serif; font-size: 14px; padding: 8px 0; text-align: left;">
                         <strong>%s</strong><br/>
@@ -118,6 +112,7 @@ class SendNewOrderEmailToSubscribers extends OrgAction
                 $transaction->net_amount ?? '0'
             );
         }
+
         return $html;
     }
 
