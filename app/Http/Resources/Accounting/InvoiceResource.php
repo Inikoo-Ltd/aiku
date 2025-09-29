@@ -42,6 +42,8 @@ class InvoiceResource extends JsonResource
             'tax_number'        => $invoice->tax_number,
             'tax_number_valid'  => $invoice->tax_number_valid,
             'tax_number_status' => $invoice->tax_number_status,
+            'name'         => $invoice->customer_name,
+            'contact_name' => $invoice->customer_contact_name,
 
         ];
     }
