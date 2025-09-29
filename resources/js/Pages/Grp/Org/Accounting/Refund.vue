@@ -420,8 +420,8 @@ console.log(props);
         </dt>
 
         <dd class="text-base text-gray-500 w-full">
-          <div v-if="invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
-            <div v-html="invoice_refund.address.formatted_address" />
+          <div v-if="original_invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
+            <div v-html="original_invoice.address.formatted_address" />
           </div>
 
           <div v-else class="text-gray-400 italic">
