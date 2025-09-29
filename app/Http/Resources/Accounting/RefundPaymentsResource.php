@@ -38,9 +38,9 @@ class RefundPaymentsResource extends JsonResource
     public function toArray($request): array
     {
 
-        $apiRefund=false;
-        if($this->payment_account_code=='checkout-v2'){
-            $apiRefund=true;
+        $apiRefund = false;
+        if ($this->payment_account_code == 'checkout-v2') {
+            $apiRefund = true;
         }
 
         return array(
@@ -76,7 +76,7 @@ class RefundPaymentsResource extends JsonResource
                 ]
             ],
             'currency_code'        => $this->currency_code,
-            'api_refund'=>$apiRefund
+            'api_refund' => $apiRefund
         );
     }
 }

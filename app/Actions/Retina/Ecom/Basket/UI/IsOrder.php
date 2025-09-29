@@ -42,7 +42,7 @@ trait IsOrder
             ];
         }
 
-        $invoicesData=[];
+        $invoicesData = [];
         foreach ($order->invoices as $invoice) {
             if (request()->routeIs('retina.*')) {
                 $routeShow     = [
@@ -52,8 +52,7 @@ trait IsOrder
                     ]
                 ];
                 $routeDownload = null;
-            }
-            else {
+            } else {
                 $routeShow = [
                     'name'       => 'grp.org.accounting.invoices.show',
                     'parameters' => [
@@ -93,8 +92,7 @@ trait IsOrder
                     ]
                 ];
                 $routeDownload = null;
-            }
-            else {
+            } else {
                 $routeShow = [
                     'name'       => 'grp.org.accounting.invoices.show',
                     'parameters' => [

@@ -270,7 +270,7 @@ class ShowRefund extends OrgAction
                     $refund->originalInvoice->slug
                 ]
             ] : [],
-            'original_order' => $refund->originalInvoice->order ? OrderResource::make($refund->originalInvoice->order): null,
+            'original_order' => $refund->originalInvoice->order ? OrderResource::make($refund->originalInvoice->order) : null,
             'original_order_route' => $refund->originalInvoice->order ? [
                 'name' => 'grp.org.shops.show.ordering.orders.show',
                 'parameters' => [

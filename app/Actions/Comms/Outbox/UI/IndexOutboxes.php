@@ -76,7 +76,7 @@ class IndexOutboxes extends OrgAction
             $queryBuilder->where('outboxes.organisation_id', $parent->id);
         }
 
-        if($bucket != 'all') {
+        if ($bucket != 'all') {
             $queryBuilder->where('outboxes.type', $bucket);
         }
 
@@ -258,7 +258,7 @@ class IndexOutboxes extends OrgAction
 
         return $this->handle($fulfilment);
     }
-        /** @noinspection PhpUnusedParameterInspection */
+    /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentNewsletter(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
