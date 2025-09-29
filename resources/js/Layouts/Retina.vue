@@ -36,6 +36,14 @@ library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExte
 library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
 
 
+interface Notification {
+    title: string
+    description?: string
+    message?: string
+    type: 'success' | 'error' | 'info' | 'warning' | 'failure'
+    status?: 'success' | 'error' | 'info' | 'warning' | 'failure'
+}
+
 
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
@@ -43,22 +51,6 @@ initialiseRetinaApp()
 
 const layout = useLayoutStore()
 
-// Flash: Notification
-watch(() => usePage().props?.flash?.notification, (notif) => {
-    // console.log('notif ret', notif)
-    if (!notif) return
-
-    notify({
-        title: notif.title,
-        text: notif.description ?? notif.message,
-        type: notif.status,
-    })
-    // setTimeout(() => {
-    // }, 500)
-}, {
-    deep: true,
-    immediate: true
-})
 
 
 // Flash: Confetti
@@ -124,15 +116,16 @@ watch(() => usePage().props?.flash?.gtm, (newValue) => {
     immediate: true
 })
 
+
 // Flash: Modal
 interface Modal {
     title: string
     description: string
     type: 'success' | 'error' | 'info' | 'warning'
 }
-const selectedModal = ref<Modal | null>(null)
+const selectedModal = ref<Notification | null>(null)
 const isModalOpen = ref(false)
-watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
+watch(() => usePage().props?.flash?.modal, (modal: Notification) => {
     // console.log('modal ret', modal)
     if (!modal) return
 
@@ -143,15 +136,16 @@ watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     immediate: true
 })
 
+
 // Flash: Notification
-watch(() => usePage().props?.flash?.notification, (notification: Modal) => {
+watch(() => usePage().props?.flash?.notification, (notification: Notification) => {
     // console.log('ret', notification)
     if (!notification) return
 
     setTimeout(() => {
         notify({
-            title: notification.title ?? trans("Something went wrong"),
-            text: notification.description || notification.message || trans("Please try again later or contact administrator."),
+            title: notification.title ?? '',
+            text: notification.description || notification.message,
             type: notification.type || notification.status,
         })
     }, 500);
@@ -159,6 +153,7 @@ watch(() => usePage().props?.flash?.notification, (notification: Modal) => {
     deep: true,
     immediate: true
 })
+
 
 // Section: To open/close the mobile menu
 const isOpenMenuMobile = ref(false)
