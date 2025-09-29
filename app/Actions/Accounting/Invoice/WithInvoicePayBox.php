@@ -117,7 +117,7 @@ trait WithInvoicePayBox
                             ]
                         ],
                         'payments'               => [
-                            'name'       => 'grp.json.refund.show.payments.index',
+                            'name'       => 'grp.json.refund.show.original_invoice_payments.index',
                             'parameters' => [
                                 'invoice' => $invoice->id,
                             ]
