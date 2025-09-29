@@ -27,6 +27,7 @@ use App\Http\Resources\Accounting\RefundInProcessTransactionsResource;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\RefundTransactionsResource;
 use App\Http\Resources\History\HistoryResource;
+use App\Http\Resources\Sales\OrderResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
@@ -262,6 +263,22 @@ class ShowRefund extends OrgAction
             ]),
             ...$this->getPayBoxData($refund),
             'original_invoice' => $refund->originalInvoice ? InvoiceResource::make($refund->originalInvoice) : null,
+            'original_invoice_route' => $refund->originalInvoice ? [
+                'name' => 'grp.org.accounting.invoices.show',
+                'parameters' => [
+                    $refund->organisation->slug,
+                    $refund->originalInvoice->slug
+                ]
+            ] : [],
+            'original_order' => $refund->originalInvoice->order ? OrderResource::make($refund->originalInvoice->order): null,
+            'original_order_route' => $refund->originalInvoice->order ? [
+                'name' => 'grp.org.shops.show.ordering.orders.show',
+                'parameters' => [
+                    $refund->originalInvoice->order->organisation->slug,
+                    $refund->originalInvoice->order->shop->slug,
+                    $refund->originalInvoice->order->slug
+                ]
+            ] : [],
             'invoice_refund'   => RefundResource::make($refund),
 
 
