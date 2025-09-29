@@ -378,7 +378,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
 
             <div v-if="invoice_pay.order_reference"
                  class="border-b border-gray-300 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                <dt v-tooltip="invoice?.reference ? trans('Total of invoice :invoice', { invoice: invoice?.reference }) : ''" class="text-sm/6 font-medium ">
+                <dt v-tooltip="invoice.reference ? trans('Total of invoice :invoice', { invoice: invoice.reference }) : ''" class="text-sm/6 font-medium ">
                     {{ trans("Total") }}
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
@@ -387,7 +387,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
             </div>
 
             <!-- Link to Invoice -->
-            <!-- <div v-if="Number(invoice_pay.total_need_to_pay) < 0" class="border-b border-gray-300 ">
+            <div v-if="Number(invoice_pay.total_need_to_pay) < 0" class="border-b border-gray-300 ">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium ">
                         <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-file-invoice-dollar" class="text-gray-400" fixed-width aria-hidden="true" />
@@ -399,7 +399,7 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                         {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
                     </dd>
                 </div>
-            </div> -->
+            </div>
 
             <!-- Link to refunds -->
             <div v-if="Number(invoice_pay.total_need_to_pay) > 0" class="border-b border-gray-300">
@@ -420,20 +420,18 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
 
 
             <!-- I+R total -->
-            <!-- <div v-if="Number(invoice_pay.total_refunds) < 0"
+            <div v-if="Number(invoice_pay.total_refunds) < 0"
                 class="border-b border-gray-300 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium ">I+R total</dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right"
                     :class="Number(invoice_pay.total_balance) > 0 ? '' : Number(invoice_pay.total_balance) < 0 ? '' : ''">
                     {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_balance)) }}
                 </dd>
-            </div> -->
-
-
-            <!-- Field: Excess payment -->
-            <div v-if="Number(invoice_pay.total_excess_payment) > 0" class="border-b border-gray-300">
+            </div>
+            <!-- addition excess payment -->
+            <div class="border-b border-gray-300" v-if="Number(invoice_pay.total_excess_payment) > 0">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium" v-tooltip="trans('Auto add to customer balance')">{{ trans("Excess Payment") }}</dt>
+                    <dt class="text-sm/6 font-medium" v-tooltip="'auto add to customer balance'">Excess Payment</dt>
                     <dd class="mt-1 text-sm/6 sm:mt-0 text-right text-gray-700">
                         {{
                             locale.currencyFormat(invoice_pay.currency_code,
@@ -444,23 +442,21 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
             </div>
 
 
-            <!-- Field: Payed in & Payed out -->
+            <!-- Pay in -->
             <div class="border-b border-gray-300">
-                <!-- Pay in -->
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium secondaryLink cursor-pointer"
-                        :style="{ padding : 0 }"
-                        @click="()=>emits('onPayInOnClick')"
-                    >
-                        {{ trans("Payed in") }}
+                    <dt class="text-sm/6 font-medium secondaryLink cursor-pointer" :style="{padding : 0}"
+                        @click="()=>emits('onPayInOnClick')">Payed in
                     </dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in)) }}
+                        {{
+                            locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in))
+                        }}
                     </dd>
                 </div>
-                
                 <!-- Pay out -->
-                <div v-if="Number(invoice_pay.total_refunds) < 0" class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+                <div v-if="Number(invoice_pay.total_refunds) < 0"
+                     class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium">Payed back</dt>
                     <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                         {{
@@ -471,7 +467,8 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
             </div>
 
             <!-- Total to pay -->
-            <div v-if="Number(invoice_pay.total_need_to_pay) != 0 " class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+            <div v-if="Number(invoice_pay.total_need_to_pay) != 0 "
+                 class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
                     {{ Number(invoice_pay.total_need_to_pay) < 0 ? "Total to refund" : "Total to pay" }}
                 </dt>
@@ -488,28 +485,22 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                     </button>
 
                     <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
-                        v-tooltip="trans('No need to pay anything')" icon="far fa-check"
-                        class="text-green-500"
-                        fixed-width
-                        aria-hidden="true"
-                    />
-                    <span :class="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">
-                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay)) }}
-                    </span>
+                                     v-tooltip="trans('No need to pay anything')" icon="far fa-check"
+                                     class="text-green-500"
+                                     fixed-width aria-hidden="true"/>
+                    <span :class="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">{{
+                            locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay))
+                        }}</span>
                 </dd>
             </div>
 
-            <!-- Field: Paid -->
             <div v-else class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
-                    {{ trans("Paid") }}
+                    Paid
                     <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
-                        v-tooltip="trans('No need to pay anything')"
-                        icon="far fa-check"
-                        class="text-green-500"
-                        fixed-width
-                        aria-hidden="true"
-                    />
+                                     v-tooltip="trans('No need to pay anything')" icon="far fa-check"
+                                     class="text-green-500"
+                                     fixed-width aria-hidden="true"/>
                 </dt>
             </div>
         </dl>
