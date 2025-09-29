@@ -581,6 +581,17 @@ const onCopyDataCustomer = (field: string) => {
                             {{ errorx }}
                         </p>
                     </div>
+
+                    <div class="flex justify-end mt-3">
+                        <Button
+                            :style="'save'"
+                            :loading="isLoadingButton == 'addTrackingNumber'"
+                            :label="trans('Save')"
+                            :disabled="!formTrackingNumber.shipping_id || !(formTrackingNumber.shipping_id?.api_shipper ? true : formTrackingNumber.tracking_number)"
+                            full
+                            @click="() => onSubmitShipment()"
+                        />
+                    </div>
                 </div>
 
                 <!-- Loading: fetching service list -->
