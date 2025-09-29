@@ -49,7 +49,6 @@ class RefundPaymentsResource extends JsonResource
             'refunded'             => $this->refunded,
             'payment_account_name' => $this->payment_account_name,
             'payment_account_slug' => $this->payment_account_slug,
-            'payment_account_type' => $this->payment_account_type,
             'date'                 => $this->date,
             'reference'            => $this->reference,
             'created_at'           => $this->created_at,
