@@ -157,6 +157,10 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_description_title_reviewed
  * @property bool|null $is_description_reviewed
  * @property bool|null $is_description_extra_reviewed
+ * @property string|null $out_of_stock_since
+ * @property string|null $back_in_stock_since
+ * @property string|null $estimated_back_in_stock_at
+ * @property int|null $estimated_to_be_delivered_quantity
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
