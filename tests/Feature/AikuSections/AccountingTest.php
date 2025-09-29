@@ -111,16 +111,15 @@ beforeEach(function () {
 });
 
 test('payment service providers seeder works', function () {
-    expect(PaymentServiceProvider::count())->toBe(12)->
+    expect(PaymentServiceProvider::count())->toBe(11)->
     and(
-        $this->group->accountingStats->number_payment_service_providers
-    )->toBe(12);
+        $this->group->accountingStats->number_payment_service_providers)->toBe(11);
 });
 
 test('add payment service provider to organisation', function () {
     expect($this->organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($this->organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1)
-        ->and($this->group->accountingStats->number_payment_service_providers)->toBe(12);
+        ->and($this->group->accountingStats->number_payment_service_providers)->toBe(11);
 
     $modelData = PaymentServiceProvider::factory()->definition();
     data_set($modelData, 'type', PaymentServiceProviderTypeEnum::CASH->value);
@@ -1515,11 +1514,11 @@ test('top up search', function () {
 test('delete payment service provider', function () {
     /** @var Group $group */
     $group = $this->group;
-    expect($group->paymentServiceProviders()->count())->toBe(12);
+    expect($group->paymentServiceProviders()->count())->toBe(11);
     $paymentServiceProvider = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first();
     DeletePaymentServiceProvider::make()->action($paymentServiceProvider);
     $group->refresh();
-    expect($group->paymentServiceProviders()->count())->toBe(11);
+    expect($group->paymentServiceProviders()->count())->toBe(10);
 });
 
 test('hydrate invoice categories', function () {
