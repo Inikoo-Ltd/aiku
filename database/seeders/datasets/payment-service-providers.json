@@ -44,14 +44,5 @@
         "code": "pastpay",
         "name": "PastPay",
         "type": "electronic_payment_service"
-    },
-    {
-        "code": "xendit",
-        "name": "Xendit",
-        "type": "electronic_payment_service",
-
-        "countries": [
-            "my","id"
-        ]
     }
 ]

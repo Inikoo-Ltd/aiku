@@ -16,7 +16,6 @@ import pastpay from '@/../art/payment_service_providers/pastpay.svg'
 import paypal from '@/../art/payment_service_providers/paypal.svg'
 import sofort from '@/../art/payment_service_providers/sofort.svg'
 import worldpay from '@/../art/payment_service_providers/worldpay.svg'
-import xendit from '@/../art/payment_service_providers/xendit.svg'
 import bank from '@/../art/payment_service_providers/bank.svg'
 import accounts from '@/../art/payment_service_providers/accounts.svg'
 import cond from '@/../art/payment_service_providers/cond.svg'
@@ -59,7 +58,6 @@ const payments = ref<PaymentItem[]>([
   { name: 'PayPal', value: 'PayPal', image: paypal },
   { name: 'Sofort', value: 'Sofort', image: sofort },
   { name: 'Worldpay', value: 'Worldpay', image: worldpay },
-  { name: 'Xendit', value: 'Xendit', image: xendit },
   { name: 'White Visa', value: 'White Visa', image: whiteVisa },
   { name: 'White Secure Payment', value: 'White Secure Payment', image: whiteSecurePayment },
   { name: 'White PayPal', value: 'White PayPal', image: whitePaypal },

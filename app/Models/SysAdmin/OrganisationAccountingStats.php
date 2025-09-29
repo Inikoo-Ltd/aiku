@@ -39,7 +39,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_payment_accounts_type_hokodo
  * @property int $number_payment_accounts_type_pastpay
  * @property int $number_payment_accounts_type_cash_on_delivery
- * @property int $number_payment_accounts_type_xendit
  * @property int $number_payments
  * @property int $number_payments_type_payment
  * @property int $number_payments_type_refund
