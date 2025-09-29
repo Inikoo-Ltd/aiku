@@ -340,7 +340,7 @@ class EditProduct extends OrgAction
                             'value' => $product->unit,
                         ],
                         'units'       => [
-                            'type'  => 'input',
+                            'type'  => 'input_number',
                             'label' => __('units'),
                             'value' => $product->units,
                         ],
@@ -354,7 +354,7 @@ class EditProduct extends OrgAction
                             })->toArray()
                         ],
                         'price'       => [
-                            'type'     => 'input',
+                            'type'     => 'input_number',
                             'label'    => __('price'),
                             'required' => true,
                             'value'    => $product->price

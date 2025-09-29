@@ -53,7 +53,15 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", retinaLayoutStructure)
-const products = ref<any[]>(toRaw(props.fieldValue.products.data || []))
+const products = ref<any[]>(
+  props.fieldValue?.products?.meta?.last_page == 1
+    ? [
+        ...(props.fieldValue?.products?.data ?? []),
+        ...(props.fieldValue?.products_out_of_stock?.data ?? [])
+      ]
+    : [...(props.fieldValue?.products?.data ?? [])]
+);
+
 const q = ref("")
 const orderBy = ref(route()?.params?.order_by)
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
