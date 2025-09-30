@@ -19,19 +19,14 @@ const props = withDefaults(
     max: number;
     min: number;
     currency: string;
-    step: Number|String
-    watcherValue?: number
+    step?: Number|String
+    noIcon?: boolean
   }>(),
   {
-    step  : 1
+    step: 1
   }
 );
 
-// To update the form value from parent
-watch(() => props.watcherValue, (newVal) => {
-  console.log("Watcher Value Changed:", newVal);
-  form.refund_amount = newVal
-})
 
 const emit = defineEmits(["update:modelValue", "refund"]);
 
@@ -56,7 +51,7 @@ defineExpose({
       <InputNumber
         v-model="form.refund_amount"
         buttonLayout="horizontal"
-        showButtons
+        :showButtons="noIcon ? false : true"
         :min="props.min"
         :max="props.max"
         :currency="props.currency"

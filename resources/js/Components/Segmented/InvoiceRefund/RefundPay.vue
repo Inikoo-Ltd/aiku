@@ -208,8 +208,6 @@ const onSubmitPaymentRefund = () => {
 }
 
 const onSubmitRefundToPaymentsMethod = (form, data: any) => {
-    console.log('ffform', data)
-    
     if (data.selected_action === 'manual') {
         onClickManual(data)
     } else if (data.selected_action === 'balance') {
@@ -353,7 +351,7 @@ const totalRefunded = computed(() => {
 const maxRefund = (data) => {
     if (!data) return 0
     const maxPossible = data.amount - data.refunded
-    return Math.min(maxPossible, -props.invoice_pay.total_need_to_refund_in_payment_method)
+    return Math.min(maxPossible, -props.invoice_pay.total_need_to_refund_in_payment_method || data.amount)
 }
 
 const onClickRefundPayments = () => {
@@ -384,104 +382,104 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
 
 const listLoadingIconActions = ref<string[]>([])
 const onClickManual = (paymentMethod) => {
-    router[paymentMethod.balance_refund_route.method || 'patch'](
-        route(paymentMethod.manual_refund_route.name, paymentMethod.manual_refund_route.parameters),
-        {
-            data: 'qqq'
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                listLoadingIconActions.value.push(paymentMethod.id)
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set location"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== paymentMethod.id)
-            },
-        }
-    )
+    // router[paymentMethod.balance_refund_route.method || 'patch'](
+    //     route(paymentMethod.manual_refund_route.name, paymentMethod.manual_refund_route.parameters),
+    //     {
+    //         data: 'qqq'
+    //     },
+    //     {
+    //         preserveScroll: true,
+    //         preserveState: true,
+    //         onStart: () => { 
+    //             listLoadingIconActions.value.push(paymentMethod.id)
+    //         },
+    //         onSuccess: () => {
+    //             notify({
+    //                 title: trans("Success"),
+    //                 text: trans("Successfully submit the data"),
+    //                 type: "success"
+    //             })
+    //         },
+    //         onError: errors => {
+    //             notify({
+    //                 title: trans("Something went wrong"),
+    //                 text: trans("Failed to set location"),
+    //                 type: "error"
+    //             })
+    //         },
+    //         onFinish: () => {
+    //             listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== paymentMethod.id)
+    //         },
+    //     }
+    // )
     console.log('Manual clicked', paymentMethod)
 }
 
 const onClickBalance = (paymentMethod, loadingKey: string) => {
-    router[paymentMethod.balance_refund_route.method || 'patch'](
-        route(paymentMethod.balance_refund_route.name, paymentMethod.balance_refund_route.parameters),
-        {
-            data: 'qqq'
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                listLoadingIconActions.value.push(`${paymentMethod.id}-${loadingKey}`)
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set location"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
-            },
-        }
-    )
+    // router[paymentMethod.balance_refund_route.method || 'patch'](
+    //     route(paymentMethod.balance_refund_route.name, paymentMethod.balance_refund_route.parameters),
+    //     {
+    //         data: 'qqq'
+    //     },
+    //     {
+    //         preserveScroll: true,
+    //         preserveState: true,
+    //         onStart: () => { 
+    //             listLoadingIconActions.value.push(`${paymentMethod.id}-${loadingKey}`)
+    //         },
+    //         onSuccess: () => {
+    //             notify({
+    //                 title: trans("Success"),
+    //                 text: trans("Successfully submit the data"),
+    //                 type: "success"
+    //             })
+    //         },
+    //         onError: errors => {
+    //             notify({
+    //                 title: trans("Something went wrong"),
+    //                 text: trans("Failed to set location"),
+    //                 type: "error"
+    //             })
+    //         },
+    //         onFinish: () => {
+    //             listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
+    //         },
+    //     }
+    // )
     console.log('Manual clicked', paymentMethod)
 }
 
 const onClickAutomatic = (paymentMethod, loadingKey: string) => {
-    router[paymentMethod.balance_refund_route.method || 'patch'](
-        route(paymentMethod.api_refund_route.name, paymentMethod.api_refund_route.parameters),
-        {
-            data: 'qqq'
-        },
-        {
-            preserveScroll: true,
-            preserveState: true,
-            onStart: () => { 
-                listLoadingIconActions.value.push(`${paymentMethod.id}-${loadingKey}`)
-            },
-            onSuccess: () => {
-                notify({
-                    title: trans("Success"),
-                    text: trans("Successfully submit the data"),
-                    type: "success"
-                })
-            },
-            onError: errors => {
-                notify({
-                    title: trans("Something went wrong"),
-                    text: trans("Failed to set location"),
-                    type: "error"
-                })
-            },
-            onFinish: () => {
-                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
-            },
-        }
-    )
+    // router[paymentMethod.balance_refund_route.method || 'patch'](
+    //     route(paymentMethod.api_refund_route.name, paymentMethod.api_refund_route.parameters),
+    //     {
+    //         data: 'qqq'
+    //     },
+    //     {
+    //         preserveScroll: true,
+    //         preserveState: true,
+    //         onStart: () => { 
+    //             listLoadingIconActions.value.push(`${paymentMethod.id}-${loadingKey}`)
+    //         },
+    //         onSuccess: () => {
+    //             notify({
+    //                 title: trans("Success"),
+    //                 text: trans("Successfully submit the data"),
+    //                 type: "success"
+    //             })
+    //         },
+    //         onError: errors => {
+    //             notify({
+    //                 title: trans("Something went wrong"),
+    //                 text: trans("Failed to set location"),
+    //                 type: "error"
+    //             })
+    //         },
+    //         onFinish: () => {
+    //             listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
+    //         },
+    //     }
+    // )
     console.log('Manual clicked', paymentMethod)
 }
 </script>
@@ -582,7 +580,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
             </template>
             <div class="isolate bg-white px-6 lg:px-8">
                 <div class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2">
-                    <div class="col-span-2">
+                    <!-- <div class="col-span-2">
                         <label for="first-name" class="block text-sm font-medium leading-6">
                             <span class="text-red-500">*</span> {{ trans("Select refund method") }}
                         </label>
@@ -597,74 +595,9 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                 {{ item.label }}
                             </div>
                         </div>
-                    </div>
+                    </div> -->
 
-
-                    <div v-if="paymentRefund.payment_method == 'credit_balance'" class="col-span-2">
-                        <label for="last-name" class="block text-sm font-medium leading-6">
-                            {{ trans("Refund amount") }}
-                        </label>
-
-                        <div class="mt-1 w-1/3">
-                            <InputNumber v-model="paymentRefund.payment_amount"
-                                @update:modelValue="(e) => paymentRefund.payment_amount = e"
-                                @input="(e) => paymentRefund.payment_amount = e.value" buttonLayout="horizontal"
-                                :min="0" :xxmax="invoice_pay.total_need_to_pay || undefined" :maxFractionDigits="2"
-                                style="width: 100%" inputClass="border border-gray-300" :inputStyle="{
-                                    fontSize: '14px',
-                                    paddingTop: '10px',
-                                    paddingBottom: '10px',
-                                    width: '50px',
-                                    background: 'transparent',
-                                }" mode="currency" :currency="invoice_pay.currency_code"
-                            />
-                        </div>
-
-                        <!-- Text: need to refund -->
-                        <div class="space-x-1">
-                            <span class="text-xxs text-gray-500">
-                                {{ trans("Need to refund") }}: {{ locale.currencyFormat(props.invoice_pay.currency_code || "", Number(-invoice_pay.total_need_to_pay)) }}
-                            </span>
-
-                            <Button @click="() => paymentRefund.payment_amount = -invoice_pay.total_need_to_pay"
-                                :disabled="paymentRefund.payment_amount === -invoice_pay.total_need_to_pay"
-                                type="tertiary" :label="trans('Refund all')" size="xxs" />
-                        </div>
-
-                        <!-- Button: Submit and error message -->
-                        <div class="mt-6 mb-4 relative flex justify-start max-w-[33%]">
-                            <Button v-if="paymentRefund.payment_method == 'credit_balance'"
-                                @click="() => onSubmitPaymentRefund()"
-                                label="Submit"
-                                full
-                                :loading="isLoadingPayment"
-                                :icon="faSave"
-                                :disabled="!paymentRefund.payment_amount || paymentRefund.payment_amount <= 0 || isLoadingPayment"
-                            />
-                            <Transition name="spin-to-down">
-                                <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">
-                                    *{{ errorPaymentMethod }}
-                                </p>
-                            </Transition>
-                        </div>
-                    </div>
-
-                    <div v-if="paymentRefund.payment_method == 'invoice_payment_method'" class="col-span-2">
-                        <!-- Title & Refund Summary -->
-                        <!-- <div class="mb-4 border-b border-gray-300 pb-3">
-                            <h3 class="text-xl font-semibold text-gray-800">Refund Details</h3>
-                            <div class="mt-2 flex items-center text-lg">
-                                <span class="text-gray-600 font-medium">Need to Refund Outside AWF Account:</span>
-                                <span :class="[props.invoice_pay.total_need_to_refund_in_payment_method < 0 ? 'text-red-500' : 'text-green-600',
-                                    'ml-2 font-semibold tracking-wide']">
-                                    {{
-                                        locale.currencyFormat(invoice_pay.currency_code,
-                                            props.invoice_pay.total_need_to_refund_in_payment_method)
-                                    }}
-                                </span>
-                            </div>
-                        </div> -->
-
+                    <div class="col-span-2">
                         <!-- Table Container -->
                         <div class="overflow-x-auto border-t border-gray-300">
                             <PureTable ref="_PureTable" :route="routes.payments" :blueprint="BluePrintTableRefund"
@@ -712,15 +645,24 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                 <template #actions="{ data, index }">
                                     <div class="min-w-64 w-fit">
                                         <div v-if="layout.app.environment === 'local'" class="text-gray-500 flex gap-x-2 border-b border-gray-300 mb-1">
-                                            <div @click="() => set(data, 'selected_action', 'manual')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
+                                            <div @click="() => set(data, 'selected_action', 'manual')" v-tooltip="trans('Manual Refund (you wlll need to process refund externally and provide a transaction id)')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'manual' ? 'fas fa-digging' : 'fal fa-digging'" class="" fixed-width aria-hidden="true" />
                                             </div>
-                                            <div @click="() => set(data, 'selected_action', 'balance')" aclick="() => onClickBalance(data, 'balance')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'balance' ? 'text-blue-700' : ''">
+                                            <div @click="() => set(data, 'selected_action', 'balance')" v-tooltip="trans('Refund to customer balance')" aclick="() => onClickBalance(data, 'balance')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'balance' ? 'text-blue-700' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'balance' ? 'fas fa-piggy-bank' : 'fal fa-piggy-bank'" class="" fixed-width aria-hidden="true" />
                                             </div>
-                                            <div v-if="data.api_refund" @click="() => set(data, 'selected_action', 'automatic')" aclick="() => onClickAutomatic(data, 'automatic')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'automatic' ? 'text-blue-700' : ''">
+                                            <div v-if="data.api_refund" @click="() => set(data, 'selected_action', 'automatic')" v-tooltip="trans('Refund by API')" aclick="() => onClickAutomatic(data, 'automatic')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'automatic' ? 'text-blue-700' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'automatic' ? 'fas fa-robot' : 'fal fa-robot'" class="" fixed-width aria-hidden="true" />
                                             </div>
+                                        </div>
+
+                                        <div v-if="data.selected_action === 'manual'" class="mb-2">
+                                            <InputText
+                                                :modelValue="get(data, 'manual_refund_id', '')"
+                                                @input="(e) => get(data, 'manual_refund_id', e.target.value)"
+                                                size="small"
+                                                placeholder="Transaction ID"
+                                            />
                                         </div>
 
                                         <div v-if="data.selected_action">
@@ -730,9 +672,10 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                                 v-model="data.refund"
                                                 @input="(e) => data.amount = e.value"
                                                 @update:model-value="(e) => data.amount = e"
-                                                :max="maxRefund(data)" :min="0"
+                                                :max="maxRefund(data)"
+                                                :min="0"
+                                                noIcon
                                                 :currency="invoice_pay.currency_code"
-                                                :watcherValue="get(data, 'watcherValue', null)"
                                                 @refund="(form) => onSubmitRefundToPaymentsMethod(form, data)"
                                             />
                                             <span v-else class="text-gray-400 font-medium italic">
