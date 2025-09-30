@@ -35,5 +35,4 @@ Route::post('{product:id}/store-transaction', StoreEcomBasketTransaction::class)
 Route::post('{transaction:id}/update-transaction', UpdateEcomBasketTransaction::class)->name('transaction.update')->withoutScopedBindings();
 
 Route::post('product/{product:id}/remind-back-in-stock', StoreIrisBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
-Route::patch('remind-back-in-stock/{backInStockReminder:id}', UpdateIrisBackInStockReminder::class)->name('remind_back_in_stock.update')->withoutScopedBindings();
 Route::delete('remind-back-in-stock/{backInStockReminder:id}', DeleteIrisBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
