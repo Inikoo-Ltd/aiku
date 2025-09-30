@@ -447,7 +447,7 @@ const onClickBalance = (paymentMethod, form) => {
                 })
             },
             onFinish: () => {
-                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
+                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-balance`)
             },
         },
     )
@@ -571,6 +571,19 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                         v-tooltip="trans('No need to pay anything')" icon="far fa-check" class="text-green-500"
                         fixed-width aria-hidden="true" />
                 </dt>
+            </div>
+
+            <div class="px-2 pb-2">
+                <Message severity="error" class="">
+                    <div class="ml-2 text-xs font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
+                        <div>
+                            <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-sm" fixed-width aria-hidden="true"/>
+                            <div class="ml-1 inline items-center gap-x-2">
+                                {{ trans("Sorry, the refund payment is not available until Tuesday, Sept 30th 2025") }}
+                            </div>
+                        </div>
+                    </div>
+                </Message>
             </div>
         </dl>
 
