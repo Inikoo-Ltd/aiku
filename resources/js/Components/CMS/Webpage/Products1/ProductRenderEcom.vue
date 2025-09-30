@@ -149,7 +149,7 @@ const onAddBackInStock = (product: ProductResource) => {
 const onUnselectBackInStock = (product: ProductResource) => {
     router.delete(
         route('iris.models.remind_back_in_stock.delete', {
-            product: product.id
+            backInStockReminder: product.id
         }),
         {
             preserveScroll: true,
@@ -243,7 +243,8 @@ const onUnselectBackInStock = (product: ProductResource) => {
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="product.is_back_in_stock ?  trans('You will be notified') :  trans('Remind me when back in stock')"
                     >
-                        <FontAwesomeIcon :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width :class="[product.is_back_in_stock  ? 'text-green-600' : 'text-gray-600']" />
+                        <LoadingIcon  v-if="isLoadingRemindBackInStock" />
+                        <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width :class="[product.is_back_in_stock  ? 'text-green-600' : 'text-gray-600']" />
                     </button>
                 </div>
             </component>
