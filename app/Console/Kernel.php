@@ -12,7 +12,9 @@ use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
+use App\Actions\Dropshipping\WooCommerce\PingActiveWooChannel;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
+use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
@@ -116,6 +118,14 @@ class Kernel extends ConsoleKernel
 
         $schedule->job(FetchWooOrders::makeJob())->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
+        );
+
+        $schedule->job(PingActiveWooChannel::makeJob())->everySixHours()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'PingActiveWooChannel',
+        );
+
+        $schedule->job(ReviveInActiveWooChannel::makeJob())->daily()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'PingActiveWooChannel',
         );
 
         $schedule->job(UpdateInventoryInWooPortfolio::makeJob())->hourly()->withoutOverlapping()->sentryMonitor(
