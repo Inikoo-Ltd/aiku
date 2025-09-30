@@ -20,6 +20,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import ButtonAddToBasket from "@/Components/Iris/Products/ButtonAddToBasket.vue"
 import { faEnvelope } from "@far"
+import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 
 library.add(faCube, faLink)
 
@@ -58,6 +59,7 @@ const isFavorite = ref(false)
 const contentRef = ref<Element | null>(null)
 const expanded = ref(false)
 const showButton = ref(false)
+const isLoadingRemindBackInStock = ref(false)
 
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
@@ -117,6 +119,67 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
+            },
+        }
+    )
+}
+
+const onAddBackInStock = (product: ProductResource) => {
+    router.post(
+          route('iris.models.remind_back_in_stock.store', {
+            product: product.id
+        }),
+        {
+            // item_id: [product.id]
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ['iris'],
+            onStart: () => {
+                isLoadingRemindBackInStock.value = true
+            },
+            onSuccess: () => {
+                set(props.fieldValue.product, 'is_back_in_stock', true)
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to add the product to remind back in stock"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingRemindBackInStock.value = false
+            },
+        }
+    )
+}
+
+const onUnselectBackInStock = (product: ProductResource) => {
+    router.delete(
+        route('iris.models.remind_back_in_stock.delete', {
+            backInStockReminder: product.id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ['iris'],
+            onStart: () => {
+                isLoadingRemindBackInStock.value = true
+            },
+            onSuccess: () => {
+                set(props.fieldValue.product, 'is_back_in_stock', false)
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove the product from remind back in stock"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingRemindBackInStock.value = false
             },
         }
     )
@@ -245,9 +308,11 @@ const validImages = computed(() => {
 
                             <!-- Remind me button absolute -->
                             <button v-if="fieldValue.product.stock <= 0 && layout?.app?.environment === 'local'"
+                                 @click="() => fieldValue.product.is_back_in_stock ? onUnselectBackInStock(fieldValue.product) :  onAddBackInStock(fieldValue.product)"
                                 class="absolute right-0 bottom-2 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
-                                <FontAwesomeIcon :icon="faEnvelope" class="text-gray-600" />
-                                <span>{{ trans("Remind me") }}</span>
+                                <LoadingIcon v-if="isLoadingRemindBackInStock" />
+                                <FontAwesomeIcon v-else :icon="fieldValue.product.is_back_in_stock  ?  faEnvelopeCircleCheck : faEnvelope" :class="[fieldValue.product.is_back_in_stock  ? 'text-green-600' :'text-gray-600']" />
+                                <span>{{ fieldValue.product.is_back_in_stock ?  trans('will be notified when in Stock') :  trans("Remind me") }}</span>
                             </button>
                         </div>
 

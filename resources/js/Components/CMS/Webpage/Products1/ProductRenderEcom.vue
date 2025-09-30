@@ -26,6 +26,7 @@ import { get, set } from 'lodash-es'
 import ButtonAddToBasketInFamily from '@/Components/Iris/Products/ButtonAddToBasketInFamily.vue'
 import { ProductResource } from '@/types/Iris/Products'
 import NewAddToCartButton from './NewAddToCartButton.vue' // Import button baru
+import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -37,7 +38,7 @@ const props = defineProps<{
     product: ProductResource
 }>()
 
-
+const isLoadingRemindBackInStock = ref(false)
 const currency = layout?.iris?.currency
 
 // Section: Add to Favourites
@@ -112,6 +113,73 @@ const onUnselectFavourite = (product: ProductResource) => {
 }
 
 
+const onAddBackInStock = (product: ProductResource) => {
+
+    // Section: Submit
+    router.post(
+        route('iris.models.remind_back_in_stock.store', {
+            product: product.id
+        }),
+        {
+            // item_id: [product.id]
+        },
+        {
+            preserveScroll: true,
+            only: ['iris'],
+            preserveState: true,
+            onStart: () => {
+                isLoadingRemindBackInStock.value = true
+            },
+            onSuccess: () => {
+                product.is_back_in_stock = true
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to add the product to remind back in stock"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingFavourite.value = false
+            },
+        }
+    )
+}
+const onUnselectBackInStock = (product: ProductResource) => {
+    router.delete(
+        route('iris.models.remind_back_in_stock.delete', {
+            backInStockReminder: product.id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ['iris'],
+            onStart: () => {
+                isLoadingRemindBackInStock.value = true
+            },
+            onSuccess: () => {
+                // notify({
+                //     title: trans("Success"),
+                //     text: trans("Added to portfolio"),
+                //     type: "success"
+                // })
+                product.is_back_in_stock = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove the product from remind back in stock"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingFavourite.value = false
+            },
+        }
+    )
+}
+
 
 
 
@@ -171,11 +239,12 @@ const onUnselectFavourite = (product: ProductResource) => {
                     <NewAddToCartButton v-if="product.stock > 0" :product="product" :key="product" />
                     <button
                         v-else-if="layout?.app?.environment === 'local'"
-                        @click.prevent="()=>null"
+                        @click.prevent="()=> product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                        v-tooltip="trans('Remind me when back in stock')"
+                        v-tooltip="product.is_back_in_stock ?  trans('You will be notified') :  trans('Remind me when back in stock')"
                     >
-                        <FontAwesomeIcon :icon="faEnvelope" fixed-width class="text-gray-600" />
+                        <LoadingIcon  v-if="isLoadingRemindBackInStock" />
+                        <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width :class="[product.is_back_in_stock  ? 'text-green-600' : 'text-gray-600']" />
                     </button>
                 </div>
             </component>

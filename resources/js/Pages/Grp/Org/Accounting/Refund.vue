@@ -140,7 +140,8 @@ const props = defineProps<{
   layout: {
     group: {}
   }
-}>();
+}>()
+
 const currentTab = ref<string>(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const _refComponents = ref({});
@@ -481,6 +482,7 @@ console.log(props);
         <RefundPay
           v-if="!invoice_refund?.in_process && invoice_pay"
           :invoice_pay
+          :refund="invoice_refund"
           :routes="{
             submit_route: invoice_pay.routes.submit_payment,
             fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,

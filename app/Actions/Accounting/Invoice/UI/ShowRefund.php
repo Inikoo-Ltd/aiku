@@ -261,7 +261,7 @@ class ShowRefund extends OrgAction
             'box_stats'        => array_merge($this->getBoxStats($refund), [
                 'refund_id' => $refund->id
             ]),
-            ...$this->getPayBoxData($refund),
+            ...$this->getRefundPayBoxData($refund),
             'original_invoice' => $refund->originalInvoice ? InvoiceResource::make($refund->originalInvoice) : null,
             'original_invoice_route' => $refund->originalInvoice ? [
                 'name' => 'grp.org.accounting.invoices.show',

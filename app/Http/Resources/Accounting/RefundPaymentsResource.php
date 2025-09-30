@@ -37,7 +37,6 @@ class RefundPaymentsResource extends JsonResource
 {
     public function toArray($request): array
     {
-
         $apiRefund = false;
         if ($this->payment_account_code == 'checkout-v2') {
             $apiRefund = true;
@@ -54,29 +53,26 @@ class RefundPaymentsResource extends JsonResource
             'created_at'           => $this->created_at,
             'updated_at'           => $this->updated_at,
             'amount'               => $this->amount,
-            'manual_refund_route'                => [
-                'name'   => 'grp.org.accounting.payments.show',
-                'params' => [
-                    'organisation' => $this->organisation_slug,
+            'manual_refund_route'  => [
+                'name'   => 'grp.models.payment.refund_manual',
+                'parameters' => [
                     'payment'      => $this->id
                 ]
             ],
-            'api_refund_route'                => [
-                'name'   => 'grp.org.accounting.payments.show',
-                'params' => [
-                    'organisation' => $this->organisation_slug,
+            'api_refund_route'  => [
+                'name'   => 'grp.models.payment.refund_api',
+                'parameters' => [
                     'payment'      => $this->id
                 ]
             ],
-            'balance_refund_route'                => [
-                'name'   => 'grp.org.accounting.payments.show',
-                'params' => [
-                    'organisation' => $this->organisation_slug,
+            'balance_refund_route' => [
+                'name'   => 'grp.models.payment.refund_to_balance',
+                'parameters' => [
                     'payment'      => $this->id
                 ]
             ],
             'currency_code'        => $this->currency_code,
-            'api_refund' => $apiRefund
+            'api_refund'           => $apiRefund
         );
     }
 }

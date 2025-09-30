@@ -521,7 +521,7 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
 
     Route::post('/payment-service-provider/{paymentServiceProvider:id}/account', StoreOrgPaymentServiceProviderAccount::class)->name('payment-service-provider-account.store')->withoutScopedBindings();
 
-    Route::post('/payment/{payment:id}/refund', RefundPayment::class)->name('payment_refund.store')->withoutScopedBindings();
+    Route::post('/payment/{payment:id}/refund', RefundPayment::class)->name('payment_refund.store')->withoutScopedBindings(); // todo to be deleted
 });
 
 Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->group(function () {
@@ -1025,6 +1025,8 @@ require __DIR__ . "/models/dispatching/delivery_note_item.php";
 require __DIR__ . "/models/stock/stock.php";
 require __DIR__ . "/models/accounting/invoice.php";
 require __DIR__ . "/models/accounting/refund.php";
+require __DIR__ . "/models/accounting/payment.php";
+
 require __DIR__ . "/models/billables/billables.php";
 require __DIR__ . "/models/billables/services.php";
 

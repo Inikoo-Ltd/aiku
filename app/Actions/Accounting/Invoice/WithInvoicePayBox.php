@@ -139,6 +139,54 @@ trait WithInvoicePayBox
             ];
     }
 
+
+    public function getRefundPayBoxData(?Invoice $invoice): array
+    {
+        if (!$invoice) {
+            return [];
+        }
+
+
+        $totalExcessPayment = ($invoice->payment_amount - $invoice->total_amount) < 0 ? $invoice->payment_amount - $invoice->total_amount : 0;
+
+        $totalPaidIn    = $invoice->payment_amount;
+        $totalNeedToPay = $invoice->total_amount - $totalPaidIn;
+
+        $orderReference = null;
+        $orderSlug      = null;
+        if ($invoice->order) {
+            $orderReference = $invoice->order->reference;
+            $orderSlug      = $invoice->order->slug;
+        }
+
+
+        return
+            [
+                'invoice_pay' => [
+                    'type'                 => $invoice->type,
+                    'order_reference'      => $orderReference,
+                    'order_slug'           => $orderSlug,
+                    'shop_slug'            => $invoice->shop->slug,
+                    'invoice_slug'         => $invoice->slug,
+                    'invoice_id'           => $invoice->id,
+                    'invoice_reference'    => $invoice->reference,
+                    'routes'               => [
+                        'payments'               => [
+                            'name'       => 'grp.json.refund.show.original_invoice_payments.index',
+                            'parameters' => [
+                                'invoice' => $invoice->id,
+                            ]
+                        ],
+                    ],
+                    'currency_code'        => $invoice->currency->code,
+                    'total_invoice'        => $invoice->total_amount,
+                    'total_paid_in'        => $totalPaidIn,
+                    'total_excess_payment' => $totalExcessPayment,
+                    'total_need_to_pay'    => $totalNeedToPay,
+                ],
+            ];
+    }
+
     protected function getTotalPaidAccount(Invoice $invoice)
     {
         return DB::table('invoices')

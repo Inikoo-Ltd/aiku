@@ -55,6 +55,8 @@ class IrisProductsInWebpageResource extends JsonResource
             }
         }
 
+        $back_in_stock = false;
+
         $media = null;
         if ($this->image_id) {
             $media = Media::find($this->image_id);
@@ -83,7 +85,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'quantity_ordered' => (int) $this->quantity_ordered ?? 0,
             'quantity_ordered_new' => (int) $this->quantity_ordered ?? 0,  // To editable in Frontend
             'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
-            'is_back_in_stock' => false
+            'is_back_in_stock' => $back_in_stock
         ];
     }
 

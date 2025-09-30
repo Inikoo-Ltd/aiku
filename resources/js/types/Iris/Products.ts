@@ -22,6 +22,7 @@ export interface ProductResource {
     units: number
     bestseller?: boolean
     is_favourite?: boolean
+    is_back_in_stock? : boolean
     top_seller: number | null
     web_images: {
         main: {

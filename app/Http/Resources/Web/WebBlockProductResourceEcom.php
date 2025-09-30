@@ -51,6 +51,7 @@ class WebBlockProductResourceEcom extends JsonResource
         ];
 
         $favourite = false;
+        $back_in_stock = false;
         $quantityOrdered = 0;
         $transactionId = null;
         if ($request->user()) {
@@ -105,6 +106,7 @@ class WebBlockProductResourceEcom extends JsonResource
             'quantity_ordered'      => (int) $quantityOrdered,
             'quantity_ordered_new'  => 1,  // To editable in Frontend
             'is_favourite'          => $favourite && !$favourite->unfavourited_at ?? false,
+            'is_back_in_stock' => $back_in_stock
         ];
     }
 
