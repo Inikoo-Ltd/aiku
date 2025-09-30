@@ -18,7 +18,6 @@ use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowDeletedInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
-use App\Actions\Accounting\InvoiceCategory\UI\CreateInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UI\EditInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UI\IndexInvoiceCategories;
 use App\Actions\Accounting\InvoiceCategory\UI\ShowInvoiceCategory;
@@ -109,7 +108,6 @@ Route::get('/invoices-deleted', IndexDeletedInvoices::class)->name('deleted_invo
 Route::get('/invoices-deleted/{invoiceSlug}', ShowDeletedInvoice::class)->name('deleted_invoices.show');
 
 Route::get('/invoice-categories', IndexInvoiceCategories::class)->name('invoice-categories.index');
-Route::get('/invoice-categories/create', CreateInvoiceCategory::class)->name('invoice-categories.create');
 Route::get('/invoice-categories/{invoiceCategory}', ShowInvoiceCategory::class)->name('invoice-categories.show');
 Route::get('/invoice-categories/{invoiceCategory}/invoices', [IndexInvoices::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index');
 Route::get('/invoice-categories/{invoiceCategory}/invoices/omega', [OmegaManyInvoice::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index.omega');

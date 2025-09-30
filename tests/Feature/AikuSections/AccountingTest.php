@@ -633,18 +633,6 @@ test('UI index invoice categories', function () {
     });
 });
 
-test('UI create invoice categories', function () {
-    $response = get(route('grp.org.accounting.invoice-categories.create', $this->organisation->slug));
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('CreateModel')
-            ->has('title')
-            ->has('formData')
-            ->has('pageHead')
-            ->has('breadcrumbs', 4);
-    });
-});
 
 test('store invoice category', function () {
     $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [

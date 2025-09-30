@@ -181,7 +181,6 @@ class FetchAuroraInvoice extends FetchAurora
             'fetched_at'               => now(),
             'last_fetched_at'          => now(),
             'footer'                   => $footer,
-            'invoice_category_id'      => $this->parseInvoiceCategory($this->organisation->id.':'.$this->auroraModelData->{'Invoice Category Key'})?->id,
             'is_vip'                   => $isVip,
             'as_organisation_id'       => $AsOrganisation?->id,
             'as_employee_id'           => $asEmployeeID,
@@ -233,23 +232,11 @@ class FetchAuroraInvoice extends FetchAurora
                     'country_id'
                 ]);
                 $this->parsedData['invoice']['delivery_address'] = new Address($deliveryAddress);
-
-
             }
-
-
 
         }
 
 
-
-
-        if ($this->auroraModelData->{'Invoice Category Key'}) {
-            $invoiceCategory = $this->parseInvoiceCategory($this->organisation->id.':'.$this->auroraModelData->{'Invoice Category Key'});
-            if ($invoiceCategory) {
-                $this->parsedData['invoice']['invoice_category_id'] = $invoiceCategory->id;
-            }
-        }
 
         if ($salesChannel) {
             $this->parsedData['invoice']['sales_channel_id'] = $salesChannel->id;
