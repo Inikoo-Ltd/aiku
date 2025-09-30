@@ -245,7 +245,7 @@ class RepairPalletDeliveriesAndReturns
             foreach ($transactions as $transaction) {
                 /** @var Pallet $pallet */
                 $pallet = $transaction->item;
-                if(!$pallet){
+                if (!$pallet) {
                     continue;
                 }
 

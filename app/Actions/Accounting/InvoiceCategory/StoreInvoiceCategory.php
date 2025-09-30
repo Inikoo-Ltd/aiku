@@ -10,6 +10,8 @@
 namespace App\Actions\Accounting\InvoiceCategory;
 
 use App\Actions\Helpers\Colour\GetRandomColour;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceCategories;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceCategories;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
@@ -36,7 +38,7 @@ class StoreInvoiceCategory extends OrgAction
         if ($parent instanceof Organisation) {
             data_set($modelData, 'group_id', $parent->group_id);
         }
-        return DB::transaction(function () use ($parent, $modelData) {
+        $invoiceCategory = DB::transaction(function () use ($parent, $modelData) {
             /** @var InvoiceCategory $invoiceCategory */
             $invoiceCategory = $parent->invoiceCategories()->create($modelData);
             $invoiceCategory->stats()->create();
@@ -45,6 +47,17 @@ class StoreInvoiceCategory extends OrgAction
 
             return $invoiceCategory;
         });
+
+        if ($invoiceCategory->organisation) {
+            OrganisationHydrateInvoiceCategories::dispatch($invoiceCategory->organisation)->delay($this->hydratorsDelay);
+        }
+
+        if ($invoiceCategory->group) {
+            GroupHydrateInvoiceCategories::dispatch($invoiceCategory->group)->delay($this->hydratorsDelay);
+        }
+
+
+        return $invoiceCategory;
     }
 
     public function authorize(ActionRequest $request): bool

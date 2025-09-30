@@ -82,6 +82,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_top_ups_status_fail
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_invoice_categories
+ * @property int $number_current_invoice_categories
+ * @property int $number_invoice_categories_state_in_process
+ * @property int $number_invoice_categories_state_active
+ * @property int $number_invoice_categories_state_closed
+ * @property int $number_invoice_categories_state_cooldown
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationAccountingStats newModelQuery()
  * @method static Builder<static>|OrganisationAccountingStats newQuery()

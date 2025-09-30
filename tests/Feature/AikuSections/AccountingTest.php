@@ -113,7 +113,8 @@ beforeEach(function () {
 test('payment service providers seeder works', function () {
     expect(PaymentServiceProvider::count())->toBe(11)->
     and(
-        $this->group->accountingStats->number_payment_service_providers)->toBe(11);
+        $this->group->accountingStats->number_payment_service_providers
+    )->toBe(11);
 });
 
 test('add payment service provider to organisation', function () {
