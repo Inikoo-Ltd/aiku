@@ -249,7 +249,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                     {{ trans("Total to refund") }}
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                    <template v-if="layout.app.environment === 'local'">
+                    <template xv-if="layout.app.environment === 'local'">
                         <button v-if="Number(invoice_pay.total_need_to_pay) < 0" @click="onClickRefundPayments"
                             size="xxs" class="secondaryLink text-indigo-500">
                             {{ trans("Refund payment") }}
@@ -277,7 +277,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
             </div>
 
 
-            <div class="px-2 pb-2">
+            <!-- <div class="px-2 pb-2">
                 <Message severity="error" class="">
                     <div class="px-1 text-xs font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
                         <div>
@@ -288,7 +288,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                         </div>
                     </div>
                 </Message>
-            </div>
+            </div> -->
         </dl>
 
         <!-- Modal: Pay refund -->
@@ -349,7 +349,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                 <!-- Column: Actions -->
                                 <template #actions="{ data, index }">
                                     <div class="min-w-64 w-fit">
-                                        <div v-if="layout.app.environment === 'local'" class="text-gray-500 flex gap-x-2 border-b border-gray-300 mb-1">
+                                        <div xv-if="layout.app.environment === 'local'" class="text-gray-500 flex gap-x-2 border-b border-gray-300 mb-1">
                                             <div v-if="data.can_manual_refund" @click="() => set(data, 'selected_action', 'manual')" v-tooltip="trans('Manual Refund (you wlll need to process refund externally and provide a transaction id)')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'manual' ? 'fas fa-digging' : 'fal fa-digging'" class="" fixed-width aria-hidden="true" />
                                             </div>
