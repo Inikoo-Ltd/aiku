@@ -44,10 +44,8 @@ class GetRefundOriginalInvoicePayments extends OrgAction
             ->where('payments.type', PaymentTypeEnum::PAYMENT)
             ->leftJoin('model_has_payments', 'payments.id', 'model_has_payments.payment_id')
             ->where('model_has_payments.model_id', $refund->original_invoice_id)
-            ->where('payments.status', PaymentStatusEnum::SUCCESS)
-            ->whereNot('payment_accounts.type', PaymentAccountTypeEnum::ACCOUNT)
             ->where('model_has_payments.model_type', 'Invoice')
-            ->leftJoin('payments as refund_payments', 'refund_payments.original_payment_id', 'payments.id');
+            ->where('payments.status', PaymentStatusEnum::SUCCESS);
 
 
         $queryBuilder->leftJoin('currencies', 'payments.currency_id', 'currencies.id');
