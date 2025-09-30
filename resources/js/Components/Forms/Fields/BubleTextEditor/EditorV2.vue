@@ -42,11 +42,14 @@ import Highlight from '@tiptap/extension-highlight'
 import UtilsColorPicker from '@/Components/Utils/ColorPicker.vue'
 /* import ImageResize from 'tiptap-extension-resize-image'; */
 // ImagePlus is only loaded on the client to avoid SSR ESM resolution issues
-let ImagePlus: any = null;
-if (typeof window !== 'undefined') {
+/* let ImagePlus: any = null; */
+/* if (typeof window !== 'undefined') {
     const mod = await import('tiptap-image-plus')
     ImagePlus = (mod as any).ImagePlus
-}
+} */
+
+import  { ImagePlus } from 'tiptap-image-plus'
+
 import Dialog from 'primevue/dialog';
 import Placeholder from "@tiptap/extension-placeholder"
 
@@ -154,9 +157,12 @@ const editorInstance = useEditor({
         Paragraph,
         Document,
         Text,
-        ...(ImagePlus ? [ImagePlus.configure({
+      /*   ...(ImagePlus ? [ImagePlus.configure({
             wrapperStyle: { cursor: 'pointer' },
-        })] : []),
+        })] : []), */
+         ImagePlus.configure({
+            wrapperStyle: { cursor: 'pointer' },
+        }),
         History,
         Placeholder.configure({
             placeholder: props.placeholder || "Start typing...",
