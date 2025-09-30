@@ -3,14 +3,14 @@ import { trans } from 'laravel-vue-i18n'
 import { ref, reactive } from 'vue'
 import { Popover, PopoverButton, PopoverPanel, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faChevronDown, faCheckSquare, faSquare } from '@fal'
+import { faChevronDown, faCheckSquare, faSquare, faFilter } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { onMounted } from 'vue'
 import { useLocaleStore } from '@/Stores/locale'
 import Button from '../Elements/Buttons/Button.vue'
 import Icon from '@/Components/Icon.vue'
 import { Icon as IconTS } from '@/types/Utils/Icon'
-library.add(faChevronDown, faCheckSquare, faSquare)
+library.add(faChevronDown, faCheckSquare, faSquare, faFilter)
 
 
 const props = defineProps<{
@@ -108,9 +108,9 @@ onMounted(() => {
 <template>
     <!-- <pre>{{ elements }}</pre> -->
 
-    <Popover class="relative md:hidden">
+    <Popover class="relative md:hidden px-3 pb-1">
         <!-- Button: Filter table -->
-        <PopoverButton :as="Button" type="tertiary" label="Filter table" icon="fal fa-filter" />
+        <PopoverButton :as="Button" type="tertiary" :label="trans('Filter table')" icon="fal fa-filter" />
 
         <Transition>
             <PopoverPanel class="z-20 absolute right-0 mt-2 min-w-80 origin-top-right rounded-lg overflow-hidden bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
