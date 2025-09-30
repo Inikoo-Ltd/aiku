@@ -11,6 +11,7 @@ import { isNull } from 'lodash-es';
 // import { trans } from 'laravel-vue-i18n';
 import Button from './Elements/Buttons/Button.vue';
 import { faChevronRight, faExternalLink } from '@far';
+import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
     header: { logo?: { image: { source: string } } },
@@ -150,7 +151,8 @@ const getHref = (item) => {
         }
         return `https://${item.url}`;
     }
-    return `/${item.url}`;
+
+    return `${item.url}`; // Internal
 }
 
 const getTarget = (item) => {
@@ -397,10 +399,10 @@ const getTarget = (item) => {
                 :class="['menu-container grid h-full', (activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'grid-cols-2', (activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'grid-cols-3']">
                 <!-- Column 1: Categories + Custom Menus -->
                 <div :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r', 'overflow-y-auto']">
-                    <!-- Custom Menu Top Section for Desktop -->
+                    <!-- Sidebar: Top for Desktop -->
                     <div v-if="customMenusTop && customMenusTop.length > 0">
                         <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex"
-                            class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                            class="p-2 px-4 flex items-center justify-between cursor-pointer"
                             :class="[
                                 activeCustomTopIndex === customTopIndex
                                     ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
@@ -422,12 +424,12 @@ const getTarget = (item) => {
 
                     <!-- Header -->
                     <div class="flex items-center justify-between px-2 py-4 border-b">
-                        <h3 class="font-semibold text-sm">Departments</h3>
+                        <h3 class="font-semibold text-sm">{{ trans("Departments") }}</h3>
                     </div>
 
                     <!-- Product Categories List -->
                     <div v-for="(item, index) in sortedProductCategories" :key="index"
-                        class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                        class="p-2 px-4 flex items-center justify-between cursor-pointer"
                         :class="[
                             activeIndex === index
                                 ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
@@ -441,7 +443,7 @@ const getTarget = (item) => {
                     <div v-if="customMenusBottom && customMenusBottom.length > 0">
                         <hr class="my-4 mx-4 border-gray-300">
                         <div v-for="(customItem, customIndex) in customMenusBottom" :key="'custom-' + customIndex"
-                            class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                            class="p-2 px-4 flex items-center justify-between cursor-pointer"
                             :class="[
                                 activeCustomIndex === customIndex
                                     ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
@@ -466,14 +468,14 @@ const getTarget = (item) => {
                     :class="[(activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'border-r']">
                     <!-- Header -->
                     <div  v-if="activeIndex !== null" class="flex items-center justify-between py-4 px-4">
-                        <h3 class="font-semibold text-sm">Sub-Departments</h3>
+                        <h3 class="font-semibold text-sm">{{ trans("Sub-Departments") }}</h3>
                     </div>
 
                     <div class="overflow-y-auto">
                         <!-- Product Categories Subdepartments -->
                         <div v-if="activeIndex !== null && sortedSubDepartments.length">
                             <div v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex"
-                                class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                                class="p-2 px-4 flex items-center justify-between cursor-pointer"
                                 :class="[
                                     activeSubIndex === sIndex
                                         ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
@@ -493,7 +495,7 @@ const getTarget = (item) => {
                         <!-- Custom Menus Subdepartments -->
                         <div v-if="activeCustomIndex !== null && customSubDepartments.length">
                             <div v-for="(sub, sIndex) in customSubDepartments" :key="sIndex"
-                                class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                                class="p-2 px-4 flex items-center justify-between cursor-pointer"
                                 :class="[
                                     activeCustomSubIndex === sIndex
                                         ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
@@ -519,7 +521,7 @@ const getTarget = (item) => {
                         <!-- Custom Top Menus Subdepartments -->
                         <div v-if="activeCustomTopIndex !== null && customTopSubDepartments.length">
                             <div v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex"
-                                class="p-2 px-4 flex items-center justify-between cursor-pointer transition-colors duration-200"
+                                class="p-2 px-4 flex items-center justify-between cursor-pointer"
                                 :class="[
                                     activeCustomTopSubIndex === sIndex
                                         ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
@@ -540,7 +542,7 @@ const getTarget = (item) => {
                         <!-- No subdepartments message -->
                         <div v-if="(activeIndex !== null && !sortedSubDepartments.length) || (activeCustomIndex !== null && !customSubDepartments.length) || (activeCustomTopIndex !== null && !customTopSubDepartments.length)"
                             class="p-2 text-gray-400 italic">
-                            No subdepartments available
+                            {{ trans("No subdepartments available") }}
                         </div>
                     </div>
                 </div>
@@ -549,7 +551,7 @@ const getTarget = (item) => {
                 <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null">
                     <!-- Header -->
                     <div  v-if="activeSubIndex !== null" class="flex items-center justify-between p-4">
-                        <h3 class="font-semibold text-sm">Families</h3>
+                        <h3 class="font-semibold text-sm">{{ trans("Families") }}</h3>
                     </div>
 
                     <div class="overflow-y-auto">
@@ -594,7 +596,7 @@ const getTarget = (item) => {
                         <!-- No families message -->
                         <div v-if="(activeSubIndex !== null && !sortedFamilies.length) || (activeCustomSubIndex !== null && !customFamilies.length) || (activeCustomTopSubIndex !== null && !customTopFamilies.length)"
                             class="p-2 text-gray-400 italic">
-                            No further items
+                            {{ trans("No further items") }}
                         </div>
                     </div>
                 </div>
@@ -679,7 +681,7 @@ const getTarget = (item) => {
 
 /* Hover & active states */
 .menu-link {
-    @apply flex items-center justify-between px-4 py-2 cursor-pointer transition-colors duration-200 rounded-lg;
+    @apply flex items-center justify-between px-4 py-2 cursor-pointer rounded-lg;
 }
 
 .menu-link:hover {
