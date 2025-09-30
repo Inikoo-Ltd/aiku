@@ -68,7 +68,7 @@ class RefundPaymentToBalance extends OrgAction
                 'status'              => PaymentStatusEnum::SUCCESS->value,
                 'state'               => PaymentStateEnum::COMPLETED->value,
                 'type'                => PaymentTypeEnum::REFUND,
-                'original_payment_id' => $payment
+                'original_payment_id' => $payment->id
             ]);
 
             StoreCreditTransaction::make()->action($refundPayment->customer, [

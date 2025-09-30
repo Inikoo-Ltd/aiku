@@ -93,6 +93,7 @@ class StorePayment extends OrgAction
             'original_payment_id' => [
                 'sometimes',
                 'nullable',
+                'integer',
                 'exists:payments,id'
             ],
             'payment_account_shop_id' => [

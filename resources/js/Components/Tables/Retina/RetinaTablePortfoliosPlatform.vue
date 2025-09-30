@@ -569,7 +569,7 @@ const onDisableCheckbox = (item) => {
                         </div>
 
                         <ButtonWithLink v-if="item.platform_possible_matches?.number_matches"
-                                        v-tooltip="trans('Match to existing Shopify product')" :routeTarget="{
+                                        v-tooltip="trans('Match to existing :platform product', { platform: platform_data?.name || 'Platform'})" :routeTarget="{
                                 method: 'post',
                                 name: props.routes.single_match.name,
                                 parameters: {
