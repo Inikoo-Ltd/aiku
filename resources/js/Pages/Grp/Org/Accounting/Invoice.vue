@@ -211,6 +211,7 @@ const taxNumberStatusText = computed(() => {
 })
 
 const generateShowOrderRoute = () => {
+    if(props.invoice_pay.order_slug)
     return route("grp.org.shops.show.ordering.orders.show", {
         organisation: route().params?.organisation,
         shop: props.invoice_pay.shop_slug,
@@ -444,6 +445,7 @@ const generateShowOrderRoute = () => {
                 </dl>
 
                 <dl
+                    v-if="props.invoice_pay.order_slug"
                     class="flex items-center flex-none gap-x-2 w-fit">
                     <dt v-tooltip="trans('Order')" class="flex-none">
                         <FontAwesomeIcon icon="fal fa-shopping-cart" fixed-width aria-hidden="true" class="text-gray-500"/>
