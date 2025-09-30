@@ -447,7 +447,7 @@ const onClickBalance = (paymentMethod, form) => {
                 })
             },
             onFinish: () => {
-                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
+                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-balance`)
             },
         },
     )
