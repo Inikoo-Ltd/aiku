@@ -61,6 +61,7 @@ class GetRefundOriginalInvoicePayments extends OrgAction
                 'payments.date',
                 'payments.amount',
                 'payment_accounts.code as payment_account_code',
+                'payment_accounts.type as payment_account_type',
                 'payment_accounts.name as payment_account_name',
                 'payment_accounts.slug as payment_account_slug',
                 'payment_service_providers.slug as payment_service_providers_slug',
