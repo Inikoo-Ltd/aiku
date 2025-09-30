@@ -1,30 +1,36 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 08-05-2025-16h-49m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Tue, 30 Sept 2025 12:07:13 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Iris\Portfolio;
+namespace App\Actions\Iris\CRM;
 
 use App\Actions\CRM\BackInStockReminder\DeleteBackInStockReminder;
-use App\Actions\IrisAction;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\BackInStockReminder;
-use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 
-class DeleteIrisBackInStockReminder extends IrisAction
+class DeleteIrisBackInStockReminder extends RetinaAction
 {
     use WithActionUpdate;
 
-    private Portfolio $portfolio;
 
     public function handle(BackInStockReminder $backInStockReminder): void
     {
         DeleteBackInStockReminder::make()->action($backInStockReminder);
+    }
+
+    public function authorize(ActionRequest $request): bool
+    {
+        $backInStockReminder = $request->route()->parameter('backInStockReminder');
+        if ($backInStockReminder->customer_id !== $this->customer->id) {
+            return false;
+        }
+        return true;
     }
 
     public function asController(BackInStockReminder $backInStockReminder, ActionRequest $request): void

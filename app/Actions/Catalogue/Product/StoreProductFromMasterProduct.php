@@ -37,7 +37,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
                 $shopProductData = isset($modelData['shop_products'][$shop->id]) ? $modelData['shop_products'][$shop->id] : [];
                 $price           = $shopProductData['price'] ?? $masterAsset->price;
-                $rrp             = $shopProductData['rrp'] ?? $price * 2.4;
+                $rrp             = $shopProductData['rrp'];
                 $createWebpage   = !isset($shopProductData['create_webpage']) || $shopProductData['create_webpage'];
 
                 $orgStocks = [];
