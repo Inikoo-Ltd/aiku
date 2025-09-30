@@ -25,15 +25,13 @@ import ActionCell from "./ActionCell.vue"
 import { InputText, Message } from "primevue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { get, set } from "lodash"
+import { InvoiceResource } from "@/types/invoice"
 
 library.add(fasDigging, fasRobot, fasPiggyBank, faExclamationTriangle, faCheck, faSave, faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank)
 
 
 const props = defineProps<{
-    invoice?: {
-        slug: string
-        reference: string
-    }
+    refund?: InvoiceResource
     invoice_pay: {
         currency_code: string
         total_invoice: number
@@ -56,6 +54,7 @@ const props = defineProps<{
     }
     is_in_refund?: boolean
 }>()
+console.log('popop', props.refund)
 
 const emits = defineEmits<{
     (e: "onPayInOnClick"): void
@@ -211,7 +210,7 @@ const onSubmitRefundToPaymentsMethod = (form, data: any) => {
     if (data.selected_action === 'manual') {
         onClickManual(data)
     } else if (data.selected_action === 'balance') {
-        onClickBalance(data, form.refund_amount)
+        onClickBalance(data, form)
     } else if (data.selected_action === 'automatic') {
         onClickAutomatic(data, form.refund_amount)
     }
@@ -415,38 +414,43 @@ const onClickManual = (paymentMethod) => {
     console.log('Manual clicked', paymentMethod)
 }
 
-const onClickBalance = (paymentMethod, loadingKey: string) => {
-    // router[paymentMethod.balance_refund_route.method || 'patch'](
-    //     route(paymentMethod.balance_refund_route.name, paymentMethod.balance_refund_route.parameters),
-    //     {
-    //         data: 'qqq'
-    //     },
-    //     {
-    //         preserveScroll: true,
-    //         preserveState: true,
-    //         onStart: () => { 
-    //             listLoadingIconActions.value.push(`${paymentMethod.id}-${loadingKey}`)
-    //         },
-    //         onSuccess: () => {
-    //             notify({
-    //                 title: trans("Success"),
-    //                 text: trans("Successfully submit the data"),
-    //                 type: "success"
-    //             })
-    //         },
-    //         onError: errors => {
-    //             notify({
-    //                 title: trans("Something went wrong"),
-    //                 text: trans("Failed to set location"),
-    //                 type: "error"
-    //             })
-    //         },
-    //         onFinish: () => {
-    //             listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
-    //         },
-    //     }
-    // )
+const onClickBalance = (paymentMethod, form) => {
     console.log('Manual clicked', paymentMethod)
+    console.log('zzzz', paymentMethod.balance_refund_route.name)
+
+    form
+    .transform((data) => ({
+        amount: data.refund_amount,
+        invoice_id: props.refund?.id
+    }))
+    .submit(
+        paymentMethod.balance_refund_route.method || "post",
+        route(paymentMethod.balance_refund_route.name, paymentMethod.balance_refund_route.parameters),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                listLoadingIconActions.value.push(`${paymentMethod.id}-balance`)
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to submit refund balance"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                listLoadingIconActions.value = listLoadingIconActions.value.filter(i => i !== `${paymentMethod.id}-${loadingKey}`)
+            },
+        },
+    )
 }
 
 const onClickAutomatic = (paymentMethod, loadingKey: string) => {
