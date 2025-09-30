@@ -139,8 +139,6 @@ trait WithWooCommerceApiRequest
                 'error' => $e->getMessage()
             ]);
 
-            \Sentry::captureMessage($e->getMessage());
-
             return [];
         }
     }
