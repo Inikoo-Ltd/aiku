@@ -11,6 +11,7 @@ import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faSave } from "@far"
 import { faExclamationTriangle } from "@fad"
+import { faDigging as fasDigging, faRobot as fasRobot, faPiggyBank as fasPiggyBank } from "@fas"
 import { faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import BluePrintTableRefund from "@/Components/Segmented/InvoiceRefund/BlueprintTableRefund"
@@ -25,7 +26,7 @@ import { InputText, Message } from "primevue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { get, set } from "lodash"
 
-library.add(faExclamationTriangle, faCheck, faSave, faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank)
+library.add(fasDigging, fasRobot, fasPiggyBank, faExclamationTriangle, faCheck, faSave, faPlus, faMinus, faArrowRight, faDigging, faRobot, faPiggyBank)
 
 
 const props = defineProps<{
@@ -569,19 +570,6 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                         fixed-width aria-hidden="true" />
                 </dt>
             </div>
-
-            <div class="px-2 pb-2">
-                <Message severity="error" class="">
-                    <div class="ml-2 text-xs font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
-                        <div>
-                            <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-sm" fixed-width aria-hidden="true"/>
-                            <div class="ml-1 inline items-center gap-x-2">
-                                {{ trans("Sorry, the refund payment is not available until Tuesday, Sept 30th 2025") }}
-                            </div>
-                        </div>
-                    </div>
-                </Message>
-            </div>
         </dl>
 
         <!-- Modal: Pay refund -->
@@ -616,6 +604,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                         <label for="last-name" class="block text-sm font-medium leading-6">
                             {{ trans("Refund amount") }}
                         </label>
+
                         <div class="mt-1 w-1/3">
                             <InputNumber v-model="paymentRefund.payment_amount"
                                 @update:modelValue="(e) => paymentRefund.payment_amount = e"
@@ -627,19 +616,36 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                     paddingBottom: '10px',
                                     width: '50px',
                                     background: 'transparent',
-                                }" mode="currency" :currency="invoice_pay.currency_code" />
+                                }" mode="currency" :currency="invoice_pay.currency_code"
+                            />
                         </div>
 
+                        <!-- Text: need to refund -->
                         <div class="space-x-1">
-                            <span class="text-xxs text-gray-500">{{
-                                trans("Need to refund")
-                            }}: {{
-                                    locale.currencyFormat(props.invoice_pay.currency_code || "gbp",
-                                        Number(-invoice_pay.total_need_to_pay))
-                                }}</span>
+                            <span class="text-xxs text-gray-500">
+                                {{ trans("Need to refund") }}: {{ locale.currencyFormat(props.invoice_pay.currency_code || "", Number(-invoice_pay.total_need_to_pay)) }}
+                            </span>
+
                             <Button @click="() => paymentRefund.payment_amount = -invoice_pay.total_need_to_pay"
                                 :disabled="paymentRefund.payment_amount === -invoice_pay.total_need_to_pay"
                                 type="tertiary" :label="trans('Refund all')" size="xxs" />
+                        </div>
+
+                        <!-- Button: Submit and error message -->
+                        <div class="mt-6 mb-4 relative flex justify-start max-w-[33%]">
+                            <Button v-if="paymentRefund.payment_method == 'credit_balance'"
+                                @click="() => onSubmitPaymentRefund()"
+                                label="Submit"
+                                full
+                                :loading="isLoadingPayment"
+                                :icon="faSave"
+                                :disabled="!paymentRefund.payment_amount || paymentRefund.payment_amount <= 0 || isLoadingPayment"
+                            />
+                            <Transition name="spin-to-down">
+                                <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">
+                                    *{{ errorPaymentMethod }}
+                                </p>
+                            </Transition>
                         </div>
                     </div>
 
@@ -669,7 +675,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
 
                                 <!-- Column: amount -->
                                 <template #amount="{ data, index }">
-                                    <div class="text-gray-700 font-medium">
+                                    <div @click="set(data, 'watcherValue', data.amount)" v-tooltip="trans('Click to fill the input')" class="w-fit font-medium cursor-pointer">
                                         {{ useLocaleStore().currencyFormat(data.currency_code, data.amount) }}
                                     </div>
                                     
@@ -686,6 +692,16 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                 </template>
 
                                 <!-- Refunded Column -->
+                                <template #payment_account_name="{ data }">
+                                    <div class="">
+                                        <div>{{data.payment_account_name}}</div>
+                                        <div class="text-gray-500 italic text-xs">
+                                            {{data.reference}}
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Refunded Column -->
                                 <template #refunded="{ data }">
                                     <div class="text-gray-500">
                                         {{ useLocaleStore().currencyFormat(data.currency_code, data.refunded) }}
@@ -694,47 +710,35 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
 
                                 <!-- Column: Actions -->
                                 <template #actions="{ data }">
-                                    <div v-if="layout.app.environment === 'local'" class="text-gray-500 flex gap-x-2">
-                                        <div @click="() => set(data, 'selected_action', 'manual') " class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
-                                            <FontAwesomeIcon icon="fal fa-digging" class="" fixed-width aria-hidden="true" />
+                                    <div class="min-w-64 w-fit">
+                                        <div v-if="layout.app.environment === 'local'" class="text-gray-500 flex gap-x-2 border-b border-gray-300 mb-1">
+                                            <div @click="() => set(data, 'selected_action', 'manual')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
+                                                <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'manual' ? 'fas fa-digging' : 'fal fa-digging'" class="" fixed-width aria-hidden="true" />
+                                            </div>
+                                            <div @click="() => set(data, 'selected_action', 'balance')" aclick="() => onClickBalance(data, 'balance')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'balance' ? 'text-blue-700' : ''">
+                                                <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'balance' ? 'fas fa-piggy-bank' : 'fal fa-piggy-bank'" class="" fixed-width aria-hidden="true" />
+                                            </div>
+                                            <div v-if="data.api_refund" @click="() => set(data, 'selected_action', 'automatic')" aclick="() => onClickAutomatic(data, 'automatic')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'automatic' ? 'text-blue-700' : ''">
+                                                <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'automatic' ? 'fas fa-robot' : 'fal fa-robot'" class="" fixed-width aria-hidden="true" />
+                                            </div>
                                         </div>
 
-                                        <div @click="() => set(data, 'selected_action', 'balance')" aclick="() => onClickBalance(data, 'balance')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'balance' ? 'text-blue-700' : ''">
-                                            <FontAwesomeIcon icon="fal fa-piggy-bank" class="" fixed-width aria-hidden="true" />
-                                        </div>
-
-                                        <div v-if="data.api_refund" @click="() => set(data, 'selected_action', 'automatic')" aclick="() => onClickAutomatic(data, 'automatic')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'automatic' ? 'text-blue-700' : ''">
-                                            <FontAwesomeIcon icon="fal fa-robot" class="" fixed-width aria-hidden="true" />
+                                        <div v-if="data.selected_action">
+                                            <ActionCell :ref="(e) => _formCell[index] = e"
+                                                v-if="(data.amount - data.refunded) > 0 && props.invoice_pay.total_need_to_refund_in_payment_method !== 0"
+                                                v-model="data.refund"
+                                                @input="(e) => data.amount = e.value"
+                                                @update:model-value="(e) => data.amount = e"
+                                                :max="maxRefund(data)" :min="0"
+                                                :currency="invoice_pay.currency_code"
+                                                :watcherValue="get(data, 'watcherValue', null)"
+                                                @refund="(form) => onSubmitRefundToPaymentsMethod(form, data)"
+                                            />
+                                            <span v-else class="text-gray-400 font-medium italic">
+                                                {{ trans("Refund Complete") }}
+                                            </span>
                                         </div>
                                     </div>
-                                </template>
-
-                                <!-- Column: Reference -->
-                                <template #reference="{ data }">
-                                    <!-- <div v-if="get(data, 'selected_action', null) === 'manual'" class="text-gray-500">
-                                        <InputText
-                                            :modelValue="get(data, 'new_reference', '')"
-                                            @update:modelValue="(e) => set(data, 'new_reference', e)"
-                                            class="bg-transparent border-0 p-0"
-                                            :placeholder="data.reference"
-                                        />
-                                    </div> -->
-                                    <div xv-else>
-                                        {{ data.reference }}
-                                    </div>
-                                </template>
-
-                                <!-- Column: Refund -->
-                                <template #refund="{ data, index }">
-                                    <ActionCell :ref="(e) => _formCell[index] = e"
-                                        v-if="(data.amount - data.refunded) > 0 && props.invoice_pay.total_need_to_refund_in_payment_method !== 0"
-                                        v-model="data.refund"
-                                        @input="(e) => data.amount = e.value"
-                                        @update:model-value="(e) => data.amount = e"
-                                        :max="maxRefund(data)" :min="0"
-                                        :currency="invoice_pay.currency_code"
-                                        @refund="(form) => onSubmitRefundToPaymentsMethod(form, data)" />
-                                    <span v-else class="text-gray-400 font-medium italic">Refund Complete</span>
                                 </template>
 
                                 <!-- Footer Section -->
@@ -758,17 +762,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                     </div>
                 </div>
 
-                <!-- Button: Submit -->
-                <div class="mt-6 mb-4 relative flex justify-end">
-                    <Button v-if="paymentRefund.payment_method == 'credit_balance'"
-                        @click="() => onSubmitPaymentRefund()" label="Submit" :loading="isLoadingPayment"
-                        :icon="faSave" />
-                    <Transition name="spin-to-down">
-                        <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">
-                            *{{ errorPaymentMethod }}
-                        </p>
-                    </Transition>
-                </div>
+                
             </div>
 
         </Dialog>

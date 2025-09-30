@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { useForm } from "@inertiajs/vue3"; // Import useForm
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { trans } from "laravel-vue-i18n";
@@ -20,11 +20,18 @@ const props = withDefaults(
     min: number;
     currency: string;
     step: Number|String
+    watcherValue?: number
   }>(),
   {
     step  : 1
   }
 );
+
+// To update the form value from parent
+watch(() => props.watcherValue, (newVal) => {
+  console.log("Watcher Value Changed:", newVal);
+  form.refund_amount = newVal
+})
 
 const emit = defineEmits(["update:modelValue", "refund"]);
 
