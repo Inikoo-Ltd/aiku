@@ -6,7 +6,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
-import { Link, router } from "@inertiajs/vue3"
+import { Link, router, usePage } from "@inertiajs/vue3"
 import InputNumber from "primevue/inputnumber"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCheck, faSave } from "@far"
@@ -53,6 +53,7 @@ const props = defineProps<{
         payments: routeType
     }
     is_in_refund?: boolean
+    handleTabUpdate: Function
 }>()
 console.log('popop', props.refund)
 
@@ -402,9 +403,10 @@ const onClickManual = (paymentMethod, form) => {
             onSuccess: () => {
                 notify({
                     title: trans("Success"),
-                    text: trans("Successfully submit the data"),
+                    text: trans("Successfully submit manual refund"),
                     type: "success"
                 })
+                handleTabUpdate('payments')
             },
             onError: errors => {
                 notify({
@@ -626,20 +628,27 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
 
                                 <!-- Column: amount -->
                                 <template #amount="{ data, index }">
-                                    <div @click="() => set(_formCell, [index, 'form', 'refund_amount'], data.amount)" v-tooltip="trans('Click to fill the input')" class="w-fit font-medium cursor-pointer">
+                                    <div class="w-fit font-medium">
                                         {{ useLocaleStore().currencyFormat(data.currency_code, data.amount) }}
                                     </div>
+
+                                    <!-- Text: available refund -->
+                                    <div v-if="data.refunded > 0">
+                                        <div class="text-gray-500 text-xs">
+                                            {{ trans("Refunded") }}: {{ useLocaleStore().currencyFormat(data.currency_code, data.refunded) }}
+                                        </div>
+                                        <div @click="() => set(_formCell, [index, 'form', 'refund_amount'], data.amount-data.refunded)" v-tooltip="trans('Click to fill the input')" class="cursor-pointer text-gray-500 hover:text-gray-700 w-fit text-xs">
+                                            {{ trans("Available to refund") }}: {{ useLocaleStore().currencyFormat(data.currency_code, data.amount-data.refunded) }}
+                                        </div>
+                                    </div>
                                     
-                                    <button
+                                    <!-- <button
                                         v-if="data.amount > -props.invoice_pay.total_need_to_refund_in_payment_method && props.invoice_pay.total_need_to_refund_in_payment_method != 0"
                                         @click="() => setRefundAllOutsideFulfilmentShop(props.invoice_pay.total_need_to_refund_in_payment_method, index)"
                                         :disabled="false"
                                         class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
-                                        Pay {{
-                                            locale.currencyFormat(invoice_pay.currency_code,
-                                                props.invoice_pay.total_need_to_refund_in_payment_method)
-                                        }}
-                                    </button>
+                                        Pay {{ locale.currencyFormat(invoice_pay.currency_code, props.invoice_pay.total_need_to_refund_in_payment_method) }}
+                                    </button> -->
                                 </template>
 
                                 <!-- Refunded Column -->
@@ -655,7 +664,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                 <!-- Refunded Column -->
                                 <template #refunded="{ data }">
                                     <div class="text-gray-500">
-                                        {{ useLocaleStore().currencyFormat(data.currency_code, data.refunded) }}
+                                        
                                     </div>
                                 </template>
 
@@ -681,6 +690,10 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                                 size="small"
                                                 placeholder="Transaction ID"
                                             />
+
+                                            <div v-if="usePage().props.errors && usePage().props.errors.reference" class="text-red-500 text-xs mt-1 italic">
+                                                *{{ usePage().props.errors.reference }}
+                                            </div>
                                         </div>
 
                                         <div v-if="data.selected_action">

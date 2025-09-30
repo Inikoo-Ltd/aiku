@@ -170,22 +170,22 @@ const listPaymentRefund = ref([
   }
 ]);
 const listPaymentMethod = ref([]);
-const isLoadingFetch = ref(false);
-const fetchPaymentMethod = async () => {
-  try {
-    isLoadingFetch.value = true;
-    const { data } = await axios.get(route(props.box_stats.information.routes.fetch_payment_accounts.name, props.box_stats.information.routes.fetch_payment_accounts.parameters));
-    listPaymentMethod.value = data.data;
-  } catch (error) {
-    notify({
-      title: trans("Something went wrong"),
-      text: trans("Failed to fetch payment method list"),
-      type: "error"
-    });
-  } finally {
-    isLoadingFetch.value = false;
-  }
-};
+// const isLoadingFetch = ref(false);
+// const fetchPaymentMethod = async () => {
+//   try {
+//     isLoadingFetch.value = true;
+//     const { data } = await axios.get(route(props.box_stats.information.routes.fetch_payment_accounts.name, props.box_stats.information.routes.fetch_payment_accounts.parameters));
+//     listPaymentMethod.value = data.data;
+//   } catch (error) {
+//     notify({
+//       title: trans("Something went wrong"),
+//       text: trans("Failed to fetch payment method list"),
+//       type: "error"
+//     });
+//   } finally {
+//     isLoadingFetch.value = false;
+//   }
+// };
 
 const paymentData = ref({
   payment_method: null as string | null,
@@ -482,6 +482,7 @@ console.log(props);
         <RefundPay
           v-if="!invoice_refund?.in_process && invoice_pay"
           :invoice_pay
+          :handleTabUpdate
           :refund="invoice_refund"
           :routes="{
             submit_route: invoice_pay.routes.submit_payment,

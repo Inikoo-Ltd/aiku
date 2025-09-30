@@ -10,6 +10,7 @@ import { faPlus, faMinus, faEdit, faCross, faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 // import { emits } from "v-calendar/dist/types/src/use/datePicker.js";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
+import { set } from "lodash"
 
 library.add(faArrowAltCircleLeft);
 
@@ -49,7 +50,9 @@ defineExpose({
   <div class="w-full flex items-center gap-x-2">
     <div>
       <InputNumber
-        v-model="form.refund_amount"
+        :modelValue="form.refund_amount"
+        @input="(e) => (set(form, 'refund_amount', e.value))"
+        @update:model-value="(e) => (set(form, 'refund_amount', e))"
         buttonLayout="horizontal"
         :showButtons="noIcon ? false : true"
         :min="props.min"
