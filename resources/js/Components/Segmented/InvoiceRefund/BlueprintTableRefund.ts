@@ -8,11 +8,11 @@ export const blueprintTable = [
         key : 'payment_account_name',
         width : "36vh",
     },
-    {
-        header : 'Reference',
-        key : 'reference',
-        width : "36vh",
-    },
+    // {
+    //     header : 'Reference',
+    //     key : 'reference',
+    //     width : "36vh",
+    // },
     {
         header : 'Amount',
         key : 'amount',
@@ -28,11 +28,11 @@ export const blueprintTable = [
         key : 'actions',
         width : "",
     },
-    {
-        header : '',
-        key : 'refund',
-        width : "10vh",
-    },
+    // {
+    //     header : '',
+    //     key : 'refund',
+    //     width : "10vh",
+    // },
 ]
 
 export default blueprintTable
