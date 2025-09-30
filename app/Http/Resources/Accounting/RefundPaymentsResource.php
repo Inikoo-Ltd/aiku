@@ -54,16 +54,14 @@ class RefundPaymentsResource extends JsonResource
             'updated_at'           => $this->updated_at,
             'amount'               => $this->amount,
             'manual_refund_route'  => [
-                'name'   => 'grp.org.accounting.payments.show',
+                'name'   => 'grp.models.payment.refund_manual',
                 'params' => [
-                    'organisation' => $this->organisation_slug,
                     'payment'      => $this->id
                 ]
             ],
-            'api_refund_route'     => [
-                'name'   => 'grp.org.accounting.payments.show',
+            'api_refund_route'  => [
+                'name'   => 'grp.models.payment.refund_api',
                 'params' => [
-                    'organisation' => $this->organisation_slug,
                     'payment'      => $this->id
                 ]
             ],
