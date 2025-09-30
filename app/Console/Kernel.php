@@ -125,7 +125,7 @@ class Kernel extends ConsoleKernel
         );
 
         $schedule->job(ReviveInActiveWooChannel::makeJob())->daily()->withoutOverlapping()->sentryMonitor(
-            monitorSlug: 'PingActiveWooChannel',
+            monitorSlug: 'ReviveInActiveWooChannel',
         );
 
         $schedule->job(UpdateInventoryInWooPortfolio::makeJob())->hourly()->withoutOverlapping()->sentryMonitor(
