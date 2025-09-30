@@ -675,7 +675,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
 
                                 <!-- Column: amount -->
                                 <template #amount="{ data, index }">
-                                    <div @click="set(data, 'watcherValue', data.amount)" v-tooltip="trans('Click to fill the input')" class="w-fit font-medium cursor-pointer">
+                                    <div @click="() => set(_formCell, [index, 'form', 'refund_amount'], data.amount)" v-tooltip="trans('Click to fill the input')" class="w-fit font-medium cursor-pointer">
                                         {{ useLocaleStore().currencyFormat(data.currency_code, data.amount) }}
                                     </div>
                                     
@@ -709,7 +709,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                 </template>
 
                                 <!-- Column: Actions -->
-                                <template #actions="{ data }">
+                                <template #actions="{ data, index }">
                                     <div class="min-w-64 w-fit">
                                         <div v-if="layout.app.environment === 'local'" class="text-gray-500 flex gap-x-2 border-b border-gray-300 mb-1">
                                             <div @click="() => set(data, 'selected_action', 'manual')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
@@ -724,8 +724,9 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                         </div>
 
                                         <div v-if="data.selected_action">
-                                            <ActionCell :ref="(e) => _formCell[index] = e"
+                                            <ActionCell
                                                 v-if="(data.amount - data.refunded) > 0 && props.invoice_pay.total_need_to_refund_in_payment_method !== 0"
+                                                :ref="(e) => _formCell[index] = e"
                                                 v-model="data.refund"
                                                 @input="(e) => data.amount = e.value"
                                                 @update:model-value="(e) => data.amount = e"
