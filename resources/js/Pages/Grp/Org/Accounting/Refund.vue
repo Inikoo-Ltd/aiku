@@ -240,10 +240,6 @@ const onSubmitPayment = () => {
   }
 };
 
-const onPayInOnClick = () => {
-  handleTabUpdate("payments");
-};
-
 
 const afterRefundAll = () => {
   if (_refComponents.value.items_in_process) {
@@ -489,7 +485,6 @@ console.log(props);
             fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
             payments: invoice_pay.routes.payments
           }"
-          @onPayInOnClick="onPayInOnClick"
           :is_in_refund="true"
         />
     </div>
