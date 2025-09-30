@@ -16,6 +16,10 @@ import { computed, ref } from "vue"
 import type { Component } from "vue"
 import type { Navigation } from "@/types/Tabs"
 import { useTabChange } from "@/Composables/tab-change"
+import { faSeedling } from '@fal'
+import {library} from "@fortawesome/fontawesome-svg-core";
+
+library.add(faSeedling)
 
 const props = defineProps<{
     title: string

@@ -287,7 +287,7 @@ const validImages = computed(() => {
                             <div>Product code: {{ fieldValue.product.code }}</div>
                             <!-- <div class="flex items-center gap-[1px]">
                             </div> -->
-                        </div>
+                        </div>  
 
                         <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between">
                             <!-- Stock info -->
