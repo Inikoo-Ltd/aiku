@@ -79,25 +79,26 @@ const paymentData = ref({
 
 
 // Section: Payment invoice
-const isOpenModalInvoice = ref(false)
-const listPaymentMethod = ref([])
-const isLoadingFetch = ref(false)
-const fetchPaymentMethod = async () => {
-    try {
-        isLoadingFetch.value = true
-        const { data } = await axios.get(route(props.routes.fetch_payment_accounts_route.name, props.routes.fetch_payment_accounts_route.parameters))
-        listPaymentMethod.value = data.data
-    } catch (error) {
-        notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to fetch payment method list"),
-            type: "error"
-        })
-    } finally {
-        isLoadingFetch.value = false
-    }
-}
-const isLoadingPayment = ref(false)
+// const isOpenModalInvoice = ref(false)
+// const listPaymentMethod = ref([])
+// const isLoadingFetch = ref(false)
+// const fetchPaymentMethod = async () => {
+//     try {
+//         isLoadingFetch.value = true
+//         const { data } = await axios.get(route(props.routes.fetch_payment_accounts_route.name, props.routes.fetch_payment_accounts_route.parameters))
+//         listPaymentMethod.value = data.data
+//     } catch (error) {
+//         console.error('error', error)
+//         notify({
+//             title: trans("Something went wrong"),
+//             text: trans("Failed to fetch payment method list"),
+//             type: "error"
+//         })
+//     } finally {
+//         isLoadingFetch.value = false
+//     }
+// }
+// const isLoadingPayment = ref(false)
 const errorPaymentMethod = ref<null | unknown>(null)
 // const onSubmitPayment = () => {
 //     router[props.routes.submit_route.method || "post"](
@@ -157,54 +158,54 @@ const paymentRefund = ref({
 })
 /* const isLoadingPaymentRefund = ref(false) */
 const errorPaymentMethodRefund = ref<null | unknown>(null)
-const sendSubmitPaymentRefund = (url: string, data: any) => {
-    try {
-        router.post(
-            url, data,
-            {
-                onStart: () => isLoadingPayment.value = true,
-                onFinish: () => {
-                    isLoadingPayment.value = false
-                    isOpenModalRefund.value = false
-                },
-                onSuccess: () => {
-                    paymentRefund.value.payment_account = null,
-                        paymentRefund.value.payment_amount = 0,
-                        notify({
-                            title: trans("Success"),
-                            text: "Successfully add payment invoice",
-                            type: "success"
-                        })
-                },
-                onError: (error) => {
-                    errorPaymentMethodRefund.value = error
-                    notify({
-                        title: trans("Something went wrong"),
-                        text: error.message,
-                        type: "error"
-                    })
-                },
-                preserveScroll: true
-            }
-        )
+// const sendSubmitPaymentRefund = (url: string, data: any) => {
+//     try {
+//         router.post(
+//             url, data,
+//             {
+//                 onStart: () => isLoadingPayment.value = true,
+//                 onFinish: () => {
+//                     isLoadingPayment.value = false
+//                     isOpenModalRefund.value = false
+//                 },
+//                 onSuccess: () => {
+//                     paymentRefund.value.payment_account = null,
+//                         paymentRefund.value.payment_amount = 0,
+//                         notify({
+//                             title: trans("Success"),
+//                             text: "Successfully add payment invoice",
+//                             type: "success"
+//                         })
+//                 },
+//                 onError: (error) => {
+//                     errorPaymentMethodRefund.value = error
+//                     notify({
+//                         title: trans("Something went wrong"),
+//                         text: error.message,
+//                         type: "error"
+//                     })
+//                 },
+//                 preserveScroll: true
+//             }
+//         )
 
-    } catch (error: unknown) {
-        errorPaymentMethodRefund.value = error
-    }
-}
+//     } catch (error: unknown) {
+//         errorPaymentMethodRefund.value = error
+//     }
+// }
 
 
-const onSubmitPaymentRefund = () => {
-    let url
-    if (paymentRefund.value.payment_method === "credit_balance") {
-        url = route("grp.models.refund.refund_to_credit", {
-            refund: props.invoice_pay.invoice_id
-        })
-        sendSubmitPaymentRefund(url, {
-            amount: paymentRefund.value.payment_amount
-        })
-    }
-}
+// const onSubmitPaymentRefund = () => {
+//     let url
+//     if (paymentRefund.value.payment_method === "credit_balance") {
+//         url = route("grp.models.refund.refund_to_credit", {
+//             refund: props.invoice_pay.invoice_id
+//         })
+//         sendSubmitPaymentRefund(url, {
+//             amount: paymentRefund.value.payment_amount
+//         })
+//     }
+// }
 
 const onSubmitRefundToPaymentsMethod = (data, form: any) => {
     if (data.selected_action === 'manual') {
@@ -338,13 +339,13 @@ watch(paymentRefund, () => {
 //     })
 // }
 
-const totalAmount = computed(() => {
-    return _PureTable.value ? _PureTable.value?.data.reduce((sum, item) => sum + Number(item.amount || 0), 0) : 0
-})
+// const totalAmount = computed(() => {
+//     return _PureTable.value ? _PureTable.value?.data.reduce((sum, item) => sum + Number(item.amount || 0), 0) : 0
+// })
 
-const totalRefunded = computed(() => {
-    return _PureTable.value ? _PureTable.value?.data.reduce((sum, item) => sum + Number(item.refunded || 0), 0) : 0
-})
+// const totalRefunded = computed(() => {
+//     return _PureTable.value ? _PureTable.value?.data.reduce((sum, item) => sum + Number(item.refunded || 0), 0) : 0
+// })
 
 
 const maxRefund = (data) => {
@@ -361,18 +362,18 @@ const onClickRefundPayments = () => {
         paymentRefund.value.payment_method = "credit_balance"
 }
 
-const listPaymentRefund = computed(() => [
-    {
-        label: trans("Refund all to customer's credit balance"),
-        value: "credit_balance",
-        disable: false
-    },
-    {
-        label: trans("Refund to original payment method"),
-        value: "invoice_payment_method",
-        disable: Number(props.invoice_pay.total_need_to_refund_in_payment_method) >= 0
-    }
-])
+// const listPaymentRefund = computed(() => [
+//     {
+//         label: trans("Refund all to customer's credit balance"),
+//         value: "credit_balance",
+//         disable: false
+//     },
+//     {
+//         label: trans("Refund to original payment method"),
+//         value: "invoice_payment_method",
+//         disable: Number(props.invoice_pay.total_need_to_refund_in_payment_method) >= 0
+//     }
+// ])
 
 const setRefundAllOutsideFulfilmentShop = (value, index) => {
     if (_formCell.value[index])
@@ -517,10 +518,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                         {{ trans("Excess Payment") }}
                     </dt>
                     <dd class="mt-1 text-sm/6 sm:mt-0 text-right text-gray-700">
-                        {{
-                            locale.currencyFormat(invoice_pay.currency_code,
-                                Number(invoice_pay.total_excess_payment))
-                        }}
+                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_excess_payment)) }}
                     </dd>
                 </div>
             </div>
@@ -539,23 +537,19 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                 </div>
             </div>
 
+
             <!-- Field: Total to refund -->
             <div v-if="Number(invoice_pay.total_need_to_pay) != 0"
                 class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
                     <!-- {{ Number(invoice_pay.total_need_to_pay) < 0 ? "Total to refund" : "Total to pay" }} -->
-                    Total to refund
+                    {{ trans("Total to refund") }}
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
                     <template v-if="layout.app.environment === 'local'">
-                        <button v-if="Number(invoice_pay.total_need_to_pay) > 0"
-                            @click="() => (isOpenModalInvoice = true, fetchPaymentMethod())" size="xxs"
-                            class="secondaryLink text-indigo-500">
-                            Pay Invoice
-                        </button>
-                        <button v-else-if="Number(invoice_pay.total_need_to_pay) < 0" @click="onClickRefundPayments"
+                        <button v-if="Number(invoice_pay.total_need_to_pay) < 0" @click="onClickRefundPayments"
                             size="xxs" class="secondaryLink text-indigo-500">
-                            Refund payment
+                            {{ trans("Refund payment") }}
                         </button>
                     </template>
 
@@ -568,6 +562,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                 </dd>
             </div>
 
+
             <!-- Field: Paid -->
             <div v-else class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
@@ -577,6 +572,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                         fixed-width aria-hidden="true" />
                 </dt>
             </div>
+
 
             <div class="px-2 pb-2">
                 <Message severity="error" class="">
