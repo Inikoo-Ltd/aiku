@@ -223,7 +223,7 @@ class RepairPalletDeliveriesAndReturns
                 $originalStartDate = $currentStartDay;
                 /** @var Pallet $pallet */
                 $pallet = $transaction->item;
-                if ($pallet && $pallet->received_at &&  $pallet->received_at->startOfDay()->isAfter($currentStartDay)) {
+                if ($pallet->received_at &&  $pallet->received_at->startOfDay()->isAfter($currentStartDay)) {
                     $currentStartDay = $pallet->received_at->startOfDay();
                 }
 
@@ -246,7 +246,7 @@ class RepairPalletDeliveriesAndReturns
                 /** @var Pallet $pallet */
                 $pallet = $transaction->item;
                 if (!$pallet) {
-                    continue;
+                    dd($transaction);
                 }
 
                 if ($pallet->dispatched_at) {
@@ -370,7 +370,7 @@ class RepairPalletDeliveriesAndReturns
                 $palletReturn
             ) {
                 if ($palletReturn->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
-                    print "Fix Pallet return Transaction CRB that should not be there!  >> ".$palletReturn->state->value." <<  (todo) : $transaction->id\n";
+                    print "Fix Pallet return Transaction CRB that should not be there! (".$palletReturn->id.")   >> ".$palletReturn->state->value." <<  (todo) : $transaction->id\n";
                     // delete it
 
                 }
