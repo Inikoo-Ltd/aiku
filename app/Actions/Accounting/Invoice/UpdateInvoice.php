@@ -132,6 +132,10 @@ class UpdateInvoice extends OrgAction
             }
         }
 
+        if (Arr::hasAny($changes, ['billing_country_id', 'sales_channel_id', 'is_vip', 'external_invoicer_id'])) {
+            CategoriseInvoice::run($invoice);
+        }
+
         if (Arr::has($changes, 'shipping_zone_schema_id')) {
             if ($oldShippingZoneSchemaId) {
                 ShippingZoneSchemaHydrateUsageInInvoices::dispatch($oldShippingZoneSchemaId)->delay($this->hydratorsDelay);

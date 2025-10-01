@@ -8,6 +8,7 @@
 
 namespace App\Actions\Transfers\Aurora;
 
+use App\Actions\Accounting\Invoice\CategoriseInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoicePaymentState;
 use App\Actions\Accounting\Invoice\StoreInvoice;
 use App\Actions\Accounting\Invoice\UpdateInvoice;
@@ -52,6 +53,8 @@ class FetchAuroraInvoices extends FetchAuroraAction
                     strict: false,
                     audit: false
                 );
+                CategoriseInvoice::run($invoice);
+
             } catch (Exception $e) {
                 $this->recordError($organisationSource, $e, $invoiceData['invoice'], 'Invoice', 'update');
 
