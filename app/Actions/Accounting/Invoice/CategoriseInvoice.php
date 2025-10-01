@@ -66,7 +66,7 @@ class CategoriseInvoice extends OrgAction
         $invoiceCategories = $invoice->organisation->invoiceCategories()->where('state', InvoiceCategoryStateEnum::ACTIVE)->orderBy('priority', 'desc')->get();
         /** @var InvoiceCategory $invoiceCategory */
         foreach ($invoiceCategories as $invoiceCategory) {
-            
+
             $invoiceCategory = match ($invoiceCategory->type) {
                 InvoiceCategoryTypeEnum::SHOP_TYPE => $this->inHaystack($invoiceCategory, 'shop_types', $invoice->shop->type->value),
                 InvoiceCategoryTypeEnum::SHOP_FALLBACK => $this->shopFallback($invoice, $invoiceCategory),

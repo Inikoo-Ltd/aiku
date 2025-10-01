@@ -22,21 +22,20 @@ class TestInvoiceInventoryCategory
     {
 
         //$invoice=Invoice::find(275557);
-        $aikuInvoiceCategory=CategoriseInvoice::make()->getInvoiceCategory($invoice);
-       // dd($aikuInvoiceCategory->slug);
+        $aikuInvoiceCategory = CategoriseInvoice::make()->getInvoiceCategory($invoice);
+        // dd($aikuInvoiceCategory->slug);
 
-        if($aikuInvoiceCategory->source_id && $aikuInvoiceCategory->source_id!=$invoice->source_invoice_category_id)
-        {
+        if ($aikuInvoiceCategory->source_id && $aikuInvoiceCategory->source_id != $invoice->source_invoice_category_id) {
 
             /** @var InvoiceCategory $auroraInvoiceCategory */
-            $auroraInvoiceCategory=InvoiceCategory::where('source_id',$invoice->source_invoice_category_id)->first();
+            $auroraInvoiceCategory = InvoiceCategory::where('source_id', $invoice->source_invoice_category_id)->first();
 
-            if($auroraInvoiceCategory->slug=='agnescat-faire' && $aikuInvoiceCategory->slug=='aromatics-faire'){
+            if ($auroraInvoiceCategory->slug == 'agnescat-faire' && $aikuInvoiceCategory->slug == 'aromatics-faire') {
                 return;
             }
 
 
-            if($auroraInvoiceCategory->slug=='aw-dropship' && $aikuInvoiceCategory->slug=='avasam'){
+            if ($auroraInvoiceCategory->slug == 'aw-dropship' && $aikuInvoiceCategory->slug == 'avasam') {
                 return;
             }
 

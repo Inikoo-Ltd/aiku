@@ -727,7 +727,7 @@ test('UI show accounting dashboard', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'accounting')
+                    ->where('title', 'Accounting')
                     ->etc()
             )
             ->has('flatTreeMaps');
