@@ -43,7 +43,7 @@ class IndexMasterShopsSalesTable extends OrgAction
 
 
         return $queryBuilder->allowedSorts(['code', 'name', 'type', 'state'])
-            ->withPaginator(null)
+            ->withPaginator(null, 1000)
             ->withQueryString();
     }
 
