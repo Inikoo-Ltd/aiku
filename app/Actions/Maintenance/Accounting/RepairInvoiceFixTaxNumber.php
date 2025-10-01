@@ -33,9 +33,6 @@ class RepairInvoiceFixTaxNumber
 
             if ($formattedTaxNumber == $invoice->tax_number || $formattedTaxNumberNoCountryCode == $invoice->tax_number) {
                 if ($invoice->customer->taxNumber->valid || !$this->taxNumberStartWithLetter($invoice->tax_number)) {
-                    if ($formattedTaxNumber != $invoice->tax_number) {
-                        print "fixing: $invoice->slug $invoice->tax_number ".$invoice->customer->taxNumber->getFormattedTaxNumber()."\n";
-                    }
 
                     $invoice->updateQuietly([
                         'tax_number' => $invoice->customer->taxNumber->getFormattedTaxNumber(),

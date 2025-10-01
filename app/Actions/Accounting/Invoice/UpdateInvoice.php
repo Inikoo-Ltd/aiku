@@ -31,6 +31,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\InvoiceTransaction;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
@@ -134,6 +135,12 @@ class UpdateInvoice extends OrgAction
 
         if (Arr::hasAny($changes, ['billing_country_id', 'sales_channel_id', 'is_vip', 'external_invoicer_id'])) {
             CategoriseInvoice::run($invoice);
+        }
+
+        if (Arr::has($changes, 'date')) {
+            InvoiceTransaction::where('invoice_id', $invoice->id)->update([
+                'date' => $invoice->date,
+            ]);
         }
 
         if (Arr::has($changes, 'shipping_zone_schema_id')) {

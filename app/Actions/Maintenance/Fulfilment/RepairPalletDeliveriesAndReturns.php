@@ -84,7 +84,7 @@ class RepairPalletDeliveriesAndReturns
                 $currentEndDay   = $transaction->end_date ? $transaction->end_date->startOfDay() : null;
 
                 if ($currentEndDay and $currentEndDay->isBefore($currentStartDay)) {
-                    print 'Pallet: '.$transaction->id.' end date is before start date '.$currentStartDay->format('Y-m-d').' -> '.$currentEndDay->format('Y-m-d')."\n";
+                    print 'Pallet: (transaction) '.$transaction->id.' end date is before start date '.$currentStartDay->format('Y-m-d').' -*-> '.$currentEndDay->format('Y-m-d')."\n";
                 }
             }
         }
@@ -223,6 +223,11 @@ class RepairPalletDeliveriesAndReturns
                 $originalStartDate = $currentStartDay;
                 /** @var Pallet $pallet */
                 $pallet = $transaction->item;
+
+                if(!$pallet) {
+                    dd($transaction);
+                }
+
                 if ($pallet->received_at &&  $pallet->received_at->startOfDay()->isAfter($currentStartDay)) {
                     $currentStartDay = $pallet->received_at->startOfDay();
                 }
@@ -370,8 +375,8 @@ class RepairPalletDeliveriesAndReturns
                 $palletReturn
             ) {
                 if ($palletReturn->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
-                    print "Fix Pallet return Transaction CRB that should not be there! (".$palletReturn->id.")   >> ".$palletReturn->state->value." <<  (todo) : $transaction->id\n";
-                    // delete it
+                    print "Fix Pallet return Transaction CRB that should not be there! (".$palletReturn->id.")   >> a >> ".$palletReturn->state->value." <<  (todo) : $transaction->id\n";
+                   RecurringBillTransaction::where('fulfilment_transaction_id', $transaction->id)->delete();
 
                 }
             });
