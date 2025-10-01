@@ -173,6 +173,9 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
 
     private function processPagination(?string $prefix, int $numberOfRecords = null, $tableName = null, $queryName = 'perPage', $userType = 'user'): \Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
+
+
+
         if ($prefix === null) {
             $prefix = '';
         }
@@ -206,6 +209,7 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
         if ($tableName && $userId) {
             Cache::put($keyRppCache, $perPage, 60 * 60 * 24 * 180); // 6 months in seconds
         }
+
 
         return $this->paginate(
             perPage: $perPage,
