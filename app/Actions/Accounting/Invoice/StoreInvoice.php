@@ -293,7 +293,7 @@ class StoreInvoice extends OrgAction
 
             'shipping_zone_schema_id' => ['sometimes', 'nullable'],
             'shipping_zone_id'        => ['sometimes', 'nullable'],
-            'has_insurance'           => ['sometimes', 'boolean'],
+            'has_insurance'           => ['sometimes', 'boolean', 'nullable'],
 
         ];
 
