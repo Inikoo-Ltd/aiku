@@ -60,7 +60,7 @@ const props = defineProps<{
   url : string
   luigi_tracker_id: string
 }>();
-console.log('ss', props.webpage)
+
 provide('isInWorkshop', true);
 const layout = inject('layout', layoutStructure);
 const confirm = useConfirm();
@@ -385,7 +385,6 @@ const beforePublish = (route, popover) => {
   const validation = JSON.stringify(data.value.layout);
   if(props.webpage.type == "catalogue") onPublish(route, popover)
   else {
-    console.log('validation', validation)
      validation.includes('<h1') || validation.includes('<H1')
     ? onPublish(route, popover)
     : confirmPublish(route, popover);
