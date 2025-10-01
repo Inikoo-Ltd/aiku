@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
 import InputText from 'primevue/inputtext'
-import Textarea from 'primevue/textarea'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import ImageCropper from '@/Components/Forms/Fields/ImageCropSquare.vue'
 import axios from 'axios'

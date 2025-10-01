@@ -2,7 +2,7 @@
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import { debounce, get, set } from 'lodash-es'
-import { Checkbox, Column, ColumnGroup, DataTable, IconField, InputIcon, InputNumber, InputText, RadioButton, Row } from 'primevue'
+import {  Column, DataTable, IconField, InputIcon, InputNumber, InputText } from 'primevue'
 import { inject, onMounted, ref, watch } from 'vue'
 
 import Editor from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
@@ -12,7 +12,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch, faText } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Image from '@/Components/Image.vue'
-import { useTruncate } from '@/Composables/useTruncate'
 import Modal from '@/Components/Utils/Modal.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureInput from '@/Components/Pure/PureInput.vue'
