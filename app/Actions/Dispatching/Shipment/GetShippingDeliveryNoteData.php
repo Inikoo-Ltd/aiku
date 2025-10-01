@@ -60,46 +60,46 @@ class GetShippingDeliveryNoteData
 
         $toPhone = $deliveryNote->phone ?? '';
 
-        if ($cascade) {
-            if (!$toPhone) {
-                $toPhone = $customer->phone ?? '';
-            }
-            if (!$toPhone) {
-                $toPhone = $shop->phone;
-            }
-        }
+//        if ($cascade) {
+//            if (!$toPhone) {
+//                $toPhone = $customer->phone ?? '';
+//            }
+//            if (!$toPhone) {
+//                $toPhone = $shop->phone;
+//            }
+//        }
 
 
         $toEmail = $deliveryNote->email ?? '';
 
-        if ($cascade) {
-            if (!$toEmail) {
-                $toEmail = $customer->email;
-            }
-            if (!$toEmail) {
-                $toEmail = $shop->email;
-            }
-        }
+//        if ($cascade) {
+//            if (!$toEmail) {
+//                $toEmail = $customer->email;
+//            }
+//            if (!$toEmail) {
+//                $toEmail = $shop->email;
+//            }
+//        }
 
 
         $toCompanyName = $deliveryNote->company_name ?? '';
 
-        if ($cascade) {
-            if (!$toCompanyName) {
-                $toCompanyName = $customer->company_name ?? '';
-            }
-            if (!$toCompanyName) {
-                $toCompanyName = $customer->name;
-            }
-        }
+//        if ($cascade) {
+//            if (!$toCompanyName) {
+//                $toCompanyName = $customer->company_name ?? '';
+//            }
+//            if (!$toCompanyName) {
+//                $toCompanyName = $customer->name;
+//            }
+//        }
 
 
 
         $contactName   = $deliveryNote->contact_name ?? '';
 
-        if ($cascade && !$contactName) {
-            $contactName = $customer->contact_name ?? '';
-        }
+//        if ($cascade && !$contactName) {
+//            $contactName = $customer->contact_name ?? '';
+//        }
 
 
         $toFirstName = '';
