@@ -357,7 +357,19 @@ class EditProduct extends OrgAction
                             'type'     => 'input_number',
                             'label'    => __('price'),
                             'required' => true,
-                            'value'    => $product->price
+                            'value'    => $product->price,
+                           /*  'bind'  => [
+                                'suffix' => 'g'
+                            ] */
+                        ],
+                        'rrp'       => [
+                            'type'     => 'input_number',
+                            'label'    => __('rrp'),
+                            'required' => true,
+                            'value'    => $product->rrp,
+                            /* 'bind'  => [
+                                'suffix' => 'g'
+                            ] */
                         ],
                         'state'       => [
                             'type'     => 'select',

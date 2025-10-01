@@ -178,10 +178,12 @@ onMounted(() => {
             />
 
             <!-- Section: Logo  -->
-            <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] mb-1 rounded">
-                <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" :imageCover="true"
-                    :style="{ objectFit: 'contain' }" />
-            </component>
+            <div class="w-full px-4 mb-1">
+                <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] rounded">
+                    <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" :imageCover="true"
+                        :style="{ objectFit: 'contain' }" />
+                </component>
+            </div>
 
             <!-- Section: Profile -->
             <div class="flex items-center cursor-pointer">
