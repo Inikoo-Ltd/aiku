@@ -17,7 +17,7 @@ class GetShippingDeliveryNoteData
     use AsAction;
 
 
-    public function handle(DeliveryNote $deliveryNote, $cascade = true): array
+    public function handle(DeliveryNote $deliveryNote): array
     {
 
 
@@ -59,47 +59,9 @@ class GetShippingDeliveryNoteData
         $address = $deliveryNote->deliveryAddress;
 
         $toPhone = $deliveryNote->phone ?? '';
-
-//        if ($cascade) {
-//            if (!$toPhone) {
-//                $toPhone = $customer->phone ?? '';
-//            }
-//            if (!$toPhone) {
-//                $toPhone = $shop->phone;
-//            }
-//        }
-
-
         $toEmail = $deliveryNote->email ?? '';
-
-//        if ($cascade) {
-//            if (!$toEmail) {
-//                $toEmail = $customer->email;
-//            }
-//            if (!$toEmail) {
-//                $toEmail = $shop->email;
-//            }
-//        }
-
-
         $toCompanyName = $deliveryNote->company_name ?? '';
-
-//        if ($cascade) {
-//            if (!$toCompanyName) {
-//                $toCompanyName = $customer->company_name ?? '';
-//            }
-//            if (!$toCompanyName) {
-//                $toCompanyName = $customer->name;
-//            }
-//        }
-
-
-
         $contactName   = $deliveryNote->contact_name ?? '';
-
-//        if ($cascade && !$contactName) {
-//            $contactName = $customer->contact_name ?? '';
-//        }
 
 
         $toFirstName = '';

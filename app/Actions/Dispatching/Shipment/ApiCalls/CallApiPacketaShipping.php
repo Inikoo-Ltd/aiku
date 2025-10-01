@@ -51,7 +51,7 @@ class CallApiPacketaShipping extends OrgAction
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
-    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, bool $cascade = true): array
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         $accessToken = $this->getAccessToken($shipper);
         $apiPassword = Arr::get($accessToken, 'api_password');
@@ -60,7 +60,7 @@ class CallApiPacketaShipping extends OrgAction
         if ($parent instanceof PalletReturn) {
             $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
         } else {
-            $parentResource = GetShippingDeliveryNoteData::run($parent, $cascade);
+            $parentResource = GetShippingDeliveryNoteData::run($parent);
         }
 
         $parcels     = $parent->parcels;

@@ -55,7 +55,7 @@ class StoreShipment extends OrgAction
                 'apc-gb' => CallApiApcGbShipping::run($parent, $shipper),
                 'gls-sk' => CallApiGlsSkShipping::run($parent, $shipper),
                 'gls-es' => CallApiGlsEsShipping::run($parent, $shipper),
-                'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper, $cascade),
+                'packeta-sk' => CallApiPacketaShipping::run($parent, $shipper),
                 'dpd-gb' => CallApiDpdGbShipping::run($parent, $shipper),
                 'itd' => CallApiItdShipping::run($parent, $shipper),
                 default => [
