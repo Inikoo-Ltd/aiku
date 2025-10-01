@@ -19,11 +19,11 @@ class RepairInvoiceSourceInventoryCategory
     protected function handle(Invoice $invoice): void
     {
 
-        $invoiceCategory=$invoice->invoiceCategory;
-        if($invoiceCategory){
+        $invoiceCategory = $invoice->invoiceCategory;
+        if ($invoiceCategory) {
             $invoice->update(
                 [
-                    'source_invoice_category_id'=>$invoiceCategory->source_id,
+                    'source_invoice_category_id' => $invoiceCategory->source_id,
                 ]
             );
         }
