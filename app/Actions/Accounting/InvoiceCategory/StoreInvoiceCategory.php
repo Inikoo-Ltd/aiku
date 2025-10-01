@@ -22,6 +22,7 @@ use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Console\Command;
 
 class StoreInvoiceCategory extends OrgAction
 {
@@ -119,5 +120,44 @@ class StoreInvoiceCategory extends OrgAction
         return $this->handle($parent, $this->validatedData);
     }
 
+    public function getCommandSignature(): string
+    {
+        return 'invoice_category:store {organisation} {name} {type} {--state=} {--priority=} {--show_in_dashboards}';
+    }
+
+    /**
+     * Create an invoice category via Artisan.
+     *
+     * @throws \Throwable
+     */
+    public function asCommand(Command $command): int
+    {
+        /** @var Organisation $organisation */
+        $organisation = Organisation::where('slug', $command->argument('organisation'))
+            ->firstOrFail();
+
+        $name = $command->argument('name');
+        $type = $command->argument('type');
+
+        $modelData = [
+            'name'  => $name,
+            'type'  => $type,
+        ];
+
+        if ($state = $command->option('state')) {
+            $modelData['state'] = $state; // validated against enum in rules
+        }
+        if (!is_null($command->option('priority'))) {
+            $modelData['priority'] = (int) $command->option('priority');
+        }
+        if ($command->option('show_in_dashboards')) {
+            $modelData['show_in_dashboards'] = true;
+        }
+
+        $invoiceCategory = $this->action($organisation, $modelData);
+        $command->info("Created invoice category: $invoiceCategory->slug");
+
+        return 0;
+    }
 
 }

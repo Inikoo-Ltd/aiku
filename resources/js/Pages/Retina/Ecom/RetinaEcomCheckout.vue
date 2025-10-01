@@ -9,7 +9,7 @@ import { trans } from "laravel-vue-i18n"
 import CheckoutPaymentBankTransfer from "@/Components/Retina/Ecom/CheckoutPaymentBankTransfer.vue"
 import CheckoutPaymentCard from "@/Components/Retina/Ecom/CheckoutPaymentCard.vue"
 import { faArrowLeft, faCreditCardFront, faUniversity } from "@fal"
-import { faExclamationTriangle } from "@fas"
+import { faExclamationTriangle, faStar, faBoxHeart, faShieldAlt } from "@fas"
 import { Head } from "@inertiajs/vue3"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { routeType } from "@/types/route"
@@ -77,6 +77,12 @@ onUnmounted(() => {
     <PageHeading
         :data="pageHead"
     />
+
+    <div v-if="order?.has_insurance || order?.is_premium_dispatch || order?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
+        <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+    </div>
 
     <div v-if="!summary" class="text-center text-gray-500 text-2xl pt-6">
         {{ trans("Your basket is empty") }}

@@ -25,7 +25,7 @@ import {Address, AddressManagement} from "@/types/PureComponent/Address"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import {faExclamationTriangle as fadExclamationTriangle} from '@fad'
-import {faExclamationTriangle, faExclamation} from '@fas'
+import {faExclamationTriangle, faExclamation, faShieldAlt, faStar, faBoxHeart } from '@fas'
 import {
     faDollarSign,
     faIdCardAlt,
@@ -39,7 +39,7 @@ import {
     faFilePdf,
     faPaperclip,
     faTimes,
-    faInfoCircle,
+    faInfoCircle
 } from '@fal'
 import {Currency} from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
@@ -54,7 +54,7 @@ import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import {debounce} from 'lodash-es'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
+library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faShieldAlt, faSpinnerThird)
 
 
 const props = defineProps<{
@@ -196,6 +196,12 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
 
     <PageHeading :data="pageHead">
     </PageHeading>
+
+    <div v-if="data?.data?.has_insurance || data?.data?.is_premium_dispatch || data?.data?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
+        <FontAwesomeIcon v-if="data?.data?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="data?.data?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="data?.data?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+    </div>
 
     <div class="mt-4 sm:mt-0 border-b border-gray-200 pb-2 max-w-5xl">
         <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6"/>

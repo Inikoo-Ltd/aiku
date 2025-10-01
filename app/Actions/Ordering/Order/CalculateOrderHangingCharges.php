@@ -9,8 +9,7 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Ordering\Transaction\DestroyTransaction;
-use App\Actions\Ordering\Transaction\StoreTransaction;
-use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Ordering\Transaction\Traits\WithChargeTransactions;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderChargesEngineEnum;
@@ -24,6 +23,7 @@ use Lorisleiva\Actions\Concerns\AsObject;
 class CalculateOrderHangingCharges
 {
     use AsObject;
+    use WithChargeTransactions;
 
     public function handle(Order $order): Order
     {
@@ -75,36 +75,6 @@ class CalculateOrderHangingCharges
         return false;
     }
 
-    private function storeChargeTransaction(Order $order, Charge $charge, $chargeAmount): Transaction
-    {
-        return StoreTransaction::run(
-            $order,
-            $charge->historicAsset,
-            [
-                'quantity_ordered' => 1,
-                'gross_amount'     => $chargeAmount,
-                'net_amount'       => $chargeAmount,
-
-            ],
-            false
-        );
-    }
-
-
-    private function updateChargeTransaction(Transaction $transaction, Charge $charge, $chargeAmount): Transaction
-    {
-        return UpdateTransaction::run(
-            $transaction,
-            [
-                'model_id'          => $charge->id,
-                'asset_id'          => $charge->asset_id,
-                'historic_asset_id' => $charge->historicAsset->id,
-                'gross_amount'      => $chargeAmount ?? 0,
-                'net_amount'        => $chargeAmount ?? 0,
-            ],
-            false
-        );
-    }
 
 
     private function match($amount, string $rules): bool

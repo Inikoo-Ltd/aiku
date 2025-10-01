@@ -13,6 +13,9 @@ namespace App\Actions\Retina\Ecom\Basket\UI;
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
@@ -47,6 +50,10 @@ class ShowRetinaEcomBasket extends RetinaAction
     {
         $isOrder = $order instanceof Order;
 
+        
+        $premiumDispatch = $order?->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $extraPacking    = $order?->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $insurance       = $order?->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
 
         return Inertia::render(
             'Ecom/RetinaEcomBasket',
@@ -136,6 +143,12 @@ class ShowRetinaEcomBasket extends RetinaAction
 
                 'is_unable_dispatch' => $order && in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
 
+                'charges' => [
+                    'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
+                    'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
+                    'insurance'       => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
+                ],
+                
                 'address_management' => $order ? GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true) : [],
                 'balance'            => $this->customer->balance,
                 'is_in_basket'       => true,

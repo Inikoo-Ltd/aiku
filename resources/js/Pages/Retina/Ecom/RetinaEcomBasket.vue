@@ -8,7 +8,7 @@ import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTag } from "@fas"
+import { faTag, faStar, faBoxHeart, faShieldAlt } from "@fas"
 import { faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { debounce } from 'lodash-es'
@@ -28,7 +28,17 @@ import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue
 import { AddressManagement } from '@/types/PureComponent/Address'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 library.add(faTag, faCheck)
+
+interface ChargeResource {
+    label: string
+    name: string
+    description: string
+    state: string
+    amount: number
+    currency_code: string
+}
 
 const props = defineProps<{
     pageHead: PageHeadingTS
@@ -91,6 +101,11 @@ const props = defineProps<{
     is_in_basket: boolean
     address_management: AddressManagement
     is_unable_dispatch: boolean
+    charges: {
+        premium_dispatch?: ChargeResource
+        extra_packing?: ChargeResource
+        insurance?: ChargeResource
+    }
 }>()
 
 console.log(props.transactions)
@@ -372,6 +387,7 @@ const blackListProductIds = computed(() => {
         .filter(Boolean)
 })
 
+// Section: Charge Priority Dispatch
 const isLoadingPriorityDispatch = ref(false)
 const onChangePriorityDispatch = async (val: boolean) => {
     router.patch(
@@ -413,6 +429,94 @@ const onChangePriorityDispatch = async (val: boolean) => {
         }
     )
 }
+
+
+// Section: Extra Packing
+const isLoadingExtraPacking = ref(false)
+const onChangeExtraPacking = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_extra_packing', props.order.id),
+        {
+            has_extra_packing: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingExtraPacking.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is changed to extra packing!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is no longer on extra packing."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update extra packing, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingExtraPacking.value = false
+            },
+        }
+    )
+}
+
+
+// Section: Charge Insurance
+const isLoadingInsurance = ref(false)
+const onChangeInsurance = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_insurance', props.order.id),
+        {
+            has_insurance: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingInsurance.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order has insurance!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order no longer has insurance."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update insurance, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingInsurance.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -441,6 +545,11 @@ const onChangePriorityDispatch = async (val: boolean) => {
         </template>
     </PageHeading>
 
+    <div v-if="order?.has_insurance || order?.is_premium_dispatch || order?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
+        <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+    </div>
 
     <EcomCheckoutSummary
         :summary
@@ -456,20 +565,67 @@ const onChangePriorityDispatch = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
             
-            <!-- Section: Priority Dispatch -->
-            <div v-if="layout.app.environment === 'local'" class="flex gap-4 my-4 justify-end pr-6">
-                <div class="px-2 flex justify-end relative" :class="order.is_premium_dispatch ? 'text-green-500' : ''">
-                    {{ trans("For the same day dispatch of your order before 12pm") }} <span class="hidden">(£7.50)</span>
+            <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                    <InformationIcon :information="charges.premium_dispatch?.description" />
+                    {{ charges.premium_dispatch?.label ?? charges.premium_dispatch?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
                 </div>
-
                 <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
                     <ToggleSwitch
-                        :modelValue="order.is_premium_dispatch"
+                        :modelValue="order?.is_premium_dispatch"
                         @update:modelValue="(e) => (onChangePriorityDispatch(e))"
                         xdisabled="isLoadingPriorityDispatch"
                     >
                         <template #handle="{ checked }">
                             <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </template>
+                    </ToggleSwitch>
+                </div>
+            </div>
+            
+            <!-- Section: Charge Extra Packing -->
+            <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-end pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
+                    <InformationIcon :information="charges.extra_packing?.description" />
+                    {{ charges.extra_packing?.label ?? charges.extra_packing?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
+                </div>
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="order?.has_extra_packing"
+                        @update:modelValue="(e) => (onChangeExtraPacking(e))"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </template>
+                    </ToggleSwitch>
+                </div>
+            </div>
+            
+            <!-- Section: Charge Insurance -->
+            <div v-if="charges.insurance" class="flex gap-4 my-4 justify-end pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                    <InformationIcon :information="charges.insurance?.description" />
+                    {{ charges.insurance?.label ?? charges.insurance?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
+                </div>
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="order?.has_insurance"
+                        @update:modelValue="(e) => (onChangeInsurance(e))"
+                        xdisabled="isLoadingInsurance"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingInsurance" xclass="text-sm text-gray-500" />
                             <template v-else>
                                 <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />

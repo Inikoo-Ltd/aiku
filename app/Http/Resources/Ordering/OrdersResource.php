@@ -96,6 +96,7 @@ class OrdersResource extends JsonResource
             'created_at'                  => $this->created_at,
             'is_premium_dispatch'         => $this->is_premium_dispatch,
             'has_extra_packing'           => $this->has_extra_packing,
+            'has_insurance'               => $this->has_insurance,
             'updated_by_customer_at'      => $this->updated_by_customer_at,
             'customer_notes'              => $this->customer_notes,
             'internal_notes'              => $this->internal_notes,

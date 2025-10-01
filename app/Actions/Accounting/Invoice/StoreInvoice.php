@@ -184,13 +184,8 @@ class StoreInvoice extends OrgAction
             return $invoice;
         });
 
-        if ($this->strict) {
-            CategoriseInvoice::run($invoice);
-        } elseif ($invoice->invoiceCategory) { // run hydrators when category from fetch
-            InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-            InvoiceCategoryHydrateSalesIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-            InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-        }
+        CategoriseInvoice::run($invoice);
+
 
         if ($invoice->customer_id) {
             CustomerHydrateInvoices::dispatch($invoice->customer)->delay($this->hydratorsDelay);
