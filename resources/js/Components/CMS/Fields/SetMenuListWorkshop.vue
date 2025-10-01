@@ -3,9 +3,7 @@ import draggable from "vuedraggable"
 import Drawer from 'primevue/drawer';
 import { ref } from "vue";
 import EditMode from "../Website/Menus/EditMode/EditMode.vue";
-import { notify } from "@kyvg/vue3-notification";
 import { routeType } from "@/types/route";
-import axios from "axios";
 import { debounce } from "lodash-es"
 import { ulid } from "ulid";
 import Button from "@/Components/Elements/Buttons/Button.vue";
@@ -14,7 +12,6 @@ import { faTrash } from "@fas";
 import { useConfirm } from "primevue/useconfirm"
 import ConfirmPopup from "primevue/confirmpopup"
 import { faExclamationTriangle } from "@far";
-import { router } from '@inertiajs/vue3'
 
 const props = defineProps<{
     data: {
@@ -73,31 +70,10 @@ const deleteNavigation = (index: Number) => {
 }
 
 
-/* const confirmDelete = (index: number) => {
-    const target = deleteButtonRefs.value[index];
-    if (!target) return;
-
-    confirm.require({
-        target,
-        message: "Are you sure you want to delete?",
-        rejectProps: {
-            label: "No",
-            severity: "secondary",
-            outlined: true,
-        },
-        acceptProps: {
-            label: "Yes",
-        },
-        accept: () => {
-            deleteNavigation(index);
-        },
-    });
-}; */
 
 
 const autoSave = async (event) => {
    emits('auto-save')
-   console.log(event);
 }
 
 </script>
@@ -109,8 +85,18 @@ const autoSave = async (event) => {
     </div>
 
     <!-- Menu List -->
-    <draggable :list="data.data?.fieldValue.navigation" ghost-class="ghost" chosen-class="chosen" drag-class="dragging"
-        group="column" itemKey="id" class="space-y-2" :move="allowMove" :fallbackOnBody="true" @end="autoSave">
+    <draggable 
+        :list="data.data?.fieldValue.navigation" 
+        ghost-class="ghost" 
+        chosen-class="chosen" 
+        drag-class="dragging"
+        group="column" 
+        itemKey="id" 
+        class="space-y-2" 
+        :move="allowMove" 
+        :fallbackOnBody="true" 
+        @end="autoSave"
+    >
         <template #item="{ element, index }">
             <div @click="() => SetMenuActive(index)"
                 class="group flex items-center bg-white border border-gray-200 rounded shadow-sm overflow-hidden transition-transform duration-200 cursor-pointer hover:ring-2 hover:ring-indigo-400">
@@ -129,24 +115,26 @@ const autoSave = async (event) => {
                 </div>
 
                 <!-- Delete Button -->
-                <!-- Add :ref to button -->
                 <button :ref="el => deleteButtonRefs[index] = el" @click.stop="() => deleteNavigation(index)"
                     class="opacity-0 group-hover:opacity-100 px-3 py-2 text-red-500 hover:text-red-700 transition duration-150"
                     title="Delete menu">
                     <FontAwesomeIcon :icon="faTrash" />
                 </button>
-
-
             </div>
         </template>
-
     </draggable>
 
     <!-- Drawer for Menu Editing -->
-    <Drawer v-model:visible="visibleDrawer" :header="data.data?.fieldValue.navigation[selectedMenu]?.label"
-        position="right" :pt="{ root: { style: 'width: 40vw' } }">
-        <EditMode v-model="data.data.fieldValue.navigation[selectedMenu]"
-            @update:model-value="(data) => onChangeNavigation(data)" />
+    <Drawer 
+        v-model:visible="visibleDrawer" 
+        :header="data.data?.fieldValue.navigation[selectedMenu]?.label"
+        position="right" 
+        :pt="{ root: { style: 'width: 40vw' } }"
+    >
+        <EditMode 
+            v-model="data.data.fieldValue.navigation[selectedMenu]"
+            @update:model-value="(data : {}) => onChangeNavigation(data)" 
+        />
     </Drawer>
 
     <ConfirmPopup>
@@ -164,13 +152,4 @@ const autoSave = async (event) => {
     border: 2px dashed #4F46E5;
 }
 
-/* .chosen {
-    opacity: 0;
-}
-
-.dragging {
-    transform: scale(1.05);
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    cursor: grabbing;
-} */
 </style>

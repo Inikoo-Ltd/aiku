@@ -24,7 +24,6 @@ import {
 	faBars,
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
-import { faCommentsDollar } from "@fal"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 
 library.add(
@@ -120,12 +119,6 @@ watch(currentView, (newValue) => {
 			<Publish :isLoading="isLoading" :is_dirty="true" v-model="comment"
 				@onPublish="(popover) => onPublish(action.route, popover)" />
 		</template>
-		<!-- <template #other>
-			<div class="px-2 cursor-pointer text-gray-500 hover:text-black transition" v-tooltip="'Go to website'"
-				@click="openWebsite">
-				<FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
-			</div>
-		</template -->
 	</PageHeading>
 
 	<div class="h-[85vh] grid grid-cols-12 gap-4 p-3">

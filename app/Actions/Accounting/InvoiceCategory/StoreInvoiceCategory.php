@@ -10,6 +10,8 @@
 namespace App\Actions\Accounting\InvoiceCategory;
 
 use App\Actions\Helpers\Colour\GetRandomColour;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceCategories;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceCategories;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
@@ -18,15 +20,12 @@ use App\Models\Accounting\InvoiceCategory;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreInvoiceCategory extends OrgAction
 {
     use WithNoStrictRules;
-
-
 
     private Organisation|Group $parent;
 
@@ -39,7 +38,7 @@ class StoreInvoiceCategory extends OrgAction
         if ($parent instanceof Organisation) {
             data_set($modelData, 'group_id', $parent->group_id);
         }
-        return DB::transaction(function () use ($parent, $modelData) {
+        $invoiceCategory = DB::transaction(function () use ($parent, $modelData) {
             /** @var InvoiceCategory $invoiceCategory */
             $invoiceCategory = $parent->invoiceCategories()->create($modelData);
             $invoiceCategory->stats()->create();
@@ -48,6 +47,17 @@ class StoreInvoiceCategory extends OrgAction
 
             return $invoiceCategory;
         });
+
+        if ($invoiceCategory->organisation) {
+            OrganisationHydrateInvoiceCategories::dispatch($invoiceCategory->organisation)->delay($this->hydratorsDelay);
+        }
+
+        if ($invoiceCategory->group) {
+            GroupHydrateInvoiceCategories::dispatch($invoiceCategory->group)->delay($this->hydratorsDelay);
+        }
+
+
+        return $invoiceCategory;
     }
 
     public function authorize(ActionRequest $request): bool
@@ -65,10 +75,6 @@ class StoreInvoiceCategory extends OrgAction
         }
     }
 
-    public function htmlResponse(InvoiceCategory $invoiceCategory): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
-    {
-        return Redirect::route('grp.org.accounting.invoice-categories.show', ['organisation' => $invoiceCategory->organisation->slug, 'invoiceCategory' => $invoiceCategory->slug]);
-    }
 
     public function rules(): array
     {
@@ -111,17 +117,6 @@ class StoreInvoiceCategory extends OrgAction
         $this->initialisationFromGroup($group, $modelData);
 
         return $this->handle($parent, $this->validatedData);
-    }
-
-    /**
-     * @throws \Throwable
-     */
-    public function asController(Organisation $organisation, ActionRequest $request): InvoiceCategory
-    {
-        $this->parent = $organisation;
-        $this->initialisation($organisation, $request);
-
-        return $this->handle($organisation, $this->validatedData);
     }
 
 

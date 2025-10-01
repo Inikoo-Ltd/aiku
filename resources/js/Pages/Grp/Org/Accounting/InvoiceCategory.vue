@@ -18,16 +18,18 @@ import { capitalize } from "@/Composables/capitalize"
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import PaymentAccountOverview from "@/Components/Tables/Grp/Org/Accounting/PaymentAccountOverview.vue"
 import PaymentAccountStats from "@/Components/Tables/Grp/Org/Accounting/PaymentAccountStats.vue"
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import type { Navigation } from "@/types/Tabs"
 
 library.add(faCoins, faChartLine, faInfoCircle, faSitemap)
 
 
 const props = defineProps<{
     title: string,
-    pageHead: {}
+    pageHead: PageHeadingTypes
     tabs: {
         current: string
-        navigation: {}
+        navigation: Navigation
     }
     payments?: {}
     history: {}

@@ -39,9 +39,9 @@ class RefundPaymentsResource extends JsonResource
     {
         $apiRefund    = false;
         $manualRefund = false;
-//        if ($this->payment_account_code == 'checkout-v2') {
-//            $apiRefund = true;
-//        }
+        //        if ($this->payment_account_code == 'checkout-v2') {
+        //            $apiRefund = true;
+        //        }
         if ($this->payment_account_type != 'account') {
             $manualRefund = true;
         }
