@@ -16,8 +16,6 @@ import { Navigation, Pagination } from 'swiper/modules'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
-import RecommendersLuigi1Iris from "./RecommendersLuigi1Iris.vue"
 import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 

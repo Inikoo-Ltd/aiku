@@ -2,8 +2,8 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 20 Jun 2023 20:33:11 Malaysia Time, Pantai Lembeng, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Created: Wed, 01 Oct 2025 14:00:40 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Ordering\Order;
@@ -21,7 +21,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateOrderPremiumDispatch extends OrgAction
+class UpdateOrderInsurance extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
@@ -29,18 +29,18 @@ class UpdateOrderPremiumDispatch extends OrgAction
     use WithChargeTransactions;
 
 
-    public function handle(Order $order, array $modelData): void
+    public function handle(Order $order, array $modelData): Order
     {
         $order = $this->update($order, $modelData);
-        $charge = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $charge = $order->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
 
         if ($charge) {
 
-            $chargeApplies = Arr::get($modelData, 'is_premium_dispatch', false);
+            $chargeApplies = Arr::get($modelData, 'has_insurance', false);
             $chargeTransaction   = null;
             $chargeTransactionID = DB::table('transactions')->where('order_id', $order->id)
                 ->leftJoin('charges', 'transactions.model_id', '=', 'charges.id')
-                ->where('model_type', 'Charge')->where('charges.type', ChargeTypeEnum::PREMIUM->value)->value('transactions.id');
+                ->where('model_type', 'Charge')->where('charges.type', ChargeTypeEnum::INSURANCE->value)->value('transactions.id');
 
             if ($chargeTransactionID) {
                 $chargeTransaction = Transaction::find($chargeTransactionID);
@@ -59,6 +59,7 @@ class UpdateOrderPremiumDispatch extends OrgAction
 
         }
 
+        return $order;
     }
 
 
@@ -66,24 +67,24 @@ class UpdateOrderPremiumDispatch extends OrgAction
     public function rules(): array
     {
         return [
-            'is_premium_dispatch' => ['required', 'boolean'],
+            'has_insurance' => ['required', 'boolean'],
         ];
     }
 
 
-    public function action(Order $order, array $modelData): void
+    public function action(Order $order, array $modelData): Order
     {
         $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
 
-        $this->handle($order, $modelData);
+        return $this->handle($order, $modelData);
     }
 
 
-    public function asController(Order $order, ActionRequest $request): void
+    public function asController(Order $order, ActionRequest $request): Order
     {
         $this->initialisationFromShop($order->shop, $request);
 
-        $this->handle($order, $this->validatedData);
+        return $this->handle($order, $this->validatedData);
     }
 }
