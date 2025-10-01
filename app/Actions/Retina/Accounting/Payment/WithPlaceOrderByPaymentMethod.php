@@ -9,8 +9,7 @@
 namespace App\Actions\Retina\Accounting\Payment;
 
 use App\Actions\Ordering\Order\SubmitOrder;
-use App\Actions\Ordering\Transaction\StoreTransaction;
-use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Ordering\Transaction\Traits\WithChargeTransactions;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderToBePaidByEnum;
@@ -23,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 
 trait WithPlaceOrderByPaymentMethod
 {
+    use WithChargeTransactions;
     /**
      * Common implementation to place an order for a given customer's current basket
      * and set the payment method designation, wrapped in a DB transaction.
@@ -85,36 +85,6 @@ trait WithPlaceOrderByPaymentMethod
         return $order;
     }
 
-    private function storeChargeTransaction(Order $order, Charge $charge, $chargeAmount): Transaction
-    {
-        return StoreTransaction::run(
-            $order,
-            $charge->historicAsset,
-            [
-                'quantity_ordered' => 1,
-                'gross_amount'     => $chargeAmount,
-                'net_amount'       => $chargeAmount,
-
-            ],
-            false
-        );
-    }
-
-
-    private function updateChargeTransaction(Transaction $transaction, Charge $charge, $chargeAmount): Transaction
-    {
-        return UpdateTransaction::run(
-            $transaction,
-            [
-                'model_id'          => $charge->id,
-                'asset_id'          => $charge->asset_id,
-                'historic_asset_id' => $charge->historicAsset->id,
-                'gross_amount'      => $chargeAmount ?? 0,
-                'net_amount'        => $chargeAmount ?? 0,
-            ],
-            false
-        );
-    }
 
 
 }

@@ -9,14 +9,12 @@
 namespace App\Actions\Ordering\Order;
 
 use App\Actions\Ordering\Transaction\DestroyTransaction;
-use App\Actions\Ordering\Transaction\StoreTransaction;
-use App\Actions\Ordering\Transaction\UpdateTransaction;
+use App\Actions\Ordering\Transaction\Traits\WithChargeTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
-use App\Models\Billables\Charge;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
 use Illuminate\Support\Arr;
@@ -28,6 +26,7 @@ class UpdateOrderExtraPacking extends OrgAction
     use WithActionUpdate;
     use HasOrderHydrators;
     use WithOrderingEditAuthorisation;
+    use WithChargeTransactions;
 
 
     public function handle(Order $order, array $modelData): Order
@@ -64,36 +63,6 @@ class UpdateOrderExtraPacking extends OrgAction
     }
 
 
-    private function storeChargeTransaction(Order $order, Charge $charge, $chargeAmount): Transaction
-    {
-        return StoreTransaction::run(
-            $order,
-            $charge->historicAsset,
-            [
-                'quantity_ordered' => 1,
-                'gross_amount'     => $chargeAmount,
-                'net_amount'       => $chargeAmount,
-
-            ],
-            false
-        );
-    }
-
-
-    private function updateChargeTransaction(Transaction $transaction, Charge $charge, $chargeAmount): Transaction
-    {
-        return UpdateTransaction::run(
-            $transaction,
-            [
-                'model_id'          => $charge->id,
-                'asset_id'          => $charge->asset_id,
-                'historic_asset_id' => $charge->historicAsset->id,
-                'gross_amount'      => $chargeAmount ?? 0,
-                'net_amount'        => $chargeAmount ?? 0,
-            ],
-            false
-        );
-    }
 
     public function rules(): array
     {
