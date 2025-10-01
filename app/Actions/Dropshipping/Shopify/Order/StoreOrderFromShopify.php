@@ -52,6 +52,7 @@ class StoreOrderFromShopify extends OrgAction
 
         $shopifyUserHasProductExists = $shopifyUser->customerSalesChannel->portfolios()
             ->whereIn('platform_product_id', $shopifyProducts->pluck('product_id'))->exists();
+
         $existOrder = Order::where('platform_order_id', Arr::get($modelData, 'id'))->first();
 
         if ($existOrder) {

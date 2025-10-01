@@ -14,7 +14,6 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Sentry;
 
 class UpdateInventoryInWooPortfolio
 {
@@ -48,11 +47,7 @@ class UpdateInventoryInWooPortfolio
             $wooCommerceUser = $customerSalesChannel->user;
 
             if (! blank($productData) && $wooCommerceUser) {
-                try {
-                    $wooCommerceUser->batchUpdateWooCommerceProducts($productData);
-                } catch (\Exception $e) {
-                    Sentry::captureException($e);
-                }
+                BulkUpdateWooPortfolio::dispatch($wooCommerceUser, $productData);
             }
         }
     }
