@@ -38,6 +38,9 @@ import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTable
 import {ulid} from "ulid";
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
+import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
+import { useTruncate } from "@/Composables/useTruncate"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
@@ -198,7 +201,7 @@ const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | num
                 router.reload({only: ["pageHead", "products"]});
                 notify({
                     title: trans("Success!"),
-                    text: `Portfolios been cloned in the background.`,
+                    text: trans(`Portfolios been cloned in the background.`),
                     type: "success"
                 });
                 props.step.current = 1;
@@ -350,10 +353,21 @@ const key = ulid()
                             {{ trans("Clone portfolio from channel:") }}
                         </div>
 
-                        <div class="flex flex-col gap-y-2" v-for="manual_channel in manual_channels?.data">
+                        <div v-for="(manual_channel, index) in manual_channels?.data" :key="index" class="flex flex-col gap-y-2 mb-1.5">
                             <Button :loading="isLoadingClone" @click="() => onCloneManualPortfolio(manual_channel.id)"
-                                    :label="manual_channel.name + ' ('+manual_channel.number_portfolios+')'" full
-                                    :style="'tertiary'"/>
+                                :label="(manual_channel.name || manual_channel.slug) + ' ('+manual_channel.number_portfolios+')'" full
+                                :style="'tertiary'"
+                            >
+                                <template #default="{ loading }">
+                                    <div class="flex gap-x-2 justify-start items-center w-full">
+                                        <LoadingIcon v-if="loading" class="h-5"/>
+                                        <span v-else v-tooltip="manual_channel.platform_name" v-html="ChannelLogo(manual_channel.platform_code)" class="h-5"></span>
+                                        <div>
+                                            {{ useTruncate(manual_channel.name || manual_channel.slug, 20) + ' ('+manual_channel.number_portfolios+')' }}
+                                        </div>
+                                    </div>
+                                </template>
+                            </Button>
                         </div>
 
                     </div>
