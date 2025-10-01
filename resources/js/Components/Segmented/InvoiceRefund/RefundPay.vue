@@ -348,8 +348,11 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
 
                                 <!-- Column: Actions -->
                                 <template #actions="{ data, index }">
-                                    <div class="min-w-64 w-fit">
-                                        <div xv-if="layout.app.environment === 'local'" class="text-gray-500 flex gap-x-2 border-b border-gray-300 mb-1">
+                                    <div class="min-w-72 w-fit">
+                                        <div xv-if="layout.app.environment === 'local'" class="text-gray-500 flex gap-x-2 border-b border-gray-300 pb-1 mb-2.5">
+                                            <div>
+                                                {{ trans("Select method") }}:
+                                            </div>
                                             <div v-if="data.can_manual_refund" @click="() => set(data, 'selected_action', 'manual')" v-tooltip="trans('Manual Refund (you wlll need to process refund externally and provide a transaction id)')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'manual' ? 'text-blue-700' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'manual' ? 'fas fa-digging' : 'fal fa-digging'" class="" fixed-width aria-hidden="true" />
                                             </div>
@@ -359,6 +362,10 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                             <div v-if="data.can_api_refund" @click="() => set(data, 'selected_action', 'automatic')" v-tooltip="trans('Refund by API')" aclick="() => onClickAutomatic(data, 'automatic')" class="hover:text-blue-700 cursor-pointer" :class="get(data, 'selected_action', null) === 'automatic' ? 'text-blue-700' : ''">
                                                 <FontAwesomeIcon :icon="get(data, 'selected_action', '') === 'automatic' ? 'fas fa-robot' : 'fal fa-robot'" class="" fixed-width aria-hidden="true" />
                                             </div>
+                                        </div>
+
+                                        <div v-if="!get(data, 'selected_action', null)" class="text-center text-gray-400 text-sm italic mb-2">
+                                            {{ trans("No method selected") }}
                                         </div>
 
                                         <div v-if="data.selected_action === 'manual'" class="mb-2">
