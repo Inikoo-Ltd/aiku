@@ -81,6 +81,7 @@ class GetProductsForPortfolioSelect extends OrgAction
             ->whereNotIn('products.id', function ($subQuery) use ($customerSalesChannel) {
                 $subQuery->select('item_id')
                     ->from('portfolios')
+                    ->where('status', true)
                     ->where('customer_sales_channel_id', $customerSalesChannel->id);
             });
 
