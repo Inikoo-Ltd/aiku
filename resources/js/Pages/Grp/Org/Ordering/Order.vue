@@ -48,7 +48,7 @@ import AlertMessage from "@/Components/Utils/AlertMessage.vue"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import UploadAttachment from "@/Components/Upload/UploadAttachment.vue"
 import { faExclamationTriangle as fadExclamationTriangle } from "@fad"
-import { faExclamationTriangle, faExclamation, faUndo, faStar } from "@fas"
+import { faExclamationTriangle, faExclamation, faUndo, faStar, faShieldAlt } from "@fas"
 import {
     faDollarSign,
     faIdCardAlt,
@@ -81,7 +81,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { ToggleSwitch } from "primevue"
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faPlus)
+library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus)
 
 interface UploadSection {
     title: {
@@ -106,6 +106,7 @@ const props = defineProps<{
         data: {
             is_premium_dispatch: boolean
             has_extra_packing: boolean
+            has_insurance: boolean
         }
     }
 
@@ -578,13 +579,6 @@ const toggleElipsis = (e: Event) => {
     </ConfirmDialog>
 
     <PageHeading :data="pageHead">
-        <template #afterTitle2>
-            <FontAwesomeIcon v-if="data?.data.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
-                icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="data?.data.has_extra_packing" v-tooltip="trans('Extra packing')"
-                icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
-        </template>
-
         <template #button-add-products="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
@@ -698,6 +692,15 @@ const toggleElipsis = (e: Event) => {
             <Button @click="() => onCreateReplacement(action)" :label="trans('Replacement')" xsize="xs" type="secondary"
                 icon="fal fa-plus" key="1" :disabled="replacementLoading" :loading="replacementLoading"
                 v-tooltip="trans('Create replacement')" />
+        </template>
+
+        <template #afterTitle2>
+            <FontAwesomeIcon v-if="data?.data.is_premium_dispatch" v-tooltip="trans('Priority dispatch')"
+                icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="data?.data.has_extra_packing" v-tooltip="trans('Extra packing')"
+                icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="data?.data.has_insurance" v-tooltip="trans('Insurance')"
+                icon="fas fa-shield-alt" class="text-yellow-500" fixed-width aria-hidden="true" />
         </template>
     </PageHeading>
 

@@ -14,7 +14,7 @@ import Icon from "@/Components/Icon.vue";
 import { useLocaleStore } from "@/Stores/locale";
 
 import { faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle } from "@fal";
-import { faStar } from "@fas"
+import { faShieldAlt, faStar } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
@@ -148,10 +148,13 @@ function customerRoute(order: Order) {
         <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
         {{ order["reference"] }}
         </Link>
+        
         <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
           class="text-yellow-500" fixed-width aria-hidden="true" />
         <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart"
           class="text-yellow-500" fixed-width aria-hidden="true" />
+        <!-- <FontAwesomeIcon v-if="order.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt"
+          class="text-yellow-500" fixed-width aria-hidden="true" /> -->
         <NotesDisplay :item="order" reference-field="reference" />
       </div>
 
