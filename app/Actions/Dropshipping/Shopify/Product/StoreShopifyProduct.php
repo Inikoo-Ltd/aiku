@@ -102,7 +102,7 @@ class StoreShopifyProduct extends RetinaAction
             $variables = [
                 'product' => [
                     'title'           => $product->name,
-                    'handle'          => Str::slug($product->name),
+                    'handle'          => Str::slug($product->name) . substr(now()->timestamp, -3),
                     'descriptionHtml' => $product->description.' '.$product->description_extra,
                     'productType'     => $product->family?->name,
                     'vendor'          => $product->shop->name,
