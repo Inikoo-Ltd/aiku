@@ -17,8 +17,8 @@ enum InvoiceCategoryStateEnum: string
 
     case IN_PROCESS = 'in_process';
     case ACTIVE = 'active';
-    case CLOSED = 'closed';
     case COOLDOWN = 'cooldown';
+    case CLOSED = 'closed';
 
     public static function labels(): array
     {

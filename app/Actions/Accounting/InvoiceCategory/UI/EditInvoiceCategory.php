@@ -59,13 +59,6 @@ class EditInvoiceCategory extends OrgAction
                                         'value'   => $invoiceCategory->name,
                                         'required' => true,
                                     ],
-                                    'type' => [
-                                        'type'     => 'select',
-                                        'label'    => __('type'),
-                                        'value'    => $invoiceCategory->type,
-                                        'options'  => Options::forEnum(InvoiceCategoryTypeEnum::class),
-                                        'required' => true,
-                                    ],
                                     'state' => [
                                         'type'     => 'radio',
                                         'label'    => __('state'),
