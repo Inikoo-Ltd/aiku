@@ -40,7 +40,7 @@ class ShowAccountingDashboard extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('accounting'),
+                'title'       => __('Accounting'),
                 'pageHead'    => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-abacus'],
@@ -50,7 +50,7 @@ class ShowAccountingDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-chart-network'],
                         'title' => __('Accounting')
                     ],
-                    'title'     => __('accounting'),
+                    'title'     => __('Accounting'),
 
                 ],
 
@@ -59,7 +59,7 @@ class ShowAccountingDashboard extends OrgAction
                     [
 
                         [
-                            'name'         => __('accounts'),
+                            'name'         => __('Accounts'),
                             'icon'         => ['fal', 'fa-money-check-alt'],
                             'route'        => [
                                 'name'       => 'grp.org.accounting.payment-accounts.index',
@@ -69,7 +69,7 @@ class ShowAccountingDashboard extends OrgAction
                                 'number' => $organisation->accountingStats->number_payment_accounts
                             ],
                             'rightSubLink' => [
-                                'tooltip'    => __('payment methods'),
+                                'tooltip'    => __('Payment methods'),
                                 'icon'       => ['fal', 'fa-cash-register'],
                                 'labelStyle' => 'bordered',
                                 'route'      => [
@@ -81,7 +81,7 @@ class ShowAccountingDashboard extends OrgAction
 
                         ],
                         [
-                            'name'  => __('payments'),
+                            'name'  => __('Payments'),
                             'icon'  => ['fal', 'fa-coins'],
                             'route' => [
                                 'name'       => 'grp.org.accounting.payments.index',
@@ -93,8 +93,24 @@ class ShowAccountingDashboard extends OrgAction
 
 
                         ],
+
+
+                    ],
+                    [
                         [
-                            'name'         => __('invoices'),
+                            'name'         => __('Invoices categories'),
+                            'tooltip'    => __('Invoice categories'),
+                            'route'      => [
+                                'name'       => 'grp.org.accounting.invoice-categories.index',
+                                'parameters' => $parameters
+                            ],
+                            'index'        => [
+                                'number' => $organisation->accountingStats->number_invoice_categories
+                            ],
+
+                        ],
+                        [
+                            'name'         => __('Invoices'),
                             'icon'         => ['fal', 'fa-file-invoice-dollar'],
                             'route'        => [
                                 'name'       => 'grp.org.accounting.invoices.index',
@@ -103,18 +119,7 @@ class ShowAccountingDashboard extends OrgAction
                             'index'        => [
                                 'number' => $organisation->orderingStats->number_invoices
                             ],
-                            'rightSubLink' => [
-                                'tooltip'    => __('invoice categories'),
-                                'icon'       => ['fal', 'fa-bars'],
-                                'labelStyle' => 'bordered',
-                                'route'      => [
-                                    'name'       => 'grp.org.accounting.invoice-categories.index',
-                                    'parameters' => $parameters
-                                ],
-
-                            ]
                         ],
-
                     ]
                 ]
 

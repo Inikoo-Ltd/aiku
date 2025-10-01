@@ -249,17 +249,17 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                     {{ trans("Total to refund") }}
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                    <template xv-if="layout.app.environment === 'local'">
+                    <!-- <div xv-if="layout.app.environment === 'local'"> -->
                         <button v-if="Number(invoice_pay.total_need_to_pay) < 0" @click="onClickRefundPayments"
                             size="xxs" class="secondaryLink text-indigo-500">
                             {{ trans("Refund payment") }}
                         </button>
-                    </template>
+                    <!-- </div> -->
 
                     <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
                         v-tooltip="trans('No need to pay anything')" icon="far fa-check" class="text-green-500"
                         fixed-width aria-hidden="true" />
-                    <span class="ml-2" xclass="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">
+                    <span class="ml-2 whitespace-nowrap" xclass="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">
                         {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay)) }}
                     </span>
                 </dd>
