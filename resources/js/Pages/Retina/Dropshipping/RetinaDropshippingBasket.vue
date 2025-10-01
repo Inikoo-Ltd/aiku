@@ -53,6 +53,15 @@ import RetinaTableOrderProduct from '@/Components/Tables/Retina/RetinaTableOrder
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird, faCheck)
 
+interface ChargeResource {
+    label: string
+    name: string
+    description: string
+    state: string
+    amount: number
+    currency_code: string
+}
+
 const props = defineProps<{
     title: string
     tabs: TSTabs
@@ -60,6 +69,7 @@ const props = defineProps<{
         data: {
             is_premium_dispatch: boolean
             has_extra_packing: boolean
+            has_insurance: boolean
             id: number
             slug: string
             reference: string
@@ -122,22 +132,9 @@ const props = defineProps<{
     address_management: AddressManagement
     total_products: number
     charges: {
-        premium_dispatch?: {
-            label: string
-            name: string
-            description: string
-            state: string
-            amount: number
-            currency_code: string
-        }
-        extra_packing?: {
-            label: string
-            name: string
-            description: string
-            state: string
-            amount: number
-            currency_code: string
-        }
+        premium_dispatch?: ChargeResource
+        extra_packing?: ChargeResource
+        insurance?: ChargeResource
     }
     is_unable_dispatch: boolean
 }>()
@@ -349,7 +346,49 @@ const onChangeExtraPacking = async (val: boolean) => {
     )
 }
 
-console.log('ewew', props.address_management)
+// Section: Insurance
+const isLoadingInsurance = ref(false)
+const onChangeInsurance = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_insurance', props.data.data?.id),
+        {
+            has_insurance: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingInsurance.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order has insurance!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order no longer has insurance."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update insurance, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingInsurance.value = false
+            },
+        }
+    )
+}
+
 </script>
 
 <template>
@@ -398,7 +437,7 @@ console.log('ewew', props.address_management)
                    :modalOpen="isModalUploadOpen"
                    @update:tab="handleTabUpdate"/>
 
-        <!-- Section: Priority Dispatch -->
+        <!-- Section: Charge Priority Dispatch -->
         <template v-if="total_products > 0">
             <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
@@ -422,7 +461,8 @@ console.log('ewew', props.address_management)
                     </ToggleSwitch>
                 </div>
             </div>
-            <!-- Section: Extra Packing -->
+            
+            <!-- Section: Charge Extra Packing -->
             <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-end pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
                     <InformationIcon :information="charges.extra_packing?.description" />
@@ -437,6 +477,30 @@ console.log('ewew', props.address_management)
                     >
                         <template #handle="{ checked }">
                             <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </template>
+                    </ToggleSwitch>
+                </div>
+            </div>
+            
+            <!-- Section: Charge Insurance -->
+            <div v-if="charges.insurance" class="flex gap-4 my-4 justify-end pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                    <InformationIcon :information="charges.insurance?.description" />
+                    {{ charges.insurance?.label ?? charges.insurance?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
+                </div>
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="data?.data?.has_insurance"
+                        @update:modelValue="(e) => (onChangeInsurance(e))"
+                        xdisabled="isLoadingInsurance"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingInsurance" xclass="text-sm text-gray-500" />
                             <template v-else>
                                 <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
                                 <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
