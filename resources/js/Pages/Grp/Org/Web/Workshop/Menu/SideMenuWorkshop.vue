@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, inject } from "vue"
+import { ref, computed } from "vue"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { TabGroup, Tab, TabPanels, TabPanel } from '@headlessui/vue'
@@ -134,7 +134,7 @@ const autoSave = async (value) => {
 					v-model="data.data.fieldValue" 
 					:blueprint="Blueprint.blueprint"
 					@update:modelValue="(e) => { data.data.fieldValue = e , autoSave(data)}"
-					:uploadImageRoute="null" />
+				/>
 			</TabPanel>
 		</TabPanels>
 	</TabGroup>
