@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Amazon\DeleteAmazonUser;
 use App\Actions\Dropshipping\CustomerClient\DeleteCustomerClient;
+use App\Actions\Dropshipping\Ebay\DeleteEbayUser;
 use App\Actions\Dropshipping\Magento\DeleteMagentoUser;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
@@ -31,6 +32,7 @@ class DeleteCustomerSalesChannel extends OrgAction
                 PlatformTypeEnum::WOOCOMMERCE => DeleteWooCommerceUser::run($customerSalesChannel->user),
                 PlatformTypeEnum::MAGENTO => DeleteMagentoUser::run($customerSalesChannel->user),
                 PlatformTypeEnum::AMAZON => DeleteAmazonUser::run($customerSalesChannel->user),
+                PlatformTypeEnum::EBAY => DeleteEbayUser::run($customerSalesChannel->user),
                 default => null
             };
         }

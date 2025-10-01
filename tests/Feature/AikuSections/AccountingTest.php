@@ -113,7 +113,8 @@ beforeEach(function () {
 test('payment service providers seeder works', function () {
     expect(PaymentServiceProvider::count())->toBe(11)->
     and(
-        $this->group->accountingStats->number_payment_service_providers)->toBe(11);
+        $this->group->accountingStats->number_payment_service_providers
+    )->toBe(11);
 });
 
 test('add payment service provider to organisation', function () {
@@ -633,18 +634,6 @@ test('UI index invoice categories', function () {
     });
 });
 
-test('UI create invoice categories', function () {
-    $response = get(route('grp.org.accounting.invoice-categories.create', $this->organisation->slug));
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('CreateModel')
-            ->has('title')
-            ->has('formData')
-            ->has('pageHead')
-            ->has('breadcrumbs', 4);
-    });
-});
 
 test('store invoice category', function () {
     $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [

@@ -26,7 +26,9 @@ class StoreRetinaPortfolioToAllChannels extends RetinaAction
      */
     public function handle(array $modelData): void
     {
-        foreach ($this->customer->customerSalesChannels as $salesChannel) {
+        $customerSalesChannels = $this->customer->customerSalesChannels()->where('platform_status', true)->get();
+
+        foreach ($customerSalesChannels as $salesChannel) {
             /** @var Product $items */
             $items = Product::whereIn('id', Arr::get($modelData, 'item_id'))->get();
 

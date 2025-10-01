@@ -18,11 +18,11 @@ export const blueprintTable = [
         key : 'amount',
         width : "36vh",
     },
-    {
-        header : 'Refunded',
-        key : 'refunded',
-        width : "36vh",
-    },
+    // {
+    //     header : 'Refunded',
+    //     key : 'refunded',
+    //     width : "36vh",
+    // },
     {
         header : 'Actions',
         key : 'actions',

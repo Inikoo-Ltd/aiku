@@ -6,12 +6,14 @@ import { trans } from "laravel-vue-i18n";
 import InputNumber from "primevue/inputnumber";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowAltCircleLeft } from "@fas";
-import { faPlus, faMinus, faEdit, faCross, faTimes } from "@fal";
+import { faSave } from "@fad";
+import { faPlus, faSave as falSave, faMinus, faEdit, faCross, faTimes } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 // import { emits } from "v-calendar/dist/types/src/use/datePicker.js";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
+import { set } from "lodash"
 
-library.add(faArrowAltCircleLeft);
+library.add(faSave, falSave, faArrowAltCircleLeft);
 
 const props = withDefaults(
   defineProps<{
@@ -49,7 +51,9 @@ defineExpose({
   <div class="w-full flex items-center gap-x-2">
     <div>
       <InputNumber
-        v-model="form.refund_amount"
+        :modelValue="form.refund_amount"
+        @input="(e) => (set(form, 'refund_amount', e.value))"
+        @update:model-value="(e) => (set(form, 'refund_amount', e))"
         buttonLayout="horizontal"
         :showButtons="noIcon ? false : true"
         :min="props.min"
