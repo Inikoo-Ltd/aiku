@@ -169,7 +169,7 @@ const getActionIcon = (icon: any) => {
           :disabled="loading || disabled || style == 'disabled' || type == 'disabled'"
           v-tooltip="tooltip ?? undefined"
   >
-    <slot>
+    <slot :loading>
       <slot name="loading">
         <FontAwesomeIcon v-if="!(!icon && iconRight) && loading" icon="fad fa-spinner-third" class="animate-spin" fixed-width aria-hidden="true" />
       </slot>
