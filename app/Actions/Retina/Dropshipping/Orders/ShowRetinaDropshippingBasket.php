@@ -69,6 +69,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
 
         $premiumDispatch = $order->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
         $extraPacking    = $order->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
+        $insurance       = $order->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
 
         return Inertia::render(
             'Dropshipping/RetinaDropshippingBasket',
@@ -188,6 +189,7 @@ class ShowRetinaDropshippingBasket extends RetinaAction
                 'charges' => [
                     'premium_dispatch' => $premiumDispatch ? ChargeResource::make($premiumDispatch)->toArray(request()) : null,
                     'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
+                    'insurance'       => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
                 ],
 
                 'is_unable_dispatch' => in_array($order->deliveryAddress->country_id, array_merge($order->organisation->forbidden_dispatch_countries ?? [], $order->shop->forbidden_dispatch_countries ?? [])),
