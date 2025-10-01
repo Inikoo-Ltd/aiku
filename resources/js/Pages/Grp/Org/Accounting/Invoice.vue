@@ -37,7 +37,7 @@ import {
     faDraftingCompass,
     faEnvelope,
     faArrowCircleLeft,
-    faTrashAlt, faExpandArrows, faTruck, faAddressCard, faReceipt
+    faTrashAlt, faExpandArrows, faTruck, faAddressCard, faReceipt, faShapes
 } from "@fal";
 import { faClock, faFileInvoice, faFileAlt, faFilePdf, faHockeyPuck, faOmega, faExclamationCircle, faCheckCircle } from "@fas";
 import {faCheck} from "@far";
@@ -59,9 +59,8 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 
 
-library.add(faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird);
+library.add(faShapes,faAddressCard,faExpandArrows, faHockeyPuck, faCheck, faEnvelope, faIdCardAlt, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine, faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faMapMarkerAlt, faPencil, faFileAlt, faDraftingCompass, faArrowCircleLeft, faTrashAlt, faOmega, faReceipt, faExclamationCircle, faCheckCircle, faSpinnerThird);
 
-const ModelChangelog = defineAsyncComponent(() => import("@/Components/ModelChangelog.vue"));
 
 
 const props = defineProps<{
@@ -441,6 +440,16 @@ const generateShowOrderRoute = () => {
                     </dt>
                     <dd class="text-base text-gray-500">
                         {{ useFormatTime(props.invoice.date) }}
+                    </dd>
+                </dl>
+
+                <dl
+                    class="flex items-center flex-none gap-x-2 w-fit">
+                    <dt v-tooltip="trans('Category')" class="flex-none">
+                        <FontAwesomeIcon icon="fal fa-shapes" fixed-width aria-hidden="true" class="text-gray-500"/>
+                    </dt>
+                    <dd class="text-base text-gray-500">
+                        {{props.invoice.category?.name}}
                     </dd>
                 </dl>
 
