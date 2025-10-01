@@ -118,6 +118,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
  * @property string|null $source_invoice_category_id
+ * @property bool|null $has_insurance
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress

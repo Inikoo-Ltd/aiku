@@ -137,7 +137,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
  * @property OrderToBePaidByEnum|null $to_be_paid_by
- * @property bool|null $has_insurance Indicate if order has insurance
+ * @property bool|null $has_insurance
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

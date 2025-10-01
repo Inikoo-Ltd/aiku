@@ -81,6 +81,7 @@ class GenerateInvoiceFromOrder extends OrgAction
                 'footer'                    => $order->shop->invoice_footer ?? '',
                 'shipping_zone_schema_id'   => $order->shipping_zone_schema_id,
                 'shipping_zone_id'          => $order->shipping_zone_id,
+                'has_insurance'             => $order->has_insurance,
             ];
 
             $shop = $order->shop;
