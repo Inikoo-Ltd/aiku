@@ -114,7 +114,7 @@ const compareObjects = (objA, objB) => {
                         class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-0 focus:outline-none focus:ring-transparent cursor-pointer" />
                     <label :for="option.label + index" class="flex items-center gap-x-1.5 cursor-pointer">
                         <p class="text-sm font-medium leading-6 text-gray-700 capitalize">
-                            {{ option.value }}
+                            {{ option.label ?  option.label : option.value }}
                         </p>
                        <!--  <span v-if="option.label" class="font-light text-sm text-gray-400 capitalize">
                             {{ option.label }}

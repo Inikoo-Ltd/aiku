@@ -17,6 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
+use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 
 class EditInvoiceCategory extends OrgAction
 {
@@ -63,6 +64,13 @@ class EditInvoiceCategory extends OrgAction
                                         'label'    => __('type'),
                                         'value'    => $invoiceCategory->type,
                                         'options'  => Options::forEnum(InvoiceCategoryTypeEnum::class),
+                                        'required' => true,
+                                    ],
+                                    'state' => [
+                                        'type'     => 'radio',
+                                        'label'    => __('state'),
+                                        'value'    => $invoiceCategory->state,
+                                        'options'  => Options::forEnum(InvoiceCategoryStateEnum::class),
                                         'required' => true,
                                     ],
                                 ]
