@@ -46,6 +46,7 @@ class OrderResource extends JsonResource
             'dispatched_at'        => $order->dispatched_at,
             'is_premium_dispatch'        => $order->is_premium_dispatch,
             'has_extra_packing'          => $order->has_extra_packing,
+            'has_insurance'          => $order->has_insurance,
             'cancelled_at'        => $order->cancelled_at,
 
         ];
