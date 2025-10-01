@@ -105,7 +105,7 @@ const onSubmitCreateOrder = () => {
                             <h2 class="text-lg font-semibold">{{ trans("Customer Information") }}</h2>
                             <Link
                                 :href="route('retina.sysadmin.settings.edit')"
-                                class="underline text-xs text-gray-500 hover:text-gray-700"
+                                class="text-right underline text-xs text-gray-500 hover:text-gray-700"
                             >
                                 <FontAwesomeIcon icon="fal fa-pencil" class="opacity-80" fixed-width aria-hidden="true" />
                                 {{ trans("Edit information") }}
