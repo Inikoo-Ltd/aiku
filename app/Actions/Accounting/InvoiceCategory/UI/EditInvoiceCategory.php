@@ -72,6 +72,7 @@ class EditInvoiceCategory extends OrgAction
                                         'value'    => $invoiceCategory->state,
                                         'options'  => Options::forEnum(InvoiceCategoryStateEnum::class),
                                         'required' => true,
+                                        'columns'  => 1
                                     ],
                                 ]
                             ]
