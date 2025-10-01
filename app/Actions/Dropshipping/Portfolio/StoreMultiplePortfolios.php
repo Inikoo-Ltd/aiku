@@ -38,6 +38,12 @@ class StoreMultiplePortfolios extends OrgAction
             }
 
             if ($item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->exists()) {
+                if ($portfolio = $item->portfolios()->where('customer_sales_channel_id', $customerSalesChannel->id)->where('status', false)->first()) {
+                    UpdatePortfolio::make()->action($portfolio, [
+                        'status' => true
+                    ]);
+                }
+
                 continue;
             }
 
