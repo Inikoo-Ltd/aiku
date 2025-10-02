@@ -101,7 +101,6 @@ function customerRoute(invoice: Invoice) {
     </template>
 
     <template #cell(customer_name)="{ item: invoice }">
-      <pre>{{ invoice }}</pre>
       <Link :href="customerRoute(invoice)" class="secondaryLink">
         {{ invoice["customer_name"] }}
       </Link>
