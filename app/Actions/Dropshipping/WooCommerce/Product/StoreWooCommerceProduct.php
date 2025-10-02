@@ -58,6 +58,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 'stock_status' => Arr::get($product, 'stock_status', 'instock'),
                 'attributes' => Arr::get($product, 'attributes', []),
                 'sku' => $portfolio->sku,
+                'weight' => (string)$product->gross_weight,
                 'status' => $this->mapProductStateToWooCommerce($product->status->value)
             ];
 
