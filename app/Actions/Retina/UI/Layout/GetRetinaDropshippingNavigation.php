@@ -103,7 +103,7 @@ class GetRetinaDropshippingNavigation
 
 
         foreach (
-            $customer->customerSalesChannels as $customerSalesChannels
+            $customer->customerSalesChannels()->whereNull('closed_at')->get() as $customerSalesChannels
         ) {
             $reference = $customerSalesChannels->name ?? 'n/a';
 
