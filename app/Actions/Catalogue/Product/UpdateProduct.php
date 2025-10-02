@@ -328,7 +328,7 @@ class UpdateProduct extends OrgAction
         return $this->handle($product, $this->validatedData);
     }
 
-    public function jsonResponse(Asset $product): ProductResource
+    public function jsonResponse(Product $product): ProductResource
     {
         return new ProductResource($product);
     }

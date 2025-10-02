@@ -30,6 +30,7 @@ library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, f
 
 defineProps<{
     data: {}
+    editable_table: boolean
     tab?: string,
     routes: {
         dataList: routeType
@@ -341,10 +342,10 @@ const locale = inject("locale", aikuLocaleStructure)
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts"
-           @onSelectRow="(item) => emits('selectedRow', item)">
+        @onSelectRow="(item) => emits('selectedRow', item)">
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
-                {{ refund["organisation_code"] }}
+            {{ refund["organisation_code"] }}
             </Link>
         </template>
         <template #cell(state)="{ item: product }">
@@ -352,10 +353,10 @@ const locale = inject("locale", aikuLocaleStructure)
         </template>
 
         <template #cell(price)="{ item: product }">
-            <pre>{{ product  }}</pre>
-            <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].price"
-                         mode="currency" :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
-                         inputClass="w-full text-xs">
+            <div class="w-1/2">
+                <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].price"
+                mode="currency" :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
+                inputClass="w-full text-xs">
                 <template #incrementbuttonicon>
                     <FontAwesomeIcon :icon="faPlus" />
                 </template>
@@ -366,13 +367,17 @@ const locale = inject("locale", aikuLocaleStructure)
             <span v-else>
                 {{ locale.currencyFormat(product.currency_code, product.price) }}
             </span>
+
+            </div>
+            
         </template>
 
 
         <template #cell(rrp)="{ item: product }">
-            <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].rrp" mode="currency"
-                         :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
-                         inputClass="w-full text-xs">
+            <div class="w-1/2">
+                <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].rrp" mode="currency"
+                :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal" 
+                inputClass="w-full text-xs">
                 <template #incrementbuttonicon>
                     <FontAwesomeIcon :icon="faPlus" />
                 </template>
@@ -382,6 +387,9 @@ const locale = inject("locale", aikuLocaleStructure)
             </InputNumber>
 
             <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
+
+            </div>
+            
         </template>
 
 
@@ -402,18 +410,18 @@ const locale = inject("locale", aikuLocaleStructure)
         <template #cell(code)="{ item: product }">
             <div class="whitespace-nowrap">
                 <Link :href="(masterProductRoute(product) as string)" v-tooltip="'Go to Master'" class="mr-1"
-                      :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
-                    <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
+                    :class="[product.master_product_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" />
                 </Link>
                 <Link :href="productRoute(product)" class="primaryLink">
-                    {{ product["code"] }}
+                {{ product["code"] }}
                 </Link>
             </div>
         </template>
 
         <template #cell(shop_code)="{ item: product }">
             <Link v-if="product['shop_slug']" :href="(shopRoute(product) as string)" class="secondaryLink">
-                {{ product["shop_code"] }}
+            {{ product["shop_code"] }}
             </Link>
         </template>
 
@@ -424,27 +432,27 @@ const locale = inject("locale", aikuLocaleStructure)
 
         <template #cell(actions)="{ item }">
             <Link v-if="routes?.detach?.name" as="button" :href="route(routes.detach.name, routes.detach.parameters)"
-                  :method="routes?.detach?.method" :data="{
+                :method="routes?.detach?.method" :data="{
                     product: item.id
                 }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
-                  @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
-                <Button icon="fal fa-times" type="negative" size="xs"
-                        :loading="isLoadingDetach.includes('detach' + item.id)" />
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
             <Link v-else-if="item?.delete_product?.name" as="button"
-                  :href="route(item.delete_product.name, item.delete_product.parameters)"
-                  :method="item?.delete_product?.method" :data="{
+                :href="route(item.delete_product.name, item.delete_product.parameters)"
+                :method="item?.delete_product?.method" :data="{
                     product: item.id
                 }" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
-                  @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
-                <Button icon="fal fa-times" type="negative" size="xs"
-                        :loading="isLoadingDetach.includes('detach' + item.id)" />
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
             </Link>
 
-            <div v-if="master">
+            <div v-if="master || editable_table">
                 <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="onEdit(item)">
                     <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"
-                                     aria-hidden="true" v-tooltip="'edit'" />
+                        aria-hidden="true" v-tooltip="'edit'" />
                 </button>
 
                 <span v-else class="flex items-center space-x-3">
@@ -452,12 +460,12 @@ const locale = inject("locale", aikuLocaleStructure)
                     </Button>
 
                     <button class="h-9 align-bottom text-center" :disabled="loadingSave.includes(item.id)"
-                            @click="onSave(item)" v-tooltip="'save'">
+                        @click="onSave(item)" v-tooltip="'save'">
                         <FontAwesomeIcon v-if="loadingSave.includes(item.id)" icon="fad fa-spinner-third"
-                                         class="text-2xl animate-spin" fixed-width aria-hidden="true" />
+                            class="text-2xl animate-spin" fixed-width aria-hidden="true" />
 
                         <FontAwesomeIcon v-else-if="editingValues[item.id]" icon="fad fa-save" class="h-8"
-                                         :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
+                            :style="{ '--fa-secondary-color': 'rgb(0, 255, 4)' }" aria-hidden="true" />
 
                         <FontAwesomeIcon v-else icon="fal fa-save" class="h-8 text-gray-300" aria-hidden="true" />
                     </button>
