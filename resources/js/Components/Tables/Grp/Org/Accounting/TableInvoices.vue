@@ -89,6 +89,8 @@ function customerRoute(invoice: Invoice) {
         invoice.id,
       ]);
   }
+
+  
 }
 
 </script>
