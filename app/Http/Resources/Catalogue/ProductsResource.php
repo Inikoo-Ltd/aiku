@@ -73,6 +73,7 @@ class ProductsResource extends JsonResource
             'family_name'               => $this->family_name,
             'price'                     => $this->price,
             'units'                     => $this->units,
+            'unit'                      => $this->unit,
             'current_historic_asset_id' => $this->current_historic_asset_id,
             'asset_id'                  => $this->asset_id,
             'available_quantity'        => $this->available_quantity,
