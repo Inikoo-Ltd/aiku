@@ -140,7 +140,7 @@ const layout = inject("layout", {})
                     <span
                         class="text-white"
                         xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
-                        v-html="textReplaceVariables('{{ items_count }} items ({{ cart_amount }})', layout.iris_variables)"
+                        v-html="textReplaceVariables(`{{ items_count }} ${trans('items')} ({{ cart_amount }})`, layout.iris_variables)"
                     >
                     </span>
                 </template>
