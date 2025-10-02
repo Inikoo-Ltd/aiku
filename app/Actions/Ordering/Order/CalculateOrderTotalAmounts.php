@@ -53,6 +53,8 @@ class CalculateOrderTotalAmounts extends OrgAction
         data_set($modelData, 'shipping_amount', $shippingAmount);
         data_set($modelData, 'charges_amount', $chargesAmount);
         data_set($modelData, 'estimated_weight', $estimatedWeight);
+        data_set($modelData, 'number_item_transactions', $numberItemTransactions);
+
 
         $order->update($modelData);
         $order->stats->update(
