@@ -120,7 +120,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                     <div class="mt-1">
                         <PureInput
                             v-model="form.username" ref="inputUsername" id="username" name="username"
-                            :autofocus="true" autocomplete="username" required placeholder="username"
+                            :autofocus="true" autocomplete="username" required :placeholder="trans('username')"
                             @keydown.enter="submit"
                             @update:modelValue="form.clearErrors('username')"
                             :class="form.errors.username ? 'errorShake' : ''"
