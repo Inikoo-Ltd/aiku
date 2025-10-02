@@ -224,7 +224,7 @@ class RepairPalletDeliveriesAndReturns
                 /** @var Pallet $pallet */
                 $pallet = $transaction->item;
 
-                if(!$pallet) {
+                if (!$pallet) {
                     dd($transaction);
                 }
 
@@ -376,7 +376,7 @@ class RepairPalletDeliveriesAndReturns
             ) {
                 if ($palletReturn->recurringBill->transactions()->where('fulfilment_transaction_id', $transaction->id)->exists()) {
                     print "Fix Pallet return Transaction CRB that should not be there! (".$palletReturn->id.")   >> a >> ".$palletReturn->state->value." <<  (todo) : $transaction->id\n";
-                   RecurringBillTransaction::where('fulfilment_transaction_id', $transaction->id)->delete();
+                    RecurringBillTransaction::where('fulfilment_transaction_id', $transaction->id)->delete();
 
                 }
             });

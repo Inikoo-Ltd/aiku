@@ -61,9 +61,9 @@ class DeleteInvoiceCategory extends OrgAction
         /** @var InvoiceCategory $invoiceCategory */
         $invoiceCategory = InvoiceCategory::find($command->argument('id'));
 
-        if($invoiceCategory) {
+        if ($invoiceCategory) {
             $this->handle($invoiceCategory);
-        }else{
+        } else {
             $this->reCategorizeInvoices($command->argument('id'));
         }
 

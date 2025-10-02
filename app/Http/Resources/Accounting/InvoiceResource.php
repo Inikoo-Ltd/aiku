@@ -10,7 +10,6 @@ namespace App\Http\Resources\Accounting;
 
 use App\Http\Resources\Helpers\AddressResource;
 use App\Models\Accounting\Invoice;
-use App\Models\Accounting\InvoiceCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class InvoiceResource extends JsonResource

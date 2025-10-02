@@ -50,7 +50,7 @@ class ShowRetinaEcomBasket extends RetinaAction
     {
         $isOrder = $order instanceof Order;
 
-        
+
         $premiumDispatch = $order?->shop->charges()->where('type', ChargeTypeEnum::PREMIUM)->where('state', ChargeStateEnum::ACTIVE)->first();
         $extraPacking    = $order?->shop->charges()->where('type', ChargeTypeEnum::PACKING)->where('state', ChargeStateEnum::ACTIVE)->first();
         $insurance       = $order?->shop->charges()->where('type', ChargeTypeEnum::INSURANCE)->where('state', ChargeStateEnum::ACTIVE)->first();
@@ -148,7 +148,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     'extra_packing'   => $extraPacking ? ChargeResource::make($extraPacking)->toArray(request()) : null,
                     'insurance'       => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
                 ],
-                
+
                 'address_management' => $order ? GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true) : [],
                 'balance'            => $this->customer->balance,
                 'is_in_basket'       => true,

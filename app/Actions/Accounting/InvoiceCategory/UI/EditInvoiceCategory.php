@@ -10,7 +10,6 @@
 namespace App\Actions\Accounting\InvoiceCategory\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
