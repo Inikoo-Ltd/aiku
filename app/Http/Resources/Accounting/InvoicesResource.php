@@ -65,6 +65,7 @@ class InvoicesResource extends JsonResource
             'shop_name'         => $this->shop_name,
             'customer_name'     => $this->customer_name,
             'customer_slug'     => $this->customer_slug,
+            'customer_company'  => $this->customer_company,
             'currency_code'     => $this->currency_code,
             'currency_symbol'   => $this->currency_symbol,
             'organisation_name' => $this->organisation_name,

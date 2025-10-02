@@ -60,7 +60,7 @@ class IndexInvoices extends OrgAction
 
     public function handle(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): LengthAwarePaginator
     {
-
+        $additionalSelects = [];
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -114,6 +114,23 @@ class IndexInvoices extends OrgAction
         $queryBuilder->leftjoin('organisations', 'invoices.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftjoin('shops', 'invoices.shop_id', '=', 'shops.id');
 
+        if ($parent instanceof Shop || $parent instanceof Organisation || $parent instanceof InvoiceCategory) {
+            $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id');
+
+            $additionalSelects = [
+                'customers.name as customer_name', 'customers.slug as customer_slug', 'customers.company_name as customer_company'
+            ];
+        }
+
+        if ($parent instanceof Fulfilment) {
+            $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
+                ->leftJoin('fulfilment_customers', 'customers.id', '=', 'fulfilment_customers.customer_id');
+
+            $additionalSelects = [
+                'customers.name as customer_name', 'fulfilment_customers.slug as customer_slug', 'customers.company_name as customer_company'
+            ];
+        }
+
         $queryBuilder->defaultSort('-date')
             ->select([
                 'invoices.id',
@@ -134,21 +151,10 @@ class IndexInvoices extends OrgAction
                 'shops.code as shop_code',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
+                ...$additionalSelects
             ])
             ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
             ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id');
-
-
-        if ($parent instanceof Shop || $parent instanceof Organisation) {
-            $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
-                ->addSelect('customers.name as customer_name', 'customers.slug as customer_slug');
-        }
-
-        if ($parent instanceof Fulfilment) {
-            $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
-                ->leftJoin('fulfilment_customers', 'customers.id', '=', 'fulfilment_customers.customer_id')
-                ->addSelect('customers.name as customer_name', 'fulfilment_customers.slug as customer_slug');
-        }
 
         return $queryBuilder->allowedSorts(['number', 'pay_status', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
             ->allowedFilters([$globalSearch])
@@ -192,10 +198,11 @@ class IndexInvoices extends OrgAction
 
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($parent instanceof Shop || $parent instanceof Fulfilment || $parent instanceof Organisation) {
-                $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
+             if ($parent instanceof Organisation) {
+            $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'customer_company', label: __('company '), canBeHidden: false, sortable: true, searchable: true);
             }
-
+            
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'pay_status', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true, type: 'icon');
             $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
