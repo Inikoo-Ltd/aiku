@@ -50,6 +50,7 @@ class HandleIrisInertiaRequests extends Middleware
                 ->select('customer_sales_channels.id', 'customer_sales_channels.name as customer_sales_channel_name', 'platform_id', 'platforms.slug', 'platforms.code', 'platforms.name')
                 ->where('customer_id', $webUser->customer_id)
                 ->where('status', CustomerSalesChannelStatusEnum::OPEN->value)
+                ->whereNull('closed_at')
                 ->get();
 
             foreach ($channels as $channel) {
