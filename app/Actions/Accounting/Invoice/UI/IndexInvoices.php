@@ -141,13 +141,13 @@ class IndexInvoices extends OrgAction
 
         if ($parent instanceof Shop || $parent instanceof Organisation) {
             $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
-                ->addSelect('customers.name as customer_name', 'customers.slug as customer_slug');
+                ->addSelect('customers.name as customer_name', 'customers.slug as customer_slug', 'customers.company_name  as customer_company');
         }
 
         if ($parent instanceof Fulfilment) {
             $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
                 ->leftJoin('fulfilment_customers', 'customers.id', '=', 'fulfilment_customers.customer_id')
-                ->addSelect('customers.name as customer_name', 'fulfilment_customers.slug as customer_slug');
+                ->addSelect('customers.name as customer_name', 'fulfilment_customers.slug as customer_slug', 'customers.company_name  as customer_company');
         }
 
         return $queryBuilder->allowedSorts(['number', 'pay_status', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
@@ -192,10 +192,10 @@ class IndexInvoices extends OrgAction
 
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
 
-            if ($parent instanceof Shop || $parent instanceof Fulfilment || $parent instanceof Organisation) {
-                $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
-            }
-
+            /* if ($parent instanceof Shop || $parent instanceof Fulfilment || $parent instanceof Organisation) { */
+              $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
+            /* } */
+            $table->column(key: 'customer_company', label: __('company '), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'pay_status', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true, type: 'icon');
             $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
