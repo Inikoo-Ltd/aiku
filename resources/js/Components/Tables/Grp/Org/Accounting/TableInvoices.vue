@@ -122,6 +122,12 @@ function customerRoute(invoice: Invoice) {
       </Link>
     </template>
 
+    <template #cell(customer_company)="{ item: invoice }">
+      <Link :href="customerRoute(invoice)" class="secondaryLink">
+        {{ invoice["customer_company"] }}
+      </Link>
+    </template>
+
     <!-- Column: Date -->
     <template #cell(type)="{ item }">
       <div class="text-center">
