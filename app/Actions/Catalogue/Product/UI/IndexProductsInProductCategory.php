@@ -82,9 +82,12 @@ class IndexProductsInProductCategory extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
+        $queryBuilder->leftJoin('currencies', 'currencies.id', 'shops.currency_id');
+
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
+
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
@@ -123,6 +126,7 @@ class IndexProductsInProductCategory extends OrgAction
                 'invoices_all',
                 'sales_all',
                 'customers_invoiced_all',
+                'currencies.code as currency_code',
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
