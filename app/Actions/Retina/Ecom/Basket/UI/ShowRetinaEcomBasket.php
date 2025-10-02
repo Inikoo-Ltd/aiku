@@ -107,7 +107,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                         'order_summary' => [
                             [
                                 [
-                                    'label'       => 'Items',
+                                    'label'       => __('Items'),
                                     'quantity'    => 0,
                                     'price_base'  => 'Multiple',
                                     'price_total' => 0
@@ -115,26 +115,26 @@ class ShowRetinaEcomBasket extends RetinaAction
                             ],
                             [
                                 [
-                                    'label'       => 'Charges',
+                                    'label'       => __('Charges'),
                                     'information' => '',
                                     'price_total' => 0
                                 ],
                                 [
-                                    'label'       => 'Shipping',
+                                    'label'       => __('Shipping'),
                                     'information' => '',
                                     'price_total' => 0
                                 ]
                             ],
                             [
                                 [
-                                    'label'       => 'Net',
+                                    'label'       => __('Net'),
                                     'information' => '',
                                     'price_total' => 0
                                 ],
                             ],
                             [
                                 [
-                                    'label'       => 'Total',
+                                    'label'       => __('Total'),
                                     'price_total' => 0
                                 ],
                             ],

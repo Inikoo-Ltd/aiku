@@ -230,7 +230,7 @@ trait IsOrder
             'order_summary' => [
                 [
                     [
-                        'label'       => 'Items',
+                        'label'       => __('Items'),
                         'quantity'    => $order->stats->number_item_transactions,
                         'price_base'  => 'Multiple',
                         'price_total' => $order->goods_amount
@@ -238,31 +238,31 @@ trait IsOrder
                 ],
                 [
                     [
-                        'label'       => 'Charges',
+                        'label'       => __('Charges'),
                         'information' => '',
                         'price_total' => $order->charges_amount
                     ],
                     [
-                        'label'       => 'Shipping',
+                        'label'       => __('Shipping'),
                         'information' => '',
                         'price_total' => $order->shipping_amount
                     ]
                 ],
                 [
                     [
-                        'label'       => 'Net',
+                        'label'       => __('Net'),
                         'information' => '',
                         'price_total' => $order->net_amount
                     ],
                     [
-                        'label'       => 'Tax 20%',
+                        'label'       => __('Tax 20%'),
                         'information' => '',
                         'price_total' => $order->tax_amount
                     ]
                 ],
                 [
                     [
-                        'label'       => 'Total',
+                        'label'       => __('Total'),
                         'price_total' => $order->total_amount
                     ],
                 ],
