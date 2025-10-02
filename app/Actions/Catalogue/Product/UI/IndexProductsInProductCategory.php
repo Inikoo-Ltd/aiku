@@ -119,6 +119,8 @@ class IndexProductsInProductCategory extends OrgAction
                 'products.name',
                 'products.state',
                 'products.price',
+                'products.rrp',
+                'products.unit',
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
@@ -164,7 +166,11 @@ class IndexProductsInProductCategory extends OrgAction
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unit', label: __('unit'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'rrp', label: __('rrp'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -268,6 +274,8 @@ class IndexProductsInProductCategory extends OrgAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
+                'editable_table'               => true,
+                'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
                 'tabs'                         => [
                     'current'    => $this->tab,
