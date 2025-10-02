@@ -133,7 +133,7 @@ class ShowCustomerClient extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => 'Add order',
+                            'label' => __('Add order'),
                             'key'   => 'add_order',
                             'route'       => [
                                 'method'     => 'post',

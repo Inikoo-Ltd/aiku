@@ -131,7 +131,7 @@ class IndexWebUsersInCRM extends OrgAction
                         ($this->canEdit && $this->parent instanceof Customer) ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('website user'),
+                            'label' => __('Website user'),
                             'route' => [
                                 'name'       => 'grp.org.shops.show.crm.customers.show.web_users.create',
                                 'parameters' => $request->route()->originalParameters()

@@ -249,7 +249,7 @@ class IndexWarehouseAreas extends OrgAction
 
                                     'type'  => 'button',
                                     'style' => 'create',
-                                    'label' => __('areas'),
+                                    'label' => __('Areas'),
                                     'route' => [
                                         'name'       => 'grp.org.warehouses.show.infrastructure.warehouse_areas.create',
                                         'parameters' => $request->route()->originalParameters()

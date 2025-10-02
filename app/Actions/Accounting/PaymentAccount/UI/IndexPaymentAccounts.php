@@ -67,7 +67,7 @@ class IndexPaymentAccounts extends OrgAction
                         $this->canEdit && $this->parent instanceof OrgPaymentServiceProvider ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('payment account'),
+                            'label' => __('Payment account'),
                             'route' => [
                                 'name'       => 'grp.org.accounting.org_payment_service_providers.show.payment-accounts.create',
                                 'parameters' => array_values($request->route()->originalParameters())

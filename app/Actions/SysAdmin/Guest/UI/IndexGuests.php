@@ -180,7 +180,7 @@ class IndexGuests extends GrpAction
                         $this->canEdit && $request->route()->getName() == 'grp.sysadmin.guests.index' ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('guest'),
+                            'label' => __('Guest'),
                             'route' => [
 
                                 'name'       => 'grp.sysadmin.guests.create',

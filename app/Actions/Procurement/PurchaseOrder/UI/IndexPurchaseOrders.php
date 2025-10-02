@@ -48,8 +48,7 @@ class IndexPurchaseOrders extends OrgAction
     {
         if ($parent instanceof Group) {
             $organisation = $parent->organisations()->first();
-        }
-        if ($parent instanceof Organisation) {
+        }elseif ($parent instanceof Organisation) {
             $organisation = $parent;
         } else {
             $organisation = $parent->organisation;
@@ -220,7 +219,7 @@ class IndexPurchaseOrders extends OrgAction
                             ],
                             'method'     => 'post'
                         ],
-                        'label' => __('purchase order')
+                        'label' => __('Purchase order')
                     ]
                 ];
             $title         = $this->parent->agent->organisation->name;
@@ -250,7 +249,7 @@ class IndexPurchaseOrders extends OrgAction
                             ],
                             'method'     => 'post'
                         ],
-                        'label' => __('purchase order')
+                        'label' => __('Purchase order')
                     ]
                 ];
             $title         = $this->parent->partner->name;
