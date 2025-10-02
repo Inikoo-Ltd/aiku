@@ -124,7 +124,6 @@ const onSaveEditBulkProduct = async () => {
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="props.tabs.navigation" @update:tab="handleTabUpdate" />
-    {{ currentTab + key }}
 
     <component :is="component" :key="currentTab + key" :tab="currentTab" :data="props[currentTab]" 
         :isCheckboxProducts="props.editable_table" :editable_table="props.editable_table"
