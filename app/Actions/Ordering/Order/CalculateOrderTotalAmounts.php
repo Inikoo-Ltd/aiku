@@ -79,16 +79,25 @@ class CalculateOrderTotalAmounts extends OrgAction
             }
         }
 
+        if (in_array($order->state, [
+            OrderStateEnum::CREATING,
+            OrderStateEnum::SUBMITTED,
+            OrderStateEnum::IN_WAREHOUSE,
+        ])) {
+            $calculateCharges = false;
+            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'number_item_transactions'])) {
+                CalculateOrderDiscounts::run($order);
+                $calculateCharges = true;
+            }
 
-        if ($calculateShipping
-            && in_array($order->state, [
-                OrderStateEnum::CREATING,
-                OrderStateEnum::SUBMITTED,
-                OrderStateEnum::IN_WAREHOUSE,
-            ])
-            && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
-            CalculateOrderShipping::run($order);
-            CalculateOrderHangingCharges::run($order);
+            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
+                CalculateOrderShipping::run($order);
+                $calculateCharges = true;
+            }
+
+            if ($calculateCharges) {
+                CalculateOrderHangingCharges::run($order);
+            }
         }
     }
 
