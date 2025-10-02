@@ -102,10 +102,9 @@ class FetchAuroraInvoice extends FetchAurora
         $isVip = $this->auroraModelData->{'Invoice Customer Level Type'} == 'VIP';
 
 
-        $auroraCustomerData=DB::connection('aurora')->table('Customer Dimension')->where('Customer Key',$this->auroraModelData->{'Invoice Customer Key'})->first();
-        if($auroraCustomerData && $auroraCustomerData->{'Customer Level Type'}=='VIP')
-        {
-            $isVip=true;
+        $auroraCustomerData = DB::connection('aurora')->table('Customer Dimension')->where('Customer Key', $this->auroraModelData->{'Invoice Customer Key'})->first();
+        if ($auroraCustomerData && $auroraCustomerData->{'Customer Level Type'} == 'VIP') {
+            $isVip = true;
         }
 
 
