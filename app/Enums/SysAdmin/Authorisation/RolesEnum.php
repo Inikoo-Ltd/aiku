@@ -552,7 +552,7 @@ enum RolesEnum: string
 
     public static function getRolesWithScope(Group|Organisation|Shop|Warehouse|Fulfilment|Production $scope): array
     {
-        $roles = array_filter(RolesEnum::cases(), fn($role) => $role->scope() == class_basename($scope));
+        $roles = array_filter(RolesEnum::cases(), fn ($role) => $role->scope() == class_basename($scope));
 
 
         $rolesNames = [];
