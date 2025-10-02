@@ -29,6 +29,7 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
+use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
 use App\Actions\Masters\MasterCollection\UI\GetMasterSubDepartments;
@@ -209,3 +210,11 @@ Route::get('master-product-category/{masterProductCategory}/taken-trade-units', 
 Route::get('master-product-category/{masterProductCategory}/all-trade-units', GetAllTradeUnits::class)->name('master-product-category.all-trade-units')->withoutScopedBindings();
 
 Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();
+
+Route::get('dashboard-custom-dates/masters-shops-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.masters_shops_sales');
+Route::get('dashboard-custom-dates/group/organisation-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.group.organisation_sales');
+Route::get('dashboard-custom-dates/group/shops-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.group.shops_sales');
+Route::get('dashboard-custom-dates/group/invoice-categories-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.group.invoice_categories_sales');
+
+Route::get('dashboard-custom-dates/organisation/{organisation:id}/shops-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.organisation.shops_sales');
+Route::get('dashboard-custom-dates/organisation/{organisation:id}/invoice-categories-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.organisation.invoice_categories_sales');
