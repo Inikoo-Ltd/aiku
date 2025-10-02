@@ -16,68 +16,88 @@ return [
 
 
     'positions' => [
-        'group-admin'    => [
+        'group-admin' => [
             'code'               => 'group-admin',
             'name'               => 'Group Administrator',
-            'scope'              => JobPositionScopeEnum::GROUP          ,
+            'scope'              => JobPositionScopeEnum::GROUP,
             'department'         => 'group admin',
             'roles'              => [
                 RolesEnum::GROUP_ADMIN
             ],
             'organisation_types' => []
         ],
-        'sys-admin'    => [
+        'sys-admin'   => [
             'code'               => 'sys-admin',
             'name'               => 'System Administrator',
-            'scope'              => JobPositionScopeEnum::GROUP          ,
+            'scope'              => JobPositionScopeEnum::GROUP,
             'department'         => 'sysadmin',
             'roles'              => [
                 RolesEnum::SYSTEM_ADMIN
             ],
             'organisation_types' => []
         ],
-        'gp-wm'    => [
+        'gp-wm'       => [
             'code'               => 'gp-wm',
             'name'               => 'Group Webmaster',
-            'scope'              => JobPositionScopeEnum::GROUP          ,
+            'scope'              => JobPositionScopeEnum::GROUP,
             'department'         => 'webmaster',
             'roles'              => [
                 RolesEnum::GROUP_WEBMASTER
             ],
             'organisation_types' => []
         ],
-        'gp-sc'    => [
+        'gp-sc'       => [
             'code'               => 'gp-sc',
             'name'               => 'Supply Chain Manager',
             'department'         => 'group procurement',
-            'scope'              => JobPositionScopeEnum::GROUP ,
+            'scope'              => JobPositionScopeEnum::GROUP,
             'roles'              => [
                 RolesEnum::SUPPLY_CHAIN
             ],
             'organisation_types' => []
         ],
-        'gp-g'    => [
+        'gp-g'        => [
             'code'               => 'gp-g',
             'name'               => 'Goods Manager',
-            'scope'              => JobPositionScopeEnum::GROUP          ,
+            'scope'              => JobPositionScopeEnum::GROUP,
             'department'         => 'group procurement',
             'roles'              => [
                 RolesEnum::GOODS_MANAGER
             ],
             'organisation_types' => []
         ],
-        'gp-mas'    => [
+        'gp-mas'      => [
             'code'               => 'gp-mas',
             'name'               => 'Masters Manager',
-            'scope'              => JobPositionScopeEnum::GROUP          ,
+            'scope'              => JobPositionScopeEnum::GROUP,
             'department'         => 'masters',
             'roles'              => [
                 RolesEnum::MASTERS_MANAGER
             ],
             'organisation_types' => []
         ],
+        'gp-md'       => [
+            'code'               => 'gp-md',
+            'name'               => 'Masters Media',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'masters',
+            'roles'              => [
+                RolesEnum::MASTERS_MEDIA
+            ],
+            'organisation_types' => []
+        ],
+        'gp-pr'       => [
+            'code'               => 'gp-pr',
+            'name'               => 'Masters Properties',
+            'scope'              => JobPositionScopeEnum::GROUP,
+            'department'         => 'masters',
+            'roles'              => [
+                RolesEnum::MASTERS_PROPERTIES
+            ],
+            'organisation_types' => []
+        ],
 
-        'org-admin'    => [
+        'org-admin'  => [
             'code'               => 'org-admin',
             'name'               => 'Organisation Administrator',
             'scope'              => JobPositionScopeEnum::ORGANISATION,
@@ -91,7 +111,7 @@ return [
                 OrganisationTypeEnum::AGENT
             ]
         ],
-        'hr-m'     => [
+        'hr-m'       => [
             'code'       => 'hr-m',
             'name'       => 'Human resources supervisor',
             'scope'      => JobPositionScopeEnum::ORGANISATION,
@@ -106,7 +126,7 @@ return [
                 OrganisationTypeEnum::AGENT
             ]
         ],
-        'hr-c'     => [
+        'hr-c'       => [
             'code'               => 'hr-c',
             'name'               => 'Human resources clerk',
             'scope'              => JobPositionScopeEnum::ORGANISATION,
@@ -120,7 +140,7 @@ return [
                 OrganisationTypeEnum::AGENT
             ]
         ],
-        'acc-m'    => [
+        'acc-m'      => [
             'code'               => 'acc-m',
             'department'         => 'admin',
             'scope'              => JobPositionScopeEnum::ORGANISATION,
@@ -134,7 +154,7 @@ return [
                 OrganisationTypeEnum::AGENT
             ]
         ],
-        'acc-c'    => [
+        'acc-c'      => [
             'code'               => 'acc-c',
             'department'         => 'admin',
             'scope'              => JobPositionScopeEnum::ORGANISATION,
@@ -150,7 +170,7 @@ return [
         ],
 
         // Shops positions
-        'shop-admin'    => [
+        'shop-admin' => [
             'code'               => 'shop-admin',
             'name'               => 'Shop Administrator',
             'scope'              => JobPositionScopeEnum::SHOPS,
@@ -163,7 +183,7 @@ return [
                 OrganisationTypeEnum::DIGITAL_AGENCY,
             ]
         ],
-        'shk-m'    => [
+        'shk-m'      => [
             'code'               => 'shk-m',
             'name'               => 'Shopkeeper supervisor',
             'department'         => 'products',
@@ -178,7 +198,7 @@ return [
                 OrganisationTypeEnum::DIGITAL_AGENCY,
             ]
         ],
-        'shk-c'    => [
+        'shk-c'      => [
             'code'               => 'shk-c',
             'name'               => 'Shopkeeper clerk',
             'scope'              => JobPositionScopeEnum::SHOPS,
@@ -193,7 +213,7 @@ return [
                 OrganisationTypeEnum::DIGITAL_AGENCY,
             ]
         ],
-        'mrk-m'    => [
+        'mrk-m'      => [
             'code'               => 'mrk-m',
             'name'               => 'Marketing supervisor',
             'scope'              => JobPositionScopeEnum::SHOPS,
@@ -206,7 +226,7 @@ return [
                 OrganisationTypeEnum::DIGITAL_AGENCY,
             ]
         ],
-        'mrk-c'    => [
+        'mrk-c'      => [
             'code'               => 'mrk-c',
             'name'               => 'Marketing clerk',
             'scope'              => JobPositionScopeEnum::SHOPS,
@@ -219,7 +239,7 @@ return [
                 OrganisationTypeEnum::DIGITAL_AGENCY,
             ]
         ],
-        'cus-m'    => [
+        'cus-m'      => [
             'code'               => 'cus-m',
             'name'               => 'Customer service supervisor',
             'scope'              => JobPositionScopeEnum::SHOPS,
@@ -232,7 +252,7 @@ return [
                 OrganisationTypeEnum::DIGITAL_AGENCY,
             ]
         ],
-        'cus-c'    => [
+        'cus-c'      => [
             'code'               => 'cus-c',
             'name'               => 'Customer service',
             'department'         => 'customer-services',
@@ -245,7 +265,7 @@ return [
                 OrganisationTypeEnum::DIGITAL_AGENCY,
             ]
         ],
-        'cus-v'    => [
+        'cus-v'      => [
             'code'               => 'cus-v',
             'name'               => 'Customer service viewer',
             'department'         => 'customer-services',
@@ -349,7 +369,7 @@ return [
         ],
 
 
-        'prod-d'   => [
+        'prod-d' => [
             'code'               => 'prod-d',
             'name'               => 'Production dispatcher',
             'scope'              => JobPositionScopeEnum::PRODUCTIONS,
@@ -361,7 +381,7 @@ return [
                 OrganisationTypeEnum::SHOP,
             ]
         ],
-        'prod-m'   => [
+        'prod-m' => [
             'code'               => 'prod-m',
             'name'               => 'Production floor supervisor',
             'scope'              => JobPositionScopeEnum::PRODUCTIONS,
@@ -373,7 +393,7 @@ return [
                 OrganisationTypeEnum::SHOP,
             ]
         ],
-        'prod-c'   => [
+        'prod-c' => [
             'code'       => 'prod-c',
             'name'       => 'Production operative',
             'scope'      => JobPositionScopeEnum::PRODUCTIONS,

@@ -142,7 +142,7 @@ class GetGroupNavigation
     private function getSysAdminNavs(): array
     {
         return [
-            'label'   => __('sysadmin'),
+            'label'   => __('Sysadmin'),
             'icon'    => ['fal', 'fa-users-cog'],
             'root'    => 'grp.sysadmin.',
             'route'   => [

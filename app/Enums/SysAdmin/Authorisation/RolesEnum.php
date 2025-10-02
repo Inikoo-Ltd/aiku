@@ -36,6 +36,8 @@ enum RolesEnum: string
     case GOODS_MANAGER = 'goods-manager';
 
     case MASTERS_MANAGER = 'masters-manager';
+    case MASTERS_MEDIA = 'masters-media';
+    case MASTERS_PROPERTIES = 'masters-properties';
 
     case ORGANISATIONS_MANAGER = 'organisations-manager';
 
@@ -135,6 +137,8 @@ enum RolesEnum: string
             RolesEnum::ORGANISATIONS_MANAGER => __('Organisations manager'),
             RolesEnum::GOODS_MANAGER => __('Goods manager'),
             RolesEnum::MASTERS_MANAGER => __('Masters manager'),
+            RolesEnum::MASTERS_MEDIA => __('Masters media'),
+            RolesEnum::MASTERS_PROPERTIES => __('Masters properties'),
             RolesEnum::SEO_SUPERVISOR => __('SEO supervisor'),
             RolesEnum::SEO_CLERK => __('SEO clerk'),
             RolesEnum::PPC_SUPERVISOR => __('PPC supervisor'),
@@ -193,6 +197,14 @@ enum RolesEnum: string
             ],
             RolesEnum::MASTERS_MANAGER => [
                 GroupPermissionsEnum::MASTERS
+            ],
+            RolesEnum::MASTERS_MEDIA => [
+                GroupPermissionsEnum::MASTERS_VIEW,
+                GroupPermissionsEnum::GROUP_WEBMASTER_MEDIA_EDIT
+            ],
+            RolesEnum::MASTERS_PROPERTIES => [
+                GroupPermissionsEnum::MASTERS_VIEW,
+                GroupPermissionsEnum::GROUP_WEBMASTER_PROPERTIES_EDIT
             ],
             RolesEnum::ORG_ADMIN => [
                 OrganisationPermissionsEnum::ORG_ADMIN,
@@ -452,6 +464,8 @@ enum RolesEnum: string
             RolesEnum::SUPPLY_CHAIN,
             RolesEnum::GOODS_MANAGER,
             RolesEnum::MASTERS_MANAGER,
+            RolesEnum::MASTERS_MEDIA,
+            RolesEnum::MASTERS_PROPERTIES,
             RolesEnum::ORGANISATIONS_MANAGER => 'Group',
 
             RolesEnum::SHOP_ADMIN,
@@ -538,7 +552,7 @@ enum RolesEnum: string
 
     public static function getRolesWithScope(Group|Organisation|Shop|Warehouse|Fulfilment|Production $scope): array
     {
-        $roles = array_filter(RolesEnum::cases(), fn ($role) => $role->scope() == class_basename($scope));
+        $roles = array_filter(RolesEnum::cases(), fn($role) => $role->scope() == class_basename($scope));
 
 
         $rolesNames = [];
