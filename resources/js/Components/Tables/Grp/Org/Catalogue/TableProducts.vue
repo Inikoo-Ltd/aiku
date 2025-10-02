@@ -353,7 +353,8 @@ const locale = inject("locale", aikuLocaleStructure)
         </template>
 
         <template #cell(price)="{ item: product }">
-            <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].price"
+            <div class="w-1/2">
+                <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].price"
                 mode="currency" :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
                 inputClass="w-full text-xs">
                 <template #incrementbuttonicon>
@@ -366,12 +367,16 @@ const locale = inject("locale", aikuLocaleStructure)
             <span v-else>
                 {{ locale.currencyFormat(product.currency_code, product.price) }}
             </span>
+
+            </div>
+            
         </template>
 
 
         <template #cell(rrp)="{ item: product }">
-            <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].rrp" mode="currency"
-                :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
+            <div class="w-1/2">
+                <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].rrp" mode="currency"
+                :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal" 
                 inputClass="w-full text-xs">
                 <template #incrementbuttonicon>
                     <FontAwesomeIcon :icon="faPlus" />
@@ -382,6 +387,9 @@ const locale = inject("locale", aikuLocaleStructure)
             </InputNumber>
 
             <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
+
+            </div>
+            
         </template>
 
 

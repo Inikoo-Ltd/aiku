@@ -34,7 +34,6 @@ class UpdateBulkProduct extends OrgAction
 
     public function asController(ActionRequest $request): void
     {
-        // $this->initialisationFromShop($family->shop, $request);
-        $this->handle($this->validatedData);
+        dd('arya Test');
     }
 }

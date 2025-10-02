@@ -70,7 +70,8 @@ const loadingSave = ref(false)
 const rowErrors = ref<Record<string, any>>({}) // store errors keyed by productId
 const key = ref(ulid())
 
-const onSaveEditBulkProduct = async () => {
+//loop save
+/* const onSaveEditBulkProduct = async () => {
     loadingSave.value = true
     rowErrors.value = {} // reset
 
@@ -108,8 +109,44 @@ const onSaveEditBulkProduct = async () => {
     } finally {
         loadingSave.value = false
     }
-}
+} */
 
+
+const onSaveEditBulkProduct = async () => {
+    loadingSave.value = true
+    rowErrors.value = {} // reset
+
+    try {
+        // Payload sekali request
+        const payload: Record<string, any> = {}
+        compSelectedProductsId.value.forEach((productId) => {
+            payload[productId] = {
+                price: form.price,
+                rrp: form.rrp,
+                unit: form.unit,
+            }
+        })
+
+        await router.patch(
+            route("grp.models.product.bulk_update"),
+            payload,
+            {
+                preserveScroll: true,
+                onError: (errors) => {
+                    rowErrors.value = errors
+                },
+                onSuccess: () => {
+                    isOpenModalEditProducts.value = false
+                    key.value = ulid()
+                },
+            }
+        )
+    } catch (error) {
+        console.error("Unexpected bulk save failure", error)
+    } finally {
+        loadingSave.value = false
+    }
+}
 </script>
 
 <template>
