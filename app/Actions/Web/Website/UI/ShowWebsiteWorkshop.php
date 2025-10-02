@@ -111,12 +111,6 @@ class ShowWebsiteWorkshop extends OrgAction
                 fn () => GetWebsiteWorkshopDepartment::run($website)
             );
 
-        $tabs[WebsiteWorkshopTabsEnum::COLLECTION->value] = $this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value
-            ?
-            fn () => GetWebsiteWorkshopCollection::run($website)
-            : Inertia::lazy(
-                fn () => GetWebsiteWorkshopCollection::run($website)
-            );
 
 
         $publishRoute = [
@@ -155,14 +149,6 @@ class ShowWebsiteWorkshop extends OrgAction
             $publishRoute = [
                 'method'     => 'post',
                 'name'       => 'grp.models.website.publish.products',
-                'parameters' => [
-                    'website' => $website->id
-                ]
-            ];
-        } elseif ($this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value) {
-            $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.collection',
                 'parameters' => [
                     'website' => $website->id
                 ]

@@ -141,7 +141,7 @@ const onAddBackInStock = (product: ProductResource) => {
                 })
             },
             onFinish: () => {
-                isLoadingFavourite.value = false
+                isLoadingRemindBackInStock.value = false
             },
         }
     )
@@ -174,7 +174,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 })
             },
             onFinish: () => {
-                isLoadingFavourite.value = false
+                isLoadingRemindBackInStock.value = false
             },
         }
     )

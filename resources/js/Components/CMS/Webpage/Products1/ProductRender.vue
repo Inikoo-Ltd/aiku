@@ -13,6 +13,8 @@ import { faCircle, faStar, faHeart as fasHeart, faEllipsisV, faMedal} from '@fas
 import { Image as ImageTS } from '@/types/Image'
 import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
 import { getStyles } from "@/Composables/styles";
+import { faEnvelope } from '@fal'
+import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -57,6 +59,7 @@ const props = defineProps<{
 
 
 const currency = layout?.iris?.currency || props.currency
+const isLoadingRemindBackInStock = ref(false)
 
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
@@ -127,6 +130,74 @@ const onUnselectFavourite = (product: ProductResource) => {
     )
 }
 
+const onAddBackInStock = (product: ProductResource) => {
+
+    // Section: Submit
+    router.post(
+        route('iris.models.remind_back_in_stock.store', {
+            product: product.id
+        }),
+        {
+            // item_id: [product.id]
+        },
+        {
+            preserveScroll: true,
+            only: ['iris'],
+            preserveState: true,
+            onStart: () => {
+                isLoadingRemindBackInStock.value = true
+            },
+            onSuccess: () => {
+                product.is_back_in_stock = true
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to add the product to remind back in stock"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingRemindBackInStock.value = false
+            },
+        }
+    )
+}
+const onUnselectBackInStock = (product: ProductResource) => {
+    router.delete(
+        route('iris.models.remind_back_in_stock.delete', {
+            backInStockReminder: product.id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ['iris'],
+            onStart: () => {
+                isLoadingRemindBackInStock.value = true
+            },
+            onSuccess: () => {
+                // notify({
+                //     title: trans("Success"),
+                //     text: trans("Added to portfolio"),
+                //     type: "success"
+                // })
+                product.is_back_in_stock = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove the product from remind back in stock"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingFavourite.value = false
+            },
+        }
+    )
+}
+
+
 
 </script>
 
@@ -155,31 +226,19 @@ const onUnselectFavourite = (product: ProductResource) => {
                 <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
                     class="cursor-pointer absolute top-2 right-2 group text-xl ">
 
-                    <FontAwesomeIcon 
-                        v-if="product.is_favourite" 
-                        :icon="fasHeart" 
-                        fixed-width 
-                        class="text-pink-500" 
-                    />
+                    <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
                     <div v-else class="relative">
-                        <FontAwesomeIcon
-                            :icon="fasHeart"
-                            class="hidden group-hover:inline text-pink-400"
-                            fixed-width
-                        />
-                        <FontAwesomeIcon
-                            :icon="faHeart"
-                            class="inline group-hover:hidden text-pink-300"
-                            fixed-width
-                        />
+                        <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400" fixed-width />
+                        <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300" fixed-width />
                     </div>
 
                 </div>
             </template>
 
             <!-- Product Image -->
-            <component :is="product.url ? Link : 'div'" :href="product.url" class="block w-full mb-1 rounded sm:h-[305px] h-[180px]">
-                <Image :src="product?.web_images?.main?.gallery" alt="product image" 
+            <component :is="product.url ? Link : 'div'" :href="product.url"
+                class="block w-full mb-1 rounded sm:h-[305px] h-[180px]">
+                <Image :src="product?.web_images?.main?.gallery" alt="product image"
                     :style="{ objectFit: 'contain' }" />
             </component>
 
@@ -204,31 +263,44 @@ const onUnselectFavourite = (product: ProductResource) => {
 
             <!-- Rating and Stock -->
             <div class="flex justify-between items-center text-xs mb-2">
-
-                <div v-if="layout?.iris?.is_logged_in" class="flex items-center gap-1"
-                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
-
-                    <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
-                    <span>({{ product.stock > 0 ? product.stock : 0 }} {{trans('available')}})</span>
+                <!-- Stock indicator -->
+                <div v-if="layout?.iris?.is_logged_in"
+                    class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
+                    :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
+                    <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
+                    <span>({{ product.stock > 0 ? product.stock : 0 }} {{ trans('available') }})</span>
                 </div>
-                <div class="flex items-center space-x-[1px] text-gray-500">
 
-                </div>
+                <!-- Notify button as tag -->
+                {{ isLoadingRemindBackInStock }}
+                <button v-if="product.stock == 0 && layout?.app?.environment === 'local'" type="button"
+                    @click.prevent="() => product?.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                    v-tooltip="'Will notify you when product is in stock'"
+                    class="flex items-center gap-1 px-2 rounded-full border text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition text-xs">
+                    <LoadingIcon v-if="isLoadingRemindBackInStock" />
+                    <FontAwesomeIcon v-else :icon="product?.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                        fixed-width :class="[product?.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
+                    <span>{{ trans('Notify me') }}</span>
+                </button>
+
             </div>
+
 
             <!-- Prices -->
             <div v-if="layout?.iris?.is_logged_in" class="mb-3">
 
                 <div class="flex justify-between text-sm ">
-                    <span>{{trans('Price')}}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,product.price) }}</span></span>
-                    <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(currency?.code,product.rrp) }}</span></span>
+                    <span>{{trans('Price')}}: <span class="font-semibold">{{
+                            locale.currencyFormat(currency?.code,product.price) }}</span></span>
+                    <span><span v-tooltip="trans('Recommended retail price')">{{trans('RRP')}}</span>: <span
+                            class="font-semibold">{{ locale.currencyFormat(currency?.code,product.rrp) }}</span></span>
 
                 </div>
             </div>
         </div>
 
 
-            <ButtonAddPortfolio :product="product" :productHasPortfolio="productHasPortfolio" />
+        <ButtonAddPortfolio :product="product" :productHasPortfolio="productHasPortfolio" />
     </div>
 </template>
 
