@@ -128,9 +128,9 @@ const isLoadingVisit = ref<number | null>(null)
                 <!-- Total Count -->
                 <div v-if="!tableData?.tables?.organisations"
                     class="flex gap-x-2 items-end"
-                    v-tooltip="props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency?.[intervals.value].formatted_value"
+                    v-tooltip="props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency?.[intervals.value]?.formatted_value"
                 >
-                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency_minified?.[intervals.value].formatted_value }}
+                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency_minified?.[intervals.value]?.formatted_value }}
                 </div>
 
                 <!-- Case Breakdown -->
@@ -171,10 +171,10 @@ const isLoadingVisit = ref<number | null>(null)
         <div class="w-28">
             <Pie
                 :data="{
-                    labels: dataSetsSplit.map(bod => bod.columns.label.formatted_value),
+                    labels: dataSetsSplit.map(bod => bod.columns.label?.formatted_value),
                     datasets: [
                         {
-                            data: dataSetsSplit.map(bod => bod.columns.sales_org_currency[intervals.value].raw_value),
+                            data: dataSetsSplit.map(bod => bod.columns.sales_org_currency?.[intervals.value]?.raw_value),
                             backgroundColor: [
                                 ...dataSetsSplit.map((dCase, idx) => useStringToHex(dCase.columns.label.formatted_value)),
                             ],
