@@ -130,7 +130,17 @@ const groupPositionList = {
                 grade: "manager",
                 label: trans("Manager")
                 // number_employees: props.options.positions?.data?.find(position => position.slug == 'gp-g')?.number_employees || 0,
-            }
+            },
+            {
+                slug: "gp-md", // Note, this is not slug is job position code
+                grade: "clerk",
+                label: trans("Media")
+            },
+            {
+                slug: "gp-pr", // Note, this is not slug is job position code
+                grade: "clerk",
+                label: trans("Properties")
+            },
         ]
         // value: null
     }
@@ -162,8 +172,21 @@ const onClickButtonGroup = (department: string, subDepartmentSlug: string) => {
         }
     } else {
 
-        props.form[props.fieldName].group.push(subDepartmentSlug)
+        const selectedSubDepartment = groupPositionList?.[department]?.subDepartment?.find(sub => sub.slug == subDepartmentSlug)
+        const existingSubDepartmentSlug = props.form[props.fieldName].group.find(slug =>
+            groupPositionList?.[department]?.subDepartment?.some(sub => sub.slug == slug)
+        )
+        const existingSubDepartment = groupPositionList?.[department]?.subDepartment?.find(sub => sub.slug == existingSubDepartmentSlug)
+
+        if (!selectedSubDepartment) return
+
+        if (!existingSubDepartment || selectedSubDepartment.grade === existingSubDepartment?.grade) {
+            props.form[props.fieldName].group.push(subDepartmentSlug)
+        } else {
+            props.form[props.fieldName].group = [subDepartmentSlug]
+        }
     }
+
 
     if (props.form?.errors?.[props.fieldName]) {
         props.form.errors[props.fieldName] = ""
