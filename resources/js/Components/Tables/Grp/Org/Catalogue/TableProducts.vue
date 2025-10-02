@@ -352,6 +352,7 @@ const locale = inject("locale", aikuLocaleStructure)
         </template>
 
         <template #cell(price)="{ item: product }">
+            <pre>{{ product  }}</pre>
             <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].price"
                          mode="currency" :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
                          inputClass="w-full text-xs">
