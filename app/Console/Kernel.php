@@ -132,9 +132,9 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'UpdateWooStockInventories',
         );
 
-        $schedule->job(CheckShopifyPortfolios::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+        /*$schedule->job(CheckShopifyPortfolios::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'CheckShopifyPortfolios',
-        );
+        );*/
 
 
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
