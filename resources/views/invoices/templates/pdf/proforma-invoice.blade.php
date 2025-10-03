@@ -278,7 +278,8 @@
             @if($pro_mode)
                 <td style="text-align:left">{{ $transaction->historicAsset?->name }}</td>
             @else
-                <td style="text-align:left">{{ $transaction->historicAsset?->units . 'x' . $transaction->historicAsset?->name . '(' . $invoice->currency->symbol . $transaction->net_amount . ')' }}
+                <td style="text-align:left">
+                    {{ $transaction->historicAsset?->units . 'x' . $transaction->historicAsset?->name . '(' . $invoice->currency->symbol . $transaction->net_amount . ')' }}
                     <br>
                     @if($rrp)
                         RRP: {{ $transaction->model->rrp }}
@@ -303,20 +304,6 @@
                     @endif
                 </td>
             @endif
-
-            <td style="text-align:left" colspan="2">
-                @if($transaction->historicAsset)
-                    {{ $transaction->historicAsset?->name }}
-                    @if(isset($transaction->pallet))
-                        <br>
-                        {{ __('Pallet') }}: {{$transaction->customerPallet}} ({{ $transaction->pallet }})
-                    @endif
-                    @if(isset($transaction->handling_date))
-                        <br>
-                        {{ __('Date') }}: {{ $transaction->handling_date }}
-                    @endif
-                @endif
-            </td>
 
             @if($pro_mode)
                 <td style="text-align:right">{{  (int) $transaction->historicAsset?->units }}</td>
