@@ -40,7 +40,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 <span>{{ product.attributes.product_code?.[0] }}</span>
             </div>
 
-            <!-- Rating and Stock -->
+            <!-- Rating and Stock F -->
             <div class="flex justify-between items-center text-xs mb-2">
                 <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')"
                     class="flex items-center gap-1"

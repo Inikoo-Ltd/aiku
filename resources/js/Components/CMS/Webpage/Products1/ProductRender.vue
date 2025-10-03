@@ -261,7 +261,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 </span>
             </div>
 
-            <!-- Rating and Stock -->
+            <!-- Rating and Stock A -->
             <div class="flex justify-between items-center text-xs mb-2">
                 <!-- Stock indicator -->
                 <div v-if="layout?.iris?.is_logged_in"
@@ -272,7 +272,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 </div>
 
                 <!-- Notify button as tag -->
-                {{ isLoadingRemindBackInStock }}
                 <button v-if="product.stock == 0 && layout?.app?.environment === 'local'" type="button"
                     @click.prevent="() => product?.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                     v-tooltip="'Will notify you when product is in stock'"

@@ -166,7 +166,7 @@ onBeforeUnmount(() => {
                         <div class="flex justify-between text-xs text-gray-500 mb-1">
                             <span>{{ product.attributes.product_code?.[0] }}</span>
                         </div>
-                        <!-- Rating and Stock -->
+                        <!-- Rating and Stock G -->
                         <div class="flex justify-between items-center text-xs mb-2">
                             <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')"
                                 class="flex items-center gap-1"
