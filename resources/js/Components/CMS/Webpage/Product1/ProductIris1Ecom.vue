@@ -159,7 +159,7 @@ const onAddBackInStock = (product: ProductResource) => {
 const onUnselectBackInStock = (product: ProductResource) => {
     router.delete(
         route('iris.models.remind_back_in_stock.delete', {
-            backInStockReminder: product.id
+            product: product.id
         }),
         {
             preserveScroll: true,

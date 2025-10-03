@@ -55,7 +55,22 @@ class IrisProductsInWebpageResource extends JsonResource
             }
         }
 
+        $back_in_stock_id = null;
         $back_in_stock = false;
+
+        if ($request->user()) {
+            $customer = $request->user()->customer;
+            if ($customer) {
+                $set_data_back_in_stock = $customer?->BackInStockReminder()
+                    ?->where('product_id', $this->id)
+                    ->first();
+
+                if ($set_data_back_in_stock) {
+                    $back_in_stock = true;
+                    $back_in_stock_id = $set_data_back_in_stock->id;
+                }
+            }
+        }
 
         $media = null;
         if ($this->image_id) {
@@ -85,7 +100,8 @@ class IrisProductsInWebpageResource extends JsonResource
             'quantity_ordered' => (int) $this->quantity_ordered ?? 0,
             'quantity_ordered_new' => (int) $this->quantity_ordered ?? 0,  // To editable in Frontend
             'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
-            'is_back_in_stock' => $back_in_stock
+            'is_back_in_stock' => $back_in_stock,
+            'back_in_stock_id' => $back_in_stock_id
         ];
     }
 

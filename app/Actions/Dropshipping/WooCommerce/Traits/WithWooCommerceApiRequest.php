@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Client\ConnectionException;
 use Carbon\Carbon;
+use Sentry;
 
 trait WithWooCommerceApiRequest
 {
@@ -98,6 +99,10 @@ trait WithWooCommerceApiRequest
 
         try {
             $response = Http::timeout(30)
+                ->withHeaders([
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json'
+                ])
                 ->connectTimeout(30)
                 ->withBasicAuth(
                     $this->woocommerceConsumerKey,
@@ -130,6 +135,8 @@ trait WithWooCommerceApiRequest
                     'response' => $response->body(),
                 ]);
 
+                Sentry::captureMessage($response->body());
+
                 return $response->json();
             }
         } catch (ConnectionException $e) {
@@ -138,6 +145,8 @@ trait WithWooCommerceApiRequest
                 'method' => $method,
                 'error' => $e->getMessage()
             ]);
+
+            Sentry::captureMessage($e->getMessage());
 
             return [];
         }
@@ -537,6 +546,7 @@ trait WithWooCommerceApiRequest
 
             return !empty($response);
         } catch (\Exception $e) {
+            \Sentry::captureMessage($e->getMessage());
             return false;
         }
     }
