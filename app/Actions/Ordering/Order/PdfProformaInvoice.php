@@ -34,6 +34,10 @@ class PdfProformaInvoice extends OrgAction
 
     public function handle(Order $order, array $options): Response
     {
+
+        $locale=$order->shop->language->code;
+        app()->setLocale($locale);
+        
         try {
             $totalItemsNet = $order->total_amount;
             $totalShipping = $order->shipping_amount ?? 0;
@@ -64,26 +68,20 @@ class PdfProformaInvoice extends OrgAction
             ];
 
 
-            $deliveryNote = $order->deliveryNotes?->first();
-            $invoice = $order->invoices()->first();
             $filename = $order?->slug.'-'.now()->format('Y-m-d');
-            $pdf      = PDF::loadView('invoices.templates.pdf.proforma-invoice', [], [
-                'shop' => $order->shop,
-                'order' => $order,
-                'invoice' => $invoice,
-                'deliveryNote'  => $deliveryNote,
-                'deliveryAddress'  => $deliveryNote?->deliveryAddress,
-                'context'       => $invoice?->original_invoice_id ? 'Refund' : 'Invoice',
-                'transactions' => $transactions,
-                'pro_mode' => Arr::get($options, 'pro_mode', false),
-                'country_of_origin' => Arr::get($options, 'country_of_origin', false),
-                'rrp' => Arr::get($options, 'rrp', false),
-                'parts' => Arr::get($options, 'parts', false),
-                'commodity_codes' => Arr::get($options, 'commodity_codes', false),
-                'weight' => Arr::get($options, 'weight', false),
-                'barcode' => Arr::get($options, 'barcode', false),
-                'hide_payment_status' => Arr::get($options, 'hide_payment_status', false),
-                'cpnp' => Arr::get($options, 'cpnp', false),
+            $pdf      = PDF::loadView('invoices.templates.pdf.proforma-invoice', [
+                'shop'                 => $order->shop,
+                'order'                => $order,
+                'transactions'         => $transactions,
+                'pro_mode'             => Arr::get($options, 'pro_mode', false),
+                'country_of_origin'    => Arr::get($options, 'country_of_origin', false),
+                'rrp'                  => Arr::get($options, 'rrp', false),
+                'parts'                => Arr::get($options, 'parts', false),
+                'commodity_codes'      => Arr::get($options, 'commodity_codes', false),
+                'weight'               => Arr::get($options, 'weight', false),
+                'barcode'              => Arr::get($options, 'barcode', false),
+                'hide_payment_status'  => Arr::get($options, 'hide_payment_status', false),
+                'cpnp'                 => Arr::get($options, 'cpnp', false),
                 'group_by_tariff_code' => Arr::get($options, 'group_by_tariff_code', false),
 
                 'totalNet' => number_format($totalNet, 2, '.', ''),
@@ -94,7 +92,6 @@ class PdfProformaInvoice extends OrgAction
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
         } catch (Exception $e) {
-            dd($e);
             Sentry::captureException($e);
 
             return response()->json(['error' => 'Failed to generate PDF'], 404);
@@ -104,15 +101,15 @@ class PdfProformaInvoice extends OrgAction
     public function rules(): array
     {
         return [
-            'pro_mode'          => ['sometimes', 'boolean'],
-            'country_of_origin' => ['sometimes', 'boolean'],
-            'rrp' => ['sometimes', 'boolean'],
-            'parts' => ['sometimes', 'boolean'],
-            'commodity_codes' => ['sometimes', 'boolean'],
-            'weight' => ['sometimes', 'boolean'],
-            'barcode' => ['sometimes', 'boolean'],
-            'cpnp' => ['sometimes', 'boolean'],
-            'hide_payment_status' => ['sometimes', 'boolean'],
+            'pro_mode'             => ['sometimes', 'boolean'],
+            'country_of_origin'    => ['sometimes', 'boolean'],
+            'rrp'                  => ['sometimes', 'boolean'],
+            'parts'                => ['sometimes', 'boolean'],
+            'commodity_codes'      => ['sometimes', 'boolean'],
+            'weight'               => ['sometimes', 'boolean'],
+            'barcode'              => ['sometimes', 'boolean'],
+            'cpnp'                 => ['sometimes', 'boolean'],
+            'hide_payment_status'  => ['sometimes', 'boolean'],
             'group_by_tariff_code' => ['sometimes', 'boolean'],
         ];
     }

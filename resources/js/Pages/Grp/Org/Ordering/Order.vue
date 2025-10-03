@@ -655,9 +655,10 @@ const onClickProforma = async () => {
         </template>
 
         <template #other>
+
+
             <div v-if="!props.readonly" class="flex">
-                <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
-                    icon="upload" />
+                <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach" icon="upload" />
 
                 <div
                     v-if="!notes?.note_list?.some(item => !!(item?.note?.trim())) || props.data?.data?.state === 'dispatched'">
@@ -720,13 +721,7 @@ const onClickProforma = async () => {
                                 </template>
                             </Popover>
 
-                            <Button
-                                v-if="proforma_invoice"
-                                @click="() => isOpenModalProforma = true"
-                                type="tertiary"
-                                :label="trans('Proforma Invoice')"
-                                icon="fal fa-download"
-                            />
+
                         </div>
                     </PopoverPrimevue>
                 </div>
@@ -1295,7 +1290,7 @@ const onClickProforma = async () => {
                 </div>
             </div>
 
-            <div @click="() => onClickProforma()" :href="route(proforma_invoice.route_download_pdf.name, proforma_invoice.route_download_pdf.parameters)" target="_blank" rel="noopener noreferrer" class="w-full block mt-6">
+            <div @click="() => onClickProforma()" :href="route(proforma_invoice.route_download_pdf.name, proforma_invoice.route_download_pdf.parameters)" tarsget="_blank" rszel="noopener noreferrer" class="w-full block mt-6">
                 <Button
                     full
                     :label="trans('Download Proforma Invoice')"

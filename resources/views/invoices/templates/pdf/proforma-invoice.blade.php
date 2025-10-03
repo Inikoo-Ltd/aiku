@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>{{ $invoice?->slug }}</title>
+    <title>{{ $order?->slug }}</title>
     <style>
         @page {
             size: 8.27in 11.69in; /* <length>{1,2} | auto | portrait | landscape */
@@ -124,35 +124,28 @@
                 </div>
             </td>
 
-            <td style="text-align: right;">{{ __($context . ' Number') }}<br/>
-                <b>{{ $invoice->reference }}</b>
+            <td style="text-align: right;">{{ __('Proforma Number') }}<br />
+                <b>{{ $order->reference }}</b>
             </td>
 
         </tr>
     </table>
 </htmlpageheader>
 
-<sethtmlpageheader name="myheader" value="on" show-this-page="1"/>
-<sethtmlpagefooter name="myfooter" value="on"/>
+<sethtmlpageheader name="myheader" value="on" show-this-page="1" />
+<sethtmlpagefooter name="myfooter" value="on" />
 
 <table width="100%" style="margin-top: 40px">
     <tr>
         <td>
             <h1>
-                {{ __($context) }} {{ $invoice->reference }}
+                {{__('Proforma')}} {{ $order->reference }}
             </h1>
         </td>
         <td style="text-align: right">
             <div>
-                {{ __($context . ' Date') }}: <b>{{ $invoice->created_at->format('j F Y') }}</b>
+                {{ __('Date') }}: <b>{{ $order->created_at->format('j F Y') }}</b>
             </div>
-
-            @if($invoice->tax_liability_at)
-                <div style="text-align: right">
-                    {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
-                </div>
-            @endif
-
         </td>
     </tr>
 </table>
@@ -163,90 +156,63 @@
                 @if($hide_payment_status)
                     <div>
                         {{ __('Payment State') }}:
-                        <b>{{ $invoice->pay_status->labels()[$invoice->pay_status->value] }}</b>
+                        <b>{{ $order->pay_status->labels()[$order->pay_status->value] }}</b>
                     </div>
                 @endif
                 <div>
-                    {{ __('Customer') }}: <b>{{ $invoice->customer['name'] }}</b>
-                    ({{ $invoice->customer['reference'] }})
+                    {{ __('Customer') }}: <b>{{ $order->customer['name'] }}</b>
+                    ({{ $order->customer['reference'] }})
                 </div>
 
                 <div>
                     <span class="address_label">{{ __('Email') }}:</span> <span
-                        class="address_value">{{ $invoice->customer['email'] }}</span>
+                            class="address_value">{{ $order->customer['email'] }}</span>
                 </div>
 
                 <div>
                     <span class="address_label">{{ __('Phone') }}:</span> <span
-                        class="address_value">{{ $invoice->customer['phone'] }}</span>
+                            class="address_value">{{ $order->customer['phone'] }}</span>
                 </div>
-                @if($invoice->tax_number  && $invoice->tax_number_valid)
+                @if($order->tax_number  && $order->tax_number_valid)
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
-                            class="address_value">{{ $invoice->tax_number }}</span>
+                                class="address_value">{{ $order->tax_number }}</span>
                     </div>
                 @endif
             </div>
         </td>
         <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
-            @if($deliveryNote?->estimated_weight)
-                <div style="text-align: right">Weight: <b>{{ $deliveryNote?->estimated_weight }} g</b></div>
-            @endif
+
         </td>
     </tr>
 </table>
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
     <tr>
-        @if($invoice->billingAddress)
+        @if($order->address)
             <td width="45%" style="border: 0.1mm solid #888888;"><span
-                    style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
+                        style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
                 <div>
-                    {{ $invoice->billingAddress->address_line_1 }}
+                    {{ $order->address->address_line_1 }}
                 </div>
                 <div>
-                    {{ $invoice->billingAddress->address_line_2 }}
+                    {{ $order->address->address_line_2 }}
                 </div>
                 <div>
-                    {{ $invoice->billingAddress->administrative_area }}
+                    {{ $order->address->administrative_area }}
                 </div>
                 <div>
-                    {{ $invoice->billingAddress->locality }}
+                    {{ $order->address->locality }}
                 </div>
                 <div>
-                    {{ $invoice->billingAddress->postal_code }}
+                    {{ $order->address->postal_code }}
                 </div>
                 <div>
-                    {{ $invoice->billingAddress->country->name }}
+                    {{ $order->address->country->name }}
                 </div>
             </td>
             <td width="10%">&nbsp;</td>
         @endif
-        @if($deliveryAddress)
-            <td width="45%" style="border: 0.1mm solid #888888;">
-                <span
-                    style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
-                <div>
-                    {{ $deliveryAddress->address_line_1 }}
-                </div>
-                <div>
-                    {{ $deliveryAddress->address_line_2 }}
-                </div>
-                <div>
-                    {{ $deliveryAddress->administrative_area }}
-                </div>
-                <div>
-                    {{ $deliveryAddress->locality }}
-                </div>
-                <div>
-                    {{ $deliveryAddress->postal_code }}
-                </div>
-                <div>
-                    {{ $deliveryAddress->country->name }}
-                </div>
-            </td>
-        @else
-            <td width="45%"></td>
-        @endif
+
     </tr>
 </table>
 <br>
@@ -262,7 +228,7 @@
             <td style="text-align:left;width:20% ">{{ __('Unit Price') }}</td>
             <td style="text-align:left;width:20% ">{{ __('Units') }}</td>
         @else
-            <td style="text-align:left;width:20% ">{{ __('Discount') }}</td>
+            <td></td>
             <td style="text-align:left">{{ __('Qty')  }}.</td>
         @endif
 
@@ -279,7 +245,7 @@
                 <td style="text-align:left" colspan="2">{{ $transaction->historicAsset?->name }}</td>
             @else
                 <td style="text-align:left" colspan="2">
-                    {{ $transaction->historicAsset?->units . 'x' . $transaction->historicAsset?->name . '(' . $invoice->currency->symbol . $transaction->net_amount . ')' }}
+                    {{ $transaction->historicAsset?->units . 'x' . $transaction->historicAsset?->name . '(' . $order->currency->symbol . $transaction->net_amount . ')' }}
                     <br>
                     @if($rrp)
                         RRP: {{ $transaction->model->rrp }} <br>
@@ -309,19 +275,17 @@
                 <td style="text-align:right">{{  (int) $transaction->historicAsset?->units }}</td>
                 <td style="text-align:left">
                     @if($transaction->quantity==0 || $transaction->quantity==null)
-                        {{ $invoice->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
+                        {{ $order->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
                     @elseif($transaction->historicAsset)
-                        {{ $invoice->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
+                        {{ $order->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
                     @endif
                 </td>
             @else
-                <td style="text-align:right">{{ round(((int)optional($transaction->historicAsset)->price - (int)$transaction->net_amount) / (int)optional($transaction->historicAsset)->price * 100) }}
-                    %
-                </td>
+                <td></td>
                 <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
             @endif
 
-            <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
+            <td style="text-align:right">{{ $order->currency->symbol . $transaction->net_amount }}</td>
         </tr>
     @endforeach
 
@@ -330,19 +294,19 @@
     <tr>
         <td style="border:none" colspan="4"></td>
         <td>{{ __('Charges') }}</td>
-        <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
+        <td>{{ $order->currency->symbol . $order->charges_amount }}</td>
     </tr>
 
     <tr>
         <td style="border:none" colspan="4"></td>
         <td>{{ __('Shipping') }}</td>
-        <td>{{ $invoice->currency->symbol . $invoice->shipping_amount }}</td>
+        <td>{{ $order->currency->symbol . $order->shipping_amount }}</td>
     </tr>
 
     <tr class="total_net">
         <td style="border:none" colspan="4"></td>
         <td>{{__('Total Net')}}</td>
-        <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
+        <td>{{ $order->currency->symbol . $order->net_amount }}</td>
     </tr>
 
     <tr>
@@ -350,17 +314,17 @@
         <td class="totals">
             {{ __('Tax') }}
 
-            <br><small>{{$invoice->taxCategory->name}}
-                ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
+            <br><small>{{$order->taxCategory->name}}
+                ({{__('rate')}}:{{percentage($order->taxCategory->rate,1)}})
             </small>
         </td>
-        <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
+        <td class="totals">{{ $order->currency->symbol . $order->tax_amount }}</td>
     </tr>
 
     <tr class="total">
         <td style="border:none" colspan="4"></td>
         <td><b>{{ __('Total') }}</b></td>
-        <td>{{ $invoice->currency->symbol . $invoice->total_amount }}</td>
+        <td>{{ $order->currency->symbol . $order->total_amount }}</td>
     </tr>
     </tbody>
 
@@ -390,9 +354,9 @@
                 <td style="text-align:left" colspan="2">
                     {{ $refund['description'] }}
                 </td>
-                <td style="text-align:left">{{  $invoice->currency->symbol . $refund['price'] }}</td>
+                <td style="text-align:left">{{  $order->currency->symbol . $refund['price'] }}</td>
                 <td style="text-align:right">{{ $refund['quantity'] }}</td>
-                <td style="text-align:right">{{ $invoice->currency->symbol . $refund['total'] }}</td>
+                <td style="text-align:right">{{ $order->currency->symbol . $refund['total'] }}</td>
             </tr>
         @endforeach
         </tbody>
@@ -401,7 +365,7 @@
 @endif
 <br>
 
-@if($invoice->payments->count() >0)
+@if($order->payments->count() >0)
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
         <tr class="title">
             <td colspan="5">{{ __('Payments') }}</td>
@@ -416,7 +380,7 @@
         </tr>
 
         <tbody>
-        @foreach($invoice->payments as $payment)
+        @foreach($order->payments as $payment)
             <tr class="@if($loop->last) last @endif">
                 <td style="text-align:left">
                     {{ $payment->paymentAccount['name'] }}
@@ -426,7 +390,7 @@
                 </td>
                 <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
                 <td style="text-align:left">{{ $payment->reference }}</td>
-                <td style="text-align:right">{{ $invoice->currency->symbol . $payment->amount }}</td>
+                <td style="text-align:right">{{ $order->currency->symbol . $payment->amount }}</td>
             </tr>
         @endforeach
         </tbody>
@@ -436,15 +400,15 @@
 <br>
 <br>
 
-@if($invoice->footer)
+@if($order->footer)
     <div>
-        {!! $invoice->footer !!}
+        {!! $order->footer !!}
     </div>
 @endif
 
 <htmlpagefooter name="myfooter">
     <div
-        style="border-top: 1px solid #000000; font-size: 9pt; text-align: center; padding-top: 5mm; margin-top: 5mm;"></div>
+            style="border-top: 1px solid #000000; font-size: 9pt; text-align: center; padding-top: 5mm; margin-top: 5mm;"></div>
     <table width="100%">
         <tr>
         <tr>
