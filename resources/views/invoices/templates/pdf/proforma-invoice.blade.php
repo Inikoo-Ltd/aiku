@@ -276,31 +276,31 @@
             <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
 
             @if($pro_mode)
-                <td style="text-align:left">{{ $transaction->historicAsset?->name }}</td>
+                <td style="text-align:left" colspan="2">{{ $transaction->historicAsset?->name }}</td>
             @else
-                <td style="text-align:left">
+                <td style="text-align:left" colspan="2">
                     {{ $transaction->historicAsset?->units . 'x' . $transaction->historicAsset?->name . '(' . $invoice->currency->symbol . $transaction->net_amount . ')' }}
                     <br>
                     @if($rrp)
-                        RRP: {{ $transaction->model->rrp }}
+                        RRP: {{ $transaction->model->rrp }} <br>
                     @endif
                     @if($parts)
-                        {{ $transaction->historicAsset?->name }}
+                        {{ __('Parts: ') }}: {{ $transaction->historicAsset?->name }} <br>
                     @endif
                     @if($commodity_codes)
-                        {{ __('Tariff Code') }}: {{ $transaction->model->tariff_code }}
+                        {{ __('Tariff Code') }}: {{ $transaction->model->tariff_code }} <br>
                     @endif
                     @if($barcode)
-                        {{ __('Barcode') }}: {{ $transaction->model->barcode }}
+                        {{ __('Barcode') }}: {{ $transaction->model->barcode }} <br>
                     @endif
                     @if($weight)
-                        {{ __('Weight') }}: {{ $transaction->model->marketing_weight }}g
+                        {{ __('Weight') }}: {{ $transaction->model->marketing_weight }}g <br>
                     @endif
                     @if($country_of_origin)
-                        {{ __('Country of Origin') }}: {{ $transaction->model->country_of_origin }}
+                        {{ __('Country of Origin') }}: {{ $transaction->model->country_of_origin }} <br>
                     @endif
                     @if($cpnp)
-                        CPNP: {{ $transaction->model->cpnp_number }}
+                        CPNP: {{ $transaction->model->cpnp_number }} <br>
                     @endif
                 </td>
             @endif
@@ -315,8 +315,11 @@
                     @endif
                 </td>
             @else
-                <td style="text-align:right">{{  (int) $transaction->discount }}</td>
-                <td style="text-align:right">{{  (int) $transaction->quantity }}</td>
+                {{-- TODO: Discount --}}
+                <td style="text-align:right">{{ round(((int)optional($transaction->historicAsset)->price - (int)$transaction->net_amount) / (int)optional($transaction->historicAsset)->price * 100) }}
+                    %
+                </td>
+                <td style="text-align:right">{{  (int) $transaction->quantity_ordered }}</td>
             @endif
 
             <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
