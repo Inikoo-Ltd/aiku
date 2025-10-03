@@ -630,7 +630,7 @@ const onCopyDataCustomer = (field: string) => {
                     <!-- Field Address: Company Name -->
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
                         <div class="flex justify-between items-center">
-                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                            <label for="selectCountry" class="mb-1 block text-xs font-medium">
                                 {{ trans("Company Name") }}
                             </label>
 
@@ -645,7 +645,7 @@ const onCopyDataCustomer = (field: string) => {
                     <!-- Field Address: Contact Name -->
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
                         <div class="flex justify-between items-center">
-                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                            <label for="selectCountry" class="mb-1 block text-xs font-medium">
                                 {{ trans("Contact Name") }}
                             </label>
 
@@ -660,7 +660,7 @@ const onCopyDataCustomer = (field: string) => {
                     <!-- Field Address: Phone -->
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
                         <div class="flex justify-between items-center">
-                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                            <label for="selectCountry" class="mb-1 block text-xs font-medium">
                                 {{ trans("Phone") }}
                             </label>
 
@@ -675,7 +675,7 @@ const onCopyDataCustomer = (field: string) => {
                     <!-- Field Address: Email -->
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
                         <div class="flex justify-between items-center">
-                            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+                            <label for="selectCountry" class="mb-1 block text-xs font-medium">
                                 {{ trans("Company Name") }}
                             </label>
 

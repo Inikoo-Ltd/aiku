@@ -119,7 +119,7 @@ onMounted(() => {
                     class="w-full"
                     :class="idxElement === 0 ? '' : 'mt-4'"
                 >
-                    <div class="text-center py-1 bg-slate-300 text-gray-600 capitalize">
+                    <div class="text-center py-1 bg-slate-300 text-gray-600">
                         {{ element.label }}
                     </div>
                     <!-- List of element (checkbox) -->
@@ -134,7 +134,7 @@ onMounted(() => {
                             <FontAwesomeIcon v-if="selectedElement[elementScope]?.includes(elementKey)" icon="fal fa-check-square" aria-hidden="true" />
                             <FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
                             <div :class="[selectedElement[elementScope]?.includes(elementKey) ? '' : 'text-gray-400']"
-                                class="capitalize space-x-1">
+                                class="space-x-1">
                                 <span class="font-normal">{{ value[0] }}</span>
                                 <span :class="[value[1] ? 'font-semibold' : 'text-gray-400']" class="">
                                     ({{ useLocaleStore().number(value[1]) }})
@@ -161,7 +161,7 @@ onMounted(() => {
                 >
                     <FontAwesomeIcon v-if="selectedElement[selectedGroup]?.includes(element)" icon="fal fa-check-square" aria-hidden="true" />
                     <FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
-                    <div class="capitalize space-x-1"
+                    <div class="space-x-1"
                         :class="[
                             selectedElement[selectedGroup]?.includes(element)
                             ? 'text-gray-700'
@@ -179,7 +179,7 @@ onMounted(() => {
             <Menu as="div" class="relative inline-block text-left" v-slot="{ open }">
                 <!-- Initial button -->
                 <div v-if="props.elements" class="w-min bg-gray-200 rounded-r ring-1 ring-gray-300">
-                    <MenuButton class="inline-flex relative w-full justify-start items-center py-2 px-1 xl:py-2.5 font-medium text-gray-600 capitalize focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-opacity-75"
+                    <MenuButton class="inline-flex relative w-full justify-start items-center py-2 px-1 xl:py-2.5 font-medium text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-500 focus-visible:ring-opacity-75"
                         :class="[Object.keys(props.elements).length > 1 ? '' : 'cursor-default']"
                     >
                         <span v-if="Object.keys(props.elements).length > 1" class="pl-2 flex items-center justify-center">
@@ -202,7 +202,7 @@ onMounted(() => {
                             >
                                 <button :class="[
                                     active ? 'bg-gray-100' : 'text-gray-600',
-                                    'group flex w-full items-center pl-4 py-2 capitalize',
+                                    'group flex w-full items-center pl-4 py-2',
                                 ]">
                                     <!-- <EditIcon :active="active" class="mr-2 h-5 w-5 text-orange-400" aria-hidden="true" /> -->
                                     {{ element.key }}

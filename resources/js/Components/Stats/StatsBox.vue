@@ -6,7 +6,6 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { inject, ref } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Icon from '../Icon.vue'
-import { capitalize } from '@/Composables/capitalize'
 import BackgroundBox from '../BackgroundBox.vue'
 import CountUp from 'vue-countup-v3'
 
@@ -68,7 +67,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 background: `color-mix(in srgb, white 90%, ${stat.color})`,
                 border: `1px solid ${stat.color}`,
                 color: `color-mix(in srgb, black 20%, ${stat.color})`
-            }" v-tooltip="capitalize(stat.metaRight?.tooltip) || capitalize(stat.metaRight?.icon?.tooltip)">
+            }" v-tooltip="stat.metaRight?.tooltip || stat.metaRight?.icon?.tooltip">
             <Icon :data="stat.metaRight?.icon" class="opacity-100" />
             <div class="group-hover/sub:text-gray-700">
                 {{ locale.number(stat.metaRight?.count) }}
@@ -83,7 +82,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 @start="() => isLoadingMeta = idxMeta" @finish="() => isLoadingMeta = null"
                 class="group/sub px-2 flex gap-x-1 items-center font-normal"
                 :class="meta.route?.name ? 'hover:underline' : ''"
-                v-tooltip="capitalize(meta.tooltip) || capitalize(meta.icon?.tooltip)">
+                v-tooltip="meta.tooltip || meta.icon?.tooltip">
 
                  <template v-if="!meta?.hide">
                     <LoadingIcon v-if="isLoadingMeta == idxMeta" class="md:opacity-50 group-hover/sub:opacity-100" />

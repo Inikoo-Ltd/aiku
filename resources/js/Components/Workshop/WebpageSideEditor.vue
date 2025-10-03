@@ -239,7 +239,7 @@ defineExpose({
                         @click="() => openedBlockSideEditor = openedBlockSideEditor === index ? null : index"
                         :disabled="!getEditPermissions(element.web_block.layout.data)">
                         <FontAwesomeIcon icon="fal fa-bars" class="handle text-sm text-gray-400 cursor-grab" />
-                        <span class="text-sm font-medium capitalize truncate">
+                        <span class="text-sm font-medium truncate">
                           {{ element.name || element.type }}
                         </span>
                         <LoadingIcon v-if="isLoadingBlock === element.id" />

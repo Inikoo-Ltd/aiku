@@ -119,6 +119,11 @@ class StoreInvoice extends OrgAction
         }
 
 
+        if ($parent instanceof Order || $parent instanceof Customer) {
+            data_set($modelData, 'is_re', $parent->is_re);
+        }
+
+
         if (!Arr::exists($modelData, 'tax_category_id')) {
             $modelData = $this->processTaxCategory($modelData, $parent);
         }
@@ -216,8 +221,7 @@ class StoreInvoice extends OrgAction
             $modelData['tax_category_id'] = $parent->tax_category_id;
         } else {
             /** @var Customer $customer */
-            $customer = Customer::find($modelData['customer_id']);
-
+            $customer        = Customer::find($modelData['customer_id']);
             $billingAddress  = $customer->address;
             $deliveryAddress = $customer->deliveryAddress;
 
@@ -228,7 +232,8 @@ class StoreInvoice extends OrgAction
                     country: $this->organisation->country,
                     taxNumber: $customer->taxNumber,
                     billingAddress: $billingAddress,
-                    deliveryAddress: $deliveryAddress
+                    deliveryAddress: $deliveryAddress,
+                    isRe: $customer->is_re,
                 )->id
             );
         }

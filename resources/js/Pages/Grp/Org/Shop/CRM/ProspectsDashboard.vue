@@ -124,7 +124,7 @@ import { ref } from 'vue'
           <dl class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-3">
   
               <div v-if="data?.prospectStats" v-for="prospectState in data.prospectStats" class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow tabular-nums">
-                  <dt class="text-base font-medium text-gray-400 capitalize">{{ prospectState.label }}</dt>
+                  <dt class="text-base font-medium text-gray-400">{{ prospectState.label }}</dt>
                   <dd class="mt-2 flex justify-between gap-x-2">
                       <div class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold text-org-500">
                           <!-- In Total -->

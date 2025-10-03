@@ -224,7 +224,7 @@ const onSelectSubmitChange = (value) => {
                         <div class="flex items-center gap-x-2" ref="buttonRefs">
                             <FontAwesomeIcon v-if="sectionData.icon" :icon='sectionData.icon' class=''
                                 aria-hidden='true' />
-                            <h3 v-if="sectionData.title" class="text-lg leading-6 font-medium text-gray-700 capitalize">
+                            <h3 v-if="sectionData.title" class="text-lg leading-6 font-medium text-gray-700">
                                 {{ sectionData.title }}
                             </h3>
                             <p v-if="sectionData.subtitle" class="max-w-2xl text-sm text-gray-500">
@@ -237,7 +237,7 @@ const onSelectSubmitChange = (value) => {
                                 <dl v-if="!fieldData.hidden" class="mt-1 pb-4 sm:pb-5 sm:grid sm:grid-cols-3 sm:gap-4"
                                     :class="fieldData.full ? '' : 'max-w-3xl'">
                                     <!-- Title of Field -->
-                                    <dt class="text-sm font-medium text-gray-500" :class="fieldData.label_no_capitalize ? '' : 'capitalize'">
+                                    <dt class="text-sm font-medium text-gray-500">
                                         <div class="inline-flex items-start leading-none">
                                             <span>{{ fieldData.label }}</span>
                                             <!-- Icon: Required -->

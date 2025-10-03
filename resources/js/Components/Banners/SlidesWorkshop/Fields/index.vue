@@ -112,7 +112,7 @@
                       <!-- Helper: Section click -->
                       <div class="sr-only absolute -top-16" :id="`field${sectionIdx}`" />
                       <div v-if="sectionData.title || sectionData.subtitle" class="space-y-1">
-                          <h3 class="text-lg leading-6 font-medium text-gray-900 capitalize">
+                          <h3 class="text-lg leading-6 font-medium text-gray-900">
                               {{ sectionData.title }}
                           </h3>
                           <p v-show="sectionData['subtitle']" class="max-w-2xl text-sm text-gray-500">
@@ -124,7 +124,7 @@
                           <div v-for="(fieldData, fieldName, index ) in sectionData.fields" :key="index" class="mt-1 ">
                               <dl class="divide-y divide-green-200  ">
                                   <div class="pb-4 sm:pb-5 sm:grid sm:grid-cols-3 sm:gap-4 max-w-2xl">
-                                      <dt class="text-sm font-medium text-gray-500 capitalize">
+                                      <dt class="text-sm font-medium text-gray-500">
                                           <div class="inline-flex items-start leading-none">
                                               <!-- Icon: Required -->
                                               <FontAwesomeIcon v-if="fieldData.required" :icon="['fas', 'asterisk']" class="font-light text-[12px] text-red-400 mr-1"/>

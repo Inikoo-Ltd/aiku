@@ -20,13 +20,13 @@ class GetTaxCategory
 {
     use AsAction;
 
-    public function handle(Country $country, ?TaxNumber $taxNumber, Address $billingAddress, ?Address $deliveryAddress): TaxCategory
+    public function handle(Country $country, ?TaxNumber $taxNumber, Address $billingAddress, ?Address $deliveryAddress, bool $isRe = false): TaxCategory
     {
         return match ($country->code) {
             'GB' => $this->gbTaxCategory($billingAddress, $deliveryAddress),
             default => IsEuropeanUnion::run($country->code)
                 ?
-                $this->euTaxCategory($country, $billingAddress, $deliveryAddress, $taxNumber)
+                $this->euTaxCategory($country, $billingAddress, $deliveryAddress, $taxNumber ,$isRe)
                 :
                 TaxCategory::find(1)
         };

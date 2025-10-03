@@ -12,7 +12,6 @@ import { PalletDelivery, BoxStats, PalletReturn, PDRNotes } from '@/types/Pallet
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { inject, ref } from 'vue'
-import { capitalize } from '@/Composables/capitalize'
 import { routeType } from "@/types/route"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
@@ -83,7 +82,7 @@ const disableBeforeToday = (date: Date) => {
     <div class="h-min grid md:grid-cols-4 border-b border-gray-200 divide-y md:divide-y-0 divide-x divide-gray-200">
         <!-- Box: Status -->
         <BoxStatPallet :color="{ bgColor: layout.app.theme[0], textColor: layout.app.theme[1] }" class=" pb-2 py-2 px-3"
-            :tooltip="trans('Detail')" :label="capitalize(data_pallet.state)" icon="fal fa-truck-couch">
+            :tooltip="trans('Detail')" :label="data_pallet.state" icon="fal fa-truck-couch">
             <div class="flex items-center w-full flex-none gap-x-2 mb-2" :class="box_stats.delivery_state.class">
                 <dt class="flex-none">
                     <span class="sr-only">{{ box_stats.delivery_state.tooltip }}</span>

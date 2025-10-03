@@ -36,7 +36,7 @@ const props = defineProps<{
 			class="flex justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums"
 			:class="[box.full ? 'col-span-2' : '']">
 			<div class="">
-				<dt class="text-base font-medium text-gray-400 capitalize">{{ box.label }}</dt>
+				<dt class="text-base font-medium text-gray-400">{{ box.label }}</dt>
 				<dd class="mt-2 flex justify-between gap-x-2">
 					<div
 						class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold">

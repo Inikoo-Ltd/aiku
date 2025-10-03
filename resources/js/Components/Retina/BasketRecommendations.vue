@@ -163,7 +163,7 @@ onBeforeUnmount(() => {
                         </component>
                         
                         <!-- SKU and RRP -->
-                        <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize">
+                        <div class="flex justify-between text-xs text-gray-500 mb-1">
                             <span>{{ product.attributes.product_code?.[0] }}</span>
                         </div>
                         <!-- Rating and Stock -->

@@ -206,10 +206,19 @@ class GetRetinaDropshippingNavigation
             'icon'    => ['fal', 'fa-users-cog'],
             'root'    => 'retina.sysadmin.',
             'route'   => [
-                'name' => 'retina.sysadmin.dashboard'
+                'name' => 'retina.sysadmin.settings.edit'
             ],
             'topMenu' => [
                 'subSections' => [
+                    [
+                        'label' => __('account settings'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'retina.sysadmin.settings.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.settings.edit',
+
+                        ]
+                    ],
                     [
                         'label' => __('users'),
                         'icon'  => ['fal', 'fa-user-circle'],
@@ -220,15 +229,7 @@ class GetRetinaDropshippingNavigation
                         ]
                     ],
 
-                    [
-                        'label' => __('account settings'),
-                        'icon'  => ['fal', 'fa-cog'],
-                        'root'  => 'retina.sysadmin.settings.',
-                        'route' => [
-                            'name' => 'retina.sysadmin.settings.edit',
 
-                        ]
-                    ],
                 ]
             ]
         ];

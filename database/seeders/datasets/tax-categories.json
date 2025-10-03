@@ -8,7 +8,7 @@
     "Tax Category Rate": 0.000000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -20,7 +20,7 @@
     "Tax Category Rate": 0.000000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -32,7 +32,7 @@
     "Tax Category Rate": 0.000000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -44,7 +44,7 @@
     "Tax Category Rate": 0.175000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "GB",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -56,7 +56,7 @@
     "Tax Category Rate": 0.200000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "GB",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -68,7 +68,7 @@
     "Tax Category Rate": 0.150000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "GB",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -80,7 +80,7 @@
     "Tax Category Rate": 0.034355,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "GB",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -92,7 +92,7 @@
     "Tax Category Rate": 0.160000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -104,7 +104,7 @@
     "Tax Category Rate": 0.040000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -116,7 +116,7 @@
     "Tax Category Rate": 0.200000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{\"is_re\": true}",
+    "Tax Category Metadata": {"is_re": true},
     "aiku_id": null
   },
   {
@@ -128,7 +128,7 @@
     "Tax Category Rate": 0.180000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -140,7 +140,7 @@
     "Tax Category Rate": 0.220000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{\"is_re\": true}",
+    "Tax Category Metadata": {"is_re": true},
     "aiku_id": null
   },
   {
@@ -152,7 +152,7 @@
     "Tax Category Rate": 0.210000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -164,7 +164,7 @@
     "Tax Category Rate": 0.052000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -176,7 +176,7 @@
     "Tax Category Rate": 0.262000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{\"is_re\": true}",
+    "Tax Category Metadata": {"is_re": true},
     "aiku_id": null
   },
   {
@@ -188,7 +188,7 @@
     "Tax Category Rate": 0.200000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "SK",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -200,7 +200,7 @@
     "Tax Category Rate": 0.200000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "SK",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -212,7 +212,7 @@
     "Tax Category Rate": 0.200000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "GB",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -224,7 +224,7 @@
     "Tax Category Rate": 0.100000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{\"with_re\": [47, \"S10\", \"0.152\"]}",
+    "Tax Category Metadata": {"with_re": [47, "S10", "0.152"]},
     "aiku_id": null
   },
   {
@@ -236,7 +236,7 @@
     "Tax Category Rate": 0.114000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{\"is_re\": true}",
+    "Tax Category Metadata": {"is_re": true},
     "aiku_id": null
   },
   {
@@ -248,7 +248,7 @@
     "Tax Category Rate": 0.190000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "GB",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -260,7 +260,7 @@
     "Tax Category Rate": 0.190000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "DE",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -272,7 +272,7 @@
     "Tax Category Rate": 0.210000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "BE",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -284,7 +284,7 @@
     "Tax Category Rate": 0.200000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "BG",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -296,7 +296,7 @@
     "Tax Category Rate": 0.210000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "CZ",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -308,7 +308,7 @@
     "Tax Category Rate": 0.250000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "DK",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -320,7 +320,7 @@
     "Tax Category Rate": 0.200000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "EE",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -332,7 +332,7 @@
     "Tax Category Rate": 0.230000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "IE",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -344,7 +344,7 @@
     "Tax Category Rate": 0.240000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "GR",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -356,7 +356,7 @@
     "Tax Category Rate": 0.210000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -368,7 +368,7 @@
     "Tax Category Rate": 0.200000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "FR",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -380,7 +380,7 @@
     "Tax Category Rate": 0.250000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "HR",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -392,7 +392,7 @@
     "Tax Category Rate": 0.220000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "IT",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -404,7 +404,7 @@
     "Tax Category Rate": 0.190000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "CY",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -416,7 +416,7 @@
     "Tax Category Rate": 0.210000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "LV",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -428,7 +428,7 @@
     "Tax Category Rate": 0.210000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "LT",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -440,7 +440,7 @@
     "Tax Category Rate": 0.170000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "LU",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -452,7 +452,7 @@
     "Tax Category Rate": 0.270000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "HU",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -464,7 +464,7 @@
     "Tax Category Rate": 0.180000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "MT",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -476,7 +476,7 @@
     "Tax Category Rate": 0.210000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "NL",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -488,7 +488,7 @@
     "Tax Category Rate": 0.200000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "AT",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -500,7 +500,7 @@
     "Tax Category Rate": 0.230000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "PL",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -512,7 +512,7 @@
     "Tax Category Rate": 0.230000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "PT",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -524,7 +524,7 @@
     "Tax Category Rate": 0.180000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "PT",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -536,7 +536,7 @@
     "Tax Category Rate": 0.220000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "PT",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -548,7 +548,7 @@
     "Tax Category Rate": 0.190000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "RO",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -560,7 +560,7 @@
     "Tax Category Rate": 0.220000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "SI",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -572,7 +572,7 @@
     "Tax Category Rate": 0.240000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "FI",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -584,7 +584,7 @@
     "Tax Category Rate": 0.250000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "SE",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -596,7 +596,7 @@
     "Tax Category Rate": 0.200000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "GB",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -608,7 +608,7 @@
     "Tax Category Rate": 0.262000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{\"is_re\": true}",
+    "Tax Category Metadata": {"is_re": true},
     "aiku_id": null
   },
   {
@@ -620,7 +620,7 @@
     "Tax Category Rate": 0.100000,
     "Tax Category Active": "No",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -632,7 +632,7 @@
     "Tax Category Rate": 0.114000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "ES",
-    "Tax Category Metadata": "{\"is_re\": true}",
+    "Tax Category Metadata": {"is_re": true},
     "aiku_id": null
   },
   {
@@ -644,7 +644,7 @@
     "Tax Category Rate": 0.000000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "GB",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -656,7 +656,7 @@
     "Tax Category Rate": 0.160000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "LU",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -668,7 +668,7 @@
     "Tax Category Rate": 0.220000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "EE",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -680,7 +680,7 @@
     "Tax Category Rate": 0.230000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "SK",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   },
   {
@@ -692,7 +692,7 @@
     "Tax Category Rate": 0.255000,
     "Tax Category Active": "Yes",
     "Tax Category Country 2 Alpha Code": "FI",
-    "Tax Category Metadata": "{}",
+    "Tax Category Metadata": {},
     "aiku_id": null
   }
 ]

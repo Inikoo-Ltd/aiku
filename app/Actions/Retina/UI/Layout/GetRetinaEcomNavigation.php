@@ -19,10 +19,10 @@ class GetRetinaEcomNavigation
         $groupNavigation = [];
 
         $groupNavigation['dashboard'] = [
-            'label' => __('Dashboard'),
-            'icon' => ['fal', 'fa-tachometer-alt'],
-            'root' => 'retina.dashboard.',
-            'route' => [
+            'label'   => __('Dashboard'),
+            'icon'    => ['fal', 'fa-tachometer-alt'],
+            'root'    => 'retina.dashboard.',
+            'route'   => [
                 'name' => 'retina.dashboard.show'
             ],
             'topMenu' => [
@@ -31,10 +31,10 @@ class GetRetinaEcomNavigation
         ];
 
         $groupNavigation['catalogue'] = [
-            'label' => __('Catalogue'),
-            'icon' => ['fal', 'fa-books'],
-            'root' => 'retina.catalogue.',
-            'route' => [
+            'label'   => __('Catalogue'),
+            'icon'    => ['fal', 'fa-books'],
+            'root'    => 'retina.catalogue.',
+            'route'   => [
                 'name' => 'retina.catalogue.dashboard'
             ],
             'topMenu' => [
@@ -93,10 +93,10 @@ class GetRetinaEcomNavigation
         ];
 
         $groupNavigation['basket'] = [
-            'label' => __('Basket'),
-            'icon' => ['fal', 'fa-shopping-cart'],
-            'root' => 'retina.ecom.basket.',
-            'route' => [
+            'label'   => __('Basket'),
+            'icon'    => ['fal', 'fa-shopping-cart'],
+            'root'    => 'retina.ecom.basket.',
+            'route'   => [
                 'name' => 'retina.ecom.basket.show'
             ],
             'topMenu' => [
@@ -105,19 +105,19 @@ class GetRetinaEcomNavigation
         ];
 
         $groupNavigation['orders'] = [
-            'label'   => __('Orders'),
-            'icon'    => ['fal', 'fa-shopping-basket'],
-            'root'    => 'retina.ecom.orders.',
-            'route'   => [
+            'label' => __('Orders'),
+            'icon'  => ['fal', 'fa-shopping-basket'],
+            'root'  => 'retina.ecom.orders.',
+            'route' => [
                 'name' => 'retina.ecom.orders.index'
             ],
         ];
 
         $groupNavigation['favourites'] = [
-            'label' => __('Favourites'),
-            'icon' => ['fal', 'fa-heart'],
-            'root' => 'retina.ecom.favourites.',
-            'route' => [
+            'label'   => __('Favourites'),
+            'icon'    => ['fal', 'fa-heart'],
+            'root'    => 'retina.ecom.favourites.',
+            'route'   => [
                 'name' => 'retina.ecom.favourites.index'
             ],
             'topMenu' => [
@@ -126,14 +126,13 @@ class GetRetinaEcomNavigation
         ];
 
         $groupNavigation['invoices'] = [
-            'label'   => __('Invoices'),
-            'icon'    => ['fal', 'fa-file-invoice-dollar'],
-            'root'    => 'retina.ecom.invoices.',
-            'route'   => [
+            'label' => __('Invoices'),
+            'icon'  => ['fal', 'fa-file-invoice-dollar'],
+            'root'  => 'retina.ecom.invoices.',
+            'route' => [
                 'name' => 'retina.ecom.invoices.index'
             ],
         ];
-
 
 
         $groupNavigation['sysadmin'] = [
@@ -141,10 +140,19 @@ class GetRetinaEcomNavigation
             'icon'    => ['fal', 'fa-users-cog'],
             'root'    => 'retina.sysadmin.',
             'route'   => [
-                'name' => 'retina.sysadmin.dashboard'
+                'name' => 'retina.sysadmin.settings.edit',
             ],
             'topMenu' => [
                 'subSections' => [
+                    [
+                        'label' => __('account settings'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'retina.sysadmin.settings.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.settings.edit',
+
+                        ]
+                    ],
                     [
                         'label' => __('users'),
                         'icon'  => ['fal', 'fa-user-circle'],
@@ -155,15 +163,7 @@ class GetRetinaEcomNavigation
                         ]
                     ],
 
-                    [
-                        'label' => __('account settings'),
-                        'icon'  => ['fal', 'fa-cog'],
-                        'root'  => 'retina.sysadmin.settings.',
-                        'route' => [
-                            'name' => 'retina.sysadmin.settings.edit',
 
-                        ]
-                    ],
                 ]
             ]
         ];

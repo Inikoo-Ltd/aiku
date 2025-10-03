@@ -445,7 +445,7 @@ const onCallbackGoogleLogin = (e) => {
 							v-for="(pollReply, idx) in form.poll_replies"
 							:key="pollReply.id"
 							class="sm:col-span-6">
-							<label class="block text-sm font-medium text-gray-700 capitalize">
+							<label class="block text-sm font-medium text-gray-700">
 								{{ pollReply.label }}
 							</label>
 
