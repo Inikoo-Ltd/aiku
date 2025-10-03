@@ -60,7 +60,7 @@ class SaveDataFeeds extends RetinaAction
      */
     public function asCommand(Command $command): int
     {
-        $shops = Shop::where('type', ShopTypeEnum::DROPSHIPPING)
+        $shops = Shop::where('is_aiku', true)
             ->whereIn('state', [ShopStateEnum::OPEN, ShopStateEnum::CLOSING_DOWN])
             ->get();
         /** @var Shop $shop */
