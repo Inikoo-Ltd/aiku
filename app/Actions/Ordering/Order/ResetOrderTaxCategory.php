@@ -25,13 +25,13 @@ class ResetOrderTaxCategory
             $taxNumber = $customer->taxNumber;
 
             $command->info("Resetting tax category for order $order->slug");
-            //   $command->info("New tax number $taxNumber->number");
 
             $tacCategory = GetTaxCategory::run(
                 country: $order->organisation->country,
                 taxNumber: $taxNumber,
                 billingAddress: $order->billingAddress,
-                deliveryAddress: $order->deliveryAddress
+                deliveryAddress: $order->deliveryAddress,
+                isRe: $order->is_re,
             );
             $command->info("New tax category rate $tacCategory->rate");
 
@@ -41,7 +41,6 @@ class ResetOrderTaxCategory
             ]);
 
             CalculateOrderTotalAmounts::run($order);
-
         }
 
 
