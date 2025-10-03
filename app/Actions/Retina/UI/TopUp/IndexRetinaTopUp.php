@@ -10,7 +10,7 @@ namespace App\Actions\Retina\UI\TopUp;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Http\Resources\Fulfilment\RetinaTopupResources;
+use App\Http\Resources\Fulfilment\RetinaTopUpResources;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\TopUp;
 use App\Models\CRM\Customer;
@@ -73,7 +73,7 @@ class IndexRetinaTopUp extends RetinaAction
                     'icon'  => 'fal fa-shopping-basket'
                 ],
 
-                'data' => RetinaTopupResources::collection($topups)
+                'data' => RetinaTopUpResources::collection($topups)
             ]
         )->table($this->tableStructure());
     }

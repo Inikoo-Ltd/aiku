@@ -23,6 +23,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $currency
  * @property mixed $currency_symbol
  * @property mixed $number_transactions
+ * @property mixed $status
+ * @property mixed $number_item_transactions
  */
 class RecurringBillsResource extends JsonResource
 {
@@ -31,7 +33,7 @@ class RecurringBillsResource extends JsonResource
         return [
             'id'                       => $this->id,
             'slug'                     => $this->slug,
-            'status_icon'             => $this->status->statusIcon()[$this->status->value],
+            'status_icon'              => $this->status->statusIcon()[$this->status->value],
             'reference'                => $this->reference,
             'customer_name'            => $this->customer_name,
             'fulfilment_customer_slug' => $this->fulfilment_customer_slug,
@@ -40,7 +42,7 @@ class RecurringBillsResource extends JsonResource
             'end_date'                 => $this->end_date,
             'currency_code'            => $this->currency_code ?? ($this->currency ? $this->currency->code : null),
             'currency_symbol'          => $this->currency_symbol,
-            'number_item_transactions'      => $this->number_item_transactions
+            'number_item_transactions' => $this->number_item_transactions
         ];
     }
 }
