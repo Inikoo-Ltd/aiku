@@ -11,7 +11,6 @@ namespace App\Actions\Iris\CRM;
 use App\Actions\CRM\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\BackInStockReminder;
 use Lorisleiva\Actions\ActionRequest;
 use App\Models\CRM\Customer;
 use App\Models\Catalogue\Product;

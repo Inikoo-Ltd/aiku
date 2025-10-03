@@ -14,7 +14,6 @@ use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Exports\Marketing\ProductsInCollectionExport;
 use App\Exports\Marketing\ProductsInProductCategoryExport;
 use App\Exports\Marketing\ProductsInShopExport;

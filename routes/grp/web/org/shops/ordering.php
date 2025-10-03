@@ -6,7 +6,6 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Accounting\Invoice\PdfInvoice;
 use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
