@@ -338,6 +338,10 @@ class ShowOrder extends OrgAction
                             'value' => 'commodity_codes',
                         ],
                         [
+                            'label' => __('Barcode'),
+                            'value' => 'barcode',
+                        ],
+                        [
                             'label' => __('Weight'),
                             'value' => 'weight',
                         ],
