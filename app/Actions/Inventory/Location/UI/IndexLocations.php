@@ -353,7 +353,7 @@ class IndexLocations extends OrgAction
                     [
                         'type'  => 'button',
                         'style' => 'create',
-                        'label' => __('location'),
+                        'label' => __('Location'),
                         'route' => match ($request->route()->getName()) {
                             'grp.org.warehouses.show.infrastructure.locations.index' => [
                                 'name'       => 'grp.org.warehouses.show.infrastructure.locations.create',

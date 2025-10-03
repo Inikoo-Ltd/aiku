@@ -116,7 +116,6 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                     'scope'             => 'sales_invoice_category_currency',
                 ]
             ],
-
             [
                 'sales_org_currency' => [
                     'formatted_value'   => __('Sales'),

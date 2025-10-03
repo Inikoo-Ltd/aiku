@@ -158,7 +158,7 @@ class IndexClockingMachines extends OrgAction
                     'grp.org.hr.workplaces.show.clocking_machines.index' => [
                         'type'  => 'button',
                         'style' => 'create',
-                        'label' => __('clocking machine'),
+                        'label' => __('Clocking machine'),
                         'route' => [
                             'name'       => 'grp.org.hr.workplaces.show.clocking_machines.create',
                             'parameters' => $request->route()->originalParameters()
@@ -167,7 +167,7 @@ class IndexClockingMachines extends OrgAction
                     default => [
                         'type'  => 'button',
                         'style' => 'create',
-                        'label' => __('clocking machine'),
+                        'label' => __('Clocking machine'),
                         'route' => [
                             'name'       => 'grp.org.hr.clocking_machines.create',
                             'parameters' => [$this->organisation->slug]
@@ -185,7 +185,7 @@ class IndexClockingMachines extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('clocking machines'),
+                'title'       => __('Clocking machines'),
                 'pageHead'    => [
                     'icon'          =>
                         [

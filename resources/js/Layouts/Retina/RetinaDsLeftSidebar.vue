@@ -61,13 +61,13 @@ const handleToggleLeftBar = () => {
             }"
         >
             <!-- Switch Language -->
-            <div class="md:hidden bg-gray-100/50 text-white px-4 mb-3 flex justify-between items-center text-xs">
-                <div>Language:</div>
+            <div v-if="Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="md:hidden bg-gray-100/50 text-white px-4 mb-3 flex justify-between items-center text-xs">
+                <div>{{ trans("Language") }}:</div>
                 <SwitchLanguage>
                     <template #default="{ isLoadingChangeLanguage }">
                         <div class="underline text-xs py-2">
                             {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.website_i18n.current_language?.code)?.name }}
-                            <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" xalt="language.code"   xtitle='capitalize(countryName)'  />
+                            <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" :alt="layout.iris.website_i18n.current_language?.code" title='capitalize(countryName)'  />
                         </div>
                     </template>
                 </SwitchLanguage>

@@ -13,6 +13,7 @@ use App\Actions\HumanResources\JobPosition\UpdateJobPosition;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\HumanResources\JobPosition;
+use App\Models\SysAdmin\JobPositionCategory;
 use App\Models\SysAdmin\Organisation;
 use App\Models\SysAdmin\Role;
 use Illuminate\Console\Command;
@@ -64,6 +65,7 @@ class SeedJobPositions extends Seeder
                 ]
             );
         } else {
+            /** @var JobPositionCategory $jobPositionCategory */
             $jobPositionCategory = $organisation->group->jobPositionCategories()->where('code', $jobPositionData['code'])->first();
             $jobPosition        = StoreJobPosition::make()->action(
                 $organisation,

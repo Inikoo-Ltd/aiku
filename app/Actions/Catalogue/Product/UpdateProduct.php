@@ -21,7 +21,6 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Http\Resources\Catalogue\ProductResource;
-use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;

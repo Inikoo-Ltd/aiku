@@ -127,7 +127,7 @@ class IndexProspectQueries extends InertiaAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('prospect list'),
+                            'label' => __('Prospect list'),
                             'route' => [
                                 'name'       => 'grp.org.shops.show.crm.prospects.lists.create',
                                 'parameters' => array_values($this->originalParameters)

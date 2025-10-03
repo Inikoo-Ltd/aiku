@@ -20,6 +20,8 @@ enum GroupPermissionsEnum: string
     case GROUP_WEBMASTER = 'group-webmaster';
     case GROUP_WEBMASTER_EDIT = 'group-webmaster.edit';
     case GROUP_WEBMASTER_VIEW = 'group-webmaster.view';
+    case GROUP_WEBMASTER_MEDIA_EDIT = 'group-webmaster.media-edit';
+    case GROUP_WEBMASTER_PROPERTIES_EDIT = 'group-webmaster.properties-edit';
 
     case ORGANISATIONS = 'organisations';
     case ORGANISATIONS_VIEW = 'organisations.edit';

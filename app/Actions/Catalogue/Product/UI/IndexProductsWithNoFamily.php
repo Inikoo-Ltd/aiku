@@ -146,7 +146,7 @@ class IndexProductsWithNoFamily extends OrgAction
 
 
         return Inertia::render(
-            'Org/Catalogue/OrphanProducts' ,
+            'Org/Catalogue/OrphanProducts',
             [
                 'breadcrumbs'                  => $this->getBreadcrumbs(
                     $request->route()->getName(),
