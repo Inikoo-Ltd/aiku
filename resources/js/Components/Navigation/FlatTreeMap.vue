@@ -63,7 +63,7 @@ const isLoadingNode = ref<string | boolean>(false)
                     <div class="flex items-center px-4 text-lg xl:px-6 font-medium gap-x-4" :class="[mode == 'compact' ? 'py-2' : node.sub_data?.length ? 'pt-4 md:pt-0 ' : 'py-4']">
                         <LoadingIcon v-if="isLoading === 'node' + nodeIdx" :size="mode == 'compact' ? undefined : 'lg'" class="flex-shrink-0 text-gray-400" />
                         <FontAwesomeIcon v-else-if="node.icon" :size="mode == 'compact' ? undefined : 'lg'" :icon="node.icon" class="flex-shrink-0 text-gray-400" aria-hidden="true" fixed-width />
-                        <p class="md:leading-none md:text-sm lg:text-base inline capitalize font-medium text-gray-500 group-hover/node:text-gray-700">
+                        <p class="md:leading-none md:text-sm lg:text-base inline font-medium text-gray-500 group-hover/node:text-gray-700">
                             <span class="hidden lg:inline">{{ node.name }}</span>
                             <span class="inline lg:hidden">{{ node.shortName ? node.shortName : node.name }}</span>
                         </p>
@@ -87,7 +87,7 @@ const isLoadingNode = ref<string | boolean>(false)
                             :is="subData.route?.name ? Link : 'div'"
                             :href="subData.route?.name ? route(subData.route.name, subData.route.parameters) : ''"
                             class="group/sub px-2 flex gap-x-0.5 items-center font-normal rounded"
-                            v-tooltip="capitalize(subData.icon?.tooltip)"
+                            v-tooltip="subData.icon?.tooltip"
                             :class="subData.route?.name ? 'hover:bg-gray-200 hover:ring-1 hover:ring-gray-300' : ''"    
                             @start="() => isLoadingNode = 'subLink' + subIdx"
                             @finish="() => isLoadingNode = false"
@@ -103,7 +103,7 @@ const isLoadingNode = ref<string | boolean>(false)
 
 
                 <!-- Sublink on right each section (Marketplace) -->
-                <div v-if="node.rightSubLink" class="pr-4 " :title="capitalize(node.rightSubLink.tooltip)">
+                <div v-if="node.rightSubLink" class="pr-4 " :title="node.rightSubLink.tooltip">
                     <component
                         :is="node.rightSubLink?.route?.name ? Link : 'div'"
                         :href="node.route?.name ? route(node.rightSubLink.route.name, node.rightSubLink.route.parameters) : ''"

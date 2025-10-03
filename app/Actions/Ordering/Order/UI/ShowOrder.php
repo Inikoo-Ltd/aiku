@@ -319,6 +319,24 @@ class ShowOrder extends OrgAction
                 'data'          => OrderResource::make($order),
                 'delivery_note' => $deliveryNoteResource,
 
+                'proforma_invoice'  => app()->environment('local') ? [
+                    'check_list'       => [
+                        [
+                            'label' => __('Pro mode'),
+                            'value' => 'pro_mode',
+                        ],
+                        [
+                            'label' => __('Recommended retail prices'),
+                            'value' => 'rrp',
+                        ],
+                    ],
+                    'route_download_pdf'    => [
+                        'name'       => 'grp.dashboard.show',
+                        'parameters' => [
+                            'order' => $order->slug,
+                        ]
+                    ]
+                ] : null,
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.order.attachment.attach',

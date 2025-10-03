@@ -210,7 +210,7 @@ const isLoadingNavigation = ref<string | boolean>(false)
                             </span>
                         </Transition>
                         <!-- <Transition name="spin-to-down">
-                            <span :key="currentNavigation()?.value.type" class="text-xxs capitalize leading-3">
+                            <span :key="currentNavigation()?.value.type" class="text-xxs leading-3">
                                 ({{ currentNavigation()?.value.type || currentNavigation()?.type}})
                             </span>
                         </Transition> -->

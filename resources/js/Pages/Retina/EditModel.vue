@@ -175,7 +175,7 @@ onBeforeUnmount(() => {
                             <div class="sr-only absolute -top-16" :id="`field${sectionIdx}`"/>
                             <!-- Title -->
                             <div class="flex items-center gap-x-2" ref="buttonRefs">
-                                <h3 v-if="sectionData.title" class="text-lg leading-6 font-medium text-gray-700 capitalize">
+                                <h3 v-if="sectionData.title" class="text-lg leading-6 font-medium text-gray-700">
                                     {{ sectionData.title }}
                                 </h3>
                                 <p v-if="sectionData.subtitle" class="max-w-2xl text-sm text-gray-500">

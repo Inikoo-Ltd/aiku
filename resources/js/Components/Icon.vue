@@ -5,7 +5,6 @@
   -->
 
 <script setup lang="ts">
-import { capitalize } from '@/Composables/capitalize.js'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { Icon as IconTS } from "@/types/Utils/Icon"
 
@@ -19,7 +18,7 @@ defineProps<{
 
     <FontAwesomeIcon
         v-if="data?.icon"
-        v-tooltip="title ? title : capitalize(data.tooltip ?? '')"
+        v-tooltip="title ? title : data.tooltip"
         aria-hidden="true"
         :icon="data.icon"
         :class="data.class"

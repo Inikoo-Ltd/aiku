@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { capitalize } from "@/Composables/capitalize"
 import { routeType } from "@/types/route"
 import { Link } from "@inertiajs/vue3"
 import { inject, ref } from "vue"
@@ -69,8 +68,8 @@ const isSubNavActive = (subNav: SubNav) => {
         }"
     >
         <div v-if="dataNavigation[0].leftIcon" class="pr-1">
-            <FontAwesomeIcon v-if="isLoading === 'home'" icon="fad fa-spinner-third" v-tooltip="capitalize(dataNavigation[0].leftIcon.tooltip)" fixed-width aria-hidden="true" class="animate-spin" />
-            <FontAwesomeIcon v-else :icon="dataNavigation[0].leftIcon.icon" v-tooltip="capitalize(dataNavigation[0].leftIcon.tooltip)" fixed-width aria-hidden="true" class="" />
+            <FontAwesomeIcon v-if="isLoading === 'home'" icon="fad fa-spinner-third" fixed-width aria-hidden="true" class="animate-spin" />
+            <FontAwesomeIcon v-else :icon="dataNavigation[0].leftIcon.icon" fixed-width aria-hidden="true" class="" />
         </div>
 
         <div class="xl:whitespace-nowrap">
@@ -105,10 +104,10 @@ const isSubNavActive = (subNav: SubNav) => {
                         ]">
                         <div class="flex items-center">
                             <FontAwesomeIcon v-if="isLoading === itemIdx" icon="fad fa-spinner-third"
-                                v-tooltip="capitalize(subNav.leftIcon?.tooltip)" fixed-width aria-hidden="true"
+                                v-tooltip="subNav.leftIcon?.tooltip" fixed-width aria-hidden="true"
                                 class="text-base animate-spin" />
                             <FontAwesomeIcon v-else-if="subNav.leftIcon" :icon="subNav.leftIcon?.icon"
-                                v-tooltip="capitalize(subNav.leftIcon?.tooltip)"
+                                v-tooltip="subNav.leftIcon?.tooltip"
                                 class="text-base group-hover:opacity-100 opacity-50" fixed-width aria-hidden="true" />
                         </div>
 
@@ -138,10 +137,10 @@ const isSubNavActive = (subNav: SubNav) => {
 
                         <div class="flex items-center">
                             <FontAwesomeIcon v-if="isLoading === itemIdx" icon="fad fa-spinner-third"
-                                v-tooltip="capitalize(subNav.leftIcon?.tooltip)" fixed-width aria-hidden="true"
+                                v-tooltip="subNav.leftIcon?.tooltip" fixed-width aria-hidden="true"
                                 class="text-sm animate-spin" />
                             <FontAwesomeIcon v-else-if="subNav.leftIcon" :icon="subNav.leftIcon?.icon"
-                                v-tooltip="capitalize(subNav.leftIcon?.tooltip)"
+                                v-tooltip="subNav.leftIcon?.tooltip"
                                 class="text-sm group-hover:opacity-100 opacity-50" fixed-width aria-hidden="true" />
                         </div>
 

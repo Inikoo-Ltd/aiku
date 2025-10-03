@@ -342,7 +342,7 @@ const validImages = computed(() => {
 
                 <!-- Section: Price, RRP -->
                 <div v-if="layout?.iris?.is_logged_in" class="flex flex-wrap gap-x-4 items-end mb-3">
-                    <div class="font-semibold text-2xl capitalize leading-none flex-grow min-w-0">
+                    <div class="font-semibold text-2xl leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
                         <span class="text-gray-500 text-base font-normal">
                             ({{ locale.currencyFormat(currency?.code,

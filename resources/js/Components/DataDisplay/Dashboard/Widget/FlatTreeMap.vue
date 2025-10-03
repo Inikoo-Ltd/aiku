@@ -9,7 +9,6 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faEmptySet, faStar, faWrench, faWarehouse, faStore, faCashRegister, faMoneyCheckAlt, faTasks } from '@fal'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { capitalize } from "@/Composables/capitalize"
 import { routeType } from '@/types/route'
 import { inject, ref } from 'vue'
 import { Icon } from '@/types/Utils/Icon'
@@ -135,7 +134,7 @@ const isLoading = ref<string | boolean>(false)
                             :is="subData.route?.name ? Link : 'div'"
                             :href="subData.route?.name ? route(subData.route.name, subData.route.parameters) : ''"
                             class="group/sub px-2 flex gap-x-0.5 items-center font-normal"
-                            v-tooltip="capitalize(subData.icon?.tooltip)"
+                            v-tooltip="subData.icon?.tooltip"
                         >
                             <FontAwesomeIcon :icon="subData.icon?.icon" class="" :class="subData.icon?.class" fixed-width :title="subData.icon?.tooltip" aria-hidden="true" />
                             <span class=" ">
@@ -147,7 +146,7 @@ const isLoading = ref<string | boolean>(false)
 
 
                 <!-- Sublink on right each section (Marketplace) -->
-                <div v-if="node.rightSubLink" class="pr-4 " :title="capitalize(node.rightSubLink.tooltip)">
+                <div v-if="node.rightSubLink" class="pr-4 " :title="node.rightSubLink.tooltip">
                     <component
                         :is="node.rightSubLink?.route?.name ? Link : 'div'"
                         :href="node.route?.name ? route(node.rightSubLink.route.name, node.rightSubLink.route.parameters) : ''"

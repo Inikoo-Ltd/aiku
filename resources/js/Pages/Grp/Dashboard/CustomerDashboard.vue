@@ -104,7 +104,7 @@ const isLoadingVisit = ref<number | null>(null)
         <dl class="mt-5 grid grid-cols-1 md:grid-cols-3 gap-x-2 gap-y-3">
             <div
                 class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow tabular-nums">
-                <dt class="text-base font-medium text-gray-400 capitalize">
+                <dt class="text-base font-medium text-gray-400">
                     {{ customerStats.label }}
                 </dt>
                 <dd class="mt-2 flex justify-between gap-x-2">

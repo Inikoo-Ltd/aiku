@@ -9,7 +9,6 @@
 -->
 <script setup lang="ts">
 import { inject, ref, watch } from "vue"
-import { capitalize } from "@/Composables/capitalize"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle, faPallet, faCircle, faUndo } from "@fas"
 import { faSpinnerThird } from "@fad"
@@ -208,7 +207,7 @@ const tabIconClass = function (
 							]"
 							class="relative group inline-flex gap-x-1.5 justify-center items-center py-2 px-2 border-b-2 font-medium text-sm"
 							:aria-current="tabSlug === currentTab ? 'page' : undefined"
-							v-tooltip="capitalize(tab.title)">
+							v-tooltip="tab.title">
 							<FontAwesomeIcon
 								v-if="tabLoading === tabSlug"
 								icon="fad fa-spinner-third"

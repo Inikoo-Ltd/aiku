@@ -15,7 +15,7 @@ import type { Component } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Timeline from "@/Components/Utils/Timeline.vue"
 import Popover from "@/Components/Popover.vue"
-import { Popover as PopoverPrimevue } from 'primevue';
+import { Checkbox, Popover as PopoverPrimevue } from 'primevue';
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import BoxNote from "@/Components/Pallet/BoxNote.vue"
@@ -222,6 +222,13 @@ const props = defineProps<{
     address_update_route?: routeType
     addresses?: {}
     upload_excel: UploadSection
+    proforma_invoice: {
+        check_list: {
+            label: string
+            value: string
+        }[]
+        route_download_pdf: routeType
+    }
 }>()
 
 
@@ -567,6 +574,9 @@ const ellipsis = ref()
 const toggleElipsis = (e: Event) => {
     ellipsis.value.toggle(e)
 }
+
+const isOpenModalProforma = ref(false)
+const selectedCheck = ref<string[]>([])
 </script>
 
 <template>
@@ -618,7 +628,7 @@ const toggleElipsis = (e: Event) => {
         </template>
 
         <template #other>
-            <div v-if="!props.readonly">
+            <div v-if="!props.readonly" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
                     icon="upload" />
 
@@ -630,6 +640,7 @@ const toggleElipsis = (e: Event) => {
                     </button>
                     <PopoverPrimevue ref="ellipsis">
                         <div class="flex flex-col gap-2">
+                            <!-- Button: Undispatched -->
                             <ModalConfirmationDelete v-if="props.data?.data?.state === 'dispatched'"
                                 :routeDelete="routes.rollback_dispatch"
                                 :title="trans('Are you sure you want to rollback the Order??')"
@@ -641,9 +652,10 @@ const toggleElipsis = (e: Event) => {
                                 </template>
                             </ModalConfirmationDelete>
 
+                            <!-- Button: Add Notes -->
                             <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
                                 <template #button="{ open }">
-                                    <Button icon="fal fa-sticky-note" type="tertiary" label="Add notes" />
+                                    <Button icon="fal fa-sticky-note" type="tertiary" full :label="trans('Add notes')" />
                                 </template>
                                 <template #content="{ close: closed }">
                                     <div class="w-[350px]">
@@ -680,6 +692,14 @@ const toggleElipsis = (e: Event) => {
                                     </div>
                                 </template>
                             </Popover>
+
+                            <Button
+                                v-if="proforma_invoice"
+                                @click="() => isOpenModalProforma = true"
+                                type="tertiary"
+                                :label="trans('Proforma Invoice')"
+                                icon="fal fa-download"
+                            />
                         </div>
                     </PopoverPrimevue>
                 </div>
@@ -1228,6 +1248,32 @@ const toggleElipsis = (e: Event) => {
                         *{{ errorPaymentMethod }}</p>
                 </Transition>
             </div>
+        </div>
+    </Modal>
+
+    <!-- Modal: Proforma -->
+    <Modal v-if="proforma_invoice" :isOpen="isOpenModalProforma" @onClose="isOpenModalProforma = false" width="w-full max-w-lg">
+        <div class="isolate bg-white px-6 lg:px-8">
+            <div class="mx-auto max-w-2xl text-center mb-4">
+                <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
+                    {{ trans("Proforma Invoice") }}
+                </h2>
+            </div>
+
+            <div class="flex flex-col gap-2">
+                <div>{{ trans("Select additional information to included:") }}</div>
+                <div v-for="check of proforma_invoice.check_list" :key="check.key" class="flex items-center gap-2">
+                    <Checkbox v-model="selectedCheck" :inputId="check.key" name="check" :value="check.value" />
+                    <label :for="check.value">{{ check.label }}</label>
+                </div>
+            </div>
+
+            <a :href="route(proforma_invoice.route_download_pdf.name, proforma_invoice.route_download_pdf.parameters)" target="_blank" rel="noopener noreferrer" download class="w-full block mt-6">
+                <Button
+                    full
+                    :label="trans('Download Proforma Invoice')"
+                />
+            </a>
         </div>
     </Modal>
 

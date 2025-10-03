@@ -2,7 +2,6 @@
 import JsBarcode from 'jsbarcode'
 import { inject, onMounted, ref } from 'vue'
 import { PalletDelivery, BoxStats } from '@/types/Pallet'
-import { capitalize } from '@/Composables/capitalize'
 import { trans } from 'laravel-vue-i18n'
 import BoxStatPallet from '@/Components/Pallet/BoxStatPallet.vue'
 import { Link, router } from '@inertiajs/vue3'
@@ -127,7 +126,7 @@ onMounted(() => {
 
 
         <!-- Box: Status -->
-        <BoxStatPallet class="py-1 sm:py-2 px-3" :label="capitalize(auditData.reference)" icon="fal fa-truck-couch">
+        <BoxStatPallet class="py-1 sm:py-2 px-3" :label="auditData.reference" icon="fal fa-truck-couch">
             
 
             <div class="flex items-center w-full flex-none gap-x-2 mb-1">
