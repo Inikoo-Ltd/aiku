@@ -315,7 +315,6 @@
                     @endif
                 </td>
             @else
-                {{-- TODO: Discount --}}
                 <td style="text-align:right">{{ round(((int)optional($transaction->historicAsset)->price - (int)$transaction->net_amount) / (int)optional($transaction->historicAsset)->price * 100) }}
                     %
                 </td>
