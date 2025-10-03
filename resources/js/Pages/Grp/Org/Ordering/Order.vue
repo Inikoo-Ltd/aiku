@@ -1021,7 +1021,7 @@ const selectedCheck = ref<string[]>([])
                         </ul>
                     </div>
 
-                    
+
 
 
                     <div v-if="box_stats?.delivery_notes?.length"
@@ -1268,7 +1268,7 @@ const selectedCheck = ref<string[]>([])
                 </div>
             </div>
 
-            <a :href="route(proforma_invoice.route_download_pdf.name, proforma_invoice.route_download_pdf.parameters)" target="_blank" rel="noopener noreferrer" download class="w-full block mt-6">
+            <a :href="route(proforma_invoice.route_download_pdf.name, proforma_invoice.route_download_pdf.parameters)" target="_blank" rel="noopener noreferrer" class="w-full block mt-6">
                 <Button
                     full
                     :label="trans('Download Proforma Invoice')"
