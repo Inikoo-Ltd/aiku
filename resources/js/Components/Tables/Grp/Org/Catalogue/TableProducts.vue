@@ -23,6 +23,8 @@ import { RouteParams } from "@/types/route-params"
 import InputNumber from "primevue/inputnumber"
 import { faPlus } from "@far"
 import { faXmark } from "@fortawesome/free-solid-svg-icons"
+import PureInput from "@/Components/Pure/PureInput.vue"
+
 
 
 library.add(faOctopusDeploy, faConciergeBell, faGarage, faExclamationTriangle, faPencil)
@@ -57,7 +59,8 @@ function onEdit(item) {
     // make a working copy
     editingValues.value[item.id] = {
         price: item.price,
-        rrp: item.rrp
+        rrp: item.rrp,
+        unit : item.unit
     }
 
     if (!onEditOpen.value.includes(item.id)) {
@@ -74,7 +77,8 @@ function onSave(item) {
         route("grp.models.product.update", { product: item.id }),
         {
             price: updated.price,
-            rrp: updated.rrp
+            rrp: updated.rrp,
+            unit : updated.unit
         },
         {
             preserveScroll: true,
@@ -350,6 +354,13 @@ const locale = inject("locale", aikuLocaleStructure)
         </template>
         <template #cell(state)="{ item: product }">
             <Icon :data="product.state"></Icon>
+        </template>
+
+         <template #cell(unit)="{ item: product }">
+            <div class="w-1/2">
+                <PureInput v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].unit" ></PureInput>
+                <span v-else>{{product.unit}}</span>
+            </div>
         </template>
 
         <template #cell(price)="{ item: product }">

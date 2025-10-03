@@ -33,6 +33,7 @@ class ProductsForPortfolioSelectResource extends JsonResource
             'rrp'  => $this->rrp,
             'currency_code' => $this->currency_code,
             'currency_id'   => $this->currency_id,
+            'stock'         => $this->stock
         ];
     }
 }
