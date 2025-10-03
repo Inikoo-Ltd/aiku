@@ -99,6 +99,8 @@ class GetProductsForPortfolioSelect extends OrgAction
                 'products.created_at',
                 'products.updated_at',
                 'products.gross_weight',
+                'products.rrp',
+                'products.available_quantity',
                 'products.web_images',
                 'products.slug',
                 'currencies.code as currency_code',
