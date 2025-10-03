@@ -4,14 +4,13 @@ import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage, faInfoCircle, faPencil, faUnlink, faUpload, faVideo } from "@fal"
+import { faImage, faPencil, faUnlink, faUpload, faVideo } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
 import axios from "axios"
 import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import Tag from "@/Components/Tag.vue"
-import { Message } from "primevue"
 import { capitalize } from "lodash"
 // Types
 import { Image as ImageTS } from "@/types/Image"
@@ -20,7 +19,6 @@ import { faStarChristmas } from "@fas"
 
 const props = defineProps<{
     data: {
-        editable?: boolean
         id: {}
         images: {}
         bucket_images?: boolean
@@ -40,7 +38,6 @@ const props = defineProps<{
 }>()
 
 // State
-const editable = ref(props.data.editable ?? true)
 const selectedDragImage = ref<ImageTS | null>(null)
 const loadingSubmit = ref<null | number | string>(null)
 const isModalEditVideo = ref(false)
@@ -256,20 +253,6 @@ function onDeleteFilesInList(categoryBox: any) {
 </script>
 
 <template>
-    <div v-if="!editable" class="px-10 pt-4">
-        <Message severity="warn" closable>
-        <template #icon>
-            <FontAwesomeIcon :icon="faInfoCircle" />
-        </template>
-        <span class="ml-2">
-            You can only view this image because of insufficient permissions.
-        </span>
-    </Message>
-
-    </div>
-    
-
-
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 px-10 py-4">
         <!-- Left: Drop Areas -->
         <div v-if="props.data.images_category_box?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
@@ -284,9 +267,9 @@ function onDeleteFilesInList(categoryBox: any) {
                 <li v-for="categoryBox in props.data.images_category_box" :key="categoryBox.column_in_db"
                     class="relative flex flex-col overflow-hidden rounded-xl border bg-gray-50 transition duration-300 ease-in-out"
                     :class="{
-                        'border-blue-500 ring-2 ring-blue-300 bg-blue-50 shadow-md': activeCategory === categoryBox.column_in_db,
-                        ' cursor-not-allowed': !editable
-                    }" v-bind="editable && categoryBox.type === 'image'
+                        'border-blue-500 ring-2 ring-blue-300 bg-blue-50 shadow-md':
+                            activeCategory === categoryBox.column_in_db,
+                    }" v-bind="categoryBox.type === 'image'
                         ? {
                             onDragover: (e) => e.preventDefault(),
                             onDragenter: (e) => {
@@ -305,11 +288,11 @@ function onDeleteFilesInList(categoryBox: any) {
                         <div class="flex items-center gap-2">
                             <FontAwesomeIcon v-if="categoryBox.information" v-tooltip="categoryBox.information"
                                 icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width />
-                            <FontAwesomeIcon v-if="categoryBox.type == 'video' && editable" @click="() => {
+                            <FontAwesomeIcon v-if="categoryBox.type == 'video'" @click="() => {
                                 selectedVideoToUpdate = { ...categoryBox }
                                 isModalEditVideo = true
                             }" :icon="faPencil" class="text-gray-400 hover:text-gray-600" fixed-width />
-                            <FontAwesomeIcon v-if="(categoryBox.images || categoryBox.url) && editable" :icon="faUnlink"
+                            <FontAwesomeIcon v-if="categoryBox.images || categoryBox.url" :icon="faUnlink"
                                 @click="() => onDeletefilesInBox(categoryBox)"
                                 class="text-gray-400 text-red-600 cursor-pointer text-xs" />
                         </div>
@@ -317,10 +300,9 @@ function onDeleteFilesInList(categoryBox: any) {
 
                     <!-- Drop Zone -->
                     <div v-if="categoryBox.type == 'image'"
-                        class="relative flex h-36 w-full items-center justify-center bg-gray-50 transition"
-                        :class="{ ' cursor-not-allowed': !editable }" :draggable="editable && !!categoryBox.images"
-                        @dragstart="editable && categoryBox.images ? (e) => onStartDrag(e, categoryBox) : null"
-                        @dragend="editable ? onEndDrag : null">
+                        class="relative flex h-36 w-full items-center justify-center bg-gray-50"
+                        :draggable="!!categoryBox.images"
+                        @dragstart="(e) => categoryBox.images && onStartDrag(e, categoryBox)" @dragend="onEndDrag">
                         <Image v-if="categoryBox.images" :src="categoryBox.images" :style="{ objectFit: 'contain' }" />
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
@@ -328,9 +310,11 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
                     </div>
 
+
                     <div v-if="categoryBox.type == 'video'"
                         class="relative flex h-36 w-full items-center justify-center bg-gray-50 cursor-pointer"
-                        @click="editable ? () => { selectedVideoToUpdate = { ...categoryBox }; isModalEditVideo = true } : null">
+                        @click="() => { selectedVideoToUpdate = { ...categoryBox }; isModalEditVideo = true }">
+
                         <!-- Video preview -->
                         <div v-if="categoryBox.url" class="relative w-full h-full">
                             <iframe class="w-full h-full rounded-md pointer-events-none" :src="categoryBox.url"
@@ -345,10 +329,12 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
 
                         <!-- Drag overlay -->
-                        <div v-show="activeCategory === categoryBox.column_in_db && editable"
+                        <div v-show="activeCategory === categoryBox.column_in_db"
                             class="absolute inset-0 bg-blue-200 bg-opacity-30 border-2 border-dashed border-blue-500 rounded-md pointer-events-none">
                         </div>
                     </div>
+
+
                 </li>
             </TransitionGroup>
         </div>
@@ -362,7 +348,7 @@ function onDeleteFilesInList(categoryBox: any) {
                     {{ trans("Image List") }}
                 </h3>
                 <div class="flex items-center gap-2">
-                    <Button v-if="editable" :loading="loadingSubmit === 'upload'" type="create" :label="trans('Upload')"
+                    <Button :loading="loadingSubmit === 'upload'" type="create" :label="trans('Upload')"
                         :icon="faUpload" @click="$refs.fileInput.click()" />
                     <input ref="fileInput" type="file" accept="image/*" multiple class="hidden"
                         @change="onUploadFile($event)" />
@@ -370,14 +356,13 @@ function onDeleteFilesInList(categoryBox: any) {
             </div>
 
             <!-- Drop Zone -->
-            <div class="relative flex-1 overflow-y-auto rounded-lg transition scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
-                :class="[isDragOver ? 'border-blue-400 bg-blue-50 shadow-md' : 'border-gray-200', !editable ? ' cursor-not-allowed' : '']"
-                @dragover.prevent="editable ? isDragOver = true : null"
-                @dragleave="editable ? isDragOver = false : null"
-                @drop.prevent="editable ? (e) => { onDropFile(e); isDragOver = false } : null">
+            <div class="relative flex-1 overflow-y-auto rounded-lg  transition scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
+                :class="isDragOver ? 'border-blue-400 bg-blue-50 shadow-md' : 'border-gray-200'"
+                @dragover.prevent="isDragOver = true" @dragleave="isDragOver = false"
+                @drop.prevent="onDropFile($event); isDragOver = false">
                 <!-- Overlay saat drag -->
-                <div v-if="isDragOver && editable" class="absolute inset-0 z-10 flex flex-col items-center justify-center
-          bg-blue-50/80 backdrop-blur-sm text-blue-500 pointer-events-none">
+                <div v-if="isDragOver" class="absolute inset-0 z-10 flex flex-col items-center justify-center
+             bg-blue-50/80 backdrop-blur-sm text-blue-500 pointer-events-none">
                     <FontAwesomeIcon :icon="faUpload" class="text-3xl mb-2" />
                     <p class="text-sm font-medium">{{ trans("Drop files to upload") }}</p>
                 </div>
@@ -390,19 +375,20 @@ function onDeleteFilesInList(categoryBox: any) {
 
                 <!-- List of images -->
                 <div v-else>
+                    <!-- Jika tidak ada gambar -->
                     <div v-if="!props.data.images || props.data.images.length === 0"
                         class="p-4 text-center text-sm text-gray-500 italic">
                         {{ trans("No images available") }}
                     </div>
 
+                    <!-- Jika ada gambar -->
                     <article v-else v-for="item in props.data.images" :key="item.id" class="group flex items-center justify-between gap-3 p-1 bg-white mb-1 border
-              hover:shadow-md hover:border-blue-400 transition" :draggable="editable"
-                        @dragstart="editable ? (e) => onStartDrag(e, item) : null"
-                        @dragend="editable ? onEndDrag : null">
+           hover:shadow-md hover:border-blue-400 transition" draggable="true" @dragstart="onStartDrag($event, item)"
+                        @dragend="onEndDrag($event)">
                         <!-- Image + Info -->
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center
-                overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
+               overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
                                 <Image v-if="item?.image" :src="item?.image"
                                     class="max-h-full max-w-full object-contain" />
                                 <div v-else class="text-gray-400">
@@ -417,6 +403,7 @@ function onDeleteFilesInList(categoryBox: any) {
                                         {{ item?.name || trans("Unnamed product") }}
                                     </p>
 
+                                    <!-- Tag PrimeVue untuk sub_scope -->
                                     <Tag v-if="item?.sub_scope"
                                         :label="capitalize(item.sub_scope + (item.sub_scope != 'main' ? ' side' : ''))"
                                         :size="'xxs'" />
@@ -438,16 +425,18 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
 
                         <!-- Delete -->
-                        <button v-if="editable" @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
-              text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
+                        <button @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
+             text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
                         </button>
                     </article>
                 </div>
+
             </div>
         </div>
-    </div>
 
+
+    </div>
 
 
     <Dialog v-model:visible="isModalEditVideo" modal header="Edit Video Link" :style="{ width: '40rem' }">
