@@ -50,7 +50,7 @@ class HandleIrisInertiaRequests extends Middleware
                 ->select('customer_sales_channels.id', 'customer_sales_channels.name as customer_sales_channel_name', 'platform_id', 'platforms.slug', 'platforms.code', 'platforms.name')
                 ->where('customer_id', $webUser->customer_id)
                 ->where('status', CustomerSalesChannelStatusEnum::OPEN->value)
-                ->whereNull('closed_at')
+                ->whereNull('deleted_at')
                 ->get();
 
             foreach ($channels as $channel) {
@@ -65,6 +65,7 @@ class HandleIrisInertiaRequests extends Middleware
             }
         }
 
+
         return array_merge(
             $firstLoadOnlyProps,
             [
@@ -75,8 +76,8 @@ class HandleIrisInertiaRequests extends Middleware
                 ],
                 'currency' => $request->get('currency_data'),
                 'flash'    => [
-                    'notification' => fn () => $request->session()->get('notification'),
-                    'modal'        => fn () => $request->session()->get('modal')
+                    'notification' => fn() => $request->session()->get('notification'),
+                    'modal'        => fn() => $request->session()->get('modal')
                 ],
                 'ziggy'    => [
                     'location' => $request->url(),
