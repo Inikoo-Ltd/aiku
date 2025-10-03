@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>{{ $invoice->slug }}</title>
+    <title>{{ $invoice?->slug }}</title>
     <style>
         @page {
             size: 8.27in 11.69in; /* <length>{1,2} | auto | portrait | landscape */

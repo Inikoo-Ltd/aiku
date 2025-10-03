@@ -577,6 +577,33 @@ const toggleElipsis = (e: Event) => {
 
 const isOpenModalProforma = ref(false)
 const selectedCheck = ref<string[]>([])
+const onClickProforma = async () => {
+    const aaa = selectedCheck.value?.reduce((acc, curr) => {
+        acc[curr] = true;
+        return acc;
+    }, {});
+    
+    // Section: Submit
+    const url = route(props.proforma_invoice.route_download_pdf.name, props.proforma_invoice.route_download_pdf.parameters)
+    try {
+        const response = await axios.get(url, aaa)
+        const blob = new Blob([response.data], { type: response.headers['content-type'] })
+        const link = document.createElement('a')
+        link.href = window.URL.createObjectURL(blob)
+        link.download = 'proforma-invoice.pdf'
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+    } catch (e) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to download proforma invoice"),
+            type: "error"
+        })
+    }
+
+
+}
 </script>
 
 <template>
@@ -1268,12 +1295,12 @@ const selectedCheck = ref<string[]>([])
                 </div>
             </div>
 
-            <a :href="route(proforma_invoice.route_download_pdf.name, proforma_invoice.route_download_pdf.parameters)" target="_blank" rel="noopener noreferrer" class="w-full block mt-6">
+            <div @click="() => onClickProforma()" :href="route(proforma_invoice.route_download_pdf.name, proforma_invoice.route_download_pdf.parameters)" target="_blank" rel="noopener noreferrer" class="w-full block mt-6">
                 <Button
                     full
                     :label="trans('Download Proforma Invoice')"
                 />
-            </a>
+            </div>
         </div>
     </Modal>
 
