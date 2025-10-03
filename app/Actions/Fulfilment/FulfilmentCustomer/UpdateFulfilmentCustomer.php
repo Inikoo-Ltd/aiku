@@ -15,6 +15,7 @@ use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Enums\Fulfilment\FulfilmentCustomer\FulfilmentCustomerStatusEnum;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
@@ -31,13 +32,14 @@ class UpdateFulfilmentCustomer extends OrgAction
 {
     use WithActionUpdate;
     use WithModelAddressActions;
+    use WithPrepareTaxNumberValidation;
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer, array $modelData): FulfilmentCustomer
     {
-        $customerData       = Arr::only($modelData, ['contact_name', 'company_name', 'email', 'phone']);
+        $customerData       = Arr::only($modelData, ['contact_name', 'company_name', 'email', 'phone','tax_number','identity_document_number']);
         $contactAddressData = Arr::get($modelData, 'address');
         UpdateCustomer::run($fulfilmentCustomer->customer, $customerData);
-        Arr::forget($modelData, ['contact_name', 'company_name', 'email', 'phone', 'address']);
+        Arr::forget($modelData, ['contact_name', 'company_name', 'email', 'phone', 'address','tax_number','identity_document_number']);
 
         $oldData = [
             'pallets_storage' => $fulfilmentCustomer->pallets_storage,
@@ -88,10 +90,11 @@ class UpdateFulfilmentCustomer extends OrgAction
             throw ValidationException::withMessages(['message' => __('You can\'t unselect because you already have platform accounts.')]);
         }
 
+
         $fulfilmentCustomer = $this->update($fulfilmentCustomer, $modelData, ['data']);
 
         $attributes = ['pallets_storage', 'items_storage', 'dropshipping', 'space_rental'];
-        if (collect($attributes)->contains(fn ($attr) => $fulfilmentCustomer->wasChanged($attr))) {
+        if (collect($attributes)->contains(fn($attr) => $fulfilmentCustomer->wasChanged($attr))) {
             $fulfilmentCustomer->customer->auditEvent    = 'update';
             $fulfilmentCustomer->customer->isCustomEvent = true;
 
@@ -127,22 +130,24 @@ class UpdateFulfilmentCustomer extends OrgAction
     public function rules(): array
     {
         return [
-            'contact_name'      => ['sometimes', 'nullable', 'string'],
-            'company_name'      => ['sometimes', 'nullable', 'string'],
-            'email'             => ['sometimes', 'nullable', 'string', Rule::unique('customers')->where('shop_id', $this->shop->id)],
-            'phone'             => ['sometimes', 'nullable', 'string'],
-            'pallets_storage'   => ['sometimes', 'boolean'],
-            'items_storage'     => ['sometimes', 'boolean'],
-            'dropshipping'      => ['sometimes', 'boolean'],
-            'space_rental'      => ['sometimes', 'boolean'],
-            'address'           => ['sometimes'],
-            'product'           => ['sometimes', 'required', 'string'],
-            'shipments_per_week' => ['sometimes', 'required', 'string'],
-            'size_and_weight'   => ['sometimes', 'required', 'string'],
-            'status' => [
+            'contact_name'             => ['sometimes', 'nullable', 'string'],
+            'company_name'             => ['sometimes', 'nullable', 'string'],
+            'email'                    => ['sometimes', 'nullable', 'string', Rule::unique('customers')->where('shop_id', $this->shop->id)],
+            'phone'                    => ['sometimes', 'nullable', 'string'],
+            'pallets_storage'          => ['sometimes', 'boolean'],
+            'items_storage'            => ['sometimes', 'boolean'],
+            'dropshipping'             => ['sometimes', 'boolean'],
+            'space_rental'             => ['sometimes', 'boolean'],
+            'address'                  => ['sometimes'],
+            'product'                  => ['sometimes', 'required', 'string'],
+            'shipments_per_week'       => ['sometimes', 'required', 'string'],
+            'size_and_weight'          => ['sometimes', 'required', 'string'],
+            'status'                   => [
                 'sometimes',
                 Rule::enum(FulfilmentCustomerStatusEnum::class)
-            ]
+            ],
+            'tax_number'               => ['sometimes', 'nullable', 'array'],
+            'identity_document_number' => ['sometimes', 'nullable', 'string'],
         ];
     }
 
