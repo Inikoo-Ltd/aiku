@@ -26,8 +26,10 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { debounce, remove, set } from 'lodash'
 import Modal from '@/Components/Utils/Modal.vue'
-import { getAnnouncementComponent } from '@/Composables/getAnnouncement'
-import { propertiesToHTMLStyle } from '@/Composables/usePropertyWorkshop'
+import { getAnnouncementComponent } from '@/Composables/useAnnouncement'
+// import { propertiesToHTMLStyle } from '@/Composables/usePropertyWorkshop'
+import { getStyles } from "@/Composables/styles"
+
 import { routeType } from '@/types/route'
 import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { TabGroup, TabList, Tab, TabPanels, TabPanel } from '@headlessui/vue'
@@ -439,7 +441,7 @@ const onSectionSetting = () => {
                     <div v-if="announcementData.template_code"
                         ref="_parentComponent"
                         :xxxstyle="{
-                            ...propertiesToHTMLStyle(announcementData.container_properties, { toRemove: styleToRemove}),
+                            ...getStyles(announcementData.container_properties, { toRemove: styleToRemove}),
                             position: announcementData.container_properties?.position?.type === 'fixed' ? 'absolute' : announcementData.container_properties?.position?.type
                         }"
                     >

@@ -1,11 +1,12 @@
 <script setup lang='ts'>
 import Moveable from "vue3-moveable"
-import { propertiesToHTMLStyle, onDrag, styleToString } from '@/Composables/usePropertyWorkshop'
+// import { propertiesToHTMLStyle, onDrag, styleToString } from '@/Composables/usePropertyWorkshop'
+import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed, ref, onMounted, onBeforeUnmount, watch } from "vue"
-import { closeIcon } from '@/Composables/getAnnouncement'
+import { closeIcon } from '@/Composables/useAnnouncement'
 import type { AnnouncementData, BlockProperties } from "@/types/Announcement"
 import { inject } from "vue"
 import { trans } from "laravel-vue-i18n";
@@ -218,23 +219,6 @@ const componentDefaultData = {
 // }
 
 
-// const compiled_layout = computed(() => {
-//     const script = `<script> const information_2_sentence = ${JSON.stringify(props.announcementData?.fields?.text_transition_1?.multi_text || [])}; let index = 0; const sentenceElem = document.getElementById("wowsbar_sentence_multi_text"); setInterval(() => { if(sentenceElem) { sentenceElem.className = 'fade-out'; sentenceElem.addEventListener('animationend', () => { index = (index + 1) % information_2_sentence.length; sentenceElem.textContent = information_2_sentence[index]; sentenceElem.className = 'fade-in'; }, { once: true }); }}, 5000) <\/script>`
-
-//     return `
-//     <div id="wowsbar_announcement" style="${styleToString(propertiesToHTMLStyle(props.announcementData?.container_properties))}">
-//         <div class="-tw-my-4">
-//             <div class="tw-flex tw-w-full tw-text-center tw-px-10">
-//                 <p id="wowsbar_sentence_multi_text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-//                     ${props.announcementData?.fields?.text_transition_1?.multi_text?.[0]}
-//                 </p>
-//             </div>
-//         </div>
-//     </div>
-//     ${script}
-//     `
-// })
-
 const openFieldWorkshop = inject('openFieldWorkshop')
 const onClickOpenFieldWorkshop = (index?: number) => {
     if(openFieldWorkshop && index) {
@@ -320,7 +304,7 @@ defineExpose({
     <div
         v-if="!isToSelectOnly"
         class="flex justify-center items-center overflow-hidden"
-        :style="propertiesToHTMLStyle(announcementData?.container_properties)"
+        :style="getStyles(announcementData?.container_properties)"
     >
         <div ref="__multitext_container" @click="() => onClickOpenFieldWorkshop(1)" class="announcement-component-editable -my-4">
             <div class="flex w-full text-center px-10 scale-75 md:scale-100">

@@ -1,13 +1,14 @@
 <script setup lang='ts'>
 import Moveable from "vue3-moveable"
-import { propertiesToHTMLStyle, onDrag, styleToString } from '@/Composables/usePropertyWorkshop'
+// import { propertiesToHTMLStyle, onDrag, styleToString } from '@/Composables/usePropertyWorkshop'
+import { getStyles } from "@/Composables/styles"
 // import type { BlockProperties, LinkProperties } from '@/Composables/usePropertyWorkshop'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed, ref, onMounted, onBeforeUnmount, onUnmounted } from "vue"
-import { closeIcon } from '@/Composables/getAnnouncement'
-import type { BlockProperties, LinkProperties } from "@/types/Website/Announcement"
+import { closeIcon } from '@/Composables/useAnnouncement'
+import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 import { inject } from "vue"
 import { trans } from "laravel-vue-i18n"
 library.add(faTimes)
@@ -352,57 +353,6 @@ const componentDefaultData = {
 // }
 
 
-// const compiled_layout = computed(() => {
-//     const script = "<script> const initialTime = 1000 * 60 * 60 * 24 * 5; const endTime = new Date('" + props.announcementData?.fields?.countdown?.date + "').getTime() + initialTime; let timer = null; const parseTime = (time) => ({ tens: Math.floor(time / 10), ones: time % 10, }); const updateCountdown = () => { const now = new Date().getTime(); const timeLeft = endTime - now; if (timeLeft <= 0) { clearInterval(timer); document.getElementById('countdown-days').textContent = '00'; document.getElementById('countdown-hours').textContent = '00'; document.getElementById('countdown-minutes').textContent = '00'; document.getElementById('countdown-seconds').textContent = '00'; return; } const days = parseTime(Math.floor(timeLeft / (1000 * 60 * 60 * 24))); const hours = parseTime(Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))); const minutes = parseTime(Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60))); const seconds = parseTime(Math.floor((timeLeft % (1000 * 60)) / 1000)); document.getElementById('countdown-days').textContent = `${days.tens}${days.ones}`; document.getElementById('countdown-hours').textContent = `${hours.tens}${hours.ones}`; document.getElementById('countdown-minutes').textContent = `${minutes.tens}${minutes.ones}`; document.getElementById('countdown-seconds').textContent = `${seconds.tens}${seconds.ones}`; }; timer = setInterval(updateCountdown, 1000); updateCountdown(); <\/script>"
-
-
-//     const button_element = props.announcementData?.fields?.button_1?.text ? `
-//         <div class="tw-justify-self-end">
-//             <a href="${props.announcementData?.fields.button_1.link.href || '#'}" target="${props.announcementData?.fields.button_1.link.target}" style="${styleToString(propertiesToHTMLStyle(props.announcementData.fields.button_1.container.properties))}">
-//                 ${props.announcementData.fields.button_1.text}
-//             </a>
-//         </div>` : ''
-
-
-//     return `
-//     <div id="wowsbar_announcement" style="${styleToString(propertiesToHTMLStyle(props.announcementData?.container_properties))}">
-//         <div class="" style="${styleToString(propertiesToHTMLStyle(props.announcementData?.fields.text_1.block_properties))}">
-//             ${props.announcementData?.fields.text_1.text}
-//         </div>
-
-//         <div class="tw-grid tw-grid-cols-4  tw-gap-x-2 tw-font-sans tw-mx-auto tw-mt-1">
-//             <div class="tw-flex tw-flex-col tw-items-center">
-//                 <div id="countdown-days" class="tw-text-base tw-bg-white tw-w-fit tw-border tw-border-gray-200 tw-flex tw-justify-center tw-overflow-hidden tw-relative tw-rounded-md tw-py-1 tw-px-2 tw-tabular-nums">
-//                     00
-//                 </div>
-//                 <div class="tw-text-xs tw-opacity-60">Days</div>
-//             </div>
-//             <div class="tw-flex tw-flex-col tw-items-center">
-//                 <div id="countdown-hours" class="tw-text-base tw-bg-white tw-w-fit tw-border tw-border-gray-200 tw-flex tw-justify-center tw-overflow-hidden tw-relative tw-rounded-md tw-py-1 tw-px-2 tw-tabular-nums">
-//                     00
-//                 </div>
-//                 <div class="tw-text-xs tw-opacity-60">Hours</div>
-//             </div>
-//             <div class="tw-flex tw-flex-col tw-items-center">
-//                 <div id="countdown-minutes" class="tw-text-base tw-bg-white tw-w-fit tw-border tw-border-gray-200 tw-flex tw-justify-center tw-overflow-hidden tw-relative tw-rounded-md tw-py-1 tw-px-2 tw-tabular-nums">
-//                     00
-//                 </div>
-//                 <div class="tw-text-xs tw-opacity-60">Minutes</div>
-//             </div>
-//             <div class="tw-flex tw-flex-col tw-items-center">
-//                 <div id="countdown-seconds" class="tw-text-base tw-bg-white tw-w-fit tw-border tw-border-gray-200 tw-flex tw-justify-center tw-overflow-hidden tw-relative tw-rounded-md tw-py-1 tw-px-2 tw-tabular-nums">
-//                     00
-//                 </div>
-//                 <div class="tw-text-xs tw-opacity-60">Seconds</div>
-//             </div>
-//         </div>
-
-//         ${button_element}
-//     </div>
-//     ${script}
-//     `
-// })
-
 const openFieldWorkshop = inject('openFieldWorkshop', null)
 const onClickOpenFieldWorkshop = (index?: number) => {
     if(openFieldWorkshop && index) {
@@ -473,23 +423,15 @@ defineExpose({
     // compiled_layout,
     fieldSideEditor
 })
-// <button
-//     v-if="announcementData?.fields?.button_1?.text"
-//     @click="() => onClickClose()"
-//     class="inline-flex items-center"
-//     style="${propertiesToHTMLStyle(props.announcementData?.fields.button_1?.container?.properties)}"
-// >
-//     ${props.announcementData?.fields?.button_1?.text}
-// </button>
 </script>
 
 <template>
     <div
         v-if="!isToSelectOnly"
-        :style="propertiesToHTMLStyle(announcementData?.container_properties)"
+        :style="getStyles(announcementData?.container_properties)"
     >
         <div class="col-span-3 grid grid-cols-1 md:grid-cols-3 justify-center gap-y-2 items-center">
-            <div v-if="announcementData?.fields.text_1.text" @click="() => (onClickOpenFieldWorkshop(1))" class="announcement-component-editable text-center md:text-left" v-html="announcementData?.fields.text_1.text" :style="propertiesToHTMLStyle(announcementData?.fields?.text_1.block_properties)">
+            <div v-if="announcementData?.fields.text_1.text" @click="() => (onClickOpenFieldWorkshop(1))" class="announcement-component-editable text-center md:text-left" v-html="announcementData?.fields.text_1.text" :style="getStyles(announcementData?.fields?.text_1.block_properties)">
             
             </div>
             
@@ -525,7 +467,7 @@ defineExpose({
             
             <div v-if="announcementData?.fields.button_1.text" class="relative justify-self-center md:justify-self-end">
                 <div v-if="isEditable"  @click="() => (onClickOpenFieldWorkshop(3))" class="absolute inset-0 announcement-component-editable " />
-                <a :href="announcementData?.fields.button_1.link.href || '#'" :target="announcementData?.fields.button_1.link.target" v-html="announcementData?.fields.button_1.text" :style="propertiesToHTMLStyle(announcementData?.fields.button_1.container.properties)">
+                <a :href="announcementData?.fields.button_1.link.href || '#'" :target="announcementData?.fields.button_1.link.target" v-html="announcementData?.fields.button_1.text" :style="getStyles(announcementData?.fields.button_1.container.properties)">
                 </a>
             </div>
         </div>

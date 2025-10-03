@@ -1,13 +1,14 @@
 <script setup lang='ts'>
 import Moveable from "vue3-moveable"
-import { propertiesToHTMLStyle, onDrag, styleToString } from '@/Composables/usePropertyWorkshop'
+// import { propertiesToHTMLStyle, onDrag, styleToString } from '@/Composables/usePropertyWorkshop'
+import { getStyles } from "@/Composables/styles"
 // import type { BlockProperties } from '@/Composables/usePropertyWorkshop'
 import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed, inject, onMounted, ref } from "vue"
-import { closeIcon } from '@/Composables/getAnnouncement'
+import { closeIcon } from '@/Composables/useAnnouncement'
 library.add(faTimes)
 
 const props = defineProps<{
@@ -301,20 +302,6 @@ const componentDefaultData = {
 }
 
 // Data: to publish in website
-// const compiled_layout = computed(() => {
-//     return `<div id="wowsbar_announcement" class="tw-flex tw-items-center tw-justify-between" style="${styleToString(propertiesToHTMLStyle(props.announcementData?.container_properties))}">
-//         <div class="tw-whitespace-nowrap" style="${styleToString(propertiesToHTMLStyle(props.announcementData?.fields.text_2.block_properties))}">
-//             ${props.announcementData?.fields.text_2.text}
-//         </div>
-        
-//         <div class="tw-whitespace-nowrap" v-html="" style="${styleToString(propertiesToHTMLStyle(props.announcementData?.fields.text_1.block_properties))}">
-//             ${props.announcementData?.fields.text_1.text}
-//         </div>
-//     </div>`
-// })
-
-// const _text_1 = ref(null)
-// const _buttonClose = ref(null)
 
 const onClickClose = () => {
     window.parent.postMessage('close_button_click', '*');
@@ -339,7 +326,7 @@ defineExpose({
     <div
         v-if="!isToSelectOnly"
         class="relative isolate flex flex-wrap justify-center md:justify-between items-center gap-x-6 px-6 sm:px-3.5 transition-all"
-        :style="propertiesToHTMLStyle(announcementData?.container_properties)"
+        :style="getStyles(announcementData?.container_properties)"
     >
         <!-- <template> -->
             <div
@@ -347,7 +334,7 @@ defineExpose({
                 @click="() => onClickOpenFieldWorkshop(2)"
                 class="announcement-component-editable"
                 v-html="announcementData?.fields.text_2.text"
-                :style="propertiesToHTMLStyle(announcementData?.fields.text_2.block_properties)"
+                :style="getStyles(announcementData?.fields.text_2.block_properties)"
             >
             </div>
             
@@ -356,53 +343,10 @@ defineExpose({
                 @click="() => onClickOpenFieldWorkshop(1)"
                 class="announcement-component-editable"
                 v-html="announcementData?.fields.text_1.text"
-                :style="propertiesToHTMLStyle(announcementData?.fields.text_1.block_properties)"
+                :style="getStyles(announcementData?.fields.text_1.block_properties)"
             >
             
             </div>
-            <!-- <Moveable
-                v-if="isEditable"
-                :target="_text_1"
-                :draggable="true"
-                :snapGap="true"
-                :throttleDrag="1"
-                :edgeDraggable="false"
-                :snappable="true"
-                :snapDirections="{top: true, left: true, bottom: true, right: true }"
-                :elementSnapDirections='{"top":true,"left":true,"bottom":true,"right":true,"center":true,"middle":true}'
-                :startDragRotate="0"
-                :throttleDragRotate="0"
-                @drag="(e) => onDrag(e, announcementData.fields.text_1.block_properties, _parentComponent)"
-            /> -->
-            
-            <!-- Close Button -->
-            <!-- <button
-                @click="() => onClickClose()"
-                ref="_buttonClose"
-                type="button"
-                class="flex flex-1 justify-end p-2 -translate-x-1/2 -translate-y-1/2"
-                :style="propertiesToHTMLStyle(announcementData.fields.close_button.block_properties)"
-            >
-                <span class="sr-only">Dismiss</span>
-                <span v-html="closeIcon"></span>
-                
-            </button> -->
-
-            <!-- <Moveable
-                v-if="isEditable"
-                :target="_buttonClose"
-                :draggable="true"
-                :snapGap="true"
-                :throttleDrag="1"
-                :edgeDraggable="false"
-                :snappable="true"
-                :snapDirections="{top: true, left: true, bottom: true, right: true }"
-                :elementSnapDirections='{"top":true,"left":true,"bottom":true,"right":true,"center":true,"middle":true}'
-                :startDragRotate="0"
-                :throttleDragRotate="0"
-                @drag="(e) => onDrag(e, announcementData.fields.close_button.block_properties, _parentComponent)"
-            /> -->
-        <!-- </template> -->
     </div>
 
     <div

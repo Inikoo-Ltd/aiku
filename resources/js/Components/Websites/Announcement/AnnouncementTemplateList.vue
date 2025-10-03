@@ -8,7 +8,7 @@ import { trans } from "laravel-vue-i18n"
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import Image from '@/Components/Image.vue'
-import { getAnnouncementComponent } from '@/Composables/getAnnouncement'
+import { getAnnouncementComponent } from '@/Composables/useAnnouncement'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { AnnouncementData } from '@/types/Announcement'
 import Checkbox from 'primevue/checkbox'
@@ -65,13 +65,9 @@ function mergeData(data1: {}, data2: {}) {
     // }
 
     for (const key in data2) {
-        // console.log('keey', key)
         if (data1.hasOwnProperty(key)) {
-            // Only replace properties other than .text
             for (const prop in data2[key]) {
                 if (prop !== 'text') {
-                    // data1[key][prop] = data2[key][prop];
-
                     set(data1, [key, prop], data2[key][prop])
                 }
             }
@@ -87,7 +83,7 @@ function mergeData(data1: {}, data2: {}) {
 
 const onSubmitTemplate = (template) => {
     console.log('template', template.fields)
-    // console.log('core announce data', isProxy(announcementData))
+
     if(isSelectFullTemplate.value || !announcementData?.template_code) {
         announcementData.template_code = template.code
         announcementData.fields = template.fields
@@ -109,7 +105,7 @@ const fetchAnnouncementList = async () => {
     isLoadingFetch.value = true
     try {
         const response = await axios.get(
-            route('customer.portfolio.websites.announcements.templates.index', {
+            route('customer.portfolio.websites.announcements.templates.index', {  // TODO: Announcement change route
                 'portfolioWebsite': route().params['portfolioWebsite']
             }),
         )
@@ -149,7 +145,7 @@ onMounted(() => {
 
     <div class="flex justify-between items-center mb-2 border-b border-gray-200 pb-2">
         <div class="text-2xl font-medium">
-            Announcement Templates
+            {{ trans("Announcement Templates") }}
         </div>
         <div>
             <Button @click="() => onSubmitTemplate(selectedTemplate)" label="Submit" :disabled="!selectedTemplate" />
@@ -205,10 +201,6 @@ onMounted(() => {
                             >
                                 <div class="h-16 w-full object-cover">
                                     <Image :src="announcement.source" :imageContain="true" />
-                                    <!-- <Image
-                                        :src="{original: 'https://media.wowsbar.com/Aj7rP-7DMjMg8IvNA7DxpVn2gJM-TvzCx0AYvcuaIF8/rs::500:300::/czM6Ly93b3dzYmFyLW1lZGlhLXN0YWdpbmcvNzA5Ny9kOTc3YTJhNTRlY2FhODkwNDUzNGYzN2NlMzJkOTc4NC4.avif 1x, https://media.wowsbar.com/W0-Riem3wiE5ihvBgOwGAx-e3tMXWLa5BT0axpA7hEA/rs::1000:600::/czM6Ly93b3dzYmFyLW1lZGlhLXN0YWdpbmcvNzA5Ny9kOTc3YTJhNTRlY2FhODkwNDUzNGYzN2NlMzJkOTc4NC4.avif 2x'}"
-                                        :imageContain="true"
-                                    /> -->
                                 </div>
 
                                 <!-- Checkbox: Full template -->
@@ -229,7 +221,7 @@ onMounted(() => {
                             />
                         </div>
                     </template>
-                    <div v-else>No template available</div>
+                    <div v-else>{{ trans("No template available") }}</div>
                 </template>
                 <div v-else class="grid gap-y-8">
                     <div v-for="_ in 3" class="grid gap-y-2">
@@ -241,42 +233,6 @@ onMounted(() => {
             </div>
         </section>
 
-
-        <!-- <div class="flex-1 p-4">
-            <section aria-labelledby="products-heading" class="h-full mx-auto w-full sm:px-6 lg:px-8">
-                <TransitionGroup tag="div" name="zzz"
-                    class="relative grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-y-3 gap-x-4">
-                    <template v-if="announcements_list?.length">
-                        <div
-                            v-for="(announ, idxAnnoun) in announcements_list"
-                            :key="idxAnnoun"
-                            @click="() => false"
-                            class="isolate relative min-h-10 h-20 max-h-24 min-w-20 w-auto border rounded cursor-pointer transition-all"
-                            :class="[
-                                announ.code == announcementData.code ? 'bg-indigo-500' : 'hover:bg-gray-100'
-                            ]"
-                        >
-                            <Image :src="announ.source" />
-
-                            <component
-                                :is="getAnnouncementComponent(announ.code)"
-                                isToSelectOnly
-                                @templateClicked="(dataTemplate) => onSubmitTemplate(dataTemplate, announ.code)"
-                                class="z-50"
-                            />
-
-                            <div class="flex items-end absolute h-1/2 bottom-0 bg-gradient-to-t from-black/60 via-black/30 to-transparent w-full truncate text-xs pl-1 pb-1 text-white">
-                                {{ announ.code }}
-                            </div>
-                        </div>
-                    </template>
-
-                    <div v-else class="text-center col-span-2 md:col-span-3 lg:col-span-4 text-gray-400">
-                        {{ trans('No block in this category') }}
-                    </div>
-                </TransitionGroup>
-            </section>
-        </div> -->
     </div>
 </template>
 

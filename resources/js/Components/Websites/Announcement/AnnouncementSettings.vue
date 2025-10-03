@@ -33,7 +33,6 @@ const announcementData = inject('announcementData', {})
 const announcementScheduleFinishAt = toRef(() => announcementData.schedule_finish_at)
 const announcementDataSettings = toRef(() => announcementData.settings)
 
-// console.log('kkkk', announcementData.schedule_at.value)
 
 // Section: target_pages
 const specificNew = ref({
@@ -108,19 +107,6 @@ onMounted(async () => {
 
 
 
-// const getAnnouncementScriptUrl = () => {
-//     let xxx
-//     if (usePage().props.environment === 'local') {
-//         xxx = `delivery.wowsbar.test`
-//     } else if (usePage().props.environment === 'staging') {
-//         xxx = `https://delivery-staging.wowsbar.com`
-//     } else if (usePage().props.environment === 'production') {
-//         xxx = `https://delivery.wowsbar.com`
-//     }
-
-//     return window.location.origin + `/announcement.min.js?ulid=${announcementData.ulid}&delivery=${xxx}`
-// }
-
 const settingsUser = ref({
     authState: 'all', // 'logout' || 'all'
 })
@@ -128,16 +114,6 @@ const settingsUser = ref({
 </script>
 
 <template>
-    <!-- <div>
-        <div class="text-lg">{{ trans("Put this script in your website and you will be fine") }}😀</div>
-        <div class="bg-white border border-gray-300 flex items-center justify-between gap-x-3 rounded-lg md:w-fit max-w-full mb-6">
-            <a :href="getAnnouncementScriptUrl()" target="_blank" class="pl-4 md:pl-5 inline-block py-2 text-base text-gray-400 truncate text-ellipsis hover:text-gray-600">{{ getAnnouncementScriptUrl() }}</a>
-            <Button :style="'secondary'" class="" size="xl" @click="useCopyText(getAnnouncementScriptUrl())" title="Copy url to clipboard">
-                <FontAwesomeIcon icon='fal fa-link' class='text-gray-500' aria-hidden='true' />
-            </Button>
-        </div>
-    </div> -->
-
     <!-- Section: Page -->
     <fieldset class="mb-6 bg-white px-7 pt-4 pb-7 border border-gray-200 rounded-xl">
         <div class="text-xl font-semibold">{{ trans("Page") }}</div>

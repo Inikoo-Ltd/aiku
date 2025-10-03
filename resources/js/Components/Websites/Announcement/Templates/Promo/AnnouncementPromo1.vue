@@ -1,12 +1,13 @@
 <script setup lang='ts'>
 import Moveable from "vue3-moveable"
-import { propertiesToHTMLStyle, onDrag, styleToString } from '@/Composables/usePropertyWorkshop'
+// import { propertiesToHTMLStyle, onDrag, styleToString } from '@/Composables/usePropertyWorkshop'
+import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { computed, ref } from "vue"
-import { closeIcon } from '@/Composables/getAnnouncement'
-import type { BlockProperties, LinkProperties } from "@/types/Website/Announcement"
+import { closeIcon } from '@/Composables/useAnnouncement'
+import type { BlockProperties, LinkProperties } from "@/types/Announcement"
 
 import { inject } from "vue";
 library.add(faTimes)
@@ -324,31 +325,6 @@ const onClickClose = () => {
 }
 
 
-// const compiled_layout = computed(() => {
-
-//     const text_1_element = props.announcementData?.fields?.text_1?.text ? `<div
-//             class="tw-text-sm tw-leading-6 tw-whitespace-nowrap "
-//             style="${styleToString(propertiesToHTMLStyle(props.announcementData?.fields?.text_1?.block_properties, { toRemove: ['position', 'top', 'left'] }))}"
-//         >
-//             ${props.announcementData?.fields?.text_1?.text}
-//         </div>` : ''
-
-//     const button_element = props.announcementData?.fields?.button_1?.text ? `<a
-//         href="${props.announcementData?.fields.button_1.link.href || '#'}" target="${props.announcementData?.fields.button_1.link.target}"
-//         class="tw-inline-flex tw-items-center"
-//         style="${styleToString(propertiesToHTMLStyle(props.announcementData?.fields.button_1?.container?.properties))}"
-//     >
-//         ${props.announcementData?.fields.button_1.text}
-//     </a>` : ''
-
-
-//     return `<div id="wowsbar_announcement" style="${styleToString(propertiesToHTMLStyle(props.announcementData?.container_properties))}">
-//         <div class="tw-flex tw-gap-x-4 tw-items-center tw-justify-center tw-w-full tw-absolute tw-top-1/2 tw-left-1/2 -tw-translate-y-1/2 -tw-translate-x-1/2">
-//             ${text_1_element}
-//             ${button_element}
-//         </div>
-//     </div>`
-// })
 
 const openFieldWorkshop = inject('openFieldWorkshop')
 const onClickOpenFieldWorkshop = (index?: number) => {
@@ -361,20 +337,12 @@ defineExpose({
     // compiled_layout,
     fieldSideEditor
 })
-    // <button
-    //     v-if="announcementData?.fields?.button_1?.text"
-    //     @click="() => onClickClose()"
-    //     class="inline-flex items-center"
-    //     style="${propertiesToHTMLStyle(props.announcementData?.fields.button_1?.container?.properties)}"
-    // >
-    //     ${props.announcementData?.fields?.button_1?.text}
-    // </button>
 </script>
 
 <template>
     <div
         v-if="!isToSelectOnly"
-        :style="propertiesToHTMLStyle(announcementData?.container_properties)"
+        :style="getStyles(announcementData?.container_properties)"
     >
         <div class="flex flex-wrap gap-x-4 items-center justify-center w-full"
         >
@@ -384,7 +352,7 @@ defineExpose({
                 @click="() => (onClickOpenFieldWorkshop(1))"
                 class="text-sm announcement-component-editable text-center md:text-left"
                 v-html="announcementData?.fields.text_1.text"
-                :style="propertiesToHTMLStyle(announcementData?.fields.text_1.block_properties, { toRemove: ['position', 'top', 'left'] })"
+                :style="getStyles(announcementData?.fields.text_1.block_properties, null, { toRemove: ['position', 'top', 'left'] })"
             >
     
             </div>
@@ -396,54 +364,10 @@ defineExpose({
                 :target="announcementData?.fields.button_1.link.target" 
                 v-html="announcementData?.fields.button_1.text"
                 class="inline-flex items-center announcement-component-editable"
-                :style="propertiesToHTMLStyle(announcementData?.fields.button_1?.container?.properties)"
+                :style="getStyles(announcementData?.fields.button_1?.container?.properties)"
             >
             </a>
         </div>
-        <!-- <pre>{{ announcementData?.fields?.button_1 }}</pre> -->
-
-        <!-- <pre>{{defaultFieldsData?.button_1?.container?.properties}}</pre> -->
-        
-        <!-- <Moveable
-            v-if="isEditable"
-            :target="_text_1"
-            :draggable="true"
-            :snapGap="true"
-            :throttleDrag="1"
-            :edgeDraggable="false"
-            :snappable="true"
-            :snapDirections="{top: true, left: true, bottom: true, right: true }"
-            :elementSnapDirections='{"top":true,"left":true,"bottom":true,"right":true,"center":true,"middle":true}'
-            :startDragRotate="0"
-            :throttleDragRotate="0"
-            @drag="(e) => onDrag(e, announcementData?.fields.text_1.block_properties, _parentComponent)"
-        /> -->
-    
-        <!-- Close Button -->
-        <!-- <button
-            ref="_buttonClose"
-            @click="() => onClickClose()"
-            type="button"
-            class="p-2 -translate-x-1/2 -translate-y-1/2"
-            :style="propertiesToHTMLStyle(announcementData?.fields.close_button.block_properties)"
-        >
-            <span class="sr-only">Dismiss</span>
-            <span v-html="closeIcon"></span>
-        </button>
-        <Moveable
-            v-if="isEditable"
-            :target="_buttonClose"
-            :draggable="true"
-            :snapGap="true"
-            :throttleDrag="1"
-            :edgeDraggable="false"
-            :snappable="true"
-            :snapDirections="{top: true, left: true, bottom: true, right: true }"
-            :elementSnapDirections='{"top":true,"left":true,"bottom":true,"right":true,"center":true,"middle":true}'
-            :startDragRotate="0"
-            :throttleDragRotate="0"
-            @drag="(e) => onDrag(e, announcementData?.fields.close_button.block_properties, _parentComponent)"
-        /> -->
     </div>
 
     <div
