@@ -228,46 +228,53 @@ watch(() => props.idxSubmitSuccess, (newVal, oldVal) => {
 
                                                     <div v-if="!item.no_code" v-tooltip="trans('Code')"
                                                         class="w-fit text-xs text-gray-400 italic">
-                                                        {{ item.code || 'no code'}}
+                                                        {{ item.code || 'no code' }}
                                                     </div>
 
                                                     <div v-if="item.reference" v-tooltip="trans('Reference')"
                                                         class="w-fit text-xs text-gray-400 italic">
                                                         <span class="font-medium">Reference:</span> {{ item.reference ||
-                                                        'no reference' }}
+                                                            'no reference' }}
                                                     </div>
 
                                                     <!-- Show Weight in KG -->
                                                     <div v-if="item.gross_weight" v-tooltip="trans('Weight')"
                                                         class="w-fit text-xs text-gray-400 italic">
-                                                        <span class="font-medium">Weight:</span> {{ (item.gross_weight / 1000).toFixed(2) }} kg
+                                                        <span class="font-medium">Weight:</span> {{ (item.gross_weight /
+                                                        1000).toFixed(2) }} kg
                                                     </div>
 
                                                     <!-- Show Stock -->
-                                                    <div v-if="item.stock" v-tooltip="trans('Stock')"
-                                                        class="w-fit text-xs text-gray-400 italic">
-                                                        <span class="font-medium">Stock:</span> {{ item.stock }}
+                                                    <div v-if="item.available_quantity !== null"
+                                                        v-tooltip="trans('Stock')" class="w-fit text-xs italic" :class="{
+                                                            'text-green-500': item.available_quantity > 5,
+                                                            'text-orange-500': item.available_quantity > 0 && item.available_quantity <= 5,
+                                                            'text-red-500': !item.available_quantity || item.available_quantity === 0
+                                                        }">
+                                                        <span class="font-medium">Stock:</span> {{
+                                                        item.available_quantity || 'Empty' }}
                                                     </div>
+
                                                 </div>
 
                                                 <!-- Show RRP Price -->
                                                 <div class="flex justify-between">
-                                                <div v-if="item.rrp"
-                                                    xclick="() => selectProduct(item)" v-tooltip="trans('RRP')"
-                                                    class="w-fit text-xs text-gray-x500">
-                                                    <span class="font-medium">RRP:</span> {{
-                                                        locale?.currencyFormat(item.currency_code || 'usd', item.rrp || 0)
-                                                    }}
-                                                </div>
+                                                    <div v-if="item.rrp" xclick="() => selectProduct(item)"
+                                                        v-tooltip="trans('RRP')" class="w-fit text-xs text-gray-x500">
+                                                        <span class="font-medium">RRP:</span> {{
+                                                            locale?.currencyFormat(item.currency_code || 'usd', item.rrp ||
+                                                                0)
+                                                        }}
+                                                    </div>
 
-                                                <!-- Show Normal Price -->
-                                                <div v-if="item.price"
-                                                    xclick="() => selectProduct(item)" v-tooltip="trans('Price')"
-                                                    class="w-fit text-xs text-blue-500">
-                                                    <span class="font-medium">Price:</span> {{
-                                                        locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
-                                                    }}
-                                                </div>
+                                                    <!-- Show Normal Price -->
+                                                    <div v-if="item.price" xclick="() => selectProduct(item)"
+                                                        v-tooltip="trans('Price')" class="w-fit text-xs text-blue-500">
+                                                        <span class="font-medium">Price:</span> {{
+                                                            locale?.currencyFormat(item.currency_code || 'usd', item.price
+                                                                || 0)
+                                                        }}
+                                                    </div>
                                                 </div>
 
                                                 <!-- Quantity Input -->

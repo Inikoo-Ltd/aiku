@@ -42,7 +42,7 @@ trait WithIrisInertia
         $itemsCount = 0;
         if ($webUser && $shop->type == ShopTypeEnum::B2B) {
             $orderInBasket = $webUser->customer->orderInBasket;
-            $cartCount     = $orderInBasket ? $orderInBasket->stats->number_item_transactions : 0;
+            $cartCount     = $orderInBasket ? $orderInBasket->number_item_transactions : 0;
             $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
             $itemsCount    = $orderInBasket ? intval($this->countItems($orderInBasket)) : 0;
         }

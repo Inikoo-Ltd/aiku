@@ -11,6 +11,7 @@
 namespace App\Http\Resources\Fulfilment;
 
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $id
@@ -21,19 +22,16 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $state
  * @property mixed $number_item_transactions
  */
-class RetinaEcomBasketResources extends JsonResource
+class RetinaTopUpResources extends JsonResource
 {
-    public static $wrap = null;
-
     public function toArray($request): array
     {
         return [
-            'net_amount'                => $this->net_amount,
-            'gross_amount'              => $this->gross_amount,
-            'tax_amount'                => $this->tax_amount,
-            'goods_amount'              => $this->goods_amount,
-            'services_amount'           => $this->services_amount,
-            'charges_amount'            => $this->charges_amount,
+            'reference'                => $this->reference,
+            'amount'                => $this->amount,
+            'currency_code'           => $this->currency->code,
+            'status'                => $this->status,
+            'payment_url'                => Arr::get($this->payment, 'data.payment_url'),
         ];
     }
 }
