@@ -190,6 +190,7 @@ test('can show webpages list in fulfilment website', function () {
 });
 
 test('can show fulfilments website workshop', function () {
+    $this->withoutExceptionHandling();
     $website = $this->fulfilmentWebsite;
 
     $response = get(
