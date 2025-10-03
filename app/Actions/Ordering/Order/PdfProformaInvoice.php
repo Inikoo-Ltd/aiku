@@ -16,6 +16,7 @@ use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -65,10 +66,20 @@ class PdfProformaInvoice extends OrgAction
 
             $filename = $order->slug.'-'.now()->format('Y-m-d');
             $pdf      = PDF::loadView('invoices.templates.pdf.proforma-invoice', '', [
-                'shop'         => $order->shop,
-                'order'        => $order,
+                'shop' => $order->shop,
+                'order' => $order,
                 'transactions' => $transactions,
-                'totalNet'     => number_format($totalNet, 2, '.', ''),
+                'pro_mode' => Arr::get($options, 'pro_mode', false),
+                'country_of_origin' => Arr::get($options, 'country_of_origin', false),
+                'rrp' => Arr::get($options, 'rrp', false),
+                'parts' => Arr::get($options, 'parts', false),
+                'commodity_codes' => Arr::get($options, 'commodity_codes', false),
+                'weight' => Arr::get($options, 'weight', false),
+                'hide_payment_status' => Arr::get($options, 'hide_payment_status', false),
+                'cpnp' => Arr::get($options, 'cpnp', false),
+                'group_by_tariff_code' => Arr::get($options, 'group_by_tariff_code', false),
+
+                'totalNet' => number_format($totalNet, 2, '.', ''),
             ], [], $config);
 
 
@@ -87,6 +98,13 @@ class PdfProformaInvoice extends OrgAction
         return [
             'pro_mode'          => ['sometimes', 'boolean'],
             'country_of_origin' => ['sometimes', 'boolean'],
+            'rrp' => ['sometimes', 'boolean'],
+            'parts' => ['sometimes', 'boolean'],
+            'commodity_codes' => ['sometimes', 'boolean'],
+            'weight' => ['sometimes', 'boolean'],
+            'cpnp' => ['sometimes', 'boolean'],
+            'hide_payment_status' => ['sometimes', 'boolean'],
+            'group_by_tariff_code' => ['sometimes', 'boolean'],
         ];
     }
 
