@@ -254,10 +254,14 @@
         <td style="width:14%;text-align:left">{{ __('Code') }}</td>
 
         <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
-        {{--        <td style="text-align:left;width:20% ">Discount</td>--}}
-        <td style="text-align:left;width:20% ">{{ __('Price') }}</td>
 
-        <td style="text-align:left">{{ __('Qty')  }}.</td>
+        @if($pro_mode)
+            <td style="text-align:left;width:20% ">{{ __('Unit Price') }}</td>
+            <td style="text-align:left;width:20% ">{{ __('Units') }}</td>
+        @else
+            <td style="text-align:left;width:20% ">{{ __('Discount') }}</td>
+            <td style="text-align:left">{{ __('Qty')  }}.</td>
+        @endif
 
         <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
     </tr>
@@ -267,6 +271,35 @@
     @foreach($transactions as $transaction)
         <tr class="@if($loop->last) last @endif">
             <td style="text-align:left">{{ $transaction->historicAsset?->code }}</td>
+
+            @if($pro_mode)
+                <td style="text-align:left">{{ $transaction->historicAsset?->name }}</td>
+            @else
+                <td style="text-align:left">{{ $transaction->historicAsset?->units . 'x' . $transaction->historicAsset?->name . '(' . $invoice->currency->symbol . $transaction->net_amount . ')' }}
+                    <br>
+                    @if($rrp)
+                        RRP: {{ $transaction->model->rrp }}
+                    @endif
+                    @if($parts)
+                        {{ $transaction->historicAsset?->name }}
+                    @endif
+                    @if($commodity_codes)
+                        {{ __('Tariff Code') }}: {{ $transaction->model->tariff_code }}
+                    @endif
+                    @if($barcode)
+                        {{ __('Barcode') }}: {{ $transaction->model->barcode }}
+                    @endif
+                    @if($weight)
+                        {{ __('Weight') }}: {{ $transaction->model->marketing_weight }}g
+                    @endif
+                    @if($country_of_origin)
+                        {{ __('Country of Origin') }}: {{ $transaction->model->country_of_origin }}
+                    @endif
+                    @if($cpnp)
+                        CPNP: {{ $transaction->model->cpnp_number }}
+                    @endif
+                </td>
+            @endif
 
             <td style="text-align:left" colspan="2">
                 @if($transaction->historicAsset)
@@ -282,15 +315,19 @@
                 @endif
             </td>
 
-            <td style="text-align:left">
-                @if($transaction->quantity==0 || $transaction->quantity==null)
-                    {{ $invoice->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
-                @elseif($transaction->historicAsset)
-                    {{ $invoice->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
-                @endif
-            </td>
-
-            <td style="text-align:right">{{  (int) $transaction->quantity }}</td>
+            @if($pro_mode)
+                <td style="text-align:right">{{  (int) $transaction->historicAsset?->units }}</td>
+                <td style="text-align:left">
+                    @if($transaction->quantity==0 || $transaction->quantity==null)
+                        {{ $invoice->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
+                    @elseif($transaction->historicAsset)
+                        {{ $invoice->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
+                    @endif
+                </td>
+            @else
+                <td style="text-align:right">{{  (int) $transaction->discount }}</td>
+                <td style="text-align:right">{{  (int) $transaction->quantity }}</td>
+            @endif
 
             <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
         </tr>
@@ -322,7 +359,7 @@
             {{ __('Tax') }}
 
             <br><small>{{$invoice->taxCategory->name}}
-             ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
+                ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
             </small>
         </td>
         <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>

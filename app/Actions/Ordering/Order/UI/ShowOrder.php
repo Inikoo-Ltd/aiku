@@ -329,11 +329,45 @@ class ShowOrder extends OrgAction
                             'label' => __('Recommended retail prices'),
                             'value' => 'rrp',
                         ],
+                        [
+                            'label' => __('Parts'),
+                            'value' => 'parts',
+                        ],
+                        [
+                            'label' => __('Commodity Codes'),
+                            'value' => 'commodity_codes',
+                        ],
+                        [
+                            'label' => __('Barcode'),
+                            'value' => 'barcode',
+                        ],
+                        [
+                            'label' => __('Weight'),
+                            'value' => 'weight',
+                        ],
+                        [
+                            'label' => __('Country of Origin'),
+                            'value' => 'country_of_origin',
+                        ],
+                        [
+                            'label' => __('Hide Payment Status'),
+                            'value' => 'hide_payment_status',
+                        ],
+                        [
+                            'label' => __('CPNP'),
+                            'value' => 'cpnp',
+                        ],
+                        [
+                            'label' => __('Group by Tariff Code'),
+                            'value' => 'group_by_tariff_code',
+                        ],
                     ],
                     'route_download_pdf'    => [
-                        'name'       => 'grp.dashboard.show',
+                        'name'       => 'grp.org.shops.show.ordering.proforma_invoice.download',
                         'parameters' => [
-                            'order' => $order->slug,
+                            'organisation' => $order->organisation->slug,
+                            'shop' => $order->shop->slug,
+                            'order' => $order->slug
                         ]
                     ]
                 ] : null,
