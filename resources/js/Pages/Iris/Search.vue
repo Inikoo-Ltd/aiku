@@ -47,6 +47,9 @@ const LBInitSearchResult = async () => {
                 'collection',
                 'tag',
             ],
+            DefaultFilters: {
+                availability: 1,  // Filter out of stock products
+            },
             Translations: {
                 "en": {
                     "facet": {
