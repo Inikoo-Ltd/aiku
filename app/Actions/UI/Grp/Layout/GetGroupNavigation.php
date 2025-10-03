@@ -31,7 +31,7 @@ class GetGroupNavigation
 
         ];
 
-        if ($user->hasPermissionTo('goods.view')) {
+        if ($user->hasAnyPermission(['goods.view','masters.view'])) {
             $groupNavigation['trade-units'] = $this->getTradeUnitsNavs();
         }
 
