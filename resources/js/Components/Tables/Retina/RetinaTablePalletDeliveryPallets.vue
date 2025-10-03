@@ -186,7 +186,6 @@ const typePallet = [
 					type="secondary"
                     label="Set as received"
 					tooltip="Set as received"
-                    :capitalize="false"
 					:size="'xs'"
 					:key="pallet.index"
 					routeName="undoNotReceivedRoute"

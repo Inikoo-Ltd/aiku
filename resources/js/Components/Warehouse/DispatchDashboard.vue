@@ -36,7 +36,7 @@ const isLoadingSub = ref<null | string>(null)
 <template>
     <div class="flex flex-wrap p-4 gap-x-4 gap-y-4">
         <div v-for="(dash, idxDash) in data" class="w-full max-w-sm px-5 py-4 lg:px-6 lg:py-6 rounded-lg bg-white shadow border border-gray-200">
-            <div class="text-lg font-semibold text-gray-400 capitalize xmb-1.5 lg:mb-3">
+            <div class="text-lg font-semibold text-gray-400 xmb-1.5 lg:mb-3">
                 {{ dash.label }}
             </div>
             <div class="flex flex-col gap-1">

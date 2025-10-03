@@ -416,7 +416,6 @@ onMounted(() => {
                             xv-if="portfolio.platform_possible_matches?.number_matches"
                             @click="() => (fetchRoute(), isOpenModalVariant = true, selectedPortfolio = portfolio)"
                             :label="trans('Select other product from Shopify')"
-                            :capitalize="false"
                             size="xxs"
                             type="tertiary"
                         />

@@ -399,8 +399,8 @@ const isModalAddress = ref(false);
         class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
         <div class="w-full flex justify-between items-center">
           <div>
-            <div class="text-base capitalize">
-              {{ trans("balance") }}
+            <div class="text-base">
+              {{ trans("Balance") }}
             </div>
             <div class="text-gray-700/60 text-sm leading-4 font-normal">
               {{ data.balance.credit_transactions }} credit transactions
@@ -555,7 +555,7 @@ const isModalAddress = ref(false);
             </div>
             <div class="flex gap-x-1 items-center text-sm">
               <div class="">{{ trans("Billing Cycle") }}:</div>
-              <div class="text-gray-500 capitalize">
+              <div class="text-gray-500">
                 {{ data.rental_agreement.stats?.data.billing_cycle }}
               </div>
             </div>

@@ -50,7 +50,7 @@ const isPanelOpen = ref(isCurrentRouteActive.value || props.itemKey == layout.or
                         <span class="text-sm leading-none uppercase">
                             {{ layout.organisationsState?.[layout.currentParams.organisation]?.[generateCurrentString(itemKey)] || Object.keys(orgNav)[0] }}
                         </span>
-                        <span class="text-[7px] capitalize leading-none">({{ itemKey }})</span>
+                        <span class="text-[7px] leading-none">({{ itemKey }})</span>
                     </template>
                 </div>
                 <FontAwesomeIcon icon='fal fa-chevron-down' class='transition'

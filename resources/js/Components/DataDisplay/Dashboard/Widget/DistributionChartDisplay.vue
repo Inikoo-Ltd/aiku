@@ -165,7 +165,7 @@ const isLoadingVisit = ref<number | null>(null)
 	<div>
 		<dl class="">
 			<div class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow tabular-nums">
-				<dt class="text-base font-medium text-gray-400 capitalize">
+				<dt class="text-base font-medium text-gray-400">
 					{{ customerStats.label }}
 				</dt>
 				<dd class="mt-2 flex justify-between gap-x-2">

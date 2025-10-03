@@ -217,7 +217,7 @@ const getStatusText = (status: string, valid: boolean) => {
 
                         <div class="flex-none self-end px-6">
                             <dt class="sr-only">state</dt>
-                            <dd class="capitalize">
+                            <dd class="">
                                 <Tag :label="data?.customer?.state" :theme="data?.customer?.state === 'active'
                                     ? 3
                                     : data?.customer?.state === 'lost'
@@ -378,8 +378,8 @@ const getStatusText = (status: string, valid: boolean) => {
                 class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
                 <div class="w-full flex justify-between items-center">
                     <div>
-                        <div class="text-base capitalize">
-                            {{ trans("balance") }}
+                        <div class="text-base">
+                            {{ trans("Balance") }}
                         </div>
                     </div>
                     <div class="flex flex-col items-end">

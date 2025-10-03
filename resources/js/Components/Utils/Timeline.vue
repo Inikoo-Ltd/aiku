@@ -124,7 +124,7 @@ const useFormatTime = (dateIso: string | Date, OptionsTime?: OptionsTime) => {
             <template v-for="(step, stepIndex) in computedXxx" :key="stepIndex">
                 <SwiperSlide>
                     <!-- Section: Title -->
-                    <div class="w-fit mx-auto capitalize text-xxs md:text-xs text-center whitespace-nowrap truncate max-w-full px-2"
+                    <div class="w-fit mx-auto text-xxs md:text-xs text-center whitespace-nowrap truncate max-w-full px-2"
                         :class="step.timestamp || state == step.key ? 'text-[#888] ' : 'text-gray-300'">
                         <FontAwesomeIcon v-if="step.icon" :icon='step.icon' class='text-sm' fixed-width aria-hidden='true' />
                         {{ step.label }}
