@@ -8,8 +8,6 @@
 
 namespace App\Actions\Fulfilment\PalletReturn;
 
-use App\Actions\Dropshipping\Shopify\Fulfilment\DispatchFulfilmentOrderShopify;
-use App\Actions\Dropshipping\WooCommerce\Fulfilment\CompleteFulfillmentWooCommerce;
 use App\Actions\Fulfilment\Fulfilment\Hydrators\FulfilmentHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\Pallet\ReturnPallet;
@@ -76,15 +74,6 @@ class DispatchPalletReturn extends OrgAction
             CalculateRecurringBillTotals::run($recurringBill);
         }
 
-        if ($palletReturn->customerSalesChannel) {
-            match ($palletReturn->customerSalesChannel?->platform?->type) {
-                PlatformTypeEnum::WOOCOMMERCE => CompleteFulfillmentWooCommerce::run($palletReturn),
-                //                PlatformTypeEnum::EBAY => FulfillOrderToEbay::run($order),
-                //                PlatformTypeEnum::AMAZON => FulfillOrderToAmazon::run($order),
-                PlatformTypeEnum::SHOPIFY => DispatchFulfilmentOrderShopify::run($palletReturn),
-                default => null,
-            };
-        }
 
         PalletReturnHydratePallets::dispatch($palletReturn);
         GroupHydratePalletReturns::dispatch($palletReturn->group);

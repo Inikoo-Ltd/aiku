@@ -25,7 +25,6 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
@@ -162,7 +161,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Platform|null $platform
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
  * @property-read Shop $shop
- * @property-read ShopifyUserHasFulfilment|null $shopifyOrder
  * @property-read \App\Models\Ordering\OrderStats|null $stats
  * @property-read TaxCategory $taxCategory
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $transactions
@@ -316,11 +314,6 @@ class Order extends Model implements HasMedia, Auditable
     public function collectionAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class);
-    }
-
-    public function shopifyOrder(): MorphOne
-    {
-        return $this->morphOne(ShopifyUserHasFulfilment::class, 'model');
     }
 
     public function addresses(): MorphToMany
