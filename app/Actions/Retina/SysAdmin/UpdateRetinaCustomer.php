@@ -44,12 +44,13 @@ class UpdateRetinaCustomer extends RetinaAction
     public function rules(): array
     {
         return [
-            'contact_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'company_name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'        => ['sometimes', 'nullable', 'email'],
-            'phone'        => ['sometimes', 'nullable', new Phone()],
-            'contact_address'      => ['sometimes', 'required', new ValidAddress()],
-            'tax_number'               => ['sometimes', 'nullable', 'array'],
+            'contact_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email'           => ['sometimes', 'nullable', 'email'],
+            'phone'           => ['sometimes', 'nullable', new Phone()],
+            'contact_address' => ['sometimes', 'required', new ValidAddress()],
+            'tax_number'      => ['sometimes', 'nullable', 'array'],
+            'is_re'           => ['sometimes', 'boolean'],
 
         ];
     }
@@ -65,6 +66,7 @@ class UpdateRetinaCustomer extends RetinaAction
     {
         $this->action = true;
         $this->initialisationFulfilmentActions($customer->fulfilmentCustomer, $modelData);
+
         return $this->handle($customer, $this->validatedData);
     }
 

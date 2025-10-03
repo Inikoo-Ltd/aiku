@@ -37,6 +37,9 @@ class ShowRetinaAccountManagement extends RetinaAction
     {
 
         $customer = $request->user()->customer;
+        $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
+
+
 
         return Inertia::render(
             'EditModel',
@@ -96,6 +99,13 @@ class ShowRetinaAccountManagement extends RetinaAction
                                         'label'   => __('Tax number'),
                                         'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                         'country' => $customer->address->country_code,
+                                    ],
+                                    'is_re'           => [
+                                        'type'   => 'toggle',
+                                        'hidden' => $this->organisation->country_id != $spain->id || $customer->address->country_id != $spain->id,
+                                        'label'  => 'Recargo de equivalencia',
+                                        'value'  => $customer->is_re,
+
                                     ]
                                 ]
                         ]

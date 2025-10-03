@@ -18,13 +18,13 @@ class ResetOrderTaxCategory
     use asAction;
 
 
-    public function handle(Order $order, Command $command): Order
+    public function handle(Order $order, Command $command=null): Order
     {
         $customer = $order->customer;
         if ($customer) {
             $taxNumber = $customer->taxNumber;
 
-            $command->info("Resetting tax category for order $order->slug");
+            $command?->info("Resetting tax category for order $order->slug");
 
             $tacCategory = GetTaxCategory::run(
                 country: $order->organisation->country,
@@ -33,7 +33,7 @@ class ResetOrderTaxCategory
                 deliveryAddress: $order->deliveryAddress,
                 isRe: $order->is_re,
             );
-            $command->info("New tax category rate $tacCategory->rate");
+            $command?->info("New tax category rate $tacCategory->rate");
 
 
             UpdateOrder::make()->action($order, [
