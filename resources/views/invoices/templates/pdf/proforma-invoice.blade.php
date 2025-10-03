@@ -160,9 +160,12 @@
     <tr>
         <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;">
             <div>
-                <div>
-                    {{ __('Payment State') }}: <b>{{ $invoice->pay_status->labels()[$invoice->pay_status->value] }}</b>
-                </div>
+                @if($hide_payment_status)
+                    <div>
+                        {{ __('Payment State') }}:
+                        <b>{{ $invoice->pay_status->labels()[$invoice->pay_status->value] }}</b>
+                    </div>
+                @endif
                 <div>
                     {{ __('Customer') }}: <b>{{ $invoice->customer['name'] }}</b>
                     ({{ $invoice->customer['reference'] }})
