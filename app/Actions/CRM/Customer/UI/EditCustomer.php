@@ -41,6 +41,7 @@ class EditCustomer extends OrgAction
     public function htmlResponse(Customer $customer, ActionRequest $request): Response
     {
         $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
+
         return Inertia::render(
             'EditModel',
             [
@@ -74,22 +75,22 @@ class EditCustomer extends OrgAction
                             'title'  => __('contact information'),
                             'label'  => __('contact'),
                             'fields' => [
-                                'contact_name'    => [
+                                'contact_name'             => [
                                     'type'  => 'input',
                                     'label' => __('contact name'),
                                     'value' => $customer->contact_name
                                 ],
-                                'company_name'    => [
+                                'company_name'             => [
                                     'type'  => 'input',
                                     'label' => __('company'),
                                     'value' => $customer->company_name
                                 ],
-                                'phone'           => [
+                                'phone'                    => [
                                     'type'  => 'phone',
                                     'label' => __('Phone'),
                                     'value' => $customer->phone
                                 ],
-                                'contact_address' => [
+                                'contact_address'          => [
                                     'type'    => 'address',
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($customer->address)->getArray(),
@@ -97,19 +98,24 @@ class EditCustomer extends OrgAction
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
-                                'tax_number'      => [
+                                'tax_number'               => [
                                     'type'    => 'tax_number',
                                     'label'   => __('Tax number'),
                                     'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                     'country' => $customer->address->country_code,
                                 ],
-                                'is_re'           => [
+                                'is_re'                    => [
                                     'type'   => 'toggle',
                                     'hidden' => $this->organisation->country_id != $spain->id || $customer->address->country_id != $spain->id,
                                     'label'  => 'Recargo de equivalencia',
                                     'value'  => $customer->is_re,
 
-                                ]
+                                ],
+                                'identity_document_number' => [
+                                    'type'  => 'input',
+                                    'label' => __('identity document number'),
+                                    'value' => $customer->identity_document_number
+                                ],
                             ]
                         ]
                     ],

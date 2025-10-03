@@ -185,20 +185,21 @@ class UpdateInvoice extends OrgAction
             'payment_amount' => ['sometimes', 'numeric'],
 
 
-            'date'                    => ['sometimes', 'date'],
-            'tax_liability_at'        => ['sometimes', 'date'],
-            'footer'                  => ['sometimes', 'string'],
-            'billing_address'         => ['sometimes', 'required', new ValidAddress()],
-            'delivery_address'        => ['sometimes', 'required', new ValidAddress()],
-            'sales_channel_id'        => [
+            'date'                     => ['sometimes', 'date'],
+            'tax_liability_at'         => ['sometimes', 'date'],
+            'footer'                   => ['sometimes', 'string'],
+            'billing_address'          => ['sometimes', 'required', new ValidAddress()],
+            'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
+            'sales_channel_id'         => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
-            'shipping_zone_schema_id' => ['sometimes', 'nullable'],
-            'shipping_zone_id'        => ['sometimes', 'nullable'],
+            'shipping_zone_schema_id'  => ['sometimes', 'nullable'],
+            'shipping_zone_id'         => ['sometimes', 'nullable'],
+            'identity_document_number' => ['sometimes', 'nullable', 'string'],
 
         ];
 
