@@ -52,13 +52,16 @@ class WebBlockProductResourceEcom extends JsonResource
 
         $favourite = false;
         $back_in_stock = false;
+        $back_in_stock_id = null;
         $quantityOrdered = 0;
         $transactionId = null;
         if ($request->user()) {
             $customer = $request->user()->customer;
             if ($customer) {
                 $favourite = $customer->favourites()->where('product_id', $product->id)->whereNull('unfavourited_at')->first();
-
+                $backInStockReminder = $customer->BackInStockReminder()->where('product_id', $product->id)->first();
+                $back_in_stock = $backInStockReminder ?true : false ;
+                $back_in_stock_id = $backInStockReminder?->id;
                 $basket = $customer->orderInBasket;
                 if ($basket) {
                     $transaction = DB::table('transactions')->where('order_id', $basket->id)
@@ -81,7 +84,7 @@ class WebBlockProductResourceEcom extends JsonResource
             'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
             'code'              => $product->code,
-            'name'              => $product->name,
+            'name'              => 'esadsdasd',
             'description'       => $product->description,
             'description_title' => $product->description_title,
             'description_extra' => $product->description_extra,
@@ -106,7 +109,8 @@ class WebBlockProductResourceEcom extends JsonResource
             'quantity_ordered'      => (int) $quantityOrdered,
             'quantity_ordered_new'  => 1,  // To editable in Frontend
             'is_favourite'          => $favourite && !$favourite->unfavourited_at ?? false,
-            'is_back_in_stock' => $back_in_stock
+            'is_back_in_stock'      => $back_in_stock,
+            'back_in_stock_id'      => $back_in_stock_id
         ];
     }
 

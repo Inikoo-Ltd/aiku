@@ -13,30 +13,27 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\BackInStockReminder;
 use Lorisleiva\Actions\ActionRequest;
+use App\Models\CRM\Customer;
+use App\Models\Catalogue\Product;
 
 class DeleteIrisBackInStockReminder extends RetinaAction
 {
     use WithActionUpdate;
 
 
-    public function handle(BackInStockReminder $backInStockReminder): void
+    public function handle(Customer $customer, Product $product): void
     {
-        DeleteBackInStockReminder::make()->action($backInStockReminder);
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $backInStockReminder = $request->route()->parameter('backInStockReminder');
-        if ($backInStockReminder->customer_id !== $this->customer->id) {
-            return false;
+        $backInStockReminder = $customer->backInStockReminder()->where('product_id', $product->id)->first();
+        if ($backInStockReminder) {
+            DeleteBackInStockReminder::make()->action($backInStockReminder);
         }
-        return true;
     }
 
-    public function asController(BackInStockReminder $backInStockReminder, ActionRequest $request): void
+
+    public function asController(Product $product, ActionRequest $request): void
     {
         $this->initialisation($request);
 
-        $this->handle($backInStockReminder);
+        $this->handle($this->customer, $product);
     }
 }
