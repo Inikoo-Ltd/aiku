@@ -73,7 +73,7 @@ class CheckIfProductHasVariantAtLocation
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product inventory check failed: ".$errorMessage);
+                Sentry::captureMessage("Product inventory check failed:  shopifyUser: $shopifyUser->id  > $productId <    ".$errorMessage);
 
                 return false;
             }

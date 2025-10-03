@@ -26,7 +26,6 @@ class FindShopifyProductVariant
 
         if (!$shopifyUser) {
             Sentry::captureMessage("Shopify user not found");
-            ;
             return null;
         }
 
@@ -96,7 +95,7 @@ class FindShopifyProductVariant
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product search failed: ".$errorMessage);
+                Sentry::captureMessage("Product search failed: channel: $customerSalesChannel->id  >".$searchValue."<   >".$searchType."<  ".$errorMessage);
 
                 return null;
             }
