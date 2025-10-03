@@ -81,6 +81,7 @@ return new class () extends Migration {
             $table->text('customer_notes')->nullable();
             $table->text('public_notes')->nullable();
             $table->text('internal_notes')->nullable();
+            $table->unsignedInteger('number_item_transactions')->default(0)->comment('Count of product item transactions in the order');
 
             $table = $this->currencyFields($table);
             $table = $this->orderTotalAmounts($table);
