@@ -107,8 +107,8 @@ class EditInvoice extends OrgAction
                             ],
                         ],
                         [
-                            'title'   => __('Customer ID number'),
-                            'label'   => __('Customer ID number'),
+                            'title'   => __('Customer identity number'),
+                            'label'   => __('Customer identity number'),
                             'icon'    => 'fa-light fa-user',
                             'fields'  => [
                                 'identity_document_number' => [
