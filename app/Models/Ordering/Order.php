@@ -139,6 +139,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property OrderToBePaidByEnum|null $to_be_paid_by
  * @property bool|null $has_insurance
  * @property int $number_item_transactions Count of product item transactions in the order
+ * @property bool $is_re recargo de equivalencia
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
