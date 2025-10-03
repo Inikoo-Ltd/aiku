@@ -72,8 +72,8 @@ class CheckIfProductHasVariantAtLocation
             $response = $client->request($query, $variables);
 
             if (!empty($response['errors']) || !isset($response['body'])) {
-                $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product inventory check failed:  shopifyUser: $shopifyUser->id  > $productId <    ".$errorMessage);
+
+                Sentry::captureMessage("Product inventory check failed:  shopifyUser: $shopifyUser->id  > $productId <    ".json_encode($response));
 
                 return false;
             }
@@ -82,8 +82,6 @@ class CheckIfProductHasVariantAtLocation
 
             // Check if product data exists in the response
             if (!isset($body['data']['product']) || !isset($body['data']['product']['variants']['edges'])) {
-                Sentry::captureMessage("Product data not found in response A ".json_encode($response));
-
                 return false;
             }
 
