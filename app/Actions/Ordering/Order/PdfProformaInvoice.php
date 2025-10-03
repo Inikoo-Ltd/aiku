@@ -64,10 +64,16 @@ class PdfProformaInvoice extends OrgAction
             ];
 
 
-            $filename = $order->slug.'-'.now()->format('Y-m-d');
-            $pdf      = PDF::loadView('invoices.templates.pdf.proforma-invoice', '', [
+            $deliveryNote = $order->deliveryNotes?->first();
+            $invoice = $order->invoices()->first();
+            $filename = $order?->slug.'-'.now()->format('Y-m-d');
+            $pdf      = PDF::loadView('invoices.templates.pdf.proforma-invoice', [], [
                 'shop' => $order->shop,
                 'order' => $order,
+                'invoice' => $invoice,
+                'deliveryNote'  => $deliveryNote,
+                'deliveryAddress'  => $deliveryNote?->deliveryAddress,
+                'context'       => $invoice?->original_invoice_id ? 'Refund' : 'Invoice',
                 'transactions' => $transactions,
                 'pro_mode' => Arr::get($options, 'pro_mode', false),
                 'country_of_origin' => Arr::get($options, 'country_of_origin', false),
@@ -88,6 +94,7 @@ class PdfProformaInvoice extends OrgAction
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
         } catch (Exception $e) {
+            dd($e);
             Sentry::captureException($e);
 
             return response()->json(['error' => 'Failed to generate PDF'], 404);
@@ -112,6 +119,8 @@ class PdfProformaInvoice extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Order $order, ActionRequest $request): Response
     {
+        $this->initialisation($organisation, $request);
+
         return $this->handle($order, $this->validatedData);
     }
 }
