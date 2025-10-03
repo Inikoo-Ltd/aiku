@@ -60,7 +60,7 @@ watch(props.forcedVisibleSearchInputs, (inputs) => {
     :key="key" class="px-4 sm:px-0">
     <div class="flex rounded-md shadow-sm relative mt-3">
       <label :for="searchInput.key"
-        class="inline-flex items-center px-4 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm capitalize">
+        class="inline-flex items-center px-4 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
         <FontAwesomeIcon icon="far fa-filter" class="h-4 w-4 mr-2 text-gray-400" aria-hidden="true" />
         <span>{{ searchInput.label }}</span></label>
       <input :id="searchInput.key" :ref="skipUnwrap.el" :key="searchInput.key" :name="searchInput.key"

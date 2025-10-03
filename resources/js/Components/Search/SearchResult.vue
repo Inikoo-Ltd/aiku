@@ -40,7 +40,7 @@ router.on('success', () => emits('finishVisit'))  // On success component 'Link'
             <ul class="mt-1 flex space-x-1 text-xs font-normal leading-4 text-gray-500">
                 <li>{{ data.label1 || '' }}</li>
                 <li>&middot;</li>
-                <li class="capitalize">{{ data?.label2 }}</li>
+                <li class="">{{ data?.label2 }}</li>
                 <!-- <li>&middot;</li> -->
                 <!-- <li>{{ data?.shareCount }} shares</li> -->
             </ul>

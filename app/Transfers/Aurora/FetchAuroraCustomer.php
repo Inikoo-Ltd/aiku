@@ -46,7 +46,7 @@ class FetchAuroraCustomer extends FetchAurora
             $state = CustomerStateEnum::LOST->value;
         }
 
-        if (!$shop->registration_needs_approval  &&  $status == CustomerStatusEnum::PENDING_APPROVAL->value) {
+        if (!$shop->registration_needs_approval && $status == CustomerStatusEnum::PENDING_APPROVAL->value) {
             $status = CustomerStatusEnum::APPROVED->value;
         }
 
@@ -160,6 +160,8 @@ class FetchAuroraCustomer extends FetchAurora
         $asEmployeeID = null;
 
 
+        $isRe = $this->auroraModelData->{'Customer Recargo Equivalencia'} == 'Yes';
+
         $this->parsedData['customer'] =
             [
                 'reference'           => sprintf('%05d', $this->auroraModelData->{'Customer Key'}),
@@ -175,7 +177,8 @@ class FetchAuroraCustomer extends FetchAurora
                 'last_fetched_at'     => now(),
                 'is_vip'              => $isVip,
                 'as_organisation_id'  => $AsOrganisation?->id,
-                'as_employee_id'      => $asEmployeeID
+                'as_employee_id'      => $asEmployeeID,
+                'is_re'               => $isRe,
             ];
 
 

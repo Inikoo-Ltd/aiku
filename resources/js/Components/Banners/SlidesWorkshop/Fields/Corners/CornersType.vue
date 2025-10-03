@@ -255,7 +255,7 @@ watch(props.section, (newValue) => {
         <div class="mt-6 block" v-if="activeType">
             <dl v-for="(field, index ) in activeType.fields" :key="field.name + index"
                 class="pb-4 flex flex-col max-w-lg gap-1">
-                <dt class="text-sm font-medium text-gray-500 capitalize">
+                <dt class="text-sm font-medium text-gray-500">
                     <div class="inline-flex items-start leading-none">
                         <span>{{ field.label }}</span>
                     </div>

@@ -124,6 +124,13 @@ class StoreOrder extends OrgAction
 
         data_set($modelData, 'master_shop_id', $shop->master_shop_id);
 
+        $isRe = false;
+        if ($parent instanceof Customer) {
+            $isRe = $parent->is_re;
+        } elseif ($parent instanceof CustomerClient) {
+            $isRe = $parent->customer->is_re;
+        }
+
 
         if (!Arr::exists($modelData, 'tax_category_id')) {
             if ($parent instanceof Shop) {
@@ -141,12 +148,13 @@ class StoreOrder extends OrgAction
                     country: $this->organisation->country,
                     taxNumber: $taxNumber,
                     billingAddress: $billingAddress,
-                    deliveryAddress: $deliveryAddress
+                    deliveryAddress: $deliveryAddress,
+                    isRe: $isRe,
                 )->id
             );
         }
 
-
+        data_set($modelData, 'is_re', $isRe);
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
 

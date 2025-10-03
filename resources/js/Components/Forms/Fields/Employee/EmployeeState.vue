@@ -49,7 +49,7 @@ const props = defineProps<{
                     ]">
                     <!-- {{ compareObjects(form[fieldName], option) }} -->
                         <div class="flex flex-col gap-y-1">
-                            <RadioGroupLabel as="span" class="select-none font-medium capitalize">{{ option.title }}</RadioGroupLabel>
+                            <RadioGroupLabel as="span" class="select-none font-medium">{{ option.title }}</RadioGroupLabel>
                             <RadioGroupDescription as="span" class="select-none text-xs text-gray-400">{{ option.description }}</RadioGroupDescription>
                         <!-- <RadioGroupDescription as="span" class="mt-6 text-xs font-medium text-gray-600">{{ option.label }}</RadioGroupDescription> -->
                         </div>

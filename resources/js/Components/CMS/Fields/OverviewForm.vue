@@ -100,7 +100,7 @@ const deleteImages = (index: number) => {
 
 <template>
 	<div v-if="type == 'text'" class="border-t border-gray-300 pb-3">
-		<div class="w-full text-center py-1 font-semibold select-none capitalize text-gray-700">
+		<div class="w-full text-center py-1 font-semibold select-none text-gray-700">
 			{{ type }}
 		</div>
 		<draggable
@@ -122,7 +122,7 @@ const deleteImages = (index: number) => {
 									class="handle text-sm cursor-grab pr-3 mr-2 text-gray-500" />
 							</div>
 							<h3
-								class="lg:text-sm text-xs capitalize font-medium select-none text-gray-700">
+								class="lg:text-sm text-xs font-medium select-none text-gray-700">
 								Text {{ index + 1 }}
 							</h3>
 						</div>
@@ -147,7 +147,7 @@ const deleteImages = (index: number) => {
 				class="group flex justify-center items-center gap-x-2 relative px-3 py-2 w-full cursor-pointer transition-transform transform hover:scale-105">
 				<FontAwesomeIcon :icon="faPlus" class="text-gray-500 group-hover:text-blue-500" />
 				<h3
-					class="lg:text-sm text-xs capitalize font-medium select-none text-gray-700 group-hover:text-blue-500">
+					class="lg:text-sm text-xs font-medium select-none text-gray-700 group-hover:text-blue-500">
 					Add Text
 				</h3>
 			</div>
@@ -155,7 +155,7 @@ const deleteImages = (index: number) => {
 	</div>
 
 	<div v-if="type == 'images'" class="border-t border-gray-300 pb-3">
-		<div class="w-full text-center py-1 font-semibold select-none capitalize text-gray-700">
+		<div class="w-full text-center py-1 font-semibold select-none text-gray-700">
 			{{ type }}
 		</div>
 		<draggable
@@ -177,7 +177,7 @@ const deleteImages = (index: number) => {
 									class="handle text-sm cursor-grab pr-3 mr-2 text-gray-500" />
 							</div>
 							<h3
-								class="lg:text-sm text-xs capitalize font-medium select-none text-gray-700">
+								class="lg:text-sm text-xs font-medium select-none text-gray-700">
 								Images {{ index + 1 }}
 							</h3>
 						</div>
@@ -202,7 +202,7 @@ const deleteImages = (index: number) => {
 				class="group flex justify-center items-center gap-x-2 relative px-3 py-2 w-full cursor-pointer transition-transform transform hover:scale-105">
 				<FontAwesomeIcon :icon="faPlus" class="text-gray-500 group-hover:text-blue-500" />
 				<h3
-					class="lg:text-sm text-xs capitalize font-medium select-none text-gray-700 group-hover:text-blue-500">
+					class="lg:text-sm text-xs font-medium select-none text-gray-700 group-hover:text-blue-500">
 					Add Image
 				</h3>
 			</div>

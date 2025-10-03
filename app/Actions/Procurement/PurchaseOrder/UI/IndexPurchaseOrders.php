@@ -48,7 +48,7 @@ class IndexPurchaseOrders extends OrgAction
     {
         if ($parent instanceof Group) {
             $organisation = $parent->organisations()->first();
-        }elseif ($parent instanceof Organisation) {
+        } elseif ($parent instanceof Organisation) {
             $organisation = $parent;
         } else {
             $organisation = $parent->organisation;

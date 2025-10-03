@@ -39,7 +39,7 @@ const navigationName = props.navKey.split('_')[0].slice(0, -1)  // shops_navigat
             class="flex items-center justify-between cursor-pointer"
             :class="layout.leftSidebar.show ? 'pt-2 py-1 pl-4 pr-2' : open ? 'py-2 bg-indigo-600' : 'py-2 hover:bg-indigo-500'"
         >
-            <div class="leading-none capitalize text-white font-bold pb-1 select-none flex items-center gap-x-1" :class="layout.leftSidebar.show ? '' : 'mx-auto'">
+            <div class="leading-none text-white font-bold pb-1 select-none flex items-center gap-x-1" :class="layout.leftSidebar.show ? '' : 'mx-auto'">
                 <FontAwesomeIcon v-if="navKey == 'shops_navigation'" icon='fal fa-store-alt' class='text-sm opacity-65' aria-hidden='true' />
                 <FontAwesomeIcon v-if="navKey == 'warehouses_navigation'" icon='fal fa-warehouse-alt' class='text-sm opacity-65' aria-hidden='true' />
 
@@ -122,7 +122,7 @@ const navigationName = props.navKey.split('_')[0].slice(0, -1)  // shops_navigat
                                 layout.currentParams[navigationName] === layout.currentModule ? '' : '',
                             ]"
                             :aria-current="layout.currentParams[navigationName] === layout.currentModule ? 'page' : undefined">
-                            <!-- <p class="bg-indigo-300 py-0.5 pl-1 capitalize text-slate-700 font-bold">{{ layout.currentParams[navigationName] }}</p> -->
+                            <!-- <p class="bg-indigo-300 py-0.5 pl-1 text-slate-700 font-bold">{{ layout.currentParams[navigationName] }}</p> -->
 
                             <!-- Looping: Navigation in Shop -->
                             <SubNavigation v-for="(shopNavigation, navigationIndex) in subNav[layout.currentParams[navigationName]]"

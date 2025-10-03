@@ -7,7 +7,6 @@
 <script setup lang="ts">
 import { Pie } from 'vue-chartjs'
 import { trans } from "laravel-vue-i18n"
-import { capitalize } from '@/Composables/capitalize'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, Colors } from 'chart.js'
 import { useLocaleStore } from "@/Stores/locale"
 import { PalletCustomer, FulfilmentCustomerStats } from '@/types/Pallet'
@@ -164,7 +163,7 @@ function routePallet(storageData: any, key: string) {
                 <div class="mt-4 space-y-4 grid md:grid-cols-2 gap-x-4">
                     <div class="flex  justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums col-span-2">
                         <div class="">
-                            <dt class="text-base font-medium text-gray-400 capitalize">{{ storageData.pallets.label }}
+                            <dt class="text-base font-medium text-gray-400">{{ storageData.pallets.label }}
                             </dt>
                             <dd class="mt-2 flex justify-between gap-x-2">
                                 <div
@@ -220,7 +219,7 @@ function routePallet(storageData: any, key: string) {
                     <!-- Box: Pallet Delivery -->
                     <div class="flex  justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums">
                         <div class="">
-                            <dt class="text-base font-medium text-gray-400 capitalize">{{
+                            <dt class="text-base font-medium text-gray-400">{{
                                 storageData.pallet_deliveries.label }}
                             </dt>
                             <dd class="mt-2 flex justify-between gap-x-2">
@@ -249,7 +248,7 @@ function routePallet(storageData: any, key: string) {
                     <div
                         class="flex  justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums">
                         <div class="">
-                            <dt class="text-base font-medium text-gray-400 capitalize">{{
+                            <dt class="text-base font-medium text-gray-400">{{
                                 storageData.pallet_returns.label }}</dt>
                             <dd class="mt-2 flex justify-between gap-x-2">
                                 <div

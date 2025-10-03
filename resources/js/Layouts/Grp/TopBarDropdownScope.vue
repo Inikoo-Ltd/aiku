@@ -105,7 +105,7 @@ const onClickOrg = async (slug?: string) => {
     <div>
         <div class="flex items-center gap-x-1.5 px-1 mb-1">
             <FontAwesomeIcon :icon="icon" class="text-gray-400 text-xxs" aria-hidden="true" />
-            <span class="text-[9px] leading-none text-gray-400 capitalize whitespace-nowrap">{{ label }}</span>
+            <span class="text-[9px] leading-none text-gray-400 whitespace-nowrap">{{ label }}</span>
             <hr class="w-full rounded-full border-slate-300">
         </div>
 

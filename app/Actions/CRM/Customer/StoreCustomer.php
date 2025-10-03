@@ -258,6 +258,7 @@ class StoreCustomer extends OrgAction
             'email_subscriptions.is_subscribed_to_basket_reminder_3' => ['sometimes', 'boolean'],
             'traffic_sources'                                        => ['sometimes', 'nullable'],
             'tax_number'                                             => ['sometimes', 'nullable', 'array'],
+            'is_re'                                                  => ['sometimes', 'boolean'],
 
 
             'password' =>
@@ -298,7 +299,6 @@ class StoreCustomer extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-
         if ($this->strict && (!$this->get('company_name') && !$this->get('email'))) {
             $validator->errors()->add('company_name', 'At least one of company_name or email must be provided');
         }

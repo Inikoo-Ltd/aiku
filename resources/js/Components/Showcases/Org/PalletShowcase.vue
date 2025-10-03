@@ -224,7 +224,7 @@ const generateRouteEditBarcode = () => {
             <div class="border-t border-gray-200 pt-4">
                 <dt class="font-medium">{{ trans("Info") }}</dt>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">{{ trans("State") }}:
-                    <Tag :class="'capitalize'" :label="data.data.state" ></Tag>
+                    <Tag :label="data.data.state" ></Tag>
                 </dd>
                 <dd class="mt-2 text-sm text-gray-500 text-justify">{{ trans("Status") }} :
                     <Tag :label="data.data.status"
@@ -232,7 +232,7 @@ const generateRouteEditBarcode = () => {
                         stringToColor
                     >
                     <template #label>
-                        <div class="flex gap-2 capitalize">
+                        <div class="flex gap-2 ">
                             <!-- <FontAwesomeIcon :icon="data.data.status_icon.icon"></FontAwesomeIcon> -->
                             <Icon :data="data?.data?.status_icon" />
                             <div>{{ data.data.status }}</div>

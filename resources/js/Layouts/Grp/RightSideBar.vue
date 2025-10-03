@@ -66,11 +66,11 @@ const onClickRemoveBar = (tabName: 'activeUsers') => {
                                     {'text-gray-400': user.action === 'leave'},
                                 ]"
                             >
-                                <span class="leading-none capitalize font-semibold">{{ useTruncate(user?.username, 10) }}</span>
+                                <span class="leading-none font-semibold">{{ useTruncate(user?.username, 10) }}</span>
                                 <span class="leading-none">-</span>
                                 <div class="flex items-center gap-x-0.5">
                                     <FontAwesomeIcon v-if="user.current_page?.icon_left?.icon" :icon='user.current_page?.icon_left.icon' fixed-width :class='user.current_page?.icon_left.class' aria-hidden='true' />
-                                    <span class="opacity-80 whitespace-nowrap leading-3 text-[10px] capitalize truncate">{{ user?.current_page?.label || 'Unknown' }}</span>
+                                    <span class="opacity-80 whitespace-nowrap leading-3 text-[10px] truncate">{{ user?.current_page?.label || 'Unknown' }}</span>
                                     <FontAwesomeIcon v-if="user.current_page?.icon_right?.icon" :icon='user.current_page?.icon_right.icon' fixed-width :class='user.current_page?.icon_right.class' aria-hidden='true' />
                                 </div>
                             </div>

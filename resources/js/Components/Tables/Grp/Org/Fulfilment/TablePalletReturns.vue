@@ -250,7 +250,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 <Button
                     :style="linkButton.style"
                     :label="linkButton.label"
-                    class="h-full capitalize inline-flex items-center rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0">
+                    class="h-full inline-flex items-center rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0">
                 </Button>
             </Link>
         </template>
