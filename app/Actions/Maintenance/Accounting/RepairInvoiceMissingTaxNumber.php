@@ -35,7 +35,7 @@ class RepairInvoiceMissingTaxNumber
         }
     }
 
-    public string $commandSignature = 'repair:invoice_missing_delivery';
+    public string $commandSignature = 'repair:invoice_missing_tax_number';
 
     public function asCommand(Command $command): void
     {

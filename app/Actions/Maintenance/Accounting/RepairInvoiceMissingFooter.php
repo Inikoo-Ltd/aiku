@@ -25,7 +25,7 @@ class RepairInvoiceMissingFooter
         ]);
     }
 
-    public string $commandSignature = 'repair:invoice_missing_delivery';
+    public string $commandSignature = 'repair:invoice_missing_footer';
 
     public function asCommand(Command $command): void
     {
