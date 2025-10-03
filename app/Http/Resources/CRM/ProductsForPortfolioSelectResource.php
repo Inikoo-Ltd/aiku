@@ -31,6 +31,7 @@ class ProductsForPortfolioSelectResource extends JsonResource
             'gross_weight'  => $this->gross_weight,
             'currency_code' => $this->currency_code,
             'currency_id'   => $this->currency_id,
+            'stock'         => $this->stock
         ];
     }
 }
