@@ -55,12 +55,12 @@ class HandleIrisInertiaRequests extends Middleware
 
             foreach ($channels as $channel) {
                 $customerSalesChannels[$channel->id] = [
-                    'customer_sales_channel_id' => $channel->id,
+                    'customer_sales_channel_id'   => $channel->id,
                     'customer_sales_channel_name' => $channel->customer_sales_channel_name,
-                    'platform_id'               => $channel->platform_id,
-                    'platform_slug'             => $channel->slug,
-                    'platform_code'             => $channel->code,
-                    'platform_name'             => $channel->name,
+                    'platform_id'                 => $channel->platform_id,
+                    'platform_slug'               => $channel->slug,
+                    'platform_code'               => $channel->code,
+                    'platform_name'               => $channel->name,
                 ];
             }
         }
