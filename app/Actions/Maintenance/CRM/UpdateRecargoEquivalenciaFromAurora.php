@@ -45,10 +45,12 @@ class UpdateRecargoEquivalenciaFromAurora
 
 
                     $auroraCustomerData=DB::connection('aurora')->table('Customer Dimension')->where('Customer Key',$auroraCustomerKey)->first();
-                    $isRe=$auroraCustomerData->{'Customer Recargo Equivalencia'}=='Yes';
-                    UpdateCustomer::make()->action($customer, [
-                        'is_re'=>$isRe,
-                    ]);
+                    if($auroraCustomerData) {
+                        $isRe = $auroraCustomerData->{'Customer Recargo Equivalencia'} == 'Yes';
+                        UpdateCustomer::make()->action($customer, [
+                            'is_re' => $isRe,
+                        ]);
+                    }
 
                 }
             }, 'id');
