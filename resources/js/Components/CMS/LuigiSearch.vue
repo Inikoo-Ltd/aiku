@@ -72,7 +72,9 @@ const LBInitAutocompleteNew = async () => {
                     heroName: "Top product",
                     type: "item",
                     size: 7,
-                    xattributes: layout.iris.is_logged_in ? ['product_code', 'formatted_price'] : ['product_code'],
+                    defaultFilters: {
+                        availability: 1,  // Filter out of stock products
+                    },
                 },
                 {
                     name: "Queries",
