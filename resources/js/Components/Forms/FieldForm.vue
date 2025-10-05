@@ -11,7 +11,6 @@ import { routeType } from '@/types/route'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Field form list
-
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSave as fadSave, } from '@fad'
 import { faSave as falSave, faInfoCircle } from '@fal'

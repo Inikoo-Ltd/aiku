@@ -19,9 +19,6 @@ class GetAddressData
 
     public function handle(?Shop $shop = null): array
     {
-
-
-
         $selectOptions = [];
         if ($shop) {
             $countries = Country::whereNotIn('id', $shop->forbidden_dispatch_countries ?? [])->get();
@@ -34,9 +31,27 @@ class GetAddressData
             if (isset($fields['address_line_3'])) {
                 unset($fields['address_line_3']);
             }
+
+            foreach ($fields as $key => $field) {
+                $label = Arr::get($field, 'label');
+                if ($label) {
+                    $translatedLabel = match ($label) {
+                        'city' => __('City'),
+                        'postal code' => __('Postal code'),
+                        'address' => __('Address line 1'),
+                        'province' => __('Province'),
+                        'address line 2' => __('Address line 2'),
+                        default => strtoupper($label),
+                    };
+
+                    $fields[$key]['label'] = $translatedLabel;
+                }
+            }
+
+
             $selectOptions[$country->id] =
                 [
-                    'label'               => $country->name . ' (' . $country->code . ')',
+                    'label'               => $country->name.' ('.$country->code.')',
                     'fields'              => $fields,
                     'administrativeAreas' => Arr::get($country->data, 'administrative_areas'),
                 ];

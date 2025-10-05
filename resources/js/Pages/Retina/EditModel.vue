@@ -5,18 +5,16 @@
   -->
 
 <script setup lang="ts">
-import {ref, onMounted, onBeforeUnmount} from 'vue'
+import {ref, onMounted, onBeforeUnmount,inject} from 'vue'
 import Action from '@/Components/Forms/Fields/Action.vue'
 import FieldForm from '@/Components/Forms/FieldForm.vue'
 import { get as getLodash } from 'lodash-es'
 import { capitalize } from "@/Composables/capitalize"
-// import { useLayoutStore } from '@/Stores/retinaLayout'
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faGoogle} from "@fortawesome/free-brands-svg-icons"
 import { routeType } from '@/types/route'
 import PageHeading from '@/Components/Headings/PageHeading.vue';
-import { inject } from 'vue'
 import { faUserLock, faBell, faCopyright, faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint, faLanguage, faAddressBook, faTrashAlt, faSlidersH } from '@fal'
 import { Head } from '@inertiajs/vue3'
 
