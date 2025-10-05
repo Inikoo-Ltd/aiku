@@ -4,7 +4,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { computed, inject, onMounted, onUnmounted, ref } from "vue"
 import type { Component } from "vue"
-import { library } from "@fortawesome/fontawesome-svg-core";
+import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import CheckoutPaymentBankTransfer from "@/Components/Retina/Ecom/CheckoutPaymentBankTransfer.vue"
 import CheckoutPaymentCard from "@/Components/Retina/Ecom/CheckoutPaymentCard.vue"
@@ -41,7 +41,8 @@ const props = defineProps<{
         by_balance: number
         by_other: number
         total: number
-    }
+    },
+    currency_code: string
 }>()
 
 const currentTab = ref({
@@ -49,26 +50,29 @@ const currentTab = ref({
     key: props.paymentMethods?.[0]?.key
 })
 
-const layout = inject('layout', retinaLayoutStructure)
+const layout = inject("layout", retinaLayoutStructure)
 
 const component = computed(() => {
     const components: Component = {
         credit_card: CheckoutPaymentCard,
         bank_transfer: CheckoutPaymentBankTransfer,
-        cash_on_delivery: CheckoutPaymentCashOnDelivery,
+        cash_on_delivery: CheckoutPaymentCashOnDelivery
 
-    };
+    }
 
-    return components[currentTab.value.key];
+    return components[currentTab.value.key]
 })
 
 
 onMounted(() => {
-    layout.root_active = 'retina.ecom.basket.'
+    layout.root_active = "retina.ecom.basket."
 })
 onUnmounted(() => {
-    layout.root_active = ''
+    layout.root_active = ""
 })
+
+const locale = inject("locale", {})
+
 </script>
 
 <template>
@@ -107,11 +111,12 @@ onUnmounted(() => {
         <!-- If balance can't cover -->
         <div v-else-if="to_pay_data.by_other > 0" class="mt-10 md:mx-10 ">
             <div v-if="to_pay_data.by_balance > 0" class="mx-auto text-center text-lg border border-gray-300 py-4 rounded">
+
                 <div>
-                    <span class="font-bold bg-yellow-300 px-1 py-0.5">{{ locale.currencyFormat(currency_code, to_pay_data.by_balance) }} of {{ locale.currencyFormat(currency_code, to_pay_data.total) }}</span>
-                    will paid with balance
+                    <span class="font-bold bg-yellow-300 px-1 py-0.5">{{ locale.currencyFormat(currency_code, to_pay_data.by_balance) }}  {{ trans("of") }} {{ locale.currencyFormat(currency_code, to_pay_data.total) }}</span>
+                    {{ trans("will be paid with balance") }}
                 </div>
-                
+
                 <div class="text-gray-500 text-sm mt-1">
                     {{ trans("Please paid the rest with your preferred method below:") }}
                 </div>
@@ -121,14 +126,15 @@ onUnmounted(() => {
                 <div v-if="props.paymentMethods?.length > 1" class="max-w-lg">
                     <div class="grid grid-cols-1 sm:hidden">
                         <!-- Use an "onChange" listener to redirect the user to the selected tab URL. -->
-                        <select aria-label="Select a tab" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pl-3 pr-8 text-base  outline outline-1 -outline-offset-1 outline-gray-300 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
+                        <select aria-label="Select a tab"
+                                class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pl-3 pr-8 text-base  outline outline-1 -outline-offset-1 outline-gray-300 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
                             <option v-for="(tab, tabIdx) in paymentMethods" :key="tabIdx" :selected="currentTab === tabIdx">
                                 <FontAwesomeIcon :icon="tab.icon" class="" fixed-width aria-hidden="true" />
                                 {{ tab.label }}
                             </option>
                         </select>
                     </div>
-            
+
                     <div class="hidden sm:block">
                         <nav class="isolate flex divide-x divide-gray-200 rounded-lg shadow" aria-label="Tabs">
                             <div

@@ -39,6 +39,17 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
      */
     public function handle(OrderPaymentApiPoint $orderPaymentApiPoint, array $modelData): array
     {
+        if ($orderPaymentApiPoint->state == OrderPaymentApiPointStateEnum::SUCCESS) {
+            return [
+                'status'   => 'success',
+                'success'  => true,
+                'reason'   => 'Order paid successfully',
+                'order'    => $orderPaymentApiPoint->order,
+                'order_id' => $orderPaymentApiPoint->order->id,
+
+            ];
+        }
+
         $paymentAccountShopID = Arr::get($orderPaymentApiPoint->data, 'payment_methods.checkout');
         $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopID);
 
