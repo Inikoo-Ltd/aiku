@@ -36,12 +36,13 @@ class GetAddressData
                 $label = Arr::get($field, 'label');
                 if ($label) {
                     $translatedLabel = match ($label) {
+                        'post town' => __('Town/City'),
                         'city' => __('City'),
                         'postal code' => __('Postal code'),
                         'address' => __('Address line 1'),
                         'province' => __('Province'),
                         'address line 2' => __('Address line 2'),
-                        default => strtoupper($label),
+                        default => ucfirst($label),
                     };
 
                     $fields[$key]['label'] = $translatedLabel;
