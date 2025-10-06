@@ -13,6 +13,7 @@ use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
+use App\Models\CRM\WebUser;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -96,7 +97,10 @@ class CustomerResource extends JsonResource
             'email_subscriptions' => [
                 'update_route'  => [
                     'method'     => 'patch',
-                    'name'       => 'grp.models.customer_comms.update',
+                    'name'       => match (class_basename($request->user())) {
+                        WebUser::class => 'retina.models.customer_comms.update',
+                        default => 'grp.models.customer_comms.update'
+                    },
                     'parameters' => [
                         $customer->comms->id
                     ]
