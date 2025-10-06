@@ -15,6 +15,7 @@ use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Http\Resources\CRM\CustomerFavouritesResource;
 use App\Models\CRM\Customer;
+use App\Models\Ordering\Order;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Inertia\Inertia;
@@ -33,6 +34,41 @@ class IndexRetinaEcomFavourites extends RetinaAction
         return IndexCustomerFavourites::make()->tableStructure($customer, $prefix);
     }
 
+    private function getBasketTransactions(Customer $customer): array
+    {
+        if (!$customer->current_order_in_basket_id) {
+            return [];
+        }
+
+        $order = Order::find($customer->current_order_in_basket_id);
+        if (!$order) {
+            return [];
+        }
+
+        // Get transactions the same way as ShowRetinaEcomBasket
+        $transactions = $order->transactions()
+            ->whereIn('model_type', ['Product', 'Service'])
+            ->with(['asset.product'])
+            ->get();
+
+        $basketTransactions = [];
+        foreach ($transactions as $transaction) {
+            // Use product ID as key to match with favorites data (products.id)
+            $productId = $transaction->asset?->product?->id;
+            
+            if ($productId) {
+                $basketTransactions[$productId] = [
+                    'id' => $transaction->id,
+                    'quantity_ordered' => (int) $transaction->quantity_ordered,
+                    'asset_id' => $transaction->asset_id,
+                    'product_id' => $productId,
+                ];
+            }
+        }
+
+        return $basketTransactions;
+    }
+
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
@@ -44,6 +80,8 @@ class IndexRetinaEcomFavourites extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $productFavorites, ActionRequest $request): Response
     {
+        $basketTransactions = $this->getBasketTransactions($this->customer);
+
         return Inertia::render(
             'Ecom/Favourites',
             [
@@ -54,6 +92,7 @@ class IndexRetinaEcomFavourites extends RetinaAction
                     'icon'          => 'fal fa-heart',
                 ],
                 'data'     => CustomerFavouritesResource::collection($productFavorites),
+                'basketTransactions' => $basketTransactions,
 
             ]
         )->table($this->tableStructure($this->customer));
