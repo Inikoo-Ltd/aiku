@@ -202,6 +202,8 @@ const getTarget = (item) => {
                 :activeCustomSubIndex
                 :activeCustomTopSubIndex
                 :changeActiveSubIndex="(index) => activeSubIndex = index"
+                :changeActiveCustomSubIndex="(index) => activeCustomSubIndex = index"
+                :changeActiveCustomTopSubIndex="(index) => activeCustomTopSubIndex = index"
             />
 
             <!-- Sidebar Menu: Desktop -->
@@ -211,6 +213,7 @@ const getTarget = (item) => {
                 :customMenusTop
                 :customTopSubDepartments
                 :customMenusBottom
+                :customSubDepartments
                 :activeIndex
                 :activeCustomIndex
                 :activeCustomTopIndex
@@ -228,7 +231,8 @@ const getTarget = (item) => {
                 :activeCustomSubIndex
                 :activeCustomTopSubIndex
                 :changeActiveSubIndex="(index) => activeSubIndex = index"
-
+                :changeActiveCustomSubIndex="(index) => activeCustomSubIndex = index"
+                :changeActiveCustomTopSubIndex="(index) => activeCustomTopSubIndex = index"
             />
 
         </Drawer>
