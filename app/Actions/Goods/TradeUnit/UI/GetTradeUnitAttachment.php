@@ -10,7 +10,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\Traits\HasBucketImages;
+use App\Actions\Traits\HasBucketAttachment;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -19,28 +19,25 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 class GetTradeUnitAttachment
 {
     use AsObject;
-    use HasBucketImages;
+    use HasBucketAttachment;
 
     public function handle(TradeUnit $tradeUnit): array
     {
         return [
             'id'                  => $tradeUnit->id,
-            'bucket_images'       => $tradeUnit->bucket_images,
-            'images_category_box' => $this->getImagesData($tradeUnit),
-            'attachmentRoutes' => [
-                'attachRoute' => [
-                    'name'       => 'grp.models.trade-unit.attachment.attach',
-                    'parameters' => [
-                        'tradeUnit' => $tradeUnit->id,
-                    ]
-                ],
-                'detachRoute' => [
-                    'name'       => 'grp.models.trade-unit.attachment.detach',
-                    'parameters' => [
-                        'tradeUnit' => $tradeUnit->id,
-                    ],
-                    'method'     => 'delete'
+            'attachment_category_box' => $this->getAttachmentData($tradeUnit),
+            'attachRoute' => [
+                'name'       => 'grp.models.trade-unit.attachment.attach',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
                 ]
+            ],
+            'detachRoute' => [
+                'name'       => 'grp.models.trade-unit.attachment.detach',
+                'parameters' => [
+                    'tradeUnit' => $tradeUnit->id,
+                ],
+                'method'     => 'delete'
             ],
             'attachments'              => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))->resolve()
 
