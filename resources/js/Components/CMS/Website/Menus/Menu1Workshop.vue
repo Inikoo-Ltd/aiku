@@ -50,7 +50,7 @@ const isCollapsedOpen = ref(false);
 const hoveredNavigation = ref<any>(null);
 const loadingItem = ref<string | null>(null);
 
-const debSetCollapsedTrue = debounce(() => (isCollapsedOpen.value = true), 800);
+const debSetCollapsedTrue = debounce(() => (isCollapsedOpen.value = true), 150);
 const debSetCollapsedFalse = debounce(() => (isCollapsedOpen.value = false), 400);
 
 const onMouseEnterMenu = (navigation: any) => {
@@ -113,6 +113,7 @@ const getNavigationIcon = (navigation: any) => {
         ...getStyles(fieldValue?.container?.properties, screenType),
     }">
         <div @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
+            @mouseenter="() => (debSetCollapsedTrue(), debSetCollapsedFalse.cancel())"
             :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
             class="relative flex justify-between items-center gap-x-2 px-4">
             <!-- All categories -->
@@ -170,8 +171,8 @@ const getNavigationIcon = (navigation: any) => {
 
             <!-- Sub Navigation -->
             <Collapse v-if="hoveredNavigation?.subnavs" :when="isCollapsedOpen" as="div"
-                class="z-[49] absolute left-0 top-full bg-white border border-gray-300 w-full shadow-lg"
-                :class="isCollapsedOpen ? '' : 'border-t-0'"
+                class="z-[49] absolute left-0 top-full -translate-y-0.5 bg-white border w-full shadow-lg"
+                :class="isCollapsedOpen ? 'border-gray-300 ' : 'border-t-0'"
                 :style="getStyles(fieldValue?.container?.properties, screenType)">
                 <div class="grid grid-cols-4 gap-8 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">

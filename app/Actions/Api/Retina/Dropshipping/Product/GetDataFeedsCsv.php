@@ -10,10 +10,9 @@
 
 namespace App\Actions\Api\Retina\Dropshipping\Product;
 
-use App\Actions\Retina\Dropshipping\Portfolio\PortfoliosCsvOrExcelExport;
+use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\RetinaApiAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Maatwebsite\Excel\Facades\Excel;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -21,18 +20,13 @@ class GetDataFeedsCsv extends RetinaApiAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel): BinaryFileResponse
     {
-        $customer = $customerSalesChannel->customer;
-        $fileName = 'data_feed_' . $customer->slug . '_' . now()->format('Ymd') . '.csv';
-
-        return Excel::download(new PortfoliosCsvOrExcelExport($customer, $customerSalesChannel), $fileName, null, [
-            'Content-Type' => 'text/csv',
-            'Cache-Control' => 'max-age=0',
-        ]);
+        return DownloadPortfoliosCSV::make()->handle($customerSalesChannel);
     }
 
-    public function asController(ActionRequest $request)
+    public function asController(ActionRequest $request): BinaryFileResponse
     {
         $this->initialisationFromDropshipping($request);
+
         return $this->handle($this->customerSalesChannel);
     }
 }

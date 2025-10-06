@@ -577,33 +577,40 @@ const toggleElipsis = (e: Event) => {
 
 const isOpenModalProforma = ref(false)
 const selectedCheck = ref<string[]>([])
-const onClickProforma = async () => {
-    const aaa = selectedCheck.value?.reduce((acc, curr) => {
+const compSelectedDeck = computed(() => {
+    const xxx =  selectedCheck.value?.reduce((acc, curr) => {
         acc[curr] = true;
         return acc;
-    }, {});
+    }, {})
+
+    return route(props.proforma_invoice.route_download_pdf.name, {...props.proforma_invoice.route_download_pdf.parameters, ...xxx})
+})
+// const onClickProforma = async () => {
+//     const aaa = ;
     
-    // Section: Submit
-    const url = route(props.proforma_invoice.route_download_pdf.name, props.proforma_invoice.route_download_pdf.parameters)
-    try {
-        const response = await axios.get(url, aaa)
-        const blob = new Blob([response.data], { type: response.headers['content-type'] })
-        const link = document.createElement('a')
-        link.href = window.URL.createObjectURL(blob)
-        link.download = 'proforma-invoice.pdf'
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-    } catch (e) {
-        notify({
-            title: trans("Something went wrong"),
-            text: trans("Failed to download proforma invoice"),
-            type: "error"
-        })
-    }
+//     // Section: Submit
+//     const url = route(props.proforma_invoice.route_download_pdf.name, {...props.proforma_invoice.route_download_pdf.parameters, ...aaa})
+//     console.log('url', url)
+
+//     try {
+//         const response = await axios.get(url, aaa)
+//         const blob = new Blob([response.data], { type: response.headers['content-type'] })
+//         const link = document.createElement('a')
+//         link.href = window.URL.createObjectURL(blob)
+//         link.download = 'proforma-invoice.pdf'
+//         document.body.appendChild(link)
+//         link.click()
+//         document.body.removeChild(link)
+//     } catch (e) {
+//         notify({
+//             title: trans("Something went wrong"),
+//             text: trans("Failed to download proforma invoice"),
+//             type: "error"
+//         })
+//     }
 
 
-}
+// }
 </script>
 
 <template>
@@ -721,6 +728,13 @@ const onClickProforma = async () => {
                                 </template>
                             </Popover>
 
+                            <Button
+                                v-if="proforma_invoice"
+                                @click="() => isOpenModalProforma = true"
+                                type="tertiary"
+                                :label="trans('Proforma Invoice')"
+                                icon="fal fa-download"
+                            />
 
                         </div>
                     </PopoverPrimevue>
@@ -1285,17 +1299,24 @@ const onClickProforma = async () => {
             <div class="flex flex-col gap-2">
                 <div>{{ trans("Select additional information to included:") }}</div>
                 <div v-for="check of proforma_invoice.check_list" :key="check.key" class="flex items-center gap-2">
-                    <Checkbox v-model="selectedCheck" :inputId="check.key" name="check" :value="check.value" />
-                    <label :for="check.value">{{ check.label }}</label>
+                    <Checkbox v-model="selectedCheck" :inputId="check.value" :name="check.value" :value="check.value" />
+                    <label :for="check.value" class="cursor-pointer">{{ check.label }}</label>
                 </div>
             </div>
 
-            <div @click="() => onClickProforma()" :href="route(proforma_invoice.route_download_pdf.name, proforma_invoice.route_download_pdf.parameters)" tarsget="_blank" rszel="noopener noreferrer" class="w-full block mt-6">
+            <a
+                aclick="() => onClickProforma()"
+                :href="compSelectedDeck"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="w-full block mt-6"
+                xdownload
+            >
                 <Button
                     full
                     :label="trans('Download Proforma Invoice')"
                 />
-            </div>
+            </a>
         </div>
     </Modal>
 
