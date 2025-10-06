@@ -319,7 +319,7 @@ class ShowOrder extends OrgAction
                 'data'          => OrderResource::make($order),
                 'delivery_note' => $deliveryNoteResource,
 
-                'proforma_invoice'  => app()->environment('local') ? [
+                'proforma_invoice'  => [
                     'check_list'       => [
                         [
                             'label' => __('Pro mode'),
@@ -370,7 +370,7 @@ class ShowOrder extends OrgAction
                             'order' => $order->slug
                         ]
                     ]
-                ] : null,
+                ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.order.attachment.attach',
