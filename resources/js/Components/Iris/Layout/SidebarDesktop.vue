@@ -10,7 +10,8 @@ library.add(faChevronRight, faExternalLink)
 
 const props = defineProps<{
     productCategories: {}
-    customMenusTop: {}[]
+    customMenusTop: {}
+    customTopSubDepartments: []
     customMenusBottom: {}
     activeIndex: {}
     activeCustomIndex: {}
@@ -30,6 +31,8 @@ const props = defineProps<{
     activeCustomTopSubIndex: {}
     changeActiveSubIndex: Function
 }>()
+
+// console.log(props.customMenusTop);
 
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -161,7 +164,7 @@ const layout = inject('layout', retinaLayoutStructure)
                 </div>
 
                 <!-- Custom Top Menus Subdepartments -->
-                <div v-if="activeCustomTopIndex !== null && customTopSubDepartments.length">
+                <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
                     <div v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex"
                         class="p-2 px-4 flex items-center justify-between cursor-pointer"
                         :class="[
@@ -182,7 +185,7 @@ const layout = inject('layout', retinaLayoutStructure)
                 </div>
 
                 <!-- No subdepartments message -->
-                <div v-if="(activeIndex !== null && !sortedSubDepartments.length) || (activeCustomIndex !== null && !customSubDepartments.length) || (activeCustomTopIndex !== null && !customTopSubDepartments.length)"
+                <div v-if="(activeIndex !== null && !sortedSubDepartments?.length) || (activeCustomIndex !== null && !customSubDepartments?.length) || (activeCustomTopIndex !== null && !customTopSubDepartments?.length)"
                     class="p-2 text-gray-400 italic">
                     {{ trans("No subdepartments available") }}
                 </div>
@@ -211,7 +214,7 @@ const layout = inject('layout', retinaLayoutStructure)
                 </div>
 
                 <!-- Custom Menus Families -->
-                <div v-if="activeCustomSubIndex !== null && customFamilies.length">
+                <div v-if="activeCustomSubIndex !== null && customFamilies?.length">
                     <div v-for="(child, cIndex) in customFamilies" :key="cIndex"
                         class="p-2 px-4  cursor-pointer hover:bg-gray-50">
                         <a v-if="child.url !== null" :href="getHref(child)" :target="getTarget(child)" >
@@ -222,7 +225,7 @@ const layout = inject('layout', retinaLayoutStructure)
                 </div>
 
                 <!-- Custom Top Menus Families -->
-                <div v-if="activeCustomTopSubIndex !== null && customTopFamilies.length">
+                <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
                     <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"
                         class="p-2 px-4  cursor-pointer hover:bg-gray-50">
                         <a v-if="child.url !== null" :href="getHref(child)" :target="getTarget(child)">

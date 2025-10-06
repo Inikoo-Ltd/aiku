@@ -30,12 +30,20 @@ const props = defineProps<{
     product: Product
 }>()
 
+// console.log(props.product);
+
 // Inject locale
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
 
 const isLoading = ref(false)
+const navigateToProduct = () => {
+    if (props.product.url) {
+        router.visit(props.product.url)
+    }
+}
+
 const toggleFavorite = (product: Product) => {
     if (product.is_not_favourite) {
         // Add to favorites
@@ -110,6 +118,7 @@ const toggleFavorite = (product: Product) => {
 
 <template>
     <article
+        @click="navigateToProduct"
         class="bg-white py-2 px-4 border rounded hover:shadow transition-shadow relative cursor-pointer"
     >
         <!-- Favorite Button -->
