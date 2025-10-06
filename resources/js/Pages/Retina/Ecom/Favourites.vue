@@ -18,7 +18,14 @@ const props = defineProps<{
 	data: {}
 	title: string
 	pageHead: {}
+	basketTransactions?: Record<string, {
+		id: string
+		quantity_ordered: number
+		asset_id: number
+	}>
 }>()
+
+// console.log(props);
 
 </script>
 
@@ -29,6 +36,7 @@ const props = defineProps<{
 	<!-- Pass the data to GridProducts component -->
 	<GridProducts 
 		:resource="data" 
+		:basket-transactions="basketTransactions"
 		:preserve-scroll="true"
 		class="mt-5"
 	/>

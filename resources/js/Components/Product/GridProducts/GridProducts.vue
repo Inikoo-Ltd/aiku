@@ -92,7 +92,14 @@ const props = defineProps({
         },
         required: false,
     },
+    basketTransactions: {
+        type: Object,
+        default: () => ({}),
+        required: false,
+    },
 })
+
+// console.log(props);
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -186,6 +193,16 @@ const compResourceMeta = computed(() => {
 const hasData = computed(() => {
     return compResourceData.value.length > 0 || compResourceMeta.value.total > 0
 })
+
+/**
+ * Get existing transaction for a product
+ */
+const getExistingTransaction = (product: Product) => {
+    if (!props.basketTransactions || !product.id) {
+        return null
+    }
+    return props.basketTransactions[product.id] || null
+}
 
 // ============================================================================
 // SEARCH & FILTER FUNCTIONS
@@ -513,7 +530,11 @@ const toggleFavorite = (product: Product): void => {
                 <!-- Product Cards -->
                 <div v-for="(item, index) in compResourceData" :key="`product-${index}`">
                     <slot name="card" :item="item">
-                        <ProductCard :product="item" @toggle-favorite="toggleFavorite" />
+                        <ProductCard 
+                            :product="item" 
+                            :existing-transaction="getExistingTransaction(item)"
+                            @toggle-favorite="toggleFavorite" 
+                        />
                     </slot>
                 </div>
 
