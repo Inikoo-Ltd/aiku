@@ -35,9 +35,9 @@ class PdfProformaInvoice extends OrgAction
     public function handle(Order $order, array $options): Response
     {
 
-        $locale=$order->shop->language->code;
+        $locale = $order->shop->language->code;
         app()->setLocale($locale);
-        
+
         try {
             $totalItemsNet = $order->total_amount;
             $totalShipping = $order->shipping_amount ?? 0;

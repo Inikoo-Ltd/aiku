@@ -145,8 +145,8 @@ class UpdateCustomer extends OrgAction
 
 
         if (Arr::hasAny($changes, ['is_re'])) {
-            foreach ($customer->orders()->where('state',OrderStateEnum::CREATING)->whereNull('orders.source_id')->get() as $order) {
-                $order->update(['is_re'=>$customer->is_re]);
+            foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->whereNull('orders.source_id')->get() as $order) {
+                $order->update(['is_re' => $customer->is_re]);
                 ResetOrderTaxCategory::run($order);
             }
 

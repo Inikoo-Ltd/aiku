@@ -26,13 +26,11 @@ class SaveCustomerInAurora implements ShouldBeUnique
     }
 
 
-
     /**
      * @throws \Illuminate\Http\Client\ConnectionException
      */
     public function handle(Customer $customer): void
     {
-
         if ($customer->source_id) {
             return;
         }
@@ -40,21 +38,45 @@ class SaveCustomerInAurora implements ShouldBeUnique
         $apiUrl = $this->getApiUrl($customer->organisation);
 
 
+        $shopSourceId = explode(':', $customer->shop->source_id);
 
 
-        Http::withHeaders([
+        $data = [
+            'action'                   => 'create_customer',
+            'contact_name'             => $customer->contact_name,
+            'company_name'             => $customer->company_name,
+            'phone'                    => $customer->phone,
+            'email'                    => $customer->email,
+            'identity_document_number' => $customer->identity_document_number,
+            'tax_number'               => $customer->taxNumber?->number,
+            'send_newsletter'          => $customer->comms->is_subscribed_to_newsletter,
+            'send_marketing'           => $customer->comms->is_subscribed_to_marketing,
+            'address_line_1'           => $customer->address->address_line_1,
+            'address_line_2'           => $customer->address->address_line_2,
+            'sorting_code'             => $customer->address->sorting_code,
+            'postal_code'              => $customer->address->postal_code,
+            'dependent_locality'       => $customer->address->dependent_locality,
+            'locality'                 => $customer->address->locality,
+            'administrative_area'      => $customer->address->administrative_area,
+            'country_code'             => $customer->address->country_code,
+            'store_key'                => $shopSourceId[1],
+            'aiku_id'                  => $customer->id,
+            'picker_name'              => 'customer'
+
+        ];
+
+        
+        $response = Http::withHeaders([
             'secret' => $this->getApiToken($customer->organisation),
-        ])->withQueryParameters(
-            [
+        ])->withQueryParameters($data)->get($apiUrl);
 
-            ]
-        )->get($apiUrl);
+        dd($response->json());
     }
 
 
     public function getCommandSignature(): string
     {
-        return 'customer:aurora_save {customerID? : The ID of the customer to save in Aurora (optional, processes all pickings if not provided)}';
+        return 'customer:aurora_save {customerID? : The ID of the customer to save in Aurora (optional, processes all customers if not provided)}';
     }
 
     /**

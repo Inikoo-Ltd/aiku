@@ -18,7 +18,7 @@ class ResetOrderTaxCategory
     use asAction;
 
 
-    public function handle(Order $order, Command $command=null): Order
+    public function handle(Order $order, Command $command = null): Order
     {
         $customer = $order->customer;
         if ($customer) {
