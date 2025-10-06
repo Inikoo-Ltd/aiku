@@ -104,6 +104,7 @@ const props = defineProps<{
 
     data?: {
         data: {
+            state: string
             is_premium_dispatch: boolean
             has_extra_packing: boolean
             has_insurance: boolean
@@ -611,6 +612,10 @@ const compSelectedDeck = computed(() => {
 
 
 // }
+
+const isShowProforma = computed(() => {
+    return props.proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)
+})
 </script>
 
 <template>
@@ -664,15 +669,17 @@ const compSelectedDeck = computed(() => {
         <template #other>
 
 
-            <div v-if="!props.readonly" class="flex">
+            <div v-if="!props.readonly || isShowProforma" class="flex">
                 <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach" icon="upload" />
 
-                <div
-                    v-if="!notes?.note_list?.some(item => !!(item?.note?.trim())) || props.data?.data?.state === 'dispatched'">
+                <div>
+                    <!-- Button: icon ellipsis -->
                     <button @click="toggleElipsis" class="cursor-pointer "
                         :class="'text-gray-400 hover:text-indigo-500'">
                         <FontAwesomeIcon :icon="faEllipsisH" class="text-4xl" fixed-width aria-hidden="true" />
                     </button>
+
+                    <!-- Popover: on click ellipsis -->
                     <PopoverPrimevue ref="ellipsis">
                         <div class="flex flex-col gap-2">
                             <!-- Button: Undispatched -->
@@ -729,7 +736,7 @@ const compSelectedDeck = computed(() => {
                             </Popover>
 
                             <Button
-                                v-if="proforma_invoice"
+                                v-if="proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)"
                                 @click="() => isOpenModalProforma = true"
                                 type="tertiary"
                                 :label="trans('Proforma Invoice')"
@@ -1032,7 +1039,7 @@ const compSelectedDeck = computed(() => {
 
 
                     <!-- Field: Invoices -->
-                    <div v-if="props.box_stats?.invoices" class="pl-1 mt-1 flex items-start w-full flex-none justify-between gap-x-1">
+                    <div v-if="props.box_stats?.invoices?.length" class="pl-1 mt-1 flex items-start w-full flex-none justify-between gap-x-1">
                         <div v-tooltip="trans('Invoices')" class="flex-none mt-1">
                             <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
@@ -1043,7 +1050,7 @@ const compSelectedDeck = computed(() => {
                                 <div
                                     class="flex items-center gap-3 gap-x-1.5  cursor-pointer">
                                     <Link
-                                        :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)" class="text-gray-500 primaryLink" v-tooltip="trans('Invoice')">
+                                        :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)" class="text-gray-500 secondaryLink" v-tooltip="trans('Invoice')">
                                         {{ invoice?.reference }}
                                     </Link>
                                 </div>
