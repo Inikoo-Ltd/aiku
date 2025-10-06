@@ -147,7 +147,7 @@ class StoreMasterProductCategory extends GrpAction
                     table: 'master_product_categories',
                     extraConditions: [
                         ['column' => 'master_shop_id', 'value' => $this->masterShop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],

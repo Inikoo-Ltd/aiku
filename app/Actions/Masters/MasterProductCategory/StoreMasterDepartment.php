@@ -45,7 +45,7 @@ class StoreMasterDepartment extends OrgAction
                     table: 'master_product_categories',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],

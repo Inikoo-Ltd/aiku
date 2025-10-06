@@ -150,7 +150,7 @@ class StoreRentalAgreement extends OrgAction
                     table: 'web_users',
                     extraConditions: [
                         ['column' => 'website_id', 'value' => $this->shop->website->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ];
@@ -162,7 +162,7 @@ class StoreRentalAgreement extends OrgAction
                     table: 'web_users',
                     extraConditions: [
                         ['column' => 'website_id', 'value' => $this->shop->website->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ];

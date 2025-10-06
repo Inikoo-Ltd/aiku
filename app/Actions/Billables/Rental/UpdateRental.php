@@ -62,15 +62,7 @@ class UpdateRental extends OrgAction
 
         return $rental;
     }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return true; //TODO: Fix Auth
-    }
+    
 
     public function rules(): array
     {
@@ -85,7 +77,7 @@ class UpdateRental extends OrgAction
                     table: 'rentals',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->rental->id, 'operator' => '!=']
                     ]
                 ),
