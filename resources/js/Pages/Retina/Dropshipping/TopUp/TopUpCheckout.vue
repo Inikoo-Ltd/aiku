@@ -14,6 +14,7 @@ import { loadCheckoutWebComponents } from "@checkout.com/checkout-web-components
 import { faSpinner } from "@fal"
 import axios from "axios"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { CheckoutTranslations } from "@/Composables/Unique/CheckoutFlowTranslation"
 
 const props = defineProps<{
     title: string,
@@ -125,7 +126,8 @@ onMounted(async () => {
         },
         appearance: {
             colorAction: "rgb(15, 22, 38)"
-        }
+        },
+        translations: CheckoutTranslations
     })
 
     const flowComponent = checkout.create("flow")
