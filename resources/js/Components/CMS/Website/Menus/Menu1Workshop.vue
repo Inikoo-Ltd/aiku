@@ -2,7 +2,17 @@
 import { Collapse } from "vue-collapsed";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faChevronRight, faSignOutAlt, faShoppingCart, faSearch, faChevronDown, faTimes, faPlusCircle, faUserCircle } from "@fas";
+import {
+    faChevronRight,
+    faSignOutAlt,
+    faShoppingCart,
+    faSearch,
+    faChevronDown,
+    faTimes,
+    faPlusCircle,
+    faUserCircle,
+    faSpinner
+} from "@fas";
 import { faHeart } from "@far";
 import { faBars, faChevronLeft, faChevronRight as falChevronRight } from "@fal";
 import { ref, inject, nextTick, onMounted } from "vue";
@@ -11,81 +21,109 @@ import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { debounce } from "lodash-es";
 import { trans } from "laravel-vue-i18n";
 
-library.add(faChevronLeft, falChevronRight, faChevronRight, faSignOutAlt, faShoppingCart, faHeart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faUserCircle);
+library.add(
+    faChevronLeft,
+    falChevronRight,
+    faChevronRight,
+    faSignOutAlt,
+    faShoppingCart,
+    faHeart,
+    faSearch,
+    faChevronDown,
+    faTimes,
+    faPlusCircle,
+    faBars,
+    faUserCircle,
+    faSpinner
+);
 
-const props = withDefaults(defineProps<{
-    fieldValue: {}
-    screenType: "mobile" | "tablet" | "desktop"
-}>(), {});
+const props = withDefaults(
+    defineProps<{
+        fieldValue: {};
+        screenType: "mobile" | "tablet" | "desktop";
+    }>(),
+    {}
+);
 
 const layout = inject("layout", layoutStructure);
-;
-
 const isCollapsedOpen = ref(false);
-const debSetCollapsedTrue = debounce(() => {
-    isCollapsedOpen.value = true;
-}, 150);
+const hoveredNavigation = ref<any>(null);
+const loadingItem = ref<string | null>(null);
 
-const debSetCollapsedFalse = debounce(() => {
-    isCollapsedOpen.value = false;
-}, 400);
+const debSetCollapsedTrue = debounce(() => (isCollapsedOpen.value = true), 150);
+const debSetCollapsedFalse = debounce(() => (isCollapsedOpen.value = false), 400);
 
-const onMouseEnterMenu = (navigation: {}, idxNavigation: number) => {
+const onMouseEnterMenu = (navigation: any) => {
     debSetCollapsedTrue();
     hoveredNavigation.value = navigation;
-
 };
 
-const hoveredNavigation = ref(null);
+// Spinner logic for main nav
+const onClickNavigation = (navigation: any) => {
+    if (!navigation?.link?.href) return;
+    loadingItem.value = navigation.id || navigation.label;
+    setTimeout(() => (window.location.href = navigation.link.href), 600);
+};
 
-const _scrollContainer = ref(null);
+// Spinner logic for subnav
+const onClickSubnav = (link: any) => {
+    if (!link?.link?.href) return;
+    loadingItem.value = link.id || link.label;
+    setTimeout(() => (window.location.href = link.link.href), 600);
+};
+
+// Scroll logic
+const _scrollContainer = ref<HTMLElement | null>(null);
 const isAbleScrollToRight = ref(false);
 const isAbleScrollToLeft = ref(false);
 
 const checkScroll = () => {
     const el = _scrollContainer.value;
     if (!el) return;
-
-    // console.log('el.scrollLeft', el.scrollLeft, 'el.clientWidth', el.clientWidth, 'el.scrollWidth', el.scrollWidth)
-
     isAbleScrollToLeft.value = el.scrollLeft > 0;
-    isAbleScrollToRight.value = parseInt(el.scrollLeft) + 1 + el.clientWidth < el.scrollWidth;
-};
-const scrollRight = () => {
-    _scrollContainer.value?.scrollBy({ left: 200, behavior: "smooth" });
+    isAbleScrollToRight.value =
+        parseInt(el.scrollLeft.toString()) + 1 + el.clientWidth < el.scrollWidth;
 };
 
-const scrollLeft = () => {
-    _scrollContainer.value?.scrollBy({ left: -200, behavior: "smooth" });
-};
+const scrollRight = () => _scrollContainer.value?.scrollBy({ left: 200, behavior: "smooth" });
+const scrollLeft = () => _scrollContainer.value?.scrollBy({ left: -200, behavior: "smooth" });
+
 onMounted(() => {
     nextTick(() => {
         checkScroll();
-        // Optional: Recheck on window resize
         window.addEventListener("resize", checkScroll);
     });
 });
 
 const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
+// Unified icon resolver
+const getNavigationIcon = (navigation: any) => {
+    if (loadingItem.value === (navigation.id || navigation.label)) return "fas fa-spinner";
+    if (navigation.type === "multiple") return "fas fa-chevron-down";
+    return navigation.icon || null;
+};
 </script>
 
 <template>
-    <!-- Main Navigation -->
-    <div class="bg-white py-1 border-b border-0.5 border-gray-300" :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, ...getStyles(fieldValue?.container?.properties,screenType)}">
-        <div
-            @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
+    <div class="bg-white py-1 border-b border-0.5 border-gray-300" :style="{
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        margin: 0,
+        padding: 0,
+        ...getStyles(fieldValue?.container?.properties, screenType),
+    }">
+        <div @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
             @mouseenter="() => (debSetCollapsedTrue(), debSetCollapsedFalse.cancel())"
-            :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
-            class="relative xcontainerx flex  justify-between items-center gap-x-2 px-4">
-
+            :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
+            class="relative flex justify-between items-center gap-x-2 px-4">
             <!-- All categories -->
             <div v-if="layout.retina?.type !== 'fulfilment'" class="relative">
-                <div @click="() => {isOpenMenuMobile = true}" class="flex items-center gap-x-2 h-fit px-5 py-1  text-sm rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap ">
-                    <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400" fixed-width aria-hidden="true" :class="'text-[10px]'" />
+                <div @click="() => { isOpenMenuMobile = true }"
+                    class="flex items-center gap-x-2 h-fit px-5 py-1 text-sm rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap">
+                    <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400 text-[10px]" fixed-width
+                        aria-hidden="true" />
                     <span class="font-medium text-gray-600">{{ trans("All Categories") }}</span>
                 </div>
-
                 <Transition>
                     <div v-if="isAbleScrollToLeft"
                         class="bg-gradient-to-r from-white via-white to-transparent absolute -right-20 z-10 top-0 h-full w-16 pointer-events-none" />
@@ -93,82 +131,70 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
 
                 <Transition>
                     <div v-if="isAbleScrollToLeft" @click="() => scrollLeft()"
-                         class="w-6 h-6 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute -right-10 top-1/2 -translate-y-1/2 cursor-pointer text-inherit"
-                    >
-                        <FontAwesomeIcon icon="fal fa-chevron-left"  fixed-width aria-hidden="true" class="text-[8px]"/>
+                        class="w-6 h-6 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute -right-10 top-1/2 -translate-y-1/2 cursor-pointer text-inherit">
+                        <FontAwesomeIcon icon="fal fa-chevron-left" fixed-width aria-hidden="true" class="text-[8px]" />
                     </div>
                 </Transition>
             </div>
 
+            <!-- Scroll Gradient + Arrows -->
             <Transition>
                 <div v-if="isAbleScrollToRight"
                     class="bg-gradient-to-l from-white via-white to-transparent absolute right-8 z-10 top-0 h-full w-16 pointer-events-none" />
             </Transition>
-
             <Transition>
-                <div v-if="isAbleScrollToRight" @click="() => scrollRight()"
-                     class="w-6 h-6 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer text-inherit"
-                >
-                    <FontAwesomeIcon icon="fal fa-chevron-left" rotation="180"  fixed-width aria-hidden="true" class="text-[8px]" />
+                <div v-if="isAbleScrollToRight" @click="scrollRight"
+                    class="w-6 h-6 z-10 bg-gray-500 hover:bg-gray-700 text-white rounded-full flex items-center justify-center absolute right-4 top-1/2 -translate-y-1/2 cursor-pointer">
+                    <FontAwesomeIcon icon="fal fa-chevron-left" rotation="180" fixed-width class="text-[8px]" />
                 </div>
             </Transition>
 
-
-            <nav ref="_scrollContainer" @scroll="() => checkScroll()"
+            <!-- Main Navigation -->
+            <nav ref="_scrollContainer" @scroll="checkScroll"
                 class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide ml-5">
-
                 <template v-for="(navigation, idxNavigation) in fieldValue?.navigation" :key="idxNavigation">
-                    <a :href="navigation?.link?.href" :target="navigation?.link?.target"
-                        @mouseenter="() => (onMouseEnterMenu(navigation, idxNavigation))"
-                        amouseleave="() => onMouseLeaveMenu()"
+                    <a @click.prevent="onClickNavigation(navigation)" @mouseenter="() => onMouseEnterMenu(navigation)"
                         :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
-                                ? 'bg-gray-100 text-orange-500'
-                                : navigation?.link?.href
-                                    ? 'cursor-pointer hover:bg-gray-100 hover:text-orange-500'
-                                    : ''
-                            ">
-                        <FontAwesomeIcon v-if="navigation.icon" :icon="navigation.icon" class="mr-2" />
-
-                        <span xv-if="!navigation?.link?.href" class="text-center whitespace-nowrap">{{ navigation.label
-                            }}</span>
-
-                        <FontAwesomeIcon v-if="navigation.type == 'multiple'" :icon="faChevronDown"
-                            class="ml-2 text-[8px]" fixed-width />
-
+                            ? 'bg-gray-100 text-orange-500'
+                            : navigation?.link?.href
+                                ? 'cursor-pointer hover:bg-gray-100 hover:text-orange-500'
+                                : ''">
+                        <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
+                        <div>
+                            <FontAwesomeIcon v-if="getNavigationIcon(navigation)" :icon="getNavigationIcon(navigation)"
+                                :spin="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
+                        </div>
                     </a>
                 </template>
             </nav>
 
+            <!-- Sub Navigation -->
             <Collapse v-if="hoveredNavigation?.subnavs" :when="isCollapsedOpen" as="div"
                 class="z-[49] absolute left-0 top-full -translate-y-0.5 bg-white border w-full shadow-lg"
                 :class="isCollapsedOpen ? 'border-gray-300 ' : 'border-t-0'"
-                :style="getStyles(fieldValue?.container?.properties, screenType)" >
-                <div class="grid grid-cols-4 gap-3 p-6">
+                :style="getStyles(fieldValue?.container?.properties, screenType)">
+                <div class="grid grid-cols-4 gap-8 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
-                        <div v-if="!subnav?.link?.href && subnav.title"
-                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, fontWeight : 600, ...getStyles(fieldValue?.sub_navigation?.properties, screenType) }"
-                            class="text-gray-700">{{ subnav.title }}</div>
-                        <a v-if="subnav?.link?.href && subnav.title" :href="subnav?.link?.href"
-                            :target="subnav?.link?.target"
-                            :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, fontWeight : 600, ...getStyles(fieldValue?.sub_navigation?.properties, screenType)}"
-                            class="font-semibold text-gray-700">{{ subnav.title }}</a>
-                        <!-- Sub-navigation Links -->
-                        <div class="flex flex-col gap-y-3">
-                            <div v-for="link in subnav.links" :key="link.url" class="flex items-center gap-x-3">
-                                <FontAwesomeIcon :icon="link.icon || faChevronRight"
-                                    class="text-[10px] text-gray-400" />
-                                <a :href="link?.link?.href" :target="link?.link?.target"
-                                    :style="getStyles(fieldValue?.sub_navigation_link?.properties, screenType)"
-                                    class="text-gray-500 hover:text-orange-500 hover:underline transition duration-200">
-                                    {{ link.label }}
-                                </a>
-                            </div>
-                        </div>
+                        <component :is="subnav?.link?.href ? 'a' : 'div'" :href="subnav?.link?.href"
+                            :target="subnav?.link?.target" :style="{
+                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                                margin: 0,
+                                padding: 0,
+                                fontWeight: 600,
+                                ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
+                            }" class="font-semibold text-gray-700 transition flex items-center gap-x-3"
+                            @click.prevent="subnav?.link?.href && onClickSubnav(subnav)">
+                            <span>{{ subnav.title }}</span>
+                            <!-- Spinner / Icon -->
+                            <FontAwesomeIcon v-if="loadingItem === (subnav.id || subnav.label)" icon="fas fa-spinner"
+                                spin class="text-[10px] text-orange-500" />
+                            <FontAwesomeIcon v-else-if="subnav.icon" :icon="subnav.icon"
+                                class="text-[10px] text-gray-400" />
+                        </component>
                     </div>
                 </div>
             </Collapse>
-
         </div>
     </div>
 </template>
@@ -178,7 +204,6 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
     max-width: 1980px;
 }
 
-/* Optional: Hide scrollbars on some browsers */
 .scrollbar-hide::-webkit-scrollbar {
     display: none;
 }
