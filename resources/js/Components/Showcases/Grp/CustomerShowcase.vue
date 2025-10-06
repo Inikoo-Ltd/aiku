@@ -31,7 +31,7 @@ import Tag from "@/Components/Tag.vue"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import ButtonPrimeVue from "primevue/button"
 import ToggleSwitch from "primevue/toggleswitch"
-import {Link} from "@inertiajs/vue3"
+import {Link, router} from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import CountUp from "vue-countup-v3"
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
@@ -64,6 +64,11 @@ interface Customer {
     address: Address
     is_dropshipping: boolean
     email_subscriptions?: {
+        update_route: {
+            method: string
+            name: string
+            parameters: number[]
+        }
         suspended: {
             label: string
             is_suspended: boolean
@@ -73,6 +78,7 @@ interface Customer {
         subscriptions: {
             [key: string]: {
                 label: string
+                field: string
                 is_subscribed: boolean
                 unsubscribed_at: string | null
             }
@@ -173,10 +179,34 @@ const toggleEditEmailSubscriptions = () => {
 }
 
 // Function to handle individual subscription toggle
-const toggleSubscription = (subscriptionKey: string, value: boolean) => {
+const toggleSubscription = async (subscriptionKey: string, value: boolean) => {
     localSubscriptions.value[subscriptionKey] = value
-    // Here you can add API call to update the server
-    console.log(`Subscription ${subscriptionKey} changed to:`, value)
+    
+    // Get the field name for the subscription
+    const subscription = props.data.customer.email_subscriptions?.subscriptions[subscriptionKey]
+    if (!subscription || !props.data.customer.email_subscriptions?.update_route) {
+        console.error('Subscription or update route not found')
+        return
+    }
+    
+    const updateRoute = props.data.customer.email_subscriptions.update_route
+    const fieldName = subscription.field
+    
+    try {
+        // Make API call to update subscription status
+        await router.patch(
+            route(updateRoute.name, updateRoute.parameters),
+            {
+                [fieldName]: value
+            }
+        )
+        
+        console.log(`Subscription ${subscriptionKey} updated successfully to:`, value)
+    } catch (error) {
+        console.error('Failed to update subscription:', error)
+        // Revert the local state on error
+        localSubscriptions.value[subscriptionKey] = !value
+    }
 }
 
 
