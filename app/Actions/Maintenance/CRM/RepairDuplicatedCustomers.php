@@ -45,7 +45,10 @@ class RepairDuplicatedCustomers
                         Customer::where('email', $customer->email)->where('shop_id',$customer->shop_id)->get()->each(function ($customer) {
                             $countWebUsers = DB::table('web_users')->where('customer_id', $customer->id)->count();
                             $orders=DB::table('orders')->where('customer_id', $customer->id)->count();
-                           print  ">> ".$customer->id."  $customer->slug  WU:$countWebUsers  O:$orders  ; $customer->source_id | $customer->post_source_id   \n";
+                            $portfolios=DB::table('portfolios')->where('customer_id', $customer->id)->count();
+                            $csc=DB::table('customer_sales_channels')->where('customer_id', $customer->id)->count();
+                            $clients=DB::table('customer_clients')->where('customer_id', $customer->id)->count();
+                           print  ">> ".$customer->id."  $customer->slug  WU:$countWebUsers  O:$orders P: $portfolios CSC: $csc   CL: $clients ; $customer->source_id | $customer->post_source_id   \n";
 
                         });
 
