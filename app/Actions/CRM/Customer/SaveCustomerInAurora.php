@@ -12,6 +12,7 @@ use App\Actions\Dispatching\Picking\WithAuroraApi;
 use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -41,6 +42,13 @@ class SaveCustomerInAurora implements ShouldBeUnique
         $shopSourceId = explode(':', $customer->shop->source_id);
 
 
+        $customerAuroraId = null;
+        if ($customer->source_id) {
+            $customerSourceId = explode(':', $customer->source_id);
+            $customerAuroraId = $customerSourceId[1];
+        }
+
+
         $data = [
             'action'                   => 'create_customer',
             'contact_name'             => $customer->contact_name,
@@ -61,7 +69,9 @@ class SaveCustomerInAurora implements ShouldBeUnique
             'country_code'             => $customer->address->country_code,
             'store_key'                => $shopSourceId[1],
             'aiku_id'                  => $customer->id,
-            'picker_name'              => 'customer'
+            'picker_name'              => 'customer',
+            'created_at'               => $customer->created_at?->format('Y-m-d H:i:s'),
+            'customer_key'             => $customerAuroraId
 
         ];
 
@@ -70,7 +80,14 @@ class SaveCustomerInAurora implements ShouldBeUnique
             'secret' => $this->getApiToken($customer->organisation),
         ])->withQueryParameters($data)->get($apiUrl);
 
-        dd($response->json());
+
+
+        if (Arr::get($response, 'customer_key')) {
+            $customer->update(['post_source_id' => $customer->organisation->id.':'.$response['customer_key']]);
+        }
+
+
+        print_r($response->json());
     }
 
 
