@@ -26,7 +26,7 @@ import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { faExclamationTriangle, faExclamation, faStar, faBoxHeart, faShieldAlt } from '@fas'
+import { faExclamationTriangle, faExclamation, faStar, faBoxHeart, faShieldAlt, faEllipsisH } from '@fas'
 import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
 import { Currency } from '@/types/LayoutRules'
 import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
@@ -40,6 +40,12 @@ import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { debounce } from 'lodash-es'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import EcomCheckoutSummary from '@/Components/Retina/Ecom/EcomCheckoutSummary.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { Checkbox, Popover as PopoverPrimevue } from 'primevue'
+import { notify } from '@kyvg/vue3-notification'
+import axios from 'axios'
+
+
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
@@ -104,6 +110,7 @@ const props = defineProps<{
     currency: Currency
     data?: {
         data: {
+            slug: string
             is_fully_paid: boolean
             unpaid_amount: number
             route_to_pay_unpaid?: routeType
@@ -187,10 +194,26 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
 
     <PageHeading :data="pageHead">
+        <template #other>
+            <a v-if="['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state || 'vcxzvcx')"
+                :href="route('retina.ecom.orders.proforma_invoice.download', {
+                    order: props.data?.data?.slug
+                })"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-block"
+            >
+                <Button
+                    
+                    type="tertiary"
+                    :label="trans('Proforma Invoice')"
+                    icon="fal fa-file-pdf"
+                />
+            </a>
+        </template>
     </PageHeading>
 
     <div v-if="data?.data?.has_insurance || data?.data?.is_premium_dispatch || data?.data?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">

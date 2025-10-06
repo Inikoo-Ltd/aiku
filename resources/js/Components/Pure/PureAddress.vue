@@ -30,7 +30,7 @@ const inAdministrativeAreas = (administrativeArea: string, countryID: number) =>
 
 // Return the fields of the selected country
 const addressFields = (countryID: number) => {
-    return props.options.countriesAddressData[countryID].fields
+    return props.options.countriesAddressData?.[countryID]?.fields
 }
 
 </script>
