@@ -10,7 +10,8 @@ library.add(faChevronRight, faExternalLink)
 
 const props = defineProps<{
     productCategories: {}
-    customMenusTop: {}[]
+    customMenusTop: {}
+    customTopSubDepartments: []
     customMenusBottom: {}
     activeIndex: {}
     activeCustomIndex: {}
@@ -30,6 +31,8 @@ const props = defineProps<{
     activeCustomTopSubIndex: {}
     changeActiveSubIndex: Function
 }>()
+
+// console.log(props.customMenusTop);
 
 const layout = inject('layout', retinaLayoutStructure)
 

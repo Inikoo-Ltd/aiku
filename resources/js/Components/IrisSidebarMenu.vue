@@ -209,6 +209,7 @@ const getTarget = (item) => {
                 v-else
                 :productCategories
                 :customMenusTop
+                :customTopSubDepartments
                 :customMenusBottom
                 :activeIndex
                 :activeCustomIndex
