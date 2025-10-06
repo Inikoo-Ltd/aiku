@@ -90,7 +90,7 @@ const onSubmitEditAddress = (address: Address) => {
             {{ title ?? trans("Edit delivery address") }}
         </div>
 
-        <div class="px-2 overflow-y-auto relative transition-all">
+        <div class="px-2 xoverflow-y-auto qmin-h-56 relative transition-all">
             <PureAddress v-model="selectedAddress" :options="addresses.options" xfieldLabel />
 
             <div class="mt-3 flex items-center">
@@ -99,7 +99,7 @@ const onSubmitEditAddress = (address: Address) => {
                 <InformationIcon :information="trans('If not checked, the changes will only apply to this order.')" class="ml-1 text-sm" />
             </div>
 
-            <div class="mt-6 flex justify-center">
+            <div class="mt-9 flex justify-center">
                 <Button @click="() => onSubmitEditAddress(selectedAddress)" :label="trans('Save')" :loading="isSubmitAddressLoading" full />
             </div>
         </div>
