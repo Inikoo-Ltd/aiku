@@ -120,7 +120,7 @@ const props = defineProps<{
 console.log(props);
 
 const locale = inject('locale', aikuLocaleStructure)
-// const layout = inject('layout')
+const layout = inject('layout')
 
 // console.log(layout);
 
