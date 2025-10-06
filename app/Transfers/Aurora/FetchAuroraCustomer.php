@@ -125,9 +125,7 @@ class FetchAuroraCustomer extends FetchAurora
             'is_subscribed_to_abandoned_cart'    => true,
             'is_subscribed_to_reorder_reminder'  => true,
             'is_subscribed_to_basket_low_stock'  => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
-            'is_subscribed_to_basket_reminder_1' => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
-            'is_subscribed_to_basket_reminder_2' => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
-            'is_subscribed_to_basket_reminder_3' => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
+            'is_subscribed_to_basket_reminder' => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
 
 
         ];
