@@ -65,7 +65,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
 
         ];
 
-        
+
         $response = Http::withHeaders([
             'secret' => $this->getApiToken($customer->organisation),
         ])->withQueryParameters($data)->get($apiUrl);
