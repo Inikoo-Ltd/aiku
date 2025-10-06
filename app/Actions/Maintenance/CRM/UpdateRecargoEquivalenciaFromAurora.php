@@ -18,7 +18,6 @@ use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -29,7 +28,7 @@ class UpdateRecargoEquivalenciaFromAurora
 
     public function handle(): void
     {
-        $organisation=Organisation::find(3);
+        $organisation = Organisation::find(3);
         $this->organisationSource = $this->getOrganisationSource($organisation);
         $this->organisationSource->initialisation($organisation);
 
@@ -41,11 +40,11 @@ class UpdateRecargoEquivalenciaFromAurora
                 foreach ($customers as $customer) {
 
                     $sourceData          = explode(':', $customer->source_id);
-                    $auroraCustomerKey=$sourceData[1];
+                    $auroraCustomerKey = $sourceData[1];
 
 
-                    $auroraCustomerData=DB::connection('aurora')->table('Customer Dimension')->where('Customer Key',$auroraCustomerKey)->first();
-                    if($auroraCustomerData) {
+                    $auroraCustomerData = DB::connection('aurora')->table('Customer Dimension')->where('Customer Key', $auroraCustomerKey)->first();
+                    if ($auroraCustomerData) {
                         $isRe = $auroraCustomerData->{'Customer Recargo Equivalencia'} == 'Yes';
                         UpdateCustomer::make()->action($customer, [
                             'is_re' => $isRe,
