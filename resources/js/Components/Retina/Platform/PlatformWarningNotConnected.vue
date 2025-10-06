@@ -52,7 +52,7 @@ const onClickReconnect = async () => {
             <div class="w-full sm:w-fit h-fit">
                 <Button v-if="customer_sales_channel?.reconnect_route?.name"
                     @click="() => onClickReconnect()" iconRight="fal fa-external-link"
-                    :label="trans('Connect')" zsize="xxs" type="secondary" full
+                    :label="trans('Try to reconnect')" zsize="xxs" type="secondary" full
                 />
             </div>
         </div>
