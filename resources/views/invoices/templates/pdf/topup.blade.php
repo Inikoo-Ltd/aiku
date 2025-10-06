@@ -1,6 +1,6 @@
 <html>
 <head>
-    <title>{{ $topup->slug }}</title>
+    <title>{{ $reference }}</title>
     <style>
         @page {
             size: 8.27in 11.69in; /* <length>{1,2} | auto | portrait | landscape */
@@ -124,8 +124,8 @@
                 </div>
             </td>
 
-            <td style="text-align: right;">{{ __('Proforma Number') }}<br/>
-                <b>{{ $topup->reference }}</b>
+            <td style="text-align: right;">{{ __('Topup Reference') }}<br/>
+                <b>{{ $reference }}</b>
             </td>
 
         </tr>
@@ -139,13 +139,8 @@
     <tr>
         <td>
             <h1>
-                {{__('Topup')}} {{ $topup->reference }}
+                {{__('Topup')}}
             </h1>
-        </td>
-        <td style="text-align: right">
-            <div>
-                {{ __('Date') }}: <b>{{ $topup->created_at->format('j F Y') }}</b>
-            </div>
         </td>
     </tr>
 </table>
@@ -153,30 +148,24 @@
     <tr>
         <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;">
             <div>
-                @if($hide_payment_status)
-                    <div>
-                        {{ __('Payment State') }}:
-                        <b>{{ $topup->pay_status->labels()[$topup->pay_status->value] }}</b>
-                    </div>
-                @endif
                 <div>
-                    {{ __('Customer') }}: <b>{{ $topup->customer['name'] }}</b>
-                    ({{ $topup->customer['reference'] }})
+                    {{ __('Customer') }}: <b>{{ $customer->name }}</b>
+                    ({{ $customer->reference }})
                 </div>
 
                 <div>
                     <span class="address_label">{{ __('Email') }}:</span> <span
-                        class="address_value">{{ $topup->customer['email'] }}</span>
+                        class="address_value">{{ $customer->email }}</span>
                 </div>
 
                 <div>
                     <span class="address_label">{{ __('Phone') }}:</span> <span
-                        class="address_value">{{ $topup->customer['phone'] }}</span>
+                        class="address_value">{{ $customer->phone }}</span>
                 </div>
-                @if($topup->tax_number  && $topup->tax_number_valid)
+                @if($customer->tax_number  && $customer->tax_number_valid)
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
-                            class="address_value">{{ $topup->tax_number }}</span>
+                            class="address_value">{{ $customer->tax_number }}</span>
                     </div>
                 @endif
             </div>
@@ -186,35 +175,7 @@
         </td>
     </tr>
 </table>
-<table width="100%" style="font-family: sans-serif;" cellpadding="10">
-    <tr>
-        @if($topup->address)
-            <td width="45%" style="border: 0.1mm solid #888888;"><span
-                    style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
-                <div>
-                    {{ $topup->address->address_line_1 }}
-                </div>
-                <div>
-                    {{ $topup->address->address_line_2 }}
-                </div>
-                <div>
-                    {{ $topup->address->administrative_area }}
-                </div>
-                <div>
-                    {{ $topup->address->locality }}
-                </div>
-                <div>
-                    {{ $topup->address->postal_code }}
-                </div>
-                <div>
-                    {{ $topup->address->country->name }}
-                </div>
-            </td>
-            <td width="10%">&nbsp;</td>
-        @endif
 
-    </tr>
-</table>
 <br>
 
 <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
@@ -225,54 +186,24 @@
     </tr>
     </thead>
     <tbody>
-    <tr>
-        <td style="text-align:right">{{ $topup->currency->symbol . $topup->amount }}</td>
-        <td style="text-align:left" colspan="2">{{ __('Topup to balance') }}</td>
-    </tr>
+    @foreach($topups as $topup)
+        <tr>
+            <td style="text-align:right">{{ $topup->currency->symbol . $topup->amount }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Topup to balance') }}</td>
+        </tr>
+    @endforeach
     </tbody>
 </table>
 
 <br>
 <br>
 
-@if($topup->payments->count() >0)
-    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
-        <tr class="title">
-            <td colspan="5">{{ __('Payments') }}</td>
-        </tr>
-
-        <tr class="title">
-            <td style="width:20%;text-align:left">{{ __('Method') }}</td>
-            <td style="text-align:right">{{ __('Date') }}</td>
-            <td style="text-align:left">{{ __('Status') }}</td>
-            <td style="text-align:left">{{ __('Reference') }}</td>
-            <td style="text-align:right; width:14%;">{{ __('Amount') }}</td>
-        </tr>
-
-        <tbody>
-        @foreach($topup->payments as $payment)
-            <tr class="@if($loop->last) last @endif">
-                <td style="text-align:left">
-                    {{ $payment->paymentAccount['name'] }}
-                </td>
-                <td style="text-align:right">
-                    {{ $payment->updated_at->format('F j, Y H:i a') }}
-                </td>
-                <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
-                <td style="text-align:left">{{ $payment->reference }}</td>
-                <td style="text-align:right">{{ $topup->currency->symbol . $payment->amount }}</td>
-            </tr>
-        @endforeach
-        </tbody>
-
-    </table>
-@endif
 <br>
 <br>
 
-@if($topup->footer)
+@if($shop->footer)
     <div>
-        {!! $topup->footer !!}
+        {!! $shop->footer !!}
     </div>
 @endif
 
