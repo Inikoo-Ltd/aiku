@@ -15,6 +15,7 @@ use App\Actions\Retina\Billing\UI\ShowRetinaEcomInvoice;
 use App\Actions\Retina\Ecom\Basket\UI\ShowRetinaEcomBasket;
 use App\Actions\Retina\Ecom\Checkout\UI\ShowRetinaEcomCheckout;
 use App\Actions\Retina\Ecom\Favourite\UI\IndexRetinaEcomFavourites;
+use App\Actions\Retina\Ecom\Orders\EcomPdfProformaInvoice;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\Retina\Ecom\Orders\ShowRetinaEcomOrder;
 use Illuminate\Support\Facades\Route;
@@ -39,4 +40,5 @@ Route::prefix('invoices')->name('invoices.')->group(function () {
 Route::prefix('orders')->name('orders.')->group(function () {
     Route::get('', IndexRetinaEcomOrders::class)->name('index');
     Route::get('{order}', ShowRetinaEcomOrder::class)->name('show');
+    Route::get('{order}/proforma-invoice', EcomPdfProformaInvoice::class)->name('proforma_invoice.download');
 });
