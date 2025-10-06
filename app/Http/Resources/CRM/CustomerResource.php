@@ -97,7 +97,7 @@ class CustomerResource extends JsonResource
             'email_subscriptions' => [
                 'update_route'  => [
                     'method'     => 'patch',
-                    'name'       => match (class_basename($request->user())) {
+                    'name'       => match (class_basename(request()->user())) {
                         WebUser::class => 'retina.models.customer_comms.update',
                         default => 'grp.models.customer_comms.update'
                     },
