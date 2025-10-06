@@ -12,6 +12,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { CheckoutTranslations } from "@/Composables/Unique/CheckoutFlowTranslation"
 library.add(faCopy)
 
 const props = defineProps<{
@@ -115,12 +116,13 @@ const hitWebhookAfterSuccess = async (paymentResponseId: string) => {
 
 const paymentResponseId = ref<string | null>(null)
 onMounted(async () => {
+    console.log('fff', layout?.iris?.website_i18n?.current_language?.code)
     // isLoading.value = true
     const checkout = await loadCheckoutWebComponents({
         paymentSession: props.data?.data,
         publicKey: props.data.public_key,
         environment: props.data.environment,
-        locale: props.data.locale,
+        locale: layout?.iris?.website_i18n?.current_language?.code,
         onReady: () => {
             console.log("onReady")
         },
@@ -140,7 +142,8 @@ onMounted(async () => {
         },
         appearance: {
             colorAction: 'rgb(15, 22, 38)',
-        }
+        },
+        translations: CheckoutTranslations
     })
     
     const flowComponent = checkout.create('flow');
