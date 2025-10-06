@@ -10,7 +10,7 @@ namespace App\Actions\Retina\Accounting\TopUp;
 
 use App\Actions\Accounting\Invoice\WithInvoicesExport;
 use App\Actions\RetinaAction;
-use App\Models\CRM\Customer;
+use App\Models\Accounting\TopUp;
 use Exception;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -19,21 +19,23 @@ use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Sentry;
 use Symfony\Component\HttpFoundation\Response;
 
-class PdfTopupPdf extends RetinaAction
+class SinglePdfTopupPdf extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
     use WithInvoicesExport;
 
 
-    public function handle(Customer $customer, array $options): Response
+    public function handle(TopUp $topUp, array $options): Response
     {
+        $customer = $topUp->customer;
+
         $locale = $customer->shop->language->code;
         app()->setLocale($locale);
 
         try {
             $config = [
-                'title'                  => 'Topup - ' . $customer->reference,
+                'title'                  => $topUp->reference,
                 'margin_left'            => 8,
                 'margin_right'           => 8,
                 'margin_top'             => 2,
@@ -46,7 +48,7 @@ class PdfTopupPdf extends RetinaAction
             $filename = $config['title'].'-'.now()->format('Y-m-d');
             $pdf      = PDF::loadView('invoices.templates.pdf.topup', [
                 'shop'                 => $customer->shop,
-                'topups'                => $customer->topUps,
+                'topups'                => $customer->topUps()->where('id', $topUp->id)->get(),
                 'reference'                => $config['title'],
                 'customer' => $customer
             ], [], $config);
@@ -55,17 +57,16 @@ class PdfTopupPdf extends RetinaAction
                 ->header('Content-Type', 'application/pdf')
                 ->header('Content-Disposition', 'inline; filename="'.$filename.'.pdf"');
         } catch (Exception $e) {
-            dd($e);
             Sentry::captureException($e);
 
             return response()->json(['error' => 'Failed to generate PDF'], 404);
         }
     }
 
-    public function asController(ActionRequest $request): Response
+    public function asController(TopUp $topUp, ActionRequest $request): Response
     {
         $this->initialisation($request);
 
-        return $this->handle($request->user()->customer, $this->validatedData);
+        return $this->handle($topUp, $this->validatedData);
     }
 }
