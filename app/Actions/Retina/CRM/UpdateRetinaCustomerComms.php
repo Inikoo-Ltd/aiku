@@ -10,20 +10,19 @@ namespace App\Actions\Retina\CRM;
 
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerComms;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateRetinaCustomerComms extends OrgAction
+class UpdateRetinaCustomerComms extends RetinaAction
 {
     use WithActionUpdate;
-    use WithCRMEditAuthorisation;
 
-    private Customer $customer;
 
-    public function handle(CustomerComms $customerComms, array $modelData, bool $updateAiku = true): CustomerComms
+    public function handle(CustomerComms $customerComms, array $modelData): CustomerComms
     {
         return UpdateCustomerComms::run($customerComms, $modelData);
     }
@@ -43,11 +42,8 @@ class UpdateRetinaCustomerComms extends OrgAction
 
     public function asController(ActionRequest $request): CustomerComms
     {
-        /** @var Customer $customer */
-        $customer = $request->user()->customer;
+        $this->initialisation($request);
 
-        $this->initialisationFromShop($customer->shop, $request);
-
-        return $this->handle($customer->comms, $this->validatedData);
+        return $this->handle($this->customer->comms, $this->validatedData);
     }
 }

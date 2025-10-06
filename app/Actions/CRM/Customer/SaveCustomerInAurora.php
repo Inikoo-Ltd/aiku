@@ -32,6 +32,8 @@ class SaveCustomerInAurora implements ShouldBeUnique
      */
     public function handle(Customer $customer): void
     {
+
+        return;
         if ($customer->source_id) {
             return;
         }
