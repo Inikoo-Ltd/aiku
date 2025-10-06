@@ -41,6 +41,7 @@ import { faExclamationCircle, faCheckCircle, faCheck, faTimes } from '@fas'
 import { faSpinnerThird } from '@fad'
 import { Tooltip } from 'floating-vue'
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import EmailSubscribetion from "@/Components/EmailSubscribetion.vue"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt)
 
@@ -151,63 +152,6 @@ const links = ref([
 const isModalBalanceDecrease = ref(false)
 const isModalBalanceIncrease = ref(false)
 
-// Section: Email Subscriptions Local State
-const localIsSuspended = ref(props.data.customer.email_subscriptions?.suspended?.is_suspended ?? false)
-const isEditingEmailSubscriptions = ref(false)
-
-// Local state for individual subscriptions
-const localSubscriptions = ref(
-    Object.keys(props.data.customer.email_subscriptions?.subscriptions || {}).reduce((acc, key) => {
-        acc[key] = props.data.customer.email_subscriptions?.subscriptions[key]?.is_subscribed ?? false
-        return acc
-    }, {} as Record<string, boolean>)
-)
-
-// Computed property for toggle switch value (inverted logic)
-const toggleSwitchValue = computed({
-    get: () => !localIsSuspended.value,
-    set: (value: boolean) => {
-        localIsSuspended.value = !value
-        // Here you can add API call to update the server
-        console.log('Email subscription suspended status changed to:', localIsSuspended.value)
-    }
-})
-
-// Function to toggle edit mode for email subscriptions
-const toggleEditEmailSubscriptions = () => {
-    isEditingEmailSubscriptions.value = !isEditingEmailSubscriptions.value
-}
-
-// Function to handle individual subscription toggle
-const toggleSubscription = async (subscriptionKey: string, value: boolean) => {
-    localSubscriptions.value[subscriptionKey] = value
-    
-    // Get the field name for the subscription
-    const subscription = props.data.customer.email_subscriptions?.subscriptions[subscriptionKey]
-    if (!subscription || !props.data.customer.email_subscriptions?.update_route) {
-        console.error('Subscription or update route not found')
-        return
-    }
-    
-    const updateRoute = props.data.customer.email_subscriptions.update_route
-    const fieldName = subscription.field
-    
-    try {
-        // Make API call to update subscription status
-        await router.patch(
-            route(updateRoute.name, updateRoute.parameters),
-            {
-                [fieldName]: value
-            }
-        )
-        
-        console.log(`Subscription ${subscriptionKey} updated successfully to:`, value)
-    } catch (error) {
-        console.error('Failed to update subscription:', error)
-        // Revert the local state on error
-        localSubscriptions.value[subscriptionKey] = !value
-    }
-}
 
 
 // Tax number validation helper functions
@@ -511,74 +455,10 @@ const getStatusText = (status: string, valid: boolean) => {
             </div>
 
             <!-- Email Subscriptions Section -->
-            <div v-if="data?.customer?.email_subscriptions"
-                class="mt-4 w-64 border border-gray-300 rounded-md p-3">
-                <div class="flex justify-between items-center mb-3">
-                    <h3 class="text-sm font-medium text-gray-900">{{ trans("Email Subscriptions") }}</h3>
-                    <!-- Edit Button -->
-                    <button 
-                        @click="toggleEditEmailSubscriptions"
-                        :style="{ color: layout.app.theme[0] }"
-                        class="p-1 rounded transition-colors duration-200"
-                        v-tooltip="isEditingEmailSubscriptions ? trans('Cancel Edit') : trans('Edit Email Subscriptions')"
-                    >
-                        <FontAwesomeIcon :icon="isEditingEmailSubscriptions ? faTimes : faPencil" class="text-sm" fixed-width />
-                    </button>
-                </div>
-
-                <!-- Suspended Status -->
-                <div v-if="data.customer.email_subscriptions.suspended"
-                    :class="`mb-3 flex items-center ${isEditingEmailSubscriptions ? 'justify-between' : 'justify-end'}`">
-                    <!-- Toggle Switch (only show when editing) -->
-                    <!-- <div v-if="isEditingEmailSubscriptions" class="flex items-center gap-3">
-                        <ToggleSwitch 
-                            v-model="toggleSwitchValue"
-                            :class="{
-                                'toggle-switch-active': !localIsSuspended,
-                                'toggle-switch-inactive': localIsSuspended
-                            }"
-                        />
-                        <span class="text-sm" :class="localIsSuspended ? 'text-red-600' : 'text-green-600'">
-                            {{ localIsSuspended ? trans('Suspended') : trans('Active') }}
-                        </span>
-                    </div> -->
-
-
-                </div>
-
-                <!-- Subscriptions List - Hidden when suspended -->
-                <div v-if="!localIsSuspended" class="space-y-2 overflow-hidden">
-                    <div v-for="(subscription, key) in data.customer.email_subscriptions.subscriptions" :key="key"
-                        class="flex items-center justify-between hover:bg-gray-50 rounded">
-                        <span class="text-sm text-gray-700">{{ subscription.label }}</span>
-
-                        <!-- Edit Mode: Toggle Switch -->
-                        <div v-if="isEditingEmailSubscriptions" class="flex items-center">
-                            <ToggleSwitch :modelValue="localSubscriptions[key]"
-                                @update:modelValue="(value) => toggleSubscription(key, value)" :class="{
-                                    'toggle-switch-active': localSubscriptions[key],
-                                    'toggle-switch-inactive': !localSubscriptions[key]
-                                }" v-tooltip="localSubscriptions[key] ? trans('Subscribed') : trans('Unsubscribed')" />
-                        </div>
-
-                        <!-- View Mode: Status Display -->
-                        <div v-else class="flex items-center">
-                            <FontAwesomeIcon :icon="subscription.is_subscribed ? faCheck : faTimes"
-                                :class="subscription.is_subscribed ? 'text-green-500' : 'text-red-500'"
-                                class="text-sm" />
-                            <span class="ml-1 text-xs"
-                                :class="subscription.is_subscribed ? 'text-green-600' : 'text-red-600'">
-                                {{ subscription.is_subscribed ? trans('Subscribed') : trans('Unsubscribed') }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Message when suspended -->
-                <div v-if="localIsSuspended" class="mt-3 p-2 bg-red-50 rounded text-center">
-                    <span class="text-xs text-red-600">{{ trans('All email communications are suspended') }}</span>
-                </div>
-            </div>
+            <EmailSubscribetion 
+                v-if="data?.customer?.email_subscriptions"
+                :emailSubscriptions="data.customer.email_subscriptions"
+            />
         </div>
     </div>
 
