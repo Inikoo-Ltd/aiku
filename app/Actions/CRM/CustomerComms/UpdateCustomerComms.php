@@ -38,7 +38,7 @@ class UpdateCustomerComms extends OrgAction
             ])
             && $customerComms->customer->shop->is_aiku
             && $updateAiku) {
-            //SaveCustomerInAurora::dispatch($customerComms->customer);
+            SaveCustomerInAurora::dispatch($customerComms->customer);
         }
 
         return $customerComms;

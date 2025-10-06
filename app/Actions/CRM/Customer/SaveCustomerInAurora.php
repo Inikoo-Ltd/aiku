@@ -32,12 +32,6 @@ class SaveCustomerInAurora implements ShouldBeUnique
      */
     public function handle(Customer $customer): void
     {
-
-        return;
-        if ($customer->source_id) {
-            return;
-        }
-
         $apiUrl = $this->getApiUrl($customer->organisation);
 
 
@@ -45,8 +39,19 @@ class SaveCustomerInAurora implements ShouldBeUnique
 
 
         $customerAuroraId = null;
+
+
+        $customerSourceId = null;
         if ($customer->source_id) {
-            $customerSourceId = explode(':', $customer->source_id);
+            $customerSourceId = $customer->source_id;
+        }
+        if (!$customerSourceId) {
+            $customerSourceId = $customer->post_source_id;
+        }
+
+
+        if ($customerSourceId) {
+            $customerSourceId = explode(':', $customerSourceId);
             $customerAuroraId = $customerSourceId[1];
         }
 
@@ -81,7 +86,6 @@ class SaveCustomerInAurora implements ShouldBeUnique
         $response = Http::withHeaders([
             'secret' => $this->getApiToken($customer->organisation),
         ])->withQueryParameters($data)->get($apiUrl);
-
 
 
         if (Arr::get($response, 'customer_key')) {
