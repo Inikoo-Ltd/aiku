@@ -77,21 +77,7 @@ class ShowTradeUnit extends GrpAction
                         ] : false,
                     ]
                 ],
-                'attachmentRoutes' => [
-                    'attachRoute' => [
-                        'name'       => 'grp.models.trade-unit.attachment.attach',
-                        'parameters' => [
-                            'tradeUnit' => $tradeUnit->id,
-                        ]
-                    ],
-                    'detachRoute' => [
-                        'name'       => 'grp.models.trade-unit.attachment.detach',
-                        'parameters' => [
-                            'tradeUnit' => $tradeUnit->id,
-                        ],
-                        'method'     => 'delete'
-                    ]
-                ],
+                
 
                 'tabs' => [
                     'current'    => $this->tab,
@@ -104,8 +90,8 @@ class ShowTradeUnit extends GrpAction
                     : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
 
                 TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))),
+                    fn () =>  GetTradeUnitAttachment::run($tradeUnit)
+                    : Inertia::lazy(fn () => GetTradeUnitAttachment::run($tradeUnit)),
 
                 TradeUnitTabsEnum::IMAGES->value => $this->tab == TradeUnitTabsEnum::IMAGES->value ?
                     fn () =>  GetTradeUnitImages::run($tradeUnit)
