@@ -32,6 +32,11 @@ class SaveCustomerInAurora implements ShouldBeUnique
      */
     public function handle(Customer $customer): void
     {
+
+        if(!$customer->shop->is_aiku){
+            return;
+        }
+
         $apiUrl = $this->getApiUrl($customer->organisation);
 
 
@@ -151,7 +156,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
 
             $bar->finish();
             $command->newLine();
-            $command->info("$count pickings processed successfully");
+            $command->info("$count customers processed successfully");
         }
 
         return 0;
