@@ -6,6 +6,7 @@ import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
 import { Message } from 'primevue'
+import { checkVisible } from "@/Composables/Workshop"
 
 const props = defineProps<{
     customer_sales_channel: CustomerSalesChannel
@@ -35,6 +36,9 @@ const onClickReconnect = async () => {
         })
     }
 }
+
+
+
 </script>
 
 <template>
@@ -57,4 +61,28 @@ const onClickReconnect = async () => {
             </div>
         </div>
     </Message>
+
+    <Message severity="error" class="mt-8 ">
+        <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
+            <div>
+                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
+                <div class="inline items-center gap-x-2">
+                    {{
+                        trans("Or delete the channel and try again")
+                    }}
+                </div>
+            </div>
+
+            <div class="w-full sm:w-fit h-fit">
+
+                <ButtonWithLink
+                    :label="fieldData.label_button"
+                    :type="fieldData.type_button"
+                    :routeTarget="fieldData.route"
+                />
+            </div>
+        </div>
+    </Message>
+
+
 </template>
