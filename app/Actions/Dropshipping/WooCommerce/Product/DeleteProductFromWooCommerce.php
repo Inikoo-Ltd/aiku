@@ -26,6 +26,10 @@ class DeleteProductFromWooCommerce extends OrgAction
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $portfolio->customerSalesChannel->user;
 
+        if (!$wooCommerceUser) {
+            return null;
+        }
+
         if (!$portfolio) {
             return null;
         }
