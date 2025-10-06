@@ -1,15 +1,18 @@
 <?php
 
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 03 Oct 2025 11:36:21 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
+ * Author: Vika Aqordi
+ * Created on 06-10-2025-11h-53m
+ * Github: https://github.com/aqordeon
+ * Copyright: 2025
+*/
 
-namespace App\Actions\Ordering\Order;
+
+namespace App\Actions\Retina\Ecom\Orders;
 
 use App\Actions\Accounting\Invoice\WithInvoicesExport;
 use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithExportData;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
@@ -24,7 +27,7 @@ use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Sentry;
 use Symfony\Component\HttpFoundation\Response;
 
-class PdfProformaInvoice extends OrgAction
+class EcomPdfProformaInvoice extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -35,9 +38,9 @@ class PdfProformaInvoice extends OrgAction
     public function handle(Order $order, array $options): Response
     {
 
-        $locale = $order->shop->language->code;
+        $locale=$order->shop->language->code;
         app()->setLocale($locale);
-
+        
         try {
             $totalItemsNet = $order->total_amount;
             $totalShipping = $order->shipping_amount ?? 0;
@@ -114,9 +117,9 @@ class PdfProformaInvoice extends OrgAction
         ];
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Order $order, ActionRequest $request): Response
+    public function asController(Order $order, ActionRequest $request): Response
     {
-        $this->initialisation($organisation, $request);
+        $this->initialisation($request);
 
         return $this->handle($order, $this->validatedData);
     }

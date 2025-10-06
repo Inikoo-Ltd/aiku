@@ -26,7 +26,7 @@ class GetTaxCategory
             'GB' => $this->gbTaxCategory($billingAddress, $deliveryAddress),
             default => IsEuropeanUnion::run($country->code)
                 ?
-                $this->euTaxCategory($country, $billingAddress, $deliveryAddress, $taxNumber ,$isRe)
+                $this->euTaxCategory($country, $billingAddress, $deliveryAddress, $taxNumber, $isRe)
                 :
                 TaxCategory::find(1)
         };
