@@ -97,8 +97,12 @@ class SaveCustomerInAurora implements ShouldBeUnique
             $customer->update(['post_source_id' => $customer->organisation->id.':'.$response['customer_key']]);
         }
 
+        if (Arr::get($response, 'error')) {
+            print_r($response->json());
+        }
 
-        print_r($response->json());
+
+
     }
 
 
@@ -150,7 +154,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
                         } catch (\Exception $e) {
                             $command->error("Error processing customer: $customer->slug - {$e->getMessage()}");
                         }
-                        $bar->advance();
+                       // $bar->advance();
                     }
                 });
 
