@@ -120,9 +120,9 @@ const props = defineProps<{
 console.log(props);
 
 const locale = inject('locale', aikuLocaleStructure)
-const layout = inject('layout')
+// const layout = inject('layout')
 
-console.log(layout);
+// console.log(layout);
 
 const isModalAddress = ref(false)
 const isModalUploadOpen = ref(false)
@@ -511,7 +511,7 @@ const getStatusText = (status: string, valid: boolean) => {
             </div>
 
             <!-- Email Subscriptions Section -->
-            <div v-if="data?.customer?.email_subscriptions && layout.app.environment === 'local'"
+            <div v-if="data?.customer?.email_subscriptions"
                 class="mt-4 w-64 border border-gray-300 rounded-md p-3">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="text-sm font-medium text-gray-900">{{ trans("Email Subscriptions") }}</h3>
