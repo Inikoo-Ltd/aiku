@@ -24,8 +24,9 @@ class GetTradeUnitAttachment
     public function handle(TradeUnit $tradeUnit): array
     {
         return [
-            'id'                  => $tradeUnit->id,
-            'attachment_category_box' => $this->getAttachmentData($tradeUnit),
+            'id'                        => $tradeUnit->id,
+            'editable'                  => true,
+            'attachment_category_box'   => $this->getAttachmentData($tradeUnit),
             'attachRoute' => [
                 'name'       => 'grp.models.trade-unit.attachment.attach',
                 'parameters' => [
@@ -40,7 +41,6 @@ class GetTradeUnitAttachment
                 'method'     => 'delete'
             ],
             'attachments'              => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))->resolve()
-
         ];
     }
 }
