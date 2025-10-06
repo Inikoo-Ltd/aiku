@@ -13,6 +13,7 @@ const props = defineProps<{
     customMenusTop: {}
     customTopSubDepartments: []
     customMenusBottom: {}
+    customSubDepartments: []
     activeIndex: {}
     activeCustomIndex: {}
     activeCustomTopIndex: {}
@@ -30,9 +31,10 @@ const props = defineProps<{
     activeCustomSubIndex: {}
     activeCustomTopSubIndex: {}
     changeActiveSubIndex: Function
+    changeActiveCustomSubIndex: Function
+    changeActiveCustomTopSubIndex: Function
 }>()
 
-// console.log(props.customMenusTop);
 
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -43,8 +45,10 @@ const layout = inject('layout', retinaLayoutStructure)
         (activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'grid-cols-2',
         (activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'grid-cols-3']"
     >
+   
         <!-- Column 1: Categories + Custom Menus -->
         <div :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r', 'overflow-y-auto']">
+             
             <!-- Sidebar: Top for Desktop -->
             <div v-if="customMenusTop && customMenusTop.length > 0">
                 <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex"
@@ -146,7 +150,7 @@ const layout = inject('layout', retinaLayoutStructure)
                             activeCustomSubIndex === sIndex
                                 ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
                                 : 'hover:bg-gray-50 text-gray-700'
-                        ]" @click="activeCustomSubIndex = sIndex">
+                        ]" @click="changeActiveCustomSubIndex(sIndex)">
                         <div>
                             <a v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
                                 :href="getHref(sub)" :target="getTarget(sub)" class="block">
@@ -171,7 +175,7 @@ const layout = inject('layout', retinaLayoutStructure)
                             activeCustomTopSubIndex === sIndex
                                 ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
                                 : 'hover:bg-gray-50 text-gray-700'
-                        ]" @click="activeCustomTopSubIndex = sIndex">
+                        ]" @click="changeActiveCustomTopSubIndex(sIndex)">
                         <div>
                             <a v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
                                 :href="getHref(sub)" :target="getTarget(sub)" class="block">

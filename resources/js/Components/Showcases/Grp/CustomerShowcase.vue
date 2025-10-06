@@ -111,7 +111,7 @@ const props = defineProps<{
     handleTabUpdate?: Function
 }>()
 
-// console.log(props);
+console.log(props);
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout')
@@ -149,6 +149,14 @@ const isModalBalanceIncrease = ref(false)
 const localIsSuspended = ref(props.data.customer.email_subscriptions?.suspended?.is_suspended ?? false)
 const isEditingEmailSubscriptions = ref(false)
 
+// Local state for individual subscriptions
+const localSubscriptions = ref(
+    Object.keys(props.data.customer.email_subscriptions?.subscriptions || {}).reduce((acc, key) => {
+        acc[key] = props.data.customer.email_subscriptions?.subscriptions[key]?.is_subscribed ?? false
+        return acc
+    }, {} as Record<string, boolean>)
+)
+
 // Computed property for toggle switch value (inverted logic)
 const toggleSwitchValue = computed({
     get: () => !localIsSuspended.value,
@@ -162,6 +170,13 @@ const toggleSwitchValue = computed({
 // Function to toggle edit mode for email subscriptions
 const toggleEditEmailSubscriptions = () => {
     isEditingEmailSubscriptions.value = !isEditingEmailSubscriptions.value
+}
+
+// Function to handle individual subscription toggle
+const toggleSubscription = (subscriptionKey: string, value: boolean) => {
+    localSubscriptions.value[subscriptionKey] = value
+    // Here you can add API call to update the server
+    console.log(`Subscription ${subscriptionKey} changed to:`, value)
 }
 
 
@@ -466,13 +481,26 @@ const getStatusText = (status: string, valid: boolean) => {
             </div>
 
             <!-- Email Subscriptions Section -->
-            <div v-if="data?.customer?.email_subscriptions && layout.app.environment === 'local'" class="mt-4 w-64 border border-gray-300 rounded-md p-3">
-                <h3 class="text-sm font-medium text-gray-900 mb-3">{{ trans("Email Subscriptions") }}</h3>
+            <div v-if="data?.customer?.email_subscriptions && layout.app.environment === 'local'"
+                class="mt-4 w-64 border border-gray-300 rounded-md p-3">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-medium text-gray-900">{{ trans("Email Subscriptions") }}</h3>
+                    <!-- Edit Button -->
+                    <button 
+                        @click="toggleEditEmailSubscriptions"
+                        :style="{ color: layout.app.theme[0] }"
+                        class="p-1 rounded transition-colors duration-200"
+                        v-tooltip="isEditingEmailSubscriptions ? trans('Cancel Edit') : trans('Edit Email Subscriptions')"
+                    >
+                        <FontAwesomeIcon :icon="isEditingEmailSubscriptions ? faTimes : faPencil" class="text-sm" fixed-width />
+                    </button>
+                </div>
 
                 <!-- Suspended Status -->
-                <div v-if="data.customer.email_subscriptions.suspended" :class="`mb-3 flex items-center ${isEditingEmailSubscriptions ? 'justify-between' : 'justify-end'}`">
+                <div v-if="data.customer.email_subscriptions.suspended"
+                    :class="`mb-3 flex items-center ${isEditingEmailSubscriptions ? 'justify-between' : 'justify-end'}`">
                     <!-- Toggle Switch (only show when editing) -->
-                    <div v-if="isEditingEmailSubscriptions" class="flex items-center gap-3">
+                    <!-- <div v-if="isEditingEmailSubscriptions" class="flex items-center gap-3">
                         <ToggleSwitch 
                             v-model="toggleSwitchValue"
                             :class="{
@@ -483,37 +511,28 @@ const getStatusText = (status: string, valid: boolean) => {
                         <span class="text-sm" :class="localIsSuspended ? 'text-red-600' : 'text-green-600'">
                             {{ localIsSuspended ? trans('Suspended') : trans('Active') }}
                         </span>
-                    </div>
-                    
-                    <!-- Status Display (only show when not editing) -->
-                    <!-- <div v-else class="flex items-center gap-2">
-                        <FontAwesomeIcon 
-                            :icon="localIsSuspended ? faTimes : faCheck"
-                            :class="localIsSuspended ? 'text-red-500' : 'text-green-500'"
-                            class="text-sm"
-                        />
-                        <span class="text-sm" :class="localIsSuspended ? 'text-red-600' : 'text-green-600'">
-                            {{ localIsSuspended ? trans('Suspended') : trans('Active') }}
-                        </span>
                     </div> -->
 
-                    <!-- Edit Button -->
-                    <Button 
-                        @click="toggleEditEmailSubscriptions"
-                        :icon="isEditingEmailSubscriptions ? faTimes : faPencil"
-                        :type="isEditingEmailSubscriptions ? 'tertiary' : 'edit'"
-                        size="xs"
-                        :tooltip="isEditingEmailSubscriptions ? trans('Cancel Edit') : trans('Edit Email Subscriptions')"
-                        class="!p-0"
-                    />
+
                 </div>
 
                 <!-- Subscriptions List - Hidden when suspended -->
-                <div v-if="!localIsSuspended" class="space-y-2">
+                <div v-if="!localIsSuspended" class="space-y-2 overflow-hidden">
                     <div v-for="(subscription, key) in data.customer.email_subscriptions.subscriptions" :key="key"
                         class="flex items-center justify-between hover:bg-gray-50 rounded">
                         <span class="text-sm text-gray-700">{{ subscription.label }}</span>
-                        <div class="flex items-center">
+
+                        <!-- Edit Mode: Toggle Switch -->
+                        <div v-if="isEditingEmailSubscriptions" class="flex items-center">
+                            <ToggleSwitch :modelValue="localSubscriptions[key]"
+                                @update:modelValue="(value) => toggleSubscription(key, value)" :class="{
+                                    'toggle-switch-active': localSubscriptions[key],
+                                    'toggle-switch-inactive': !localSubscriptions[key]
+                                }" v-tooltip="localSubscriptions[key] ? trans('Subscribed') : trans('Unsubscribed')" />
+                        </div>
+
+                        <!-- View Mode: Status Display -->
+                        <div v-else class="flex items-center">
                             <FontAwesomeIcon :icon="subscription.is_subscribed ? faCheck : faTimes"
                                 :class="subscription.is_subscribed ? 'text-green-500' : 'text-red-500'"
                                 class="text-sm" />
@@ -526,8 +545,7 @@ const getStatusText = (status: string, valid: boolean) => {
                 </div>
 
                 <!-- Message when suspended -->
-                <div v-if="localIsSuspended"
-                    class="mt-3 p-2 bg-red-50 rounded text-center">
+                <div v-if="localIsSuspended" class="mt-3 p-2 bg-red-50 rounded text-center">
                     <span class="text-xs text-red-600">{{ trans('All email communications are suspended') }}</span>
                 </div>
             </div>
