@@ -98,7 +98,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(7)
+        ->and($group->roles()->count())->toBe(9)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -106,14 +106,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(6)
+    expect($group->jobPositions()->count())->toBe(8)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(6)
+    expect($group->jobPositions()->count())->toBe(8)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -166,7 +166,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(7)
-        ->and($group->roles()->count())->toBe(14)
+        ->and($group->roles()->count())->toBe(16)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 

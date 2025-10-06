@@ -10,10 +10,12 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
+use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
+use App\Actions\Ordering\Order\ResetOrderTaxCategory;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
@@ -25,6 +27,7 @@ use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Enums\CRM\Customer\CustomerStateEnum;
 use App\Enums\CRM\Customer\CustomerStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\CRM\CustomersResource;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
@@ -96,7 +99,6 @@ class UpdateCustomer extends OrgAction
                         modelData: $taxNumberData
                     );
                 } else {
-
                     UpdateTaxNumber::run($customer->taxNumber, $taxNumberData);
                 }
             } elseif ($customer->taxNumber) {
@@ -115,17 +117,14 @@ class UpdateCustomer extends OrgAction
         }
 
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
-        $customer->comms->update($emailSubscriptionsData);
+        UpdateCustomerComms::run($customer->comms, $emailSubscriptionsData);
+
         $customer = $this->update($customer, $modelData, ['data', 'contact_name_components']);
 
 
-        if ($customer->wasChanged('state')) {
-            GroupHydrateCustomers::dispatch($customer->group);
-            OrganisationHydrateCustomers::dispatch($customer->organisation);
-            ShopHydrateCustomers::dispatch($customer->shop);
-        }
+        $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if (Arr::hasAny($modelData, ['contact_name', 'email'])) {
+        if (Arr::hasAny($changes, ['contact_name', 'email'])) {
             $rootWebUser = $customer->webUsers->where('is_root', true)->first();
             if ($rootWebUser) {
                 $rootWebUser->update(
@@ -136,7 +135,21 @@ class UpdateCustomer extends OrgAction
                 );
             }
         }
-        $changes = Arr::except($customer->getChanges(), ['updated_at', 'last_fetched_at']);
+
+
+        if (Arr::has($changes, 'state')) {
+            GroupHydrateCustomers::dispatch($customer->group);
+            OrganisationHydrateCustomers::dispatch($customer->organisation);
+            ShopHydrateCustomers::dispatch($customer->shop);
+        }
+
+
+        if (Arr::hasAny($changes, ['is_re'])) {
+            foreach ($customer->orders()->where('state', OrderStateEnum::CREATING)->whereNull('orders.source_id')->get() as $order) {
+                $order->update(['is_re' => $customer->is_re]);
+                ResetOrderTaxCategory::run($order);
+            }
+        }
 
         if (Arr::hasAny($changes, [
             'company_name',
@@ -194,16 +207,15 @@ class UpdateCustomer extends OrgAction
             'warehouse_public_notes'   => ['sometimes', 'nullable', 'string'],
             'tax_number'               => ['sometimes', 'nullable', 'array'],
 
-            'email_subscriptions'                                    => ['sometimes', 'array'],
-            'email_subscriptions.is_subscribed_to_newsletter'        => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_marketing'         => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_abandoned_cart'    => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_reorder_reminder'  => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_low_stock'  => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_1' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_2' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_3' => ['sometimes', 'boolean'],
-            'state'                                                  => ['sometimes', Rule::enum(CustomerStateEnum::class)]
+            'email_subscriptions'                                   => ['sometimes', 'array'],
+            'email_subscriptions.is_subscribed_to_newsletter'       => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_marketing'        => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_abandoned_cart'   => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
+            'state'                                                 => ['sometimes', Rule::enum(CustomerStateEnum::class)],
+            'is_re'                                                 => ['sometimes', 'boolean'],
 
         ];
 

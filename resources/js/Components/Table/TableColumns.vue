@@ -39,7 +39,7 @@ const props = defineProps({
                 <ul class="divide-y divide-gray-200">
                     <li v-for="(column, key) in props.columns" v-show="column.can_be_hidden" :key="key"
                         class="py-2 flex items-center justify-between">
-                        <p class="text-sm text-gray-800 capitalize">
+                        <p class="text-sm text-gray-800">
                             {{ typeof column.label == 'string' ? trans(column.label) : '' }}
                             <FontAwesomeIcon v-if="(typeof column.label != 'string')" class="text-gray-700"
                                 :icon="column.label" aria-hidden="true" />

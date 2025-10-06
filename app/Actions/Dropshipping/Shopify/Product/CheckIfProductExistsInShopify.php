@@ -56,7 +56,7 @@ class CheckIfProductExistsInShopify
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product existence check failed:  >$productId<  V2 ".$errorMessage);
+                Sentry::captureMessage("Product existence check failed: shopifyUser  $shopifyUser->id    >$productId<  V2 ".$errorMessage);
 
                 return false;
             }

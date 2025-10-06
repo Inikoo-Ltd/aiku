@@ -146,10 +146,9 @@
             <div>
                 {{ __($context . ' Date') }}: <b>{{ $invoice->created_at->format('j F Y') }}</b>
             </div>
-
             @if($invoice->tax_liability_at)
                 <div style="text-align: right">
-                    {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
+                    {{ __('Tax liability dates') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
                 </div>
             @endif
 
@@ -182,6 +181,9 @@
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
                             class="address_value">{{ $invoice->tax_number }}</span>
                     </div>
+                @endif
+                @if($invoice->identity_document_number)
+                    {{__('Registration Number')}}: {{$shop->identity_document_number}}
                 @endif
             </div>
         </td>

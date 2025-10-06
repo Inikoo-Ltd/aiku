@@ -116,7 +116,7 @@ const options = {
 		<div
 			v-for="stats in dashboardStats"
 			class="px-4 py-5 sm:p-6 rounded-lg bg-white shadow tabular-nums ring-3 ring-gray-300">
-			<dt class="text-base font-medium text-gray-400 capitalize">{{ stats.label }}</dt>
+			<dt class="text-base font-medium text-gray-400">{{ stats.label }}</dt>
 			<dd class="mt-2 flex justify-between gap-x-2">
 				<div
 					class="flex flex-col gap-x-2 gap-y-3 leading-none items-baseline text-2xl font-semibold">

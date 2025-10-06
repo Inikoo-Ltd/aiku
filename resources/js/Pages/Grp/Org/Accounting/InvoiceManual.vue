@@ -409,7 +409,7 @@ const onSubmitAddPhysicalGood = (data: Action, closedPopover: Function) => {
                                         </template>
 
                                         <template #option="{ option, isSelected, isPointed }">
-                                            <div class="">{{ option.reference }} <span class="text-sm text-gray-400 capitalize">({{ option.type }})</span></div>
+                                            <div class="">{{ option.reference }} <span class="text-sm text-gray-400">({{ option.type }})</span></div>
                                         </template>
                                     </PureMultiselectInfiniteScroll>
 

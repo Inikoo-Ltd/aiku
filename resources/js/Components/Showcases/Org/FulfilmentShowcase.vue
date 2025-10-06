@@ -144,7 +144,7 @@ function palletRoute(pallet: any) {
 
 						<div class="flex flex-col">
 							<Link :href="palletRoute(activity)">
-								<div class="capitalize">{{ activity.title }}</div>
+								<div class="">{{ activity.title }}</div>
 								<div class="text-slate-400 text-sm">{{ activity.description }}</div>
 							</Link>
 						</div>

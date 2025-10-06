@@ -47,7 +47,6 @@ class RejectShopifyFulfillmentRequest extends OrgAction
             ];
 
             $this->doPost($shopifyUser, $mutation, $variables);
-
         } catch (\Exception $e) {
             Sentry::captureException($e);
         }

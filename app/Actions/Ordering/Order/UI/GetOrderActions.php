@@ -164,21 +164,26 @@ class GetOrderActions
             }
 
             if ($showCancel) {
-                array_unshift($actions, [
-                    'type'  => 'button',
-                    'style' => 'cancel',
-                    'key'   => 'cancel',
-                    'label' => __('Cancel'),
-                    'route' => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.order.state.cancelled',
-                        'parameters' => [
-                            'order' => $order->id
+                array_unshift(
+                    $actions,
+                    [
+                        'type'  => 'button',
+                        'style' => 'cancel',
+                        'key'   => 'cancel',
+                        'label' => __('Cancel'),
+                        'route' => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.state.cancelled',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
                         ]
                     ]
-                ]);
+                );
             }
         }
+
+
 
         return $actions;
     }

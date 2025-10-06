@@ -11,7 +11,6 @@ import { routeType } from '@/types/route'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import { getComponent } from '@/Composables/Listing/FieldFormList'  // Field form list
-
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faSave as fadSave, } from '@fad'
 import { faSave as falSave, faInfoCircle } from '@fal'
@@ -29,7 +28,6 @@ const props = defineProps<{
             route: routeType
             state: string
         }
-        label_no_capitalize?: boolean  // To remove capitalize on label Fieldform
         value: any
         mode?: string
         required?: boolean
@@ -106,7 +104,7 @@ defineExpose({
     <form @submit.prevent="submit" class="divide-y divide-gray-200 w-full" :class="props.fieldData.full ? '' : 'max-w-2xl'">
         <dl class="pb-4 sm:pb-5 sm:grid sm:grid-cols-3 sm:gap-4 ">
             <!-- Title -->
-            <dt v-if="!fieldData.noTitle && fieldData.label" class="text-sm font-medium text-gray-400" :class="props.fieldData.label_no_capitalize ? '' : 'capitalize'">
+            <dt v-if="!fieldData.noTitle && fieldData.label" class="text-sm font-medium text-gray-400">
                 <div class="inline-flex items-start leading-none">
                     {{ fieldData.label }}
                     <FontAwesomeIcon v-if="fieldData.required" icon="fas fa-asterisk" class="font-light text-[12px] text-red-400 mr-1"/>

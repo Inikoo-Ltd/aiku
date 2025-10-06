@@ -88,7 +88,7 @@ const onCancel = (e) => {
 <template>
     <div class="">
         <div v-for="item in blueprint" :key="item.title">
-            <div class="mb-3 text-2xl font-medium text-gray-500 capitalize"><span>{{ item.title }}</span></div>
+            <div class="mb-3 text-2xl font-medium text-gray-500"><span>{{ item.title }}</span></div>
             <hr class="my-5 h-0.5 border-t-0 bg-neutral-100 dark:bg-white/10" />
             <div class="mb-5 flex flex-wrap">
                 <div v-for="(fieldData, fieldName) in item.fields" :key="fieldName"

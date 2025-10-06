@@ -4,15 +4,15 @@ import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faImage, faInfoCircle, faPencil, faUnlink, faUpload, faVideo } from "@fal"
+import { faImage, faPencil, faUnlink, faUpload, faVideo, faInfoCircle } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Image from "@/Components/Image.vue"
 import axios from "axios"
 import Dialog from "primevue/dialog"
 import InputText from "primevue/inputtext"
 import Tag from "@/Components/Tag.vue"
-import { Message } from "primevue"
 import { capitalize } from "lodash"
+import { Message } from "primevue"
 // Types
 import { Image as ImageTS } from "@/types/Image"
 import { routeType } from "@/types/route"
@@ -180,6 +180,7 @@ function onDropImage(event: DragEvent, categoryBox: any) {
 
 
 function onStartDrag(event: DragEvent, img: any, fromCategory?: any) {
+    console.log("onStartDrag", img, fromCategory)
     selectedDragImage.value = { ...img, fromCategory }
     event.dataTransfer?.setData("application/json", JSON.stringify(img))
         ; (event.target as HTMLElement).classList.add("dragging")
@@ -258,17 +259,14 @@ function onDeleteFilesInList(categoryBox: any) {
 <template>
     <div v-if="!editable" class="px-10 pt-4">
         <Message severity="warn" closable>
-        <template #icon>
-            <FontAwesomeIcon :icon="faInfoCircle" />
-        </template>
-        <span class="ml-2">
-            You can only view this image because of insufficient permissions.
-        </span>
-    </Message>
-
+            <template #icon>
+                <FontAwesomeIcon :icon="faInfoCircle" />
+            </template>
+            <span class="ml-2">
+                You can only view this image because of insufficient permissions.
+            </span>
+        </Message>
     </div>
-    
-
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-5 px-10 py-4">
         <!-- Left: Drop Areas -->
@@ -319,8 +317,8 @@ function onDeleteFilesInList(categoryBox: any) {
                     <div v-if="categoryBox.type == 'image'"
                         class="relative flex h-36 w-full items-center justify-center bg-gray-50 transition"
                         :class="{ ' cursor-not-allowed': !editable }" :draggable="editable && !!categoryBox.images"
-                        @dragstart="editable && categoryBox.images ? (e) => onStartDrag(e, categoryBox) : null"
-                        @dragend="editable ? onEndDrag : null">
+                        @dragstart="(e) =>  editable && categoryBox.images ?  onStartDrag(e, categoryBox) : null"
+                        @dragend="(e)=> editable ? onEndDrag(e) : null">
                         <Image v-if="categoryBox.images" :src="categoryBox.images" :style="{ objectFit: 'contain' }" />
                         <div v-else class="flex flex-col items-center justify-center text-gray-400">
                             <FontAwesomeIcon :icon="faImage" class="mb-1 text-2xl" />
@@ -328,9 +326,11 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
                     </div>
 
+
                     <div v-if="categoryBox.type == 'video'"
                         class="relative flex h-36 w-full items-center justify-center bg-gray-50 cursor-pointer"
                         @click="editable ? () => { selectedVideoToUpdate = { ...categoryBox }; isModalEditVideo = true } : null">
+
                         <!-- Video preview -->
                         <div v-if="categoryBox.url" class="relative w-full h-full">
                             <iframe class="w-full h-full rounded-md pointer-events-none" :src="categoryBox.url"
@@ -349,6 +349,8 @@ function onDeleteFilesInList(categoryBox: any) {
                             class="absolute inset-0 bg-blue-200 bg-opacity-30 border-2 border-dashed border-blue-500 rounded-md pointer-events-none">
                         </div>
                     </div>
+
+
                 </li>
             </TransitionGroup>
         </div>
@@ -370,14 +372,13 @@ function onDeleteFilesInList(categoryBox: any) {
             </div>
 
             <!-- Drop Zone -->
-            <div class="relative flex-1 overflow-y-auto rounded-lg transition scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
-                :class="[isDragOver ? 'border-blue-400 bg-blue-50 shadow-md' : 'border-gray-200', !editable ? ' cursor-not-allowed' : '']"
-                @dragover.prevent="editable ? isDragOver = true : null"
-                @dragleave="editable ? isDragOver = false : null"
-                @drop.prevent="editable ? (e) => { onDropFile(e); isDragOver = false } : null">
-                <!-- Overlay saat drag -->
+            <div class="relative flex-1 overflow-y-auto rounded-lg  transition scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-gray-400"
+                :class="isDragOver ? 'border-blue-400 bg-blue-50 shadow-md' : 'border-gray-200'"
+                @dragover.prevent="isDragOver = true" @dragleave="isDragOver = false"
+                @drop.prevent="onDropFile($event); isDragOver = false">
+                <!-- Overlay  drag -->
                 <div v-if="isDragOver && editable" class="absolute inset-0 z-10 flex flex-col items-center justify-center
-          bg-blue-50/80 backdrop-blur-sm text-blue-500 pointer-events-none">
+             bg-blue-50/80 backdrop-blur-sm text-blue-500 pointer-events-none">
                     <FontAwesomeIcon :icon="faUpload" class="text-3xl mb-2" />
                     <p class="text-sm font-medium">{{ trans("Drop files to upload") }}</p>
                 </div>
@@ -395,14 +396,15 @@ function onDeleteFilesInList(categoryBox: any) {
                         {{ trans("No images available") }}
                     </div>
 
+                    <!-- if has gambar -->
                     <article v-else v-for="item in props.data.images" :key="item.id" class="group flex items-center justify-between gap-3 p-1 bg-white mb-1 border
               hover:shadow-md hover:border-blue-400 transition" :draggable="editable"
-                        @dragstart="editable ? (e) => onStartDrag(e, item) : null"
-                        @dragend="editable ? onEndDrag : null">
+                        @dragstart="(e) => editable ? onStartDrag(e, item) : null"
+                        @dragend="(e)=> editable ? onEndDrag(e) : null">
                         <!-- Image + Info -->
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center
-                overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
+               overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
                                 <Image v-if="item?.image" :src="item?.image"
                                     class="max-h-full max-w-full object-contain" />
                                 <div v-else class="text-gray-400">
@@ -417,6 +419,7 @@ function onDeleteFilesInList(categoryBox: any) {
                                         {{ item?.name || trans("Unnamed product") }}
                                     </p>
 
+                                    <!-- Tag PrimeVue untuk sub_scope -->
                                     <Tag v-if="item?.sub_scope"
                                         :label="capitalize(item.sub_scope + (item.sub_scope != 'main' ? ' side' : ''))"
                                         :size="'xxs'" />
@@ -439,15 +442,17 @@ function onDeleteFilesInList(categoryBox: any) {
 
                         <!-- Delete -->
                         <button v-if="editable" @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
-              text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
+             text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
                         </button>
                     </article>
                 </div>
+
             </div>
         </div>
-    </div>
 
+
+    </div>
 
 
     <Dialog v-model:visible="isModalEditVideo" modal header="Edit Video Link" :style="{ width: '40rem' }">

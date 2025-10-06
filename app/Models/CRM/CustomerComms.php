@@ -22,9 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_subscribed_to_abandoned_cart
  * @property bool $is_subscribed_to_reorder_reminder
  * @property bool $is_subscribed_to_basket_low_stock
- * @property bool $is_subscribed_to_basket_reminder_1
- * @property bool $is_subscribed_to_basket_reminder_2
- * @property bool $is_subscribed_to_basket_reminder_3
+ * @property bool $is_subscribed_to_basket_reminder
  * @property string|null $newsletter_unsubscribed_at
  * @property string|null $newsletter_unsubscribed_author_type Customer|User
  * @property string|null $newsletter_unsubscribed_author_id
@@ -50,21 +48,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $basket_low_stock_unsubscribed_author_id
  * @property string|null $basket_low_stock_unsubscribed_origin_type EmailBulkRun|Mailshot|Website|Customer (Customer is used when a user unsubscribes from aiku UI)
  * @property string|null $basket_low_stock_unsubscribed_origin_id
- * @property string|null $basket_reminder_1_unsubscribed_at
- * @property string|null $basket_reminder_1_unsubscribed_author_type Customer|User
- * @property string|null $basket_reminder_1_unsubscribed_author_id
- * @property string|null $basket_reminder_1_unsubscribed_origin_type EmailBulkRun|Mailshot|Website|Customer (Customer is used when a user unsubscribes from aiku UI)
- * @property string|null $basket_reminder_1_unsubscribed_origin_id
- * @property string|null $basket_reminder_2_unsubscribed_at
- * @property string|null $basket_reminder_2_unsubscribed_author_type Customer|User
- * @property string|null $basket_reminder_2_unsubscribed_author_id
- * @property string|null $basket_reminder_2_unsubscribed_origin_type EmailBulkRun|Mailshot|Website|Customer (Customer is used when a user unsubscribes from aiku UI)
- * @property string|null $basket_reminder_2_unsubscribed_origin_id
- * @property string|null $basket_reminder_3_unsubscribed_at
- * @property string|null $basket_reminder_3_unsubscribed_author_type Customer|User
- * @property string|null $basket_reminder_3_unsubscribed_author_id
- * @property string|null $basket_reminder_3_unsubscribed_origin_type EmailBulkRun|Mailshot|Website|Customer (Customer is used when a user unsubscribes from aiku UI)
- * @property string|null $basket_reminder_3_unsubscribed_origin_id
+ * @property string|null $basket_reminder_unsubscribed_at
+ * @property string|null $basket_reminder_unsubscribed_author_type Customer|User
+ * @property string|null $basket_reminder_unsubscribed_author_id
+ * @property string|null $basket_reminder_unsubscribed_origin_type EmailBulkRun|Mailshot|Website|Customer (Customer is used when a user unsubscribes from aiku UI)
+ * @property string|null $basket_reminder_unsubscribed_origin_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_traffic_sources

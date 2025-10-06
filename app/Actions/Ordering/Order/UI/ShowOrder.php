@@ -319,6 +319,58 @@ class ShowOrder extends OrgAction
                 'data'          => OrderResource::make($order),
                 'delivery_note' => $deliveryNoteResource,
 
+                'proforma_invoice'  => [
+                    'check_list'       => [
+                        [
+                            'label' => __('Pro mode'),
+                            'value' => 'pro_mode',
+                        ],
+                        [
+                            'label' => __('Recommended retail prices'),
+                            'value' => 'rrp',
+                        ],
+                        [
+                            'label' => __('Parts'),
+                            'value' => 'parts',
+                        ],
+                        [
+                            'label' => __('Commodity Codes'),
+                            'value' => 'commodity_codes',
+                        ],
+                        [
+                            'label' => __('Barcode'),
+                            'value' => 'barcode',
+                        ],
+                        [
+                            'label' => __('Weight'),
+                            'value' => 'weight',
+                        ],
+                        [
+                            'label' => __('Country of Origin'),
+                            'value' => 'country_of_origin',
+                        ],
+                        [
+                            'label' => __('Hide Payment Status'),
+                            'value' => 'hide_payment_status',
+                        ],
+                        [
+                            'label' => __('CPNP'),
+                            'value' => 'cpnp',
+                        ],
+                        [
+                            'label' => __('Group by Tariff Code'),
+                            'value' => 'group_by_tariff_code',
+                        ],
+                    ],
+                    'route_download_pdf'    => [
+                        'name'       => 'grp.org.shops.show.ordering.proforma_invoice.download',
+                        'parameters' => [
+                            'organisation' => $order->organisation->slug,
+                            'shop' => $order->shop->slug,
+                            'order' => $order->slug
+                        ]
+                    ]
+                ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.order.attachment.attach',

@@ -131,7 +131,7 @@ const isVisitClockingMachine = ref(false)
                         <div class="text-gray-400">
                             {{ trans("Contact Name") }}
                         </div>
-                        <div class="xl:col-span-2 font-medium capitalize text-right lg:text-left">
+                        <div class="xl:col-span-2 font-medium text-right lg:text-left">
                             {{ data?.employee?.data.contact_name }}
                         </div>
                     </div>
@@ -140,7 +140,7 @@ const isVisitClockingMachine = ref(false)
                         <div class="text-gray-400">
                           {{ trans("Emergency Contact") }}
                         </div>
-                        <div class="xl:col-span-2 font-medium capitalize text-right lg:text-left">
+                        <div class="xl:col-span-2 font-medium text-right lg:text-left">
                             {{ data?.employee?.data.emergency_contact || '-' }}
                         </div>
                     </div>

@@ -285,10 +285,10 @@ const onDisableCheckbox = (item) => {
 
                     <Button v-if="item.platform_possible_matches?.number_matches"
                         @click="() => { fetchRoute(), isOpenModal = true, selectedPortfolio = item }"
-                        :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs"
+                        :label="trans('Choose another product from your shop')" size="xxs"
                         type="tertiary" />
                     <Button v-else @click="() => { fetchRoute(), isOpenModal = true, selectedPortfolio = item }"
-                        :label="trans('Match it with an existing product in your shop')" :capitalize="false" size="xxs"
+                        :label="trans('Match it with an existing product in your shop')" size="xxs"
                         type="tertiary" />
                 </template>
 
@@ -309,7 +309,7 @@ const onDisableCheckbox = (item) => {
 
 
                     <Button class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
-                        :label="trans('Connect with other product')" :capitalize="false" :icon="faRecycle" size="xxs"
+                        :label="trans('Connect with other product')" :icon="faRecycle" size="xxs"
                         type="tertiary" />
 
                 </template>

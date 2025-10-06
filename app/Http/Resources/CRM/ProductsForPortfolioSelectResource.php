@@ -29,8 +29,11 @@ class ProductsForPortfolioSelectResource extends JsonResource
             'price'         => $this->price,
             'name'          => $this->name,
             'gross_weight'  => $this->gross_weight,
+            'available_quantity'  => $this->available_quantity,
+            'rrp'  => $this->rrp,
             'currency_code' => $this->currency_code,
             'currency_id'   => $this->currency_id,
+            'stock'         => $this->stock
         ];
     }
 }

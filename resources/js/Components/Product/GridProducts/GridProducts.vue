@@ -21,14 +21,19 @@ import { notify } from '@kyvg/vue3-notification'
 import Pagination from '@/Components/Table/Pagination.vue'
 import TableFilterSearch from '@/Components/Table/TableFilterSearch.vue'
 import TableWrapper from '@/Components/Table/TableWrapper.vue'
+import HeaderCell from '@/Components/Table/HeaderCell.vue'
 
 // Product Components
 import RecordCounter from './RecordCounter.vue'
 import ProductCard from './ProductCard.vue'
 import EmptyState from './EmptyState.vue'
 
+
+import { clone } from 'lodash-es'
+
 // Types
 import type { Product, QueryBuilderData } from './types'
+import ListItem from '@tiptap/extension-list-item'
 
 
 // ============================================================================
@@ -80,7 +85,21 @@ const props = defineProps({
         default: 'lg:grid-cols-3 xl:grid-cols-4 grid grid-cols-2',
         required: false,
     },
+    columnsType: {
+        type: Object,
+        default: () => {
+            return {};
+        },
+        required: false,
+    },
+    basketTransactions: {
+        type: Object,
+        default: () => ({}),
+        required: false,
+    },
 })
+
+// console.log(props);
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -99,7 +118,7 @@ const queryBuilderProps = computed(() => {
     return data
 })
 
-const queryBuilderData = ref<QueryBuilderData>({...queryBuilderProps.value})
+const queryBuilderData = ref<QueryBuilderData>({ ...queryBuilderProps.value })
 
 // Initialize search inputs if not present
 if (!queryBuilderData.value.searchInputs) {
@@ -127,15 +146,15 @@ const compResourceData = computed<Product[]>(() => {
     if (props.resource?.data?.length > 0) {
         return props.resource.data
     }
-    
+
     if (props.data?.length > 0) {
         return props.data
     }
-    
+
     if (Object.keys(props.resource || {}).length > 0 && !('data' in props.resource)) {
         return props.resource
     }
-    
+
     return []
 })
 
@@ -174,6 +193,16 @@ const compResourceMeta = computed(() => {
 const hasData = computed(() => {
     return compResourceData.value.length > 0 || compResourceMeta.value.total > 0
 })
+
+/**
+ * Get existing transaction for a product
+ */
+const getExistingTransaction = (product: Product) => {
+    if (!props.basketTransactions || !product.id) {
+        return null
+    }
+    return props.basketTransactions[product.id] || null
+}
 
 // ============================================================================
 // SEARCH & FILTER FUNCTIONS
@@ -335,6 +364,30 @@ function generateNewQueryString(): string {
     return (!query || query === pageName.value + '=1') ? '' : query
 }
 
+function sortBy(column) {
+    if (queryBuilderData.value.sort === column) {
+        queryBuilderData.value.sort = `-${column}`;
+    } else {
+        queryBuilderData.value.sort = column;
+    }
+
+    queryBuilderData.value.cursor = null;
+    queryBuilderData.value.page = 1;
+}
+
+
+
+function header(key) {
+    const intKey = findDataKey('columns', key);
+    const columnData = clone(queryBuilderProps.value.columns[intKey]);
+
+    if (columnData) {
+        columnData.onSort = sortBy;
+    }
+
+    return columnData;
+}
+
 // ============================================================================
 // NAVIGATION
 // ============================================================================
@@ -398,10 +451,10 @@ watch(queryBuilderData, async () => {
 const toggleFavorite = (product: Product): void => {
     // Default to true if undefined (all products are favorited by default)
     const originalState = product.is_favourite !== undefined ? product.is_favourite : true
-    
+
     // Optimistically update the UI
     product.is_favourite = !originalState
-    
+
     // Section: Submit - Handle favorite/unfavorite API calls
     if (originalState) {
         // Product was favorited, now unfavorite it
@@ -410,7 +463,7 @@ const toggleFavorite = (product: Product): void => {
             {
                 preserveScroll: true,
                 preserveState: true,
-                onStart: () => { 
+                onStart: () => {
                     isLoading.value = true
                 },
                 onSuccess: () => {
@@ -437,7 +490,7 @@ const toggleFavorite = (product: Product): void => {
                 },
             }
         )
-    } 
+    }
 }
 </script>
 
@@ -460,17 +513,28 @@ const toggleFavorite = (product: Product): void => {
                             :isVisiting="isVisiting" />
                     </div>
                 </div>
+
+                <div>
+                    <slot v-for="column in queryBuilderProps.columns.filter(item => item.sortable)":name="`header(${column.key})`" :header="column">
+                        <HeaderCell :key="`table-${name}-header-${column.key}`" :cell="header(column.key)"
+                            :type="columnsType[column.key]" :column="column" :resource="compResourceData">
+                        </HeaderCell>
+                    </slot>
+                </div>
             </div>
         </div>
 
         <!-- Products Grid -->
         <TableWrapper :result="compResourceMeta?.total === 0" class="mt-2">
-            <div v-if="compResourceData.length > 0"
-                class="auto-rows-auto gap-4 p-4" :class="gridClass">
+            <div v-if="compResourceData.length > 0" class="auto-rows-auto gap-4 p-4" :class="gridClass">
                 <!-- Product Cards -->
                 <div v-for="(item, index) in compResourceData" :key="`product-${index}`">
                     <slot name="card" :item="item">
-                        <ProductCard :product="item" @toggle-favorite="toggleFavorite" />
+                        <ProductCard 
+                            :product="item" 
+                            :existing-transaction="getExistingTransaction(item)"
+                            @toggle-favorite="toggleFavorite" 
+                        />
                     </slot>
                 </div>
 
@@ -478,24 +542,14 @@ const toggleFavorite = (product: Product): void => {
             </div>
 
             <!-- Empty State -->
-            <EmptyState
-            v-else-if="!isVisiting"
-                :message="getSearchInputValue('global') ? trans('No result') : ( trans('Empty') + ' ' + name) "
-                :description="getSearchInputValue('global') ? trans('Try adjusting your search terms') :   name +' ' +trans('could not be found')"
-            />
+            <EmptyState v-else-if="!isVisiting"
+                :message="getSearchInputValue('global') ? trans('No result') : (trans('Empty') + ' ' + name)"
+                :description="getSearchInputValue('global') ? trans('Try adjusting your search terms') : name + ' ' + trans('could not be found')" />
 
             <!-- Pagination -->
-            <Pagination
-                v-if="hasData"
-                :on-click="visit"
-                :has-data="hasData"
-                :meta="compResourceMeta"
-                :exportLinks="queryBuilderProps?.exportLinks"
-                :per-page-options="queryBuilderProps?.perPageOptions"
-                :on-per-page-change="onPerPageChange"
-            />
+            <Pagination v-if="hasData" :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
+                :exportLinks="queryBuilderProps?.exportLinks" :per-page-options="queryBuilderProps?.perPageOptions"
+                :on-per-page-change="onPerPageChange" />
         </TableWrapper>
     </fieldset>
 </template>
-
-

@@ -42,7 +42,7 @@ import { getComponent } from '@/Composables/Listing/FieldFormList'  // Fieldform
       <form class="divide-y divide-gray-200 w-full" :class="props.fieldData.full ? '' : 'max-w-2xl'">
           <dl class="pb-4 sm:pb-5">
               <!-- Title -->
-              <dt v-if="!fieldData.noTitle" class="text-sm font-medium text-gray-400 capitalize py-2">
+              <dt v-if="!fieldData.noTitle" class="text-sm font-medium text-gray-400 py-2">
                   <div class="inline-flex items-start leading-none"><FontAwesomeIcon v-if="fieldData.required" :icon="['fas', 'asterisk']" class="font-light text-[12px] text-red-400 mr-1"/>{{ fieldData.label }}</div>
               </dt>
   

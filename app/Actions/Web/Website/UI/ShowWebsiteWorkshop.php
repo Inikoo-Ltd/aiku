@@ -71,7 +71,6 @@ class ShowWebsiteWorkshop extends OrgAction
             unset($navigation[WebsiteWorkshopTabsEnum::PRODUCTS->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::FAMILY->value]);
-            unset($navigation[WebsiteWorkshopTabsEnum::COLLECTION->value]);
         }
 
         $tabs = [

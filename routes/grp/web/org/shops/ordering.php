@@ -10,6 +10,7 @@ use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
+use App\Actions\Ordering\Order\PdfProformaInvoice;
 use App\Actions\Ordering\Order\UI\IndexOrders;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Purge\UI\CreatePurge;
@@ -38,6 +39,8 @@ Route::prefix('orders/{order}')->group(function () {
     Route::get('delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInShop'])->name('orders.show.delivery-note');
     Route::get('replacement', [CreateReplacementDeliveryNote::class, 'inOrderInShop'])->name('orders.show.replacement.create');
     Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order.uploads.templates');
+    Route::get('proforma-invoice', PdfProformaInvoice::class)->name('proforma_invoice.download');
+
 });
 
 Route::get('/purges/', IndexPurges::class)->name('purges.index');

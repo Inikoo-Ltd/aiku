@@ -60,7 +60,7 @@ class WebBlockProductResourceEcom extends JsonResource
             if ($customer) {
                 $favourite = $customer->favourites()->where('product_id', $product->id)->whereNull('unfavourited_at')->first();
                 $backInStockReminder = $customer->BackInStockReminder()->where('product_id', $product->id)->first();
-                $back_in_stock = $backInStockReminder ?true : false ;
+                $back_in_stock = $backInStockReminder ? true : false ;
                 $back_in_stock_id = $backInStockReminder?->id;
                 $basket = $customer->orderInBasket;
                 if ($basket) {
@@ -84,7 +84,7 @@ class WebBlockProductResourceEcom extends JsonResource
             'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
             'code'              => $product->code,
-            'name'              => 'esadsdasd',
+            'name'              => $product->name,
             'description'       => $product->description,
             'description_title' => $product->description_title,
             'description_extra' => $product->description_extra,

@@ -20,9 +20,7 @@ return new class () extends Migration {
                 'abandoned_cart',
                 'reorder_reminder',
                 'basket_low_stock',
-                'basket_reminder_1',
-                'basket_reminder_2',
-                'basket_reminder_3',
+                'basket_reminder',
             ];
 
             $table->increments('id');

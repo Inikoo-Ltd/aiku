@@ -106,6 +106,18 @@ class EditInvoice extends OrgAction
                                 ],
                             ],
                         ],
+                        [
+                            'title'   => __('Customer identity number'),
+                            'label'   => __('Customer identity number'),
+                            'icon'    => 'fa-light fa-user',
+                            'fields'  => [
+                                'identity_document_number' => [
+                                    'type'  => 'input',
+                                    'label' => __('Identity document number'),
+                                    'value' => $invoice->identity_document_number
+                                ],
+                            ],
+                        ],
                     ],
                     'args'      => [
                         'updateRoute' => [

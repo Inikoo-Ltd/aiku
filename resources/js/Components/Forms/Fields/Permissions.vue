@@ -238,7 +238,7 @@ const organisationPositionCounts = ref({})
                     <template v-for="(jobGroup, departmentName, idxJobGroup) in groupPositionList" :key="departmentName + idxJobGroup">
                         <div class="grid grid-cols-3 gap-x-1.5 px-2 items-center even:bg-gray-100 transition-all duration-200 ease-in-out">
                             <!-- Section: Department label -->
-                            <div class="flex items-center capitalize gap-x-1.5">
+                            <div class="flex items-center gap-x-1.5">
                                 <FontAwesomeIcon v-if="jobGroup.icon" :icon="jobGroup.icon" class="text-gray-400 fixed-width" aria-hidden="true" />
                                 {{ jobGroup.department }}
                             </div>
@@ -251,7 +251,7 @@ const organisationPositionCounts = ref({})
                                             <!-- If subDepartment is have atleast 1 Fulfilment, or have atleast 1 Shop, or have atleast 1 Warehouse, or have atleast 1 Production, or is a simple sub department (i.e buyer, administrator, etc) -->
                                             <button
                                                 @click.prevent="onClickButtonGroup(departmentName, subDepartment.slug)"
-                                                class="group h-full cursor-pointer flex items-center justify-start rounded-md py-3 px-3 font-medium capitalize disabled:text-gray-400 disabled:cursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
+                                                class="group h-full cursor-pointer flex items-center justify-start rounded-md py-3 px-3 font-medium disabled:text-gray-400 disabled:cursor-not-allowed disabled:ring-0 disabled:active:active:ring-offset-0"
                                                 :class="(isRadioChecked('org-admin') && subDepartment.slug != 'org-admin') || (isRadioChecked('group-admin') && subDepartment.slug != 'group-admin') ? 'text-green-500' : ''"
                                                 :disabled="!!(isRadioChecked('group-admin') && subDepartment.slug != 'group-admin')"
                                             >

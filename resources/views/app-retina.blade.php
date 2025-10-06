@@ -54,5 +54,12 @@
         @endif
         
         @inertia
+
+        <script>
+            window.component = {
+                php: @json(str_replace('\\', '/', Route::currentRouteAction())),
+                vue: ''
+            }
+        </script>
     </body>
 </html>

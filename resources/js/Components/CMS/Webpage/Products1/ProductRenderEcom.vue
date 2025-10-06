@@ -268,7 +268,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                             </span> -->
                         </div>
 
-                        <!-- Rating and Stock -->
+                        <!-- Rating and Stock C-->
                         <div class="flex justify-between items-center text-xs mb-2">
                             <div v-if="layout?.iris?.is_logged_in">
                                 <div v-if="product.stock > 0" class="flex items-center gap-1"

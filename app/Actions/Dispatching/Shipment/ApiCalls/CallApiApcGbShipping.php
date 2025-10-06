@@ -113,12 +113,7 @@ class CallApiApcGbShipping extends OrgAction
 
         $contactName = Str::limit(Arr::get($parentResource, 'to_contact_name'), 60);
         $companyName = Str::limit(Arr::get($parentResource, 'to_company_name'), 30);
-        if (!$companyName) {
-            $companyName = $contactName;
-        }
-        if (!$companyName) {
-            $companyName = 'anonymous';
-        }
+
 
         $prepareParams = [
             'CollectionDate'  => $pickupDate->format('d/m/Y'),
