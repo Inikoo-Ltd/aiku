@@ -24,6 +24,7 @@ import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import type { Navigation } from "@/types/Tabs"
 import { Images } from "@/types/Images"
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
+import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 
 library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
 
@@ -50,7 +51,7 @@ const props = defineProps<{
     products?: {}
     stocks?: {}
     images?: {},
-    images_category_box?: { 
+    images_category_box?: {
         label: string
         type: string
         column_in_db: string
@@ -58,7 +59,7 @@ const props = defineProps<{
         images?: Images
     }[]
     images_update_route: routeType
-    id : number | string
+    id: number | string
 }>()
 
 
@@ -70,7 +71,7 @@ const component = computed(() => {
     const components = {
         showcase: TradeUnitShowcase,
         history: ModelChangelog,
-        attachments: TableAttachments,
+        attachments: AttachmentManagement,
         products: TableProducts,
         stocks: TableStocks,
         images: TradeUnitImagesManagement
@@ -85,27 +86,20 @@ const component = computed(() => {
 
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach" icon="upload" />
+            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+                icon="upload" />
         </template>
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
-    <component 
-        :is="component"
-        :data="props[currentTab]"
-        :tab="currentTab"
-        :tag_routes
-        :detachRoute="attachmentRoutes.detachRoute">
-    </component>
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :tag_routes />
 
     <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',
         information: 'The list of column file: customer_reference, notes, stored_items'
     }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
-
-
-    
 </template>

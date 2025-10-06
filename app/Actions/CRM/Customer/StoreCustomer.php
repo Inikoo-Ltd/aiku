@@ -173,6 +173,10 @@ class StoreCustomer extends OrgAction
             TrafficSourceHydrateCustomers::dispatch($customer->trafficSource);
         }
 
+        if ($customer->shop->is_aiku) {
+            //SaveCustomerInAurora::dispatch($customer);
+        }
+
 
         return $customer;
     }
@@ -189,14 +193,12 @@ class StoreCustomer extends OrgAction
     private function getCommsBaseValues(): array
     {
         return [
-            'is_subscribed_to_newsletter'        => false,
-            'is_subscribed_to_marketing'         => false,
-            'is_subscribed_to_abandoned_cart'    => true,
-            'is_subscribed_to_reorder_reminder'  => true,
-            'is_subscribed_to_basket_low_stock'  => true,
-            'is_subscribed_to_basket_reminder_1' => true,
-            'is_subscribed_to_basket_reminder_2' => true,
-            'is_subscribed_to_basket_reminder_3' => true,
+            'is_subscribed_to_newsletter'       => false,
+            'is_subscribed_to_marketing'        => false,
+            'is_subscribed_to_abandoned_cart'   => true,
+            'is_subscribed_to_reorder_reminder' => true,
+            'is_subscribed_to_basket_low_stock' => true,
+            'is_subscribed_to_basket_reminder'  => true,
 
         ];
     }
@@ -240,25 +242,23 @@ class StoreCustomer extends OrgAction
             'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
 
 
-            'timezone_id'                                            => ['nullable', 'exists:timezones,id'],
-            'language_id'                                            => ['nullable', 'exists:languages,id'],
-            'data'                                                   => ['sometimes', 'array'],
-            'registered_at'                                          => ['sometimes', 'nullable', 'date'],
-            'internal_notes'                                         => ['sometimes', 'nullable', 'string'],
-            'warehouse_internal_notes'                               => ['sometimes', 'nullable', 'string'],
-            'warehouse_public_notes'                                 => ['sometimes', 'nullable', 'string'],
-            'email_subscriptions'                                    => ['sometimes', 'array'],
-            'email_subscriptions.is_subscribed_to_newsletter'        => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_marketing'         => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_abandoned_cart'    => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_reorder_reminder'  => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_low_stock'  => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_1' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_2' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_3' => ['sometimes', 'boolean'],
-            'traffic_sources'                                        => ['sometimes', 'nullable'],
-            'tax_number'                                             => ['sometimes', 'nullable', 'array'],
-            'is_re'                                                  => ['sometimes', 'boolean'],
+            'timezone_id'                                           => ['nullable', 'exists:timezones,id'],
+            'language_id'                                           => ['nullable', 'exists:languages,id'],
+            'data'                                                  => ['sometimes', 'array'],
+            'registered_at'                                         => ['sometimes', 'nullable', 'date'],
+            'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
+            'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],
+            'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
+            'email_subscriptions'                                   => ['sometimes', 'array'],
+            'email_subscriptions.is_subscribed_to_newsletter'       => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_marketing'        => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_abandoned_cart'   => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
+            'traffic_sources'                                       => ['sometimes', 'nullable'],
+            'tax_number'                                            => ['sometimes', 'nullable', 'array'],
+            'is_re'                                                 => ['sometimes', 'boolean'],
 
 
             'password' =>
