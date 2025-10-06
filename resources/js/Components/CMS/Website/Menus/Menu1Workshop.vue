@@ -24,7 +24,7 @@ const layout = inject("layout", layoutStructure);
 const isCollapsedOpen = ref(false);
 const debSetCollapsedTrue = debounce(() => {
     isCollapsedOpen.value = true;
-}, 800);
+}, 150);
 
 const debSetCollapsedFalse = debounce(() => {
     isCollapsedOpen.value = false;
@@ -75,6 +75,7 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
     <div class="bg-white py-1 border-b border-0.5 border-gray-300" :style="{...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin : 0, padding : 0, ...getStyles(fieldValue?.container?.properties,screenType)}">
         <div
             @mouseleave="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())"
+            @mouseenter="() => (debSetCollapsedTrue(), debSetCollapsedFalse.cancel())"
             :style="getStyles(fieldValue?.navigation_container?.properties,screenType)"
             class="relative xcontainerx flex  justify-between items-center gap-x-2 px-4">
 
@@ -140,8 +141,8 @@ const isOpenMenuMobile = inject("isOpenMenuMobile", ref(false));
             </nav>
 
             <Collapse v-if="hoveredNavigation?.subnavs" :when="isCollapsedOpen" as="div"
-                class="z-[49] absolute left-0 top-full bg-white border border-gray-300 w-full shadow-lg"
-                :class="isCollapsedOpen ? '' : 'border-t-0'"
+                class="z-[49] absolute left-0 top-full -translate-y-0.5 bg-white border w-full shadow-lg"
+                :class="isCollapsedOpen ? 'border-gray-300 ' : 'border-t-0'"
                 :style="getStyles(fieldValue?.container?.properties, screenType)" >
                 <div class="grid grid-cols-4 gap-3 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
