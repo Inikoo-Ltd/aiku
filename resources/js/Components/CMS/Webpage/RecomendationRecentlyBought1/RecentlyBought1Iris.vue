@@ -57,40 +57,39 @@ const isFetched = ref(false)
 const fetchRecommenders = async () => {
     try {
         isLoadingFetch.value = true
-        const response = await axios.post(
-            `https://live.luigisbox.com/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
-            [
-                {
-                    "blacklisted_item_ids": [],
-                    "item_ids": [],
-                    "recommendation_type": "trends",
-                    "recommender_client_identifier": "trends",
-                    "size": 12,
-                    "user_id": layout.iris?.user_auth?.customer_id?.toString(),
-                    "category": undefined,
-                    "brand": undefined,
-                    "product_id": undefined,
-                    "recommendation_context": {},
-                    // "hit_fields": ["url", "title"]
-                }
-            ],
-            {
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8'
-                }
-            }
+        
+        const response = await axios.get(
+            route('iris.json.product_category.last-ordered-products.index', { productCategory: 8279 })
         )
-        if (response.status !== 200) {
-            console.error('Error fetching recommenders:', response.statusText)
+        
+        
+        if (response.data?.[0]?.hits) {
+            console.log('Found hits in data[0]:', response.data[0].hits)
+            listProducts.value = response.data[0].hits
+        } else if (Array.isArray(response.data)) {
+            console.log('Using data directly as array:', response.data)
+            listProducts.value = response.data
+        } else if (response.data?.data) {
+            console.log('Found data property:', response.data.data)
+            listProducts.value = response.data.data
+        } else {
+            console.log('Data structure not recognized, setting to empty array')
+            listProducts.value = []
         }
-        console.log('LTrends1:', response.data)
-        listProducts.value = response.data[0].hits
+        
+        console.log('Final listProducts value:', listProducts.value)
+        console.log('=== END FETCH SUCCESS ===')
+        
     } catch (error: any) {
+        console.log('=== FETCH ERROR ===')
         console.error('Error on fetching recommendations:', error)
+        console.log('Error response:', error.response?.data)
+        console.log('Error status:', error.response?.status)
+        console.log('=== END FETCH ERROR ===')
     } finally {
         isFetched.value = true
+        isLoadingFetch.value = false
     }
-    isLoadingFetch.value = false
 }
 
 onMounted(() => {

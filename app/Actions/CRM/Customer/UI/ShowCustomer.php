@@ -156,6 +156,13 @@ class ShowCustomer extends OrgAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
+                'notes'              => $this->getOrderNotes($customer),
+                'updateRoute'   => [
+                    'name'       => 'grp.models.customer.update',
+                    'parameters' => [
+                        'customer' => $customer->id
+                    ]
+                ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.customer.attachment.attach',
@@ -224,6 +231,39 @@ class ShowCustomer extends OrgAction
     public function jsonResponse(Customer $customer): CustomersResource
     {
         return new CustomersResource($customer);
+    }
+
+    
+    public function getOrderNotes(Customer $customer): array
+    {
+        return [
+            "note_list" => [
+                [
+                    "label"       => __("Private"),
+                    "note"        => $customer->internal_notes ?? '',
+                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
+                    "editable"    => true,
+                    "bgColor"     => "#FF7DBD",
+                    "field"       => "internal_notes"
+                ],
+                [
+                    "label"       => __("Warehouse Public"),
+                    "note"        => $customer->warehouse_public_notes ?? '',
+                    "information" => __("This note will be visible to public, both staff and the customer can see."),
+                    "editable"    => true,
+                    "bgColor"     => "#94DB84",
+                    "field"       => "warehouse_public_notes"
+                ],
+                [
+                    "label"       => __("Warehouse internal"),
+                    "note"        => $customer->warehouse_internal_notes ?? '',
+                    "information" => __("This note is from customer in the platform. Not editable."),
+                    "editable"    => false,
+                    "bgColor"     => "#FCF4A3",
+                    "field"       => "warehouse_internal_notes"
+                ]
+            ]
+        ];
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array
