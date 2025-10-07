@@ -233,7 +233,7 @@ class ShowCustomer extends OrgAction
         return new CustomersResource($customer);
     }
 
-    
+
     public function getOrderNotes(Customer $customer): array
     {
         return [

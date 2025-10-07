@@ -57,7 +57,7 @@ class UnsubscribeAurora extends IrisAction
         if ($type == 'Customer') {
             $source_id = $this->organisation.':'.Arr::get($data, 'unsubscribe_subject_key');
             $customer  = Customer::where('source_id', $source_id)->first();
-            if(!$customer){
+            if (!$customer) {
                 $customer  = Customer::where('post_source_id', $source_id)->first();
             }
 
@@ -78,7 +78,7 @@ class UnsubscribeAurora extends IrisAction
         } elseif ($type == 'Prospect') {
             $source_id = $this->organisation.':'.Arr::get($data, 'unsubscribe_subject_key');
             $prospect  = Prospect::where('source_id', $source_id)->first();
-            if(!$prospect){
+            if (!$prospect) {
                 $prospect  = Prospect::where('post_source_id', $source_id)->first();
             }
 

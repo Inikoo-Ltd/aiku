@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 06 Oct 2025 16:36:14 Malaysia Time, Kuala Lumpur, Malaysia
@@ -8,7 +9,6 @@
 namespace App\Enums\Goods\TradeUnit;
 
 use App\Enums\EnumHelperTrait;
-use App\Models\SysAdmin\Group;
 
 enum TradeAttachmentScopeEnum: string
 {

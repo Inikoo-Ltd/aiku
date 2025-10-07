@@ -12,7 +12,6 @@ namespace App\Http\Resources\CRM;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Helpers\Media;
-use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -36,12 +35,13 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $web_images
  * @property mixed $top_seller
  * @property mixed $parent_url
+ * @property mixed $quantity_ordered
  */
 class CustomerFavouritesResource extends JsonResource
 {
     use HasSelfCall;
 
-   public function toArray($request): array
+    public function toArray($request): array
     {
         $url = '';
         if ($this->parent_url) {
@@ -53,23 +53,22 @@ class CustomerFavouritesResource extends JsonResource
         if ($request->user()) {
             $customer = $request->user()->customer;
             if ($customer) {
-                $favourite = $customer?->favourites()?->where('product_id', $this->id)->first();
+                $favourite = $customer->favourites()?->where('product_id', $this->id)->first();
             }
         }
 
-        $back_in_stock_id = null;
+
         $back_in_stock = false;
 
         if ($request->user()) {
             $customer = $request->user()->customer;
             if ($customer) {
-                $set_data_back_in_stock = $customer?->BackInStockReminder()
+                $set_data_back_in_stock = $customer->BackInStockReminder()
                     ?->where('product_id', $this->id)
                     ->first();
 
                 if ($set_data_back_in_stock) {
                     $back_in_stock = true;
-                    $back_in_stock_id = $set_data_back_in_stock->id;
                 }
             }
         }
