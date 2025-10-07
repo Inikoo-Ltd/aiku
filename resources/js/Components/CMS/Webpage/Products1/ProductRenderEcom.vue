@@ -234,8 +234,10 @@ console.log(props)
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
                 class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative">
+                <slot name="image" :product="product">
                 <Image :src="product?.web_images?.main?.gallery" alt="product image"
                     :style="{ objectFit: 'contain' }" />
+                </slot>
 
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
