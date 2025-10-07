@@ -22,7 +22,7 @@ class DeleteRetinaFavourite extends RetinaAction
 
     public function handle(Customer $customer, Product $product): void
     {
-     /** @var Favourite $favourite */
+        /** @var Favourite $favourite */
         $favourite = $customer->favourites()->where('product_id', $product->id)->first();
         if ($favourite) {
             UnFavourite::make()->action($favourite, []);

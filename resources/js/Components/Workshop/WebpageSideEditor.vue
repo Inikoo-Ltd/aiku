@@ -201,7 +201,7 @@ defineExpose({
         <TabPanel class="w-[400px] p-2">
           <div class="max-h-[calc(100vh-220px)] overflow-y-auto">
             <SiteSettings :webpage="webpage" :webBlockTypes="webBlockTypes"
-              @onSaveSiteSettings="v => emits('onSaveSiteSettings', v)" />
+              @onSaveSiteSettings="(v: any) => emits('onSaveSiteSettings', v)" />
           </div>
         </TabPanel>
 
@@ -214,7 +214,7 @@ defineExpose({
                 :size="'xs'" label="Block" />
               <select
                 class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none"
-                :value="filterBlock" @change="e => filterBlock = e.target.value">
+                :value="filterBlock" @change="(event: { target: { value: any } }) => filterBlock = event.target.value">
                 <option disabled value="">Filter</option>
                 <option v-for="option in filterOptions" :key="option.value" :value="option.value">
                   {{ option.label }}
@@ -228,7 +228,7 @@ defineExpose({
                 ghost-class="ghost" group="column" itemKey="id" class="space-y-1">
                 <template #item="{ element, index }">
                   <div v-if="showWebpage(element)" class="bg-white border border-gray-200 rounded"
-                    @contextmenu="e => openContextMenu(e, element)">
+                    @contextmenu="(event: any) => openContextMenu(event, element)">
                     <div class="flex justify-between items-center px-3 py-2 "
                       v-tooltip="getEditPermissions(element.web_block.layout.data) ? '' : trans('This block is reserved by system. Not editable.')"
                       :class="[
@@ -262,7 +262,7 @@ defineExpose({
                         </button>
 
                         <button v-if="getDeletePermissions(element.web_block.layout.data)"
-                          @click="e => isLoadingDeleteBlock !== element.id && confirmDelete(e, element)"
+                          @click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
                           class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
                           <LoadingIcon v-if="isLoadingDeleteBlock === element.id" />
                           <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-500" fixed-width />

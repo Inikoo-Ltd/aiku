@@ -62,7 +62,7 @@ class UpdateRental extends OrgAction
 
         return $rental;
     }
-    
+
 
     public function rules(): array
     {

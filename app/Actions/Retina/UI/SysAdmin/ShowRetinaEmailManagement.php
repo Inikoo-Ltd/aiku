@@ -10,6 +10,7 @@ namespace App\Actions\Retina\UI\SysAdmin;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Http\Resources\CRM\CustomerResource;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -50,7 +51,7 @@ class ShowRetinaEmailManagement extends RetinaAction
                     "blueprint" =>
                     [
                         [
-                            'title'  => __('marketing information'),
+                            'title'  => __('Marketing information'),
                             'label'  => __('marketing'),
                             'icon'    => 'fa-light fa-envelope',
                             'fields' => [
@@ -58,6 +59,16 @@ class ShowRetinaEmailManagement extends RetinaAction
                                         'type'  => 'input',
                                         'label' => __('email'),
                                         'value' => $customer->email
+                                    ],
+                                    'email_subscriptions' => [
+                                        'type'  => 'email_subscriptions',
+                                        'full' => true,
+                                        'noSaveButton' => true,
+                                        "updateRoute" => [
+                                            "name"       => "retina.models.customer.comms.update",
+                                            'parameters' => [$customer->comms->id]
+                                        ],
+                                        'customer' => CustomerResource::make($customer)->getArray(),
                                     ],
                                 ]
                         ]

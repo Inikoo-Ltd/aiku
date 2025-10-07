@@ -25,7 +25,6 @@ class IndexCustomerFavourites extends OrgAction
 {
     public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
     {
-        // dd($parent->favourites);
         $basket = $parent->orderInBasket;
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -42,19 +41,22 @@ class IndexCustomerFavourites extends OrgAction
         $query = QueryBuilder::for(Favourite::class);
         $query->where('favourites.customer_id', $parent->id);
         $query->leftJoin('products', 'favourites.product_id', '=', 'products.id');
-        $query->leftJoin('transactions', function ($join) use ($basket) {
-            $join->on('products.id', '=', 'transactions.model_id')
-                ->where('transactions.model_type', '=', 'Product')
-                ->where('transactions.order_id', '=', $basket->id)
-                ->whereNull('transactions.deleted_at');
-        });
+        if($basket) {
+            $query->leftJoin('transactions', function ($join) use ($basket) {
+                $join->on('products.id', '=', 'transactions.model_id')
+                    ->where('transactions.model_type', '=', 'Product')
+                    ->where('transactions.order_id', '=', $basket->id)
+                    ->whereNull('transactions.deleted_at');
+            });
+            $select[] = 'transactions.id as in_basket_transaction_id';
+            $select[] = 'transactions.quantity_ordered as in_basket_quantity_ordered';
+        }
         $query->leftJoin('webpages', function ($join) {
             $join->on('products.id', '=', 'webpages.model_id')
                 ->where('webpages.model_type', '=', 'Product');
         });
         $query->whereNull('favourites.unfavourited_at');
-        // dd($query->get());
-        $select =[
+        $select = [
                 'products.id',
                 'products.image_id',
                 'products.code',
@@ -74,8 +76,6 @@ class IndexCustomerFavourites extends OrgAction
                 'products.top_seller',
                 'products.web_images',
                 'webpages.url',
-                'transactions.id as transaction_id',
-                'transactions.quantity_ordered as quantity_ordered',
         ];
 
         return $query->defaultSort('products.code')
@@ -114,7 +114,7 @@ class IndexCustomerFavourites extends OrgAction
                 );
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, searchable: true, sortable: true, );
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true, );
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'actions', label: '', canBeHidden: false);
         };

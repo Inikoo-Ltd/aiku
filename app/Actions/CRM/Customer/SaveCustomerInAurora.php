@@ -32,8 +32,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
      */
     public function handle(Customer $customer): void
     {
-
-        if(!$customer->shop->is_aiku){
+        if (!$customer->shop->is_aiku) {
             return;
         }
 
@@ -100,9 +99,6 @@ class SaveCustomerInAurora implements ShouldBeUnique
         if (Arr::get($response, 'error')) {
             print_r($response->json());
         }
-
-
-
     }
 
 
@@ -154,7 +150,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
                         } catch (\Exception $e) {
                             $command->error("Error processing customer: $customer->slug - {$e->getMessage()}");
                         }
-                       // $bar->advance();
+                        $bar->advance();
                     }
                 });
 
