@@ -52,6 +52,9 @@ class LastOrderedProductsResource extends JsonResource
             'state'                     => $this->state,
             'available_quantity'        => $this->available_quantity,
             'price'                     => $this->price,
+            'submitted_at'              => $this->submitted_at,
+            'customer_contact_name'     => $this->customer_contact_name,
+            'customer_name'             => $this->customer_name,
         ];
     }
 }
