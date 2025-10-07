@@ -22,6 +22,7 @@ import Pagination from '@/Components/Table/Pagination.vue'
 import TableFilterSearch from '@/Components/Table/TableFilterSearch.vue'
 import TableWrapper from '@/Components/Table/TableWrapper.vue'
 import HeaderCell from '@/Components/Table/HeaderCell.vue'
+import Image from '@/Components/Image.vue'
 
 // Product Components
 import RecordCounter from './RecordCounter.vue'
@@ -516,7 +517,8 @@ const toggleFavorite = (product: Product): void => {
                 </div>
 
                 <div>
-                    <slot v-for="column in queryBuilderProps.columns.filter(item => item.sortable)":name="`header(${column.key})`" :header="column">
+                    <slot v-for="column in queryBuilderProps.columns.filter(item => item.sortable)"
+                        :name="`header(${column.key})`" :header="column">
                         <HeaderCell :key="`table-${name}-header-${column.key}`" :cell="header(column.key)"
                             :type="columnsType[column.key]" :column="column" :resource="compResourceData">
                         </HeaderCell>
@@ -536,15 +538,17 @@ const toggleFavorite = (product: Product): void => {
                             :existing-transaction="getExistingTransaction(item)"
                             @toggle-favorite="toggleFavorite" 
                         /> -->
-                        <ProductRenderEcom
-                                :product="item"
-                                :key="index"
-                                :dettach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"
-                                :attachToFavouriteRoute="{ name: 'retina.models.product.favourite' }"
-                                :add-to-basket-route="{ name: 'retina.models.product.add-to-basket'}"
-                                :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update', method: 'patch' }"
-                                @after-on-unselect-favourite="(e)=>router.reload()"
-                            />
+                        <ProductRenderEcom :product="item" :key="index"
+                            :dettach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"
+                            :attachToFavouriteRoute="{ name: 'retina.models.product.favourite' }"
+                            :add-to-basket-route="{ name: 'retina.models.product.add-to-basket'}"
+                            :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update', method: 'patch' }"
+                            @after-on-unselect-favourite="(e)=>router.reload()">
+                            <template #image="{ product }">
+                                <Image :src="product?.image?.source" alt="product image"
+                                    :style="{ objectFit: 'contain' }" />
+                            </template>
+                        </ProductRenderEcom>
                     </slot>
                 </div>
 

@@ -14,6 +14,7 @@ use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditTradeUnit extends OrgAction
@@ -300,6 +301,155 @@ class EditTradeUnit extends OrgAction
                                     'type_label' => 'department-and-sub-department',
                                     'labelProp' => 'code',
                                     'value'   => $tradeUnit->tradeUnitFamily->id ?? null,
+                                ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('Properties'),
+                            'icon'   => 'fa-light fa-book-open-open',
+                            'fields' => [
+                                'ingredients' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ingredients'),
+                                    'value' => $tradeUnit->ingredients
+                                ],
+                                'country_of_origin' => [
+                                    'type'  => 'select',
+                                    'label' => __('Country of Origin'),
+                                    'value' => $tradeUnit->country_of_origin,
+                                    'options' => GetCountriesOptions::run(),
+                                    'valueProp' => 'label',
+                                ],
+                                'tariff_code' => [
+                                    'type'  => 'input',
+                                    'label' => __('Tariff Code'),
+                                    'value' => $tradeUnit->tariff_code
+                                ],
+                                'duty_rate' => [
+                                    'type'  => 'input',
+                                    'label' => __('Duty Rate'),
+                                    'value' => $tradeUnit->duty_rate
+                                ],
+                                'hts_us' => [
+                                    'type'  => 'input',
+                                    'label' => __('HTS US'),
+                                    'value' => $tradeUnit->hts_us,
+                                ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('Health & Safety'),
+                            'icon'   => 'fa-light fa-notes-medical',
+                            'fields' => [
+                                'un_number' => [
+                                    'type'  => 'input',
+                                    'label' => __('UN Number'),
+                                    'value' => $tradeUnit->un_number
+                                ],
+                                'un_class' => [
+                                    'type'  => 'input',
+                                    'label' => __('UN Class'),
+                                    'value' => $tradeUnit->un_class
+                                ],
+                                'packing_group' => [
+                                    'type'  => 'input',
+                                    'label' => __('Packing Group'),
+                                    'value' => $tradeUnit->packing_group
+                                ],
+                                'proper_shipping_name' => [
+                                    'type'  => 'input',
+                                    'label' => __('Proper Shipping Name'),
+                                    'value' => $tradeUnit->proper_shipping_name
+                                ],
+                                'hazard_identification_number' => [
+                                    'type'  => 'input',
+                                    'label' => __('Hazard Identification Number'),
+                                    'value' => $tradeUnit->hazard_identification_number,
+                                ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('GPSR (if empty will use Part GPSR)'),
+                            'icon'   => 'fa-light fa-biohazard',
+                            'fields' => [
+                                'gpsr_manufacturer' => [
+                                    'type'  => 'input',
+                                    'label' => __('Manufacturer'),
+                                    'value' => $tradeUnit->gpsr_manufacturer
+                                ],
+                                'gpsr_eu_responsible' => [
+                                    'type'  => 'input',
+                                    'label' => __('EU Responsible'),
+                                    'value' => $tradeUnit->gpsr_eu_responsible
+                                ],
+                                'warnings' => [
+                                    'type'  => 'input',
+                                    'label' => __('Warnings'),
+                                    'value' => $tradeUnit->gpsr_warnings
+                                ],
+                                'gpsr_manual' => [
+                                    'type'  => 'input',
+                                    'label' => __('How To Use'),
+                                    'value' => $tradeUnit->gpsr_manual
+                                ],
+                                'gpsr_class_category_danger' => [
+                                    'type'  => 'input',
+                                    'label' => __('Class & category of danger'),
+                                    'value' => $tradeUnit->gpsr_class_category_danger,
+                                ],
+                                'pictogram_toxic' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Acute Toxicity'),
+                                    'value' => $tradeUnit->pictogram_toxic,
+                                    'suffixImage' => '/hazardIcon/toxic-icon.png'
+                                ],
+                                'pictogram_corrosive' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Corrosive'),
+                                    'value' => $tradeUnit->pictogram_corrosive,
+                                    'suffixImage' => '/hazardIcon/corrosive-icon.png'
+                                ],
+                                'pictogram_explosive' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Explosive'),
+                                    'value' => $tradeUnit->pictogram_explosive,
+                                    'suffixImage' => '/hazardIcon/explosive.jpg'
+                                ],
+                                'pictogram_flammable' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Flammable'),
+                                    'value' => $tradeUnit->pictogram_flammable,
+                                    'suffixImage' => '/hazardIcon/flammable.png'
+                                ],
+                                'pictogram_gas' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Gas Under Pressure'),
+                                    'value' => $tradeUnit->pictogram_gas,
+                                    'suffixImage' => '/hazardIcon/gas.png'
+                                ],
+                                'pictogram_environment' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Hazardous to the Environment'),
+                                    'value' => $tradeUnit->pictogram_environment,
+                                    'suffixImage' => '/hazardIcon/hazard-env.png'
+                                ],
+                                'pictogram_health' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Health Hazard'),
+                                    'value' => $tradeUnit->pictogram_health,
+                                    'suffixImage' => '/hazardIcon/health-hazard.png'
+                                ],
+                                'pictogram_oxidising' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Oxidising'),
+                                    'value' => $tradeUnit->pictogram_oxidising,
+                                    'suffixImage' => '/hazardIcon/oxidising.png'
+                                ],
+                                'pictogram_danger' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Serious Health Hazard'),
+                                    'value' => $tradeUnit->pictogram_danger,
+                                    'suffixImage' => '/hazardIcon/serious-health-hazard.png'
                                 ],
                             ],
                         ],

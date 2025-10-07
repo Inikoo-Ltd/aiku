@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref, reactive } from "vue"
+import { ref, reactive, computed } from "vue"
 import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUnlink, faInfoCircle, faFile, faStarChristmas } from "@fal"
+import { faUnlink, faInfoCircle, faFile, faStarChristmas, faFileCheck } from "@fal"
 import Message from "primevue/message"
 import ProgressBar from "primevue/progressbar"
 import { routeType } from "@/types/route"
+import { router } from "@inertiajs/vue3"
+
 
 const props = defineProps<{
     data: {
@@ -66,6 +68,7 @@ async function uploadFiles(files: FileList, categoryBox: Record<string, any>) {
         )
 
         notifySuccess(trans("File(s) uploaded successfully"))
+        router.reload()
     } catch (err: any) {
         console.error(err)
         notifyError(err.response?.data?.message || trans("Failed to upload file(s)"))
@@ -95,15 +98,31 @@ function onClickBox(categoryBox: any) {
 }
 
 async function onDeletefilesInBox(categoryBox: any) {
+    const attachment = getAttachment(categoryBox)
+    if (!attachment?.id) {
+        notifyError(trans("No attachment found to delete"))
+        return
+    }
+
     const payload = { [categoryBox.scope]: null }
 
     try {
         loadingSubmit.value = categoryBox.scope
-        await axios.post(
-            route(props.data.detachRoute.name, props.data.detachRoute.parameters),
+
+        await axios.delete(
+            route(props.data.detachRoute.name, {
+                ...props.data.detachRoute.parameters,
+                attachment: attachment.id,
+            }),
             payload
         )
+
         notifySuccess(trans("Attachment deleted successfully"))
+
+        // Optional: refresh UI (depending on your Inertia setup)
+        if (typeof router !== "undefined" && router.reload) {
+            router.reload()
+        }
     } catch (err: any) {
         console.error(err)
         notifyError(err.response?.data?.message || trans("Failed to delete attachment"))
@@ -111,6 +130,12 @@ async function onDeletefilesInBox(categoryBox: any) {
         loadingSubmit.value = null
     }
 }
+
+
+function getAttachment(item: any) {
+    return props.data.attachments.find(att => att.scope === item.scope)
+}
+
 </script>
 
 <template>
@@ -153,8 +178,8 @@ async function onDeletefilesInBox(categoryBox: any) {
                         <div class="flex items-center gap-2">
                             <FontAwesomeIcon v-if="categoryBox.information" v-tooltip="categoryBox.information"
                                 icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width />
-                            <FontAwesomeIcon v-if="(categoryBox.attachments || categoryBox.url) && editable"
-                                :icon="faUnlink" @click.stop="() => onDeletefilesInBox(categoryBox)"
+                            <FontAwesomeIcon v-if="getAttachment(categoryBox) && editable" :icon="faUnlink"
+                                @click.stop="() => onDeletefilesInBox(categoryBox)"
                                 class="text-red-600 cursor-pointer text-xs" />
                         </div>
                     </div>
@@ -162,17 +187,30 @@ async function onDeletefilesInBox(categoryBox: any) {
                     <!-- Drop Zone / Preview -->
                     <div
                         class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden relative">
-                        <template v-if="categoryBox.attachments">
-                            <img :src="categoryBox.attachments" alt="Attachment" class="object-contain w-full h-full" />
+                        <template v-if="getAttachment(categoryBox)">
+                            <div
+                                class="flex flex-col items-center justify-center h-full text-green-700 bg-green-50  shadow-inner transition hover:bg-green-100 hover:scale-[1.02] cursor-pointer p-3">
+                                <FontAwesomeIcon :icon="faFileCheck"
+                                    class="mb-2 text-3xl text-green-500 animate-pulse" />
+                                <span class="text-[13px] font-semibold text-green-700 text-center">
+                                    {{ getAttachment(categoryBox)?.caption || trans("Attachment uploaded") }}
+                                </span>
+                                <!--  <span class="text-[11px] text-green-500 mt-1">
+                                    {{ trans("Click to view or replace") }}
+                                </span> -->
+                            </div>
                         </template>
+
                         <template v-else>
-                            <div class="flex flex-col items-center justify-center text-gray-400 h-full">
-                                <FontAwesomeIcon :icon="faFile" class="mb-1 text-2xl" />
+                            <div
+                                class="flex flex-col items-center justify-center text-gray-400 h-full bg-gray-50  rounded-md hover:bg-gray-100 transition cursor-pointer p-3">
+                                <FontAwesomeIcon :icon="faFile" class="mb-2 text-2xl" />
                                 <span class="text-[12px] font-medium">
                                     {{ trans("Drop or click to upload") }}
                                 </span>
                             </div>
                         </template>
+
 
                         <!-- ProgressBar always at the bottom -->
                         <div v-if="uploadProgress[categoryBox.scope] > 0" class="absolute bottom-3 left-0 w-full p-3">
@@ -226,12 +264,24 @@ async function onDeletefilesInBox(categoryBox: any) {
                     <!-- Drop Zone / Preview -->
                     <div
                         class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden relative">
-                        <template v-if="categoryBox.attachments">
-                            <img :src="categoryBox.attachments" alt="Attachment" class="object-contain w-full h-full" />
+                        <template v-if="getAttachment(categoryBox)">
+                            <div
+                                class="flex flex-col items-center justify-center h-full text-green-700 bg-green-50  shadow-inner transition hover:bg-green-100 hover:scale-[1.02] cursor-pointer p-3">
+                                <FontAwesomeIcon :icon="faFileCheck"
+                                    class="mb-2 text-3xl text-green-500 animate-pulse" />
+                                <span class="text-[13px] font-semibold text-green-700 text-center">
+                                    {{ getAttachment(categoryBox)?.caption || trans("Attachment uploaded") }}
+                                </span>
+                                <!--  <span class="text-[11px] text-green-500 mt-1">
+                                    {{ trans("Click to view or replace") }}
+                                </span> -->
+                            </div>
                         </template>
+
                         <template v-else>
-                            <div class="flex flex-col items-center justify-center text-gray-400 h-full">
-                                <FontAwesomeIcon :icon="faFile" class="mb-1 text-2xl" />
+                            <div
+                                class="flex flex-col items-center justify-center text-gray-400 h-full bg-gray-50  rounded-md hover:bg-gray-100 transition cursor-pointer p-3">
+                                <FontAwesomeIcon :icon="faFile" class="mb-2 text-2xl" />
                                 <span class="text-[12px] font-medium">
                                     {{ trans("Drop or click to upload") }}
                                 </span>
