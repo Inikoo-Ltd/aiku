@@ -89,7 +89,9 @@ class FetchAuroraProspects extends FetchAuroraAction
 
         if ($this->shop) {
             $query->where('Prospect Store Key', $this->shop->source_id);
+
         }
+
 
         return $query;
     }
