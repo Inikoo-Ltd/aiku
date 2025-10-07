@@ -101,7 +101,7 @@ const submitCheckStock = () => {
                     <div class="w-14">
                         <InputNumber
                             :modelValue="forrrmm.stock"
-                            @input="e => forrrmm.stock = e.value"
+                            @input="(event: { value: any }) => forrrmm.stock = event.value"
                             :min="0"
                             :disabled="forrrmm.isAudited"
                             :step="1"
