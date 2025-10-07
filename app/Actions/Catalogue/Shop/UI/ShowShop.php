@@ -220,7 +220,7 @@ class ShowShop extends OrgAction
                 'flatTreeMaps' => [
                     [
                         [
-                            'name'  => __('customers'),
+                            'name'  => __('Customers'),
                             'icon'  => ['fal', 'fa-user'],
                             'route' => ['grp.org.shops.show.crm.customers.index', $shop->slug],
                             'index' => [
@@ -228,7 +228,7 @@ class ShowShop extends OrgAction
                             ]
                         ],
                         [
-                            'name'  => __('prospects'),
+                            'name'  => __('Prospects'),
                             'icon'  => ['fal', 'fa-user'],
                             'route' => ['grp.crm.shops.show.prospects.index', $shop->slug],
                             'index' => [
@@ -238,7 +238,7 @@ class ShowShop extends OrgAction
                     ],
                     [
                         [
-                            'name'  => __('departments'),
+                            'name'  => __('Departments'),
                             'icon'  => ['fal', 'fa-folder-tree'],
                             'route' => ['shops.show.departments.index', $shop->slug],
                             'index' => [
@@ -247,7 +247,7 @@ class ShowShop extends OrgAction
                         ],
 
                         [
-                            'name'  => __('families'),
+                            'name'  => __('Families'),
                             'icon'  => ['fal', 'fa-folder'],
                             'route' => ['shops.show.families.index', $shop->slug],
                             'index' => [
@@ -256,7 +256,7 @@ class ShowShop extends OrgAction
                         ],
 
                         [
-                            'name'  => __('products'),
+                            'name'  => __('Products'),
                             'icon'  => ['fal', 'fa-cube'],
                             'route' => ['shops.show.products.index', $shop->slug],
                             'index' => [
@@ -266,7 +266,7 @@ class ShowShop extends OrgAction
                     ],
                     [
                         [
-                            'name'  => __('orders'),
+                            'name'  => __('Orders'),
                             'icon'  => ['fal', 'fa-shopping-cart'],
                             'route' => ['grp.crm.shops.show.orders.index', $shop->slug],
                             'index' => [
@@ -274,7 +274,7 @@ class ShowShop extends OrgAction
                             ]
                         ],
                         [
-                            'name'  => __('invoices'),
+                            'name'  => __('Invoices'),
                             'icon'  => ['fal', 'fa-file-invoice'],
                             'route' => ['grp.crm.shops.show.invoices.index', $shop->slug],
                             'index' => [
@@ -282,7 +282,7 @@ class ShowShop extends OrgAction
                             ]
                         ],
                         [
-                            'name'  => __('delivery-notes'),
+                            'name'  => __('Delivery notes'),
                             'icon'  => ['fal', 'fa-sticky-note'],
                             'route' => ['grp.crm.shops.show.delivery-notes.index', $shop->slug],
                             'index' => [
