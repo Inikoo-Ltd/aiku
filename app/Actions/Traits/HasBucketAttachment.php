@@ -52,6 +52,41 @@ trait HasBucketAttachment
                 'file'         => null,
                 'size'         => '2kb',
             ],
+            [
+                'label'        => __('UFRA Private'),
+                'scope'        => 'ifra_private',
+                'id'           => null,
+                'file'         => null,
+                'size'         => '2kb',
+            ],
+            [
+                'label'        => __('SDS Private'),
+                'scope'        => 'sds_private',
+                'id'           => null,
+                'file'         => null,
+                'size'         => '2kb',
+            ],
+            [
+                'label'        => __('Allergen Declarations Private'),
+                'scope'        => 'allergen_declarations_private',
+                'id'           => null,
+                'file'         => null,
+                'size'         => '2kb',
+            ],
+            [
+                'label'        => __('CPSR Private'),
+                'scope'        => 'cpsr_private',
+                'id'           => null,
+                'file'         => null,
+                'size'         => '2kb',
+            ],
+            [
+                'label'        => __('DOC Private'),
+                'scope'        => 'doc_private',
+                'id'           => null,
+                'file'         => null,
+                'size'         => '2kb',
+            ],
         ];
     }
 }

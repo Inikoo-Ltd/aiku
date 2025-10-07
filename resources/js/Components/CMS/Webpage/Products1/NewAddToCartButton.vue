@@ -103,7 +103,7 @@ const onAddToBasket = async (product: ProductResource) => {
 
 // Update quantity function - exact copy dari ButtonAddToBasketInFamily
 const onUpdateQuantity = (product: ProductResource) => {
-    router.post(
+    router[props.updateBasketQuantityRoute.method || 'post'](
         route(props.updateBasketQuantityRoute.name, {
             transaction: product.transaction_id
         }),
