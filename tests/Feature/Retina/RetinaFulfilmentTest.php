@@ -173,41 +173,55 @@ beforeEach(function () {
 
     $this->webUser = createWebUser($this->customer);
 
-    $palletRental         = StoreRental::make()->action(
-        $this->fulfilment->shop,
-        [
-            'price'                  => 100,
-            'unit'                   => RentalUnitEnum::WEEK->value,
-            'code'                   => 'R00002',
-            'name'                   => 'Rental Asset B',
-            'auto_assign_asset'      => 'Pallet',
-            'auto_assign_asset_type' => PalletTypeEnum::PALLET->value
-        ]
-    );
+    $palletRental =  Rental::where('auto_assign_asset_type',PalletTypeEnum::PALLET)->first();
+    if (!$palletRental) {
+
+        $palletRental         = StoreRental::make()->action(
+            $this->fulfilment->shop,
+            [
+                'price'                  => 100,
+                'unit'                   => RentalUnitEnum::WEEK->value,
+                'code'                   => 'R00002',
+                'name'                   => 'Rental Asset B',
+                'auto_assign_asset'      => 'Pallet',
+                'auto_assign_asset_type' => PalletTypeEnum::PALLET->value
+            ]
+        );
+    }
     $this->palletRental   = $palletRental;
-    $oversizeRental       = StoreRental::make()->action(
-        $this->fulfilment->shop,
-        [
-            'price'                  => 100,
-            'unit'                   => RentalUnitEnum::WEEK->value,
-            'code'                   => 'R00003',
-            'name'                   => 'Rental Asset C',
-            'auto_assign_asset'      => 'Pallet',
-            'auto_assign_asset_type' => PalletTypeEnum::OVERSIZE->value
-        ]
-    );
+
+    $oversizeRental = Rental::where('auto_assign_asset_type',PalletTypeEnum::OVERSIZE)->first();
+
+    if(!$oversizeRental) {
+        $oversizeRental = StoreRental::make()->action(
+            $this->fulfilment->shop,
+            [
+                'price'                  => 100,
+                'unit'                   => RentalUnitEnum::WEEK->value,
+                'code'                   => 'R00003',
+                'name'                   => 'Rental Asset C',
+                'auto_assign_asset'      => 'Pallet',
+                'auto_assign_asset_type' => PalletTypeEnum::OVERSIZE->value
+            ]
+        );
+    }
     $this->oversizeRental = $oversizeRental;
-    $boxRental            = StoreRental::make()->action(
-        $this->fulfilment->shop,
-        [
-            'price'                  => 100,
-            'unit'                   => RentalUnitEnum::WEEK->value,
-            'code'                   => 'R00004',
-            'name'                   => 'Rental Asset D',
-            'auto_assign_asset'      => 'Pallet',
-            'auto_assign_asset_type' => PalletTypeEnum::BOX->value
-        ]
-    );
+    $boxRental= Rental::where('auto_assign_asset_type',PalletTypeEnum::BOX)->first();
+    if(!$boxRental) {
+        $boxRental            = StoreRental::make()->action(
+            $this->fulfilment->shop,
+            [
+                'price'                  => 100,
+                'unit'                   => RentalUnitEnum::WEEK->value,
+                'code'                   => 'R00004',
+                'name'                   => 'Rental Asset D',
+                'auto_assign_asset'      => 'Pallet',
+                'auto_assign_asset_type' => PalletTypeEnum::BOX->value
+            ]
+        );
+    }
+
+
     $this->boxRental      = $boxRental;
 
     Config::set(
