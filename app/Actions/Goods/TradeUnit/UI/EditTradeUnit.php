@@ -14,6 +14,7 @@ use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditTradeUnit extends OrgAction
@@ -313,9 +314,11 @@ class EditTradeUnit extends OrgAction
                                     'value' => $tradeUnit->ingredients
                                 ],
                                 'country_of_origin' => [
-                                    'type'  => 'input',
+                                    'type'  => 'select',
                                     'label' => __('Country of Origin'),
-                                    'value' => $tradeUnit->country_of_origin
+                                    'value' => $tradeUnit->country_of_origin,
+                                    'options' => GetCountriesOptions::run(),
+                                    'valueProp' => 'label',
                                 ],
                                 'tariff_code' => [
                                     'type'  => 'input',
@@ -398,46 +401,55 @@ class EditTradeUnit extends OrgAction
                                     'type'  => 'toggle',
                                     'label' => __('Acute Toxicity'),
                                     'value' => $tradeUnit->pictogram_toxic,
+                                    'suffixImage' => '/hazardIcon/toxic-icon.png'
                                 ],
                                 'pictogram_corrosive' => [
                                     'type'  => 'toggle',
                                     'label' => __('Corrosive'),
                                     'value' => $tradeUnit->pictogram_corrosive,
+                                    'suffixImage' => '/hazardIcon/corrosive-icon.png'
                                 ],
                                 'pictogram_explosive' => [
                                     'type'  => 'toggle',
                                     'label' => __('Explosive'),
                                     'value' => $tradeUnit->pictogram_explosive,
+                                    'suffixImage' => '/hazardIcon/explosive.jpg'
                                 ],
                                 'pictogram_flammable' => [
                                     'type'  => 'toggle',
                                     'label' => __('Flammable'),
                                     'value' => $tradeUnit->pictogram_flammable,
+                                    'suffixImage' => '/hazardIcon/flammable.png'
                                 ],
                                 'pictogram_gas' => [
                                     'type'  => 'toggle',
                                     'label' => __('Gas Under Pressure'),
                                     'value' => $tradeUnit->pictogram_gas,
+                                    'suffixImage' => '/hazardIcon/gas.png'
                                 ],
                                 'pictogram_environment' => [
                                     'type'  => 'toggle',
                                     'label' => __('Hazardous to the Environment'),
                                     'value' => $tradeUnit->pictogram_environment,
+                                    'suffixImage' => '/hazardIcon/hazard-env.png'
                                 ],
                                 'pictogram_health' => [
                                     'type'  => 'toggle',
                                     'label' => __('Health Hazard'),
                                     'value' => $tradeUnit->pictogram_health,
+                                    'suffixImage' => '/hazardIcon/health-hazard.png'
                                 ],
                                 'pictogram_oxidising' => [
                                     'type'  => 'toggle',
                                     'label' => __('Oxidising'),
                                     'value' => $tradeUnit->pictogram_oxidising,
+                                    'suffixImage' => '/hazardIcon/oxidising.png'
                                 ],
                                 'pictogram_danger' => [
                                     'type'  => 'toggle',
                                     'label' => __('Serious Health Hazard'),
                                     'value' => $tradeUnit->pictogram_danger,
+                                    'suffixImage' => '/hazardIcon/serious-health-hazard.png'
                                 ],
                             ],
                         ],
