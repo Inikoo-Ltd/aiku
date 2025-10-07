@@ -25,7 +25,6 @@ class IndexCustomerFavourites extends OrgAction
 {
     public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
     {
-        // dd($parent->favourites);
         $basket = $parent->orderInBasket;
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -53,8 +52,8 @@ class IndexCustomerFavourites extends OrgAction
                 ->where('webpages.model_type', '=', 'Product');
         });
         $query->whereNull('favourites.unfavourited_at');
-        // dd($query->get());
-        $select =[
+
+        $select = [
                 'products.id',
                 'products.image_id',
                 'products.code',
@@ -114,7 +113,7 @@ class IndexCustomerFavourites extends OrgAction
                 );
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, searchable: true, sortable: true, );
+            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true, );
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'actions', label: '', canBeHidden: false);
         };

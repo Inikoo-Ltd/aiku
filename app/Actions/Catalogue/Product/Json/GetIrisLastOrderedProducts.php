@@ -13,7 +13,6 @@ use App\Actions\IrisAction;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Http\Resources\Catalogue\LastOrderedProductsResource;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
