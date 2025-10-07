@@ -66,4 +66,11 @@ class StoreTradeUnitFamily extends GrpAction
 
         return $this->handle($group, $this->validatedData);
     }
+
+    public function action(Group $group, array $modelData): TradeUnitFamily
+    {
+        $this->initialisation($group, $modelData);
+
+        return $this->handle($group, $this->validatedData);
+    }
 }
