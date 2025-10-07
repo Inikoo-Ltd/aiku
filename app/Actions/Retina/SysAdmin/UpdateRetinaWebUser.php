@@ -30,13 +30,6 @@ class UpdateRetinaWebUser extends RetinaAction
         return UpdateWebUser::run($webUser, $modelData);
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->action) {
-            return true;
-        }
-        return $this->customer->id == $request->route()->parameter('webUser')->customer_id and $request->user()->is_root;
-    }
 
     public function rules(): array
     {
@@ -51,7 +44,7 @@ class UpdateRetinaWebUser extends RetinaAction
                     table: 'web_users',
                     extraConditions: [
                         ['column' => 'website_id', 'value' => $this->webUser->website->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->webUserToUpdate->id, 'operator' => '!='],
                     ]
                 ),
@@ -64,7 +57,7 @@ class UpdateRetinaWebUser extends RetinaAction
                     table: 'web_users',
                     extraConditions: [
                         ['column' => 'website_id', 'value' => $this->webUser->website->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->webUserToUpdate->id, 'operator' => '!='],
                     ]
                 ),

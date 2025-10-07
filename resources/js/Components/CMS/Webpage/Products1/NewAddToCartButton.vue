@@ -11,11 +11,14 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { routeType } from '@/types/route'
 
 library.add(faPlus, faMinus, faCartPlus)
 
 const props = defineProps<{
     product: ProductResource
+    addToBasketRoute: routeType
+    updateBasketQuantityRoute: routeType
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -52,7 +55,7 @@ const onAddToBasket = async (product: ProductResource) => {
         setStatus('loading')
         isLoadingSubmitQuantityProduct.value = true
         const response = await axios.post(
-            route('iris.models.transaction.store', {
+            route(props.addToBasketRoute.name, {
                 product: product.id
             }),
             {
@@ -101,7 +104,7 @@ const onAddToBasket = async (product: ProductResource) => {
 // Update quantity function - exact copy dari ButtonAddToBasketInFamily
 const onUpdateQuantity = (product: ProductResource) => {
     router.post(
-        route('iris.models.transaction.update', {
+        route(props.updateBasketQuantityRoute.name, {
             transaction: product.transaction_id
         }),
         {

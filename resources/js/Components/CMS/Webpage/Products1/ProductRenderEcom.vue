@@ -3,30 +3,23 @@ import Image from '@/Components/Image.vue'
 import { useLocaleStore } from "@/Stores/locale"
 import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { Link, router, usePage } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faEnvelope, faHeart } from '@far'
-import { faCircle, faStar, faHeart as fasHeart, faEllipsisV, faMedal } from '@fas'
-import { Image as ImageTS } from '@/types/Image'
-import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
-import { getStyles } from "@/Composables/styles";
-import Button from '@/Components/Elements/Buttons/Button.vue'
+import { faCircle, faHeart as fasHeart, faMedal } from '@fas'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle } from "@fal"
 import { faStarHalfAlt } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import InformationIcon from '@/Components/Utils/InformationIcon.vue'
-import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
-import { InputNumber } from 'primevue'
-import { get, set } from 'lodash-es'
-import ButtonAddToBasketInFamily from '@/Components/Iris/Products/ButtonAddToBasketInFamily.vue'
 import { ProductResource } from '@/types/Iris/Products'
 import NewAddToCartButton from './NewAddToCartButton.vue' // Import button baru
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
+import { routeType } from '@/types/route'
+import { parameterize } from '@sentry/vue'
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -34,9 +27,43 @@ const layout = inject('layout', retinaLayoutStructure)
 const locale = useLocaleStore()
 
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     product: ProductResource
+    attachToFavouriteRoute?: routeType
+    dettachToFavouriteRoute?: routeType
+    attachBackInStockRoute?: routeType
+    detachBackInStockRoute?: routeType
+    addToBasketRoute?: routeType
+    updateBasketQuantityRoute?: routeType
+
+}>(), {
+    addToBasketRoute: {
+        name: 'iris.models.transaction.store',
+    },
+    updateBasketQuantityRoute: {
+        name: 'iris.models.transaction.update',
+    },
+    attachToFavouriteRoute: {
+        name: 'iris.models.favourites.store',
+    },
+    dettachToFavouriteRoute: {
+        name: 'iris.models.favourites.delete', 
+    },
+    attachBackInStockRoute: {
+        name: 'iris.models.remind_back_in_stock.store', 
+    },
+    detachBackInStockRoute: {
+        name: 'iris.models.remind_back_in_stock.delete', 
+    },
+})
+
+const emits = defineEmits<{
+  (e: 'afterOnAddFavourite', value: any[]): void
+  (e: 'afterOnUnselectFavourite', value: any[]): void
+  (e: 'afterOnAddBackInStock', value: any[]): void
+  (e: 'afterOnUnselectBackInStock', value: any[]): void
 }>()
+
 
 const isLoadingRemindBackInStock = ref(false)
 const currency = layout?.iris?.currency
@@ -47,7 +74,7 @@ const onAddFavourite = (product: ProductResource) => {
 
     // Section: Submit
     router.post(
-        route('iris.models.favourites.store', {
+        route(props.attachToFavouriteRoute.name, {
             product: product.id
         }),
         {
@@ -72,6 +99,7 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
+                emits('afterOnAddFavourite', product)
             },
         }
     )
@@ -80,7 +108,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
     // Section: Submit
     router.delete(
-        route('iris.models.favourites.delete', {
+        route(props.dettachToFavouriteRoute.name, {
             product: product.id
         }),
         {
@@ -107,6 +135,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
+                emits('afterOnUnselectFavourite', product)
             },
         }
     )
@@ -117,7 +146,7 @@ const onAddBackInStock = (product: ProductResource) => {
 
     // Section: Submit
     router.post(
-        route('iris.models.remind_back_in_stock.store', {
+        route(props.attachBackInStockRoute.name, {
             product: product.id
         }),
         {
@@ -142,13 +171,14 @@ const onAddBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
+                emits('afterOnAddBackInStock', product)
             },
         }
     )
 }
 const onUnselectBackInStock = (product: ProductResource) => {
     router.delete(
-        route('iris.models.remind_back_in_stock.delete', {
+        route(props.detachBackInStockRoute.name, {
             product: product.id
         }),
         {
@@ -175,14 +205,13 @@ const onUnselectBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
+                emits('afterOnUnselectBackInStock', product)
             },
         }
     )
 }
 
-
-
-
+console.log(props)
 </script>
 
 <template>
@@ -202,32 +231,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
             </div>
 
 
-
-
-            <!-- Icon: status (stocks) -->
-            <!-- <template v-if="layout?.iris?.is_logged_in">
-
-                <div class="absolute top-9 right-2">
-                    <div class="cursor-pointer group text-xl ">
-                        <FontAwesomeIcon
-                            v-if="product.stock"
-                            v-tooltip="trans('Product is ready stock')"
-                            :icon="faCircle"
-                            class="text-green-400 animate-pulse"
-                            fixed-width
-                        />
-                        <FontAwesomeIcon
-                            v-else
-                            v-tooltip="trans('Product is out of stock')"
-                            :icon="faCircle"
-                            class="text-red-500"
-                            fixed-width
-                        />
-                    </div>
-                </div>
-            </template> -->
-
-
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
                 class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative">
@@ -236,7 +239,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
-                    <NewAddToCartButton v-if="product.stock > 0" :product="product" :key="product" />
+                    <NewAddToCartButton v-if="product.stock > 0" :product="product" :key="product" :addToBasketRoute="addToBasketRoute" :updateBasketQuantityRoute="updateBasketQuantityRoute" />
                     <button
                         v-else-if="layout?.app?.environment === 'local'"
                         @click.prevent="()=> product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
@@ -332,42 +335,8 @@ const onUnselectBackInStock = (product: ProductResource) => {
                         </div>
                     </div>
                 </div>
-
-                <!-- Section: Coupon -->
-                <!-- <div class="mb-2">
-                    <div v-if="!xxxxxxx" class="cursor-pointer rounded py-1 px-3 bg-gray-100 border border-gray-300 w-fit text-xs" >
-                        <FontAwesomeIcon icon="fas fa-star-half-alt" class="" fixed-width aria-hidden="true" />
-                        <span class="">↓5%</span>
-                        <InformationIcon :information="trans('Information')" />
-                    </div>
-                    <div v-else class="cursor-pointer rounded py-1 px-3 bg-green-100 border border-green-300 text-green-700 w-fit text-xs" >
-                        <FontAwesomeIcon icon="fas fa-star-half-alt" class="" fixed-width aria-hidden="true" />
-                        <span class="">↓5%</span>
-                        <InformationIcon :information="trans('Information')" />
-                    </div>
-                </div> -->
             </div>
         </div>
-
-
-        <!-- Old Button - Commented Out -->
-        <!-- <div class="px-3">
-            <div v-if="layout?.iris?.is_logged_in" class="w-full">
-
-                <ButtonAddToBasketInFamily
-                    v-if="product.stock > 0"
-                    :product
-                />
-
-                <div v-else>
-                    <Button :label="trans('Out of stock')" type="tertiary" disabled full />
-                </div>
-            </div>
-
-            <Link v-else :href="urlLoginWithRedirect()" class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-                {{ trans("Login or Register for Wholesale Prices") }}
-            </Link>
-        </div> -->
 
         <!-- Login Button for Non-Logged In Users -->
         <div v-if="!layout?.iris?.is_logged_in" class="px-3">

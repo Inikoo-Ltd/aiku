@@ -32,7 +32,8 @@ class SaveCustomerInAurora implements ShouldBeUnique
      */
     public function handle(Customer $customer): void
     {
-        if ($customer->source_id) {
+
+        if(!$customer->shop->is_aiku){
             return;
         }
 
@@ -43,8 +44,19 @@ class SaveCustomerInAurora implements ShouldBeUnique
 
 
         $customerAuroraId = null;
+
+
+        $customerSourceId = null;
         if ($customer->source_id) {
-            $customerSourceId = explode(':', $customer->source_id);
+            $customerSourceId = $customer->source_id;
+        }
+        if (!$customerSourceId) {
+            $customerSourceId = $customer->post_source_id;
+        }
+
+
+        if ($customerSourceId) {
+            $customerSourceId = explode(':', $customerSourceId);
             $customerAuroraId = $customerSourceId[1];
         }
 
@@ -81,13 +93,16 @@ class SaveCustomerInAurora implements ShouldBeUnique
         ])->withQueryParameters($data)->get($apiUrl);
 
 
-
         if (Arr::get($response, 'customer_key')) {
             $customer->update(['post_source_id' => $customer->organisation->id.':'.$response['customer_key']]);
         }
 
+        if (Arr::get($response, 'error')) {
+            print_r($response->json());
+        }
 
-        print_r($response->json());
+
+
     }
 
 
@@ -139,13 +154,13 @@ class SaveCustomerInAurora implements ShouldBeUnique
                         } catch (\Exception $e) {
                             $command->error("Error processing customer: $customer->slug - {$e->getMessage()}");
                         }
-                        $bar->advance();
+                       // $bar->advance();
                     }
                 });
 
             $bar->finish();
             $command->newLine();
-            $command->info("$count pickings processed successfully");
+            $command->info("$count customers processed successfully");
         }
 
         return 0;

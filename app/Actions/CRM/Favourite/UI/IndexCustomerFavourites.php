@@ -25,6 +25,8 @@ class IndexCustomerFavourites extends OrgAction
 {
     public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
     {
+        // dd($parent->favourites);
+        $basket = $parent->orderInBasket;
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('products.code', $value)
@@ -38,29 +40,46 @@ class IndexCustomerFavourites extends OrgAction
 
 
         $query = QueryBuilder::for(Favourite::class);
-
         $query->where('favourites.customer_id', $parent->id);
-        $query->whereNull('favourites.unfavourited_at');
-
         $query->leftJoin('products', 'favourites.product_id', '=', 'products.id');
+        $query->leftJoin('transactions', function ($join) use ($basket) {
+            $join->on('products.id', '=', 'transactions.model_id')
+                ->where('transactions.model_type', '=', 'Product')
+                ->where('transactions.order_id', '=', $basket->id)
+                ->whereNull('transactions.deleted_at');
+        });
         $query->leftJoin('webpages', function ($join) {
             $join->on('products.id', '=', 'webpages.model_id')
                 ->where('webpages.model_type', '=', 'Product');
         });
+        $query->whereNull('favourites.unfavourited_at');
+        // dd($query->get());
+        $select =[
+                'products.id',
+                'products.image_id',
+                'products.code',
+                'products.group_id',
+                'products.organisation_id',
+                'products.shop_id',
+                'products.name',
+                'products.available_quantity',
+                'products.price',
+                'products.rrp',
+                'products.state',
+                'products.status',
+                'products.created_at',
+                'products.updated_at',
+                'products.units',
+                'products.unit',
+                'products.top_seller',
+                'products.web_images',
+                'webpages.url',
+                'transactions.id as transaction_id',
+                'transactions.quantity_ordered as quantity_ordered',
+        ];
 
         return $query->defaultSort('products.code')
-            ->select([
-                'favourites.id as favourite_id',
-                'products.id',
-                'products.slug',
-                'products.code',
-                'products.name',
-                'products.description',
-                'products.price',
-                'products.image_id',
-                'webpages.url as webpage_url',
-                'webpages.id as webpage_id',
-            ])
+            ->select($select)
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

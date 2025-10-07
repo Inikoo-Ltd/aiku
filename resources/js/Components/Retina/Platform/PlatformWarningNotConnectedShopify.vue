@@ -6,6 +6,7 @@ import { notify } from '@kyvg/vue3-notification'
 import axios from 'axios'
 import { trans } from 'laravel-vue-i18n'
 import { Message } from 'primevue'
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 const props = defineProps<{
     customer_sales_channel: CustomerSalesChannel
@@ -50,6 +51,9 @@ const onClickReconnect = async () => {
             </div>
         </Message>
 
+
+
+
         <div class="w-8/12 mx-auto mt-8">
             <img
                 src="/art/shopify_install_instruction.webp"
@@ -60,5 +64,31 @@ const onClickReconnect = async () => {
                 <span @click="() => onClickReconnect()" class="font-bold hover:text-red-500 underline cursor-pointer">{{ trans("Click here to install") }}</span>
             </div>
         </div>
+
+
+
+        <Message severity="error" class="mt-8 ">
+            <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
+                <div>
+                    <div class="inline items-center gap-x-2">
+                        {{
+                            trans("Or delete the channel and try again")
+                        }}
+                    </div>
+                </div>
+
+                <div class="w-full sm:w-fit h-fit">
+
+                    <ButtonWithLink
+                        :label="trans('Delete')"
+                        type="delete"
+                        :routeTarget="customer_sales_channel?.delete_route"
+                    />
+                </div>
+            </div>
+        </Message>
+
+
+
     </div>
 </template>

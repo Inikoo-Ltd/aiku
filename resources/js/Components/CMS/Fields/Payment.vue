@@ -28,7 +28,12 @@ import whiteCheckout from '@/../art/payment_service_providers/white_checkout.png
 import whiteApplePay from '@/../art/payment_service_providers/white_apple_pay.png'
 import applepay_googlepay from '@/../art/payment_service_providers/googlepayapplepay.png'
 import mastercard_visa from '@/../art/payment_service_providers/mastercardvisa.png'
-
+import ApplePayFrame from '@/../art/payment_service_providers/ApplePayFrame.png'
+import GooglePay from '@/../art/payment_service_providers/GooglePay.png'
+import MasterCard from '@/../art/payment_service_providers/mastercard.png'
+import Paypal from '@/../art/payment_service_providers/PayPal.png'
+import SecureCheckout from '@/../art/payment_service_providers/SecureCheckout.png'
+import VisaBrandMarlBlue from '@/../art/payment_service_providers/VisaBrandmarkBlueRGB2021.png'
 
 library.add(faFacebookF, faInstagram, faTiktok, faPinterest, faYoutube, faLinkedinIn, faShieldAlt, faTimes, faTrash);
 
@@ -67,6 +72,12 @@ const payments = ref<PaymentItem[]>([
   { name: 'White Apple Pay', value: 'White Apple Pay', image: whiteApplePay },
   { name: 'Apple Pay & Google Pay', value: 'Apple Pay & Google Pay', image: applepay_googlepay },
   { name: 'Mastercard & Visa', value: 'Mastercard & Visa', image: mastercard_visa },
+  { name: 'Apple Pay Frame', value: 'Apple Pay Frame', image: ApplePayFrame },
+  { name: 'Google Pay', value: 'Google Pay', image: GooglePay },
+  { name: 'MasterCard', value: 'MasterCard', image: MasterCard },
+  { name: 'Paypal', value: 'Paypal', image: Paypal },
+  { name: 'Secure Checkout', value: 'Secure Checkout', image: SecureCheckout },
+  { name: 'Visa Brandmark Blue', value: 'Visa Brandmark Blue', image: VisaBrandMarlBlue },
 ]);
 
 

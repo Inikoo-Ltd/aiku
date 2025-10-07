@@ -3,10 +3,13 @@ import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronRight, faExternalLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { router } from '@inertiajs/vue3'
 library.add(faChevronRight, faExternalLink)
+
+
 
 const props = defineProps<{
     productCategories: {}
@@ -35,8 +38,49 @@ const props = defineProps<{
     changeActiveCustomTopSubIndex: Function
 }>()
 
+const emit = defineEmits<{
+    closeMobileMenu: []
+}>()
+
 
 const layout = inject('layout', retinaLayoutStructure)
+
+// Loading states for View all buttons
+const isLoadingProductCategory = ref(false)
+const isLoadingSubDepartment = ref(false)
+
+// Handle navigation with loading state
+const handleViewAllProductCategory = (url: string) => {
+    isLoadingProductCategory.value = true
+    router.visit('/' + url, {
+        onFinish: () => {
+            isLoadingProductCategory.value = false
+            // Emit event to close mobile drawer
+            emit('closeMobileMenu')
+        },
+        onError: () => {
+            isLoadingProductCategory.value = false
+            // Emit event to close mobile drawer
+            emit('closeMobileMenu')
+        }
+    })
+}
+
+const handleViewAllSubDepartment = (url: string) => {
+    isLoadingSubDepartment.value = true
+    router.visit('/' + url, {
+        onFinish: () => {
+            isLoadingSubDepartment.value = false
+            // Emit event to close mobile drawer
+            emit('closeMobileMenu')
+        },
+        onError: () => {
+            isLoadingSubDepartment.value = false
+            // Emit event to close mobile drawer
+            emit('closeMobileMenu')
+        }
+    })
+}
 
 </script>
 
@@ -136,9 +180,20 @@ const layout = inject('layout', retinaLayoutStructure)
                     </div>
 
                     <div class="p-2 px-4 font-bold">
-                        <a :href="'/' + sortedProductCategories[activeIndex].url" class="cursor-pointer">
+                        <!-- Original navigation (commented out) -->
+                        <!-- <a :href="'/' + sortedProductCategories[activeIndex].url" class="cursor-pointer">
                             <Button :label="trans('View all')" :icon="faExternalLink" size="xs" />
-                        </a>
+                        </a> -->
+                        
+                        <!-- New Inertia navigation with loading indicator -->
+                        <Button 
+                            :label="trans('View all')" 
+                            :icon="faExternalLink" 
+                            size="xs" 
+                            :loading="isLoadingProductCategory"
+                            @click="handleViewAllProductCategory(sortedProductCategories[activeIndex].url)"
+                            class="cursor-pointer"
+                        />
                     </div>
                 </div>
 
@@ -211,9 +266,20 @@ const layout = inject('layout', retinaLayoutStructure)
                         <a :href="'/' + child.url">{{ child.name }}</a>
                     </div>
                     <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">
-                        <a :href="'/' + sortedSubDepartments[activeSubIndex].url">
+                        <!-- Original navigation (commented out) -->
+                        <!-- <a :href="'/' + sortedSubDepartments[activeSubIndex].url">
                             <Button :label="trans('View all')" :icon="faExternalLink" size="xs" />
-                        </a>
+                        </a> -->
+                        
+                        <!-- New Inertia navigation with loading indicator -->
+                        <Button 
+                            :label="trans('View all')" 
+                            :icon="faExternalLink" 
+                            size="xs" 
+                            :loading="isLoadingSubDepartment"
+                            @click="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
+                            class="cursor-pointer"
+                        />
                     </div>
                 </div>
 
