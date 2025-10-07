@@ -531,19 +531,19 @@ const toggleFavorite = (product: Product): void => {
                 <!-- Product Cards -->
                 <div v-for="(item, index) in compResourceData" :key="`product-${index}`">
                     <slot name="card" :item="item">
-                       <!--  <ProductCard 
+                        <ProductCard 
                             :product="item" 
                             :existing-transaction="getExistingTransaction(item)"
                             @toggle-favorite="toggleFavorite" 
-                        /> -->
-                        <ProductRenderEcom
+                        />
+                        <!-- <ProductRenderEcom
                                 :product="item"
                                 :key="index"
                                 :dettach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"
                                 :attachToFavouriteRoute="{ name: 'retina.models.product.favourite' }"
                                 :add-to-basket-route="{ name: 'retina.models.product.add-to-basket'}"
                                 :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update' }"
-                            />
+                            /> -->
                     </slot>
                 </div>
 
