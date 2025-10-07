@@ -103,12 +103,12 @@ const onAddToBasket = async (product: ProductResource) => {
 
 // Update quantity function - exact copy dari ButtonAddToBasketInFamily
 const onUpdateQuantity = (product: ProductResource) => {
-    router.post(
+    router[props.updateBasketQuantityRoute.method || 'post'](
         route(props.updateBasketQuantityRoute.name, {
             transaction: product.transaction_id
         }),
         {
-            quantity: get(product, ['quantity_ordered_new'], product.quantity_ordered)
+            quantity_ordered: get(product, ['quantity_ordered_new'], product.quantity_ordered)
         },
         {
             preserveScroll: true,

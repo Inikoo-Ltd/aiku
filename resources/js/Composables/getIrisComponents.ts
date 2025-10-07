@@ -56,6 +56,8 @@ import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscr
 import LuigiLastSeen1Iris from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Iris.vue'
 import LuigiItemAlternatives1Iris from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Iris.vue'
 
+import RecentlyBought1Iris from '../Components/CMS/Webpage/RecomendationRecentlyBought1/RecentlyBought1Iris.vue'
+
 
 const components = (shop_type?: string): Record<string, Component> => {
     return {
@@ -105,6 +107,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'luigi-trends-1' : LuigiTrends1Iris,
         'luigi-last-seen-1' : LuigiLastSeen1Iris,
         'luigi-item-alternatives-1' : LuigiItemAlternatives1Iris,
+        'recomandation-recently-bought-1': RecentlyBought1Iris,
 
 
         'banner': WowsbarBannerIris,

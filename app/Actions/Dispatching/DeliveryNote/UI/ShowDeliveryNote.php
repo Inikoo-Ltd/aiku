@@ -131,25 +131,11 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        $actions[] = [
-            'type'    => 'button',
-            'style'   => 'save',
-            'tooltip' => __('Change picker'),
-            'icon'    => 'fal fa-exchange-alt',
-            'label'   => __('Change Picker'),
-            'key'     => 'change-picker',
-        ];
-
-
         return $actions;
     }
 
-
-    public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
+    public function wrappedActions(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
-        $startPickingLabel    = __('Start picking');
-        $generateInvoiceLabel = __('Generate Invoice');
-
         $showCancel = true;
 
         if (in_array($deliveryNote->state, [
@@ -160,9 +146,9 @@ class ShowDeliveryNote extends OrgAction
             $showCancel = false;
         }
 
-        $cancelActions = [];
+        $actions = [];
         if ($showCancel) {
-            $cancelActions = [
+            $actions[] = [
                 'type'  => 'button',
                 'style' => 'cancel',
                 'key'   => 'cancel',
@@ -177,7 +163,44 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        $actions = match ($deliveryNote->state) {
+        if ($deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'tooltip' => __('Change picker'),
+                'icon'    => 'fal fa-exchange-alt',
+                'label'   => __('Change Picker'),
+                'key'     => 'change-picker',
+            ];
+        }
+
+        if ($deliveryNote->state === DeliveryNoteStateEnum::PACKED) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'icon'    => 'fal fa-tired',
+                'tooltip' => __('Unpack the parcels'),
+                'label'   => __('Unpack'),
+                'key'     => 'unpack',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.unpacked',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ];
+        }
+
+        return $actions;
+    }
+
+    public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
+    {
+        $startPickingLabel    = __('Start picking');
+        $generateInvoiceLabel = __('Generate Invoice');
+
+        return match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
                 [
                     'type'      => 'button',
@@ -289,7 +312,7 @@ class ShowDeliveryNote extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ] : [],
+                ] : []
             ],
             DeliveryNoteStateEnum::FINALISED => [
                 [
@@ -355,8 +378,6 @@ class ShowDeliveryNote extends OrgAction
             ],
             default => []
         };
-
-        return [...$actions, $cancelActions];
     }
 
     public function getInvoiceButton(DeliveryNote $deliveryNote): array
@@ -605,7 +626,8 @@ class ShowDeliveryNote extends OrgAction
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
                 'actions'    => $actions,
-                $this->getInvoiceButton($deliveryNote)
+                $this->getInvoiceButton($deliveryNote),
+                'wrapped_actions' => $this->wrappedActions($deliveryNote, $request),
             ],
             'warning'       => $warning,
             'tabs'          => [
