@@ -46,7 +46,7 @@ const LBInitAutocompleteNew = async () => {
             Layout: "heromobile",
             // TrackerId: '483878-588294',
             TrackerId: layout.iris?.luigisbox_tracker_id,
-            Locale: layout.iris?.website_i18n?.current_language?.code || 'en',
+            // Locale: layout.iris?.website_i18n?.current_language?.code || 'en',
             PriceFilter: {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2,
@@ -179,7 +179,7 @@ const visitSearchPage = () => {
     <div class="w-full relative group">
         <input
             :value="inputValue"
-            @input="(q) => (inputValue = q?.target?.value, console.log('inputValue', inputValue))"
+            @input="(q) => (inputValue = q?.target?.value)"
             xdisabled
             class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
             :id="id || 'inputLuigi'"

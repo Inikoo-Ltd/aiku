@@ -46,13 +46,13 @@ export const LuigiTranslation = {
                 recommendName: "водещ подотдел"
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "bg",
-            prefixed: true,
-            symbol: "€"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "bg",
+        //     prefixed: true,
+        //     symbol: "€"
+        // }
     },
     cs: {
 
@@ -96,13 +96,13 @@ export const LuigiTranslation = {
                 recommendName: "Top-Artikel"
             },
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "en",
-            prefixed: true,
-            symbol: "$"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "en",
+        //     prefixed: true,
+        //     symbol: "$"
+        // }
     },
     en: {
         showAllTitle: "Show all products",
@@ -143,13 +143,13 @@ export const LuigiTranslation = {
                 recommendName: "Top articles"
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "en",
-            prefixed: true,
-            symbol: "$"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "en",
+        //     prefixed: true,
+        //     symbol: "$"
+        // }
     },
     es: {
         showAllTitle: "Ver todos los productos",
@@ -190,13 +190,13 @@ export const LuigiTranslation = {
                 recommendName: "Artículos destacados"
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "es",
-            prefixed: true,
-            symbol: "€"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "es",
+        //     prefixed: true,
+        //     symbol: "€"
+        // }
     },
     fr: {
         showAllTitle: "Afficher tous les produits",
@@ -237,13 +237,13 @@ export const LuigiTranslation = {
                 recommendName: "Articles populaires"
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "fr",
-            prefixed: true,
-            symbol: "€"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "fr",
+        //     prefixed: true,
+        //     symbol: "€"
+        // }
     },
     hr: {
         showAllTitle: "Prikaži sve proizvode",
@@ -284,13 +284,13 @@ export const LuigiTranslation = {
                 recommendName: "Najbolji članci"
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "en",
-            prefixed: true,
-            symbol: "€"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "en",
+        //     prefixed: true,
+        //     symbol: "€"
+        // }
     },
     hu: {
         showAllTitle: "Összes termék megjelenítése",
@@ -331,13 +331,13 @@ export const LuigiTranslation = {
                 recommendName: "Top cikkek"
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "en",
-            prefixed: true,
-            symbol: "$"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "en",
+        //     prefixed: true,
+        //     symbol: "$"
+        // }
     },
     nl: {
         showAllTitle: "Toon alle producten",
@@ -378,13 +378,13 @@ export const LuigiTranslation = {
                 recommendName: "Topartikelen"
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "nl",
-            prefixed: true,
-            symbol: "€"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "nl",
+        //     prefixed: true,
+        //     symbol: "€"
+        // }
     },
     pl: {
         showAllTitle: "Pokaż wszystkie produkty",
@@ -425,13 +425,13 @@ export const LuigiTranslation = {
                 recommendName: "Najlepsze artykuły"
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "en",
-            prefixed: true,
-            symbol: "$"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "en",
+        //     prefixed: true,
+        //     symbol: "$"
+        // }
     },
     pt: {
         showAllTitle: "Ver todos os produtos",
@@ -472,13 +472,13 @@ export const LuigiTranslation = {
                 recommendName: "Artigos em destaque"
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "pt",
-            prefixed: true,
-            symbol: "€"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "pt",
+        //     prefixed: true,
+        //     symbol: "€"
+        // }
     },
     ro: {
         showAllTitle: "Afișează toate produsele",
@@ -519,13 +519,13 @@ export const LuigiTranslation = {
                 recommendName: "Articole de top",
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "ro",
-            prefixed: true,
-            symbol: "$"
-        },
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "ro",
+        //     prefixed: true,
+        //     symbol: "$"
+        // },
     },
     se: {
         showAllTitle: "Visa alla produkter",
@@ -566,13 +566,13 @@ export const LuigiTranslation = {
                 recommendName: "Toppartiklar"
             }
         },
-        priceFilter: {
-            minimumFractionDigits: 0,
-            maximumFractionDigits: 2,
-            locale: "sv",
-            prefixed: true,
-            symbol: "kr"
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "sv",
+        //     prefixed: true,
+        //     symbol: "kr"
+        // }
     },
     sk: {
         showAllTitle: "Zobraziť všetky produkty",
@@ -612,12 +612,12 @@ export const LuigiTranslation = {
                 recommendName: "Najlepšie články"
             }
         },
-        cenovýFilter: {
-            minimálnyZlomkovýČíselník: 0,
-            maximálnyZlomkovýČíselník: 2,
-            locale: "en",
-            predpona: true,
-            symbol: "$",
-        }
+        // priceFilter: {
+        //     minimumFractionDigits: 0,
+        //     maximumFractionDigits: 2,
+        //     locale: "en",
+        //     prefixed: true,
+        //     symbol: "$",
+        // }
     }
 }
