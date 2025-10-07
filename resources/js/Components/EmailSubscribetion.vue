@@ -150,7 +150,7 @@ defineExpose({
     <!-- Email Subscriptions Section -->
     <div v-if="emailSubscriptions" :class="containerClass">
         <div class="flex justify-between items-center mb-3">
-            <h3 class="text-sm font-medium text-gray-900">{{ trans("Email Subscriptions") }}</h3>
+            <h3 class="text-sm font-medium text-gray-900">{{ trans("Subscriptions") }}</h3>
             
             <!-- Edit Button -->
             <button 

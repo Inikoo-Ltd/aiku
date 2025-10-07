@@ -49,7 +49,8 @@ class ShowProspectQuery extends InertiaAction
 
     public function htmlResponse(Query $query, ActionRequest $request): Response
     {
-        $subNavigation = $this->getSubNavigation($request);
+        $shop = $request->route()->parameters()['shop'];
+        $subNavigation = $this->getSubNavigation($shop, $request);
         return Inertia::render(
             'Prospects/ProspectQuery',
             [

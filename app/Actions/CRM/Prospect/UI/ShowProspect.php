@@ -13,6 +13,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Enums\UI\CRM\ProspectTabsEnum;
+use App\Http\Resources\Lead\ProspectResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Prospect;
 use App\Models\SysAdmin\Organisation;
@@ -25,7 +26,6 @@ class ShowProspect extends OrgAction
     use WithProspectsSubNavigation;
     use WithCRMAuthorisation;
 
-    private Shop $parent;
 
     public function handle(Prospect $prospect): Prospect
     {
@@ -34,28 +34,26 @@ class ShowProspect extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Prospect $prospect, ActionRequest $request): Prospect
     {
-        $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
+
+        $this->initialisationFromShop($shop, $request)->withTab(ProspectTabsEnum::values());
         return $this->handle($prospect);
     }
 
     public function htmlResponse(Prospect $prospect, ActionRequest $request): Response
     {
-        $subNavigation = null;
-        if ($this->parent instanceof Shop) {
-            $subNavigation = $this->getSubNavigation($request);
-        }
+        $shop = $prospect->shop;
+        $subNavigation = $this->getSubNavigation($shop, $request);
         return Inertia::render(
             'Org/Shop/CRM/Prospect',
             [
-                'title'       => __('collection'),
+                'title'       => __('Prospect').' '.$prospect->name,
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
                     'title'     => $prospect->name,
-                    'model'     => __('prospect'),
+                    'model'     => __('Prospect'),
                     'icon'      =>
                         [
                             'icon'  => ['fal', 'fa-user-plus'],
@@ -67,8 +65,21 @@ class ShowProspect extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => ProspectTabsEnum::navigation()
                 ],
+
+                ProspectTabsEnum::SHOWCASE->value => $this->tab == ProspectTabsEnum::SHOWCASE->value ?
+                    fn () => $this->getProspectShowcase($prospect)
+                    : Inertia::lazy(fn () => $this->getProspectShowcase($prospect)),
+
             ]
         );
+    }
+
+
+    public function getProspectShowcase(Prospect $prospect): array
+    {
+        return [
+            'prospect' => ProspectResource::make($prospect)->getArray(),
+        ];
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = null): array
