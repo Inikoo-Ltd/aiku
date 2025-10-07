@@ -161,7 +161,7 @@ async function onDeletefilesInBox(categoryBox: any) {
 
                     <!-- Drop Zone / Preview -->
                     <div
-                        class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden">
+                        class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden relative">
                         <template v-if="categoryBox.attachments">
                             <img :src="categoryBox.attachments" alt="Attachment" class="object-contain w-full h-full" />
                         </template>
@@ -175,11 +175,12 @@ async function onDeletefilesInBox(categoryBox: any) {
                         </template>
 
                         <!-- ProgressBar always at the bottom -->
-                        <div v-if="uploadProgress[categoryBox.scope] > 0">
+                        <div v-if="uploadProgress[categoryBox.scope] > 0" class="absolute bottom-3 left-0 w-full p-3">
                             <ProgressBar :value="uploadProgress[categoryBox.scope]" showValue
                                 class="h-2 rounded-b-md" />
                         </div>
                     </div>
+
 
                 </li>
             </TransitionGroup>
@@ -189,13 +190,13 @@ async function onDeletefilesInBox(categoryBox: any) {
 
     <div class="px-10">
         <div v-if="props.data.attachment_category_box?.public?.length" class="rounded-xl bg-white p-5 lg:col-span-2">
-           <div class="text-base font-semibold text-gray-700">
+            <div class="text-base font-semibold text-gray-700">
                 <h3 class="mb-1">
                     {{ trans("Attachment Public") }}
                 </h3>
                 <div class="border-b border-gray-300 h-1 mb-4"></div>
             </div>
-    
+
 
             <TransitionGroup name="fade-move" tag="ul"
                 class="grid grid-cols-2 sm:grid-cols-5 gap-4 overflow-y-auto max-h-[600px]">
@@ -224,7 +225,7 @@ async function onDeletefilesInBox(categoryBox: any) {
 
                     <!-- Drop Zone / Preview -->
                     <div
-                        class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden">
+                        class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden relative">
                         <template v-if="categoryBox.attachments">
                             <img :src="categoryBox.attachments" alt="Attachment" class="object-contain w-full h-full" />
                         </template>
@@ -238,12 +239,11 @@ async function onDeletefilesInBox(categoryBox: any) {
                         </template>
 
                         <!-- ProgressBar always at the bottom -->
-                        <div v-if="uploadProgress[categoryBox.scope] > 0">
+                        <div v-if="uploadProgress[categoryBox.scope] > 0" class="absolute bottom-3 left-0 w-full p-3">
                             <ProgressBar :value="uploadProgress[categoryBox.scope]" showValue
                                 class="h-2 rounded-b-md" />
                         </div>
                     </div>
-
                 </li>
             </TransitionGroup>
         </div>
