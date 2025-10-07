@@ -57,6 +57,13 @@ const props = withDefaults(defineProps<{
     },
 })
 
+const emits = defineEmits<{
+  (e: 'afterOnAddFavourite', value: any[]): void
+  (e: 'afterOnUnselectFavourite', value: any[]): void
+  (e: 'afterOnAddBackInStock', value: any[]): void
+  (e: 'afterOnUnselectBackInStock', value: any[]): void
+}>()
+
 
 const isLoadingRemindBackInStock = ref(false)
 const currency = layout?.iris?.currency
@@ -92,6 +99,7 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
+                emits('afterOnAddFavourite', product)
             },
         }
     )
@@ -127,6 +135,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
+                emits('afterOnUnselectFavourite', product)
             },
         }
     )
@@ -162,6 +171,7 @@ const onAddBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
+                emits('afterOnAddBackInStock', product)
             },
         }
     )
@@ -195,6 +205,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
+                emits('afterOnUnselectBackInStock', product)
             },
         }
     )
