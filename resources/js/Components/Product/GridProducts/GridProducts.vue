@@ -542,7 +542,7 @@ const toggleFavorite = (product: Product): void => {
                                 :dettach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"
                                 :attachToFavouriteRoute="{ name: 'retina.models.product.favourite' }"
                                 :add-to-basket-route="{ name: 'retina.models.product.add-to-basket'}"
-                                :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update' }"
+                                :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update', method: 'patch' }"
                                 @after-on-unselect-favourite="(e)=>router.reload()"
                             />
                     </slot>
