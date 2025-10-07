@@ -35,6 +35,8 @@ const props = defineProps<{
     } | null
 }>()
 
+console.log(props)
+
 const emit = defineEmits<{
     'toggle-favorite': [product: Product]
     'add-to-basket': [product: Product]
@@ -199,7 +201,7 @@ const toggleFavorite = (product: Product) => {
     } else {
         // Remove from favorites
         router.delete(
-            route('retina.models.product.unfavourite', {favourite: product.favourite_id}),
+            route('retina.models.product.unfavourite', {  product: product.id}),
             {
                 preserveScroll: true,
                 preserveState: true,

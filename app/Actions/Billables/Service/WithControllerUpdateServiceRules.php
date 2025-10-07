@@ -29,7 +29,7 @@ trait WithControllerUpdateServiceRules
                     table: 'services',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->service->id, 'operator' => '!=']
                     ]
                 ),

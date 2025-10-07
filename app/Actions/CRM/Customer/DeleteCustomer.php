@@ -72,7 +72,6 @@ class DeleteCustomer
         foreach ($customer->orders as $order) {
             DeleteOrder::run(
                 order: $order,
-                skipHydrate: true,
                 deletedData: $dependantDeletedData
             );
         }
@@ -85,13 +84,7 @@ class DeleteCustomer
             );
         }
 
-        foreach ($customer->stocks as $stock) {
-            DeleteStock::run(
-                stock: $stock,
-                skipHydrate: true,
-                deletedData: $dependantDeletedData
-            );
-        }
+
 
 
         $customer->delete();

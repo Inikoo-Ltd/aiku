@@ -140,7 +140,7 @@ class StoreMasterAsset extends OrgAction
                     table: 'master_assets',
                     extraConditions: [
                         ['column' => 'master_shop_id', 'value' => $this->masterFamily->master_shop_id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],

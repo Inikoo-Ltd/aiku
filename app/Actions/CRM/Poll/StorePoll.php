@@ -75,7 +75,7 @@ class StorePoll extends OrgAction
                     table: 'polls',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'value' => null],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -88,7 +88,7 @@ class StorePoll extends OrgAction
                     table: 'polls',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'value' => null],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -134,10 +134,6 @@ class StorePoll extends OrgAction
         return $this->handle($shop, $this->validatedData);
     }
 
-    public function afterValidator(Validator $validator): void
-    {
-        $type = $this->get('type.type');
-    }
 
     public function htmlResponse(Poll $poll): RedirectResponse
     {

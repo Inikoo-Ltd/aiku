@@ -35,6 +35,7 @@ use App\Actions\Retina\CRM\DeleteRetinaFavourite;
 use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
 use App\Actions\Retina\CRM\StoreRetinaFavourite;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
+use App\Actions\Retina\CRM\UpdateRetinaCustomerComms;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\ApiToken\DeleteCustomerAccessToken;
@@ -147,6 +148,10 @@ Route::patch('/settings', UpdateRetinaCustomerSettings::class)->name('settings.u
 Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilmentTransaction:id}')->group(function () {
     Route::patch('', UpdateRetinaFulfilmentTransaction::class)->name('update');
     Route::delete('', DeleteRetinaFulfilmentTransaction::class)->name('delete');
+});
+
+Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->group(function () {
+    Route::patch('update', UpdateRetinaCustomerComms::class)->name('update');
 });
 
 Route::post('pallet-return', StoreRetinaPalletReturn::class)->name('pallet-return.store');
@@ -353,8 +358,9 @@ Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
 
 Route::name('product.')->prefix('product')->group(function () {
     Route::post('{product:id}/favourite', StoreRetinaFavourite::class)->name('favourite');
-    Route::delete('{favourite:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite');
+    Route::delete('{product:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite');
     Route::post('{product:id}/add-to-basket', StoreRetinaEcomBasketTransaction::class)->name('add-to-basket');
+
 });
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');

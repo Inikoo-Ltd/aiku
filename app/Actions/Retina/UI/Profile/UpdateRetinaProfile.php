@@ -43,7 +43,7 @@ class UpdateRetinaProfile extends RetinaAction
                     table: 'web_users',
                     extraConditions: [
                         ['column' => 'website_id', 'value' => $this->website->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->webUser->id, 'operator' => '!='],
                     ]
                 )
@@ -64,7 +64,7 @@ class UpdateRetinaProfile extends RetinaAction
                     table: 'web_users',
                     extraConditions: [
                         ['column' => 'website_id', 'value' => $this->website->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->webUser->id, 'operator' => '!='],
                     ]
                 )

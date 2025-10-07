@@ -174,7 +174,7 @@ class StoreCustomer extends OrgAction
         }
 
         if ($customer->shop->is_aiku) {
-            //SaveCustomerInAurora::dispatch($customer);
+            SaveCustomerInAurora::dispatch($customer);
         }
 
 
@@ -228,7 +228,7 @@ class StoreCustomer extends OrgAction
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -285,7 +285,7 @@ class StoreCustomer extends OrgAction
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ];

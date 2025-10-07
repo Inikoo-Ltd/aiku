@@ -233,6 +233,7 @@ const getTarget = (item) => {
                 :changeActiveSubIndex="(index) => activeSubIndex = index"
                 :changeActiveCustomSubIndex="(index) => activeCustomSubIndex = index"
                 :changeActiveCustomTopSubIndex="(index) => activeCustomTopSubIndex = index"
+                @closeMobileMenu="isOpenMenuMobile = false"
             />
 
         </Drawer>

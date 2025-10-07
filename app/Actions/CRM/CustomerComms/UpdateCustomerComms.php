@@ -12,7 +12,6 @@ use App\Actions\CRM\Customer\SaveCustomerInAurora;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\CRM\Customer;
 use App\Models\CRM\CustomerComms;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -22,7 +21,6 @@ class UpdateCustomerComms extends OrgAction
     use WithActionUpdate;
     use WithCRMEditAuthorisation;
 
-    private Customer $customer;
 
     public function handle(CustomerComms $customerComms, array $modelData, bool $updateAiku = true): CustomerComms
     {
