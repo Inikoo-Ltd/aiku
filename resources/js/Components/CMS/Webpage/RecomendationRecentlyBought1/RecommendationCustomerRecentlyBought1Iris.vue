@@ -16,7 +16,7 @@ import { Autoplay } from 'swiper/modules'
 // Font Awesome
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import RecommendationRecentlyBought from "@/Components/Iris/Recommendations/RecommendationRecentlyBought.vue"
+import RecommendationCustomerRecentlyBoughtSlideIris from "@/Components/Iris/Recommendations/RecommendationCustomerRecentlyBoughtSlideIris.vue"
 import { LastOrderedProduct } from "@/types/Resource/LastOrderedProductsResource"
 library.add(faChevronLeft, faChevronRight)
 
@@ -53,24 +53,28 @@ const isProductLoading = (productId: string) => {
 
 const isFetched = ref(false)
 const fetchRecommenders = async () => {
-    try {
-        isLoadingFetch.value = true
-        
-        const response = await axios.get(
-            route('iris.json.product_category.last-ordered-products.index', { productCategory: 31890 })
-        )
-        
-        
-        listProducts.value = response.data.data
-
-        
-        console.log('Final listProducts value:', listProducts.value)
-        
-    } catch (error: any) {
-        console.error('Error on fetching recommendations:', error)
-    } finally {
-        isFetched.value = true
-        isLoadingFetch.value = false
+    console.log('qqqqqqq')
+    if (route().has('iris.json.product_category.last-ordered-products.index')) {
+        console.log('wwwwwwwwwwww')
+        try {
+            isLoadingFetch.value = true
+            
+            const response = await axios.get(
+                route('iris.json.product_category.last-ordered-products.index', { productCategory: 31890 })
+            )
+            
+            
+            listProducts.value = response.data.data
+    
+            
+            console.log('Final listProducts value:', listProducts.value)
+            
+        } catch (error: any) {
+            console.error('Error on fetching recommendations:', error)
+        } finally {
+            isFetched.value = true
+            isLoadingFetch.value = false
+        }
     }
 }
 
@@ -115,7 +119,7 @@ onMounted(() => {
                             :key="index"
                             class="w-full cursor-grab relative !grid h-full min-h-full"
                         >
-                            <RecommendationRecentlyBought
+                            <RecommendationCustomerRecentlyBoughtSlideIris
                                 :product
                                 :isProductLoading
                             />
