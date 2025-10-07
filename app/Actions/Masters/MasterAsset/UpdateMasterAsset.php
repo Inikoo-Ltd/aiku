@@ -108,7 +108,7 @@ class UpdateMasterAsset extends OrgAction
                     table: 'master_assets',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->masterAsset->id, 'operator' => '!=']
                     ]
                 ),

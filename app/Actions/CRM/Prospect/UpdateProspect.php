@@ -100,6 +100,10 @@ class UpdateProspect extends OrgAction
             'fail_status'       => ['sometimes', 'nullable', Rule::enum(ProspectFailStatusEnum::class)],
             'success_status'    => ['sometimes', 'nullable', Rule::enum(ProspectSuccessStatusEnum::class)],
             'dont_contact_me'   => ['sometimes', 'boolean'],
+            'can_contact_by_email'   => ['sometimes', 'boolean'],
+            'can_contact_by_phone'   => ['sometimes', 'boolean'],
+            'can_contact_by_address'   => ['sometimes', 'boolean'],
+
             'last_contacted_at' => 'sometimes|nullable|date',
             'contact_name'      => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_name'      => ['sometimes', 'nullable', 'string', 'max:255'],

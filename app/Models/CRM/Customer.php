@@ -129,6 +129,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $traffic_sources
  * @property int|null $master_shop_id
  * @property bool $is_re recargo de equivalencia
+ * @property string|null $post_source_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, AmazonUser> $amazonUsers

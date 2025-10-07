@@ -30,6 +30,10 @@ class FetchAuroraCustomer extends FetchAurora
             return;
         }
 
+        if ($shop->is_aiku) {
+            return;
+        }
+
 
         $this->parsedData['shop'] = $shop;
 

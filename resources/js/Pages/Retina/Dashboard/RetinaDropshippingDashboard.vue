@@ -18,6 +18,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import { notify } from '@kyvg/vue3-notification'
 import TaxNumberDisplay from '@/Components/UI/TaxNumberDisplay.vue'
+import EmailSubscribetion from '@/Components/EmailSubscribetion.vue'
 library.add(faReceipt, faArrowRight, faUser, faBuilding, faEnvelope, faPhone)
 
 const props = defineProps<{
@@ -121,61 +122,75 @@ const onSubmitCreateOrder = () => {
                             /> -->
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                            <!-- Information: contact name -->
-                            <div v-if="data.customer.contact_name" class="flex items-center">
-                                <FontAwesomeIcon
-                                    fixed-width 
-                                    icon="fas fa-user" 
-                                    class="text-gray-600 mr-2 w-4 h-4"
-                                    v-tooltip="trans('Contact Name')"
-                                />
-                                <span class="">{{ data.customer.contact_name }}</span>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Left Column: Customer Information -->
+                            <div class="space-y-3 text-sm">
+                                <!-- Information: contact name -->
+                                <div v-if="data.customer.contact_name" class="flex items-center">
+                                    <FontAwesomeIcon
+                                        fixed-width 
+                                        icon="fas fa-user" 
+                                        class="text-gray-600 mr-2 w-4 h-4"
+                                        v-tooltip="trans('Contact Name')"
+                                    />
+                                    <span class="">{{ data.customer.contact_name }}</span>
+                                </div>
+
+                                <!-- Information: company name -->
+                                <div v-if="data.customer.company_name" class="flex items-center">
+                                    <FontAwesomeIcon
+                                        fixed-width 
+                                        icon="fas fa-building" 
+                                        class="text-gray-600 mr-2 w-4 h-4"
+                                        v-tooltip="trans('Company Name')"
+                                    />
+                                    <span class="">{{ data.customer.company_name }}</span>
+                                </div>
+
+                                <!-- Information: email -->
+                                <div v-if="data.customer.email" class="flex items-center">
+                                    <FontAwesomeIcon
+                                        fixed-width 
+                                        icon="fas fa-envelope" 
+                                        class="text-gray-600 mr-2 w-4 h-4"
+                                        v-tooltip="trans('Email')"
+                                    />
+                                    <span class="">{{ data.customer.email }}</span>
+                                </div>
+
+                                <!-- Information: phone -->
+                                <div v-if="data.customer.phone" class="flex items-center">
+                                    <FontAwesomeIcon
+                                        fixed-width 
+                                        icon="fas fa-phone" 
+                                        class="text-gray-600 mr-2 w-4 h-4"
+                                        v-tooltip="trans('Phone')"
+                                    />
+                                    <span class="">{{ data.customer.phone }}</span>
+                                </div>
+
+                                <!-- Information: Tax Number -->
+                                <div v-if="data?.customer.tax_number && data.customer.tax_number.number" class="flex items-start w-full flex-none gap-x-1.5">
+                                    <dt v-tooltip="trans('Tax Number')" class="flex-none xpt-1">
+                                        <span class="sr-only">Tax Number</span>
+                                        <FontAwesomeIcon icon="fas fa-receipt" class="text-gray-600" fixed-width aria-hidden="true"/>
+                                    </dt>
+
+                                    <TaxNumberDisplay :tax_number="data.customer.tax_number" />
+                                </div>
                             </div>
 
-                            <!-- Information: company name -->
-                            <div v-if="data.customer.company_name" class="flex items-center">
-                                <FontAwesomeIcon
-                                    fixed-width 
-                                    icon="fas fa-building" 
-                                    class="text-gray-600 mr-2 w-4 h-4"
-                                    v-tooltip="trans('Company Name')"
+                            <!-- Right Column: Email Subscriptions -->
+                            <div class="flex justify-start lg:justify-end">
+                                <EmailSubscribetion 
+                                    v-if="data?.customer?.email_subscriptions"
+                                    :emailSubscriptions="data.customer.email_subscriptions"
+                                    containerClass="p-3 bg-white rounded-md border border-gray-200 w-full max-w-sm"
                                 />
-                                <span class="">{{ data.customer.company_name }}</span>
-                            </div>
-
-                            <!-- Information: email -->
-                            <div v-if="data.customer.email" class="flex items-center">
-                                <FontAwesomeIcon
-                                    fixed-width 
-                                    icon="fas fa-envelope" 
-                                    class="text-gray-600 mr-2 w-4 h-4"
-                                    v-tooltip="trans('Email')"
-                                />
-                                <span class="">{{ data.customer.email }}</span>
-                            </div>
-
-                            <!-- Information: phone -->
-                            <div v-if="data.customer.phone" class="flex items-center">
-                                <FontAwesomeIcon
-                                    fixed-width 
-                                    icon="fas fa-phone" 
-                                    class="text-gray-600 mr-2 w-4 h-4"
-                                    v-tooltip="trans('Phone')"
-                                />
-                                <span class="">{{ data.customer.phone }}</span>
-                            </div>
-
-                            <!-- Information: Tax Number -->
-                            <div v-if="data?.customer.tax_number && data.customer.tax_number.number" class="flex items-start w-full flex-none gap-x-1.5">
-                                <dt v-tooltip="trans('Tax Number')" class="flex-none xpt-1">
-                                    <span class="sr-only">Tax Number</span>
-                                    <FontAwesomeIcon icon="fas fa-receipt" class="text-gray-600" fixed-width aria-hidden="true"/>
-                                </dt>
-
-                                <TaxNumberDisplay :tax_number="data.customer.tax_number" />
                             </div>
                         </div>
+
+                      
                     </div>
 
                     <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
