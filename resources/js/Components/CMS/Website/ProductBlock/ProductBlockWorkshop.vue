@@ -37,7 +37,7 @@ provide("currentView", currentView);
 
 
 const autosave = () => {
-  const payload = toRaw(props.data.layout)
+  const payload = toRaw({...props.data.layout})
   delete payload.data?.fieldValue?.product
 
   router.patch(

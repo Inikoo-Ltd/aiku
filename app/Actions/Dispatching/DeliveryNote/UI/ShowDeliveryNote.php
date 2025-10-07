@@ -290,6 +290,21 @@ class ShowDeliveryNote extends OrgAction
                         ]
                     ]
                 ] : [],
+                [
+                    'type'    => 'button',
+                    'style'   => 'save',
+                    'icon'    => 'fal fa-tired',
+                    'tooltip' => __('Unpack the parcels'),
+                    'label'   => __('Unpack'),
+                    'key'     => 'unpack',
+                    'route'   => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.delivery_note.state.unpacked',
+                        'parameters' => [
+                            'deliveryNote' => $deliveryNote->id
+                        ]
+                    ],
+                ]
             ],
             DeliveryNoteStateEnum::FINALISED => [
                 [

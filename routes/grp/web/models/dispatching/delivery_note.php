@@ -9,6 +9,7 @@
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\SaveDeliveryNoteShippingFieldsAndRetryStoreShipping;
 use App\Actions\Dispatching\DeliveryNote\UndispatchDeliveryNote;
+use App\Actions\Dispatching\DeliveryNote\UnpackDeliveryNotePackedState;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\FinaliseDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\PickDeliveryNoteAsEmployee;
@@ -40,6 +41,7 @@ Route::name('delivery_note.')->prefix('delivery-note/{deliveryNote:id}')->group(
         Route::patch('picking', UpdateDeliveryNoteStateToPicking::class)->name('picking');
         Route::patch('picked', UpdateDeliveryNoteStateToPicked::class)->name('picked');
         Route::patch('packing', UpdateDeliveryNoteStateToPacking::class)->name('packing');
+        Route::patch('unpacked', UnpackDeliveryNotePackedState::class)->name('unpacked');
         Route::patch('packed', SetDeliveryNoteStateAsPacked::class)->name('packed');
         Route::patch('finalised', FinaliseDeliveryNote::class)->name('finalised');
         Route::patch('dispatched', DispatchDeliveryNote::class)->name('dispatched');
