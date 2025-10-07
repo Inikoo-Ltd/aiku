@@ -35,6 +35,7 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraOrder;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOrgStockMovement;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPayment;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraProduct;
+use App\Actions\Transfers\Aurora\Api\ProcessAuroraProductOrgStocks;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraProspect;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPurchaseOrder;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPurge;
@@ -42,6 +43,7 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraShop;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraStock;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraStockDelivery;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraStockFamily;
+use App\Actions\Transfers\Aurora\Api\ProcessAuroraStockLocations;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraSupplier;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraSupplierProduct;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraTimesheet;
@@ -64,7 +66,6 @@ class ProcessFetchStack
      */
     public function handle(FetchStack $fetchStack, $bg = false): void
     {
-
         $organisation = $fetchStack->organisation;
         $modelData    = [
             'fetch_stack_id' => $fetchStack->id,
@@ -120,7 +121,9 @@ class ProcessFetchStack
             'DeliveryNote' => ProcessAuroraDeliveryNote::make()->action($organisation, array_merge($modelData, ['with' => 'transactions'])),
             'PurchaseOrder' => ProcessAuroraPurchaseOrder::make()->action($organisation, array_merge($modelData, ['with' => 'transactions'])),
             'Customer' => ProcessAuroraCustomer::make()->action($organisation, $modelData),
-            'Stock','Part' => ProcessAuroraStock::make()->action($organisation, $modelData),
+            'Stock', 'Part' => ProcessAuroraStock::make()->action($organisation, $modelData),
+            'StockLocations' => ProcessAuroraStockLocations::make()->action($organisation, $modelData),
+            'Product_Parts' => ProcessAuroraProductOrgStocks::make()->action($organisation, $modelData),
             'DeleteFavourite' => ProcessAuroraDeleteFavourites::make()->action($organisation, $modelData),
             'Webpage' => ProcessAuroraWebpage::make()->action($organisation, $modelData),
             'PublishWebpage' => ProcessAuroraWebpage::make()->action($organisation, array_merge($modelData, ['with' => 'web_blocks'])),
