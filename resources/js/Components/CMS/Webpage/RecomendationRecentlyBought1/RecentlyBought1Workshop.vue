@@ -60,34 +60,14 @@ const isLoadingFetch = ref(false)
 const fetchRecommenders = async () => {
     try {
         isLoadingFetch.value = true
-        const response = await axios.post(
-            `https://live.luigisbox.com/v1/recommend?tracker_id=${layout.iris?.luigisbox_tracker_id}`,
-            [
-                {
-                    "blacklisted_item_ids":  [],
-                    "item_ids": [],
-                    "recommendation_type": "trends",
-                    "recommender_client_identifier": "trends",
-                    "size": 7,
-                    // "user_id": "1234",
-                    "recommendation_context":  {},
-                    "category": undefined,
-                    "brand": undefined,
-                    "product_id": undefined,
-                    // "hit_fields": ["url", "title"]
-                }
-            ],
-            {
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8'
-                }
-            }
+        const response = await axios.get(
+            route('iris.json.product_category.last-ordered-products.index', { productCategory: 8279 })
         )
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
         console.log('Response axios:', response.data)
-        listProducts.value = response.data[0].hits
+        listProducts.value = response.data
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)
     }

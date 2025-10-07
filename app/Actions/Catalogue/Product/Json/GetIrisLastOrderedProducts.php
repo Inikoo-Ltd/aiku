@@ -45,7 +45,7 @@ class GetIrisLastOrderedProducts extends IrisAction
             ->get();
     }
 
-    public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
+    public function jsonResponse($products): AnonymousResourceCollection
     {
         return LastOrderedProductsResource::collection($products);
     }
