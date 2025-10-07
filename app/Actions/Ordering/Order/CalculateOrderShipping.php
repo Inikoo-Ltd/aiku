@@ -12,19 +12,15 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
-use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Billables\ShippingZone;
 use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Transaction;
-use App\Models\SysAdmin\Organisation;
 use CommerceGuys\Addressing\Address;
 use CommerceGuys\Addressing\Zone\Zone;
-use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\AsObject;
 
 class CalculateOrderShipping
 {
@@ -212,44 +208,5 @@ class CalculateOrderShipping
         return $helperZone->match($helperAddress);
     }
 
-
-    public string $commandSignature = 'order:recalculate_shipping {--s|slugs=}';
-
-    public function asCommand(Command $command): int
-    {
-        $exitCode = 0;
-        if (!$command->option('slugs')) {
-            if ($command->argument('organisations')) {
-                /** @var Organisation $organisation */
-                $organisation       = $this->getOrganisations($command)->first();
-                $this->organisation = $organisation;
-            }
-            // $this->loopAll($command);
-        } else {
-            $slug  = $command->option('slugs');
-            $order = Order::where('slug', $slug)->first();
-            if ($order) {
-                $this->handle($order);
-                CalculateOrderTotalAmounts::run($order);
-                $command->line("Order $order->reference hydrated 💦");
-            } else {
-                $command->error("Model not found");
-                $exitCode = 1;
-            }
-        }
-
-        return $exitCode;
-    }
-
-    protected function loopAll(Command $command): void
-    {
-        $command->withProgressBar(Order::whereIn('state', [OrderStateEnum::CREATING])->get(), function ($model) {
-            if ($model) {
-                $this->handle($model);
-                CalculateOrderTotalAmounts::run($model);
-            }
-        });
-        $command->info("");
-    }
 
 }

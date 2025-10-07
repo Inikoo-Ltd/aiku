@@ -7,16 +7,12 @@
  * Copyright: 2025
 */
 
-
 namespace App\Actions\Retina\Ecom\Orders;
 
 use App\Actions\Accounting\Invoice\WithInvoicesExport;
-use App\Actions\OrgAction;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithExportData;
-use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
-use App\Models\SysAdmin\Organisation;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Arr;
@@ -38,9 +34,9 @@ class EcomPdfProformaInvoice extends RetinaAction
     public function handle(Order $order, array $options): Response
     {
 
-        $locale=$order->shop->language->code;
+        $locale = $order->shop->language->code;
         app()->setLocale($locale);
-        
+
         try {
             $totalItemsNet = $order->total_amount;
             $totalShipping = $order->shipping_amount ?? 0;

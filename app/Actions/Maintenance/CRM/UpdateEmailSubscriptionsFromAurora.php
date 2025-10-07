@@ -11,7 +11,6 @@
 
 namespace App\Actions\Maintenance\CRM;
 
-use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\Traits\WithOrganisationSource;
 use App\Models\Catalogue\Shop;
@@ -71,8 +70,6 @@ class UpdateEmailSubscriptionsFromAurora
                                 'is_subscribed_to_basket_reminder'  => $canBasket
                             ];
 
-                           // print $customer->slug."\n";
-                           // print_r($dataToUpdate);
 
                             UpdateCustomerComms::run($customer->comms, $dataToUpdate, false);
                         }

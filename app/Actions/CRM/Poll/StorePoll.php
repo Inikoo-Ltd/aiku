@@ -23,7 +23,6 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\RequiredIf;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Validation\Validator;
 
 class StorePoll extends OrgAction
 {
