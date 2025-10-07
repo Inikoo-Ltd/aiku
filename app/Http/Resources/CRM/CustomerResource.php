@@ -13,7 +13,6 @@ use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
-use App\Models\CRM\WebUser;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**

@@ -20,12 +20,10 @@ use App\Models\Procurement\PurchaseOrder;
 use App\Models\Procurement\StockDelivery;
 use App\Models\SupplyChain\Supplier;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachAttachmentToModel extends OrgAction
 {
-    private Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn $parent;
 
     public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn $model, array $modelData): void
     {
@@ -34,7 +32,7 @@ class AttachAttachmentToModel extends OrgAction
             $attachmentData = [
                 'path'         => $file->getPathName(),
                 'originalName' => $file->getClientOriginalName(),
-                'scope'        => $modelData['scope'],
+                'scope'        => Arr::get($modelData, 'scope', 'Other'),
                 'caption'      => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
                 'extension'    => $file->getClientOriginalExtension()
             ];
@@ -45,38 +43,18 @@ class AttachAttachmentToModel extends OrgAction
 
     public function rules(): array
     {
-        if ($this->parent instanceof Employee) {
-            $allowedScopes = ['Other', 'CV', 'Contract'];
-        } elseif ($this->parent instanceof TradeUnit) {
-            $allowedScopes = ['Other'];
-        } elseif ($this->parent instanceof Supplier) {
-            $allowedScopes = ['Other'];
-        } elseif ($this->parent instanceof Customer) {
-            $allowedScopes = ['Other'];
-        } elseif ($this->parent instanceof PurchaseOrder) {
-            $allowedScopes = ['Other'];
-        } elseif ($this->parent instanceof StockDelivery) {
-            $allowedScopes = ['Other'];
-        } elseif ($this->parent instanceof Order) {
-            $allowedScopes = ['Other'];
-        } else {
-            $allowedScopes = ['Other'];
-        }
-
         return [
             'attachments' => ['required', 'array'],
             'attachments.*' => ['required', 'file', 'max:50000'],
             'scope'      => [
                 'required',
-                'string',
-                Rule::in($allowedScopes),
+                'string'
             ],
         ];
     }
 
     public function inEmployee(Employee $employee, ActionRequest $request): void
     {
-        $this->parent = $employee;
         $this->initialisation($employee->organisation, $request);
 
         $this->handle($employee, $this->validatedData);
@@ -84,7 +62,6 @@ class AttachAttachmentToModel extends OrgAction
 
     public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): void
     {
-        $this->parent = $tradeUnit;
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
         $this->handle($tradeUnit, $this->validatedData);
@@ -92,7 +69,6 @@ class AttachAttachmentToModel extends OrgAction
 
     public function inSupplier(Supplier $supplier, ActionRequest $request): void
     {
-        $this->parent = $supplier;
         $this->initialisationFromGroup($supplier->group, $request);
 
         $this->handle($supplier, $this->validatedData);
@@ -100,7 +76,6 @@ class AttachAttachmentToModel extends OrgAction
 
     public function inCustomer(Customer $customer, ActionRequest $request): void
     {
-        $this->parent = $customer;
         $this->initialisation($customer->organisation, $request);
 
         $this->handle($customer, $this->validatedData);
@@ -108,7 +83,6 @@ class AttachAttachmentToModel extends OrgAction
 
     public function inPurchaseOrder(PurchaseOrder $purchaseOrder, ActionRequest $request): void
     {
-        $this->parent = $purchaseOrder;
         $this->initialisation($purchaseOrder->organisation, $request);
 
         $this->handle($purchaseOrder, $this->validatedData);
@@ -116,7 +90,6 @@ class AttachAttachmentToModel extends OrgAction
 
     public function inStockDelivery(StockDelivery $stockDelivery, ActionRequest $request): void
     {
-        $this->parent = $stockDelivery;
         $this->initialisation($stockDelivery->organisation, $request);
 
         $this->handle($stockDelivery, $this->validatedData);
@@ -124,7 +97,6 @@ class AttachAttachmentToModel extends OrgAction
 
     public function inOrder(Order $order, ActionRequest $request): void
     {
-        $this->parent = $order;
         $this->initialisation($order->organisation, $request);
 
         $this->handle($order, $this->validatedData);
@@ -132,7 +104,6 @@ class AttachAttachmentToModel extends OrgAction
 
     public function inPalletDelivery(PalletDelivery $palletDelivery, ActionRequest $request): void
     {
-        $this->parent = $palletDelivery;
         $this->initialisation($palletDelivery->organisation, $request);
 
         $this->handle($palletDelivery, $this->validatedData);
@@ -140,7 +111,6 @@ class AttachAttachmentToModel extends OrgAction
 
     public function inPalletReturn(PalletReturn $palletReturn, ActionRequest $request): void
     {
-        $this->parent = $palletReturn;
         $this->initialisation($palletReturn->organisation, $request);
 
         $this->handle($palletReturn, $this->validatedData);

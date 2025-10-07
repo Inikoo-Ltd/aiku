@@ -13,7 +13,6 @@ use App\Actions\IrisAction;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Http\Resources\Catalogue\LastOrderedProductsResource;
 use App\Models\Catalogue\ProductCategory;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -23,7 +22,7 @@ class GetIrisLastOrderedProducts extends IrisAction
     public function handle(ProductCategory $productCategory): \Illuminate\Support\Collection
     {
         return DB::table('products')
-            ->select('products.*', 'transactions.submitted_at', 'transactions.id as transaction_id')
+            ->select('products.*', 'transactions.submitted_at', 'transactions.id as transaction_id', 'customers.contact_name as customer_contact_name', 'customers.name as customer_name')
             ->where('products.family_id', $productCategory->id)
             ->join('transactions', function ($join) {
                 $join->on('transactions.model_id', '=', 'products.id')
@@ -40,6 +39,7 @@ class GetIrisLastOrderedProducts extends IrisAction
                         ['Product', TransactionStateEnum::SUBMITTED]
                     );
             })
+            ->join('customers', 'transactions.customer_id', 'customers.id')
             ->orderBy('transactions.submitted_at', 'desc')
             ->limit(10)
             ->get();
