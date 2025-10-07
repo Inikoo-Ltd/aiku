@@ -253,6 +253,10 @@ class IndexProspects extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $prospects, ActionRequest $request): Response
     {
+
+        $shop = $request->route()->parameters()['shop'];
+        $subNavigation = $this->getSubNavigation($shop, $request);
+
         $navigation = ProspectsTabsEnum::navigation();
         if (!($this->parent instanceof Shop)) {
             unset($navigation[ProspectsTabsEnum::CONTACTED->value]);
@@ -277,7 +281,7 @@ class IndexProspects extends OrgAction
                 ],
             ];
         }
-        $subNavigation = $this->getSubNavigation($request);
+
 
 
         if ($this->parent instanceof Group) {
@@ -322,10 +326,10 @@ class IndexProspects extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'              => __('prospects'),
+                'title'              => __('Prospects'),
                 'pageHead'           => array_filter([
                     'icon'          => ['fal', 'fa-user-plus'],
-                    'title'         => __('prospects'),
+                    'title'         => __('Prospects'),
                     'actions'       => [
                         $this->canEdit ? [
                             'type'    => 'buttonGroup',
@@ -335,7 +339,7 @@ class IndexProspects extends OrgAction
                                     [
                                         'style' => 'primary',
                                         'icon'  => ['fal', 'fa-upload'],
-                                        'label' => 'upload',
+                                        'label' => 'Upload',
                                         'route' => [
                                             'name'       => 'grp.org.models.shop.prospects.upload',
                                             'parameters' => $this->parent->id

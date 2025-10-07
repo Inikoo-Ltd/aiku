@@ -110,7 +110,9 @@ class IndexProspectQueries extends InertiaAction
 
     public function htmlResponse(LengthAwarePaginator $prospects, ActionRequest $request): Response
     {
-        $subNavigation = $this->getSubNavigation($request);
+
+        $shop = $request->route()->parameters()['shop'];
+        $subNavigation = $this->getSubNavigation($shop, $request);
 
         return Inertia::render(
             'CRM/Prospects/Queries',

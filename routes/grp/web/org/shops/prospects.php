@@ -15,5 +15,5 @@ use App\Actions\CRM\Prospect\UI\ShowProspect;
 Route::get('/', IndexProspects::class)->name('index');
 Route::get('export', [ExportProspects::class, 'inShop'])->name('export');
 Route::get('/create', CreateProspect::class)->name('create');
-Route::get('/mailshots', [IndexProspectMailshots::class, 'inShop'])->name('mailshots.index');
+Route::get('/mailshots', IndexProspectMailshots::class)->name('mailshots.index');
 Route::get('/{prospect}', ShowProspect::class)->name('show');
