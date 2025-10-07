@@ -58,20 +58,22 @@ console.log('lala', layout)
 const listProducts = ref<ProductHit[] | null>()
 const isLoadingFetch = ref(false)
 const fetchRecommenders = async () => {
-    try {
-        isLoadingFetch.value = true
-        const response = await axios.get(
-            route('iris.json.product_category.last-ordered-products.index', { productCategory: 8279 })
-        )
-        if (response.status !== 200) {
-            console.error('Error fetching recommenders:', response.statusText)
+    if (route().has('iris.json.product_category.last-ordered-products.index')) {
+        try {
+            isLoadingFetch.value = true
+            const response = await axios.get(
+                route('iris.json.product_category.last-ordered-products.index', { productCategory: 8279 })
+            )
+            if (response.status !== 200) {
+                console.error('Error fetching recommenders:', response.statusText)
+            }
+            console.log('Response axios:', response.data)
+            listProducts.value = response.data
+        } catch (error: any) {
+            console.error('Error on fetching recommendations:', error)
         }
-        console.log('Response axios:', response.data)
-        listProducts.value = response.data
-    } catch (error: any) {
-        console.error('Error on fetching recommendations:', error)
+        isLoadingFetch.value = false
     }
-    isLoadingFetch.value = false
 }
 
 onMounted(()=> {

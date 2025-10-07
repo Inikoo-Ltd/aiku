@@ -11,15 +11,13 @@ import { Swiper, SwiperSlide } from 'swiper/vue'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
-import { Autoplay, Navigation, Pagination } from 'swiper/modules'
+import { Autoplay } from 'swiper/modules'
 
 // Font Awesome
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
-import { ProductHit } from "@/types/Luigi/LuigiTypes"
-// import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
+import RecommendationCustomerRecentlyBoughtSlideIris from "@/Components/Iris/Recommendations/RecommendationCustomerRecentlyBoughtSlideIris.vue"
+import { LastOrderedProduct } from "@/types/Resource/LastOrderedProductsResource"
 library.add(faChevronLeft, faChevronRight)
 
 
@@ -36,7 +34,7 @@ const props = defineProps<{
 const slidesPerView = computed(() => {
     const perRow = props.fieldValue?.settings?.per_row ?? {}
     return {
-        desktop: perRow.desktop ?? 6,
+        desktop: perRow.desktop ?? 5.2,
         tablet: perRow.tablet ?? 4,
         mobile: perRow.mobile ?? 2,
     }[props.screenType] ?? 5
@@ -45,7 +43,7 @@ const slidesPerView = computed(() => {
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
-const listProducts = ref<ProductHit[] | null>()
+const listProducts = ref<LastOrderedProduct[] | null>()
 const isLoadingFetch = ref(false)
 
 const listLoadingProducts = ref<Record<string, string>>({})
@@ -55,40 +53,28 @@ const isProductLoading = (productId: string) => {
 
 const isFetched = ref(false)
 const fetchRecommenders = async () => {
-    try {
-        isLoadingFetch.value = true
-        
-        const response = await axios.get(
-            route('iris.json.product_category.last-ordered-products.index', { productCategory: 8279 })
-        )
-        
-        
-        if (response.data?.[0]?.hits) {
-            console.log('Found hits in data[0]:', response.data[0].hits)
-            listProducts.value = response.data[0].hits
-        } else if (Array.isArray(response.data)) {
-            console.log('Using data directly as array:', response.data)
-            listProducts.value = response.data
-        } else if (response.data?.data) {
-            console.log('Found data property:', response.data.data)
+    console.log('qqqqqqq')
+    if (route().has('iris.json.product_category.last-ordered-products.index')) {
+        console.log('wwwwwwwwwwww')
+        try {
+            isLoadingFetch.value = true
+            
+            const response = await axios.get(
+                route('iris.json.product_category.last-ordered-products.index', { productCategory: 31890 })
+            )
+            
+            
             listProducts.value = response.data.data
-        } else {
-            console.log('Data structure not recognized, setting to empty array')
-            listProducts.value = []
+    
+            
+            console.log('Final listProducts value:', listProducts.value)
+            
+        } catch (error: any) {
+            console.error('Error on fetching recommendations:', error)
+        } finally {
+            isFetched.value = true
+            isLoadingFetch.value = false
         }
-        
-        console.log('Final listProducts value:', listProducts.value)
-        console.log('=== END FETCH SUCCESS ===')
-        
-    } catch (error: any) {
-        console.log('=== FETCH ERROR ===')
-        console.error('Error on fetching recommendations:', error)
-        console.log('Error response:', error.response?.data)
-        console.log('Error status:', error.response?.status)
-        console.log('=== END FETCH ERROR ===')
-    } finally {
-        isFetched.value = true
-        isLoadingFetch.value = false
     }
 }
 
@@ -133,7 +119,7 @@ onMounted(() => {
                             :key="index"
                             class="w-full cursor-grab relative !grid h-full min-h-full"
                         >
-                            <RecommendationSlideIris
+                            <RecommendationCustomerRecentlyBoughtSlideIris
                                 :product
                                 :isProductLoading
                             />
