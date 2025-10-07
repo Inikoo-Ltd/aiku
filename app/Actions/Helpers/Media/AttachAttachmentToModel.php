@@ -34,7 +34,7 @@ class AttachAttachmentToModel extends OrgAction
             $attachmentData = [
                 'path'         => $file->getPathName(),
                 'originalName' => $file->getClientOriginalName(),
-                'scope'        => $modelData['scope'],
+                'scope'        => Arr::get($modelData, 'scope', 'Other'),
                 'caption'      => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
                 'extension'    => $file->getClientOriginalExtension()
             ];
@@ -45,31 +45,30 @@ class AttachAttachmentToModel extends OrgAction
 
     public function rules(): array
     {
-        if ($this->parent instanceof Employee) {
-            $allowedScopes = ['Other', 'CV', 'Contract'];
-        } elseif ($this->parent instanceof TradeUnit) {
-            $allowedScopes = ['Other'];
-        } elseif ($this->parent instanceof Supplier) {
-            $allowedScopes = ['Other'];
-        } elseif ($this->parent instanceof Customer) {
-            $allowedScopes = ['Other'];
-        } elseif ($this->parent instanceof PurchaseOrder) {
-            $allowedScopes = ['Other'];
-        } elseif ($this->parent instanceof StockDelivery) {
-            $allowedScopes = ['Other'];
-        } elseif ($this->parent instanceof Order) {
-            $allowedScopes = ['Other'];
-        } else {
-            $allowedScopes = ['Other'];
-        }
+        // if ($this->parent instanceof Employee) {
+        //     $allowedScopes = ['Other', 'CV', 'Contract'];
+        // } elseif ($this->parent instanceof TradeUnit) {
+        //     $allowedScopes = ['Other'];
+        // } elseif ($this->parent instanceof Supplier) {
+        //     $allowedScopes = ['Other'];
+        // } elseif ($this->parent instanceof Customer) {
+        //     $allowedScopes = ['Other'];
+        // } elseif ($this->parent instanceof PurchaseOrder) {
+        //     $allowedScopes = ['Other'];
+        // } elseif ($this->parent instanceof StockDelivery) {
+        //     $allowedScopes = ['Other'];
+        // } elseif ($this->parent instanceof Order) {
+        //     $allowedScopes = ['Other'];
+        // } else {
+        //     $allowedScopes = ['Other'];
+        // }
 
         return [
             'attachments' => ['required', 'array'],
             'attachments.*' => ['required', 'file', 'max:50000'],
             'scope'      => [
                 'required',
-                'string',
-                Rule::in($allowedScopes),
+                'string'
             ],
         ];
     }
