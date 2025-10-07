@@ -486,7 +486,6 @@ const responsiveGridClass = computed(() => {
                             <ProductRenderEcom
                                 :product="product"
                                 :key="index"
-                                :productHasPortfolio="productHasPortfolio.list[product.id]"
                             />
                         </div>
                     </template>
