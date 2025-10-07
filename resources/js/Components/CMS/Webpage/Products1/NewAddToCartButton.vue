@@ -108,7 +108,7 @@ const onUpdateQuantity = (product: ProductResource) => {
             transaction: product.transaction_id
         }),
         {
-            quantity: get(product, ['quantity_ordered_new'], product.quantity_ordered)
+            quantity_ordered: get(product, ['quantity_ordered_new'], product.quantity_ordered)
         },
         {
             preserveScroll: true,
