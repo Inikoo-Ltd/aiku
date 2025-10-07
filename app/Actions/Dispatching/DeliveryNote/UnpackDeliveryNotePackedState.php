@@ -1,0 +1,86 @@
+<?php
+
+/*
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Thu, 23 Feb 2023 16:47:00 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2023, Raul A Perusquia Flores
+ */
+
+namespace App\Actions\Dispatching\DeliveryNote;
+
+use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
+use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
+use App\Actions\OrgAction;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
+use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Models\Dispatching\DeliveryNote;
+use App\Models\SysAdmin\User;
+use Lorisleiva\Actions\ActionRequest;
+
+class UnpackDeliveryNotePackedState extends OrgAction
+{
+    use WithActionUpdate;
+
+    private DeliveryNote $deliveryNote;
+    protected User $user;
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function handle(DeliveryNote $deliveryNote): DeliveryNote
+    {
+        data_set($modelData, 'packed_at', null);
+        data_set($modelData, 'packer_user_id', null);
+        data_set($modelData, 'state', DeliveryNoteStateEnum::HANDLING->value);
+
+        foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
+            $item->packings()->delete();
+        }
+
+        data_set($modelData, 'parcels', []);
+
+        if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+            UpdateOrderStateToHandling::make()->action($deliveryNote->orders->first());
+        }
+
+        $deliveryNote = $this->update($deliveryNote, $modelData);
+
+        if ($deliveryNote->pickingSessions) {
+            foreach ($deliveryNote->pickingSessions as $pickingSession) {
+                AutoFinishPackingPickingSession::run($pickingSession);
+            }
+        }
+
+        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
+            ->delay($this->hydratorsDelay);
+
+        return $deliveryNote;
+    }
+
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    {
+        $this->user = $request->user();
+        $this->deliveryNote = $deliveryNote;
+        $this->initialisationFromShop($deliveryNote->shop, $request);
+
+        return $this->handle($deliveryNote);
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
+    {
+        $this->user = $user;
+        $this->deliveryNote = $deliveryNote;
+        $this->initialisationFromShop($deliveryNote->shop, []);
+
+        return $this->handle($deliveryNote);
+    }
+}
