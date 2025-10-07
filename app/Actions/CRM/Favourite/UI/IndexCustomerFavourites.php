@@ -43,11 +43,11 @@ class IndexCustomerFavourites extends OrgAction
         $query->leftJoin('products', 'favourites.product_id', '=', 'products.id');
         $query->leftJoin('transactions', function ($join) {
             $join->on('products.id', '=', 'transactions.model_id')
-                ->where('transactions.model_type', '=', 'product');
+                ->where('transactions.model_type', '=', 'Product');
         });
         $query->leftJoin('webpages', function ($join) {
             $join->on('products.id', '=', 'webpages.model_id')
-                ->where('webpages.model_type', '=', 'product');
+                ->where('webpages.model_type', '=', 'Product');
         });
 
         $select =[
