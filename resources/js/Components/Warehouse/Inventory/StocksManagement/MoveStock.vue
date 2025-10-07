@@ -57,14 +57,14 @@ const form = useForm({
     moveStock: null
 })
 
-const selectSourceWarehouse = (warehouse) => {
+const selectSourceWarehouse = (warehouse: any) => {
     moveStock.value.from = warehouse
     moveStock.value.to = null
     moveStock.value.quantity = 0
     moveStock.value.isActive = true
 }
 
-const selectDestinationWarehouse = (warehouse) => {
+const selectDestinationWarehouse = (warehouse: any) => {
     moveStock.value.to = warehouse
     form.moveStock = {
         from: moveStock.value.from.name,
@@ -83,7 +83,7 @@ const closeMoveStock = () => {
     form.moveStock = null
 }
 
-const updateMoveQuantity = (value) => {
+const updateMoveQuantity = (value: number) => {
     // Ensure value is valid and within bounds
     const validValue = value || 0
     const maxQuantity = getMaxQuantity()
@@ -104,7 +104,7 @@ const getMaxQuantity = () => {
     return moveStock.value.from ? moveStock.value.from.stock : 0
 }
 
-const getCalculatedStock = (warehouse) => {
+const getCalculatedStock = (warehouse: { stock: number; id: any }) => {
     if (!moveStock.value.isActive || moveStock.value.quantity <= 0) {
         return warehouse.stock
     }
@@ -122,7 +122,7 @@ const getCalculatedStock = (warehouse) => {
     return warehouse.stock
 }
 
-const getStockChangeIndicator = (warehouse) => {
+const getStockChangeIndicator = (warehouse: { id: any }) => {
     if (!moveStock.value.isActive || moveStock.value.quantity <= 0) {
         return null
     }
@@ -140,7 +140,7 @@ const getStockChangeIndicator = (warehouse) => {
     return null
 }
 
-const handleForkliftClick = (warehouse) => {
+const handleForkliftClick = (warehouse: { id: any }) => {
     // If no move stock is active, start new move stock selection
     if (!moveStock.value.isActive) {
         selectSourceWarehouse(warehouse)
@@ -213,7 +213,7 @@ const submitCheckStock = () => {
                     <div class="w-20">
                         <InputNumber
                             :modelValue="moveStock.quantity"
-                            @input="e => updateMoveQuantity(e.value)"
+                            @input="(event: { value: any }) => updateMoveQuantity(event.value)"
                             :min="0"
                             :max="getMaxQuantity()"
                             :step="1"
@@ -268,7 +268,7 @@ const submitCheckStock = () => {
                     <div class="w-20 relative flex items-center gap-2">
                         <InputNumber
                             :modelValue="getCalculatedStock(forrrmm)"
-                            @input="e => forrrmm.stock = e.value"
+                            @input="(event: { value: any }) => forrrmm.stock = event.value"
                             :min="0"
                             :disabled="true"
                             :step="1"

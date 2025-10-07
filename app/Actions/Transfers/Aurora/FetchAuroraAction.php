@@ -82,7 +82,8 @@ class FetchAuroraAction extends FetchAction
                 'fetch:portfolios',
                 'fetch:favourites',
                 'fetch:offer_components',
-                'fetch:product_org_stocks'
+                'fetch:product_org_stocks',
+                'fetch:prospects',
             ]) and $command->option('shop')) {
             $this->shop = Shop::where('slug', $command->option('shop'))->firstOrFail();
         }

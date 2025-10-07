@@ -18,10 +18,10 @@ import { notify } from '@kyvg/vue3-notification';
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faThumbsDown, faChair, faLaugh } from '@fal';
-import { faCheck } from '@far';
+import { faCheck, faTimes } from '@far';
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from 'laravel-vue-i18n'
-library.add(faThumbsDown, faChair, faLaugh, faCheck)
+library.add(faThumbsDown, faChair, faLaugh, faCheck, faTimes)
 
 interface tag {
     id: number
@@ -121,7 +121,22 @@ function prospectRoute(prospect: Prospect) {
         <!-- Column: Opt in -->
         <template #cell(is_opt_in)="{ item: prospect }">
             <div class="text-center">
-                <FontAwesomeIcon v-if="prospect.is_opt_in" v-tooltip="trans('Opt-in to newsletter')" icon="far fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon 
+                    v-if="prospect.is_opt_in" 
+                    v-tooltip="trans('Opted in to newsletter')" 
+                    icon="far fa-check" 
+                    class="text-green-500" 
+                    fixed-width 
+                    aria-hidden="true" 
+                />
+                <FontAwesomeIcon 
+                    v-else 
+                    v-tooltip="trans('Not opted in to newsletter')" 
+                    icon="far fa-times" 
+                    class="text-red-500" 
+                    fixed-width 
+                    aria-hidden="true" 
+                />
             </div>
         </template>
 

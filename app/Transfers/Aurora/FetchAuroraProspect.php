@@ -22,6 +22,14 @@ class FetchAuroraProspect extends FetchAurora
      */
     protected function parseModel(): void
     {
+
+        $shop=$this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Prospect Store Key'});
+
+        if($shop->is_aiku){
+            return;
+        }
+
+
         $customerId = null;
         if ($this->auroraModelData->{'Prospect Customer Key'}) {
             $customer = $this->parseCustomer(
@@ -101,7 +109,7 @@ class FetchAuroraProspect extends FetchAurora
             $this->parsedData['prospect']['created_at'] = $this->auroraModelData->{'Prospect Created Date'};
         }
 
-        $this->parsedData['shop'] = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Prospect Store Key'});
+        $this->parsedData['shop'] = $shop;
     }
 
 

@@ -24,14 +24,14 @@ export const initialiseRetinaApp = () => {
 
 
 
-    const storageLayout = JSON.parse(localStorage.getItem(`layout_${usePage().props.retina?.type}`) || '{}')  // Get layout from localStorage
+    const storageLayout = JSON.parse(localStorage.getItem(`layout_${usePage().props?.retina?.type}`) || '{}')  // Get layout from localStorage
     layout.currentPlatform = storageLayout.currentPlatform
 
     if (usePage().props?.auth?.user) {
-        layout.user = usePage().props.auth.user
-        echoCustomer.subscribe(usePage().props.auth.user.customer_id)
+        layout.user = usePage().props?.auth?.user
+        echoCustomer.subscribe(usePage().props?.auth?.user?.customer_id)
         // Echo: Personal
-        echoPersonal.subscribe(usePage().props.auth.user.id)
+        echoPersonal.subscribe(usePage().props?.auth?.user?.id)
 
     }
     
@@ -48,7 +48,7 @@ export const initialiseRetinaApp = () => {
         if (layout.currentParams?.customerSalesChannel && layout.currentParams?.customerSalesChannel !== layout.currentPlatform) {
             layout.currentPlatform = layout.currentParams.customerSalesChannel
 
-            localStorage.setItem(`layout_${usePage().props.retina?.type}`, JSON.stringify({
+            localStorage.setItem(`layout_${usePage().props?.retina?.type}`, JSON.stringify({
                 ...storageLayout,
                 currentPlatform: layout.currentPlatform
             }))
@@ -65,7 +65,7 @@ export const initialiseRetinaApp = () => {
     })
 
     // Echo: Website wide websocket
-    echoWebsite.subscribe(usePage().props.iris.website.id)  // Websockets: notification
+    echoWebsite.subscribe(usePage().props?.iris?.website?.id)  // Websockets: notification
 
     if (usePage().props?.iris?.locale) {
         loadLanguageAsync(usePage().props?.iris?.locale)
