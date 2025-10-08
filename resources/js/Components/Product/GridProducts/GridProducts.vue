@@ -199,12 +199,13 @@ const hasData = computed(() => {
 /**
  * Get existing transaction for a product
  */
-const getExistingTransaction = (product: Product) => {
+/* const getExistingTransaction = (product: Product) => {
     if (!props.basketTransactions || !product.id) {
         return null
     }
     return props.basketTransactions[product.id] || null
-}
+} */
+console.log('basketTransactions', props.basketTransactions)
 
 // ============================================================================
 // SEARCH & FILTER FUNCTIONS
@@ -494,6 +495,16 @@ const toggleFavorite = (product: Product): void => {
         )
     }
 }
+
+const getDataHasInBasket = (item: Product) => {
+        return {
+                id: item?.id,
+                quantity_ordered: item.quantity_ordered || 0,
+                quantity_ordered_new: item.quantity_ordered_new || 0,
+                asset_id: item?.asset_id
+            }
+    }
+
 </script>
 
 <template>
@@ -538,12 +549,12 @@ const toggleFavorite = (product: Product): void => {
                             :existing-transaction="getExistingTransaction(item)"
                             @toggle-favorite="toggleFavorite" 
                         /> -->
-                        <ProductRenderEcom :product="item" :key="index"
+                        <ProductRenderEcom :product="item" :key="index" :hasInBasket="item"
                             :dettach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"
-                            :attachToFavouriteRoute="{ name: 'retina.models.product.favourite' }"
-                            :add-to-basket-route="{ name: 'retina.models.product.add-to-basket'}"
+                            :attach-to-favourite-route="{ name: 'retina.models.product.favourite' }"
+                            :add-to-basket-route="{ name: 'retina.models.product.add-to-basket' }"
                             :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update', method: 'patch' }"
-                            @after-on-unselect-favourite="(e)=>router.reload()">
+                            @after-on-unselect-favourite="() => router.reload()">
                             <template #image="{ product }">
                                 <Image :src="product?.image?.source" alt="product image"
                                     :style="{ objectFit: 'contain' }" />

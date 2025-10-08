@@ -29,6 +29,8 @@ const locale = useLocaleStore()
 
 const props = withDefaults(defineProps<{
     product: ProductResource
+    hasInBasket?: any
+    basketButton?: boolean
     attachToFavouriteRoute?: routeType
     dettachToFavouriteRoute?: routeType
     attachBackInStockRoute?: routeType
@@ -37,6 +39,7 @@ const props = withDefaults(defineProps<{
     updateBasketQuantityRoute?: routeType
 
 }>(), {
+    basketButton: true,
     addToBasketRoute: {
         name: 'iris.models.transaction.store',
     },
@@ -91,6 +94,7 @@ const onAddFavourite = (product: ProductResource) => {
                 product.is_favourite = true
             },
             onError: errors => {
+                console.error(errors)
                 notify({
                     title: trans("Something went wrong"),
                     text: trans("Failed to add the product to favourites"),
@@ -211,7 +215,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
     )
 }
 
-console.log(props)
+
 </script>
 
 <template>
@@ -241,9 +245,9 @@ console.log(props)
 
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
-                    <NewAddToCartButton v-if="product.stock > 0" :product="product" :key="product" :addToBasketRoute="addToBasketRoute" :updateBasketQuantityRoute="updateBasketQuantityRoute" />
+                    <NewAddToCartButton v-if="product.stock > 0 && basketButton" :hasInBasket :product="product" :key="product" :addToBasketRoute="addToBasketRoute" :updateBasketQuantityRoute="updateBasketQuantityRoute" />
                     <button
-                        v-else-if="layout?.app?.environment === 'local'"
+                        v-else-if="layout?.app?.environment === 'local' && product.stock < 1"
                         @click.prevent="()=> product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
                         v-tooltip="product.is_back_in_stock ?  trans('You will be notified') :  trans('Remind me when back in stock')"

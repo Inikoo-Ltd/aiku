@@ -15,26 +15,45 @@ import { routeType } from '@/types/route'
 
 library.add(faPlus, faMinus, faCartPlus)
 
-const props = defineProps<{
+const props = withDefaults(
+  defineProps<{
     product: ProductResource
     addToBasketRoute: routeType
     updateBasketQuantityRoute: routeType
-}>()
+    hasInBasket?: any
+  }>(),
+  {
+    hasInBasket: {
+        id: null,
+        quantity_ordered: 0,
+        quantity_ordered_new: 0,
+        asset_id: null
+    }
+  }
+)
+
 
 const layout = inject('layout', retinaLayoutStructure)
 const isLoadingSubmitQuantityProduct = ref(false)
 const status = ref<null | 'loading' | 'success' | 'error'>(null)
 
-// Get current quantity - menggunakan logic yang sama dengan ButtonAddToBasketInFamily
+
 const currentQuantity = computed(() => {
-    return get(props.product, ['quantity_ordered_new'], null) !== null
-        ? get(props.product, ['quantity_ordered_new'], 0)
-        : (props.product.quantity_ordered || 0)
+    const quantityNew = get(props.hasInBasket, ['quantity_ordered_new'])
+    const quantity = get(props.hasInBasket, ['quantity_ordered'])
+
+    // Normalize null/undefined to 0
+    const safeQuantityNew = Number(quantityNew ?? 0)
+    const safeQuantity = Number(quantity ?? 0)
+
+    // Use new quantity if set, otherwise fallback
+    return safeQuantityNew > 0 ? safeQuantityNew : safeQuantity
 })
+
 
 // Check if value is dirty (changed) - dari ButtonAddToBasketInFamily
 const compIsValueDirty = computed(() => {
-    return get(props.product, ['quantity_ordered_new'], null) !== get(props.product, ['quantity_ordered'], null)
+    return get(props.hasInBasket, ['quantity_ordered_new'], null) !== get(props.hasInBasket, ['quantity_ordered'], null)
 })
 
 // Set status with timeout - dari ButtonAddToBasketInFamily
@@ -50,7 +69,7 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
 }
 
 // Add to basket function - exact copy dari ButtonAddToBasketInFamily
-const onAddToBasket = async (product: ProductResource) => {
+const onAddToBasket = async (product: ProductResource, basket : any) => {
     try {
         setStatus('loading')
         isLoadingSubmitQuantityProduct.value = true
@@ -59,7 +78,7 @@ const onAddToBasket = async (product: ProductResource) => {
                 product: product.id
             }),
             {
-                quantity: get(product, ['quantity_ordered_new'], product.quantity_ordered)
+                quantity: get(basket, ['quantity_ordered_new'], basket.quantity_ordered)
             }
         )
 
@@ -68,11 +87,11 @@ const onAddToBasket = async (product: ProductResource) => {
         }
 
         router.reload({
-            only: ['iris'],
+            only: ['iris','data'],
         })
 
         product.transaction_id = response.data?.transaction_id
-        product.quantity_ordered = response.data?.quantity_ordered
+        basket.quantity_ordered = response.data?.quantity_ordered
         setStatus('success')
 
         // Luigi: event add to cart
@@ -102,13 +121,13 @@ const onAddToBasket = async (product: ProductResource) => {
 }
 
 // Update quantity function - exact copy dari ButtonAddToBasketInFamily
-const onUpdateQuantity = (product: ProductResource) => {
+const onUpdateQuantity = (product: ProductResource, basket : any) => {
     router[props.updateBasketQuantityRoute.method || 'post'](
         route(props.updateBasketQuantityRoute.name, {
             transaction: product.transaction_id
         }),
         {
-            quantity_ordered: get(product, ['quantity_ordered_new'], product.quantity_ordered)
+            quantity_ordered: get(basket, ['quantity_ordered_new'], basket.quantity_ordered)
         },
         {
             preserveScroll: true,
@@ -120,7 +139,7 @@ const onUpdateQuantity = (product: ProductResource) => {
             },
             onSuccess: () => {
                 setStatus('success')
-                product.quantity_ordered = product.quantity_ordered_new
+                basket.quantity_ordered = product.quantity_ordered_new
             },
             onError: errors => {
                 setStatus('error')
@@ -139,12 +158,12 @@ const onUpdateQuantity = (product: ProductResource) => {
 
 // Main function to add/update product - dari ButtonAddToBasketInFamily
 const addAndUpdateProduct = () => {
-    if (!props.product.quantity_ordered) {
-        onAddToBasket(props.product)
-    } else if (props.product.quantity_ordered_new === 0) {
-        onUpdateQuantity(props.product)
+    if (!props.hasInBasket.quantity_ordered) {
+        onAddToBasket(props.product,props.hasInBasket)
+    } else if (props.hasInBasket.quantity_ordered_new === 0) {
+        onUpdateQuantity(props.product,props.hasInBasket)
     } else {
-        onUpdateQuantity(props.product)
+        onUpdateQuantity(props.product,props.hasInBasket)
     }
 }
 
@@ -159,7 +178,7 @@ const updateQuantity = (newQuantity: number) => {
     const clampedQuantity = Math.max(0, Math.min(newQuantity, props.product.stock))
 
     // Set quantity_ordered_new - sama seperti di ButtonAddToBasketInFamily
-    set(props.product, ['quantity_ordered_new'], clampedQuantity)
+    set(props.hasInBasket, ['quantity_ordered_new'], clampedQuantity)
 
     // Trigger debounced update jika ada perubahan
     if (compIsValueDirty.value) {
@@ -188,21 +207,27 @@ const handleInitialAdd = () => {
 }
 
 const instantAddToBasket = () => {
-    set(props.product, ['quantity_ordered_new'], 1)
-    onAddToBasket(props.product)
+    set(props.hasInBasket, ['quantity_ordered_new'], 1)
+    onAddToBasket(props.product,props.hasInBasket)
 }
+
+const showChartButton = computed(() => {
+  const quantityOrdered = get(props.hasInBasket, ['quantity_ordered'], 0)
+  return !quantityOrdered && currentQuantity.value === 0
+})
+
+
 </script>
 
 <template>
     <div class="group relative">
         <!-- State awal: qty 0, tampilkan icon + -->
-        <button v-if="get(props.product, ['quantity_ordered'], 0) === 0 && currentQuantity === 0"
+        <button v-if="showChartButton"
             @click.stop.prevent="instantAddToBasket"
             :disabled="isLoadingSubmitQuantityProduct || props.product.stock === 0"
             class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg" v-tooltip="trans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />
             <FontAwesomeIcon v-else :icon="faCartPlus" fixed-width class="text-gray-600" />
-            
         </button>
 
         <!-- State: qty > 0, tampilkan quantity dan expand saat hover -->
