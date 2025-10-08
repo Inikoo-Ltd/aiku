@@ -114,11 +114,11 @@ const ipAddresses = [
                 />
             </div>
         </div>
-        <div v-if="!errorCaptcha" class="ml-2">
+        <div v-if="errorCaptcha" class="ml-2">
             <small class="text-red-500">{{errorCaptcha}}</small>
             <div>
                 <div>
-                    <small>Add this IP Address to whitelist: </small>
+                    <small>Please add this IP Address to whitelist: </small>
                 </div>
                 <div v-for="(ip, i) in ipAddresses" :key="i">
                     <blockquote>{{ ip }}</blockquote>
