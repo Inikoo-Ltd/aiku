@@ -6,6 +6,7 @@ use App\Enums\Announcement\AnnouncementStateEnum;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Snapshot;
+use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -149,6 +150,11 @@ class Announcement extends Model
     public function liveSnapshot(): BelongsTo
     {
         return $this->belongsTo(Snapshot::class, 'live_snapshot_id');
+    }
+
+    public function website(): BelongsTo
+    {
+        return $this->belongsTo(Website::class, 'website_id');
     }
 
     public function deployments(): MorphMany

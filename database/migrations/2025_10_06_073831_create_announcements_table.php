@@ -21,7 +21,7 @@ return new class () extends Migration {
             $table->jsonb('fields');
             $table->jsonb('container_properties');
 
-            $table->unsignedInteger('portfolio_website_id')->nullable()->after('id');
+            $table->unsignedInteger('website_id')->nullable()->after('id');
 
             $table->unsignedSmallInteger('unpublished_snapshot_id')->nullable()->index();
             $table->unsignedSmallInteger('live_snapshot_id')->nullable()->index();
