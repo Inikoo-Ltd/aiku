@@ -12,6 +12,7 @@ import { faSignIn, faSignOut, faTimesCircle } from '@fas'
 import { faChevronCircleDown } from '@fal'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import SwitchLanguage from "../SwitchLanguage.vue"
 
 library.add(faChevronRight, faExternalLink)
 
@@ -53,7 +54,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     <!-- Custom Menu Top WITH Sub-departments -->
                     <Disclosure v-if="customTopItem.sub_departments && customTopItem.sub_departments.length > 0"
                         v-slot="{ open }">
-                        <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
+                        <DisclosureButton class="w-full text-left px-2 py-2 md:p-4 font-semibold text-gray-600 border-b">
                             <div class="flex justify-between items-center xtext-lg"
                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                 <span>{{ customTopItem.name }}</span>
@@ -98,7 +99,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     </Disclosure>
 
                     <!-- Custom Menu Top SINGLE LINK -->
-                    <div v-else class="py-4 px-5 border-b">
+                    <div v-else class="px-2 py-2 md:p-4 border-b">
                         <a v-if="customTopItem?.url !== null" :href="getHref(customTopItem)"
                             :target="getTarget(customTopItem)"
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
@@ -116,9 +117,9 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
             <!-- Product Categories Section for Mobile -->
             <div v-for="(category, index) in sortedProductCategories" :key="index">
                 <!-- Product Category WITH Sub-departments -->
-                <Disclosure v-if="category.sub_departments && category.sub_departments.length > 0"
+                <Disclosure v-if="category.sub_departments && category.sub_departments.length > 0" as="div" class="border-b"
                     v-slot="{ open }">
-                    <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
+                    <DisclosureButton class="w-full text-left px-2 py-2 md:p-4 font-semibold text-gray-600 border-b">
                         <div class="flex justify-between items-center xtext-lg"
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                             <span>{{ category.name }}</span>
@@ -162,7 +163,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                 </Disclosure>
 
                 <!-- Product Category SINGLE LINK -->
-                <div v-else class="py-4 px-5 border-b">
+                <div v-else class="px-2 py-2 md:p-4 border-b">
                     <a v-if="category?.url !== null" :href="'/' + category.url"
                         :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                         class="font-bold text-gray-600 xtext-lg">
@@ -182,7 +183,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     <!-- Custom Menu WITH Sub-departments -->
                     <Disclosure v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
                         v-slot="{ open }">
-                        <DisclosureButton class="w-full text-left p-4 font-semibold text-gray-600 border-b">
+                        <DisclosureButton class="w-full text-left px-2 py-2 md:p-4 font-semibold text-gray-600 border-b">
                             <div class="flex justify-between items-center xtext-lg"
                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                 <span>{{ customItem.name }}</span>
@@ -227,7 +228,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     </Disclosure>
 
                     <!-- Custom Menu SINGLE LINK -->
-                    <div v-else class="py-4 px-5 border-b">
+                    <div v-else class="px-2 py-2 md:p-4 border-b">
                         <a v-if="customItem?.url !== null" :href="getHref(customItem)"
                             :target="getTarget(customItem)"
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
@@ -241,6 +242,19 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     </div>
                 </div>
             </div>
+        </div>
+
+        <!-- Switch Language -->
+        <div v-if="Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="border-t border-[#e5e5e5] px-4 mb-1 flex justify-between items-center text-xs">
+            <div>{{ trans("Language") }}:</div>
+            <SwitchLanguage>
+                <template #default="{ isLoadingChangeLanguage }">
+                    <div class="underline text-xs py-2">
+                        {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.website_i18n.current_language?.code)?.name }}
+                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" :alt="layout.iris.website_i18n.current_language?.code" title='capitalize(countryName)'  />
+                    </div>
+                </template>
+            </SwitchLanguage>
         </div>
 
         <div class="login-section pl-3 pr-5 py-4 border-t border-[#e5e5e5] flex items-center">
