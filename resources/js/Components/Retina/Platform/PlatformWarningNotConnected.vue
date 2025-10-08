@@ -66,6 +66,12 @@ const onClickTestConnection = async () => {
     }
 }
 
+const ipAddresses = [
+    import.meta.env.VITE_IP_ADDRESS_1,
+    import.meta.env.VITE_IP_ADDRESS_2,
+    import.meta.env.VITE_IP_ADDRESS_3,
+]
+
 </script>
 
 <template>
@@ -108,8 +114,16 @@ const onClickTestConnection = async () => {
                 />
             </div>
         </div>
-        <div v-if="errorCaptcha" class="ml-2">
+        <div v-if="!errorCaptcha" class="ml-2">
             <small class="text-red-500">{{errorCaptcha}}</small>
+            <div>
+                <div>
+                    <small>Add this IP Address to whitelist: </small>
+                </div>
+                <div v-for="(ip, i) in ipAddresses" :key="i">
+                    <blockquote>{{ ip }}</blockquote>
+                </div>
+            </div>
         </div>
     </Message>
 
