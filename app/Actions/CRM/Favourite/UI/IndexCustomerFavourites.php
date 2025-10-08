@@ -41,6 +41,7 @@ class IndexCustomerFavourites extends OrgAction
         $query = QueryBuilder::for(Favourite::class);
         $query->where('favourites.customer_id', $parent->id);
         $query->leftJoin('products', 'favourites.product_id', '=', 'products.id');
+        $select = [];
         if($basket) {
             $query->leftJoin('transactions', function ($join) use ($basket) {
                 $join->on('products.id', '=', 'transactions.model_id')
@@ -48,15 +49,17 @@ class IndexCustomerFavourites extends OrgAction
                     ->where('transactions.order_id', '=', $basket->id)
                     ->whereNull('transactions.deleted_at');
             });
-            $select[] = 'transactions.id as in_basket_transaction_id';
-            $select[] = 'transactions.quantity_ordered as in_basket_quantity_ordered';
+            $select[] = 'transactions.id as transaction_id';
+            $select[] = 'transactions.quantity_ordered as quantity_ordered';
         }
+
         $query->leftJoin('webpages', function ($join) {
             $join->on('products.id', '=', 'webpages.model_id')
                 ->where('webpages.model_type', '=', 'Product');
         });
+        
         $query->whereNull('favourites.unfavourited_at');
-        $select = [
+        $select = array_merge($select, [
                 'products.id',
                 'products.image_id',
                 'products.code',
@@ -76,7 +79,7 @@ class IndexCustomerFavourites extends OrgAction
                 'products.top_seller',
                 'products.web_images',
                 'webpages.url',
-        ];
+        ]);
 
         return $query->defaultSort('products.code')
             ->select($select)
