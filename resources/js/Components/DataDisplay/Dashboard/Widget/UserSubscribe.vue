@@ -3,7 +3,7 @@ import { inject, ref, computed } from "vue"
 import { router, useForm } from "@inertiajs/vue3" // Inertia router
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faEdit, faTrash, faSave, faSignOutAlt } from "@fortawesome/free-solid-svg-icons"
+import { faEdit, faSave, faSignOutAlt } from "@fortawesome/free-solid-svg-icons"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faPlus } from "@far"
 import { notify } from "@kyvg/vue3-notification"
@@ -12,22 +12,24 @@ import ConfirmPopup from "primevue/confirmpopup"
 import { useConfirm } from "primevue/useconfirm"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { faExclamationTriangle } from "@fal"
+import { faTrashAlt, faExclamationTriangle } from "@fal"
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue"
 import Dialog from "primevue/dialog"
+import { useTruncate } from "@/Composables/useTruncate"
+import Tag from "@/Components/Tag.vue"
 
 // Add icons to the library
-library.add(faEdit, faTrash, faPlus, faSave, faSignOutAlt, faExclamationTriangle)
+library.add(faEdit, faTrashAlt, faPlus, faSave, faSignOutAlt, faExclamationTriangle)
 
 const props = withDefaults(defineProps<{ widget: any[] }>(), { widget: () => [] })
 
 // Create reactive copy for deletion handling
-const widgetItems = ref([...props.widget])
+const subscriberList = ref([...props.widget])
 
 // Inject global locale and layout stores
 const locale = inject("locale", aikuLocaleStructure)
 const layoutStore = inject("layout", layoutStructure)
-
+console.log('vvvv', layoutStore)
 const confirm = useConfirm()
 
 // Track edit mode, modal visibility, and unsaved changes
@@ -47,7 +49,7 @@ const routeIndexUser = {
 
 const hasSubscriptions = computed(() => {
 	return (
-		widgetItems.value.length > 0 ||
+		subscriberList.value.length > 0 ||
 		newUserInputs.value.length > 0 ||
 		newExternalEmailInputs.value.length > 0
 	)
@@ -94,7 +96,7 @@ const deleteWidgetItem = (item: any, index: number) => {
 				type: "success",
 			})
 			// Remove the deleted item from the reactive copy
-			widgetItems.value.splice(index, 1)
+			subscriberList.value.splice(index, 1)
 			hasChanges.value = true
 		},
 		onError: (error: any) => {
@@ -112,6 +114,7 @@ const deleteExternalEmailInput = (index: number) => {
 	hasChanges.value = true
 }
 
+const isLoadingSubmitSubscriber = ref(false)
 const saveChanges = () => {
 	const payload: any = {}
 	if (newExternalEmailInputs.value.length > 0) {
@@ -130,9 +133,12 @@ const saveChanges = () => {
 	console.log(payload, "payload to submit")
 	router.post(route(routeToSubmit.name, routeToSubmit.parameters), payload, {
 		preserveScroll: true,
+		onStart: () => {
+			isLoadingSubmitSubscriber.value = true
+		},
 		onSuccess: (page) => {
 
-			widgetItems.value = page.props.showcase.outbox_subscribe.data
+			subscriberList.value = page.props.showcase.outbox_subscribe.data
 			
 			notify({
 				title: trans("Success"),
@@ -151,8 +157,61 @@ const saveChanges = () => {
 				type: "error",
 			})
 		},
-		onFinish: () => {},
+		onFinish: () => {
+			isLoadingSubmitSubscriber.value = false
+		},
 	})
+}
+
+// Method: add my self as subscriber
+const addMySelfAsSubscriber = () => {
+	const payload: any = {}
+	if (newExternalEmailInputs.value.length > 0) {
+		payload.external_emails = newExternalEmailInputs.value
+	}
+	if (newUserInputs.value.length > 0) {
+		payload.users_id = Array.isArray(formAddUser.user_id)
+			? formAddUser.user_id
+			: [formAddUser.user_id]
+	}
+	
+	router.post(
+		route('grp.models.outboxes.subscriber.store', [route().params["outbox"]]),
+		{
+			users_id: [layoutStore.user.id]
+		},
+		{
+			preserveScroll: true,
+			onStart: () => {
+				isLoadingSubmitSubscriber.value = true
+			},
+			onSuccess: (page) => {
+
+				subscriberList.value = page.props.showcase.outbox_subscribe.data
+				
+				notify({
+					title: trans("Success"),
+					text: trans("Successfully add yourself as subscriber"),
+					type: "success",
+				})
+				newUserInputs.value = []
+				newExternalEmailInputs.value = []
+				hasChanges.value = false
+				exitEdit()
+			},
+			onError: (errors: any) => {
+				console.error('error add my self:', errors)
+				notify({
+					title: trans("Something went wrong."),
+					text: trans("Failed to add yourself as subscriber"),
+					type: "error",
+				})
+			},
+			onFinish: () => {
+				isLoadingSubmitSubscriber.value = false
+			},
+		}
+	)
 }
 
 const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
@@ -185,8 +244,8 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 	<ConfirmPopup />
 
 	<!-- Display card in non-edit mode -->
-	<dl class="mb-2 grid grid-cols-1 md:grid-cols-2 gap-3">
-		<div class="rounded-lg bg-white shadow border border-gray-200">
+	<dl class="mb-2 grid grid-cols-1 md:grid-cols-4 gap-3">
+		<div class="rounded-lg bg-white shadow border border-gray-200 md:col-span-3">
 			<!-- Card Header -->
 			<div class="px-4 py-5 flex items-center justify-between">
 				<dt class="text-lg font-semibold text-gray-500">{{ trans("Subscriber") }}</dt>
@@ -198,21 +257,34 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 			<div class="pl-4 pr-4 pb-5">
 				<!-- Iterate over the reactive copy -->
 				<div
-					v-for="(item, index) in widgetItems"
+					v-for="(item, index) in subscriberList"
 					:key="item.id"
-					class="flex items-center justify-between border-b border-gray-100 py-1">
-					<span class="text-gray-600">
-						{{ item.contact_name }}
-						<i>
-							<template v-if="item.email"> ({{ item.email }}) </template>
-							<template v-else>
-								(<FontAwesomeIcon
-									:icon="faExclamationTriangle"
-									class="text-red-500 mr-1" />
-								no email set)
+					class="flex items-center gap-x-2 border-b border-gray-100 py-1">
+					<template v-if="item.user_id">
+						<div class="text-gray-600">
+							<span class="font-semibold">{{ item.contact_name }}</span>
+							<span class="italic opacity-70">
+								<template v-if="item.email"> ({{ item.email }}) </template>
+								<template v-else>
+									(<FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500 mr-1" fixed-width /> {{ trans("no email set") }})
+								</template>
+							</span>
+							<span v-if="item.user_id == layoutStore.user.id" class="text-indigo-500 text-sm">({{ trans("You") }})</span>
+						</div>
+					</template>
+
+					<template v-if="!item.user_id">
+						<span>
+							{{ item.email }}
+						</span>
+						<Tag noHoverColor>
+							<template #label>
+								<span class="whitespace-nowrap">{{trans('External email')}}</span>
 							</template>
-						</i>
-					</span>
+						</Tag>
+
+					</template>
+
 				</div>
 				<div v-if="!hasSubscriptions" class="mt-2">
 					<p class="text-gray-600 italic">{{trans('Nobody has subscribed yet')}}</p>
@@ -229,11 +301,13 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 		modal
 		draggable
 		closable
-		@hide="exitEdit">
-		<div class="pl-4 pr-4 pb-5">
+		@hide="exitEdit"
+		:style="{ overflow: 'visible' }"
+	>
+		<div class="pl-4 pr-4 pb-5 xh-96">
 			<!-- List current subscribers with delete option -->
 			<div
-				v-for="(item, index) in widgetItems"
+				v-for="(item, index) in subscriberList"
 				:key="item.id"
 				class="flex items-center justify-between border-b border-gray-100 py-1">
 				<span class="text-gray-600">
@@ -250,57 +324,64 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 					<span
 						class="inline-block p-2"
 						@click="confirmDeleteWidgetItem($event, item, index)">
-						<FontAwesomeIcon :icon="faTrash" class="text-red-500 cursor-pointer" />
+						<FontAwesomeIcon :icon="faTrashAlt" class="text-red-500 cursor-pointer" />
 					</span>
 				</span>
 			</div>
 
-			<!-- New user input (only one allowed at a time) -->
-			<div v-if="newUserInputs.length" class="mt-2 flex items-center">
-				<div
-					v-for="(input, index) in newUserInputs"
-					:key="'user-' + index"
-					class="flex-1 border-b py-2">
-					<PureMultiselectInfiniteScroll
-						v-model="formAddUser.user_id"
-						:fetchRoute="routeIndexUser"
-						:placeholder="trans('Select User')"
-						valueProp="id"
-						@optionsList="(options) => (dataUserList = options)">
-						<template #singlelabel="{ value }">
-							<div class="w-full text-left pl-4">
-								{{ value.username }}
-								<span class="text-sm text-gray-400">
-									<template v-if="value.email">
-										{{ value.email }}
-									</template>
-									<template v-else>
-										<FontAwesomeIcon
-											:icon="faExclamationTriangle"
-											class="text-red-500 mr-1" />
-										no email set
-									</template>
-								</span>
-							</div>
-						</template>
-						<template #option="{ option }">
-							<div>
-								{{ option.username }}
-								<span class="text-sm text-gray-400"
-									>| {{ option.contact_name }}</span
-								>
-							</div>
-						</template>
-					</PureMultiselectInfiniteScroll>
+			<!-- Section: Add User -->
+			<div v-if="newUserInputs.length" class="mb-4">
+				<div class="mt-2 flex items-center">
+					<div
+						v-for="(input, index) in newUserInputs"
+						:key="'user-' + index"
+						class="flex-1 border-b py-2">
+						<PureMultiselectInfiniteScroll
+							v-model="formAddUser.user_id"
+							:fetchRoute="routeIndexUser"
+							:placeholder="trans('Select User')"
+							valueProp="id"
+							@optionsList="(options) => (dataUserList = options)">
+							<template #singlelabel="{ value }">
+								<div class="w-full text-left pl-4">
+									{{ value.username }}
+									<span class="text-sm text-gray-400">
+										<template v-if="value.email">
+											(<FontAwesomeIcon icon="fal fa-envelope" class="" fixed-width aria-hidden="true" />
+											{{ value.email }})
+										</template>
+										<template v-else>
+											<FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500 mr-1" fixed-width />
+											no email set
+										</template>
+									</span>
+								</div>
+							</template>
+				
+							<template #option="{ option }">
+								<div v-tooltip="option.disabled ? trans('User has no associated email') : ''" class="w-full">
+									{{ option.username }}
+									<span class="text-sm" >| {{ useTruncate(option.contact_name, 11) }}</span>
+									<span v-if="option.disabled" class="text-sm italic opacity-70" > ({{ trans("No email") }})</span>
+									<span v-else class="text-sm opacity-70" > ({{ option.email }})</span>
+								</div>
+							</template>
+						</PureMultiselectInfiniteScroll>
+					</div>
+				
+					<!-- Delete icon beside the user input -->
+					<FontAwesomeIcon
+						:icon="faTrashAlt"
+						class="text-red-500 cursor-pointer ml-2"
+						@click="deleteUserInput(0)" />
 				</div>
-				<!-- Delete icon beside the user input -->
-				<FontAwesomeIcon
-					:icon="faTrash"
-					class="text-red-500 cursor-pointer ml-2"
-					@click="deleteUserInput(0)" />
+
+				<div v-if="!subscriberList.some(item => item.user_id === layoutStore.user.id)" @click="() => addMySelfAsSubscriber()" class="text-xs text-gray-400 mt-1 underline hover:text-gray-700 cursor-pointer w-fit">
+					{{ trans("Add myself as subscriber (:email)", { email: layoutStore.user.email }) }}
+				</div>
 			</div>
 
-			<!-- New external email input (only one allowed at a time) -->
+			<!-- Section: Add External Email -->
 			<div v-if="newExternalEmailInputs.length" class="mt-2 flex items-center">
 				<div
 					v-for="(input, index) in newExternalEmailInputs"
@@ -309,19 +390,20 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 					<input
 						type="text"
 						v-model="newExternalEmailInputs[index]"
-						@input="hasChanges.value = true"
+						@input="hasChanges = true"
 						placeholder="Enter External Email"
 						class="w-full border border-gray-300 rounded p-2" />
 				</div>
 				<!-- Delete icon beside the external email input -->
 				<FontAwesomeIcon
-					:icon="faTrash"
+					:icon="faTrashAlt"
 					class="text-red-500 cursor-pointer ml-2"
+					fixed-width
 					@click="deleteExternalEmailInput(0)" />
 			</div>
 
-			<!-- Action buttons for adding inputs -->
-			<div class="mt-2 flex items-center space-x-4">
+			<!-- Section: Actions -->
+			<div class="mt-4 flex items-center space-x-4 mb-12">
 				<!-- Disable Add User if either input exists -->
 				<Button
 					label="Add User"
@@ -340,12 +422,12 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 					iconRight="far fa-plus" />
 				<!-- Save button -->
 				<Button
-					label="Save"
-					type="primary"
+					type="save"
 					size="s"
+					:loading="isLoadingSubmitSubscriber"
 					@click="saveChanges"
 					:disabled="!hasChanges"
-					iconRight="faSave" />
+				/>
 			</div>
 		</div>
 	</Dialog>

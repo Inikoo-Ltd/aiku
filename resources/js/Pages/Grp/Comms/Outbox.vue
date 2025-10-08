@@ -10,13 +10,14 @@ import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { Tabs as TSTabs } from "@/types/Tabs"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBars, faInboxOut, faMailBulk, faRabbitFast, faSeedling } from "@fal"
+import { faBars, faInboxOut, faMailBulk, faRabbitFast, faSeedling, faSquare, faExclamationCircle } from "@fal"
 import TableMailshots from "@/Components/Tables/TableMailshots.vue"
 import OutboxShowcase from "@/Components/Showcases/Grp/OutboxShowcase.vue"
 import TableDispatchedEmails from "@/Components/Tables/TableDispatchedEmails.vue"
 import { faPaperPlane } from "@far"
+import { faSave } from "@fas"
 
-library.add(faInboxOut, faMailBulk, faRabbitFast, faPaperPlane, faBars, faSeedling)
+library.add(faSave, faInboxOut, faMailBulk, faRabbitFast, faPaperPlane, faBars, faSeedling, faSquare, faExclamationCircle)
 
 const props = defineProps<{
     title: string,
