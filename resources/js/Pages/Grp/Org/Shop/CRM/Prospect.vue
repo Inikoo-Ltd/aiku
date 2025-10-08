@@ -13,6 +13,7 @@
   import { computed, defineAsyncComponent, ref } from "vue"
   import type { Component } from 'vue'
   import Tabs from "@/Components/Navigation/Tabs.vue"
+  import ProspectShowcase from './ProspectShowcase.vue'
 
   
   import { capitalize } from "@/Composables/capitalize"
@@ -41,14 +42,17 @@
           current: string
           navigation: {}
       }
+      showcase: any
   }>()
   
+  console.log(props)
   
   const currentTab = ref(props.tabs.current)
   const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
   
   const component = computed(() => {
       const components: {[key: string]: Component} = {
+        'showcase' : ProspectShowcase
       }
   
       return components[currentTab.value]
