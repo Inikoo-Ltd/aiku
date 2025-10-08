@@ -14,6 +14,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CheckWooChannel
@@ -27,7 +28,7 @@ class CheckWooChannel
 
         $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
 
-        if ($wooCommerceUser->checkConnection() && ! blank($webhooks)) {
+        if (Arr::has($wooCommerceUser->checkConnection(), 'environment') && ! blank($webhooks)) {
             $platformStatus = true;
             $canConnectToPlatform = true;
             $existInPlatform = true;
