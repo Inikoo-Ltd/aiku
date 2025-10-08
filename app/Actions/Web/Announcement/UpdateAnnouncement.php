@@ -14,16 +14,10 @@ use App\Models\Announcement;
 use App\Models\CRM\Customer;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class UpdateAnnouncement extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
-
-    private bool $asAction = false;
 
     private Customer|Website $parent;
     private string $scope;

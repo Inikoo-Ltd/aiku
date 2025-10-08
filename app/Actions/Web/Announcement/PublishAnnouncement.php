@@ -22,16 +22,10 @@ use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class PublishAnnouncement extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
-
-    private bool $asAction = false;
 
     private Customer|Website $parent;
     private string $scope;

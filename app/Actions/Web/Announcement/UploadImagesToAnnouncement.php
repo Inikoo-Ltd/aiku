@@ -8,15 +8,14 @@
 
 namespace App\Actions\Web\Announcement;
 
+use App\Actions\OrgAction;
 use App\Actions\Web\WithUploadWebImage;
 use App\Models\Announcement;
 use Illuminate\Support\Collection;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 
-class UploadImagesToAnnouncement
+class UploadImagesToAnnouncement extends OrgAction
 {
-    use AsAction;
     use WithUploadWebImage;
 
     public function asController(Announcement $announcement, ActionRequest $request): Collection

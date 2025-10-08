@@ -17,16 +17,12 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
 
 class StoreAnnouncement extends OrgAction
 {
-    use AsAction;
     use WithAttributes;
-
-    private bool $asAction = false;
 
     private Website $parent;
     private string $scope;

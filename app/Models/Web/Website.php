@@ -109,6 +109,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $unpublished_sidebar_snapshot_id
  * @property int|null $live_sidebar_snapshot_id
  * @property string|null $published_sidebar_checksum
+ * @property-read Collection<int, Announcement> $announcements
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, Deployment> $deployments
  * @property-read Collection<int, \App\Models\Web\ExternalLink> $externalLinks

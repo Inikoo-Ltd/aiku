@@ -14,13 +14,9 @@ use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Models\Announcement;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class ToggleAnnouncement extends OrgAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     public function handle(Announcement $announcement, string $status = null): void
