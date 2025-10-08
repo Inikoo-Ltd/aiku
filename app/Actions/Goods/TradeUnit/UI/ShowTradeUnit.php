@@ -76,12 +76,9 @@ class ShowTradeUnit extends GrpAction
                         ] : false,
                     ]
                 ],
-
-
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => TradeUnitTabsEnum::navigation()
-
                 ],
 
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?

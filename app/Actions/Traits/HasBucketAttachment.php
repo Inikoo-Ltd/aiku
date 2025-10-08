@@ -33,13 +33,10 @@ trait HasBucketAttachment
         $mapAttachments = function($configs) use ($attachments) {
             return array_map(function($config) use ($attachments) {
                 $attachment = $attachments->get($config['enum']->value ?? $config['enum']);
-                
                 return [
-                    'label' => $config['label'],
-                    'scope' => $config['scope'],
-                    'id'    => $attachment?->id,
-                    'file'  => null,
-                    'size'  => $attachment?->size,
+                    'label'            => $config['label'],
+                    'scope'            => $config['scope'],
+                    'attachment'       => $attachment,
                 ];
             }, $configs);
         };

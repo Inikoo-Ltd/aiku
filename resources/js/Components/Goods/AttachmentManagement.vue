@@ -4,12 +4,12 @@ import axios from "axios"
 import { trans } from "laravel-vue-i18n"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faUnlink, faInfoCircle, faFile, faStarChristmas, faFileCheck } from "@fal"
+import { faUnlink, faInfoCircle, faFile, faStarChristmas, faFileCheck, faFilePdf, faFileWord } from "@fal"
 import Message from "primevue/message"
 import ProgressBar from "primevue/progressbar"
 import { routeType } from "@/types/route"
 import { router } from "@inertiajs/vue3"
-
+import { Link } from "@inertiajs/vue3"
 
 const props = defineProps<{
     data: {
@@ -98,12 +98,6 @@ function onClickBox(categoryBox: any) {
 }
 
 async function onDeletefilesInBox(categoryBox: any) {
-    const attachment = getAttachment(categoryBox)
-    if (!attachment?.id) {
-        notifyError(trans("No attachment found to delete"))
-        return
-    }
-
     const payload = { [categoryBox.scope]: null }
 
     try {
@@ -112,7 +106,7 @@ async function onDeletefilesInBox(categoryBox: any) {
         await axios.delete(
             route(props.data.detachRoute.name, {
                 ...props.data.detachRoute.parameters,
-                attachment: attachment.id,
+                attachment: categoryBox.attachment.id,
             }),
             payload
         )
@@ -132,9 +126,20 @@ async function onDeletefilesInBox(categoryBox: any) {
 }
 
 
-function getAttachment(item: any) {
-    return props.data.attachments.find(att => att.scope === item.scope)
+
+const getIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+        case "pdf":
+            return faFilePdf
+        case "doc":
+        case "docx":
+            return faFileWord
+        default:
+            return faFileCheck // or faFile for a more generic icon
+    }
 }
+
+
 
 </script>
 
@@ -168,8 +173,7 @@ function getAttachment(item: any) {
                         'cursor-pointer': editable,
                         'cursor-not-allowed': !editable,
                     }" @dragover.prevent @dragenter.prevent="activeCategory = categoryBox.scope"
-                    @dragleave="activeCategory = null" @drop="onDropFile($event, categoryBox)"
-                    @click="onClickBox(categoryBox)">
+                    @dragleave="activeCategory = null" @drop="onDropFile($event, categoryBox)">
                     <!-- Header -->
                     <div class="flex items-center justify-between px-3 py-2 bg-gray-100 border-b">
                         <span class="truncate text-sm font-medium text-gray-700" :title="categoryBox.label">
@@ -178,7 +182,7 @@ function getAttachment(item: any) {
                         <div class="flex items-center gap-2">
                             <FontAwesomeIcon v-if="categoryBox.information" v-tooltip="categoryBox.information"
                                 icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width />
-                            <FontAwesomeIcon v-if="getAttachment(categoryBox) && editable" :icon="faUnlink"
+                            <FontAwesomeIcon v-if="categoryBox.attachment && editable" :icon="faUnlink"
                                 @click.stop="() => onDeletefilesInBox(categoryBox)"
                                 class="text-red-600 cursor-pointer text-xs" />
                         </div>
@@ -187,22 +191,23 @@ function getAttachment(item: any) {
                     <!-- Drop Zone / Preview -->
                     <div
                         class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden relative">
-                        <template v-if="getAttachment(categoryBox)">
+                        <template v-if="categoryBox.attachment">
                             <div
                                 class="flex flex-col items-center justify-center h-full text-green-700 bg-green-50  shadow-inner transition hover:bg-green-100 hover:scale-[1.02] cursor-pointer p-3">
-                                <FontAwesomeIcon :icon="faFileCheck"
+                                <FontAwesomeIcon :icon="getIcon(categoryBox.attachment.type)"
                                     class="mb-2 text-3xl text-green-500 animate-pulse" />
                                 <span class="text-[13px] font-semibold text-green-700 text-center">
-                                    {{ getAttachment(categoryBox)?.caption || trans("Attachment uploaded") }}
+                                    {{ categoryBox.attachment.name || trans("Attachment uploaded") }}
                                 </span>
-                                <!--  <span class="text-[11px] text-green-500 mt-1">
-                                    {{ trans("Click to view or replace") }}
-                                </span> -->
+                                <Link class="text-[11px] text-green-500 mt-1" :href="categoryBox.attachment.preview_url"
+                                    v-if="categoryBox.attachment.preview_url" target="_blank">
+                                {{ trans("Click to view or replace") }}
+                                </Link>
                             </div>
                         </template>
 
                         <template v-else>
-                            <div
+                            <div @click="onClickBox(categoryBox)"
                                 class="flex flex-col items-center justify-center text-gray-400 h-full bg-gray-50  rounded-md hover:bg-gray-100 transition cursor-pointer p-3">
                                 <FontAwesomeIcon :icon="faFile" class="mb-2 text-2xl" />
                                 <span class="text-[12px] font-medium">
@@ -245,8 +250,7 @@ function getAttachment(item: any) {
                         'cursor-pointer': editable,
                         'cursor-not-allowed': !editable,
                     }" @dragover.prevent @dragenter.prevent="activeCategory = categoryBox.scope"
-                    @dragleave="activeCategory = null" @drop="onDropFile($event, categoryBox)"
-                    @click="onClickBox(categoryBox)">
+                    @dragleave="activeCategory = null" @drop="onDropFile($event, categoryBox)">
                     <!-- Header -->
                     <div class="flex items-center justify-between px-3 py-2 bg-gray-100 border-b">
                         <span class="truncate text-sm font-medium text-gray-700" :title="categoryBox.label">
@@ -255,8 +259,8 @@ function getAttachment(item: any) {
                         <div class="flex items-center gap-2">
                             <FontAwesomeIcon v-if="categoryBox.information" v-tooltip="categoryBox.information"
                                 icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width />
-                            <FontAwesomeIcon v-if="(categoryBox.attachments || categoryBox.url) && editable"
-                                :icon="faUnlink" @click.stop="() => onDeletefilesInBox(categoryBox)"
+                            <FontAwesomeIcon v-if="categoryBox.attachments && editable" :icon="faUnlink"
+                                @click.stop="() => onDeletefilesInBox(categoryBox)"
                                 class="text-red-600 cursor-pointer text-xs" />
                         </div>
                     </div>
@@ -264,22 +268,23 @@ function getAttachment(item: any) {
                     <!-- Drop Zone / Preview -->
                     <div
                         class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden relative">
-                        <template v-if="getAttachment(categoryBox)">
+                        <template v-if="categoryBox.attachment">
                             <div
                                 class="flex flex-col items-center justify-center h-full text-green-700 bg-green-50  shadow-inner transition hover:bg-green-100 hover:scale-[1.02] cursor-pointer p-3">
-                                <FontAwesomeIcon :icon="faFileCheck"
+                                <FontAwesomeIcon :icon="getIcon(categoryBox.attachment.type)"
                                     class="mb-2 text-3xl text-green-500 animate-pulse" />
                                 <span class="text-[13px] font-semibold text-green-700 text-center">
-                                    {{ getAttachment(categoryBox)?.caption || trans("Attachment uploaded") }}
+                                    {{ categoryBox.attachment.name || trans("Attachment uploaded") }}
                                 </span>
-                                <!--  <span class="text-[11px] text-green-500 mt-1">
-                                    {{ trans("Click to view or replace") }}
-                                </span> -->
+                                <Link class="text-[11px] text-green-500 mt-1" :href="categoryBox.attachment.preview_url"
+                                    v-if="categoryBox.attachment.preview_url" target="_blank">
+                                {{ trans("Click to view or replace") }}
+                                </Link>
                             </div>
                         </template>
 
                         <template v-else>
-                            <div
+                            <div @click="onClickBox(categoryBox)"
                                 class="flex flex-col items-center justify-center text-gray-400 h-full bg-gray-50  rounded-md hover:bg-gray-100 transition cursor-pointer p-3">
                                 <FontAwesomeIcon :icon="faFile" class="mb-2 text-2xl" />
                                 <span class="text-[12px] font-medium">
