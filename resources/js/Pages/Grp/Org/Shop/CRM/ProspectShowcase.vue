@@ -39,6 +39,7 @@ import { faSpinnerThird } from '@fad'
 import { Tooltip } from 'floating-vue'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import EmailSubscribetion from "@/Components/EmailSubscribetion.vue"
+import ContactPreferences from "@/Components/ContactPreferences.vue"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faClock, faBuilding)
 
@@ -224,6 +225,45 @@ const getStatusText = (status: string, valid: boolean) => {
     }
     return trans('Pending')
 }
+
+// Create contact preferences data from prospect data
+const contactPreferencesData = computed(() => {
+    if (!props.data?.prospect) return null
+    
+    return {
+        update_route: {
+            method: 'PATCH',
+            name: 'prospect.contact-preferences.update',
+            parameters: [props.data.prospect.slug]
+        },
+        dont_contact_me: {
+            label: trans('Don\'t Contact Me'),
+            is_active: props.data.prospect.dont_contact_me || false,
+            activated_at: props.data.prospect.dont_contact_me_at,
+            reason: null
+        },
+        preferences: {
+            email: {
+                label: trans('Email'),
+                field: 'can_contact_by_email',
+                is_allowed: props.data.prospect.can_contact_by_email || false,
+                updated_at: null
+            },
+            phone: {
+                label: trans('Phone Calls'),
+                field: 'can_contact_by_phone',
+                is_allowed: props.data.prospect.can_contact_by_phone || false,
+                updated_at: null
+            },
+            address: {
+                label: trans('Postal Mail'),
+                field: 'can_contact_by_address',
+                is_allowed: props.data.prospect.can_contact_by_address || false,
+                updated_at: null
+            }
+        }
+    }
+})
 </script>
 
 <template>
@@ -293,7 +333,7 @@ const getStatusText = (status: string, valid: boolean) => {
                                 <FontAwesomeIcon icon="fal fa-male" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
-                            <dd class="text-gray-500">{{ data?.prospect.customer?.data.contact_name }}</dd>
+                            <dd class="text-gray-500">{{ data?.prospect?.customer?.data?.contact_name }}</dd>
                         </div>
 
                         <!-- Field: Company name -->
@@ -304,56 +344,61 @@ const getStatusText = (status: string, valid: boolean) => {
                                 <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
-                            <dd class="text-gray-500">{{ data?.prospect.customer?.data.company_name }}</dd>
+                            <dd class="text-gray-500">{{ data?.prospect?.customer?.data?.company_name }}</dd>
                         </div>
 
                         <!-- Field: Created at -->
-                        <div v-if="data?.prospect.created_at" class="flex items-center w-full flex-none gap-x-4 px-6">
+                        <div v-if="data?.prospect?.created_at" class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Created at')" class="flex-none">
                                 <span class="sr-only">Created at</span>
                                 <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                <time>{{ useFormatTime(data?.prospect.created_at) }}</time>
+                                <time>{{ useFormatTime(data?.prospect?.created_at) }}</time>
                             </dd>
                         </div>
 
                         <!-- Field: Email -->
-                        <div v-if="data?.prospect.customer?.data?.email" class="flex items-center w-full flex-none gap-x-4 px-6">
+                        <div v-if="data?.prospect?.customer?.data?.email"
+                            class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Email')" class="flex-none">
                                 <span class="sr-only">Email</span>
                                 <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                <a :href="`mailto:${data.prospect.customer.data.email}`">{{ data?.prospect.customer?.data?.email }}</a>
+                                <a :href="`mailto:${data?.prospect?.customer?.data?.email}`">{{
+                                    data?.prospect?.customer?.data?.email }}</a>
                             </dd>
                         </div>
 
                         <!-- Field: Phone -->
-                        <div v-if="data?.prospect.customer?.data?.phone" class="flex items-center w-full flex-none gap-x-4 px-6">
+                        <div v-if="data?.prospect?.customer?.data?.phone"
+                            class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Phone')" class="flex-none">
                                 <span class="sr-only">Phone</span>
                                 <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                <a :href="`tel:${data.prospect.customer.data.phone}`">{{ data?.prospect.customer?.data?.phone }}</a>
+                                <a :href="`tel:${data?.prospect?.customer?.data?.phone}`">{{
+                                    data?.prospect?.customer?.data?.phone }}</a>
                             </dd>
                         </div>
 
                         <!-- Field: Address -->
-                        <div v-if="data?.prospect.customer?.data?.address" class="relative flex items w-full flex-none gap-x-4 px-6">
+                        <div v-if="data?.prospect?.customer?.data?.address"
+                            class="relative flex items w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="'Address'" class="flex-none">
                                 <FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
                             <dd class="w-full text-gray-500">
                                 <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                                    <span class="" v-html="data?.prospect.customer?.data?.address?.formatted_address" />
+                                    <span class="" v-html="data?.prospect?.customer?.data?.address?.formatted_address" />
 
-                                    <div v-if="data.address_management?.can_open_address_management"
+                                    <div v-if="data?.address_management?.can_open_address_management"
                                         @click="() => isModalAddress = true"
                                         class="w-fit pr-4 whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                         <span>{{ trans("Edit") }}</span>
@@ -363,14 +408,15 @@ const getStatusText = (status: string, valid: boolean) => {
                         </div>
 
                         <!-- Field: Last Contacted -->
-                        <div v-if="data?.prospect.last_contacted_at" class="flex items-center w-full flex-none gap-x-4 px-6">
+                        <div v-if="data?.prospect?.last_contacted_at"
+                            class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Last contacted')" class="flex-none">
                                 <span class="sr-only">Last contacted</span>
                                 <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                <time>{{ useFormatTime(data?.prospect.last_contacted_at) }}</time>
+                                <time>{{ useFormatTime(data?.prospect?.last_contacted_at) }}</time>
                             </dd>
                         </div>
 
@@ -380,7 +426,7 @@ const getStatusText = (status: string, valid: boolean) => {
                 </dl>
             </div>
             <!-- Field: Tax Number -->
-            <div v-if="data?.prospect.customer?.tax_number && data?.prospect.customer?.tax_number?.number"
+            <div v-if="data?.prospect?.customer?.tax_number && data?.prospect?.customer?.tax_number?.number"
                 class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
                 <dt v-tooltip="trans('Tax Number')" class="flex-none pt-1">
                     <span class="sr-only">Tax Number</span>
@@ -389,39 +435,42 @@ const getStatusText = (status: string, valid: boolean) => {
                 <dd class="w-full text-gray-500">
                     <div class="space-y-2">
                         <!-- Tax Number Display -->
-                        <div class="text-gray-900 font-medium">{{ data.prospect.customer.tax_number.number }}</div>
+                        <div class="text-gray-900 font-medium">{{ data?.prospect?.customer?.tax_number?.number }}</div>
 
                         <!-- Validation Status Display -->
                         <div class="p-3 bg-gray-50 rounded-lg border">
                             <div class="flex items-start justify-between">
                                 <div class="flex items-center space-x-2">
                                     <FontAwesomeIcon
-                                        :icon="getStatusIcon(data.prospect.customer.tax_number.status, data.prospect.customer.tax_number.valid)"
-                                        :class="getStatusColor(data.prospect.customer.tax_number.status, data.prospect.customer.tax_number.valid)"
+                                        :icon="getStatusIcon(data?.prospect?.customer?.tax_number?.status, data?.prospect?.customer?.tax_number?.valid)"
+                                        :class="getStatusColor(data?.prospect?.customer?.tax_number?.status, data?.prospect?.customer?.tax_number?.valid)"
                                         class="text-sm" />
 
 
                                     <div class="space-y-2">
                                         <p class="text-sm text-gray-900">
                                             <span class="font-medium ">
-                                                {{ getStatusText(data.prospect.customer.tax_number.status,
-                                                    data.prospect.customer.tax_number.valid) }}
+                                                {{ getStatusText(data?.prospect?.customer?.tax_number?.status,
+                                                data?.prospect?.customer?.tax_number?.valid) }}
                                             </span>
                                             <!-- Country -->
-                                            <Tooltip v-if="data.prospect.customer.tax_number.country" class="inline ml-1">
+                                            <Tooltip v-if="data?.prospect?.customer?.tax_number?.country"
+                                                class="inline ml-1">
                                                 <div class="inline hover:underline cursor-default">({{
-                                                    data.prospect.customer.tax_number.country.name }})</div>
+                                                    data?.prospect?.customer?.tax_number?.country?.name }})</div>
 
                                                 <template #popper>
                                                     <div class="p-1 max-w-xs">
                                                         <div class="space-y-2">
                                                             <div class="text-sm space-y-1">
                                                                 <p><span class="font-medium">{{ trans('Country')
-                                                                }}:</span> {{
-                                                                            data.prospect.customer.tax_number.country.name }}</p>
+                                                                        }}:</span> {{
+                                                                    data?.prospect?.customer?.tax_number?.country?.name }}
+                                                                </p>
                                                                 <p><span class="font-medium">{{ trans('Country Code')
-                                                                }}:</span> {{
-                                                                            data.prospect.customer.tax_number.country.code }}</p>
+                                                                        }}:</span> {{
+                                                                    data?.prospect?.customer?.tax_number?.country?.code }}
+                                                                </p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -429,10 +478,10 @@ const getStatusText = (status: string, valid: boolean) => {
                                             </Tooltip>
 
                                             <!-- Last checked date -->
-                                            <span v-if="data.prospect.customer.tax_number.checked_at"
-                                                v-tooltip="trans('Last checked :date', { date: formatDate(data.prospect.customer.tax_number.checked_at) })"
+                                            <span v-if="data?.prospect?.customer?.tax_number?.checked_at"
+                                                v-tooltip="trans('Last checked :date', { date: formatDate(data?.prospect?.customer?.tax_number?.checked_at) })"
                                                 class="ml-1 cursor-default hover:underline">
-                                                {{ formatDate(data.prospect.customer.tax_number.checked_at) }}
+                                                {{ formatDate(data?.prospect?.customer?.tax_number?.checked_at) }}
                                             </span>
                                         </p>
                                     </div>
@@ -493,14 +542,37 @@ const getStatusText = (status: string, valid: boolean) => {
                 </div>
             </div> -->
 
+            <!-- Contact Preferences Section -->
+            <ContactPreferences v-if="contactPreferencesData && layout?.app?.environment === 'local'"
+                :contactPreferences="contactPreferencesData" />
+
             <!-- Email Subscriptions Section -->
-            <EmailSubscribetion v-if="data?.prospect.customer?.email_subscriptions"
-                :emailSubscriptions="data.prospect.customer.email_subscriptions" />
-            
+            <EmailSubscribetion v-if="data?.prospect?.customer?.data?.email_subscriptions"
+                :emailSubscriptions="data?.prospect?.customer?.data?.email_subscriptions" />
+
         </div>
     </div>
 
-   
+    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
+        <CustomerAddressManagementModal :addresses="data?.address_management?.addresses"
+            :updateRoute="data?.address_management?.address_update_route" />
+    </Modal>
+
+    <!-- Modal: Increase balance -->
+    <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
+        <CustomerDSBalanceIncrease v-model="isModalBalanceIncrease" :routeSubmit="data?.balance?.route_increase"
+            :options="data?.balance?.increaase_reasons_options" :currency="data?.currency"
+            :types="data?.balance?.type_options" />
+    </Modal>
+
+    <!-- Modal: Decrease balance -->
+    <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
+        <CustomerDSBalanceDecrease v-model="isModalBalanceDecrease" :routeSubmit="data?.balance?.route_decrease"
+            :options="data?.balance?.decrease_reasons_options" :currency="data?.currency"
+            :types="data?.balance?.type_options" />
+    </Modal>
+
+    <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName" />
 </template>
 
 <style scoped>

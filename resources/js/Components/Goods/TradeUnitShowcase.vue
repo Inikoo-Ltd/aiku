@@ -13,6 +13,9 @@ import {
 	faChevronUp,
 	faBox,
 	faVideo,
+	faFileCheck, 
+	faFilePdf, 
+	faFileWord
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { routeType } from "@/types/route"
