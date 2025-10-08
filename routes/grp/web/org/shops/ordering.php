@@ -6,6 +6,8 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Accounting\Invoice\UI\ShowInvoice;
+use App\Actions\Accounting\Invoice\UI\ShowRefund;
 use App\Actions\Dispatching\DeliveryNote\UI\CreateReplacementDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotesInOrdering;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
@@ -36,6 +38,8 @@ Route::get('/orders/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'i
 
 Route::prefix('orders/{order}')->group(function () {
     Route::get('', ShowOrder::class)->name('orders.show');
+    Route::get('invoices/{invoice}', [ShowInvoice::class, 'inOrderShop'])->name('orders.show.invoices.show');
+    Route::get('invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceInOrderInShop'])->name('orders.show.invoices.show.refunds.show');
     Route::get('delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInShop'])->name('orders.show.delivery-note');
     Route::get('replacement', [CreateReplacementDeliveryNote::class, 'inOrderInShop'])->name('orders.show.replacement.create');
     Route::get('order-transaction-templates', DownloadOrderTransactionsTemplate::class)->name('order.uploads.templates');
