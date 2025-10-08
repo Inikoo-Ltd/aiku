@@ -77,7 +77,7 @@ const getIcon = (type?: string) => {
           <div class="flex items-center gap-1">
             <template v-if="item.attachment">
               <a
-                :href="item.attachment.url"
+                :href="route(item?.download_route?.name, item?.download_route?.parameters)"
                 target="_blank"
                 class="text-xs text-green-600 flex items-center gap-1 hover:underline"
               >
@@ -121,7 +121,7 @@ const getIcon = (type?: string) => {
           <div class="flex items-center gap-1">
             <template v-if="item.attachment">
               <a
-                :href="item.attachment.url"
+                :href="route(item?.download_route?.name, item?.download_route?.parameters)"
                 target="_blank"
                 class="text-xs text-green-600 flex items-center gap-1 hover:underline"
               >

@@ -48,7 +48,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    containerClass: 'mt-4 w-64 border border-gray-300 rounded-md p-3',
+    containerClass: 'mt-4 min-w-64 border border-gray-300 rounded-md p-3',
     showEditButton: true,
     editable: true
 })
@@ -78,20 +78,50 @@ const dontContactMeToggle = computed({
 })
 
 // Function to undo "don't contact me" and restore original view
-const undoDontContact = () => {
+const undoDontContact = async () => {
     if (!props.editable) return
     
-    localDontContactMe.value = false
+    if (!props.contactPreferences?.update_route) {
+        console.error('Update route not found')
+        notify({
+            title: trans('Error'),
+            text: trans('Contact preference configuration not found'),
+            type: 'error'
+        })
+        return
+    }
     
-    // API call disabled for UI testing
-    console.log('Undo don\'t contact me - restored to normal view')
+    const updateRoute = props.contactPreferences.update_route
     
-    // Show success toast for UI feedback
-    notify({
-        title: trans('Success'),
-        text: trans('Contact preferences have been restored'),
-        type: 'success'
-    })
+    try {
+        // Make API call to restore contact preferences
+        await router.patch(
+            route(updateRoute.name, updateRoute.parameters),
+            {
+                dont_contact_me: false
+            }
+        )
+        
+        localDontContactMe.value = false
+        
+        // Show success toast for UI feedback
+        notify({
+            title: trans('Success'),
+            text: trans('Contact preferences have been restored'),
+            type: 'success'
+        })
+        
+        console.log('Undo don\'t contact me - restored to normal view')
+    } catch (error) {
+        console.error('Failed to undo dont contact me:', error)
+        
+        // Show error toast
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to restore contact preferences. Please try again.'),
+            type: 'error'
+        })
+    }
 }
 
 // Function to handle individual preference toggle
@@ -102,22 +132,51 @@ const togglePreference = async (preferenceKey: string, value: boolean) => {
     
     // Get the field name for the preference
     const preference = props.contactPreferences?.preferences[preferenceKey]
-    if (!preference) {
-        console.error('Preference not found')
+    if (!preference || !props.contactPreferences?.update_route) {
+        console.error('Preference or update route not found')
+        notify({
+            title: trans('Error'),
+            text: trans('Contact preference configuration not found'),
+            type: 'error'
+        })
         return
     }
     
-    // API call disabled for UI testing
-    console.log(`Preference ${preferenceKey} updated locally to:`, value)
+    const updateRoute = props.contactPreferences.update_route
+    const fieldName = preference.field
     
-    // Show success toast for UI feedback
-    notify({
-        title: trans('Success'),
-        text: value 
-            ? trans('Contact via :method is now allowed', { method: preference.label })
-            : trans('Contact via :method is now disabled', { method: preference.label }),
-        type: 'success'
-    })
+    try {
+        // Make API call to update preference status
+        await router.patch(
+            route(updateRoute.name, updateRoute.parameters),
+            {
+                [fieldName]: value
+            }
+        )
+        
+        // Show success toast
+        notify({
+            title: trans('Success'),
+            text: value 
+                ? trans('Contact via :method is now allowed', { method: preference.label })
+                : trans('Contact via :method is now disabled', { method: preference.label }),
+            type: 'success'
+        })
+        
+        console.log(`Preference ${preferenceKey} updated successfully to:`, value)
+    } catch (error) {
+        console.error('Failed to update preference:', error)
+        
+        // Revert the local state on error
+        localPreferences.value[preferenceKey] = !value
+        
+        // Show error toast
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to update contact preference. Please try again.'),
+            type: 'error'
+        })
+    }
 }
 
 // Function to handle "don't contact me" toggle
@@ -126,17 +185,53 @@ const toggleDontContactMe = async (value: boolean) => {
     
     dontContactMeToggle.value = value
     
-    // API call disabled for UI testing
-    console.log(`Don't contact me updated locally to:`, value)
+    if (!props.contactPreferences?.update_route) {
+        console.error('Update route not found')
+        notify({
+            title: trans('Error'),
+            text: trans('Contact preference configuration not found'),
+            type: 'error'
+        })
+        return
+    }
     
-    // Show success toast for UI feedback
-    notify({
-        title: trans('Success'),
-        text: value 
-            ? trans('All contact methods have been disabled')
-            : trans('Contact preferences have been restored'),
-        type: 'success'
-    })
+    const updateRoute = props.contactPreferences.update_route
+    
+    try {
+        // Only send dont_contact_me payload, no other toggle states
+        const updateData = {
+            dont_contact_me: value
+        }
+        
+        // Make API call to update only dont_contact_me
+        await router.patch(
+            route(updateRoute.name, updateRoute.parameters),
+            updateData
+        )
+        
+        // Show success toast
+        notify({
+            title: trans('Success'),
+            text: value 
+                ? trans('All contact methods have been disabled')
+                : trans('Contact preferences have been restored'),
+            type: 'success'
+        })
+        
+        console.log(`Don't contact me updated successfully to:`, value)
+    } catch (error) {
+        console.error('Failed to update dont contact me:', error)
+        
+        // Revert the local state on error
+        localDontContactMe.value = !value
+        
+        // Show error toast
+        notify({
+            title: trans('Error'),
+            text: trans('Failed to update contact preferences. Please try again.'),
+            type: 'error'
+        })
+    }
 }
 
 // Expose methods for parent component if needed
@@ -159,14 +254,6 @@ defineExpose({
             </button>
         </div>
 
-        <!-- Undo Button - Only show when "don't contact me" is active -->
-        <div v-if="localDontContactMe && editable" class="mb-3 text-center">
-            <button @click="undoDontContact"
-                class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors duration-200 w-full">
-                <FontAwesomeIcon :icon="faUndo" class="text-white text-sm mr-2" />
-                {{ trans('Undo Don\'t Contact') }}
-            </button>
-        </div>
 
         <!-- Contact Preferences Section Box -->
         <div :class="containerClass">
@@ -195,13 +282,22 @@ defineExpose({
 
             <!-- Message when "don't contact me" is active -->
             <div v-if="localDontContactMe" class="mt-3">
-                <!-- Message -->
-                <div class="p-2 bg-red-50 rounded text-center">
-                    <span class="text-xs text-red-600">{{ trans('Prospect do not want to be contacted') }}</span>
-                    <div v-if="contactPreferences.dont_contact_me.reason" class="mt-1">
-                        <span class="text-xs text-red-500">{{ trans('Reason') }}: {{
-                            contactPreferences.dont_contact_me.reason }}</span>
+                <!-- Message with Edit Button -->
+                <div class="p-2 bg-red-50 rounded flex items-center justify-between">
+                    <div class="text-start flex-1">
+                        <span class="text-xs text-red-600">{{ trans('Prospect do not want to be contacted') }}</span>
+                        <div v-if="contactPreferences.dont_contact_me.reason" class="mt-1">
+                            <span class="text-xs text-red-500">{{ trans('Reason') }}: {{
+                                contactPreferences.dont_contact_me.reason }}</span>
+                        </div>
                     </div>
+
+                    <!-- Pencil Edit Button -->
+                    <button v-if="editable" @click="undoDontContact" class="ml-2 p-1"
+                        :style="{ color: layout?.app?.theme?.[0] || '#6366f1' }"
+                        v-tooltip="trans('Edit Contact Preferences')">
+                        <FontAwesomeIcon :icon="faPencil" class="text-sm" fixed-width />
+                    </button>
                 </div>
             </div>
         </div>

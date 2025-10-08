@@ -199,10 +199,10 @@ const getIcon = (type: string) => {
                                 <span class="text-[13px] font-semibold text-green-700 text-center">
                                     {{ categoryBox.attachment.name || trans("Attachment uploaded") }}
                                 </span>
-                                <Link class="text-[11px] text-green-500 mt-1" :href="categoryBox.attachment.preview_url"
-                                    v-if="categoryBox.attachment.preview_url" target="_blank">
-                                {{ trans("Click to view or replace") }}
-                                </Link>
+                                <a class="text-[11px] text-green-500 mt-1"  :href="route(categoryBox.download_route.name, categoryBox.download_route.parameters)"
+                                    v-if="categoryBox.download_route" target="_blank">
+                                {{ trans("Click to view") }}
+                                </a>
                             </div>
                         </template>
 
@@ -276,10 +276,10 @@ const getIcon = (type: string) => {
                                 <span class="text-[13px] font-semibold text-green-700 text-center">
                                     {{ categoryBox.attachment.name || trans("Attachment uploaded") }}
                                 </span>
-                                <Link class="text-[11px] text-green-500 mt-1" :href="categoryBox.attachment.preview_url"
-                                    v-if="categoryBox.attachment.preview_url" target="_blank">
-                                {{ trans("Click to view or replace") }}
-                                </Link>
+                                 <a class="text-[11px] text-green-500 mt-1" :href="route(categoryBox.download_route.name, categoryBox.download_route.parameters)"
+                                    v-if="categoryBox.download_route" target="_blank" method="get">
+                                {{ trans("Click to view") }}
+                                </a>
                             </div>
                         </template>
 

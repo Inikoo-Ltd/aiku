@@ -157,10 +157,10 @@ class UpdateProspect extends OrgAction
         return $rules;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Prospect $prospect, ActionRequest $request): Prospect
+    public function asController(Prospect $prospect, ActionRequest $request): Prospect
     {
-        $this->initialisationFromShop($prospect->shop, $request);
         $this->prospect = $prospect;
+        $this->initialisationFromShop($prospect->shop, $request);
 
         return $this->handle($prospect, $this->validatedData);
     }
