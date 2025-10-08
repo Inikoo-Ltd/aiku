@@ -159,8 +159,8 @@ class UpdateProspect extends OrgAction
 
     public function asController(Prospect $prospect, ActionRequest $request): Prospect
     {
-        $this->initialisationFromShop($prospect->shop, $request);
         $this->prospect = $prospect;
+        $this->initialisationFromShop($prospect->shop, $request);
 
         return $this->handle($prospect, $this->validatedData);
     }
