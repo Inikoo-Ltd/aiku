@@ -1,5 +1,6 @@
 <script setup lang='ts'>
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import Image from '@/Components/Image.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
@@ -75,6 +76,16 @@ const debounceUpdateQuantity = debounce(
 
 <template>
     <Table :resource="data" :name="tab">
+        <!-- Column: Image -->
+        <template #cell(image)="{ item }">
+            <div class="flex relative w-8 aspect-square overflow-hidden">
+                <Image
+                    :src="item.image?.thumbnail"
+                    class="w-full h-full object-contain"
+                />
+            </div>
+        </template>
+
         <!-- Column: Code -->
         <template #cell(asset_code)="{ item }">
             <Link :href="productRoute(item)" class="primaryLink">

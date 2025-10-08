@@ -110,6 +110,7 @@ class IndexTransactions extends OrgAction
                     ]
                 );
 
+            $table->column(key: 'image', label: '', canBeHidden: false, sortable: false, searchable: false);
             $table->column(key: 'asset_code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'asset_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
