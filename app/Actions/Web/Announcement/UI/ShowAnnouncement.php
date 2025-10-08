@@ -12,13 +12,12 @@ use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Enums\Web\Banner\BannerTabsEnum;
+use App\Enums\Announcement\AnnouncementTabsEnum;
 use App\Http\Resources\Helpers\SnapshotResource;
-use App\Http\Resources\Web\BannerResource;
+use App\Http\Resources\Web\AnnouncementResource;
+use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
-use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Web\Banner;
 use App\Models\Web\Website;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -32,21 +31,20 @@ class ShowAnnouncement extends OrgAction
 
     private Website $parent;
 
-    public function handle(Banner $banner): Banner
+    public function handle(Announcement $announcement): Announcement
     {
-        return $banner;
+        return $announcement;
     }
 
-
-    public function asController(Organisation $organisation, Shop $shop, Website $website, Banner $announcement, ActionRequest $request): Banner
+    public function asController(Organisation $organisation, Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): Announcement
     {
         $this->parent = $website;
-        $this->initialisationFromShop($shop, $request)->withTab(BannerTabsEnum::values());
+        $this->initialisationFromShop($shop, $request)->withTab(AnnouncementTabsEnum::values());
 
         return $this->handle($announcement);
     }
 
-    public function htmlResponse(Banner $banner, ActionRequest $request): Response
+    public function htmlResponse(Announcement $announcement, ActionRequest $request): Response
     {
         return Inertia::render(
             'Websites/Announcement',
@@ -55,9 +53,9 @@ class ShowAnnouncement extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => $banner->name,
+                'title'       => $announcement->name,
                 'pageHead'    => [
-                    'title'     => $banner->name,
+                    'title'     => $announcement->name,
                     'icon'      => [
                         'tooltip' => __('announcement'),
                         'icon'    => 'fal fa-sign'
@@ -67,7 +65,7 @@ class ShowAnnouncement extends OrgAction
                         'tooltip' => __('Website'),
                         'label'   => Str::possessive($this->parent->name)
                     ],
-                    'iconRight' => $banner->state->stateIcon()[$banner->state->value],
+                    'iconRight' => $announcement->state->stateIcon()[$announcement->state->value],
                     'actions'   => [
                         $this->canEdit ? [
                             'type'  => 'button',
@@ -83,59 +81,61 @@ class ShowAnnouncement extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => BannerTabsEnum::navigation()
+                    'navigation' => AnnouncementTabsEnum::navigation()
                 ],
 
-                BannerTabsEnum::SHOWCASE->value => $this->tab == BannerTabsEnum::SHOWCASE->value
+                AnnouncementTabsEnum::SHOWCASE->value => $this->tab == AnnouncementTabsEnum::SHOWCASE->value
                     ?
-                    fn () => BannerResource::make($banner)->getArray()
+                    fn () => AnnouncementResource::make($announcement)->getArray()
                     : Inertia::lazy(
-                        fn () => BannerResource::make($banner)->getArray()
+                        fn () => AnnouncementResource::make($announcement)->getArray()
                     ),
 
-                BannerTabsEnum::SNAPSHOTS->value => $this->tab == BannerTabsEnum::SNAPSHOTS->value
+                AnnouncementTabsEnum::SNAPSHOTS->value => $this->tab == AnnouncementTabsEnum::SNAPSHOTS->value
                     ?
                     fn () => SnapshotResource::collection(
                         IndexSnapshots::run(
-                            parent: $banner,
-                            prefix: BannerTabsEnum::SNAPSHOTS->value
+                            parent: $announcement,
+                            prefix: AnnouncementTabsEnum::SNAPSHOTS->value
                         )
                     )
                     : Inertia::lazy(fn () => SnapshotResource::collection(
                         IndexSnapshots::run(
-                            parent: $banner,
-                            prefix: BannerTabsEnum::SNAPSHOTS->value
+                            parent: $announcement,
+                            prefix: AnnouncementTabsEnum::SNAPSHOTS->value
                         )
                     )),
             ]
         )->table(
             IndexSnapshots::make()->tableStructure(
-                parent: $banner,
-                prefix: BannerTabsEnum::SNAPSHOTS->value
+                parent: $announcement,
+                prefix: AnnouncementTabsEnum::SNAPSHOTS->value
             )
         );
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
     {
-        $headCrumb = function (string $type, Banner $banner, array $routeParameters, string $suffix = null) {
+        return [];
+
+        $headCrumb = function (string $type, Announcement $announcement, array $routeParameters, string $suffix = null) {
             return [
                 [
                     'type'           => $type,
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('banners')
+                            'label' => __('Announcements')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $banner->name,
+                            'label' => $announcement->name,
                         ],
 
                     ],
                     'simple'         => [
                         'route' => $routeParameters['model'],
-                        'label' => $banner->name
+                        'label' => $announcement->name
                     ],
                     'suffix'         => $suffix
                 ],
@@ -149,7 +149,7 @@ class ShowAnnouncement extends OrgAction
                 IndexAnnouncements::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
                     'modelWithIndex',
-                    Banner::firstWhere('slug', $routeParameters['announcement']),
+                    Announcement::firstWhere('slug', $routeParameters['announcement']),
                     [
                         'index' => [
                             'name'       => 'grp.org.shops.show.web.announcements.index',
