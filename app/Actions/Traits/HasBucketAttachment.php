@@ -36,7 +36,15 @@ trait HasBucketAttachment
                 return [
                     'label'            => $config['label'],
                     'scope'            => $config['scope'],
-                    'attachment'       => $attachment,
+                    'id'               => $attachment0->id ?? null,
+                    'size'             => $attachment->size ?? null,
+                    'download_route'  =>  [
+                        'name'       => 'grp.media.download',
+                        'parameters' => [
+                            'media' => $attachment->ulid ?? null,
+                        ],
+                        'method'     => 'get'
+                    ],
                 ];
             }, $configs);
         };
