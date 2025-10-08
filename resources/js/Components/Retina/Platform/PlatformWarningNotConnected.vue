@@ -118,7 +118,7 @@ const ipAddresses = [
             <small class="text-red-500">{{errorCaptcha}}</small>
             <div>
                 <div>
-                    <small>Please add this IP Address to whitelist: </small>
+                    <small>{{ trans('Please add this IP Address to whitelist: ')}}</small>
                 </div>
                 <div v-for="(ip, i) in ipAddresses" :key="i">
                     <blockquote>{{ ip }}</blockquote>
