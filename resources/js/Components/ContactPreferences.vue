@@ -48,7 +48,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    containerClass: 'mt-4 w-64 border border-gray-300 rounded-md p-3',
+    containerClass: 'mt-4 min-w-64 border border-gray-300 rounded-md p-3',
     showEditButton: true,
     editable: true
 })
@@ -254,14 +254,6 @@ defineExpose({
             </button>
         </div>
 
-        <!-- Undo Button - Only show when "don't contact me" is active -->
-        <div v-if="localDontContactMe && editable" class="mb-3 text-center">
-            <button @click="undoDontContact"
-                class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm rounded transition-colors duration-200 w-full">
-                <FontAwesomeIcon :icon="faUndo" class="text-white text-sm mr-2" />
-                {{ trans('Undo Don\'t Contact') }}
-            </button>
-        </div>
 
         <!-- Contact Preferences Section Box -->
         <div :class="containerClass">
@@ -290,13 +282,22 @@ defineExpose({
 
             <!-- Message when "don't contact me" is active -->
             <div v-if="localDontContactMe" class="mt-3">
-                <!-- Message -->
-                <div class="p-2 bg-red-50 rounded text-center">
-                    <span class="text-xs text-red-600">{{ trans('Prospect do not want to be contacted') }}</span>
-                    <div v-if="contactPreferences.dont_contact_me.reason" class="mt-1">
-                        <span class="text-xs text-red-500">{{ trans('Reason') }}: {{
-                            contactPreferences.dont_contact_me.reason }}</span>
+                <!-- Message with Edit Button -->
+                <div class="p-2 bg-red-50 rounded flex items-center justify-between">
+                    <div class="text-start flex-1">
+                        <span class="text-xs text-red-600">{{ trans('Prospect do not want to be contacted') }}</span>
+                        <div v-if="contactPreferences.dont_contact_me.reason" class="mt-1">
+                            <span class="text-xs text-red-500">{{ trans('Reason') }}: {{
+                                contactPreferences.dont_contact_me.reason }}</span>
+                        </div>
                     </div>
+
+                    <!-- Pencil Edit Button -->
+                    <button v-if="editable" @click="undoDontContact" class="ml-2 p-1"
+                        :style="{ color: layout?.app?.theme?.[0] || '#6366f1' }"
+                        v-tooltip="trans('Edit Contact Preferences')">
+                        <FontAwesomeIcon :icon="faPencil" class="text-sm" fixed-width />
+                    </button>
                 </div>
             </div>
         </div>
