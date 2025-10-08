@@ -275,13 +275,9 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith("-")
     }
 
-    if (layout?.iris?.is_logged_in) {
-        fetchProductHasPortfolio()
+    if (layout?.iris?.is_logged_in){
+        fetchHasInBasket();
     }
-
-
-
-    /* debFetchProducts() */
 })
 
 const updateQueryParams = () => {
@@ -324,47 +320,47 @@ const toggleSort = (key: string) => {
 }
 
 
-const productHasPortfolio = ref({
+const productInBasket = ref({
     isLoading: false,
     list: []
 })
 
-
-const getRouteForProductPortfolio = () => {
-    const { model_type, model_id } = props.fieldValue
+const getRouteForProductInBasket = () => {
+    const { model_type, model_id } = props.fieldValue;
     if (model_type == "ProductCategory") {
-        return route("iris.json.product_category.portfolio_data", {
+        return route("iris.json.product_category.transaction_data", {
             productCategory: model_id
-        })
+        });
     } else if (model_type == "Collection") {
-        return route("iris.json.collection.portfolio_data", {
+        return route("iris.json.collection.transaction_data", {
             collection: model_id
-        })
+        });
     }
-}
+};
 
-const fetchProductHasPortfolio = async () => {
-    productHasPortfolio.value.isLoading = true
+const fetchHasInBasket = async () => {
+    productInBasket.value.isLoading = true;
     try {
-        const apiUrl = getRouteForProductPortfolio()
+        const apiUrl = getRouteForProductInBasket();
 
         if (!apiUrl) {
-            throw new Error("Invalid model_type or missing route configuration")
+            throw new Error("Invalid model_type or missing route configuration");
         }
 
-        const response = await axios.get(apiUrl)
-        productHasPortfolio.value.list = response.data || []
+        const response = await axios.get(apiUrl);
+        productInBasket.value.list = response.data || [];
     } catch (error) {
-        console.error(error)
+        console.error(error);
         notify({
             title: "Error",
             text: "Failed to load product portfolio.",
             type: "error"
-        })
+        });
     } finally {
-        productHasPortfolio.value.isLoading = false
+        productInBasket.value.isLoading = false;
     }
-}
+};
+
 
 
 const responsiveGridClass = computed(() => {
@@ -379,8 +375,6 @@ const responsiveGridClass = computed(() => {
     const count = columnCount[props.screenType] ?? 1
     return `grid-cols-${count}`
 })
-
-
 
 
 </script>
@@ -486,6 +480,7 @@ const responsiveGridClass = computed(() => {
                             <ProductRenderEcom
                                 :product="product"
                                 :key="index"
+                                :hasInBasket="productInBasket.list[product.id]"
                             />
                         </div>
                     </template>

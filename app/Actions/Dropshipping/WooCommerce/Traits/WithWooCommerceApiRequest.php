@@ -137,7 +137,7 @@ trait WithWooCommerceApiRequest
 
                 Sentry::captureMessage($response->body());
 
-                return $response->json();
+                return [$response->body()];
             }
         } catch (ConnectionException $e) {
             Log::error('WooCommerce API Connection Error', [

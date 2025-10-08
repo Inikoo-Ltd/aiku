@@ -102,7 +102,7 @@ console.log('see also',props)
           class="h-full">
           <div class="h-full">
             <div v-if="product" class="h-full flex flex-col">
-              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
               <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
             <div v-else>
