@@ -81,6 +81,7 @@ use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
+use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
@@ -1016,6 +1017,10 @@ Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function (
 
 Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->group(function () {
     Route::patch('update', UpdateCustomerComms::class)->name('update');
+});
+
+Route::prefix('prospect/{prospect:id}')->name('prospect.')->group(function () {
+    Route::patch('update', UpdateProspect::class)->name('update');
 });
 
 

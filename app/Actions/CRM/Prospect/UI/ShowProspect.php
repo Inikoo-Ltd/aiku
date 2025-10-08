@@ -79,6 +79,13 @@ class ShowProspect extends OrgAction
     {
         return [
             'prospect' => ProspectResource::make($prospect)->getArray(),
+            'update_route' => [
+                'name' => 'grp.models.prospect.update',
+                'parameters' => [
+                    'prospect' => $prospect->id
+                ],
+                'method' => 'patch'
+            ]
         ];
     }
 
