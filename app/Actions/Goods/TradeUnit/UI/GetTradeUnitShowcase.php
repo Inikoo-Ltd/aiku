@@ -10,6 +10,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Actions\Traits\HasBucketAttachment;
 use App\Actions\Traits\HasBucketImages;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagsResource;
@@ -22,6 +23,7 @@ class GetTradeUnitShowcase
 {
     use AsObject;
     use HasBucketImages;
+    use HasBucketAttachment;
 
     public function handle(TradeUnit $tradeUnit): array
     {
@@ -152,6 +154,7 @@ class GetTradeUnitShowcase
                     ],
                 ],
             ],
+            'attachment_box'=>  $this->getAttachmentData($tradeUnit),
             'images' => $this->getImagesData($tradeUnit),
         ];
     }
