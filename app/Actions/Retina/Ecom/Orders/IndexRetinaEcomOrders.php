@@ -11,6 +11,7 @@ namespace App\Actions\Retina\Ecom\Orders;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Http\Resources\Fulfilment\RetinaEcomOrdersTransactionsResources;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
@@ -95,10 +96,10 @@ class IndexRetinaEcomOrders extends RetinaAction
                 ->withEmptyState($emptyStateData);
 
             $table->column(key: 'state', label: __('Status'), sortable: true, type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
-            $table->column(key: 'number_item_transactions', label: __('items'), canBeHidden: false, sortable: true);
-            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, align: "right");
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date');
+            $table->column(key: 'number_item_transactions', label: __('Items'), canBeHidden: false, sortable: true);
+            $table->column(key: 'total_amount', label: __('Total'), canBeHidden: false, sortable: true, align: "right");
         };
     }
 
@@ -117,7 +118,7 @@ class IndexRetinaEcomOrders extends RetinaAction
                     'actions'    => $actions
                 ],
                 'currency'              => CurrencyResource::make($this->shop->currency)->getArray(),
-                'data'                  => $orders,
+                'data'                  => RetinaEcomOrdersTransactionsResources::collection($orders),
             ]
         )->table($this->tableStructure());
     }

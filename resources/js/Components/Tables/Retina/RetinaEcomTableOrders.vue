@@ -76,7 +76,7 @@ function orderRoute(order) {
 
             <!-- Column: State -->
             <template #cell(state)="{ item: order }">
-                <Icon :data="order['type_icon']" class="px-1" />
+                <Icon :data="order['state_icon']" class="px-1" />
             </template>
 
 
