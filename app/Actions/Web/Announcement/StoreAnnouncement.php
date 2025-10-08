@@ -31,7 +31,7 @@ class StoreAnnouncement extends OrgAction
     private Website $parent;
     private string $scope;
 
-    public $commandSignature = 'announcement:create {portfolioWebsite}';
+    public $commandSignature = 'announcement:create {website}';
 
     public function handle(Website $parent, array $modelData): Announcement
     {
