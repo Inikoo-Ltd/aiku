@@ -64,7 +64,7 @@ Route::prefix('platform')->as('platform.')->group(function () {
     Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
 
     Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
-    Route::post('wc-user/test-connection', TestConnectionWooCommerceUser::class)->name('wc.test_connection');
+    Route::post('wc-user/{customerSalesChannel}/test-connection', TestConnectionWooCommerceUser::class)->name('wc.test_connection');
     Route::delete('wc-user', DeleteShopifyUser::class)->name('wc.delete');
 
     Route::post('ebay-user/authorize', AuthorizeRetinaEbayUser::class)->name('ebay.authorize');

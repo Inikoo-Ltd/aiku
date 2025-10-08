@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dropshipping\WooCommerce;
 
-use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\WebUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -19,7 +19,7 @@ use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class TestConnectionWooCommerceUser extends OrgAction
+class TestConnectionWooCommerceUser extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -27,7 +27,7 @@ class TestConnectionWooCommerceUser extends OrgAction
 
     public $commandSignature = 'retina:ds:test-woo {customerSalesChannel}';
 
-    public function handle(CustomerSalesChannel $customerSalesChannel): void
+    public function handle(CustomerSalesChannel $customerSalesChannel): WooCommerceUser
     {
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $customerSalesChannel->user;
@@ -35,14 +35,18 @@ class TestConnectionWooCommerceUser extends OrgAction
         $connection = $wooCommerceUser->checkConnection();
 
         if (! Arr::has($connection, 'environment')) {
-            $errorData = $connection;
+            $errorData = [
+                'error_data' => $connection
+            ];
 
             $wooCommerceUser->update([
                 'data' => $errorData,
             ]);
         }
 
-        CheckWooChannel::run($wooCommerceUser);
+        $wooCommerceUser->refresh();
+
+        return $wooCommerceUser;
     }
 
     public function asCommand(Command $command): void
@@ -61,11 +65,10 @@ class TestConnectionWooCommerceUser extends OrgAction
         return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
-    public function asController(ActionRequest $request): void
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): WooCommerceUser
     {
-        $customer = $request->user()->customer;
-        $this->initialisationFromShop($customer->shop, $request);
+        $this->initialisation($request);
 
-        $this->handle($customer, $this->validatedData);
+        return $this->handle($customerSalesChannel);
     }
 }
