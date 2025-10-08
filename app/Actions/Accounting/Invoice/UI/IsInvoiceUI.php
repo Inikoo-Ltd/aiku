@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Invoice\UI;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
+use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Http\Resources\Dispatching\ShipmentsResource;
@@ -18,6 +19,7 @@ use App\Models\Accounting\Invoice;
 use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -331,6 +333,8 @@ trait IsInvoiceUI
 
                 ]
             ],
+
+            default => null
         };
     }
 
