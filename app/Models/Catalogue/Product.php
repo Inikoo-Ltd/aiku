@@ -25,6 +25,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterAsset;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
@@ -231,6 +232,7 @@ class Product extends Model implements Auditable, HasMedia
     use HasFactory;
     use HasImage;
     use HasTranslations;
+    use HasAttachments;
 
     protected $guarded = [];
 

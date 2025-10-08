@@ -37,6 +37,7 @@ const props = defineProps<{
         icon: string
     }
     customer_sales_channel: CustomerSalesChannel
+    error_captcha: any
     timeline: {
         current_state: string
         options: {}[]
@@ -188,6 +189,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 <PlatformWarningNotConnected
                     v-else
                     :customer_sales_channel="customer_sales_channel"
+                    :error_captcha="error_captcha"
                 />
             </template>
 
