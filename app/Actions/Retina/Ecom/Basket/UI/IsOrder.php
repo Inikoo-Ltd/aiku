@@ -54,11 +54,8 @@ trait IsOrder
                 $routeDownload = null;
             } else {
                 $routeShow = [
-                    'name'       => 'grp.org.accounting.invoices.show',
-                    'parameters' => [
-                        'organisation' => $order->organisation->slug,
-                        'invoice'      => $invoice->slug,
-                    ]
+                    'name'       => request()->route()->getName() . '.invoices.show',
+                    'parameters' => array_merge(request()->route()->originalParameters(), ['invoice' => $invoice->slug])
                 ];
 
                 $routeDownload = [
@@ -94,11 +91,8 @@ trait IsOrder
                 $routeDownload = null;
             } else {
                 $routeShow = [
-                    'name'       => 'grp.org.accounting.invoices.show',
-                    'parameters' => [
-                        'organisation' => $order->organisation->slug,
-                        'invoice'      => $invoice->slug,
-                    ]
+                    'name'       => request()->route()->getName() . '.invoices.show',
+                    'parameters' => array_merge(request()->route()->originalParameters(), ['invoice' => $invoice->slug])
                 ];
 
                 $routeDownload = [
@@ -181,7 +175,7 @@ trait IsOrder
                 ]
             ),
             'customer_channel' => $customerChannel,
-            'invoice'          => $invoiceData,   //todo vika delete this
+            // 'invoice'          => $invoiceData,   //todo vika delete this
             'invoices'          => $invoicesData,
 
 

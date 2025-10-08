@@ -269,58 +269,11 @@ const contactPreferencesData = computed(() => {
 <template>
     <!-- Section: Stats box -->
     <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-2 gap-8">
-        <!-- <div v-if="data?.require_approval && data?.prospect.customer.data.status === 'pending_approval'"
-            class="w-full max-w-md justify-self-end">
-            <div class="p-5 border rounded-lg bg-white">
-                <div class="flex flex-col items-center text-center gap-2">
-                    <h3 class="text-lg font-semibold text-gray-800">Pending Application</h3>
-                    <p class="text-sm text-gray-600">
-                        This application is currently awaiting approval.
-                    </p>
-                </div>
-
-                <div class="mt-5 flex justify-center gap-3">
-                    <Link :href="route(data.approveRoute.name, data.approveRoute.parameters)" method="patch"
-                        :data="{ status: 'approved' }">
-                    <ButtonPrimeVue class="fixed-width-btn" severity="success" size="small" variant="outlined">
-                        <FontAwesomeIcon :icon="faCheck" @click="visible = false" />
-                        <span> Approve </span>
-                    </ButtonPrimeVue>
-                    </Link>
-
-                    <ButtonPrimeVue class="fixed-width-btn" severity="danger" size="small" variant="outlined"
-                        @click="() => openRejectedModal(data.prospect.customer)">
-                        <FontAwesomeIcon :icon="faTimes" @click="visible = false" />
-                        <span> Reject </span>
-                    </ButtonPrimeVue>
-                </div>
-            </div>
-        </div> -->
 
         <!-- Section: Profile box -->
         <div>
             <div class="rounded-lg shadow-sm ring-1 ring-gray-900/5">
                 <dl class="flex flex-wrap">
-                    <!-- Profile: Header -->
-                    <!-- <div class="flex w-full py-6">
-                        <div v-if="data?.customer.is_dropshipping" class="flex-auto pl-6">
-                            <dt class="text-sm text-gray-500">{{ trans("Total Clients") }}</dt>
-                            <dd class="mt-1 text-base font-semibold leading-6">{{
-                                data?.customer?.number_current_customer_clients || 0 }}</dd>
-                        </div>
-
-                        <div class="flex-none self-end px-6">
-                            <dt class="sr-only">state</dt>
-                            <dd class="">
-                                <Tag :label="data?.customer?.state" :theme="data?.customer?.state === 'active'
-                                    ? 3
-                                    : data?.customer?.state === 'lost'
-                                        ? 7
-                                        : 99
-                                    " />
-                            </dd>
-                        </div>
-                    </div> -->
 
 
                     <!-- Section: Field -->
@@ -495,113 +448,19 @@ const contactPreferencesData = computed(() => {
 
 
         <div class="justify-self-end ">
-            <!-- <div
-                class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
-                <div class="w-full flex justify-between items-center">
-                    <div>
-                        <div class="text-base">
-                            {{ trans("Balance") }}
-                        </div>
-                    </div>
-                    <div class="flex flex-col items-end">
-                        <div class="text-2xl font-bold">
-                            <CountUp :endVal="data.customer.balance" :decimalPlaces="2" :duration="1.5"
-                                :scrollSpyOnce="true" :options="{
-                                    formattingFn: (value) =>
-                                        locale.currencyFormat(data.currency?.code, value),
-                                }" />
-                        </div>
-                        <div class="flex items-center">
-                            <div @click="() => isModalBalanceIncrease = true"
-                                v-tooltip="trans('Increase customer balance')"
-                                class="cursor-pointer text-gray-400 hover:text-indigo-600">
-                                <FontAwesomeIcon :icon="faArrowAltFromBottom" class="text-base"
-                                    tooltip="Decrease Balance" fixed-width aria-hidden="true" />
-                            </div>
-                            <span class="mx-2 text-gray-400">|</span>
-                            <div @click="() => isModalBalanceDecrease = true"
-                                v-tooltip="trans('Decrease customer balance')"
-                                class="cursor-pointer text-gray-400 hover:text-indigo-600">
-                                <FontAwesomeIcon :icon="faArrowAltFromTop" class="text-base" tooltip="Decrease Balance"
-                                    fixed-width aria-hidden="true" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"
-                    class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
-                    {{ trans("See all transactions list") }}
-                </div>
-            </div>
-
-            <div class="mt-4 w-64 border border-gray-300 rounded-md p-2">
-                <div v-for="(item, index) in links" :key="index" class="p-2">
-                    <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
-                        type="secondary" />
-                </div>
-            </div> -->
 
             <!-- Contact Preferences Section -->
             <ContactPreferences v-if="contactPreferencesData && layout?.app?.environment === 'local'"
                 :contactPreferences="contactPreferencesData" />
 
             <!-- Email Subscriptions Section -->
-            <EmailSubscribetion v-if="data?.prospect?.customer?.data?.email_subscriptions"
-                :emailSubscriptions="data?.prospect?.customer?.data?.email_subscriptions" />
+            <!-- <EmailSubscribetion v-if="data?.prospect?.customer?.data?.email_subscriptions"
+                :emailSubscriptions="data?.prospect?.customer?.data?.email_subscriptions" /> -->
 
         </div>
     </div>
-
-    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)">
-        <CustomerAddressManagementModal :addresses="data?.address_management?.addresses"
-            :updateRoute="data?.address_management?.address_update_route" />
-    </Modal>
-
-    <!-- Modal: Increase balance -->
-    <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
-        <CustomerDSBalanceIncrease v-model="isModalBalanceIncrease" :routeSubmit="data?.balance?.route_increase"
-            :options="data?.balance?.increaase_reasons_options" :currency="data?.currency"
-            :types="data?.balance?.type_options" />
-    </Modal>
-
-    <!-- Modal: Decrease balance -->
-    <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
-        <CustomerDSBalanceDecrease v-model="isModalBalanceDecrease" :routeSubmit="data?.balance?.route_decrease"
-            :options="data?.balance?.decrease_reasons_options" :currency="data?.currency"
-            :types="data?.balance?.type_options" />
-    </Modal>
-
-    <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName" />
 </template>
 
 <style scoped>
-/* Toggle Switch Active (Green) */
-.toggle-switch-active :deep(.p-toggleswitch-slider) {
-    background-color: #10b981 !important;
-    /* green-500 */
-}
 
-.toggle-switch-active :deep(.p-toggleswitch-slider:hover) {
-    background-color: #059669 !important;
-    /* green-600 */
-}
-
-/* Toggle Switch Inactive (Red) */
-.toggle-switch-inactive :deep(.p-toggleswitch-slider) {
-    background-color: #ef4444 !important;
-    /* red-500 */
-}
-
-.toggle-switch-inactive :deep(.p-toggleswitch-slider:hover) {
-    background-color: #dc2626 !important;
-    /* red-600 */
-}
-
-/* Handle (circle) styling */
-.toggle-switch-active :deep(.p-toggleswitch-handle),
-.toggle-switch-inactive :deep(.p-toggleswitch-handle) {
-    background-color: white !important;
-    border: 2px solid white !important;
-}
 </style>
