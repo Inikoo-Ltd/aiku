@@ -140,8 +140,8 @@ const label = {
                                 <Transition name="slide-to-left">
                                     <p v-if="layoutStore.leftSidebar.show" class="text-lg bg-clip-text font-bold whitespace-nowrap leading-none lg:truncate">
                                         {{ layoutStore.currentParams?.organisation
-                                        ? layoutStore.organisations.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
-                                        ?? layoutStore.agents.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                                        ? layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                                        ?? layoutStore.agents.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
                                         ?? layoutStore.group?.label
                                         : layoutStore.group?.label }}
                                     </p>
@@ -151,32 +151,32 @@ const label = {
                     </div>
 
                     <!-- Dropdown: TopBars -->
-                    <Menu v-if="layoutStore.group || (layoutStore.organisations.data.length > 1)" as="div" class="ml-2 relative text-left">
+                    <Menu v-if="layoutStore.group || (layoutStore.organisations.data?.length > 1)" as="div" class="ml-2 relative text-left">
                         <MenuButton v-slot="{ open }"
                                     class="inline-flex sm:min-w-32 sm:w-[184px] h-[26px] lg:h-8 overflow-ellipsis rounded border border-gray-300 w-full whitespace-nowrap justify-between items-center gap-x-2 px-2.5 py-2 text-xxs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
                                     :class="[!!(layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)) || !!layoutStore.agents.data?.find((item) => item.slug == layoutStore.currentParams?.organisation) ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'hover:bg-slate-200 text-slate-600']">
                             <div class="flex items-center gap-x-1 w-full truncate overflow-ellipsis line-clamp-2">
                                 <FontAwesomeIcon :icon="layoutStore.currentParams?.organisation
-                                            ? layoutStore.organisations.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                                            ? layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
                                                 ? 'fal fa-building'
-                                                : layoutStore.agents.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                                                : layoutStore.agents.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
                                                     ? 'fal fa-people-arrows'
-                                                    : layoutStore.digital_agency.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                                                    : layoutStore.digital_agency.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
                                                         ? 'fal fa-laptop-house'
                                                         : 'fal fa-city'
                                             : 'fal fa-city'" class="opacity-60 text-xs" fixed-width aria-hidden="true" />
                                 <Transition name="spin-to-down">
                           <span :key="layoutStore.currentParams?.organisation
-                                              ? layoutStore.organisations.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
-                                                  ?? layoutStore.agents.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
-                                                  ?? layoutStore.digital_agency.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                                              ? layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                                                  ?? layoutStore.agents.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                                                  ?? layoutStore.digital_agency.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
                                                   ?? layoutStore.group?.label
                                               : layoutStore.group?.label"
                                 class="hidden sm:inline whitespace-pre-line">
                                               {{ useTruncate(layoutStore.currentParams?.organisation
-                              ? layoutStore.organisations.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
-                              ?? layoutStore.agents.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
-                              ?? layoutStore.digital_agency.data.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                              ? layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                              ?? layoutStore.agents.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
+                              ?? layoutStore.digital_agency.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
                               ?? layoutStore.group?.label
                               : layoutStore.group?.label, 44) }}</span>
                                 </Transition>
@@ -199,7 +199,7 @@ const label = {
                                 />
 
                                 <!-- Dropdown: Organisation -->
-                                <TopBarDropdownScope v-if="layoutStore.organisations.data.length"
+                                <TopBarDropdownScope v-if="layoutStore.organisations.data?.length"
                                                      :menuItems="layoutStore.organisations.data"
                                                      :imageSkeleton="imageSkeleton"
                                                      :label="trans('E-commerce')"
@@ -254,8 +254,8 @@ const label = {
                     layoutStore.currentParams?.organisation
                     && ((layoutStore.isShopPage || layoutStore.isFulfilmentPage)
                         || layoutStore.currentRoute.includes('grp.org.dashboard.'))
-                    && (layoutStore.organisations.data.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_shops.length
-                        || layoutStore.agents.data.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_fulfilments.length)
+                    && (layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_shops.length
+                        || layoutStore.agents.data?.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_fulfilments.length)
                 "
                                 as="div" class="relative inline-block text-left"
                                 v-slot="{ close: closeMenu }"
@@ -279,14 +279,14 @@ const label = {
                                 <transition>
                                     <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y-0 divide-gray-400 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
                                         <MenuPopoverList
-                                            v-if="layoutStore.organisations.data.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length || layoutStore.agents.data.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length"
+                                            v-if="layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length || layoutStore.agents.data?.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length"
                                             icon="fal fa-store-alt"
                                             :navKey="'shop'"
                                             :closeMenu="closeMenu"
                                         />
 
                                         <MenuPopoverList
-                                            v-if="layoutStore.organisations.data.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_fulfilments.length || layoutStore.agents.data.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_fulfilments.length"
+                                            v-if="layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_fulfilments.length || layoutStore.agents.data?.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_fulfilments.length"
                                             icon="fal fa-hand-holding-box"
                                             :navKey="'fulfilment'"
                                             :closeMenu="closeMenu"
@@ -311,7 +311,7 @@ const label = {
                                 <TopBarSelectButton
                                     icon="fal fa-warehouse-alt"
                                     :activeButton="!!(layoutStore.currentParams.warehouse)"
-                                    :label="(layoutStore.organisations.data.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_warehouses.find(warehouse => warehouse.slug == layoutStore.currentParams.warehouse)?.label || layoutStore.agents.data.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_warehouses.find(warehouse => warehouse.slug == layoutStore.currentParams.warehouse)?.label) ?? label.warehouseSelect"
+                                    :label="(layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_warehouses?.find(warehouse => warehouse.slug == layoutStore.currentParams.warehouse)?.label || layoutStore.agents.data?.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_warehouses?.find(warehouse => warehouse.slug == layoutStore.currentParams.warehouse)?.label) ?? label.warehouseSelect"
                                 />
 
                                 <transition>

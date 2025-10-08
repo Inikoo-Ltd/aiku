@@ -1,8 +1,8 @@
 {
 	"scope": "webpage",
-	"slug": "recomandation-recently-bought-1",
-	"code": "recomandation-recently-bought-1",
-	"name": "Recomandation: recently bought",
+	"slug": "recommendation-customer-recently-bought-1",
+	"code": "recommendation-customer-recently-bought-1",
+	"name": "Recommenders: Customer Recently Bought",
 	"website_type" : ["info","b2b","b2","dropshipping","fulfilment","digital_agency"],
 	"category": "block",
 	"fixed": true,
