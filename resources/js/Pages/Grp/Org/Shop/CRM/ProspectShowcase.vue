@@ -39,6 +39,7 @@ import { faSpinnerThird } from '@fad'
 import { Tooltip } from 'floating-vue'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import EmailSubscribetion from "@/Components/EmailSubscribetion.vue"
+import ContactPreferences from "@/Components/ContactPreferences.vue"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faClock, faBuilding)
 
@@ -224,6 +225,45 @@ const getStatusText = (status: string, valid: boolean) => {
     }
     return trans('Pending')
 }
+
+// Create contact preferences data from prospect data
+const contactPreferencesData = computed(() => {
+    if (!props.data?.prospect) return null
+    
+    return {
+        update_route: {
+            method: 'PATCH',
+            name: 'prospect.contact-preferences.update',
+            parameters: [props.data.prospect.slug]
+        },
+        dont_contact_me: {
+            label: trans('Don\'t Contact Me'),
+            is_active: props.data.prospect.dont_contact_me || false,
+            activated_at: props.data.prospect.dont_contact_me_at,
+            reason: null
+        },
+        preferences: {
+            email: {
+                label: trans('Email'),
+                field: 'can_contact_by_email',
+                is_allowed: props.data.prospect.can_contact_by_email || false,
+                updated_at: null
+            },
+            phone: {
+                label: trans('Phone Calls'),
+                field: 'can_contact_by_phone',
+                is_allowed: props.data.prospect.can_contact_by_phone || false,
+                updated_at: null
+            },
+            address: {
+                label: trans('Postal Mail'),
+                field: 'can_contact_by_address',
+                is_allowed: props.data.prospect.can_contact_by_address || false,
+                updated_at: null
+            }
+        }
+    }
+})
 </script>
 
 <template>
@@ -501,6 +541,10 @@ const getStatusText = (status: string, valid: boolean) => {
                         type="secondary" />
                 </div>
             </div> -->
+
+            <!-- Contact Preferences Section -->
+            <ContactPreferences v-if="contactPreferencesData && layout?.app?.environment === 'local'"
+                :contactPreferences="contactPreferencesData" />
 
             <!-- Email Subscriptions Section -->
             <EmailSubscribetion v-if="data?.prospect?.customer?.data?.email_subscriptions"
