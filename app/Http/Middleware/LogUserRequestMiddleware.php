@@ -22,13 +22,10 @@ class LogUserRequestMiddleware
             return $next($request);
         }
 
-        if (!str_starts_with($request->route()->getName(), 'grp.')) {
+        if (!str_starts_with($request->route()->getName(), 'grp.') || $request->route()->getName() == 'grp.logout') {
             return $next($request);
         }
 
-        if ($request->route()->getName() == 'grp.logout') {
-            return $next($request);
-        }
 
 
         /* @var User $user */
@@ -46,7 +43,7 @@ class LogUserRequestMiddleware
                 $request->header('User-Agent')
             );
 
-            $user->stats()->update(['last_active_at' => now()]);
+
         }
 
         return $next($request);

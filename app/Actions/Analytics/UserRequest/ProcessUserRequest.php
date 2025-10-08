@@ -52,6 +52,11 @@ class ProcessUserRequest extends GrpAction
             'location'               => json_encode($this->getLocation($ip)),
         ];
 
+
+        $user->stats()->update([
+            'last_active_at' => $datetime
+        ]);
+
         return StoreUserRequest::make()->action(
             user: $user,
             modelData: $modelData,
