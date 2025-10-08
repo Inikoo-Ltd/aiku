@@ -9,10 +9,14 @@
 
 namespace App\Actions\CRM\Prospect\UI;
 
+use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Enums\UI\CRM\ProspectTabsEnum;
+use App\Http\Resources\CRM\ProspectsResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Lead\ProspectResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Prospect;
@@ -70,7 +74,24 @@ class ShowProspect extends OrgAction
                     fn () => $this->getProspectShowcase($prospect)
                     : Inertia::lazy(fn () => $this->getProspectShowcase($prospect)),
 
+                ProspectTabsEnum::DISPATCHED_EMAILS->value => $this->tab == ProspectTabsEnum::DISPATCHED_EMAILS->value ?
+                    fn () => ProspectsResource::collection(IndexDispatchedEmails::run($prospect, ProspectTabsEnum::DISPATCHED_EMAILS->value))
+                    : Inertia::lazy(fn () => ProspectsResource::collection(IndexDispatchedEmails::run($prospect, ProspectTabsEnum::DISPATCHED_EMAILS->value))),
+
+                ProspectTabsEnum::HISTORY->value => $this->tab == ProspectTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($prospect, ProspectTabsEnum::HISTORY->value))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($prospect, ProspectTabsEnum::HISTORY->value))),
+
             ]
+        )->table(
+                IndexDispatchedEmails::make()->tableStructure(
+                    parent: $prospect,
+                    prefix: ProspectTabsEnum::DISPATCHED_EMAILS->value
+                )
+        )->table(
+                IndexHistory::make()->tableStructure(
+                    prefix: ProspectTabsEnum::HISTORY->value
+                )
         );
     }
 
