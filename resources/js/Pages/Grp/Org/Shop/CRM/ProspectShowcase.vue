@@ -141,6 +141,13 @@ interface ProspectData {
 const props = defineProps<{
     data: {
         prospect: ProspectData
+        update_route :    {
+                name: string,
+                    parameters: {
+                    prospect: number
+                },
+                method: string
+            }
     },
     tab: string
     handleTabUpdate?: Function
@@ -228,13 +235,13 @@ const getStatusText = (status: string, valid: boolean) => {
 
 // Create contact preferences data from prospect data
 const contactPreferencesData = computed(() => {
-    if (!props.data?.prospect) return null
+    if (!props.data?.prospect || !props.data?.update_route) return null
     
     return {
         update_route: {
-            method: 'PATCH',
-            name: 'prospect.contact-preferences.update',
-            parameters: [props.data.prospect.slug]
+            method: props.data.update_route.method,
+            name: props.data.update_route.name,
+            parameters: [props.data.update_route.parameters.prospect]
         },
         dont_contact_me: {
             label: trans('Don\'t Contact Me'),
