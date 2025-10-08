@@ -457,7 +457,7 @@ const contactPreferencesData = computed(() => {
         <div class="justify-self-end ">
 
             <!-- Contact Preferences Section -->
-            <ContactPreferences v-if="contactPreferencesData && layout?.app?.environment === 'local'"
+            <ContactPreferences v-if="contactPreferencesData"
                 :contactPreferences="contactPreferencesData" />
 
             <!-- Email Subscriptions Section -->
