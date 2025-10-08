@@ -11,7 +11,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { notify } from "@kyvg/vue3-notification"
 import debounce from "lodash/debounce"
 import ScreenView from "@/Components/ScreenView.vue";
-import { cloneDeep } from "lodash"
+import { cloneDeep } from "lodash-es"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
