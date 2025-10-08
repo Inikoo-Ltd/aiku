@@ -15,6 +15,7 @@ use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -104,6 +105,9 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'can_connect_to_platform' => $canConnectToPlatform,
             'exist_in_platform'       => $existInPlatform,
             'platform_status'         => $platformStatus,
+
+            'error_captcha' => Arr::get($customerSalesChannel->user->data, 'error_data'),
+
             'step'                    => $step
         ]);
     }
