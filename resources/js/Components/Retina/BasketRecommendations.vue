@@ -14,6 +14,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { reactive } from 'vue'
 // import { Carousel } from 'primevue'
 library.add(faCircle)
 
@@ -46,8 +47,6 @@ const emit = defineEmits<{
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
 
-const listProducts = ref<ProductHits[] | null>()
-const isLoadingFetch = ref(false)
 
 const handleProductClick = (product: ProductHits) => {
     if (product.attributes.product_id?.[0]) {
@@ -59,40 +58,77 @@ const isProductLoading = (productId: string) => {
     return props.listLoadingProducts?.[`recommender-${productId}`] === 'loading'
 }
 
-const fetchRecommenders = async () => {
-    // console.log('11111 recommmmm', layout.user.user.customer_id)
-    try {
-        isLoadingFetch.value = true
-        const response = await axios.post(
-            `https://live.luigisbox.com/v1/recommend?tracker_id=${layout.iris.luigisbox_tracker_id}`,
-            [
-                {
-                    "blacklisted_item_ids": props.blacklistItems,
-                    "item_ids": [],
-                    "recommendation_type": 'basket',
-                    "recommender_client_identifier": 'basket',
-                    "size": 7,
-                    "user_id": layout.user?.customer_id?.toString(),
-                    "recommendation_context": {},
-                    // "hit_fields": ["url", "title"]
-                }
-            ],
-            {
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8'
-                }
-            }
-        )
-        if (response.status !== 200) {
-            console.error('Error fetching recommenders:', response.statusText)
-        }
-        console.log('Response axios:', response.data)
-        listProducts.value = response.data[0].hits
-    } catch (error: any) {
-        console.error('Error on fetching recommendations:', error)
+const pageSize = 7
+const page = ref(0)
+const listProducts = ref<ProductHits[] | null>()
+const isLoadingFetch = ref(false)
+const hitsMap = reactive(new Map<string, any>()) // untuk dedup cepat
+let lastRequestId = 0
+
+const fetchRecommenders = async (nextPage = false) => {
+  try {
+    if (nextPage) page.value += 1
+    else {
+      // reset untuk first load / context berubah
+      page.value = 1
+      listProducts.value = []
+      hitsMap.clear()
     }
+
+    isLoadingFetch.value = true
+    const requestId = ++lastRequestId
+
+    // Jika TIDAK ada offset di API, strategi "size bertambah"
+    const size = page.value * pageSize
+
+    const response = await axios.post(
+      `https://live.luigisbox.com/v1/recommend?tracker_id=${layout.iris.luigisbox_tracker_id}`,
+      [
+        {
+          blacklisted_item_ids: props.blacklistItems,
+          item_ids: [],
+          recommendation_type: 'basket',
+          recommender_client_identifier: 'basket',
+          size,
+          user_id: layout.user?.customer_id?.toString(),
+          recommendation_context: {},
+        }
+      ],
+      { headers: { 'Content-Type': 'application/json;charset=utf-8' }, signal: undefined /* atau AbortController */ }
+    )
+
+    if (lastRequestId !== requestId) return // ada request yang lebih baru, abaikan respons ini
+    if (response.status !== 200) {
+      console.error('Error fetching recommenders:', response.statusText)
+      return
+    }
+
+    const hits: any[] = response.data?.[0]?.hits ?? []
+
+    // Ambil hanya "delta": item yang belum ada di hitsMap
+    const delta = []
+    for (const h of hits) {
+      const key = h.id ?? h.item_id ?? h.uuid ?? h.url // pilih ID yang paling stabil
+      if (!hitsMap.has(key)) {
+        hitsMap.set(key, h)
+        delta.push(h)
+      }
+    }
+
+    // Kalau ini first load, delta = semua; kalau load berikutnya, delta = penambahan 7 (idealnya)
+    listProducts.value = [...listProducts.value, ...delta]
+  } catch (error: any) {
+    console.error('Error on fetching recommendations:', error)
+  } finally {
     isLoadingFetch.value = false
+  }
 }
+
+const onReachEnd = () => {
+  // minta halaman berikutnya: page bertambah 1 → size bertambah 7
+  fetchRecommenders(true)
+}
+
 
 onMounted(() => {
     fetchRecommenders()
@@ -130,18 +166,19 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="py-4" id="basket-recommendations" >
-        <Swiper :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
-            :loop="false" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay]" class="w-full"
-            xstyle="getStyles(fieldValue?.value?.layout?.properties, screenType)" spaceBetween="12"
+        <Swiper
+            :slides-per-view="slidesPerView ? Math.min(listProducts?.length || 0, slidesPerView || 0) : 4"
+            :loop="false"
+            :autoplay="false"
+            :pagination="{ clickable: true }"
+            :modules="[Autoplay]"
+            class="w-full"
+            spaceBetween="12"
             autoHeight
+            @reachEnd="() => onReachEnd()"
         >
-            <div v-if="isLoadingFetch" class="grid grid-cols-4 gap-x-4">
-                <div v-for="xx in 4" class="skeleton w-full h-64 rounded">
 
-                </div>
-            </div>
-
-            <template v-else-if="listProducts?.length">
+            <template v-if="listProducts?.length">
                 <SwiperSlide v-for="(product, index) in listProducts"
                     :key="index"
                     class="w-full cursor-grab relative px-4 py-3 rounded !flex !flex-col !justify-between gap-y-4 min-h-full"
@@ -202,11 +239,18 @@ onBeforeUnmount(() => {
                         />
                     </div>
                 </SwiperSlide>
+
+                <SwiperSlide
+                    v-if="isLoadingFetch"
+                    v-for="xx in 4"
+                    class="w-full cursor-grab relative px-4 py-3 rounded !flex !flex-col !justify-between gap-y-4 min-h-full skeleton"
+                >
+                </SwiperSlide>
             </template>
 
-            <div v-else class="w-full h-full text-center text-gray-400 py-6">
+            <!-- <div v-else class="w-full h-full text-center text-gray-400 py-6">
                 <span class="italic">{{ trans("No recommendations found. Explore more products to get personalized suggestions") }}</span> 🙂
-            </div>
+            </div> -->
         </Swiper>
     </div>
 </template>
