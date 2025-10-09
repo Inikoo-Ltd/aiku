@@ -18,8 +18,10 @@ class IrisAttachmentsResource extends JsonResource
         return [
             'caption'    => $this->caption,
             'scope'      => $this->scope,
+            'label' => $this->scope->labels()[$this->scope->value],
             'media_id'   => $this->media_id,
             'media_ulid'   => $this->media_ulid,
+            'mime_type'  => $this->mime_type,
             'download_route' => [
                 'name' => 'iris.iris_attachment',
                 'parameters' => ['media' => $this->media_ulid],
