@@ -287,8 +287,14 @@ const taxNumberStatusText = computed(() => {
 
 // Method: get Invoice route
 const getInvoiceRoute = () => {
-    console.log('wewqe', props.original_invoice)
-    if (route().current() === 'grp.org.fulfilments.show.operations.invoices.show.refunds.show') {
+    if (['grp.org.shops.show.dashboard.invoices.refunds.show', 'grp.org.shops.show.dashboard.invoices.show.refunds.show'].includes(route().current())) {
+        return route('grp.org.shops.show.dashboard.invoices.show', {
+            organisation: (route().params as RouteParams).organisation,
+            shop: (route().params as RouteParams).shop,
+            invoice: props.original_invoice.slug
+
+        });
+    } else if (route().current() === 'grp.org.fulfilments.show.operations.invoices.show.refunds.show') {
         return route('grp.org.fulfilments.show.operations.invoices.show', {
             organisation: (route().params as RouteParams).organisation,
             fulfilment: (route().params as RouteParams).fulfilment,

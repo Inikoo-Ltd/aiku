@@ -29,7 +29,16 @@ defineProps<{
 const locale = useLocaleStore();
 
 function invoiceRoute(invoice: Invoice) {
+  'grp.org.shops.show.dashboard.invoices.index'
+  'grp.org.shops.show.dashboard.invoices.show'
   switch (route().current()) {
+    case "grp.org.shops.show.dashboard.invoices.index":
+      return route(
+        "grp.org.shops.show.dashboard.invoices.show", {
+          organisation: invoice.organisation_slug,
+          shop: invoice.shop_slug,
+          invoice: invoice.slug
+        });
     case "shops.show.invoices.index":
       return route(
         "shops.show.invoices.show",

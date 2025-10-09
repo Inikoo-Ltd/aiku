@@ -26,11 +26,11 @@ defineProps<{
 
 const locale = useLocaleStore();
 
-console.log(route().current())
 
 function refundRoute(refund: Invoice) {
 
     switch (route().current()) {
+      case 'grp.org.accounting.invoices.show':
       case 'grp.overview.accounting.refunds.index':
       case 'grp.org.accounting.refunds.index':
         return route(
@@ -39,6 +39,7 @@ function refundRoute(refund: Invoice) {
             refund.organisation_slug,
             refund.slug
           ])
+      case 'grp.org.shops.show.dashboard.invoices.show':
       case 'grp.org.shops.show.dashboard.invoices.refunds.index':
         return route(
           'grp.org.shops.show.dashboard.invoices.refunds.show',
