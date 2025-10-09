@@ -8,7 +8,6 @@
 
 namespace App\Actions\Web\Announcement\UI;
 
-
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Http\Resources\Web\BannerResource;

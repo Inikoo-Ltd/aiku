@@ -283,6 +283,15 @@ use App\Actions\UI\Notification\MarkAllNotificationAsRead;
 use App\Actions\UI\Notification\MarkNotificationAsRead;
 use App\Actions\UI\Profile\GetProfileAppLoginQRCode;
 use App\Actions\UI\Profile\UpdateProfile;
+use App\Actions\Web\Announcement\CloseAnnouncement;
+use App\Actions\Web\Announcement\DeleteAnnouncement;
+use App\Actions\Web\Announcement\PublishAnnouncement;
+use App\Actions\Web\Announcement\ResetAnnouncement;
+use App\Actions\Web\Announcement\StartAnnouncement;
+use App\Actions\Web\Announcement\StoreAnnouncement;
+use App\Actions\Web\Announcement\ToggleAnnouncement;
+use App\Actions\Web\Announcement\UpdateAnnouncement;
+use App\Actions\Web\Announcement\UploadImagesToAnnouncement;
 use App\Actions\Web\Banner\DeleteBanner;
 use App\Actions\Web\Banner\PublishBanner;
 use App\Actions\Web\Banner\SetSnapshotToBanner;
@@ -702,6 +711,20 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
             Route::delete('', DeleteBanner::class)->name('delete')->withoutScopedBindings();
             Route::patch('shutdown', ShutdownBanner::class)->name('shutdown')->withoutScopedBindings();
             Route::patch('switch-on', PublishBanner::class)->name('switch-on')->withoutScopedBindings();
+        });
+    });
+
+    Route::prefix('website/{website:id}')->name('website.')->group(function () {
+        Route::prefix('announcements')->name('announcement.')->group(function () {
+            Route::post('upload-images', UploadImagesToAnnouncement::class)->name('upload-images.store');
+            Route::post('/', StoreAnnouncement::class)->name('store');
+            Route::patch('{announcement}/publish', PublishAnnouncement::class)->name('publish');
+            Route::patch('{announcement}', UpdateAnnouncement::class)->name('update');
+            Route::delete('{announcement}/reset', ResetAnnouncement::class)->name('reset');
+            Route::patch('{announcement}/close', CloseAnnouncement::class)->name('close');
+            Route::patch('{announcement}/start', StartAnnouncement::class)->name('start');
+            Route::patch('{announcement}/toggle', ToggleAnnouncement::class)->name('toggle');
+            Route::delete('{announcement}', DeleteAnnouncement::class)->name('delete');
         });
     });
 
