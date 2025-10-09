@@ -306,16 +306,16 @@ class ShowRefund extends OrgAction
                     $refund->organisation->slug,
                     $refund->originalInvoice->slug
                 ]
-            ] : [],
-            'original_order' => $refund->originalInvoice->order ? OrderResource::make($refund->originalInvoice->order) : null,
-            'original_order_route' => $refund->originalInvoice->order ? [
+            ] : null,
+            'original_order' => $refund->originalInvoice?->order ? OrderResource::make($refund->originalInvoice->order) : null,
+            'original_order_route' => $refund->originalInvoice?->order ? [
                 'name' => 'grp.org.shops.show.ordering.orders.show',
                 'parameters' => [
                     $refund->originalInvoice->order->organisation->slug,
                     $refund->originalInvoice->order->shop->slug,
                     $refund->originalInvoice->order->slug
                 ]
-            ] : [],
+            ] : null,
             'invoice_refund'   => RefundResource::make($refund),
 
 
