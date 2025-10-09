@@ -153,7 +153,7 @@ class IndexCustomersInPaymentAccount extends OrgAction
                     'title' => __('Customers').' ('.$this->paymentAccount->name.')',
                     'icon'          => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('customer')
+                        'title' => __('Customer')
                     ],
                 ],
                 'data'              => CustomersInPaymentAccountResource::collection($customers),

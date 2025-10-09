@@ -20,13 +20,17 @@ class IUnique implements ValidationRule
 
     public array $extraConditions;
 
-    public function __construct($table, $column = null, array $extraConditions = [])
+    protected ?string $message = null;
+
+    public function __construct($table, $column = null, array $extraConditions = [], ?string $message = null)
     {
         $this->table = $table;
 
         $this->column = $column;
 
         $this->extraConditions = $extraConditions;
+
+        $this->message = $message;
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void
@@ -73,7 +77,7 @@ class IUnique implements ValidationRule
         }
 
         if ($count->count() != 0) {
-            $fail('The :attribute has already been taken.');
+            $fail($this->message ?? 'The :attribute has already been taken.');
         }
     }
 }

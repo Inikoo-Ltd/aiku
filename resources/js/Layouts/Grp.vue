@@ -22,8 +22,8 @@ import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import Notification from "@/Components/Utils/Notification.vue"
 import { faStackOverflow, faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import {
-    faPoll, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear,
-    faParking, faBoxCheck,
+    faPoll, faPhotoVideo, faBrowser, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear,
+    faParking, faSeedling, faBoxCheck,
     faUsers, faShoppingBasket, faLayerGroup, faInboxOut,
     faTachometerAltFast,
     faGlobe,
@@ -42,7 +42,7 @@ import {
     faSmile
 } from "@fal"
 import { faSearch, faBell } from "@far"
-import { faAsterisk as fasAsterisk, faExclamation, faInfo, faPlay, faGlobe as fasGlobe } from "@fas"
+import { faAsterisk as fasAsterisk, faBoxHeart, faExclamation, faInfo, faPlay, faGlobe as fasGlobe, faStar } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -50,7 +50,7 @@ import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 
-library.add(faOctopusDeploy, faPoll, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
+library.add(faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
 
 provide("layout", useLayoutStore())
 provide("locale", useLocaleStore())
@@ -124,12 +124,12 @@ const setColorStyleRoot = () => {
     root.style.setProperty('--grp-color-primary', layout?.app?.theme?.[0])
     root.style.setProperty('--grp-color-secondary', layout?.app?.theme?.[2])
     
-    root.style.setProperty('--grp-color-0', layout?.app?.theme?.[0])  // var(--grp-color-0)
-    root.style.setProperty('--grp-color-1', layout?.app?.theme?.[1])
-    root.style.setProperty('--grp-color-2', layout?.app?.theme?.[2])
-    root.style.setProperty('--grp-color-3', layout?.app?.theme?.[3])
-    root.style.setProperty('--grp-color-4', layout?.app?.theme?.[4])
-    root.style.setProperty('--grp-color-5', layout?.app?.theme?.[5])
+    root.style.setProperty('--theme-color-0', layout?.app?.theme?.[0])  // var(--theme-color-0)
+    root.style.setProperty('--theme-color-1', layout?.app?.theme?.[1])
+    root.style.setProperty('--theme-color-2', layout?.app?.theme?.[2])
+    root.style.setProperty('--theme-color-3', layout?.app?.theme?.[3])
+    root.style.setProperty('--theme-color-4', layout?.app?.theme?.[4])
+    root.style.setProperty('--theme-color-5', layout?.app?.theme?.[5])
 }
 
 onMounted(() => {

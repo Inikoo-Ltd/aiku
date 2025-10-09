@@ -46,19 +46,19 @@ class CreateTag extends OrgAction
         return Inertia::render(
             'CreateModel',
             [
-                'title'    => __('new tag'),
+                'title'    => __('New tag'),
                 'icon'     =>
                     [
                         'icon'  => ['fal', 'fa-box'],
                         'title' => __('Tag')
                     ],
                 'pageHead' => [
-                    'title'        => __('new Tag'),
+                    'title'        => __('New Tag'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => str_replace('create', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -69,7 +69,7 @@ class CreateTag extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('new Tag'),
+                            'title'  => __('New Tag'),
                             'fields' => [
                                 'name' => [
                                     'type'     => 'input',

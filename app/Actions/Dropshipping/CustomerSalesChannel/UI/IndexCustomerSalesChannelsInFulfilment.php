@@ -76,7 +76,7 @@ class IndexCustomerSalesChannelsInFulfilment extends OrgAction
         $title         = $this->parent->customer->name;
         $iconRight     = [
             'icon'  => ['fal', 'fa-user-friends'],
-            'title' => __('channels')
+            'title' => __('Channels')
         ];
         $afterTitle    = [
 

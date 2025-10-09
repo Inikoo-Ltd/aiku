@@ -27,6 +27,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
             ->where('shop_id', $shop->id)
             ->where('state', ProductCategoryStateEnum::ACTIVE->value)
             ->whereNotNull('webpage_id')
+            ->whereNull('deleted_at')
             ->select('id', 'name', 'url')
             ->get();
 
@@ -44,6 +45,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
                 ->where('department_id', $department->id)
                 ->where('state', ProductCategoryStateEnum::ACTIVE->value)
                 ->whereNotNull('webpage_id')
+                ->whereNull('deleted_at')
                 ->select('id', 'name', 'url')
                 ->limit(10)
                 ->get();

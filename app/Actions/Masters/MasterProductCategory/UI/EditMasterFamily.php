@@ -18,6 +18,7 @@ use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 
 class EditMasterFamily extends OrgAction
 {
@@ -77,10 +78,15 @@ class EditMasterFamily extends OrgAction
 
         }
 
-        // dd($masterProductCategory->masterDepartment->id);
         return Inertia::render(
             'EditModel',
             [
+                'warning' => $masterProductCategory->productCategories ? [
+                    'type'  =>  'warning',
+                    'title' =>  'warning',
+                    'text'  =>  __('Changing name or description may affect multiple families in various shops.'),
+                    'icon'  => ['fas', 'fa-exclamation-triangle']
+                ] : null,
                  'breadcrumbs' => $this->getBreadcrumbs(
                      $this->parent,
                      $masterProductCategory,
@@ -89,12 +95,11 @@ class EditMasterFamily extends OrgAction
                  ),
                 'title'       => __('Edit Master Family'),
                 'pageHead'    => [
-                    'title'   => __('edit master family'),
+                    'title'   => __('Edit master family'),
                     'actions' => [
                         [
                             'type'  => 'button',
-                            'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'style' => 'exitEdit',
                             'route' => [
                                 'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -105,14 +110,20 @@ class EditMasterFamily extends OrgAction
                 'formData'    => [
                     'blueprint' => [
                         [
-                            'label'  => __('Name/Description'),
-                            'icon'   => 'fa-light fa-tag',
+                            'label'  => __('Id'),
+                            'icon'   => 'fa-light fa-fingerprint',
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
                                     'label' => __('code'),
                                     'value' => $masterProductCategory->code
                                 ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Name/Description'),
+                            'icon'   => 'fa-light fa-tag',
+                            'fields' => [
                                 'name' => [
                                     'type'  => 'input',
                                     'label' => __('name'),
@@ -130,9 +141,69 @@ class EditMasterFamily extends OrgAction
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $masterProductCategory->description_extra
                                 ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Translations'),
+                            'icon'   => 'fa-light fa-language',
+                            'fields' => [
+                                'name_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate name'),
+                                    'language_from' => 'en',
+                                    'full' => true,
+                                    'main' => $masterProductCategory->name,
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('name_i8n')
+                                ],
+                                'description_title_i8n' => [
+                                    'type'  => 'input_translation',
+                                    'label' => __('translate description title'),
+                                    'language_from' => 'en',
+                                    'full' => true,
+                                    'main' => $masterProductCategory->description_title,
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_title_i8n')
+                                ],
+                                'description_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description'),
+                                    'language_from' => 'en',
+                                    'full' => true,
+                                    'main' => $masterProductCategory->description,
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_i8n')
+                                ],
+                                'description_extra_i8n' => [
+                                    'type'  => 'textEditor_translation',
+                                    'label' => __('translate description extra'),
+                                    'language_from' => 'en',
+                                    'full' => true,
+                                    'main' => $masterProductCategory->description_extra,
+                                    'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($masterProductCategory->group->extra_languages),
+                                    'value' => $masterProductCategory->getTranslations('description_extra_i8n')
+                                ],
+                            ]
+                        ],
+                        [
+                            'label'  => __('Pricing'),
+                            'title'  => __('id'),
+                            'icon'   => 'fa-light fa-money-bill',
+                            'fields' => [
+                                'cost_price_ratio' => [
+                                    'type'          => 'input_number',
+                                    'bind' => [
+                                        'maxFractionDigits' => 3
+                                    ],
+                                    'label'         => __('pricing ratio'),
+                                    'placeholder'   => __('Cost price ratio'),
+                                    'required'      => true,
+                                    'value'         => $masterProductCategory->cost_price_ratio,
+                                    'min'           => 0
+                                ]
                             ]
                         ],
                         [
@@ -155,34 +226,38 @@ class EditMasterFamily extends OrgAction
                             'label'  => __('Parent').' ('.__('Department/Sub-Department').')',
                             'icon'   => 'fa-light fa-folder-tree',
                             'fields' => [
-                                'department_id'  =>  [
+                                'master_department_or_master_sub_department_id'  =>  [
                                     'type'    => 'select_infinite',
-                                    'label'   => __('Master Department'),
+                                    'label'   => __('Parent'),
                                     'options'   => [
-                                        [
-                                            'id' => $masterProductCategory->masterDepartment?->id,
-                                            'code' => $masterProductCategory->masterDepartment?->code
-                                        ]
+                                            [
+                                                'id' =>  $masterProductCategory->masterSubDepartment->id ?? $masterProductCategory->masterDepartment->id  ?? null,
+                                                'code' =>  $masterProductCategory->masterSubDepartment->code ?? $masterProductCategory->masterDepartment->code  ?? null,
+                                                'type' => $masterProductCategory->masterSubDepartment->type ?? $masterProductCategory->masterDepartment->type  ?? null,
+                                            ]
                                     ],
                                     'fetchRoute'    => [
-                                        'name'       => 'grp.masters.master_shops.show.master_departments.index',
+                                        'name'       => 'grp.json.master_shop.master_departments_and_sub_departments',
                                         'parameters' => [
                                             'masterShop' => $masterProductCategory->masterShop->slug,
                                         ]
                                     ],
+                                    'required' => true,
                                     'valueProp' => 'id',
+                                    'type_label' => 'department-and-sub-department',
                                     'labelProp' => 'code',
-                                    'required' => false,
-                                    'value'   => $masterProductCategory->masterDepartment->id ?? null,
-                                ]
+                                    'value'   => $masterProductCategory->masterSubDepartment->id ?? $masterProductCategory->masterDepartment->id  ?? null,
+                                ],
+
+
+
                             ],
 
                         ],
-
                     ],
                     'args'      => [
                         'updateRoute' => [
-                            'name' => 'grp.models.master_product.update',
+                            'name' => 'grp.models.master_product_category.update',
                             'parameters' => [
                                 'masterProductCategory' => $masterProductCategory->id
                             ]

@@ -25,7 +25,7 @@ enum DispatchHubTabsEnum: string
     {
         return match ($this) {
             DispatchHubTabsEnum::DASHBOARD => [
-                'title' => __('dashboard'),
+                'title' => __('Dashboard'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

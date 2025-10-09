@@ -12,36 +12,30 @@ use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\UpdateTransaction;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
+use App\Models\Billables\ShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Ordering\Order;
-use App\Models\Ordering\ShippingZone;
-use App\Models\Ordering\ShippingZoneSchema;
 use App\Models\Ordering\Transaction;
 use CommerceGuys\Addressing\Address;
 use CommerceGuys\Addressing\Zone\Zone;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\Concerns\AsObject;
+use Lorisleiva\Actions\Concerns\AsAction;
 
 class CalculateOrderShipping
 {
-    use AsObject;
+    use AsAction;
 
     protected bool $toBeConfirmed = false;
 
     public function handle(Order $order, $discount = false): Order
     {
-
-
-
         if (in_array($order->shipping_engine, [OrderShippingEngineEnum::MANUAL, OrderShippingEngineEnum::NO_APPLICABLE, OrderShippingEngineEnum::TO_BE_CONFIRMED_SET])) {
             return $order;
         }
 
 
         if ($order->stats->number_item_transactions == 0) {
-
-
-
             DB::table('transactions')->where('order_id', $order->id)
                 ->where('model_type', 'ShippingZone')
                 ->delete();
@@ -50,6 +44,7 @@ class CalculateOrderShipping
             ]);
             CalculateOrderTotalAmounts::run($order, false);
             OrderHydrateTransactions::dispatch($order);
+
             return $order;
         }
 
@@ -63,9 +58,14 @@ class CalculateOrderShipping
 
         if (!$shippingZoneSchema) {
             if ($order->shipping_engine == OrderShippingEngineEnum::AUTO) {
-                $order->update([
-                    'shipping_engine' => OrderShippingEngineEnum::MANUAL,
-                ]);
+                UpdateOrder::run(
+                    $order,
+                    [
+                        'shipping_engine'         => OrderShippingEngineEnum::MANUAL,
+                        'shipping_zone_schema_id' => null,
+                        'shipping_zone_id'        => null,
+                    ]
+                );
             }
 
             return $order;
@@ -77,6 +77,10 @@ class CalculateOrderShipping
             $shippingAmount = 0;
         }
 
+        if ($order->collection_address_id) {
+            $shippingAmount = 0;
+        }
+
         $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
         if ($shippingTransaction) {
             $this->updateShippingTransaction($shippingTransaction, $shippingZone, $shippingAmount);
@@ -84,6 +88,14 @@ class CalculateOrderShipping
             $this->storeShippingTransaction($order, $shippingZone, $shippingAmount);
         }
 
+
+        UpdateOrder::run(
+            $order,
+            [
+                'shipping_zone_schema_id' => $shippingZoneSchema->id,
+                'shipping_zone_id'        => $shippingZone->id,
+            ]
+        );
 
 
         if ($this->toBeConfirmed) {
@@ -101,8 +113,6 @@ class CalculateOrderShipping
 
     private function storeShippingTransaction(Order $order, ShippingZone $shippingZone, $shippingAmount): Transaction
     {
-
-
         return StoreTransaction::run(
             $order,
             $shippingZone->historicAsset,
@@ -115,7 +125,6 @@ class CalculateOrderShipping
             false
         );
     }
-
 
     private function updateShippingTransaction(Transaction $transaction, ShippingZone $shippingZone, $shippingAmount): Transaction
     {
@@ -132,7 +141,6 @@ class CalculateOrderShipping
         );
     }
 
-
     private function getShippingAmountAndShippingZone(Order $order, ShippingZoneSchema $shippingZoneSchema): array
     {
         $shippingZones = $shippingZoneSchema->shippingZones()->where('status', true)->orderBy('position', 'desc')->get();
@@ -147,7 +155,6 @@ class CalculateOrderShipping
 
         return [null, null];
     }
-
 
     private function getShippingAmountFromShippingZone(Order $order, ShippingZone $shippingZone)
     {
@@ -180,7 +187,6 @@ class CalculateOrderShipping
         return null;
     }
 
-
     private function matchTerritories(Order $order, ShippingZone $shippingZone): bool
     {
         if (!$shippingZone->territories) {
@@ -201,4 +207,6 @@ class CalculateOrderShipping
 
         return $helperZone->match($helperAddress);
     }
+
+
 }

@@ -81,7 +81,7 @@ class ShowPaymentAccount extends OrgAction
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'fa-money-check-alt'],
-                            'title' => __('payment account')
+                            'title' => __('Payment account')
                         ],
                     'title'         => $paymentAccount->name,
                     'create'        => $this->canEdit

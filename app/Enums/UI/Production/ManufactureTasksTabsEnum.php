@@ -23,11 +23,11 @@ enum ManufactureTasksTabsEnum: string
     {
         return match ($this) {
             ManufactureTasksTabsEnum::MANUFACTURE_TASKS => [
-                'title' => __('tasks'),
+                'title' => __('Tasks'),
                 'icon'  => 'fal fa-bars',
             ],
             ManufactureTasksTabsEnum::MANUFACTURE_TASKS_HISTORIES => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

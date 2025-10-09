@@ -10,13 +10,13 @@
 namespace App\Actions\Accounting\InvoiceCategory\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\LaravelOptions\Options;
+use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 
 class EditInvoiceCategory extends OrgAction
 {
@@ -30,14 +30,14 @@ class EditInvoiceCategory extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('edit invoice category'),
+                'title'    => __('Edit invoice category'),
                 'pageHead' => [
-                    'title'        => __('edit invoice category'),
+                    'title'        => __('Edit invoice category'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.accounting.invoice-categories.show',
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -58,13 +58,13 @@ class EditInvoiceCategory extends OrgAction
                                         'value'   => $invoiceCategory->name,
                                         'required' => true,
                                     ],
-                                    'type' => [
-                                        'type'     => 'select',
-                                        'label'    => __('type'),
+                                    'state' => [
+                                        'type'     => 'radio',
+                                        'label'    => __('state'),
+                                        'value'    => $invoiceCategory->state,
+                                        'options'  => Options::forEnum(InvoiceCategoryStateEnum::class),
                                         'required' => true,
-                                        'value'    => $invoiceCategory->type,
-                                        'options'  => Options::forEnum(InvoiceCategoryTypeEnum::class),
-                                        'required' => true,
+                                        'columns'  => 1
                                     ],
                                 ]
                             ]

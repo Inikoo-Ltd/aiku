@@ -21,9 +21,9 @@ use Lorisleiva\Actions\ActionRequest;
 
 class RollbackDispatchedOrder extends OrgAction
 {
-    public function handle(Order $order): void
+    public function handle(Order $order, $fromDeliveryNote = false): void
     {
-        if ($order->deliveryNotes) {
+        if ($order->deliveryNotes && !$fromDeliveryNote) {
             foreach ($order->deliveryNotes as $deliveryNote) {
                 if ($deliveryNote->state == DeliveryNoteStateEnum::DISPATCHED) {
                     UpdateDeliveryNote::make()->action($deliveryNote, [
@@ -45,13 +45,14 @@ class RollbackDispatchedOrder extends OrgAction
 
         if ($order->state == OrderStateEnum::DISPATCHED) {
             $order = UpdateOrder::make()->action($order, [
-                'state' => OrderStateEnum::FINALISED,
-                'dispatched_at' => null
+                'state' => $order->invoices()->exists() ? OrderStateEnum::FINALISED : OrderStateEnum::PACKED,
+                'dispatched_at' => null,
+                'finalised_at' => null
             ]);
             foreach ($order->transactions as $transaction) {
                 if ($transaction->state == TransactionStateEnum::DISPATCHED) {
                     UpdateTransaction::make()->action($transaction, [
-                        'state' => TransactionStateEnum::FINALISED,
+                        'state' =>  $order->invoices()->exists() ? TransactionStateEnum::FINALISED : TransactionStateEnum::PACKED,
                     ]);
                 }
             }
@@ -63,5 +64,12 @@ class RollbackDispatchedOrder extends OrgAction
         $this->initialisationFromShop($order->shop, $request);
 
         $this->handle($order);
+    }
+
+    public function action(Order $order, $fromDeliveryNote = false): void
+    {
+        $this->initialisationFromShop($order->shop, []);
+
+        $this->handle($order, $fromDeliveryNote);
     }
 }

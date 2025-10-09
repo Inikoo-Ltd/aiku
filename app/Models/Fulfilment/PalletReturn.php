@@ -14,7 +14,6 @@ use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
 use App\Models\Dispatching\Shipment;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
@@ -35,7 +34,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
@@ -99,6 +97,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $deleted_by
  * @property array<array-key, mixed>|null $parcels
  * @property int|null $customer_sales_channel_id
+ * @property int|null $shipping_zone_schema_id
+ * @property int|null $shipping_zone_id
  * @property PalletReturnItemNoSetReasonStateEnum $not_setup_reason
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
@@ -120,7 +120,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Helpers\RetinaSearch|null $retinaSearch
  * @property-read SalesChannel|null $salesChannel
  * @property-read Collection<int, Shipment> $shipments
- * @property-read ShopifyUserHasFulfilment|null $shopifyFulfilment
  * @property-read \App\Models\Fulfilment\PalletReturnStats|null $stats
  * @property-read Collection<int, \App\Models\Fulfilment\StoredItem> $storedItems
  * @property-read TaxCategory $taxCategory
@@ -271,11 +270,6 @@ class PalletReturn extends Model implements HasMedia
     public function salesChannel(): BelongsTo
     {
         return $this->belongsTo(SalesChannel::class);
-    }
-
-    public function shopifyFulfilment(): MorphOne
-    {
-        return $this->morphOne(ShopifyUserHasFulfilment::class, 'model');
     }
 
     public function items(): HasMany

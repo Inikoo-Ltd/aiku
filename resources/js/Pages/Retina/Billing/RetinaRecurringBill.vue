@@ -62,7 +62,7 @@ const component = computed(() => {
                 :class="[status_rb === 'current' ? 'bg-green-100 ring-1 ring-green-500 text-green-700' : 'bg-gray-200 ring-1 ring-gray-500 text-gray-700']"
             >
                 <div class="text-xs">Status</div>
-                <div class="font-semibold capitalize">{{ status_rb }}</div>
+                <div class="font-semibold">{{ status_rb }}</div>
             </div>
         </div>
         <div class="py-1 px-3 flex items-center">

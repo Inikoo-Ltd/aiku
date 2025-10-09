@@ -15,145 +15,158 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-
+import { router } from "@inertiajs/vue3"
 import {
-	faMicrophoneAltSlash,
-	faImage,
-	faTag,
-	faBrowser,
-	faPowerOff,
-	faDoorClosed,
-	faUserLock,
-	faEnvelope,
-	faShoePrints,
-	faShoppingBag,
-	faBell,
-	faCopyright,
-	faUserCircle,
-	faMobileAndroidAlt,
-	faKey,
-	faClone,
-	faPaintBrush,
-	faMoonStars,
-	faLightbulbOn,
-	faCheck,
-	faPhone,
-	faIdCard,
-	faFingerprint,
-	faLanguage,
-	faAddressBook,
-	faTrashAlt,
-	faSlidersH,
-	faCog,
-	faFlagCheckered,
-	faBracketsCurly,
-	faFileInvoice,
-	faTransporter,
-	faCode,
-	faExchange,
-	faBoxes,
-	faAtom
+    faMicrophoneAltSlash,
+    faImage,
+    faTag,
+    faBrowser,
+    faPowerOff,
+    faDoorClosed,
+    faUserLock,
+    faEnvelope,
+    faShoePrints,
+    faShoppingBag,
+    faBell,
+    faCopyright,
+    faUserCircle,
+    faMobileAndroidAlt,
+    faKey,
+    faClone,
+    faPaintBrush,
+    faMoonStars,
+    faLightbulbOn,
+    faCheck,
+    faPhone,
+    faIdCard,
+    faFingerprint,
+    faLanguage,
+    faAddressBook,
+    faTrashAlt,
+    faSlidersH,
+    faCog,
+    faFlagCheckered,
+    faBracketsCurly,
+    faFileInvoice,
+    faTransporter,
+    faCode,
+    faExchange,
+    faBoxes,
+    faAtom,
+    faMoneyBill,
 } from "@fal"
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
+import { faExclamationTriangle } from "@fas"
 import { faBan } from "@far"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
-import { router } from "@inertiajs/vue3"
+import Message from 'primevue/message';
 
 library.add(
-	faAtom,
-	faTag,
-	faMicrophoneAltSlash,
-	faImage,
-	faBan,
-	faEnvelope,
-	faPowerOff,
-	faShoePrints,
-	faShoppingBag,
-	faBrowser,
-	faUserLock,
-	faBell,
-	faCopyright,
-	faUserCircle,
-	faMobileAndroidAlt,
-	faKey,
-	faClone,
-	faPaintBrush,
-	faExchange,
-	faMoonStars,
-	faLightbulbOn,
-	faCheck,
-	faPhone,
-	faIdCard,
-	faFingerprint,
-	faLanguage,
-	faAddressBook,
-	faTrashAlt,
-	faSlidersH,
-	faCog,
-	faGoogle,
-	faFlagCheckered,
-	faBracketsCurly,
-	faFileInvoice,
-	faTransporter,
-	faCode,
-	faDoorClosed,
-	faBoxes
+    faOctopusDeploy,
+    faExclamationTriangle,
+    faAtom,
+    faTag,
+    faMicrophoneAltSlash,
+    faImage,
+    faBan,
+    faEnvelope,
+    faPowerOff,
+    faShoePrints,
+    faShoppingBag,
+    faBrowser,
+    faUserLock,
+    faBell,
+    faCopyright,
+    faUserCircle,
+    faMobileAndroidAlt,
+    faKey,
+    faClone,
+    faPaintBrush,
+    faExchange,
+    faMoonStars,
+    faLightbulbOn,
+    faCheck,
+    faPhone,
+    faIdCard,
+    faFingerprint,
+    faLanguage,
+    faAddressBook,
+    faTrashAlt,
+    faSlidersH,
+    faCog,
+    faGoogle,
+    faFlagCheckered,
+    faBracketsCurly,
+    faFileInvoice,
+    faTransporter,
+    faCode,
+    faDoorClosed,
+    faBoxes,
+    faMoneyBill
 )
 
 const props = defineProps<{
-	title: string
-	pageHead: {
-		title: string
-		exitEdit: {
-			route: {
-				name: string
-				parameters: string[]
-			}
-		}
-	}
-	formData: {
-		current?: string
-		blueprint: {
-			[key: string]: {
-				// sectionData
-				label: string
-				title: string
-				subtitle?: string
-				information?: string // Tooltip information
-				icon: string
-				fields: {
-					// FieldData
-					name: string
-					type: string
-					label: string
-					value: string | object
-					icon?: string
-					action?: {
-						data?: any
-						method?: string
-					}
-				}
-				button: {
-					title: string
-					route: string
-					disable: boolean
-				}
-			}
-		}
-		fullLayout: boolean
-		args: {
-			updateRoute: routeType
-		}
-		title?: string
-	}
+    title: string
+    warning?: {
+        text: string
+        title: string
+        icon: string
+        type: string
+    }
+    pageHead: {
+        title: string
+        exitEdit: {
+            route: {
+                name: string
+                parameters: string[]
+            }
+        }
+    }
+    formData: {
+        current?: string
+        blueprint: {
+            [key: string]: {
+                // sectionData
+                label: string
+                title: string
+                subtitle?: string
+                information?: string // Tooltip information
+                icon: string
+                fields: {
+                    // FieldData
+                    name: string
+                    type: string
+                    label: string
+                    value: string | object
+                    icon?: string
+                    action?: {
+                        data?: any
+                        method?: string
+                    }
+                }
+                button: {
+                    title: string
+                    route: string
+                    disable: boolean
+                }
+            }
+        }
+        fullLayout: boolean
+        args: {
+            updateRoute: routeType
+        }
+        title?: string
+    }
 }>()
 
-
+const paramsSection = route().params['section'] || 0
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
 const currentTab = ref<string | number>(
-	props.formData?.current || parseInt(Object.keys(props.formData?.blueprint)[0])
-) // if formData.current not exist, take first navigation
+    props.formData?.current || paramsSection
+)
+ // if formData.current not exist, take first navigation
 const _buttonRefs = ref([]) // For click linked to Navigation
 const isMobile = ref(false)
 const tabActive: any = ref({})
@@ -161,64 +174,65 @@ const fieldGroupAnimateSection = ref()
 const _fieldForm = ref()
 
 const updateViewportWidth = () => {
-	isMobile.value = window.innerWidth <= 768
+    isMobile.value = window.innerWidth <= 768
 }
 
 const handleIntersection = (element: Element, index: number) => (entries) => {
-	const [entry] = entries
-	tabActive.value[`${index}`] = entry.isIntersecting
+    const [entry] = entries
+    tabActive.value[`${index}`] = entry.isIntersecting
 }
 
 const switchTab = (key: string) => {
-	currentTab.value = key
+    currentTab.value = key
+    console.log(key)
 
-	// Update URL with query parameter
-	router.visit('' , {
-		data: {
-			// ...route().params, // Keep existing route parameters
-			// section: props.formData.blueprint[key].label.toLowerCase()      // Add section query parameter
-			section: key
-		},
-		preserveState: true,
-		replace: true,
-		only: [] // Don't reload any data, just update URL
-	})
+    // Update URL with query parameter
+    router.visit('', {
+        data: {
+            // ...route().params, // Keep existing route parameters
+            // section: props.formData.blueprint[key].label.toLowerCase()      // Add section query parameter
+            section: key
+        },
+        preserveState: true,
+        replace: true,
+        only: [] // Don't reload any data, just update URL
+    })
 }
 
 onMounted(() => {
-	updateViewportWidth()
-	window.addEventListener("resize", updateViewportWidth)
+    updateViewportWidth()
+    window.addEventListener("resize", updateViewportWidth)
 
-	// Animate the selected section
-	route().v().query?.section
-		? ((currentTab.value = getLodash(route().v().query, "section")),
-		  setTimeout(() => {
-				fieldGroupAnimateSection.value = ["bg-yellow-500/20"]
-				setTimeout(() => {
-					fieldGroupAnimateSection.value = []
-				}, 600)
-		  }, 100))
-		: ""
+    // Animate the selected section
+    route().v().query?.section
+        ? ((currentTab.value = getLodash(route().v().query, "section")),
+            setTimeout(() => {
+                fieldGroupAnimateSection.value = ["bg-yellow-500/20"]
+                setTimeout(() => {
+                    fieldGroupAnimateSection.value = []
+                }, 600)
+            }, 100))
+        : ""
 
-	// To indicate active state that on viewport
-	_buttonRefs.value.forEach((element: any, index: number) => {
-		const observer = new IntersectionObserver(handleIntersection(element, index))
-		observer.observe(element)
+    // To indicate active state that on viewport
+    _buttonRefs.value.forEach((element: any, index: number) => {
+        const observer = new IntersectionObserver(handleIntersection(element, index))
+        observer.observe(element)
 
-		// Clean up the observer when the component is unmounted
-		element.cleanupObserver = () => {
-			observer.disconnect()
-		}
-	})
+        // Clean up the observer when the component is unmounted
+        element.cleanupObserver = () => {
+            observer.disconnect()
+        }
+    })
 
-	// Clean up all the observers when the component is unmounted
-	return () => {
-		_buttonRefs.value.forEach((button: any) => button.cleanupObserver())
-	}
+    // Clean up all the observers when the component is unmounted
+    return () => {
+        _buttonRefs.value.forEach((button: any) => button.cleanupObserver())
+    }
 })
 
 onBeforeUnmount(() => {
-	window.removeEventListener("resize", updateViewportWidth)
+    window.removeEventListener("resize", updateViewportWidth)
 })
 
 // Error
@@ -228,17 +242,61 @@ onBeforeUnmount(() => {
 // const messageError = splitError?.[2]
 
 function connectToPlatform(routeName, parameters) {
-	axios.post(route(routeName, parameters)).then((response) => {
-		window.location.href = response.data
-	})
+    axios.post(route(routeName, parameters)).then((response) => {
+        window.location.href = response.data
+    })
+}
+
+const showWarningMessage = ref(true)
+
+const severityMap: Record<string, string> = {
+  warning: "warn",
+  success: "success",
+  info: "info",
+  error: "error"
+}
+
+const getSeverity = (type?: string) => {
+  return type ? severityMap[type.toLowerCase()] || "info" : "info"
 }
 </script>
+
 
 <template>
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
+    <div v-if="warning && showWarningMessage">
+        <Message v-if="warning && showWarningMessage" :severity="getSeverity(warning.type)" :closable="true"
+            @close="showWarningMessage = false">
+            <div class="flex items-start gap-3">
+                <!-- Icon -->
+                <FontAwesomeIcon v-if="warning.icon" :icon="warning.icon" class="w-4 h-4 flex-shrink-0 mt-0.5" :class="[
+                    getSeverity(warning.type) === 'warn' ? 'text-yellow-800' :
+                        getSeverity(warning.type) === 'success' ? 'text-green-800' :
+                            getSeverity(warning.type) === 'error' ? 'text-red-800' :
+                                'text-blue-500'
+                ]" />
+
+                <!-- Content -->
+                <div class="flex flex-col">
+                    <div class="text-sm font-semibold">
+                        {{ warning?.title }}
+                    </div>
+                    <div v-if="warning?.text" :class="[
+                        getSeverity(warning.type) === 'warn' ? 'text-yellow-500' :
+                            getSeverity(warning.type) === 'success' ? 'text-green-500' :
+                                getSeverity(warning.type) === 'error' ? 'text-red-500' :
+                                    'text-blue-500'
+                    ]" class="text-xs ">
+                        {{ warning?.text }}
+                    </div>
+                </div>
+            </div>
+        </Message>
+
+    </div>
     <!-- If overflow-hidden, affect to Multiselect on Address -->
     <div class="rounded-lg shadow">
         <div v-if="!isMobile"
@@ -317,24 +375,15 @@ function connectToPlatform(routeName, parameters) {
                                 :class="fieldGroupAnimateSection">
                                 <template v-for="(fieldData, fieldName, index) in sectionData.fields" :key="index">
                                     <!-- Field: is not hidden and skip price when TBC -->
-                                  
-                                    <div
-										v-if="!fieldData?.hidden && !( ['price','territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
-										class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0">
-                                       
-										<Action
-											v-if="fieldData.type === 'action'"
-											:action="fieldData.action"
-											:dataToSubmit="fieldData.action?.data" />
-										<FieldForm
-											v-else
-											:key="fieldName + index"
-											ref="_fieldForm"
-											:field="fieldName"
-											:fieldData="fieldData"
-											:args="formData.args"
-											:refForms="_fieldForm" />
-									</div>
+
+                                    <div v-if="!fieldData?.hidden && !( ['price','territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
+                                        class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0">
+
+                                        <Action v-if="fieldData.type === 'action'" :action="fieldData.action"
+                                            :dataToSubmit="fieldData.action?.data" />
+                                        <FieldForm v-else :key="fieldName + index" ref="_fieldForm" :field="fieldName"
+                                            :fieldData="fieldData" :args="formData.args" :refForms="_fieldForm" />
+                                    </div>
                                 </template>
                             </div>
                         </div>

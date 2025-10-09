@@ -67,7 +67,7 @@ const updateFormValue = (newValue) => {
                         :name="option.value" type="radio" :value="option.value" :checked="isEqual(value,option.value)"
                         class="h-4 w-4 border-gray-300 text-gray-600 focus:ring-0 focus:outline-none focus:ring-transparent cursor-pointer" />
                     <div class="flex items-center gap-x-1.5">
-                        <span v-if="option.label" class="font-light text-sm text-gray-400 capitalize">
+                        <span v-if="option.label" class="font-light text-sm text-gray-400">
                             {{ option.label }}
                         </span>
                     </div>

@@ -129,7 +129,7 @@ watch(isOpenModalCrop, (val) => {
             </div>
 
             <!-- Hover Actions -->
-            <label v-if="!imgAfterCrop?.original" for="input-avatar-large"
+            <label xv-if="!imgAfterCrop?.original" for="input-avatar-large"
                 class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-sm font-medium text-white opacity-0 hover:opacity-100 transition-opacity duration-200 cursor-pointer">
                 <span>{{ trans("Upload") }}</span>
                 <input id="input-avatar-large" type="file" accept="image/*"

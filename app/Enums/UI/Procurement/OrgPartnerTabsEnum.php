@@ -24,7 +24,7 @@ enum OrgPartnerTabsEnum: string
     {
         return match ($this) {
             OrgPartnerTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

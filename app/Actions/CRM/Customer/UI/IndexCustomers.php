@@ -242,8 +242,8 @@ class IndexCustomers extends OrgAction
                             'action'      => ($parent->type == ShopTypeEnum::FULFILMENT || $parent->type == ShopTypeEnum::DROPSHIPPING) ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new customer'),
-                                'label'   => __('customer'),
+                                'tooltip' => __('New customer'),
+                                'label'   => __('Customer'),
                                 'route'   => [
                                     'name'       => 'grp.org.shops.show.crm.customers.create',
                                     'parameters' => [
@@ -334,7 +334,7 @@ class IndexCustomers extends OrgAction
                     'title'         => __('customers'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('customer')
+                        'title' => __('Customer')
                     ],
                     'actions'       => $action,
                     'subNavigation' => $subNavigation,
@@ -344,6 +344,26 @@ class IndexCustomers extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation
                 ],
+
+                'download_route' => [
+                    'xlsx'   => [
+                        'name'       => 'grp.org.shops.show.crm.customers.export',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                            'shop' => $this->shop->slug,
+                            'type' => 'xlsx'
+                        ]
+                    ],
+                    'csv'    => [
+                        'name'       => 'grp.org.shops.show.crm.customers.export',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                            'shop' => $this->shop->slug,
+                            'type' => 'csv'
+                        ]
+                    ]
+                ],
+
                 CustomersTabsEnum::DASHBOARD->value => $this->tab == CustomersTabsEnum::DASHBOARD->value ?
                     fn () => GetCustomersDashboard::run($this->parent, $request)
                     : Inertia::lazy(fn () => GetCustomersDashboard::run($this->parent, $request)),

@@ -152,7 +152,7 @@ class IndexSpaces extends OrgAction
                 [
                     'type'  => 'button',
                     'style' => 'create',
-                    'label' => __('space'),
+                    'label' => __('Space'),
                     'route' => [
                         'name'       => 'grp.org.fulfilments.show.crm.customers.show.spaces.create',
                         'parameters' => array_values($request->route()->originalParameters())

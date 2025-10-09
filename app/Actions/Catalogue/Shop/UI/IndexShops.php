@@ -125,7 +125,7 @@ class IndexShops extends OrgAction
                     'action'      => [
                         'type'    => 'button',
                         'style'   => 'create',
-                        'tooltip' => __('new shop'),
+                        'tooltip' => __('New shop'),
                         'label'   => __('shop'),
                         'route'   => [
                             'name'       => 'grp.org.shops.create',
@@ -172,13 +172,13 @@ class IndexShops extends OrgAction
                     'title'   => __('shops'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-store-alt'],
-                        'title' => __('shop')
+                        'title' => __('Shop')
                     ],
                     'actions' => [
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new shop'),
+                            'tooltip' => __('New shop'),
                             'label'   => __('shop'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.create',

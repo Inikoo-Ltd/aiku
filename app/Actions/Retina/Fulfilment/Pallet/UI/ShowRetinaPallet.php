@@ -73,7 +73,7 @@ class ShowRetinaPallet extends RetinaAction
             [
                 'type'    => 'button',
                 'style'   => 'edit',
-                'tooltip' => __('edit pallet'),
+                'tooltip' => __('Edit pallet'),
                 'label'   => __('Edit'),
                 'route'   => [
                     'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
@@ -112,7 +112,7 @@ class ShowRetinaPallet extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPallet',
             [
-                'title'                         => __('goods'),
+                'title'                         => __('Goods'),
                 'breadcrumbs'                   => $this->getBreadcrumbs(
                     $pallet,
                     request()->route()->getName(),

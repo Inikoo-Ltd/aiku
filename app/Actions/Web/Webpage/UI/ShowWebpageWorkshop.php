@@ -74,7 +74,7 @@ class ShowWebpageWorkshop extends OrgAction
                         'label' => '../'.$webpage->url,
                     ],
                     'icon'       => [
-                        'title' => __('webpage'),
+                        'title' => __('Webpage'),
                         'icon'  => 'fal fa-browser'
                     ],
                     'iconRight'  => $webpage->state->stateIcon()[$webpage->state->value],
@@ -116,7 +116,7 @@ class ShowWebpageWorkshop extends OrgAction
         return ShowWebpage::make()->getBreadcrumbs(
             $routeName,
             $routeParameters,
-            suffix: '('.__('workshop').')'
+            suffix: '('.__('Workshop').')'
         );
     }
 

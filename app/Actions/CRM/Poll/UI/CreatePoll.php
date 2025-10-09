@@ -40,16 +40,16 @@ class CreatePoll extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'title'   => __('new poll'),
+                    'title'   => __('New poll'),
                     'icon'    => [
-                        'title' => __('polls'),
+                        'title' => __('Polls'),
                         'icon'  => 'fal fa-cube'
                     ],
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -61,7 +61,7 @@ class CreatePoll extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('new poll'),
+                            'title'  => __('New poll'),
                             'fields' => [
                                 'name'                     => [
                                     'type'     => 'input',

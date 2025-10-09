@@ -29,31 +29,31 @@ enum ProspectsTabsEnum: string
     {
         return match ($this) {
             ProspectsTabsEnum::DASHBOARD => [
-                'title' => __('dashboard'),
+                'title' => __('Dashboard'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],
 
             ProspectsTabsEnum::PROSPECTS => [
-                'title' => __('prospects'),
+                'title' => __('Prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
 
             ProspectsTabsEnum::CONTACTED => [
-                'title' => __('contacted prospects'),
+                'title' => __('Contacted prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
 
             ProspectsTabsEnum::FAILED => [
-                'title' => __('fail prospects'),
+                'title' => __('Fail prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
 
             ProspectsTabsEnum::SUCCESS => [
-                'title' => __('success prospects'),
+                'title' => __('Success prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
             ProspectsTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

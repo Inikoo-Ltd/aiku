@@ -23,8 +23,20 @@ trait WithFetchStock
     protected function processOrgStock(SourceOrganisationService $organisationSource, Stock $effectiveStock, array $stockData): OrgStock|null
     {
         $organisation = $organisationSource->getOrganisation();
+
+
+        $orgStock = $organisation->orgStocks()->where('source_id', $stockData['stock']['source_id'])->first();
+
+        if (!$orgStock) {
+            $code = $stockData['stock']['code'];
+            $orgStock = OrgStock::where('organisation_id', $organisation->id)
+                ->whereRaw('LOWER(code) = LOWER(?)', [$code])
+                ->first();
+        }
+
+
         /** @var OrgStock $orgStock */
-        if ($orgStock = $organisation->orgStocks()->where('source_id', $stockData['stock']['source_id'])->first()) {
+        if ($orgStock) {
             try {
                 return UpdateOrgStock::make()->action(
                     orgStock: $orgStock,

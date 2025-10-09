@@ -34,19 +34,19 @@ enum WebpageTabsEnum: string
     {
         return match ($this) {
             WebpageTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fas fa-info-circle',
             ],
             WebpageTabsEnum::EXTERNAL_LINKS => [
-                'title' => __('external links'),
+                'title' => __('External links'),
                 'icon'  => 'fal fa-external-link',
             ],
             WebpageTabsEnum::WEBPAGES => [
-                'title' => __('child webpages'),
+                'title' => __('Child webpages'),
                 'icon'  => 'fal fa-browser',
             ],
             WebpageTabsEnum::ANALYTICS => [
-                'title' => __('analytics'),
+                'title' => __('Analytics'),
                 'icon'  => 'fal fa-analytics',
             ],
             WebpageTabsEnum::SNAPSHOTS => [
@@ -62,7 +62,7 @@ enum WebpageTabsEnum: string
                 'icon'  => 'fal fa-layer-group',
             ],
             WebpageTabsEnum::CHANGELOG => [
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

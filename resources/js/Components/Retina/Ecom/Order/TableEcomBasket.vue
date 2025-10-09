@@ -72,7 +72,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
                     set(listState.value, [idTransaction, 'quantity'], null)
                 }, 3000)
             },
-            only: ['transactions', 'summary', 'total_to_pay', 'balance'],
+            only: ['transactions', 'summary', 'total_to_pay', 'balance', 'iris'],
             preserveScroll: true,
         }
     )
@@ -165,39 +165,4 @@ const debounceUpdateQuantity = debounce(
         </template>
     </Table>
 
-    <!-- <div>
-        <div>
-            <div :colspan="4">
-                <div>
-                    <div class="px-2 flex justify-end relative">
-                        For the same day dispatch of your order before 12pm (£7.50)
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <div class="px-2 flex justify-end relative">
-                        <Toggle :modelValue="true" />
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div>
-            <div :colspan="4">
-                <div>
-                    <div class="px-2 flex justify-end relative">
-                        Glass & ceramics insurance (£2.75)
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div>
-                    <div class="px-2 flex justify-end relative">
-                        <Toggle :modelValue="true" />
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div> -->
 </template>

@@ -28,16 +28,16 @@ enum BannerTabsEnum: string
     {
         return match ($this) {
             BannerTabsEnum::SHOWCASE => [
-                'title' => __('banner'),
+                'title' => __('Banner'),
                 'icon'  => 'fas fa-info-circle',
             ],
             BannerTabsEnum::SNAPSHOTS => [
-                'title' => __('snapshots'),
+                'title' => __('Snapshots'),
                 'icon'  => 'fal fa-layer-group',
             ],
 
             BannerTabsEnum::CHANGELOG => [
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

@@ -70,7 +70,7 @@ class IndexDeliveryNotesInCustomers extends OrgAction
         $title      = $this->customer->name;
         $icon       = [
             'icon'  => ['fal', 'fa-user'],
-            'title' => __('customer')
+            'title' => __('Customer')
         ];
 
 

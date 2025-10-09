@@ -8,14 +8,14 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
-use App\Actions\RetinaAction;
+use App\Actions\OrgAction;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class StoreNewProductToCurrentWooCommerce extends RetinaAction
+class StoreNewProductToCurrentWooCommerce extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -28,9 +28,11 @@ class StoreNewProductToCurrentWooCommerce extends RetinaAction
         StoreWooCommerceProduct::run($wooCommerceUser, $portfolio);
     }
 
-    public function asController(WooCommerceUser $wooCommerceUser, Portfolio $portfolio, ActionRequest $request): void
+    public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
-        $this->initialisation($request);
+        /** @var WooCommerceUser $wooCommerceUser */
+        $wooCommerceUser = $portfolio->customerSalesChannel->user;
+        $this->initialisation($portfolio->organisation, $request);
 
         $this->handle($wooCommerceUser, $portfolio);
     }

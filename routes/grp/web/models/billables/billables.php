@@ -7,7 +7,7 @@
  */
 
 use App\Actions\Billables\Charge\StoreCharge;
-use App\Actions\Ordering\ShippingZoneSchema\StoreShippingZoneSchema;
+use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use Illuminate\Support\Facades\Route;
 
 Route::name('billables.')->prefix('shop/{shop:id}/billables')->group(function () {

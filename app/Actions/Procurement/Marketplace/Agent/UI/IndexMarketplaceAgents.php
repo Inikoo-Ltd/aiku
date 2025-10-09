@@ -91,7 +91,7 @@ class IndexMarketplaceAgents extends OrgAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new agent'),
+                            'tooltip' => __('New agent'),
                             'label'   => __('agent'),
                             'route'   => [
                                 'name'       => 'grp.supply-chain.org_agents.create',
@@ -152,7 +152,7 @@ class IndexMarketplaceAgents extends OrgAction
                         $this->canEdit && $request->route()->getName() == 'grp.org.procurement.marketplace.org_agents.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new agent'),
+                            'tooltip' => __('New agent'),
                             'label'   => __('agent'),
                             'route'   => [
                                 'name'       => 'grp.org.procurement.marketplace.org_agents.create',

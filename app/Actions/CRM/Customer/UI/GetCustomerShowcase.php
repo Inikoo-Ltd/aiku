@@ -8,7 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
-use App\Http\Resources\CRM\CustomersResource;
+use App\Http\Resources\CRM\CustomerResource;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -37,7 +37,7 @@ class GetCustomerShowcase
         }
 
         return [
-            'customer' => CustomersResource::make($customer)->getArray(),
+            'customer' => CustomerResource::make($customer)->getArray(),
             'address_management' => GetCustomerAddressManagement::run(customer:$customer),
             'require_approval' => Arr::get($customer->shop->settings, 'registration.require_approval', false),
             'approveRoute'       => [

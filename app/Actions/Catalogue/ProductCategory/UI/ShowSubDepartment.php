@@ -76,6 +76,18 @@ class ShowSubDepartment extends OrgAction
                         'icon'  => 'fal fa-folder-tree'
                     ]
                 ];
+
+
+        $urlMaster                              = null;
+        if ($subDepartment->master_product_category_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_product_category',
+                'parameters' => [
+                    $subDepartment->masterProductCategory->id
+                ]
+            ];
+        }
+
         return Inertia::render(
             'Org/Catalogue/SubDepartment',
             [
@@ -89,6 +101,37 @@ class ShowSubDepartment extends OrgAction
                     'previous' => $this->getPrevious($subDepartment, $request),
                     'next'     => $this->getNext($subDepartment, $request),
                 ],
+                'mini_breadcrumbs' => array_filter(
+                    [
+                        [
+                            'label' => $subDepartment->department->name,
+                            'to'    => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'department'   => $subDepartment->department->slug
+                                ]
+                            ],
+                            'tooltip' => 'Department',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                        [
+                            'label' => $subDepartment->name,
+                            'to'    => [
+                                'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                    'shop'         => $this->shop->slug,
+                                    'department'   => $subDepartment->department->slug,
+                                    'subDepartment' => $subDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => __('Sub-Department'),
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                    ],
+                ),
                 'pageHead'    => [
                     'title'         => $subDepartment->name,
                     'model'         => __('Sub-department'),
@@ -152,7 +195,7 @@ class ShowSubDepartment extends OrgAction
                     ],
                     'method' => 'get'
                 ],
-
+                'url_master'       => $urlMaster,
                 'attach_collections_route' => $subDepartment->webpage ? [
                     'name'       => 'grp.models.webpage.attach_collection',
                     'parameters' => [
@@ -185,6 +228,9 @@ class ShowSubDepartment extends OrgAction
                     fn () => HistoryResource::collection(IndexHistory::run($subDepartment))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($subDepartment))),
 
+                DepartmentTabsEnum::IMAGES->value => $this->tab == DepartmentTabsEnum::IMAGES->value ?
+                    fn () =>  GetProductCategoryImages::run($subDepartment)
+                    : Inertia::lazy(fn () => GetProductCategoryImages::run($subDepartment)),
 
             ]
         )->table(

@@ -75,16 +75,16 @@ export const useLiveUsers = defineStore('useLiveUsers', {
                 .joining((user) => {
                     console.log('Someone join')
                     // if UserA join, then others send their data to UserA
-                    window.Echo.join(`grp.live.users`).whisper(`sendTo${user.id}`, this.liveUsers[usePage().props.auth.user?.id])
+                    window.Echo.join(`grp.live.users`).whisper(`sendTo${user?.id}`, this.liveUsers[usePage().props?.auth?.user?.id])
                 })
 
                 .leaving((user: {id: number, alias: string, name: string}) => {
                     // console.log('Someone leaved: ', user)
 
                     // If user 'logout', no need to set the action to 'leave'
-                    if (this.liveUsers[user.id]?.action && this.liveUsers[user.id].action != 'logout') {
-                        this.liveUsers[user.id].action = 'leave'
-                        this.liveUsers[user.id].last_active = new Date()
+                    if (this.liveUsers[user?.id]?.action && this.liveUsers[user?.id].action != 'logout') {
+                        this.liveUsers[user?.id].action = 'leave'
+                        this.liveUsers[user?.id].last_active = new Date()
                     }
                 })
 
@@ -95,14 +95,14 @@ export const useLiveUsers = defineStore('useLiveUsers', {
                 .listenForWhisper('otherIsNavigating', (e: LiveUser) => {
                     // On the first load and on navigating page
                     // console.log('qwer', e)
-                    this.liveUsers[e.id] = e
+                    this.liveUsers[e?.id] = e
                     // console.log('qwer', this.liveUsers)
                 })
 
                 .listenForWhisper(`sendTo${usePage().props.auth.user?.id}`, (otherUser: LiveUser) => {
                     // console.log('receive the emit')
                     // On the first load and on navigating page
-                    this.liveUsers[otherUser.id] = otherUser
+                    this.liveUsers[otherUser?.id] = otherUser
                     // console.log('qwer', this.liveUsers)
                 })
         },

@@ -16,10 +16,9 @@ defineProps<{
 
 function tradeUnitRoute(tradeUnit: TradeUnit) {
     return route(
-        "grp.goods.trade-units.show",
+        "grp.trade_units.units.show",
         [tradeUnit.slug])
 }
-
 
 </script>
 

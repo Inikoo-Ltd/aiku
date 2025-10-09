@@ -152,8 +152,8 @@ class IndexMasterCollections extends OrgAction
                         [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new master collection'),
-                            'label'   => __('master collection'),
+                            'tooltip' => __('New master collection'),
+                            'label'   => __('Master collection'),
                             'route'   => match ($this->parent::class) {
                                 MasterProductCategory::class => [
                                 ],

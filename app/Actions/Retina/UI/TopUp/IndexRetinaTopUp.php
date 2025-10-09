@@ -10,7 +10,7 @@ namespace App\Actions\Retina\UI\TopUp;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Http\Resources\Fulfilment\RetinaTopupResources;
+use App\Http\Resources\Fulfilment\RetinaTopUpResources;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\TopUp;
 use App\Models\CRM\Customer;
@@ -67,13 +67,25 @@ class IndexRetinaTopUp extends RetinaAction
             'Dropshipping/TopUp/TopUps',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('Topups'),
+                'title'       => __('Top ups'),
                 'pageHead'    => [
-                    'title' => __('Topups'),
-                    'icon'  => 'fal fa-shopping-basket'
+                    'title' => __('Top ups'),
+                    'icon'  => 'fal fa-shopping-basket',
+                    'actions'      => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'primary',
+                            'label' => __('Download PDF'),
+                            'target' => '_blank',
+                            'route' => [
+                                'name'       => 'retina.top_up.top_up_pdf.export',
+                                'parameters' => []
+                            ],
+                        ]
+                    ]
                 ],
 
-                'data' => RetinaTopupResources::collection($topups)
+                'data' => RetinaTopUpResources::collection($topups)
             ]
         )->table($this->tableStructure());
     }
@@ -89,7 +101,7 @@ class IndexRetinaTopUp extends RetinaAction
 
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
-                'title' => __("No topup exist"),
+                'title' => __("No top up exist"),
                 'count' => 0
             ];
 
@@ -116,7 +128,7 @@ class IndexRetinaTopUp extends RetinaAction
                             'route' => [
                                 'name' => 'retina.top_up.index'
                             ],
-                            'label'  => __('Topup'),
+                            'label'  => __('Top up'),
                         ]
                     ]
                 ]

@@ -113,6 +113,13 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $ulid
  * @property int|null $master_shop_id
  * @property InvoicePayDetailedStatusEnum|null $pay_detailed_status
+ * @property string $effective_total effective total to pay
+ * @property bool $is_cash_on_delivery
+ * @property int|null $shipping_zone_schema_id
+ * @property int|null $shipping_zone_id
+ * @property string|null $source_invoice_category_id
+ * @property bool|null $has_insurance
+ * @property bool $is_re recargo de equivalencia
  * @property-read Address|null $address
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Address|null $billingAddress

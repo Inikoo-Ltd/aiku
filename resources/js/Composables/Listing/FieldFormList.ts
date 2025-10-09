@@ -1,6 +1,7 @@
 import type { Component } from 'vue'
 import { defineAsyncComponent } from 'vue'
 import Input from '@/Components/Forms/Fields/Input.vue'
+import FieldInputNumber from '@/Components/Forms/Fields/FieldInputNumber.vue'
 import Select from '@/Components/Forms/Fields/Select.vue'
 import SelectBillingCycle from '@/Components/Forms/Fields/SelectBillingCycle.vue'
 import Phone from '@/Components/Forms/Fields/Phone.vue'
@@ -31,6 +32,9 @@ import StructureDataWebsite from '@/Components/Forms/Fields/StructureDataWebsite
 import SelectInfiniteScroll from '@/Components/Forms/Fields/SelectInfiniteScroll.vue'
 import ButtonForm from '@/Components/Forms/Fields/ButtonForm.vue'
 import cropImageFull from '@/Components/Forms/Fields/CropImageFull.vue'
+import FormEditTradeUnit from '@/Components/Forms/Fields/FormEditTradeUnit.vue'
+import TagsTradeUnits from '@/Components/Forms/Fields/TagsTradeUnits.vue'
+import invoiceSerialReferences from '@/Components/Forms/Fields/invoiceSerialReferences.vue'
 
 
 const ProductParts = defineAsyncComponent(() => import('@/Components/Forms/Fields/ProductParts.vue'))
@@ -51,14 +55,19 @@ import DeleteWebpage from '@/Components/Forms/Fields/DeleteWebpage.vue'
 import InputTranslation from '@/Components/Forms/Fields/InputTranslation.vue'
 import TextEditorTranslation from '@/Components/Forms/Fields/TextEditorTranslation.vue'
 import Pricing_zone from '@/Components/Forms/Fields/Pricing_zone.vue'
-import Teritory_zone from '@/Components/Forms/Fields/Teritory_zone.vue'
+import TerritoryZone from '@/Components/Forms/Fields/TerritoryZone.vue'
 import SelectPrinter from '@/Components/Forms/Fields/SelectPrinter.vue'
 import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
+import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
+import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
+import InputDimensions from '@/Components/Forms/Fields/InputDimensions.vue'
+import WrapperEmailSubscribetion from '@/Components/Forms/Fields/WrapperEmailSubscribetion.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
     'image_crop_square': ImageCropSquare,
     'input': Input,
+    'input_number': FieldInputNumber,
     'inputWithAddOn': InputWithAddOn,
     'phone': Phone,
     'date': Date,
@@ -107,9 +116,17 @@ export const componentsList: {[key: string]: Component} = {
     'select_infinite': SelectInfiniteScroll,
     'textEditor_translation' : TextEditorTranslation,
     'pricing_zone': Pricing_zone,
-    'teritory_zone': Teritory_zone,
+    'territory_zone': TerritoryZone,
     'crop-image-full' : cropImageFull,
-    'list-selector' : ListSelectorFrom
+    'list-selector' : ListSelectorFrom,
+    'edit-trade-unit-shop' : FormEditTradeUnit,
+    'tags-trade-unit' : TagsTradeUnits,
+    'brands-trade-unit' : BrandsTradeUnit,
+    'multiselect-tags' : MultiselectTagsInfiniteScroll,
+    'input-dimension' : InputDimensions,
+    'invoice_serial_references' : invoiceSerialReferences,
+
+    'email_subscriptions': WrapperEmailSubscribetion
 }
 
 export const getComponent = (componentName: string) => {

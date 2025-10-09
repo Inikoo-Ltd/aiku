@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from "@inertiajs/vue3"
+import { Head } from "@inertiajs/vue3"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal } from "@fal"
@@ -22,9 +22,9 @@ import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.v
 import TableStocks from "@/Components/Tables/Grp/Goods/TableStocks.vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import type { Navigation } from "@/types/Tabs"
-import TableImages from "@/Components/Tables/Grp/Helpers/TableImages.vue"
 import { Images } from "@/types/Images"
-import TradeUnitImagesManagement from "@/Components/Goods/TradeUnitImagesManagement.vue"
+import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
+import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 
 library.add(faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube, faHandReceiving, faClipboard, faPoop, faScanner, faDollarSign, faGripHorizontal)
 
@@ -51,7 +51,7 @@ const props = defineProps<{
     products?: {}
     stocks?: {}
     images?: {},
-    images_category_box?: { 
+    images_category_box?: {
         label: string
         type: string
         column_in_db: string
@@ -59,10 +59,9 @@ const props = defineProps<{
         images?: Images
     }[]
     images_update_route: routeType
-
+    id: number | string
 }>()
 
-console.log('opo', props.images_category_box)
 
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
@@ -72,10 +71,10 @@ const component = computed(() => {
     const components = {
         showcase: TradeUnitShowcase,
         history: ModelChangelog,
-        attachments: TableAttachments,
+        attachments: AttachmentManagement,
         products: TableProducts,
         stocks: TableStocks,
-        images: TableImages
+        images: TradeUnitImagesManagement
     }
     return components[currentTab.value]
 
@@ -87,43 +86,20 @@ const component = computed(() => {
 
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #other>
-            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach" icon="upload" />
-        </template>
+        <!-- <template #other>
+            <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+                icon="upload" />
+        </template> -->
     </PageHeading>
 
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+    <component :is="component" :data="props[currentTab]" :tab="currentTab" :tag_routes />
 
-
-
-    <TradeUnitImagesManagement
-        v-if="currentTab === 'images' && images_category_box?.length"
-        :currentTab
-        :imagesCategoryBox="images_category_box"
-        :imagesUpdateRoute="props.images_update_route"
-        :dataTable="props.images"
-    />
-
-
-    <component v-else
-        :is="component"
-        :data="props[currentTab]"
-        :tab="currentTab"
-        :tag_routes
-        :detachRoute="attachmentRoutes.detachRoute">
-    </component>
-
-    <!-- Modal: Increase balance -->
-    
-
-
-    <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
+    <!-- <UploadAttachment v-model="isModalUploadOpen" scope="attachment" :title="{
         label: 'Upload your file',
         information: 'The list of column file: customer_reference, notes, stored_items'
-    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" />
-
-
-    
+    }" progressDescription="Adding Pallet Deliveries" :attachmentRoutes="attachmentRoutes" /> -->
 </template>

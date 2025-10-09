@@ -36,21 +36,27 @@ class GetRecommendedTradeUnits extends GrpAction
             });
         });
 
-        $masterAssetIds = $parent->masterAssets()->pluck('id')->toArray();
+        $masterAssetIds = $parent->masterAssets()->pluck('id')->filter()->toArray();
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $parent->group_id)
-            ->where('trade_units.code', 'like', $parent->code . '%')
+            ->whereRaw("trade_units.code COLLATE \"C\" ILIKE ?", $parent->code.'%')
             ->leftJoin('model_has_trade_units', function ($join) {
                 $join->on('trade_units.id', '=', 'model_has_trade_units.trade_unit_id')
                     ->where('model_has_trade_units.model_type', '=', 'MasterAsset');
             });
 
-        $queryBuilder->where(function ($query) use ($masterAssetIds) {
-            $query->whereNull('model_has_trade_units.model_id')
-                ->orWhereNotIn('model_has_trade_units.model_id', $masterAssetIds);
-        });
 
+        if (!empty($masterAssetIds)) {
+            $queryBuilder->whereNotIn('trade_units.id', function ($subquery) use ($masterAssetIds) {
+                $subquery->select('trade_unit_id')
+                    ->from('model_has_trade_units')
+                    ->where('model_type', 'MasterAsset')
+                    ->whereIn('model_id', $masterAssetIds);
+            });
+        }
+
+        $queryBuilder->groupBy('trade_units.id');
         return $queryBuilder
             ->defaultSort('trade_units.code')
             ->select([

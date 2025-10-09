@@ -74,10 +74,7 @@ class StoreRetinaManualPlatform extends RetinaAction
                             'column' => 'customer_id',
                             'value'  => $this->customer->id,
                         ],
-                        [
-                            'column' => 'deleted_at',
-                            'operator' => 'null',
-                        ],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ]

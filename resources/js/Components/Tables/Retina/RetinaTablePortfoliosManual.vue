@@ -160,63 +160,54 @@ const onClickFilterOutOfStock = (query: string) => {
 </script>
 
 <template>
-	<Table
-		:resource="data"
-		:name="tab"
-		class="mt-5"
-		xxisCheckBox
-		xxdisabledCheckbox="(xxx) => !!xxx.platform_product_id || xxx.platform == 'manual'"
-		@onChecked="(item) => {
+	<Table :resource="data" :name="tab" class="mt-5" xxisCheckBox
+		xxdisabledCheckbox="(xxx) => !!xxx.platform_product_id || xxx.platform == 'manual'" @onChecked="(item) => {
 			console.log('onChecked', item)
 			props.selectedData.products.push(item.id)
-		}"
-		@onUnchecked="(item) => {
+		}" @onUnchecked="(item) => {
 			onUnchecked(item.id)
-		}"
-		:isChecked="(item) => props.selectedData.products.includes(item.id)"
-		:rowColorFunction="(item) => {
+		}" :isChecked="(item) => props.selectedData.products.includes(item.id)" :rowColorFunction="(item) => {
 			if (!isPlatformManual && is_platform_connected && !item.platform_product_id && get(progressToUploadToShopify, [item.id], undefined) != 'success') {
 				return 'bg-yellow-50'
 			} else {
 				return ''
 			}
-		}"
-		:isParentLoading="!!isLoadingTable"
-	>
+		}" :isParentLoading="!!isLoadingTable">
 		<template #add-on-button>
-			<Button
-				@click="onClickFilterOutOfStock('out-of-stock')"
-				v-tooltip="trans('Filter the product that out of stock')"
-				label="Out of stock"
-				size="xs"
-				:key="compTableFilterStatus"
-				:type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
+			<Button @click="onClickFilterOutOfStock('out-of-stock')"
+				v-tooltip="trans('Filter the product that out of stock')" label="Out of stock" size="xs"
+				:key="compTableFilterStatus" :type="compTableFilterStatus === 'out-of-stock' ? 'secondary' : 'tertiary'"
 				:icon="compTableFilterStatus === 'out-of-stock' ? 'fas fa-filter' : 'fal fa-filter'"
-				iconRight="fal fa-exclamation-triangle"
-				:loading="isLoadingTable == 'out-of-stock'"
-			/>
-			<Button
-				@click="onClickFilterOutOfStock('discontinued')"
-				v-tooltip="trans('Filter the product that discontinued')"
-				label="Discontinued"
-				size="xs"
-				:key="compTableFilterStatus"
-				:type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
+				iconRight="fal fa-exclamation-triangle" :loading="isLoadingTable == 'out-of-stock'" />
+			<Button @click="onClickFilterOutOfStock('discontinued')"
+				v-tooltip="trans('Filter the product that discontinued')" label="Discontinued" size="xs"
+				:key="compTableFilterStatus" :type="compTableFilterStatus === 'discontinued' ? 'secondary' : 'tertiary'"
 				:icon="compTableFilterStatus === 'discontinued' ? 'fas fa-filter' : 'fal fa-filter'"
-				iconRight="fal fa-times"
-				:loading="isLoadingTable == 'discontinued'"
-			/>
+				iconRight="fal fa-times" :loading="isLoadingTable == 'discontinued'" />
 		</template>
 
-        <template #cell(image)="{ item: product }">
-            <div class="overflow-hidden w-10 h-10">
-				<Image :src="product.image" :alt="product.name" />
+		<template #cell(image)="{ item: product }">
+			<div class="relative group">
+				<div class="relative overflow-hidden w-10 h-10">
+					<Image :src="product.image" :alt="product.name" />
+				</div>
+				<!-- Popover with larger image -->
+				<div
+					class="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+					<div class="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+						<div class="w-64 h-64 overflow-hidden rounded">
+							<Image :src="product.full_size_image || product.image" :alt="product.name"
+								class="w-full h-full object-cover" />
+						</div>
+					</div>
+				</div>
 			</div>
-        </template>
+
+		</template>
 
 		<template #cell(name)="{ item: product }">
 			<Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
-				{{ product["code"] }}
+			{{ product["code"] }}
 			</Link>
 			<div class="text-base font-semibold">
 				{{ product["name"] }}
@@ -238,35 +229,34 @@ const onClickFilterOutOfStock = (query: string) => {
 					{{ trans("RRP:") }} {{ locale.currencyFormat(product.currency_code, product.customer_price) }}
 				</div>
 			</div>
-			
+
 			<!-- Section: is code exist in platform -->
 			<div v-if="product.is_code_exist_in_platform" class="text-xs text-amber-500">
 				<FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
 				<span class="pr-2">{{ trans("We found same product in your shop, do you want to create new or use existing?") }}</span>
-				<Button v-tooltip="trans('Will create new product in :platform', {platform: props.platform_data.name})" label="Create new" icon="fal fa-plus" type="tertiary" size="xxs" />
+				<Button v-tooltip="trans('Will create new product in :platform', {platform: props.platform_data.name})"
+					label="Create new" icon="fal fa-plus" type="tertiary" size="xxs" />
 				<span class="px-2 text-gray-500">or</span>
-				<Button v-tooltip="trans('Will sync the product and prioritize our product', {platform: props.platform_data.name})" label="Use Existing" icon="fal fa-sync-alt" :disabled="data?.product_availability?.options === 'use_existing'" :type="data?.product_availability?.options === 'use_existing' ? 'primary' : 'tertiary'" size="xxs" />
+				<Button
+					v-tooltip="trans('Will sync the product and prioritize our product', {platform: props.platform_data.name})"
+					label="Use Existing" icon="fal fa-sync-alt"
+					:disabled="data?.product_availability?.options === 'use_existing'"
+					:type="data?.product_availability?.options === 'use_existing' ? 'primary' : 'tertiary'"
+					size="xxs" />
 			</div>
-        </template>
+		</template>
 
 
 
 		<!-- Column: Actions -->
 		<template #cell(actions)="{ item }">
 			<div class="mx-auto flex flex-wrap justify-center gap-2">
-				<ButtonWithLink
-					v-tooltip="trans('Remove product from list')"
-					type="negative"
-					icon="fal fa-times"
-					:routeTarget="item.update_portfolio"
-					:body="{
+				<ButtonWithLink v-tooltip="trans('Remove product from list')" type="negative" icon="fal fa-times"
+					:routeTarget="item.update_portfolio" :body="{
 						'status': false,
-					}"
-					size="xs"
-					:bindToLink="{
+					}" size="xs" :bindToLink="{
 						preserveScroll: true,
-					}"
-				/>
+					}" />
 			</div>
 		</template>
 	</Table>

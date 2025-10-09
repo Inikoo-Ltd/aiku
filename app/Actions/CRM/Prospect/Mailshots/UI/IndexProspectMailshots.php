@@ -30,7 +30,6 @@ class IndexProspectMailshots extends InertiaAction
 {
     use WithProspectsSubNavigation;
 
-    private Shop $parent;
 
     protected function getElementGroups(): array
     {
@@ -39,7 +38,6 @@ class IndexProspectMailshots extends InertiaAction
 
     public function handle(Shop $shop, $prefix = null): LengthAwarePaginator
     {
-        $this->parent = $shop;
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -102,8 +100,8 @@ class IndexProspectMailshots extends InertiaAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new mailshot'),
-                            'label'   => __('mailshot'),
+                            'tooltip' => __('New mailshot'),
+                            'label'   => __('Mailshot'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.show.crm.prospects.mailshots.create',
                                 'parameters' => array_values($this->originalParameters)
@@ -126,11 +124,11 @@ class IndexProspectMailshots extends InertiaAction
         };
     }
 
-
-
     public function htmlResponse(LengthAwarePaginator $mailshots, ActionRequest $request): Response
     {
-        $subNavigation = $this->getSubNavigation($request);
+
+        $shop = $request->route()->parameters()['shop'];
+        $subNavigation = $this->getSubNavigation($shop, $request);
         return Inertia::render(
             'CRM/Prospects/Mailshots',
             [
@@ -144,7 +142,7 @@ class IndexProspectMailshots extends InertiaAction
                     'subNavigation'    => $subNavigation,
                     'actions'          =>
                         [
-                            ($this->parent->prospects_sender_email_id && $this->parent->prospectsSenderEmail->state == SenderEmailStateEnum::VERIFIED) ? [
+                            ($shop->prospects_sender_email_id && $shop->prospectsSenderEmail->state == SenderEmailStateEnum::VERIFIED) ? [
                                 'type'  => 'button',
                                 'style' => 'create',
                                 'label' => __('New mailshot'),
@@ -159,8 +157,8 @@ class IndexProspectMailshots extends InertiaAction
                 ],
 
                 'senderEmail' =>
-                    $this->parent->prospects_sender_email_id ?
-                        SenderEmailResource::make($this->parent->prospectsSenderEmail)->getArray() : null,
+                    $shop->prospects_sender_email_id ?
+                        SenderEmailResource::make($shop->prospectsSenderEmail)->getArray() : null,
 
 
                 'tabs' => [
@@ -181,9 +179,7 @@ class IndexProspectMailshots extends InertiaAction
         )->table($this->tableStructure(prefix: ProspectsMailshotsTabsEnum::MAILSHOTS->value));
     }
 
-
-
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request)->withTab(ProspectsMailshotsTabsEnum::values());
 

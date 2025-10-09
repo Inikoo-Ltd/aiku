@@ -147,7 +147,7 @@ class ShowFulfilmentInvoice extends OrgAction
         return Inertia::render(
             'Org/Accounting/Invoice',
             [
-                'title'       => __('invoice'),
+                'title'       => __('Invoice'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),

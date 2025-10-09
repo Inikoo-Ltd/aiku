@@ -10,7 +10,7 @@ import LayoutWorkshop from "@/Components/CMS/Website/Layout/LayoutWorkshop.vue"
 import ProductBlockWorkshop from "@/Components/CMS/Website/ProductBlock/ProductBlockWorkshop.vue"
 import ProductsBlockWorkshop from '@/Components/CMS/Website/ProductsBlock/ProductsBlockWorkshop.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import SubDepartementWorkshop from '@/Components/CMS/Website/SubDepartementBlockWorkshop/SubDepartementWorkshop.vue'
+import SubDepartmentWorkshop from '@/Components/CMS/Website/SubDepartmentBlockWorkshop/SubDepartmentWorkshop.vue'
 import FamiliesBlockWorkshop from '@/Components/CMS/Website/FamiliesBlockWorkshop/FamiliesBlockWorkshop.vue'
 import CollectionsBlockWorkshop from '@/Components/CMS/Website/CollectionsWorkshop/CollectionsBlockWorkshop.vue'
 
@@ -37,13 +37,13 @@ const props = defineProps<{
 
 
 let currentTab = ref(props.tabs?.current)
-const handleTabUpdate = (tabSlug) => useTabChange(tabSlug, currentTab)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const loadingPublish = ref(false)
 
 const component = computed(() => {
     const components = {
         website_layout: LayoutWorkshop,
-        sub_department: SubDepartementWorkshop,
+        sub_department: SubDepartmentWorkshop,
         families: FamiliesBlockWorkshop,
         products: ProductsBlockWorkshop,
         product: ProductBlockWorkshop,

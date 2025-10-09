@@ -31,14 +31,14 @@ class CreateWarehouseArea extends OrgAction
                 ),
                 'title'       => __('create warehouse area'),
                 'pageHead'    => [
-                    'model'        => __('warehouse area'),
-                    'title'        => __('create'),
+                    'model'        => __('Warehouse area'),
+                    'title'        => __('Create'),
                     'icon'         => 'fal fa-map-signs',
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

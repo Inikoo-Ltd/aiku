@@ -10,6 +10,7 @@ import { getStyles } from '@/Composables/styles'
 import { checkVisible, textReplaceVariables } from '@/Composables/Workshop'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import SwitchLanguage from '@/Components/Iris/SwitchLanguage.vue'
+import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -46,17 +47,6 @@ const emits = defineEmits<{
     (e: 'setPanelActive', value: string | number): void
 }>()
 
-
-// Method: generate url for Login
-const urlLoginWithRedirect = () => {
-    if (layout.currentRoute !== "retina.login.show" && layout.currentRoute !== "retina.register") {
-        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${
-            window?.location.search ? encodeURIComponent(window?.location.search) : ""
-        }`
-    } else {
-        return "/app/login"
-    }
-}
 
 </script>
 
@@ -110,6 +100,7 @@ const urlLoginWithRedirect = () => {
             </ButtonWithLink>
 
             <SwitchLanguage
+                v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length"
                 class="md:hidden"
             />
 
@@ -182,6 +173,7 @@ const urlLoginWithRedirect = () => {
 
         <div class="action_buttons" style="display: flex; justify-content: flex-end; column-gap: 5px; grid-column: span 5 / span 5">
             <SwitchLanguage
+                v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length"
                 class="hidden md:block"
             />
 

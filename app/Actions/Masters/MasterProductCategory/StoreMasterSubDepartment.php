@@ -29,14 +29,15 @@ class StoreMasterSubDepartment extends OrgAction
      */
     private MasterShop|MasterProductCategory $parent;
 
-    public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
+    public function handle(MasterProductCategory|MasterShop $parent, array $modelData, bool $createChildren = true): MasterProductCategory
     {
         data_set($modelData, 'type', MasterProductCategoryTypeEnum::SUB_DEPARTMENT);
 
-        $masterSubDepartment = StoreMasterProductCategory::run($parent, $modelData);
+        $masterSubDepartment = StoreMasterProductCategory::run($parent, $modelData, $createChildren);
 
         MasterDepartmentHydrateMasterSubDepartments::dispatch($masterSubDepartment->masterDepartment)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterSubDepartments::dispatch($masterSubDepartment->masterShop)->delay($this->hydratorsDelay);
+
         return $masterSubDepartment;
     }
 
@@ -51,7 +52,7 @@ class StoreMasterSubDepartment extends OrgAction
                     table: 'master_product_categories',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -62,12 +63,12 @@ class StoreMasterSubDepartment extends OrgAction
     }
 
 
-    public function action(MasterProductCategory $masterDepartment, array $modelData): MasterProductCategory
+    public function action(MasterProductCategory $masterDepartment, array $modelData, bool $createChildren = true): MasterProductCategory
     {
         $this->asAction = true;
         $this->initialisationFromGroup(group(), $modelData);
 
-        return $this->handle($masterDepartment, $this->validatedData);
+        return $this->handle($masterDepartment, $this->validatedData, $createChildren);
     }
 
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterProductCategory

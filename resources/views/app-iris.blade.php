@@ -55,6 +55,7 @@
         <!-- End Google Tag Manager -->
     @endif
 
+    <!-- Section: Luigi analytics -->
     @if(request()->get('website') && Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', ''))
         <script async src="https://scripts.luigisbox.com/{{ Arr::get(request()->get('website')->settings, 'luigisbox.lbx_code', '') }}.js"></script> 
     @endif

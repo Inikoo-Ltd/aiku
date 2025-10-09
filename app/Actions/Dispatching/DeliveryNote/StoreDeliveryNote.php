@@ -18,7 +18,10 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliv
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
@@ -46,18 +49,43 @@ class StoreDeliveryNote extends OrgAction
             $modelData['delivery_address'] = $order->deliveryAddress;
         }
 
+        if ($order->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
+            data_set($modelData, 'is_cash_on_delivery', true);
+        }
 
         $deliveryAddress = Arr::pull($modelData, 'delivery_address');
-
 
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);
         data_set($modelData, 'group_id', $order->group_id);
         data_set($modelData, 'organisation_id', $order->organisation_id);
+        data_set($modelData, 'collection_address_id', $order->collection_address_id);
+
+
+        data_set($modelData, 'customer_notes', $order->customer_notes);
+        data_set($modelData, 'internal_notes', $order->internal_notes);
+        data_set($modelData, 'public_notes', $order->public_notes);
+        data_set($modelData, 'shipping_notes', $order->shipping_notes);
+        data_set($modelData, 'has_insurance', $order->has_insurance);
+
+
+        if ($this->strict) {
+            data_set($modelData, 'delivery_locked', true);
+        }
 
         $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress) {
             /** @var DeliveryNote $deliveryNote */
             $deliveryNote = $order->deliveryNotes()->create($modelData);
+
+            $deliveryNote->refresh();
+
+            if ($deliveryNote->type === DeliveryNoteTypeEnum::ORDER) {
+                $deliveryNote->update([
+                    'is_premium_dispatch' => $order->is_premium_dispatch,
+                    'has_extra_packing'   => $order->has_extra_packing
+                ]);
+            }
+
 
             if ($deliveryNote->delivery_locked) {
                 $this->createFixedAddress(
@@ -111,6 +139,8 @@ class StoreDeliveryNote extends OrgAction
             ],
             'email'                     => ['sometimes', 'nullable', $this->strict ? 'email' : 'string'],
             'phone'                     => ['sometimes', 'nullable', 'string'],
+            'company_name'              => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_name'              => ['sometimes', 'nullable', 'string', 'max:255'],
             'date'                      => ['required', 'date'],
             'warehouse_id'              => [
                 'required',
@@ -122,6 +152,8 @@ class StoreDeliveryNote extends OrgAction
             'customer_client_id'        => ['sometimes', 'nullable'],
             'customer_sales_channel_id' => ['sometimes', 'nullable'],
             'platform_id'               => ['sometimes', 'nullable'],
+            'shipping_zone_schema_id'   => ['sometimes', 'nullable'],
+            'shipping_zone_id'          => ['sometimes', 'nullable'],
         ];
 
         if (!$this->strict) {
@@ -163,6 +195,7 @@ class StoreDeliveryNote extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if (!$this->has('warehouse_id')) {
+            /** @var Warehouse $warehouse */
             $warehouse = $this->shop->organisation->warehouses()->first();
             $this->set('warehouse_id', $warehouse->id);
         }

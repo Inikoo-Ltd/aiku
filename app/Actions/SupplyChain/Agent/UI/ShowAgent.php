@@ -70,7 +70,7 @@ class ShowAgent extends GrpAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'people-arrows'],
-                            'title' => __('agent')
+                            'title' => __('Agent')
                         ],
                     'subNavigation' => $this->getAgentNavigation($agent),
                     'title'   => $agent->organisation->name,

@@ -7,12 +7,13 @@
  */
 
 use App\Actions\Accounting\OrgPaymentServiceProvider\Json\GetOrgPaymentServiceProviders;
-use App\Actions\Accounting\Payment\Json\GetRefundPayments;
+use App\Actions\Accounting\Payment\Json\GetRefundOriginalInvoicePayments;
 use App\Actions\Accounting\PaymentAccount\Json\GetShopPaymentAccounts;
 use App\Actions\Catalogue\Collection\Json\GetCollections;
 use App\Actions\Catalogue\Collection\Json\GetCollectionsForWorkshop;
 use App\Actions\Catalogue\Collection\Json\GetWebpagesInCollection;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
+use App\Actions\Catalogue\Product\Json\GetOrderProductsForModification;
 use App\Actions\Catalogue\Product\Json\GetOutOfStockProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsNotAttachedToACollection;
 use App\Actions\Catalogue\Product\Json\GetProductsInCollection;
@@ -20,6 +21,7 @@ use App\Actions\Catalogue\Product\Json\GetProductsInProductCategory;
 use App\Actions\Catalogue\Product\Json\GetProductsInWorkshop;
 use App\Actions\Catalogue\Product\Json\GetProductsWithNoWebpage;
 use App\Actions\Catalogue\Product\Json\GetTopProductsInProductCategory;
+use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentAndSubDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartments;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetDepartmentsInShop;
@@ -27,6 +29,8 @@ use App\Actions\Catalogue\ProductCategory\Json\GetFamilies;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInCollection;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInProductCategory;
 use App\Actions\Catalogue\ProductCategory\Json\GetFamiliesInShop;
+use App\Actions\Dashboard\GetMasterShopsSalesCustomDates;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
 use App\Actions\Masters\MasterCollection\UI\GetMasterDepartments;
 use App\Actions\Masters\MasterCollection\UI\GetMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Json\GetFamiliesInMasterProductCategory;
@@ -57,6 +61,7 @@ use App\Actions\Fulfilment\PalletDelivery\Json\GetFulfilmentServices;
 use App\Actions\Fulfilment\PalletDelivery\UI\IndexRecentPalletDeliveryUploads;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\StoredItem\Json\GetPalletAuditStoredItems;
+use App\Actions\Goods\TradeUnit\UI\GetTradeUnitsForTradeUnitFamily;
 use App\Actions\Helpers\Brand\Json\GetBrands;
 use App\Actions\Helpers\Brand\Json\GetGrpBrands;
 use App\Actions\Helpers\Tag\Json\GetGrpTags;
@@ -69,6 +74,7 @@ use App\Actions\Masters\MasterAsset\Json\GetTakenTradeUnits;
 use App\Actions\Masters\MasterCollection\UI\GetMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\GetMasterFamilies;
 use App\Actions\Masters\MasterCollection\UI\GetMasterProductsNotAttachedToAMasterCollection;
+use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterSubDepartments;
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
@@ -94,7 +100,7 @@ Route::get('fulfilment/{fulfilment}/return/{scope}/physical-goods', [GetFulfilme
 Route::get('fulfilment/{fulfilment}/recurring-bill/{scope}/physical-goods', [GetFulfilmentPhysicalGoods::class, 'inRecurringBill'])->name('fulfilment.recurring-bill.physical-goods.index');
 Route::get('fulfilment/{fulfilment}/invoice/{scope}/physical-goods', [GetFulfilmentPhysicalGoods::class, 'inInvoice'])->name('fulfilment.invoice.physical-goods.index');
 
-Route::get('refund/{invoice:id}/payments', GetRefundPayments::class)->name('refund.show.payments.index');
+Route::get('refund/{invoice:id}/original-invoice-payments', GetRefundOriginalInvoicePayments::class)->name('refund.show.original_invoice_payments.index');
 
 Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWholePallets::class)->name('pallet-return.pallets.index');
 
@@ -108,6 +114,8 @@ Route::get('/mailshot/{mailshot:id}/merge-tags', GetMailshotMergeTags::class)->n
 
 Route::get('shop/{shop}/payment-accounts', GetShopPaymentAccounts::class)->name('shop.payment-accounts');
 Route::get('shop/{shop}/products', GetProductsInWorkshop::class)->name('shop.products');
+
+Route::get('shop/{shop}/department-and-sub-departments', GetDepartmentAndSubDepartments::class)->name('shop.department_and_sub_departments');
 
 Route::get('shop/{shop}/collection/{collection}/webpages-for-collection', GetWebpagesForCollection::class)->name('shop.collection.webpages');
 Route::get('shop/{shop:id}/families', GetFamiliesInShop::class)->name('shop.families');
@@ -138,6 +146,7 @@ Route::get('delivery-recent-uploads/{palletDelivery:id}', IndexRecentPalletDeliv
 Route::get('order-transaction-recent-uploads/{order:id}', IndexRecentOrderTransactionUploads::class)->name('order.transaction.recent_uploads');
 
 Route::get('order/{order:id}/products', GetOrderProducts::class)->name('order.products');
+Route::get('order/{order:id}/products-for-modify', GetOrderProductsForModification::class)->name('order.products_for_modify');
 Route::get('organisation/{organisation}/shippers', GetShippers::class)->name('shippers.index');
 Route::get('organisation/{organisation:id}/org-stocks', GetOrgStocks::class)->name('org_stocks.index');
 
@@ -178,9 +187,10 @@ Route::get('mini-delivery-note-shipments/{deliveryNote:id}', GetMiniDeliveryNote
 
 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
-
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
 
+Route::get('master-shop/{masterShop}/departments-and-sub-departments', GetMasterDepartmentAndMasterSubDepartments::class)->name('master_shop.master_departments_and_sub_departments');
 Route::get('master-shop/{masterShop}/scopes/{scope}/departments', GetMasterDepartments::class)->name('master_shop.master_departments');
 Route::get('master-shop/{masterShop}/scopes/{scope}/sub-departments', GetMasterSubDepartments::class)->name('master_shop.master_sub_departments');
 
@@ -198,3 +208,13 @@ Route::get('webpage/{webpage:id}/web-block-type/{webBlockType:id}/web-block-hist
 Route::get('master-product-category/{masterProductCategory}/recommended-trade-units', GetRecommendedTradeUnits::class)->name('master-product-category.recommended-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory}/taken-trade-units', GetTakenTradeUnits::class)->name('master-product-category.taken-trade-units')->withoutScopedBindings();
 Route::get('master-product-category/{masterProductCategory}/all-trade-units', GetAllTradeUnits::class)->name('master-product-category.all-trade-units')->withoutScopedBindings();
+
+Route::get('trade-unit-family/{tradeUnitFamily}/trade-units', GetTradeUnitsForTradeUnitFamily::class)->name('trade_unit_family.trade_units')->withoutScopedBindings();
+
+Route::get('dashboard-custom-dates/masters-shops-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.masters_shops_sales');
+Route::get('dashboard-custom-dates/group/organisation-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.group.organisation_sales');
+Route::get('dashboard-custom-dates/group/shops-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.group.shops_sales');
+Route::get('dashboard-custom-dates/group/invoice-categories-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.group.invoice_categories_sales');
+
+Route::get('dashboard-custom-dates/organisation/{organisation:id}/shops-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.organisation.shops_sales');
+Route::get('dashboard-custom-dates/organisation/{organisation:id}/invoice-categories-sales', GetMasterShopsSalesCustomDates::class)->name('dashboard_custom-dates.organisation.invoice_categories_sales');

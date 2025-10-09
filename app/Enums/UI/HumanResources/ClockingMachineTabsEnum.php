@@ -27,23 +27,23 @@ enum ClockingMachineTabsEnum: string
     {
         return match ($this) {
             ClockingMachineTabsEnum::CLOCKINGS => [
-                'title' => __('clockings'),
+                'title' => __('Clockings'),
                 'icon'  => 'fal fa-clock',
             ],
             ClockingMachineTabsEnum::DATA => [
-                'title' => __('database'),
+                'title' => __('Database'),
                 'icon'  => 'fal fa-database',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             ClockingMachineTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             ClockingMachineTabsEnum::SHOWCASE => [
-                'title' => __('clocking machine'),
+                'title' => __('Clocking machine'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

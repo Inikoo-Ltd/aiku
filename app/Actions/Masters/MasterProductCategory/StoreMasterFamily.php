@@ -17,6 +17,8 @@ use App\Models\Masters\MasterShop;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,15 +26,21 @@ use Lorisleiva\Actions\ActionRequest;
 class StoreMasterFamily extends OrgAction
 {
     /**
-     * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
+     * @throws \Throwable
      */
-    private MasterShop|MasterProductCategory $parent;
-
     public function handle(MasterProductCategory|MasterShop $parent, array $modelData): MasterProductCategory
     {
-        data_set($modelData, 'type', MasterProductCategoryTypeEnum::FAMILY);
+        return DB::transaction(function () use ($parent, $modelData) {
+            $shops = Arr::pull($modelData, 'shop_family', []);
+            data_set($modelData, 'type', MasterProductCategoryTypeEnum::FAMILY);
 
-        return StoreMasterProductCategory::run($parent, $modelData);
+            $masterFamily = StoreMasterProductCategory::run($parent, $modelData);
+            StoreFamilyFromMasterFamily::make()->action($masterFamily, [
+                'shop_family' => $shops
+            ]);
+
+            return $masterFamily;
+        });
     }
 
     public function rules(): array
@@ -46,18 +54,21 @@ class StoreMasterFamily extends OrgAction
                     table: 'master_product_categories',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
             'name'        => ['required', 'max:250', 'string'],
-            'description' => ['sometimes', 'required', 'max:1500'],
+            'description'       => ['sometimes', 'nullable', 'max:10000'],
+            'description_title' => ['sometimes', 'nullable', 'max:400'],
+            'description_extra' => ['sometimes', 'nullable', 'max:10000'],
             'image'       => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
+            'shop_family' => ['sometimes', 'array']
         ];
     }
 
@@ -72,7 +83,6 @@ class StoreMasterFamily extends OrgAction
 
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterProductCategory
     {
-        $this->parent = $masterShop;
         $this->initialisationFromGroup(group(), $request);
 
         return $this->handle($masterShop, $this->validatedData);
@@ -97,10 +107,25 @@ class StoreMasterFamily extends OrgAction
 
     public function htmlResponse(MasterProductCategory $masterProductCategory, ActionRequest $request): RedirectResponse
     {
-        return Redirect::route('grp.masters.master_shops.show.master_families.show', [
-            'masterShop' => $masterProductCategory->masterShop->slug,
-            'masterFamily' => $masterProductCategory->slug,
-        ]);
+        if ($masterProductCategory->master_department_id && $masterProductCategory->master_sub_department_id) {
+            return Redirect::route('grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show', [
+                'masterShop' => $masterProductCategory->masterShop->slug,
+                'masterDepartment' => $masterProductCategory->masterDepartment->slug,
+                'masterSubDepartment' => $masterProductCategory->masterSubDepartment->slug,
+                'masterFamily' => $masterProductCategory->slug,
+            ]);
+        } elseif ($masterProductCategory->master_department_id) {
+            return Redirect::route('grp.masters.master_shops.show.master_departments.show.master_families.show', [
+                'masterShop' => $masterProductCategory->masterShop->slug,
+                'masterDepartment' => $masterProductCategory->masterDepartment->slug,
+                'masterFamily' => $masterProductCategory->slug,
+            ]);
+        } else {
+            return Redirect::route('grp.masters.master_shops.show.master_families.show', [
+                'masterShop' => $masterProductCategory->masterShop->slug,
+                'masterFamily' => $masterProductCategory->slug,
+            ]);
+        }
 
     }
 

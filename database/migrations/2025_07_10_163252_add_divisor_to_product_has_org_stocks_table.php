@@ -16,7 +16,7 @@ return new class () extends Migration {
         Schema::table('product_has_org_stocks', function (Blueprint $table) {
             $table->unsignedSmallInteger('dividend')->default(1)->comment('helper for non integer quantities');
             $table->unsignedSmallInteger('divisor')->default(1)->comment('helper for non integer quantities');
-            $table->unsignedSmallInteger('trade_units_per_org_stock')->nullable()->comment('null if non integer or if org_stock has multiple trade units');
+            $table->unsignedInteger('trade_units_per_org_stock')->nullable()->comment('null if non integer or if org_stock has multiple trade units');
 
         });
     }

@@ -121,7 +121,7 @@ class IndexPostRooms extends GrpAction
         $title      = __('Post Room');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('post rooms')
+            'title' => __('Post rooms')
         ];
         $afterTitle = null;
         $iconRight  = null;

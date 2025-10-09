@@ -63,7 +63,7 @@ class ShowRetinaStoredItem extends RetinaAction
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'fa-narwhal'],
-                            'title' => __('stored item')
+                            'title' => __('Stored item')
                         ],
                     'model'  => 'stored item',
                     'title'  => $storedItem->slug,

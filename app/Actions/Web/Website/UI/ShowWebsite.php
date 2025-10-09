@@ -171,7 +171,6 @@ class ShowWebsite extends OrgAction
                 ]
             ];
         }
-
         return Inertia::render(
             'Org/Web/Website',
             [
@@ -189,7 +188,7 @@ class ShowWebsite extends OrgAction
                     'title'     => $website->name,
                     'model'     => __('Website'),
                     'icon'      => [
-                        'title' => __('website'),
+                        'title' => __('Website'),
                         'icon'  => 'fal fa-globe'
                     ],
                     'iconRight' => $website->state->stateIcon()[$website->state->value],
@@ -245,10 +244,11 @@ class ShowWebsite extends OrgAction
                     'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
                 ],
 
+
                 WebsiteTabsEnum::SHOWCASE->value => $this->tab == WebsiteTabsEnum::SHOWCASE->value ? array_merge(
                     WebsiteResource::make($website)->getArray(),
                     ['layout' => GetWebsiteWorkshopLayout::run($this->parent, $website)['routeList']],
-                    ['stats' => $stats, 'content_blog_stats' => $content_blog_stats]
+                    ['stats' => $stats, 'content_blog_stats' => $content_blog_stats, 'website_type' => $website->shop->type],
                 )
                     : Inertia::lazy(fn () => WebsiteResource::make($website)->getArray()),
 

@@ -32,14 +32,14 @@ class CreateClocking extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new clocking'),
+                'title'    => __('New clocking'),
                 'pageHead' => [
-                    'title'        => __('new clocking'),
+                    'title'        => __('New clocking'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.hr.workplaces.show.clockings.index',
                                 'parameters' => $request->route()->originalParameters()
@@ -54,7 +54,7 @@ class CreateClocking extends OrgAction
                             'fields' => [
                                 'generator_id' => [
                                     'type'        => 'select',
-                                    'label'       => __('employee'),
+                                    'label'       => __('Employee'),
                                     'placeholder' => __('Select a employee'),
                                     'options'     => Options::forModels(Employee::class, 'contact_name', 'id'),
                                     'required'    => true,

@@ -31,8 +31,6 @@ class ProductHydrateImages implements ShouldBeUnique
         $stats = $this->calculateImageStatsUsingDB(
             model: $product,
             modelType: 'Product',
-            hasPublicImages: true,
-            useTotalImageSize: false
         );
 
         // Update product stats

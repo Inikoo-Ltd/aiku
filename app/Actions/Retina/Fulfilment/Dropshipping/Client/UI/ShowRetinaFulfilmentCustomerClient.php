@@ -65,7 +65,7 @@ class ShowRetinaFulfilmentCustomerClient extends RetinaAction
                     'model'     => __($customerClient->customer->name),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-folder'],
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
                     'actions'    => [
                         $this->getEditActionIcon($request, ''),

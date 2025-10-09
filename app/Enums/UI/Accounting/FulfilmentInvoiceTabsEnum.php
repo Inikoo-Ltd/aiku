@@ -41,7 +41,7 @@ enum FulfilmentInvoiceTabsEnum: string
 
             FulfilmentInvoiceTabsEnum::EMAIL => [
                 'align' => 'right',
-                'title' => __('email'),
+                'title' => __('Email'),
                 'icon'  => 'fal fa-envelope',
                 'type'  => 'icon'
             ],

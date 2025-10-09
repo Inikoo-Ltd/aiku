@@ -45,3 +45,15 @@ export const twBreakPoint = () => {
 
     return type
 }
+
+// Method: to pass to Iris components
+export const checkScreenType = () => {
+    const width = window.innerWidth
+    if (width < 640) {
+        return 'mobile'
+    } else if (width >= 640 && width < 1024) {
+        return 'tablet'
+    } else {
+        return 'desktop'
+    }
+}

@@ -10,12 +10,12 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\ProductCategory\UI\IndexSubDepartments;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
 use App\Actions\Masters\MasterShop\UI\ShowMasterShop;
 use App\Actions\Traits\Authorisations\WithMastersAuthorisation;
-use App\Enums\UI\Catalogue\DepartmentTabsEnum;
 use App\Enums\UI\SupplyChain\MasterSubDepartmentTabsEnum;
 use App\Http\Resources\Catalogue\DepartmentsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -24,6 +24,9 @@ use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
+use App\Http\Resources\Catalogue\SubDepartmentsResource;
 
 class ShowMasterSubDepartment extends GrpAction
 {
@@ -48,6 +51,7 @@ class ShowMasterSubDepartment extends GrpAction
         return $this->handle($masterSubDepartment);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
     public function inMasterDepartment(MasterShop $masterShop, MasterProductCategory $masterDepartment, MasterProductCategory $masterSubDepartment, ActionRequest $request): MasterProductCategory
     {
         $this->parent = $masterDepartment;
@@ -74,12 +78,41 @@ class ShowMasterSubDepartment extends GrpAction
                     'previous' => $this->getPrevious($masterSubDepartment, $request),
                     'next'     => $this->getNext($masterSubDepartment, $request),
                 ],
+                'mini_breadcrumbs' => array_filter(
+                    [
+                        [
+                            'label' => $masterSubDepartment->masterDepartment->name,
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterSubDepartment->masterShop->slug,
+                                    'masterDepartment'   => $masterSubDepartment->masterDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => 'Master Department',
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                        [
+                            'label' => $masterSubDepartment->name,
+                            'to'    => [
+                                'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
+                                'parameters' => [
+                                    'masterShop'         => $masterSubDepartment->masterShop->slug,
+                                    'masterDepartment'   => $masterSubDepartment->masterDepartment->slug,
+                                    'masterSubDepartment' => $masterSubDepartment->slug
+                                ]
+                            ],
+                            'tooltip' => __('Master Sub-Department'),
+                            'icon' => ['fal', 'folder-tree']
+                        ],
+                    ],
+                ),
                 'pageHead'    => [
                     'title'   => $masterSubDepartment->name,
                     'model'   => __('master sub-department'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('master sub-department')
+                        'title' => __('Master sub-department')
                     ],
                     'actions' => [
                         $this->canEdit ? [
@@ -103,7 +136,7 @@ class ShowMasterSubDepartment extends GrpAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => DepartmentTabsEnum::navigation()
+                    'navigation' => MasterSubDepartmentTabsEnum::navigation()
                 ],
 
                 'routes' => [
@@ -126,18 +159,43 @@ class ShowMasterSubDepartment extends GrpAction
                         ]
                     ]
                 ],
+                'storeRoute' =>  match ($this->parent::class) {
+                    MasterShop::class => [
+                        'name' => 'grp.models.master_shops.master_family.store',
+                        'parameters' => [
+                            'masterShop' => $this->parent->id
+                        ]
+                    ],
+                    MasterProductCategory::class => [
+                        'name' => 'grp.models.master-sub-department.master_family.store',
+                            'parameters' => [
+                                'masterSubDepartment' => $this->parent->id
+                        ]
+                    ],
+                    default => []
+                },
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterSubDepartment->masterShop, 'shops')),
 
                 MasterSubDepartmentTabsEnum::SHOWCASE->value => $this->tab == MasterSubDepartmentTabsEnum::SHOWCASE->value ?
                     fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)
                     : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterSubDepartment)),
 
+                MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value => $this->tab == MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value ?
+                    fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))
+                    : Inertia::lazy(fn () => SubDepartmentsResource::collection(IndexSubDepartments::run($masterSubDepartment))),
+
                 MasterSubDepartmentTabsEnum::HISTORY->value => $this->tab == MasterSubDepartmentTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($masterSubDepartment))),
 
+                MasterSubDepartmentTabsEnum::IMAGES->value => $this->tab == MasterSubDepartmentTabsEnum::IMAGES->value ?
+                    fn () =>  GetMasterProductCategoryImages::run($masterSubDepartment)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterSubDepartment)),
+
 
             ]
         )
+            ->table(IndexSubDepartments::make()->tableStructure(parent: $masterSubDepartment, prefix: MasterSubDepartmentTabsEnum::SUB_DEPARTMENTS->value))
             ->table(IndexHistory::make()->tableStructure(prefix: MasterSubDepartmentTabsEnum::HISTORY->value));
     }
 

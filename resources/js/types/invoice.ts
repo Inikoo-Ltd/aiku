@@ -27,6 +27,7 @@ export interface Invoice {
 }
 
 export interface InvoiceResource {
+    id: number
     address: Address
     created_at: string
     date: string

@@ -22,6 +22,7 @@ class RegisterRetinaFromStandalone extends IrisAction
      */
     public function asController(ActionRequest $request): void
     {
+
         $this->initialisation($request);
         $this->handle($this->validatedData);
 

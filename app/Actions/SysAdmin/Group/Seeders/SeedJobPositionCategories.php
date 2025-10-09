@@ -56,7 +56,7 @@ class SeedJobPositionCategories extends Seeder
     }
 
 
-    public string $commandSignature = 'job-position-categories:seed {group?}';
+    public string $commandSignature = 'group:seed-job-position-categories {group?}';
 
     public function asCommand(Command $command): int
     {

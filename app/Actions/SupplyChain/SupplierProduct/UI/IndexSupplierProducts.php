@@ -178,11 +178,11 @@ class IndexSupplierProducts extends GrpAction
     public function htmlResponse(LengthAwarePaginator $supplier_products, ActionRequest $request): Response
     {
         $subNavigation = null;
-        $title = __('supplier products');
+        $title = __('Supplier products');
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-box-usd'],
-            'title' => __('supplier products')
+            'title' => __('Supplier products')
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -195,7 +195,7 @@ class IndexSupplierProducts extends GrpAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('supplier products')
+                'title' => __('Supplier products')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-box-usd',
@@ -210,7 +210,7 @@ class IndexSupplierProducts extends GrpAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-person-dolly'],
-                'title' => __('supplier products')
+                'title' => __('Supplier products')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-box-usd',
@@ -223,8 +223,8 @@ class IndexSupplierProducts extends GrpAction
                 [
                     'type'    =>    'button',
                                     'style'   => 'create',
-                                    'tooltip' => __('new supplier product'),
-                                    'label'   => __('new supplier product'),
+                                    'tooltip' => __('New supplier product'),
+                                    'label'   => __('New supplier product'),
                                     'route'   => [
                                         'name'       => 'grp.supply-chain.suppliers.supplier_products.create',
                                         'parameters' => $request->route()->originalParameters()
@@ -254,7 +254,7 @@ class IndexSupplierProducts extends GrpAction
                     $request->route()->originalParameters(),
                     $this->scope
                 ),
-                'title'       => __('supplier products'),
+                'title'       => __('Supplier products'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -279,7 +279,7 @@ class IndexSupplierProducts extends GrpAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('supplier products'),
+                        'label' => __('Supplier products'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],

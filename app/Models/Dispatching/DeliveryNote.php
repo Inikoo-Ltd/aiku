@@ -127,6 +127,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $shipping_notes
  * @property string|null $quantity_picked
  * @property string|null $quantity_packed
+ * @property int|null $collection_address_id
+ * @property bool $is_premium_dispatch
+ * @property bool|null $has_extra_packing
+ * @property string|null $company_name recipient company name
+ * @property string|null $contact_name recipient contact name
+ * @property bool $is_cash_on_delivery
+ * @property int|null $shipping_zone_schema_id
+ * @property int|null $shipping_zone_id
+ * @property bool|null $has_insurance
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits

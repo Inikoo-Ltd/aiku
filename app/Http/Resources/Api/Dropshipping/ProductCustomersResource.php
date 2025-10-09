@@ -43,19 +43,19 @@ class ProductCustomersResource extends JsonResource
             'last_added_at'              => $this->last_added_at,
             'last_removed_at'            => $this->last_removed_at,
             'customer_id'                => $this->customer_id,
-            'created_at'                 => $this->created_at,
+            'created_at'                 => $this->created_at ? (method_exists($this->created_at, 'format') ? $this->created_at->format('Y-m-d H:i:s') : (\Illuminate\Support\Carbon::parse($this->created_at)->format('Y-m-d H:i:s'))) : null,
             'updated_at'                 => $this->updated_at,
 
-            'customer' => [
-                    'id'           => $this->customer_id,
-                    'slug'         => $this->customer_slug,
-                    'number'       => $this->customer_reference,
-                    'name'         => $this->customer_name,
-                    'contact_name' => $this->customer_contact_name,
-                    'email'        => $this->customer_email,
-                    'created_at'   => $this->customer_created_at,
-                    'updated_at'   => $this->customer_updated_at,
-                ]
+                        'customer' => [
+                                'id'           => $this->customer_id,
+                                'slug'         => $this->customer_slug,
+                                'number'       => $this->customer_reference,
+                                'name'         => $this->customer_name,
+                                'contact_name' => $this->customer_contact_name,
+                                'email'        => $this->customer_email,
+                                'created_at'   => $this->customer_created_at ? (\Illuminate\Support\Carbon::parse($this->customer_created_at)->format('Y-m-d H:i:s')) : null,
+                                'updated_at'   => $this->customer_updated_at,
+                            ]
         ];
     }
 }

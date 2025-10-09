@@ -1,169 +1,221 @@
-<!--
-  -  Author: Jonathan Lopez <raul@inikoo.com>
-  -  Created: Wed, 12 Oct 2022 16:50:56 Central European Summer Time, Benalmádena, Malaga,Spain
-  -  Copyright (c) 2022, Jonathan Lopez
-  -->
-
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
+import { Head, useForm, router } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue"
-import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import Tabs from "@/Components/Navigation/Tabs.vue"
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
 import { computed, ref } from "vue"
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import Modal from '@/Components/Utils/Modal.vue'
-import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
-import { trans } from 'laravel-vue-i18n'
-import { notify } from '@kyvg/vue3-notification'
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from '@/types/route'
-import { inject } from 'vue'
-import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import Icon from '@/Components/Icon.vue'
+import Dialog from 'primevue/dialog'
+import { faMinus, faPencil, faPlus } from '@fal'
+import InputNumber from "primevue/inputnumber"
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import PureInput from '@/Components/Pure/PureInput.vue'
+import { trans } from 'laravel-vue-i18n'
+import axios from 'axios'
+import { ulid } from 'ulid'
+import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
 
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
+    editable_table: boolean
     title: string
+    currencies?: any
     tabs: {
         current: string
-        navigation: {}
+        navigation: Record<string, string>
     },
-    data: {},
-    index?: {}
-    sales?: {}
+    data: Record<string, any>
+    index?: Record<string, any>
+    sales?: Record<string, any>
     routes: {
         families_route: routeType
         submit_route: routeType
     }
     is_orphan_products?: boolean
+    attachments?: Record<string, any>
 }>()
-const currentTab = ref<string>(props.tabs.current)
+
+console.log(props)
+
+// Current tab state
+const currentTab = ref(props.tabs.current)
+const isOpenModalEditProducts = ref(false)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
-
-const locale = inject('locale', aikuLocaleStructure)
-
-const component = computed(() => {
-    const components: any = {
-        index: TableProducts,
-        sales: TableProducts,
-    }
-
-    return components[currentTab.value]
+const form = useForm({
+    rrp: 0,
+    price: 0,
+    unit: ''
 })
 
-const selectedProductsId = ref<{[key: string]: boolean}>({})
-const compSelectedProductsId = computed(() => Object.keys(selectedProductsId.value).filter(key => selectedProductsId.value[key]))
-const isOpenModalAddToFamily = ref(false)
-const selectedFamilyId = ref(null)
-const isLoadingButton = ref(false)
-const onSubmitToFamily = () => {
-    isLoadingButton.value = true
+// Component mapping per tab
+const component = computed(() => {
+    const mapping: Record<string, any> = {
+        index: TableProducts,
+        sales: TableProducts,
+        attachments: AttachmentManagement
+    }
+    return mapping[currentTab.value]
+})
 
-    const selectedProductsIdToSubmit = compSelectedProductsId.value
-    console.log('ewqewq', selectedProductsIdToSubmit)
+// Selected products logic
+const selectedProductsId = ref<Record<string, boolean>>({})
+const compSelectedProductsId = computed(() =>
+    Object.keys(selectedProductsId.value).filter(key => selectedProductsId.value[key])
+)
 
-    router.post(
-        route(props.routes.submit_route?.name, {
-            ...props.routes.submit_route?.parameters,
-            family: selectedFamilyId.value,
-        }),
-        {
-            products: selectedProductsIdToSubmit,
-        },
-        {
-            preserveScroll: true,
-            onSuccess: () => {
-                isOpenModalAddToFamily.value = false
-                selectedFamilyId.value = null
-                selectedProductsId.value = {}
-                notify({
-                    title: trans("Success"),
-                    text: selectedProductsIdToSubmit.length + ' ' + trans("Products added to Family successfully."),
-                    type: "success",
-                })
-            },
-            onError: (errors) => {
-                console.error(errors)
-                notify({
-                    title: 'Something went wrong.',
-                    text: 'Failed to add Family, please try again.',
-                    type: 'error',
-                })
-            },
-            onFinish: () => {
-                isLoadingButton.value = false
-            }
+
+const loadingSave = ref(false)
+const rowErrors = ref<Record<string, any>>({}) // store errors keyed by productId
+const key = ref(ulid())
+
+//loop save
+/* const onSaveEditBulkProduct = async () => {
+    loadingSave.value = true
+    rowErrors.value = {} // reset
+
+    try {
+        // Run all axios requests in parallel
+        await Promise.all(
+            compSelectedProductsId.value.map(async (productId) => {
+                try {
+                    await axios.patch(
+                        route("grp.models.product.update", { product: productId }),
+                        {
+                            price: form.price,
+                            rrp: form.rrp,
+                            unit: form.unit
+                        }
+                    )
+                } catch (err: any) {
+                    // Save error for this productId
+                    rowErrors.value[productId] =
+                        err.response?.data?.errors ?? err.message
+                }
+            })
+        )
+
+        // Close modal only if no errors
+        if (Object.keys(rowErrors.value).length === 0) {
+            isOpenModalEditProducts.value = false
+            router.reload({ preserveScroll: true })
+            key.value = ulid()
+        } else {
+            console.warn("Some products failed to update", rowErrors.value)
         }
-    )
+    } catch (error) {
+        console.error("Unexpected bulk save failure", error)
+    } finally {
+        loadingSave.value = false
+    }
+} */
+
+
+const onSaveEditBulkProduct = async () => {
+    loadingSave.value = true
+    rowErrors.value = {} // reset
+
+    try {
+        // Payload sekali request
+        const payload: Record<string, any> = {}
+        compSelectedProductsId.value.forEach((productId) => {
+            payload[productId] = {
+                price: form.price,
+                rrp: form.rrp,
+                unit: form.unit,
+            }
+        })
+
+        await router.patch(
+            route("grp.models.product.bulk_update"),
+            payload,
+            {
+                preserveScroll: true,
+                onError: (errors) => {
+                    rowErrors.value = errors
+                },
+                onSuccess: () => {
+                    isOpenModalEditProducts.value = false
+                    key.value = ulid()
+                },
+            }
+        )
+    } catch (error) {
+        console.error("Unexpected bulk save failure", error)
+    } finally {
+        loadingSave.value = false
+    }
 }
 </script>
 
 <template>
-    <Head :title="capitalize(title)"/>
+
+    <Head :title="capitalize(title)" />
+
     <PageHeading :data="pageHead">
         <template #other>
-            <Button
-                v-if="is_orphan_products"
-                @click="() => isOpenModalAddToFamily = true"
-                type="tertiary"
-                icon="fas fa-plus"
-                label="Add to Family"
-                :disabled="compSelectedProductsId.length < 1"
-                v-tooltip="compSelectedProductsId.length < 1 ? trans('Select at least one product') : ''"
-            />
+            <Button v-if="compSelectedProductsId.length > 0" @click="() => isOpenModalEditProducts = true"
+                type="tertiary" :icon="faPencil" label="Edit Products" />
         </template>
     </PageHeading>
 
-    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    
-    <component
-        :is="component"
-        :key="currentTab"
-        :tab="currentTab"
-        :data="props[currentTab]"
-        :isCheckboxProducts="is_orphan_products"
-        @selectedRow="(productsId: {}) => (console.log('qqqqqq', productsId), selectedProductsId = productsId)"
-    />
-    
+    <Tabs :current="currentTab" :navigation="props.tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <Modal
-        v-if="is_orphan_products"
-        :isOpen="isOpenModalAddToFamily"
-        @onClose="isOpenModalAddToFamily = false"
-        width="w-full max-w-[500px]"
-    >
-        <div class="text-center font-semibold text-lg mb-4">
-            {{ trans("Select Family to add the products to:") }}
+    <component :is="component" :key="currentTab + key" :tab="currentTab" :data="props[currentTab]" 
+        :isCheckboxProducts="props.editable_table" :editable_table="props.editable_table"
+        @selectedRow="(productsId: Record<string, boolean>) => selectedProductsId = productsId" />
+
+    <!-- PrimeVue Dialog Modal -->
+    <Dialog :header="trans('Edit Selected Products')" v-model:visible="isOpenModalEditProducts" :modal="true"
+        :closable="true" :style="{ width: '500px' }">
+        <div class="px-2 space-y-4">
+            <!-- Form fields -->
+            <form class="space-y-3">
+                <!-- Grid for Price & RRP -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm" for="price">Price</label>
+                        <InputNumber v-model="form.price" mode="currency" :currency="currencies?.code" :step="0.25" showButtons
+                            button-layout="horizontal" inputClass="w-full text-xs">
+                            <template #incrementbuttonicon>
+                                <FontAwesomeIcon :icon="faPlus" />
+                            </template>
+                            <template #decrementbuttonicon>
+                                <FontAwesomeIcon :icon="faMinus" />
+                            </template>
+                        </InputNumber>
+                    </div>
+
+                    <div class="flex flex-col gap-1">
+                        <label class="text-sm" for="rrp">RRP</label>
+                        <InputNumber v-model="form.rrp" mode="currency" :currency="currencies?.code" :step="0.25" showButtons
+                            button-layout="horizontal" inputClass="w-full text-xs">
+                            <template #incrementbuttonicon>
+                                <FontAwesomeIcon :icon="faPlus" />
+                            </template>
+                            <template #decrementbuttonicon>
+                                <FontAwesomeIcon :icon="faMinus" />
+                            </template>
+                        </InputNumber>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                    <label class="text-sm" for="unit">Unit</label>
+                    <PureInput v-model="form.unit" />
+                </div>
+
+                <div class="flex justify-end gap-2 mt-4">
+                    <Button type="tertiary" label="Cancel" @click="isOpenModalEditProducts = false" />
+                    <Button type="save" @click="onSaveEditBulkProduct" :loading="loadingSave"/>
+                </div>
+            </form>
         </div>
+    </Dialog>
 
-        <div class="mb-4">
-            <PureMultiselectInfiniteScroll
-                v-model="selectedFamilyId"
-                :fetchRoute="props.routes.families_route"
-                :placeholder="trans('Select Family')"
-                valueProp="id"
-                xoptionsList="(options) => dataFamilyList = options"
-            >
-                <template #singlelabel="{ value }">
-                       <div class="">{{ value.code }} - {{ value.name }} <Icon :data="value.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div>
-                 <!--    <div class="w-full text-left pl-4">{{ value.name }} <span class="text-sm text-gray-400">({{ locale.number(value.number_current_products) }} {{ trans("products") }})</span></div> -->
-                </template>
-                
-                <template #option="{ option, isSelected, isPointed }">
-                    <div class="">{{ option.code }} - {{ option.name }} <Icon :data="option.state"></Icon><span class="text-sm text-gray-400">({{ locale.number(option.number_current_products) }} {{ trans("products") }})</span></div>
-                </template>
-            </PureMultiselectInfiniteScroll>
-        </div>
 
-        <Button
-            @click="() => onSubmitToFamily()"
-            label="Submit"
-            :loading="isLoadingButton"
-            full
-        />
-    </Modal>
 </template>
-

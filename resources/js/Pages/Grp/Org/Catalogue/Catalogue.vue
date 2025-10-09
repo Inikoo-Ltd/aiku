@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3'
+import { Head } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCubes, faSeedling } from "@fal"
 import { faFireAlt } from "@fad"
@@ -13,16 +13,16 @@ import { faCheckCircle, faTimesCircle, faExclamationTriangle } from "@fas"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
+import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { trans } from 'laravel-vue-i18n'
-import Image from '@/Components/Image.vue'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { routeType } from '@/types/route'
+import { trans } from "laravel-vue-i18n"
+import Image from "@/Components/Image.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
+import { routeType } from "@/types/route"
 import { Image as ImageProxy } from "@/types/Image"
-import StatsBox from '@/Components/Stats/StatsBox.vue'
+import StatsBox from "@/Components/Stats/StatsBox.vue"
 
 library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt, faExclamationTriangle)
 
@@ -103,8 +103,8 @@ const props = defineProps<{
 }>()
 
 
-const locale = inject('locale', aikuLocaleStructure)
-const layout = inject('layout', layoutStructure)
+const locale = inject("locale", aikuLocaleStructure)
+const layout = inject("layout", layoutStructure)
 
 // const stats = [
 //     { id: 1, label: 'Total Subscribers', stat: '71,897', change: '122', changeType: 'increase' },
@@ -113,9 +113,9 @@ const layout = inject('layout', layoutStructure)
 // ]
 
 
-const boxLoaded = ref<{[key: string]: boolean}>({})
+const boxLoaded = ref<{ [key: string]: boolean }>({})
 const isLoadingMeta = ref<string | null>(null)
-console.log('proqqqqqqqqqqqqqqps', props)
+
 </script>
 
 
@@ -134,7 +134,7 @@ console.log('proqqqqqqqqqqqqqqps', props)
             </StatsBox>
         </dl>
     </div>
-    
+
     <!-- Section: Top of the Month -->
     <div v-if="top_selling?.product?.value?.all || top_selling?.department?.value?.all || top_selling?.family?.value?.all" class="p-6">
         <div class="text-xl font-semibold py-1 border-b border-gray-200">{{ trans("Top of the month (Top_selling)") }}</div>
@@ -142,12 +142,11 @@ console.log('proqqqqqqqqqqqqqqps', props)
             <!-- Top_selling: Product -->
             <div v-if="top_selling.product.value" class="row-span-2 example-2 rounded-md">
                 <div class="inner group bg-gray-100 h-full rounded-md px-8 py-8 flex gap-x-4"
-                    :style="{
+                     :style="{
                         background: `color-mix(in srgb, ${layout?.app?.theme[0]} 10%, white)`
                     }"
                 >
                     <div class="aspect-square h-1/2 lg:h-full w-fit flex-shrink-0 rounded-md overflow-hidden">
-                        <!-- <img src="https://www.ancientwisdom.biz/wi.php?id=1857494&s=705x705" class="h-full w-auto z-10" /> -->
                         <Image :src="top_selling.product.value?.images?.data?.[0]?.source" />
                     </div>
 
@@ -157,12 +156,12 @@ console.log('proqqqqqqqqqqqqqqps', props)
                             <h3 class="text-xl font-semibold">
                                 {{ top_selling.product.value?.name }}
                             </h3>
-                            <div class="text-gray-400 text-sm">{{ top_selling.product.value?.code || '-' }}</div>
+                            <div class="text-gray-400 text-sm">{{ top_selling.product.value?.code || "-" }}</div>
                         </div>
                         <div>
-                            <p aria-hidden="true" class="text-gray-500">{{ trans('Sold this month') }}: {{ top_selling.product.value?.sold_on_month || '-' }}</p>
-                            <p aria-hidden="true" class="text-gray-500">{{ trans('Stock') }}: {{ top_selling.product.value?.stock || '-' }}</p>
-                            <p aria-hidden="true" class="text-gray-500">{{ trans('Price') }}: {{ top_selling.product.value?.price || '-' }}</p>
+                            <p aria-hidden="true" class="text-gray-500">{{ trans("Sold this month") }}: {{ top_selling.product.value?.sold_on_month || "-" }}</p>
+                            <p aria-hidden="true" class="text-gray-500">{{ trans("Stock") }}: {{ top_selling.product.value?.stock || "-" }}</p>
+                            <p aria-hidden="true" class="text-gray-500">{{ trans("Price") }}: {{ top_selling.product.value?.price || "-" }}</p>
                         </div>
                     </div>
                 </div>
@@ -172,22 +171,22 @@ console.log('proqqqqqqqqqqqqqqps', props)
             <div v-if="top_selling.department.value" class="bg-gray-50 border-gray-200 border rounded-md flex items-center p-6">
                 <div class="flex gap-x-2 items-center">
                     <div class="p-3 rounded">
-                        <FontAwesomeIcon icon='fal fa-folder-tree' class='text-indigo-500 text-xl' v-tooltip="trans('Department')" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon icon="fal fa-folder-tree" class="text-indigo-500 text-xl" v-tooltip="trans('Department')" fixed-width aria-hidden="true" />
                     </div>
                     <div class="">
                         <div class="text-xl font-medium">{{ top_selling.department.value.name }}</div>
                         <div class="flex gap-x-10">
                             <div class="text-gray-500">
-                                <FontAwesomeIcon icon='fal fa-folder' class='text-gray-400' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon icon="fal fa-folder" class="text-gray-400" fixed-width aria-hidden="true" />
                                 {{ top_selling.department.value.current_families }}
                             </div>
                             <div class="text-gray-500">
-                                <FontAwesomeIcon icon='fal fa-cube' class='text-gray-400' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon icon="fal fa-cube" class="text-gray-400" fixed-width aria-hidden="true" />
                                 {{ top_selling.department.value.current_products }}
                             </div>
                         </div>
                     </div>
-                    
+
                 </div>
             </div>
 
@@ -195,29 +194,17 @@ console.log('proqqqqqqqqqqqqqqps', props)
             <div v-if="top_selling.family.value" class="bg-gray-50 border-gray-200 border rounded-md flex items-center p-6">
                 <div class="flex gap-x-2 items-center">
                     <div class="p-3 rounded">
-                        <FontAwesomeIcon :icon='top_selling.family.icon' class='text-indigo-500 text-xl' v-tooltip="trans('Family')" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon :icon="top_selling.family.icon" class="text-indigo-500 text-xl" v-tooltip="trans('Family')" fixed-width aria-hidden="true" />
                     </div>
 
                     <div class="">
                         <div class="text-xl font-medium">{{ top_selling.family.value.name }}</div>
-                        <!-- <div class="flex gap-x-10">
-                            <div class="text-gray-500">
-                                <FontAwesomeIcon icon='fal fa-folder' class='text-gray-400' fixed-width aria-hidden='true' />
-                                {{ top_selling.department.value.current_families }}
-                            </div>
-                            <div class="text-gray-500">
-                                <FontAwesomeIcon icon='fal fa-cube' class='text-gray-400' fixed-width aria-hidden='true' />
-                                {{ top_selling.department.value.current_products }}
-                            </div>
-                        </div> -->
                     </div>
                 </div>
             </div>
 
         </dl>
     </div>
-
-    <!-- <pre>{{ top_selling }}</pre> -->
 
 
 </template>
@@ -233,30 +220,29 @@ console.log('proqqqqqqqqqqqqqqps', props)
 }
 
 .example-2 .inner {
-  position: relative;
-  z-index: 1;
-  width: 100%;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    margin: 0;
 }
-.example-2 .inner {
-  margin: 0;
-}
+
 .example-2::before {
-  content: "";
-  display: block;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    v-bind('`color-mix(in srgb, ${layout?.app?.theme[0]} 100%, transparent)`') 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  height: 150%;
-  width: 300px;
-  transform: translate(0);
-  position: absolute;
-  animation: rotate 3s linear forwards infinite;
-  z-index: 0;
-  top: 50%;
-  transform-origin: top center;
+    content: "";
+    display: block;
+    background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            v-bind('`color-mix(in srgb, ${layout?.app?.theme[0]} 100%, transparent)`') 50%,
+            rgba(255, 255, 255, 0) 100%
+    );
+    height: 150%;
+    width: 300px;
+    transform: translate(0);
+    position: absolute;
+    animation: rotate 3s linear forwards infinite;
+    z-index: 0;
+    top: 50%;
+    transform-origin: top center;
 }
 
 @keyframes rotate {

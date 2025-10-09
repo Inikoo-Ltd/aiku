@@ -28,37 +28,37 @@ enum MarketplaceSupplierProductTabsEnum: string
     {
         return match ($this) {
             MarketplaceSupplierProductTabsEnum::SHOWCASE => [
-                'title' => __('supplier product'),
+                'title' => __('Supplier product'),
                 'icon'  => 'fas fa-info-circle',
             ],
 
             MarketplaceSupplierProductTabsEnum::DATA => [
-                'title' => __('data'),
+                'title' => __('Data'),
                 'icon'  => 'fal fa-database',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
 
             MarketplaceSupplierProductTabsEnum::FEEDBACKS => [
-                'title' => __('issues'),
+                'title' => __('Issues'),
                 'icon'  => 'fal fa-poop',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             MarketplaceSupplierProductTabsEnum::IMAGES => [
-                'title' => __('images'),
+                'title' => __('Images'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             MarketplaceSupplierProductTabsEnum::ATTACHMENTS => [
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             MarketplaceSupplierProductTabsEnum::HISTORY => [
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

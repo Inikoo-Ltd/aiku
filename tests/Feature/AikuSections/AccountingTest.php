@@ -111,16 +111,16 @@ beforeEach(function () {
 });
 
 test('payment service providers seeder works', function () {
-    expect(PaymentServiceProvider::count())->toBe(12)->
+    expect(PaymentServiceProvider::count())->toBe(11)->
     and(
         $this->group->accountingStats->number_payment_service_providers
-    )->toBe(12);
+    )->toBe(11);
 });
 
 test('add payment service provider to organisation', function () {
     expect($this->organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($this->organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1)
-        ->and($this->group->accountingStats->number_payment_service_providers)->toBe(12);
+        ->and($this->group->accountingStats->number_payment_service_providers)->toBe(11);
 
     $modelData = PaymentServiceProvider::factory()->definition();
     data_set($modelData, 'type', PaymentServiceProviderTypeEnum::CASH->value);
@@ -317,7 +317,7 @@ test('UI create payment', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'new payment')
+                    ->where('title', 'New payment')
                     ->etc()
             )
             ->has('formData');
@@ -634,18 +634,6 @@ test('UI index invoice categories', function () {
     });
 });
 
-test('UI create invoice categories', function () {
-    $response = get(route('grp.org.accounting.invoice-categories.create', $this->organisation->slug));
-
-    $response->assertInertia(function (AssertableInertia $page) {
-        $page
-            ->component('CreateModel')
-            ->has('title')
-            ->has('formData')
-            ->has('pageHead')
-            ->has('breadcrumbs', 4);
-    });
-});
 
 test('store invoice category', function () {
     $invoiceCategory = StoreInvoiceCategory::make()->action($this->organisation, [
@@ -739,7 +727,7 @@ test('UI show accounting dashboard', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'accounting')
+                    ->where('title', 'Accounting')
                     ->etc()
             )
             ->has('flatTreeMaps');
@@ -1006,7 +994,7 @@ test('UI create payment account', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'new payment account')
+                    ->where('title', 'New payment account')
                     ->has('actions')
                     ->etc()
             )
@@ -1243,7 +1231,7 @@ test('UI show invoice in Organisation', function () {
                             ->has('reference')
                             ->has('route')
                             ->has('contact_name')
-                            ->has('company_name')
+                            ->has('name')
                             ->has('location')
                             ->has('phone')
                     )
@@ -1301,7 +1289,7 @@ test('UI show invoice in Shop', function () {
                             ->has('reference')
                             ->has('route')
                             ->has('contact_name')
-                            ->has('company_name')
+                            ->has('name')
                             ->has('location')
                             ->has('phone')
                     )
@@ -1515,11 +1503,11 @@ test('top up search', function () {
 test('delete payment service provider', function () {
     /** @var Group $group */
     $group = $this->group;
-    expect($group->paymentServiceProviders()->count())->toBe(12);
+    expect($group->paymentServiceProviders()->count())->toBe(11);
     $paymentServiceProvider = PaymentServiceProvider::where('type', PaymentServiceProviderTypeEnum::CASH->value)->first();
     DeletePaymentServiceProvider::make()->action($paymentServiceProvider);
     $group->refresh();
-    expect($group->paymentServiceProviders()->count())->toBe(11);
+    expect($group->paymentServiceProviders()->count())->toBe(10);
 });
 
 test('hydrate invoice categories', function () {

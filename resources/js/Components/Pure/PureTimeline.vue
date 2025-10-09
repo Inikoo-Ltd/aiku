@@ -39,7 +39,7 @@ const compIndexCurrent = computed(() => {
             <template v-for="(step, stepIndex) in props.options" :key="stepIndex">
                 <SwiperSlide>
                     <!-- Section: Title -->
-                    <div class="w-fit mx-auto capitalize text-xxs md:text-xs text-center"
+                    <div class="w-fit mx-auto text-xxs md:text-xs text-center"
                         :class="step.timestamp || state == step.key ? 'text-[#888] ' : 'text-gray-300'">
                         {{ step.label }}
                     </div>

@@ -85,9 +85,9 @@ class IndexPurges extends OrgAction
     }
 
 
-    public function tableStructure($parent, ?array $modelOperations = null, $prefix = null): Closure
+    public function tableStructure($parent, $prefix = null): Closure
     {
-        return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
+        return function (InertiaTable $table) use ($parent, $prefix) {
             if ($prefix) {
                 $table
                     ->name($prefix)
@@ -106,16 +106,16 @@ class IndexPurges extends OrgAction
                 );
 
 
-            $table->column(key: 'state', label: __('state'), sortable: true, canBeHidden: false, searchable: true);
-            $table->column(key: 'scheduled_at', label: __('date'), sortable: true, canBeHidden: false, searchable: true);
-            $table->column(key: 'type', label: __('type'), sortable: true, canBeHidden: false, searchable: true);
+            $table->column(key: 'state', label: __('state'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'scheduled_at', label: __('date'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, searchable: true);
                 $table->column(key: 'shop_name', label: __('shop'), canBeHidden: false, searchable: true);
             }
-            $table->column(key: 'estimated_number_orders', label: __('orders'), sortable: true, canBeHidden: false, searchable: true);
-            $table->column(key: 'estimated_number_transactions', label: __('transactions'), sortable: true, canBeHidden: false, searchable: true);
-            $table->column(key: 'estimated_net_amount', label: __('amount'), sortable: true, canBeHidden: false, searchable: true, align: 'right');
+            $table->column(key: 'estimated_number_orders', label: __('orders'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'estimated_number_transactions', label: __('transactions'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'estimated_net_amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
         };
     }
 
@@ -150,7 +150,7 @@ class IndexPurges extends OrgAction
             [
                 'type'    =>    'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new purge'),
+                                'tooltip' => __('New purge'),
                                 'label'   => __('purge'),
                                 'route'   => [
                                     'name'       => 'grp.org.shops.show.ordering.purges.create',
@@ -170,7 +170,7 @@ class IndexPurges extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'                                      => __('purges'),
+                'title'                                      => __('Purges'),
                 'pageHead'                                   => [
                     'title'         => $title,
                     'icon'          => $icon,
@@ -230,9 +230,7 @@ class IndexPurges extends OrgAction
             ),
             'grp.overview.ordering.purges.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs(
-                    $routeParameters
-                ),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,

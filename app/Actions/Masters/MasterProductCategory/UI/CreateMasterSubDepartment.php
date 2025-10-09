@@ -56,12 +56,12 @@ class CreateMasterSubDepartment extends OrgAction
                  ),
                 'title'       => __('New Master Sub-department'),
                 'pageHead'    => [
-                    'title'   => __('new master Sub-department'),
+                    'title'   => __('New master Sub-department'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/\.create$/', '.index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

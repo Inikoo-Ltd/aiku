@@ -102,7 +102,7 @@ class StoreShopifyProduct extends RetinaAction
             $variables = [
                 'product' => [
                     'title'           => $product->name,
-                    'handle'          => Str::slug($product->name),
+                    'handle'          => Str::slug($product->name) . substr(now()->timestamp, -3),
                     'descriptionHtml' => $product->description.' '.$product->description_extra,
                     'productType'     => $product->family?->name,
                     'vendor'          => $product->shop->name,
@@ -121,7 +121,7 @@ class StoreShopifyProduct extends RetinaAction
 
 
             if (!empty($response['errors']) || !isset($response['body'])) {
-                $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
+                $errorMessage = 'Error in API response: '.json_encode($response['errors']);
                 UpdatePortfolio::run($portfolio, [
                     'errors_response' => [$errorMessage]
                 ]);
@@ -224,6 +224,7 @@ class StoreShopifyProduct extends RetinaAction
 
     public function asCommand(Command $command): void
     {
+        /** @var Portfolio $portfolio */
         $portfolio = Portfolio::find($command->argument('portfolio_id'));
 
         if (!$portfolio) {
@@ -250,7 +251,7 @@ class StoreShopifyProduct extends RetinaAction
 
         $command->info("Creating product in Shopify for portfolio #$portfolio->id...");
 
-        [$status, $result] = $this->handle($shopifyUser, $portfolio);
+        [$status, $result] = $this->handle($portfolio);
 
         if (!$status) {
             $command->error("Failed to create product in Shopify");

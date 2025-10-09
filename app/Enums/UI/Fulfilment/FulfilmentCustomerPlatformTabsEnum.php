@@ -23,7 +23,7 @@ enum FulfilmentCustomerPlatformTabsEnum: string
     {
         return match ($this) {
             FulfilmentCustomerPlatformTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],
         };

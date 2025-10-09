@@ -121,7 +121,7 @@ class IndexInvoicesInOrganisation extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            'title' => __('invoices')
+            'title' => __('Invoices')
         ];
 
 
@@ -140,7 +140,7 @@ class IndexInvoicesInOrganisation extends OrgAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('invoices'),
+                'title'       => __('Invoices'),
                 'pageHead'    => [
                     'title'   => $title,
                     'icon'    => $icon,

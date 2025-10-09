@@ -53,7 +53,15 @@ const props = defineProps<{
 }>()
 
 const layout = inject("layout", retinaLayoutStructure)
-const products = ref<any[]>(toRaw(props.fieldValue.products.data || []))
+const products = ref<any[]>(
+  props.fieldValue?.products?.meta?.last_page == 1
+    ? [
+        ...(props.fieldValue?.products?.data ?? []),
+        ...(props.fieldValue?.products_out_of_stock?.data ?? [])
+      ]
+    : [...(props.fieldValue?.products?.data ?? [])]
+);
+
 const q = ref("")
 const orderBy = ref(route()?.params?.order_by)
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
@@ -233,12 +241,13 @@ const loadMore = () => {
 const sortOptions = computed(() => {
     const baseOptions = [
         /* { label: "Latest Arrivals", value: "created_at" }, */
-        { label: "Product Code", value: "code" },
-        { label: "Name", value: "name" }
+        { label: trans("New arrivals"), value: "created_at" },
+        { label: trans("Product Code"), value: "code" },
+        { label: trans("Name"), value: "name" }
     ]
     if (layout?.iris?.is_logged_in) {
-        baseOptions.splice(1, 0, { label: "Price", value: "price" })
-        baseOptions.splice(1, 0, { label: "Rrp", value: "rrp" })
+        baseOptions.splice(1, 0, { label: trans("Price"), value: "price" })
+        baseOptions.splice(1, 0, { label: trans("RRP"), value: "rrp" })
     }
     return baseOptions
 })
@@ -266,13 +275,9 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith("-")
     }
 
-    if (layout?.iris?.is_logged_in) {
-        fetchProductHasPortfolio()
+    if (layout?.iris?.is_logged_in){
+        fetchHasInBasket();
     }
-
-
-
-    /* debFetchProducts() */
 })
 
 const updateQueryParams = () => {
@@ -308,54 +313,54 @@ const toggleSort = (key: string) => {
         sortKey.value = key
         isAscending.value = true
     }
-
+    
     orderBy.value = isAscending.value ? key : `-${key}`
     updateQueryParams()
     handleSearch()
 }
 
 
-const productHasPortfolio = ref({
+const productInBasket = ref({
     isLoading: false,
     list: []
 })
 
-
-const getRouteForProductPortfolio = () => {
-    const { model_type, model_id } = props.fieldValue
+const getRouteForProductInBasket = () => {
+    const { model_type, model_id } = props.fieldValue;
     if (model_type == "ProductCategory") {
-        return route("iris.json.product_category.portfolio_data", {
+        return route("iris.json.product_category.transaction_data", {
             productCategory: model_id
-        })
+        });
     } else if (model_type == "Collection") {
-        return route("iris.json.collection.portfolio_data", {
+        return route("iris.json.collection.transaction_data", {
             collection: model_id
-        })
+        });
     }
-}
+};
 
-const fetchProductHasPortfolio = async () => {
-    productHasPortfolio.value.isLoading = true
+const fetchHasInBasket = async () => {
+    productInBasket.value.isLoading = true;
     try {
-        const apiUrl = getRouteForProductPortfolio()
+        const apiUrl = getRouteForProductInBasket();
 
         if (!apiUrl) {
-            throw new Error("Invalid model_type or missing route configuration")
+            throw new Error("Invalid model_type or missing route configuration");
         }
 
-        const response = await axios.get(apiUrl)
-        productHasPortfolio.value.list = response.data || []
+        const response = await axios.get(apiUrl);
+        productInBasket.value.list = response.data || [];
     } catch (error) {
-        console.error(error)
+        console.error(error);
         notify({
             title: "Error",
             text: "Failed to load product portfolio.",
             type: "error"
-        })
+        });
     } finally {
-        productHasPortfolio.value.isLoading = false
+        productInBasket.value.isLoading = false;
     }
-}
+};
+
 
 
 const responsiveGridClass = computed(() => {
@@ -370,8 +375,6 @@ const responsiveGridClass = computed(() => {
     const count = columnCount[props.screenType] ?? 1
     return `grid-cols-${count}`
 })
-
-
 
 
 </script>
@@ -396,7 +399,7 @@ const responsiveGridClass = computed(() => {
             </transition>
 
             <!-- Main Content -->
-            <main class="flex-1">
+            <div class="flex-1">
                 <!-- Search & Sort -->
                 <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
@@ -408,12 +411,12 @@ const responsiveGridClass = computed(() => {
                             <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-3 !w-auto"
                                 aria-label="Open Filters" />
                         </div>
-                        <PureInput v-model="q" @keyup.enter="handleSearch" type="text" placeholder="Search products..."
+                        <PureInput v-model="q" @keyup.enter="handleSearch" type="text" :placeholder="trans('Search products...')"
                             :clear="true" :isLoading="isLoadingInitial" :prefix="{ icon: faSearch, label: '' }" />
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
+                    <div class="flex xspace-x-6 overflow-x-auto mt-2 md:mt-0">
                         <!-- <button @click="toggleNewArrivals"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
                             isNewArrivals
@@ -424,12 +427,12 @@ const responsiveGridClass = computed(() => {
                         </button> -->
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
-                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
-                                'pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1',
+                            class="pb-2 px-4 text-sm font-medium whitespace-nowrap flex items-center border-b-2 gap-1" :class="[
                                 sortKey === option.value
-                                    ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                                    : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                            ]" :disabled="isLoadingInitial || isLoadingMore">
+                                    ? `border-[var(--iris-color-0)] text-[var(--iris-color-0)]`
+                                    : `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
+                            ]"
+                            :disabled="isLoadingInitial || isLoadingMore">
                             {{ option.label }} {{ getArrow(option.value) }}
                         </button>
                     </div>
@@ -439,14 +442,14 @@ const responsiveGridClass = computed(() => {
                 <div class="px-4 mb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
-                        <span class="text-gray-700 font-medium">
-                            Showing
+                        <span class="font-medium">
+                            {{ trans("Showing") }}
                             <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
                                 products.length }}</span>
-                            of
+                            {{ trans("of") }}
                             <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
                                 totalProducts }}</span>
-                            {{ products.length === 1 ? "product" : "products" }}
+                            {{ products.length === 1 ? trans("product") : trans("products") }}
                         </span>
                     </div>
 
@@ -477,7 +480,7 @@ const responsiveGridClass = computed(() => {
                             <ProductRenderEcom
                                 :product="product"
                                 :key="index"
-                                :productHasPortfolio="productHasPortfolio.list[product.id]"
+                                :hasInBasket="productInBasket.list[product.id]"
                             />
                         </div>
                     </template>
@@ -499,7 +502,7 @@ const responsiveGridClass = computed(() => {
                         <template v-else>{{ trans("Load More") }}</template>
                     </Button>
                 </div>
-            </main>
+            </div>
 
             <!-- Mobile Filters Drawer -->
             <Drawer v-model:visible="isShowFilters" position="left" :modal="true" :dismissable="true"

@@ -22,7 +22,7 @@ class DeleteOrder extends OrgAction
     use WithOrderingEditAuthorisation;
     use WithActionUpdate;
 
-    public string $commandSignature = 'cancel:order {id}';
+    public string $commandSignature = 'cancel:delete {id}';
 
     /**
      * @throws \Illuminate\Validation\ValidationException

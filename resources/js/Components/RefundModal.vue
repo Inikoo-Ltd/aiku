@@ -140,8 +140,6 @@ const maxRefundAmount = computed(() => {
 const validateRefundAmount = () => {
     const amount = parseFloat(refundAmount.value)
 
-    console.log(amount)
-
     if (refundAmount.value === '' || isNaN(amount)) {
         validationErrors.value.amount = trans('Amount cannot be empty')
         return false 

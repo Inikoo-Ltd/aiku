@@ -41,7 +41,7 @@ class IndexDepartmentsInGroup extends OrgAction
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-folder-tree'],
-            'title' => __('departments')
+            'title' => __('Departments')
         ];
         $afterTitle = [
             'label' => '@ '.__('group').' '.$this->group->code,

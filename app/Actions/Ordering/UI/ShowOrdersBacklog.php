@@ -187,9 +187,9 @@ class ShowOrdersBacklog extends OrgAction
                     $parent,
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('orders backlog'),
+                'title'       => __('Orders backlog'),
                 'pageHead'    => [
-                    'title' => __('orders backlog'),
+                    'title' => __('Orders backlog'),
 
                 ],
 

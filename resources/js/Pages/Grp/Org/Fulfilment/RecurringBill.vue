@@ -234,7 +234,7 @@ const isLoading = ref(false)
                                     <template #option="{ option, isSelected, isPointed }">
                                         <div class="">
                                             {{ option.reference }}
-                                            <span class="text-sm text-gray-400 capitalize">({{ option.type }})</span>
+                                            <span class="text-sm text-gray-400">({{ option.type }})</span>
                                         </div>
                                     </template>
                                 </PureMultiselectInfiniteScroll>
@@ -377,7 +377,7 @@ const isLoading = ref(false)
             <div class="flex flex-col lg:flex-row w-full justify-start lg:justify-between items-start lg:items-center gap-y-2 pr-4">
                 <div class="flex flex-col justify-center ">
                     <!-- <div class="text-xs">Status</div> -->
-                    <div class="font-semibold capitalize">
+                    <div class="font-semibold">
                         {{ status_rb === 'current' ? trans('On going') : trans('Expired') }}
                         <FontAwesomeIcon icon='far fa-wave-sine' class='' fixed-width aria-hidden='true' />
                     </div>

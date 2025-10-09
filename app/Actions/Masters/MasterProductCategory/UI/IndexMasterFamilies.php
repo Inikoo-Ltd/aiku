@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Actions\Goods\UI\WithMasterCatalogueSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterDepartmentSubNavigation;
 use App\Actions\Masters\MasterProductCategory\WithMasterSubDepartmentSubNavigation;
@@ -16,6 +17,7 @@ use App\Actions\Masters\UI\ShowMastersDashboard;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Masters\MasterProductCategory;
@@ -198,12 +200,13 @@ class IndexMasterFamilies extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $masterFamilies, ActionRequest $request): Response
     {
+        $masterShop = null;
         $subNavigation = null;
         $title         = $this->parent->name;
         $model         = '';
         $icon          = [
             'icon'  => ['fal', 'fa-store-alt'],
-            'title' => __('master shop')
+            'title' => __('Master shop')
         ];
         $afterTitle    = [
             'label' => __('Master Families')
@@ -213,6 +216,7 @@ class IndexMasterFamilies extends OrgAction
         ];
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
+            $masterShop = $this->parent;
         } elseif ($this->parent instanceof Group) {
             $title      = __('Master families');
             $icon       = [
@@ -239,6 +243,7 @@ class IndexMasterFamilies extends OrgAction
                 ];
                 $subNavigation = $this->getMasterSubDepartmentSubNavigation($this->parent);
             }
+            $masterShop = $this->parent->masterShop;
         }
 
         return Inertia::render(
@@ -249,58 +254,57 @@ class IndexMasterFamilies extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Departments'),
+                'title'       => __('Master Families'),
                 'pageHead'    => [
                     'title'         => $title,
                     'icon'          => $icon,
                     'model'         => $model,
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
-                    'actions'       => $this->getActions($request),
+                    'actions'       => $this->getActions(),
                     'subNavigation' => $subNavigation,
                 ],
+                'storeRoute' =>  match ($this->parent::class) {
+                    MasterShop::class => [
+                        'name' => 'grp.models.master_shops.master_family.store',
+                        'parameters' => [
+                            'masterShop' => $this->parent->id
+                        ]
+                    ],
+                    MasterProductCategory::class => $this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT
+                        ? [
+                            'name' => 'grp.models.master_family.store',
+                            'parameters' => [
+                                'masterDepartment' => $this->parent->id
+                            ]
+                        ]
+                        : [
+                            'name' => 'grp.models.master-sub-department.master_family.store',
+                            'parameters' => [
+                                'masterSubDepartment' => $this->parent->id
+                            ]
+                        ],
+                    default => null
+                },
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterShop, 'shops')),
                 'data'        => MasterFamiliesResource::collection($masterFamilies),
             ]
         )->table($this->tableStructure($this->parent));
     }
 
-    public function getActions(ActionRequest $request): array
+    public function getActions(): array
     {
         $actions = [];
 
-
-        $createRoute = "grp.masters.master_shops.show.master_families.create";
-
-        if ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            $createRoute = "grp.masters.master_sub_departments.show.master_families.create";
-        } elseif ($this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
-            match ($request->route()->getName()) {
-                'grp.masters.master_departments.show.master_families.index' =>
-                $createRoute = 'grp.masters.master_departments.show.master_families.create',
-                'grp.masters.master_shops.show.master_departments.show.master_families.index' =>
-                $createRoute = 'grp.masters.master_shops.show.master_departments.show.master_families.create',
-                default => $createRoute
-            };
-        } elseif ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
-            match ($request->route()->getName()) {
-                'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.index' =>
-                $createRoute = 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.create',
-                'grp.masters.master_departments.show.master_families.index' =>
-                $createRoute = 'grp.masters.master_departments.show.master_families.create',
-                default => $createRoute
-            };
+        if ($this->parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT || $this->parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            $actions[] = [
+                'type'    => 'button',
+                'key'     => 'add-master-family',
+                'style'   => 'create',
+                'tooltip' => __('Create master family'),
+                'label'   => __('Master Family'),
+            ];
         }
-
-        $actions[] = [
-            'type'    => 'button',
-            'style'   => 'create',
-            'tooltip' => __('master new family'),
-            'label'   => __('master family'),
-            'route'   => [
-                'name'       => $createRoute,
-                'parameters' => $request->route()->originalParameters()
-            ]
-        ];
 
 
         return $actions;

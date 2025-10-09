@@ -9,18 +9,22 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
+use App\Actions\Traits\HasBucketImages;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Actions\Traits\HasBucketAttachment;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Inventory\OrgStocksResource;
 
 class GetProductShowcase
 {
     use AsObject;
+    use HasBucketImages;
+    use HasBucketAttachment;
 
     public function handle(Product $product): array
     {
@@ -54,7 +58,7 @@ class GetProductShowcase
             'flammable' => $product->pictogram_flammable,
             'gas_under_pressure' => $product->pictogram_gas,
             'hazard_environment' => $product->pictogram_environment,
-            'health_hazard' => $product->pictogram_,
+            'health_hazard' => $product->pictogram_health,
             'oxidising' => $product->pictogram_oxidising,
 
         ];
@@ -113,6 +117,9 @@ class GetProductShowcase
                     ],
                 ],
             ],
+            'images' => $this->getImagesData($product),
+            'attachment_box'=>  $this->getAttachmentData($product),
+
         ];
     }
 
@@ -122,4 +129,5 @@ class GetProductShowcase
             return GetTradeUnitShowcase::run($tradeUnit);
         })->toArray();
     }
+
 }

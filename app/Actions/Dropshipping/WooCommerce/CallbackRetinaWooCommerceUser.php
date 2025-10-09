@@ -45,16 +45,9 @@ class CallbackRetinaWooCommerceUser extends OrgAction
         ]);
 
         $wooCommerceUser->refresh();
-
-        $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
-
         CheckWooChannel::run($wooCommerceUser);
 
-        return $this->update($wooCommerceUser, [
-            'settings' => array_merge($wooCommerceUser->settings, [
-                'webhooks' => $webhooks
-            ])
-        ]);
+        return $wooCommerceUser;
     }
 
     public function htmlResponse(WooCommerceUser $wooCommerceUser): Response

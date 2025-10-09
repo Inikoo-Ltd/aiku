@@ -36,6 +36,11 @@ import {CustomerSalesChannel} from "@/types/customer-sales-channel"
 import RetinaTablePortfoliosPlatform from "@/Components/Tables/Retina/RetinaTablePortfoliosPlatform.vue"
 import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTablePortfoliosShopify.vue"
 import {ulid} from "ulid";
+import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
+import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
+import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
+import { useTruncate } from "@/Composables/useTruncate"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
@@ -81,11 +86,7 @@ const props = defineProps<{
         type: string
     }
     is_platform_connected: boolean
-    customer_sales_channel: {
-        id: number
-        slug: string
-        name: string
-    }
+    customer_sales_channel: CustomerSalesChannel
     manual_channels: object
     count_product_not_synced: number
 
@@ -200,7 +201,7 @@ const onCloneManualPortfolio = async (sourceCustomerSalesChannelId: string | num
                 router.reload({only: ["pageHead", "products"]});
                 notify({
                     title: trans("Success!"),
-                    text: `Portfolios been cloned in the background.`,
+                    text: trans(`Portfolios been cloned in the background.`),
                     type: "success"
                 });
                 props.step.current = 1;
@@ -318,6 +319,7 @@ const key = ulid()
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
 
+     
         <template #button-upload-to-shopify="{ action }">
             <Button @click="onUploadToShopify()" :style="action.style" :label="action.label" :loading="isLoadingUpload"
                     :disabled="!selectedData.products.length"
@@ -351,10 +353,21 @@ const key = ulid()
                             {{ trans("Clone portfolio from channel:") }}
                         </div>
 
-                        <div class="flex flex-col gap-y-2" v-for="manual_channel in manual_channels?.data">
+                        <div v-for="(manual_channel, index) in manual_channels?.data" :key="index" class="flex flex-col gap-y-2 mb-1.5">
                             <Button :loading="isLoadingClone" @click="() => onCloneManualPortfolio(manual_channel.id)"
-                                    :label="manual_channel.name + ' ('+manual_channel.number_portfolios+')'" full
-                                    :style="'tertiary'"/>
+                                :label="(manual_channel.name || manual_channel.slug) + ' ('+manual_channel.number_portfolios+')'" full
+                                :style="'tertiary'"
+                            >
+                                <template #default="{ loading }">
+                                    <div class="flex gap-x-2 justify-start items-center w-full">
+                                        <LoadingIcon v-if="loading" class="h-5"/>
+                                        <span v-else v-tooltip="manual_channel.platform_name" v-html="ChannelLogo(manual_channel.platform_code)" class="h-5"></span>
+                                        <div>
+                                            {{ useTruncate(manual_channel.name || manual_channel.slug, 20) + ' ('+manual_channel.number_portfolios+')' }}
+                                        </div>
+                                    </div>
+                                </template>
+                            </Button>
                         </div>
 
                     </div>
@@ -363,25 +376,19 @@ const key = ulid()
         </template>
     </PageHeading>
 
-    <!-- Section: Alert if Platform not connected yet -->
-    <Message v-if="!is_platform_connected && !isPlatformManual" severity="error" class="m-4 ">
-        <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
-            <div>
-                <FontAwesomeIcon icon="fad fa-exclamation-triangle" class="text-xl" fixed-width aria-hidden="true"/>
-                <div class="inline items-center gap-x-2">
-                    {{
-                        trans("Your channel is not connected yet to the platform. Please connect it to be able to synchronize your products.")
-                    }}
-                </div>
-            </div>
-
-            <div class="w-full sm:w-fit h-fit">
-                <Button v-if="customer_sales_channel?.reconnect_route?.name"
-                        @click="() => onClickReconnect(customer_sales_channel)" iconRight="fal fa-external-link"
-                        :label="trans('Connect')" zsize="xxs" type="secondary" full/>
-            </div>
+    <!-- Section: Alert if platform not connected yet -->
+    <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
+        <div v-if="platform_data.type === 'shopify'" class="px-2 md:px-6">
+            <PlatformWarningNotConnectedShopify
+                :customer_sales_channel="customer_sales_channel"
+            />
         </div>
-    </Message>
+
+        <PlatformWarningNotConnected
+            v-else
+            :customer_sales_channel="customer_sales_channel"
+        />
+    </div>
 
     <!-- Section: Alert if there is product not synced -->
     <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual" severity="warn"
@@ -448,48 +455,47 @@ const key = ulid()
     </Message>
 
     <!-- retina.models.dropshipping.ebay.batch_upload -->
-    <div v-if="props.product_count < 1"
-         class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
-        <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
-            {{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
-        </h1>
-        <p class="mt-4 text-xl">
-            {{
-                content?.portfolio_empty?.description || trans("To get started, add products to your shop. You can sync from your inventory or create a new one.")
-            }}
-        </p>
-        <div class="mt-6 space-y-4">
-            <ButtonWithLink v-if="routes?.syncAllRoute" :routeTarget="routes?.syncAllRoute" isWithError
-                            :label="content?.portfolio_empty?.sync_button" icon="fas fa-sync-alt" xtype="tertiary"
-                            size="xl"/>
-            <div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
-                {{ content?.portfolio_empty?.separation || trans("or") }}
+    <div v-if="is_platform_connected || isPlatformManual">
+        <div v-if="props.product_count < 1"
+            class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
+            <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
+                {{ content?.portfolio_empty?.title || trans(`You don't have a single portfolios`) }}
+            </h1>
+            <p class="mt-4 text-xl">
+                {{
+                    content?.portfolio_empty?.description || trans("To get started, add products to your shop. You can sync from your inventory or create a new one.")
+                }}
+            </p>
+            <div class="mt-6 space-y-4">
+                <ButtonWithLink v-if="routes?.syncAllRoute" :routeTarget="routes?.syncAllRoute" isWithError
+                                :label="content?.portfolio_empty?.sync_button" icon="fas fa-sync-alt" xtype="tertiary"
+                                size="xl"/>
+                <div v-if="routes?.syncAllRoute && routes?.addPortfolioRoute" class="text-gray-500">
+                    {{ content?.portfolio_empty?.separation || trans("or") }}
+                </div>
+                <Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true"
+                        :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus"
+                        size="xl"/>
             </div>
-            <Button v-if="routes?.addPortfolioRoute" @click="isOpenModalPortfolios = true"
-                    :label="content?.portfolio_empty?.add_button || trans('Add products')" icon="fas fa-plus"
-                    size="xl"/>
         </div>
-    </div>
-    <div v-else class="overflow-x-auto">
-        <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
-                                     :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
-                                     :isPlatformManual
-                                     :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
-
-        <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
-                                      :tab="'products'" :selectedData :platform_data :platform_user_id
-                                      :is_platform_connected
-                                      :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
-                                      :customerSalesChannel="customer_sales_channel"
-                                      v-model:selectedProducts="selectedProducts" :key="key"
-                                      :count_product_not_synced="count_product_not_synced"/>
-
-
-        <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-                                       :platform_user_id :is_platform_connected :progressToUploadToShopify
-                                       :customerSalesChannel="customer_sales_channel"
-                                       v-model:selectedProducts="selectedProducts" :key="tableKey"
-                                       :routes="props.routes"/>
+        <div v-else class="overflow-x-auto">
+            <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
+                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
+                :isPlatformManual
+                :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
+            <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
+                :tab="'products'" :selectedData :platform_data :platform_user_id
+                :is_platform_connected
+                :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
+                :customerSalesChannel="customer_sales_channel"
+                v-model:selectedProducts="selectedProducts" :key="key"
+                :count_product_not_synced="count_product_not_synced"/>
+            <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
+                :platform_user_id :is_platform_connected :progressToUploadToShopify
+                :customerSalesChannel="customer_sales_channel" :progressToUploadToEcom="progessbar"
+                v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
+                :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>
+        </div>
     </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"

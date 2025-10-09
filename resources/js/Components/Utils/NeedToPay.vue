@@ -43,11 +43,11 @@ const locale = inject('locale', aikuLocaleStructure)
         </div>
 
         <div v-if="paidAmount !== undefined && payAmount !== 0" class="text-xs text-gray-500 font-light">
-            {{ trans('Paid') }}: {{ locale.currencyFormat(currencyCode || 'usd', Number(paidAmount)) }}
+            {{ trans('Paid') }}: {{ locale.currencyFormat(currencyCode, Number(paidAmount)) }}
         </div>
         
-        <div v-if="paidAmount !== undefined && payAmount !== 0" class="text-xs text-gray-500 font-light">
-            {{ trans('Need to pay') }}: {{ locale.currencyFormat(currencyCode || 'usd', Number(payAmount)) }}
+        <div v-if="paidAmount !== undefined && payAmount > 0" class="text-xs text-gray-500 font-light">
+            {{ trans('Need to pay') }}: {{ locale.currencyFormat(currencyCode, Number(payAmount)) }}
         </div>
 
         <slot name="default" />

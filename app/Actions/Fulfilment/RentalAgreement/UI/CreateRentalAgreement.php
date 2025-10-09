@@ -48,7 +48,7 @@ class CreateRentalAgreement extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new rental agreement'),
+                'title'    => __('New rental agreement'),
                 'pageHead' => [
                     'title'     => __('Create rental agreement'),
                     'model'     => $fulfilmentCustomer->customer->name,

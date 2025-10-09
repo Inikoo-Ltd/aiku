@@ -93,7 +93,7 @@ class IndexIrisBlogWebpages extends IrisAction
                     'title'         => __('blogs'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
-                        'title' => __('blog')
+                        'title' => __('Blog')
                     ],
                 ],
                 'data'        => BlogWebpagesResource::collection($webpages),

@@ -27,23 +27,23 @@ enum OrdersTabsEnum: string
         return match ($this) {
 
             OrdersTabsEnum::ORDERS => [
-                'title' => __('all orders'),
+                'title' => __('All orders'),
                 'icon'  => 'fal fa-bars',
             ],
             OrdersTabsEnum::LAST_ORDERS => [
-                'title' => __('last orders'),
+                'title' => __('Last orders'),
                 'icon'  => 'fal fa-bars',
             ],
             OrdersTabsEnum::EXCESS_ORDERS => [
-                'title' => __('overpaid orders'),
+                'title' => __('Overpaid orders'),
                 'icon'  => 'fal fa-bars',
             ],
             OrdersTabsEnum::STATS => [
-                'title' => __('stats'),
+                'title' => __('Stats'),
                 'icon'  => 'fal fa-chart-pie',
             ],
             OrdersTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

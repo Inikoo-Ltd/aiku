@@ -49,7 +49,7 @@ class ShowInventoryDashboard extends OrgAction
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('inventory')
+                        'title' => __('Inventory')
                     ],
                 ],
                 'flatTreeMaps' => [

@@ -38,7 +38,7 @@ class FinaliseAndDispatchDeliveryNote extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function asController(DeliveryNote $deliveryNote, ActionRequest $request)
+    public function asController(DeliveryNote $deliveryNote, ActionRequest $request): void
     {
         $this->initialisationFromShop($deliveryNote->shop, $request);
 

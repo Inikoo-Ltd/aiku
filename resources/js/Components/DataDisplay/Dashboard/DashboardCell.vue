@@ -2,6 +2,8 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTriangle, faEquals } from "@fas"
 import { Link } from "@inertiajs/vue3"
+import { Intervals } from "@/types/Components/Dashboard"
+import { getDashboardDateRange } from "@/Composables/useDashboard"
 
 interface RouteTarget {
     name?: string
@@ -19,15 +21,7 @@ const props = defineProps<{
             state?: string
         }
     }
-    interval: {
-        options: {
-            label: string
-            value: string
-            labelShort: string
-        }[]
-        value: string
-        range_interval: string
-    }
+    interval: Intervals
 }>()
 
 const getIntervalChangesIcon = (change: string) => {
@@ -64,17 +58,20 @@ const getIntervalStateColor = (state?: string) => {
 	}
 }
 
-// To take key_date_filter from route_target
-const generateRouteParameter = (route_target: RouteTarget) => {
-    if (route_target?.key_date_filter) {
-        return {
-            ...route_target?.parameters,
-            [route_target?.key_date_filter]: props.interval.range_interval
-        }
-    } 
+// const dashboardDateRange = inject('dashboardDateRange', '')
+// // console.log('vcxvcxvcx', dashboardDateRange)
+
+// // To take key_date_filter from route_target
+// const generateRouteParameter = (route_target: RouteTarget) => {
+//     if (route_target?.key_date_filter) {
+//         return {
+//             ...route_target?.parameters,
+//             [route_target?.key_date_filter]: dashboardDateRange
+//         }
+//     } 
     
-    return route_target?.parameters
-}
+//     return route_target?.parameters
+// }
 </script>
 
 <template>
@@ -84,7 +81,10 @@ const generateRouteParameter = (route_target: RouteTarget) => {
             cell?.route_target?.name ? 'cursor-pointer hover:underline' : '',
         ]"
         :is="cell?.route_target?.name ? Link : 'div'"
-        :href="cell?.route_target?.name ? route(cell?.route_target.name, generateRouteParameter(cell?.route_target)) : '#'"
+        :href="cell?.route_target?.name ? route(cell?.route_target.name, cell?.route_target.key_date_filter ? {
+            ...cell?.route_target?.parameters,
+            [cell?.route_target?.key_date_filter]: getDashboardDateRange(props.interval.value)
+        } : cell?.route_target.parameters) : '#'"
     >
         <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value }}</span>
         <FontAwesomeIcon

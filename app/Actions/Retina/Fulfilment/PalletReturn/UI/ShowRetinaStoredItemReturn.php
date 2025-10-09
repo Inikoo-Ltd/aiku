@@ -83,7 +83,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
 
         $actions = GetRetinaPalletReturnActions::run($palletReturn);
 
-        $title = __('goods out');
+        $title = __('Goods out');
 
         return Inertia::render(
             'Storage/RetinaPalletReturn',
@@ -260,7 +260,7 @@ class ShowRetinaStoredItemReturn extends RetinaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('goods out')
+                            'label' => __('Goods out')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

@@ -57,7 +57,7 @@ Route::get('returns/cancelled', [IndexWarehousePalletReturns::class, 'inWarehous
 Route::get('returns/{palletReturn}', ShowWarehousePalletReturn::class)->name('pallet-returns.show');
 Route::get('return-stored-items/{palletReturn}', ShowWarehouseStoredItemReturn::class)->name('pallet-return-with-stored-items.show');
 
-Route::get('shippers/current', [IndexShippers::class, 'inCurrent'])->name('shippers.current.index');
+Route::get('shippers/current', IndexShippers::class)->name('shippers.current.index');
 Route::get('shippers/inactive', [IndexShippers::class, 'inInactive'])->name('shippers.inactive.index');
 Route::get('shippers/create', CreateShipper::class)->name('shippers.create');
 Route::get('shippers/{shipper}', ShowShipper::class)->name('shippers.show');

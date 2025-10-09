@@ -150,7 +150,7 @@ class IndexRawMaterials extends OrgAction
                             'action'      => $canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new raw material'),
+                                'tooltip' => __('New raw material'),
                                 'label'   => __('raw material'),
                                 'route'   => [
                                     'name'       => 'grp.org.productions.show.crafts.raw_materials.create',

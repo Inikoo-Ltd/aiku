@@ -10,7 +10,6 @@ namespace App\Actions\Web\Website\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Actions\Web\Website\GetWebsiteWorkshopCollection;
 use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamily;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
@@ -72,7 +71,6 @@ class ShowWebsiteWorkshop extends OrgAction
             unset($navigation[WebsiteWorkshopTabsEnum::PRODUCTS->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::FAMILY->value]);
-            unset($navigation[WebsiteWorkshopTabsEnum::COLLECTION->value]);
         }
 
         $tabs = [
@@ -111,12 +109,6 @@ class ShowWebsiteWorkshop extends OrgAction
                 fn () => GetWebsiteWorkshopDepartment::run($website)
             );
 
-        $tabs[WebsiteWorkshopTabsEnum::COLLECTION->value] = $this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value
-            ?
-            fn () => GetWebsiteWorkshopCollection::run($website)
-            : Inertia::lazy(
-                fn () => GetWebsiteWorkshopCollection::run($website)
-            );
 
 
         $publishRoute = [
@@ -155,14 +147,6 @@ class ShowWebsiteWorkshop extends OrgAction
             $publishRoute = [
                 'method'     => 'post',
                 'name'       => 'grp.models.website.publish.products',
-                'parameters' => [
-                    'website' => $website->id
-                ]
-            ];
-        } elseif ($this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value) {
-            $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.collection',
                 'parameters' => [
                     'website' => $website->id
                 ]

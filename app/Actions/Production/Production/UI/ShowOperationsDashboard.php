@@ -84,7 +84,7 @@ class ShowOperationsDashboard extends OrgAction
                             [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new job order'),
+                                'tooltip' => __('New job order'),
                                 'label'   => __('job order'),
                                 'route'   => [
                                     'name'       => 'grp.org.productions.show.job-orders.create',

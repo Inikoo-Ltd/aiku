@@ -27,7 +27,7 @@ enum RawMaterialTabsEnum: string
             RawMaterialTabsEnum::HISTORY     => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
             ],
             RawMaterialTabsEnum::SHOWCASE => [

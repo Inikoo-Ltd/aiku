@@ -14,6 +14,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Poll\PollTypeEnum;
 use App\Models\CRM\Poll;
 use App\Models\CRM\PollOption;
+use App\Models\Helpers\Country;
 use App\Rules\IUnique;
 use App\Rules\ValidAddress;
 use Illuminate\Support\Arr;
@@ -26,6 +27,7 @@ trait WithRetinaRegistration
 {
     public function handle(array $modelData): void
     {
+
         if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
             RegisterFulfilmentCustomer::run(
                 $this->shop->fulfilment,
@@ -115,6 +117,22 @@ trait WithRetinaRegistration
     public function prepareForValidation(ActionRequest $request): void
     {
         $this->set('traffic_sources', $request->cookie('aiku_tsd'));
+
+        if ($request->has('tax_number')) {
+            $taxNumberValue = (string)Arr::get($request->get('tax_number'), 'value');
+            if ($taxNumberValue) {
+                $countryCode   = Arr::get($request->get('tax_number'), 'country.isoCode.short');
+                $country       = Country::where('code', $countryCode)->first();
+                $taxNumberData = [
+                    'number'     => (string)Arr::get($request->get('tax_number'), 'value'),
+                    'country_id' => $country?->id,
+                ];
+            } else {
+                $taxNumberData = null;
+            }
+
+            $this->set('tax_number', $taxNumberData);
+        }
     }
 
 
@@ -141,7 +159,7 @@ trait WithRetinaRegistration
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -149,6 +167,7 @@ trait WithRetinaRegistration
             'contact_address' => ['required', new ValidAddress()],
             'is_opt_in'       => ['required', 'boolean'],
             'poll_replies'    => ['sometimes', 'array'],
+            'tax_number'               => ['sometimes', 'nullable', 'array'],
             'password'        =>
                 [
                     'required',

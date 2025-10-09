@@ -17,50 +17,42 @@ enum MasterFamilyTabsEnum: string
     use HasTabs;
 
     case SHOWCASE  = 'showcase';
+    case FAMILIES     = 'families';
     case SALES     = 'sales';
 
-    case OFFERS    = 'offers';
-    // case MAILSHOTS = 'mailshots';
+
+
     case HISTORY   = 'history';
     case IMAGES    = 'images';
-    case CUSTOMERS = 'customers';
+
 
     public function blueprint(): array
     {
         return match ($this) {
 
             MasterFamilyTabsEnum::SALES => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
-            MasterFamilyTabsEnum::CUSTOMERS => [
-                'title' => __('customers'),
-                'icon'  => 'fal fa-user',
-                'type'  => 'icon',
-                'align' => 'right',
+            MasterFamilyTabsEnum::FAMILIES => [
+                'title' => __('Families in shop'),
+                'icon'  => 'fal fa-store',
             ],
-            MasterFamilyTabsEnum::OFFERS => [
-                'title' => __('offers'),
-                'icon'  => 'fal fa-tags',
-            ],
-            // FamilyTabsEnum::MAILSHOTS => [
-            //     'title' => __('mailshots'),
-            //     'icon'  => 'fal fa-bullhorn',
-            // ],
+
             MasterFamilyTabsEnum::IMAGES => [
-                'title' => __('images'),
+                'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             MasterFamilyTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             MasterFamilyTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

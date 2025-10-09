@@ -90,6 +90,7 @@ class UpdateTransaction extends OrgAction
 
         $rules = [
             'quantity_ordered'    => $qtyRule,
+            'quantity_picked'    => $qtyRule,
             'quantity_bonus'      => $qtyRule,
             'quantity_dispatched' => $qtyRule,
             'quantity_fail'       => $qtyRule,
@@ -115,7 +116,7 @@ class UpdateTransaction extends OrgAction
             $rules['model_id']          = ['sometimes', 'nullable', 'integer'];
             $rules['asset_id']          = ['sometimes', 'nullable', 'integer'];
             $rules['historic_asset_id'] = ['sometimes', 'nullable', 'integer'];
-            $rules['in_warehouse_at']   = ['sometimes', 'required', 'date'];
+            $rules['in_warehouse_at']   = ['sometimes', 'nullable', 'date'];
             $rules                      = $this->noStrictStoreRules($rules);
         }
 

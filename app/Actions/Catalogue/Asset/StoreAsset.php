@@ -19,9 +19,9 @@ use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
+use App\Models\Billables\ShippingZone;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
-use App\Models\Ordering\ShippingZone;
 
 class StoreAsset extends OrgAction
 {

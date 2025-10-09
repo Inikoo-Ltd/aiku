@@ -191,7 +191,7 @@ test('UI show procurement dashboard', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'procurement')
+                        ->where('title', 'Procurement')
                         ->etc()
             )
             ->has('flatTreeMaps');
@@ -271,7 +271,7 @@ test('UI index org supplier products', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                        ->where('title', 'supplier products')
+                        ->where('title', 'Supplier products')
                         ->etc()
             );
 

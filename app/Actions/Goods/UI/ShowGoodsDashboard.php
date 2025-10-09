@@ -42,7 +42,7 @@ class ShowGoodsDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-cloud-rainbow'],
                         'title' => $title
                     ],
-                    'title' => __('goods strategy'),
+                    'title' => __('Goods strategy'),
                 ],
                 'flatTreeMaps' => [
                     [

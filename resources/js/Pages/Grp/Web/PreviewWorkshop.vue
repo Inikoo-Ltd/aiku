@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { getComponent } from '@/Composables/getWorkshopComponents'
 import { getIrisComponent } from '@/Composables/getIrisComponents'
-import { ref, onMounted, provide, onBeforeUnmount, inject, watch } from 'vue'
+import { ref, onMounted, provide, onBeforeUnmount, inject, watch, computed } from 'vue'
 import WebPreview from "@/Layouts/WebPreview.vue";
 import { sendMessageToParent } from '@/Composables/Workshop'
 import RenderHeaderMenu from './RenderHeaderMenu.vue'
@@ -19,6 +19,7 @@ import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.v
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { Sidebar } from 'primevue';
 library.add(faTimes)
 
 defineOptions({ layout: WebPreview })
@@ -35,8 +36,13 @@ const props = defineProps<{
     }
     layout: {
 
-    }
+    },
+    sidebar: {}
 }>()
+
+// console.log(props.sidebar);
+
+const isOpenMenuMobile = inject('isOpenMenuMobile')
 const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)
 const { mode } = route().params;
@@ -71,9 +77,10 @@ const updateData = (newVal) => {
     sendMessageToParent('autosave', newVal)
 }
 
+
 onMounted(() => {
-    layout.app.theme = props.layout.color,
-    layout.app.webpage_layout = props.layout
+    layout.app.theme = props?.layout?.color,
+    layout.app.webpage_layout = props?.layout
     updateIrisLayout(isPreviewLoggedIn.value)
     window.addEventListener('message', (event) => {
         if (event.data.key === 'isPreviewLoggedIn') isPreviewLoggedIn.value = event.data.value
@@ -81,7 +88,7 @@ onMounted(() => {
         if (event.data.key === 'active_language') active_language.value = event.data.value
         if (event.data.key === 'reload') {
             router.reload({
-                only: ['footer', 'header', 'webpage', 'navigation'],
+                only: ['footer', 'header', 'webpage', 'navigation', 'sidebar'],
                 onSuccess: () => {
                     if (props.webpage) data.value = props.webpage
                 }
@@ -90,6 +97,9 @@ onMounted(() => {
     });
     checkScreenType()
     window.addEventListener('resize', checkScreenType)
+    if (props.sidebar) {
+        isOpenMenuMobile.value = true
+    }
 });
 
 
@@ -108,11 +118,15 @@ onBeforeUnmount(() => {
 
 provide('isPreviewLoggedIn', isPreviewLoggedIn)
 provide('isPreviewMode', isPreviewMode)
+const compSidebar = computed(() => {
+    return props?.sidebar?.sidebar
+})
+provide('sidebarMenu', compSidebar)
+
 
 watch(isPreviewLoggedIn, (value) => {
      updateIrisLayout(isPreviewLoggedIn.value)
 }, { immediate: true });
-
 
 </script>
 
@@ -125,12 +139,12 @@ watch(isPreviewLoggedIn, (value) => {
 
         <div class="shadow-xl" :class="props.layout?.layout == 'fullscreen' ? 'w-full' : 'container max-w-7xl mx-auto'">
             <div>
-                <RenderHeaderMenu 
-                    v-if="header?.data" 
-                    :data="header.data" 
+                <RenderHeaderMenu
+                    v-if="header?.data"
+                    :data="header.data"
                     :menu="navigation"
-                    :loginMode="isPreviewLoggedIn" 
-                    @update:model-value="updateData(header.data)" 
+                    :loginMode="isPreviewLoggedIn"
+                    @update:model-value="updateData(header.data)"
                     :screenType="screenType"
                 />
             </div>
@@ -162,16 +176,16 @@ watch(isPreviewLoggedIn, (value) => {
 .is-not-mode-iris {
     .hover-dashed {
         @apply relative;
-    
+
         &::after {
             content: "";
             @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
         }
     }
-    
+
     .hover-text-input {
         @apply relative isolate;
-    
+
         &::after {
             content: "";
             @apply -z-10 absolute inset-0 hover:bg-yellow-500/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;

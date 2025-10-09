@@ -16,7 +16,6 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Validator;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use OwenIt\Auditing\Events\AuditCustom;
@@ -53,7 +52,7 @@ class StoreCustomerToken extends RetinaAction
             'api_token' => ''
         ];
         $customerSalesChannel->customer->auditCustomNew = [
-            'api_token' => __('Api token for'. $customerSalesChannel->platform->name.' created').' ('.$tokenName.')'
+            'api_token' => __('Api token created').' ('.$tokenName.')'
         ];
 
         Event::dispatch(new AuditCustom($customerSalesChannel->customer));
@@ -61,12 +60,7 @@ class StoreCustomerToken extends RetinaAction
         return $plainTextToken;
     }
 
-    // public function afterValidator(Validator $validator): void
-    // {
-    //     if (!$this->customer->status) {
-    //         $validator->errors()->add('customer', __('Customer is not active'));
-    //     }
-    // }
+
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): string
     {

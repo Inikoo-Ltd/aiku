@@ -117,16 +117,6 @@ class DashboardHeaderInvoiceCategoriesInOrganisationSalesResource extends JsonRe
                 ]
             ],
             [
-                'sales_invoice_category_currency_delta' => [
-                    'formatted_value'   => 'Δ 1Y',
-                    'tooltip'           => $deltaTooltip,
-                    'currency_type'     => 'always',
-                    'data_display_type' => 'always',
-                    'sortable'          => true,
-                    'scope'             => 'sales_invoice_category_currency',
-                ],
-            ],
-            [
                 'sales_org_currency' => [
                     'formatted_value'   => __('Sales'),
                     'currency_type'     => 'org',

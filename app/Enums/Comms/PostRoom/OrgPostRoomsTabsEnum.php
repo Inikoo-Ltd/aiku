@@ -26,15 +26,15 @@ enum OrgPostRoomsTabsEnum: string
     {
         return match ($this) {
             OrgPostRoomsTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             OrgPostRoomsTabsEnum::OUTBOXES => [
-                'title' => __('outboxes'),
+                'title' => __('Outboxes'),
                 'icon'  => 'fal fa-inbox-out',
             ],
             OrgPostRoomsTabsEnum::MAILSHOTS => [
-                'title' => __('mailshots'),
+                'title' => __('Mailshots'),
                 'icon'  => 'fal fa-folder',
             ],
         };

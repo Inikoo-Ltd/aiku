@@ -152,11 +152,11 @@ class IndexRetinaFamilies extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $families, ActionRequest $request): Response
     {
-        $title      = __('families');
+        $title      = __('Families');
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-folder'],
-            'title' => __('family')
+            'title' => __('Family')
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -167,7 +167,7 @@ class IndexRetinaFamilies extends RetinaAction
                 $model      = '';
                 $icon       = [
                     'icon'  => ['fal', 'fa-folder-tree'],
-                    'title' => __('department')
+                    'title' => __('Department')
                 ];
                 $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];
                 $afterTitle = [
@@ -179,7 +179,7 @@ class IndexRetinaFamilies extends RetinaAction
                 $model      = '';
                 $icon       = [
                     'icon'  => ['fal', 'fa-dot-circle'],
-                    'title' => __('sub department')
+                    'title' => __('Sub department')
                 ];
 
                 $iconRight  = $this->parent->state->stateIcon()[$this->parent->state->value];

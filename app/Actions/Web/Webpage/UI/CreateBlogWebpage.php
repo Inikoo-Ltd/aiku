@@ -53,9 +53,9 @@ class CreateBlogWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new blog'),
+                'title'       => __('New blog'),
                 'pageHead'    => [
-                    'title'   => __('new blog'),
+                    'title'   => __('New blog'),
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -115,7 +115,6 @@ class CreateBlogWebpage extends OrgAction
                                 ],
                                 'seo_structure_type' => [
                                         'type'     => 'select',
-                                        'required'  => true,
                                         'label'    => __('seo structure type'),
                                         'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
                                         'value'    => '',

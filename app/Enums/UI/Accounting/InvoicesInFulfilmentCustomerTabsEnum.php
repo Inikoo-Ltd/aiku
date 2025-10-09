@@ -34,7 +34,7 @@ enum InvoicesInFulfilmentCustomerTabsEnum: string
             ],
 
             InvoicesInFulfilmentCustomerTabsEnum::IN_PROCESS => [
-                'title' => __('standalone invoices in process'),
+                'title' => __('Standalone invoices in process'),
                 'icon'  => 'fal fa-seedling',
                 'align' => 'right',
             ],

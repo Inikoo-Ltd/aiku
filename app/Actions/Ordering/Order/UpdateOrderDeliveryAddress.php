@@ -8,7 +8,9 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\Dispatching\DeliveryNote\UpdateDeliveryNoteFixedAddress;
+use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
@@ -38,7 +40,44 @@ class UpdateOrderDeliveryAddress extends OrgAction
         data_set($modelData, 'address', $address);
         data_set($modelData, 'type', 'delivery');
 
-        UpdateOrderFixedAddress::make()->action($order, $modelData);
+        $order = UpdateOrderFixedAddress::make()->action($order, $modelData);
+        $order = CalculateOrderShipping::run($order);
+
+        if (Arr::get($modelData, 'update_parent')) {
+            $addressData = Arr::only(
+                $order->deliveryAddress->toArray(),
+                [
+                    'address_line_1',
+                    'address_line_2',
+                    'sorting_code',
+                    'postal_code',
+                    'locality',
+                    'dependent_locality',
+                    'administrative_area',
+                    'country_code',
+                    'country_id',
+                    'checksum'
+                ]
+            );
+
+            if ($order->customer_client_id) {
+                UpdateCustomerClient::make()->action(
+                    $order->customerClient,
+                    [
+                        'address' => $addressData
+                    ]
+                );
+            } else {
+                UpdateCustomer::make()->action(
+                    $order->customer,
+                    [
+                        'delivery_address' => $addressData
+                    ]
+                );
+            }
+        }
+
+
         foreach ($order->deliveryNotes as $deliveryNote) {
             if ($this->canModifyDeliveryNoteAddress($deliveryNote)) {
                 UpdateDeliveryNoteFixedAddress::make()->action($deliveryNote, $modelData);
@@ -72,9 +111,8 @@ class UpdateOrderDeliveryAddress extends OrgAction
     public function rules(): array
     {
         return [
-
             'address' => ['required', new ValidAddress()],
-
+            'update_parent' => ['sometimes', 'boolean'],
         ];
     }
 

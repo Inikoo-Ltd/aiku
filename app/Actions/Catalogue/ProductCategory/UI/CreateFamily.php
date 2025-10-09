@@ -102,12 +102,12 @@ class CreateFamily extends OrgAction
                 ),
                 'title'       => __('New Family'),
                 'pageHead'    => [
-                    'title'        => __('new family'),
+                    'title'        => __('New family'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name' => class_basename($this->parent) == 'ProductCategory'
                                             ? ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT

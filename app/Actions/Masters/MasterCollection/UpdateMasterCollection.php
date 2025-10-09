@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\Search\MasterCollectionRecordSearch;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -39,6 +40,20 @@ class UpdateMasterCollection extends GrpAction
             $this->processCatalogueImage($imageData, $masterCollection);
         }
         $masterCollection = $this->update($masterCollection, $modelData, ['data']);
+        $changed = Arr::except($masterCollection->getChanges(), ['updated_at']);
+
+
+        if (Arr::hasAny($changed, ['code', 'name', 'description'])) {
+            foreach ($masterCollection->childrenCollections as $collections) {
+                UpdateCollection::make()->action($collections, [
+                    'code' => $masterCollection->code,
+                    'name' => $masterCollection->name,
+                    'description' => $masterCollection->description,
+                ]);
+            }
+        }
+
+
         MasterCollectionRecordSearch::dispatch($masterCollection);
 
         return $masterCollection;
@@ -64,7 +79,7 @@ class UpdateMasterCollection extends GrpAction
                     table: 'master_collections',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->masterCollection->id, 'operator' => '!=']
 
                     ]

@@ -626,7 +626,7 @@ test('UI edit fulfilment customer', function () {
         $page
             ->component('EditModel')
             ->has('title')
-            ->has('formData.blueprint.0.fields', 6)
+            ->has('formData.blueprint.0.fields', 8)
             ->has('pageHead')
             ->has(
                 'formData.args.updateRoute',
@@ -788,7 +788,7 @@ test('UI show fulfilment customer create space', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'new space')
+                    ->where('title', 'New space')
                     ->etc()
             )
             ->has('formData')
@@ -805,7 +805,7 @@ test('UI show fulfilment customer edit space', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'edit space')
+                    ->where('title', 'Edit space')
                     ->etc()
             )
             ->has('formData')
@@ -888,7 +888,7 @@ test('UI show fulfilment customer stored item', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'new SKU')
+                    ->where('title', 'New SKU')
                     ->etc()
             )
             ->has('formData')
@@ -1343,7 +1343,7 @@ test('UI Index pallet deliveries', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'fulfilment deliveries')
+                    ->where('title', 'Fulfilment deliveries')
                     ->has('subNavigation')
                     ->has('actions')
                     ->etc()
@@ -1561,7 +1561,7 @@ test('UI Index pallet returns', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'returns')
+                    ->where('title', 'Returns')
                     ->has('subNavigation')
                     ->has('actions')
                     ->etc()
@@ -2026,7 +2026,7 @@ test('UI Index Recurring Bills', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'recurring bills')
+                    ->where('title', 'Recurring bills')
                     ->has('subNavigation')
                     ->etc()
             );

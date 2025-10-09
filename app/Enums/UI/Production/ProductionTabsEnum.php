@@ -27,11 +27,11 @@ enum ProductionTabsEnum: string
             ProductionTabsEnum::HISTORY     => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
             ],
             ProductionTabsEnum::SHOWCASE => [
-                'title' => __('dashboard'),
+                'title' => __('Dashboard'),
                 'icon'  => 'fal fa-chart-network',
             ],
         };

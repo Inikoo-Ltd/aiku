@@ -27,25 +27,25 @@ enum RecurringBillTabsEnum: string
     {
         return match ($this) {
             RecurringBillTabsEnum::TRANSACTIONS => [
-                'title' => __('transactions'),
+                'title' => __('Transactions'),
                 'icon'  => 'fal fa-ballot',
             ],
             RecurringBillTabsEnum::PALLET_DELIVERIES => [
-                'title' => __('pallet deliveries'),
+                'title' => __('Pallet deliveries'),
                 'icon'  => 'fal fa-truck',
             ],
             RecurringBillTabsEnum::PALLET_RETURNS => [
-                'title' => __('pallet returns'),
+                'title' => __('Pallet returns'),
                 'icon'  => 'fal fa-ballot',
             ],
             // RecurringBillTabsEnum::DATA => [
             //     'align' => 'right',
             //     'type'  => 'icon',
-            //     'title' => __('data'),
+            //     'title' => __('Data'),
             //     'icon'  => 'fal fa-database',
             // ],
             RecurringBillTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

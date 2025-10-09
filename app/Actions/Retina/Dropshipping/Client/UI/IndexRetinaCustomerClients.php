@@ -199,7 +199,7 @@ class IndexRetinaCustomerClients extends RetinaAction
                     'title'      => $title,
                     'icon'       => [
                         'icon'  => ['fal', 'fa-user-friends'],
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
                     'afterTitle'    => [
                         'label'     => '@' . $this->customerSalesChannel->name,

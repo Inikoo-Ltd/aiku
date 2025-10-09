@@ -150,7 +150,7 @@ class IndexFamiliesWithNoDepartment extends OrgAction
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-folder'],
-            'title' => __('family')
+            'title' => __('Family')
         ];
         $iconRight  = null;
         $routes     = null;

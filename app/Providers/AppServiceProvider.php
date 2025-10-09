@@ -225,8 +225,8 @@ class AppServiceProvider extends ServiceProvider
                 'Order'                         => 'App\Models\Ordering\Order',
                 'Purge'                         => 'App\Models\Ordering\Purge',
                 'SalesChannel'                  => 'App\Models\Ordering\SalesChannel',
-                'ShippingZone'                  => 'App\Models\Ordering\ShippingZone',
-                'ShippingZoneSchema'            => 'App\Models\Ordering\ShippingZoneSchema',
+                'ShippingZone'                  => 'App\Models\Billables\ShippingZone',
+                'ShippingZoneSchema'            => 'App\Models\Billables\ShippingZoneSchema',
                 'Transaction'                   => 'App\Models\Ordering\Transaction',
 
                 // Procurement

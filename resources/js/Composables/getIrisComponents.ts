@@ -39,7 +39,7 @@ import ProductIris1Ecom from '@/Components/CMS/Webpage/Product1/ProductIris1Ecom
 import Carousel1Iris from '@/Components/CMS/Webpage/Carousel-1/Carousel1Iris.vue'
 import Products1Iris from '@/Components/CMS/Webpage/Products1/Products1Iris.vue'
 import Products1IrisEcom from '@/Components/CMS/Webpage/Products1/Products1IrisEcom.vue'
-import SubDepartments1Iris from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementIris.vue'
+import SubDepartmentIris from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentIris.vue'
 import Collections1Iris from '@/Components/CMS/Webpage/Collections1/Collections1Iris.vue'
 import CTAVideo1Iris from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
@@ -49,9 +49,14 @@ import BlogIris from '@/Components/CMS/Webpage/Blog/BlogIris.vue'
 import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
 
 import SeeAlso1WorkshopIris from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue'
+import LuigiTrends1Iris from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Iris.vue'
 
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
+import LuigiLastSeen1Iris from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Iris.vue'
+import LuigiItemAlternatives1Iris from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Iris.vue'
+
+import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
 
 
 const components = (shop_type?: string): Record<string, Component> => {
@@ -77,12 +82,12 @@ const components = (shop_type?: string): Record<string, Component> => {
 
 
 
-        //departement
+        //department
         'department' : Department1Iris,
         'department-1' : Department1Iris,
 
-        //sub-departement
-        'sub-departments-1' : SubDepartments1Iris,
+        //sub-department
+        'sub-departments-1' : SubDepartmentIris,
 
         //family
         'family-1' : FamilyIris1,
@@ -97,6 +102,12 @@ const components = (shop_type?: string): Record<string, Component> => {
 
         //see-also
         'see-also-1' : SeeAlso1WorkshopIris,
+
+        // Luigi
+        'luigi-trends-1' : LuigiTrends1Iris,
+        'luigi-last-seen-1' : LuigiLastSeen1Iris,
+        'luigi-item-alternatives-1' : LuigiItemAlternatives1Iris,
+        'recommendation-customer-recently-bought-1': RecommendationCustomerRecentlyBought1Iris,
 
 
         'banner': WowsbarBannerIris,

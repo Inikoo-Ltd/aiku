@@ -159,12 +159,20 @@ function collectionRoute(collection: Collection) {
                 (route().params as RouteParams).department,
                 (route().params as RouteParams).subDepartment,
                 collection.slug])
+    } else {
+        return route(
+            "grp.org.shops.show.catalogue.collections.show",
+            [
+                collection.organisation_slug,
+                collection.shop_slug,
+                collection.slug
+            ])
     }
 }
 
 function shopRoute(collection: Collection) {
     return route(
-        "grp.org.shops.show.catalogue.collections.index",
+        "grp.org.shops.show.dashboard.show",
         [collection.organisation_slug, collection.shop_slug])
 
 }

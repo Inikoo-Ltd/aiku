@@ -32,6 +32,7 @@ trait WithShopifyOrderRetrieval
                                         firstName
                                         lastName
                                         address1
+                                        address2
                                         city
                                         province
                                         zip

@@ -24,7 +24,7 @@ class AttachPaymentToOrder extends OrgAction
             'amount' => $amount,
         ]);
 
-        SetOrderPayments::run($order);
+        UpdateOrderPaymentsStatus::run($order);
 
     }
 

@@ -15,7 +15,7 @@ use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Billables\Charge;
-use App\Models\Ordering\ShippingZone;
+use App\Models\Billables\ShippingZone;
 use App\Transfers\SourceOrganisationService;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;

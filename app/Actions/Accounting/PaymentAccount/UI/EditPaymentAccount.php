@@ -54,7 +54,7 @@ class EditPaymentAccount extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('edit payment account'),
+                'title'       => __('Edit payment account'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

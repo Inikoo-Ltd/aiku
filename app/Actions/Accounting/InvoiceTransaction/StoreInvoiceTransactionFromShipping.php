@@ -13,7 +13,7 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Actions\Traits\WithStoreNoProductTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
-use App\Models\Ordering\ShippingZone;
+use App\Models\Billables\ShippingZone;
 use Illuminate\Validation\Validator;
 
 class StoreInvoiceTransactionFromShipping extends OrgAction

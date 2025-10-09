@@ -21,14 +21,14 @@ class CreateUser extends InertiaAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName()),
-                'title'       => __('new user'),
+                'title'       => __('New user'),
                 'pageHead'    => [
-                    'title'   => __('new user'),
+                    'title'   => __('New user'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.sysadmin.users.index',
                                 'parameters' => array_values($request->route()->originalParameters())

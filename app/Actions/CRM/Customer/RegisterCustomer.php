@@ -29,6 +29,7 @@ class RegisterCustomer extends OrgAction
      */
     public function handle(Shop $shop, array $modelData): Customer
     {
+
         $password = Arr::pull($modelData, 'password');
         data_set($modelData, 'registered_at', now());
 
@@ -67,6 +68,7 @@ class RegisterCustomer extends OrgAction
 
             return [$customer, $webUser];
         });
+
 
         SendCustomerWelcomeEmail::run($customer);
         SendNewCustomerNotification::run($customer);

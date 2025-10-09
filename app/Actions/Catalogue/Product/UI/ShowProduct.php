@@ -25,7 +25,6 @@ use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
-use App\Http\Resources\Helpers\ImagesResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Inventory\OrgStocksResource;
 use App\Models\Catalogue\Product;
@@ -140,12 +139,12 @@ class ShowProduct extends OrgAction
             $family = [
                 'label'   => $product->family->code,
                 'tooltip' => $product->family->code,
-                 'name'   => $product->family->name,
+                'name'    => $product->family->name,
                 'route'   => match ($routeName) {
                     'grp.org.shops.show.catalogue.departments.show.families.show.products.show' => [
                         'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
                         'parameters' => [
-                            'organisation' => $this->parent->slug,
+                            'organisation' => $product->organisation->slug,
                             'shop'         => $product->shop->slug,
                             'department'   => $product->family->department->slug,
                             'family'       => $product->family->slug
@@ -155,7 +154,7 @@ class ShowProduct extends OrgAction
                     default => [
                         'name'       => 'grp.org.shops.show.catalogue.families.show',
                         'parameters' => [
-                            'organisation' => $this->parent->slug,
+                            'organisation' => $product->organisation->slug,
                             'shop'         => $product->shop->slug,
                             'family'       => $product->family->slug
                         ]
@@ -169,7 +168,7 @@ class ShowProduct extends OrgAction
         if ($product->department) {
             $department = [
                 'label'   => $product->department->code,
-                'name'   => $product->department->name,
+                'name'    => $product->department->name,
                 'tooltip' => $product->department->name,
                 'route'   => [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show',
@@ -192,41 +191,114 @@ class ShowProduct extends OrgAction
 
     public function htmlResponse(Product $product, ActionRequest $request): Response
     {
+        $hasMaster = $product->master_product_id;
+
+        $miniBreadcrumbs = [];
+        if ($product->department) {
+            $miniBreadcrumbs[] = [
+                'label'   => $product->department->name,
+                'to'      => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show',
+                    'parameters' => [
+                        'organisation' => $product->organisation->slug,
+                        'shop'         => $product->shop->slug,
+                        'department'   => $product->department->slug,
+                    ]
+                ],
+                'tooltip'   => __('Department').': '.$product->department->name,
+                'icon'    => ['fal', 'folder-tree']
+            ];
+        }
+
+        if ($product->subDepartment) {
+            $miniBreadcrumbs[] = [
+                'label'   => $product->subDepartment->name,
+                'to'      => [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show',
+                    'parameters' => [
+                        'organisation'  => $product->organisation->slug,
+                        'shop'          => $product->shop->slug,
+                        'department'    => $product->department->slug,
+                        'subDepartment' => $product->subDepartment->slug,
+                    ]
+                ],
+                'tooltip' => __('Sub-department').': '.$product->subDepartment->name,
+                'icon'    => ['fal', 'folders']
+            ];
+        }
+
+        if ($product->family) {
+            if ($product->subDepartment) {
+                $route = [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
+                    'parameters' => [
+                        'organisation'  => $product->organisation->slug,
+                        'shop'          => $product->shop->slug,
+                        'department'    => $product->department->slug,
+                        'subDepartment' => $product->subDepartment->slug,
+                        'family'        => $product->family->slug,
+                    ]
+                ];
+            } else {
+                $route = [
+                    'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
+                    'parameters' => [
+                        'organisation' => $product->organisation->slug,
+                        'shop'         => $product->shop->slug,
+                        'department'   => $product->department->slug,
+                        'family'       => $product->family->slug,
+                    ]
+                ];
+            }
+
+            $miniBreadcrumbs[] = [
+                'label'   => $product->family->name,
+                'to'      => $route,
+                'tooltip' => __('Family').': '.$product->family->name,
+                'icon'    => ['fal', 'folder']
+            ];
+        }
+
+
+
+
         return Inertia::render(
             'Org/Catalogue/Product',
             [
-                'title'       => __('product'),
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'title'            => __('product'),
+                'breadcrumbs'      => $this->getBreadcrumbs(
                     $this->parent,
                     $product,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation'       => [
                     'previous' => $this->getPrevious($product, $request),
                     'next'     => $this->getNext($product, $request),
                 ],
+                'mini_breadcrumbs' => $miniBreadcrumbs,
+
                 'pageHead'    => [
                     'title'      => $product->code,
                     'model'      => $this->parent->code,
                     'icon'       =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
-                            'title' => __('product')
+                            'title' => __('Product')
                         ],
                     'afterTitle' => [
                         'label' => $product->name
                     ],
-                    'iconRight' => $product->state->stateIcon()[$product->state->value],
+                    'iconRight'  => $product->state->stateIcon()[$product->state->value],
                     'actions'    => [
                         $product->webpage
                             ?
                             [
-                                'type'    => 'button',
-                                'style'   => 'edit',
-                                'label'   => __('Webpage'),
-                                'icon'    => ["fal", "fa-browser"],
-                                'route'   => [
+                                'type'  => 'button',
+                                'style' => 'edit',
+                                'label' => __('Webpage'),
+                                'icon'  => ["fal", "fa-browser"],
+                                'route' => [
                                     'name'       => 'grp.org.shops.show.web.webpages.show',
                                     'parameters' => [
                                         'organisation' => $this->organisation->slug,
@@ -252,7 +324,7 @@ class ShowProduct extends OrgAction
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
-                            'label'   => __('Edit'),
+                            'label' => __('Edit'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -261,6 +333,14 @@ class ShowProduct extends OrgAction
 
                     ]
                 ],
+                'master'      => $hasMaster,
+                'masterRoute' => $hasMaster ? [
+                    'name'       => 'grp.masters.master_shops.show.master_products.show',
+                    'parameters' => [
+                        'masterShop'    => $product->masterProduct->masterShop->slug,
+                        'masterProduct' => $product->masterProduct->slug
+                    ]
+                ] : [],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => ProductTabsEnum::navigation()
@@ -271,7 +351,6 @@ class ShowProduct extends OrgAction
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
-
 
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
@@ -291,12 +370,16 @@ class ShowProduct extends OrgAction
                     : Inertia::lazy(fn () => OrgStocksResource::collection(IndexOrgStocksInProduct::run($product))),
 
                 ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
-                    fn () => ImagesResource::collection(IndexProductImages::run($product))
-                    : Inertia::lazy(fn () => ImagesResource::collection(IndexProductImages::run($product))),
+                    fn () => GetProductImagesShowcase::run($product)
+                    : Inertia::lazy(fn () => GetProductImagesShowcase::run($product)),
+
+                ProductTabsEnum::ATTACHMENTS->value => $this->tab == ProductTabsEnum::ATTACHMENTS->value ?
+                    fn () => GetProductAttachment::run($product)
+                    : Inertia::lazy(fn () => GetProductAttachment::run($product)),
 
                 ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
-                                    fn () => HistoryResource::collection(IndexHistory::run($product))
-                                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
+                    fn () => HistoryResource::collection(IndexHistory::run($product))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
 
 
             ]
@@ -393,6 +476,25 @@ class ShowProduct extends OrgAction
                     ],
                     $suffix,
                     ' ('.__('Orphan').')'
+                )
+            ),
+            'grp.org.shops.show.catalogue.products.out_of_stock_products.show' =>
+            array_merge(
+                ShowCatalogue::make()->getBreadcrumbs($routeParameters),
+                $headCrumb(
+                    $product,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.out_of_stock_products.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.products.out_of_stock_products.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix,
+                    ' ('.__('Out Of Stock').')'
                 )
             ),
             'grp.org.shops.show.catalogue.products.discontinued_products.show' =>

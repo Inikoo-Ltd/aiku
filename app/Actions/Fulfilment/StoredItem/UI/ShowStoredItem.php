@@ -107,7 +107,7 @@ class ShowStoredItem extends OrgAction
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'fa-narwhal'],
-                            'title' => __('stored item')
+                            'title' => __('Stored item')
                         ],
                     'subNavigation' => $subNavigation,
                     'model'  => __('Customer\'s SKU'),

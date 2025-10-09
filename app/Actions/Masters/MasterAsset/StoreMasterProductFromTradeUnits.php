@@ -13,6 +13,7 @@ use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
@@ -20,13 +21,18 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Redirect;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreMasterProductFromTradeUnits extends GrpAction
 {
     use WithNoStrictRules;
     use WithMastersEditAuthorisation;
+    use WithAttachMediaToModel;
+
+    /**
+     * @var \App\Models\Masters\MasterProductCategory
+     */
+    private MasterProductCategory $masterFamily;
 
     /**
      * @throws \Throwable
@@ -34,24 +40,46 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     public function handle(MasterProductCategory $parent, array $modelData): MasterAsset
     {
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+        $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
         if (!Arr::has($modelData, 'unit') && count($tradeUnits) == 1) {
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
         }
 
 
-        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits) {
+        $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
+
             $data        = [
                 'code'    => Arr::get($modelData, 'code'),
                 'name'    => Arr::get($modelData, 'name'),
-                'price'   => Arr::get($modelData, 'price'),
                 'unit'    => Arr::get($modelData, 'unit'),
+                'description'             => Arr::get($modelData, 'description'),
+                'description_title'       => Arr::get($modelData, 'description_title'),
+                'description_extra'       => Arr::get($modelData, 'description_extra'),
+                'units'                   => Arr::get($modelData, 'units', 1),
+                'marketing_weight'        => Arr::get($modelData, 'marketing_weight', 0),
+                'gross_weight'            => Arr::get($modelData, 'gross_weight', 0),
+                'marketing_dimensions'    => Arr::get($modelData, 'marketing_dimensions', []),
                 'is_main' => true,
                 'type'    => MasterAssetTypeEnum::PRODUCT,
-                'trade_units'  => $tradeUnits
+                'trade_units'  => $tradeUnits,
+                'shop_products' => $shopProducts
             ];
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
+
+            if (Arr::has($modelData, 'image') && !$masterAsset->is_single_trade_unit) {
+                $medias = UploadImagesToMasterProduct::run($masterAsset, 'image', [
+                    'images' => [
+                        Arr::get($modelData, 'image')
+                    ]
+                ]);
+
+                UpdateMasterProductImages::run($masterAsset, [
+                    'image_id' => Arr::get($medias, '0.id')
+                ]);
+            }
+
             $masterAsset->refresh();
             return $masterAsset;
         });
@@ -73,14 +101,20 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 new IUnique(
                     table: 'master_assets',
                     extraConditions: [
-                        ['column' => 'group_id', 'value' => $this->group->id],
+                        ['column' => 'master_shop_id', 'value' => $this->masterFamily->master_shop_id],
                         ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
             'name'                   => ['required', 'string'],
             'unit'                   => ['sometimes', 'string'],
-            'price'                  => ['required', 'numeric', 'min:0'],
+            'units'                  => ['sometimes', 'nullable'],
+            'description'            => ['sometimes', 'string', 'nullable'],
+            'description_title'      => ['sometimes', 'string', 'nullable'],
+            'description_extra'      => ['sometimes', 'string', 'nullable'],
+            'price'                  => ['sometimes', 'numeric', 'min:0'],
+            'rrp'                    => ['sometimes', 'numeric', 'min:0'],
+            'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
             'trade_units'            => [
                 'required',
                 'array'
@@ -95,39 +129,51 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'numeric',
                 'min:1'
             ],
+            'shop_products' => ['sometimes', 'array'],
+            'shop_products.*.price'       => [
+                'required',
+                'numeric',
+                'min:0'
+            ],
+            'shop_products.*.rrp'       => [
+                'required',
+                'numeric',
+                'min:0'
+            ],
+            'image' => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"],
+            'marketing_weight'       => ['sometimes', 'numeric', 'min:0'],
+            'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
+            'marketing_dimensions'   => ['sometimes'],
         ];
     }
 
     /**
      * @throws \Throwable
      */
-    public function action(MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true): MasterAsset
+    public function action(MasterProductCategory $masterFamily, array $modelData, int $hydratorsDelay = 0, $strict = true, $audit = true): MasterAsset
     {
         if (!$audit) {
             MasterAsset::disableAuditing();
         }
+        $this->masterFamily = $masterFamily;
 
         $this->hydratorsDelay = $hydratorsDelay;
         $this->asAction       = true;
         $this->strict         = $strict;
 
-        $this->initialisation($parent->group, $modelData);
+        $this->initialisation($masterFamily->group, $modelData);
 
-        return $this->handle($parent, $this->validatedData);
-    }
-
-    public function asController(MasterProductCategory $masterFamily, ActionRequest $request): MasterAsset
-    {
-        $this->initialisation($masterFamily->group, $request);
         return $this->handle($masterFamily, $this->validatedData);
     }
 
-    public function htmlResponse(MasterAsset $masterAsset): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
+    /**
+     * @throws \Throwable
+     */
+    public function asController(MasterProductCategory $masterFamily, ActionRequest $request): MasterAsset
     {
-        return Redirect::route('grp.masters.master_shops.show.master_families.master_products.show', [
-            'masterShop'    => $masterAsset->masterShop->slug,
-            'masterFamily' => $masterAsset->masterFamily->slug,
-            'masterProduct' => $masterAsset->slug
-        ]);
+        $this->masterFamily = $masterFamily;
+
+        $this->initialisation($masterFamily->group, $request);
+        return $this->handle($masterFamily, $this->validatedData);
     }
 }

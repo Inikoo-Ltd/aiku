@@ -32,19 +32,18 @@ class StoreStandaloneFulfilmentInvoice extends OrgAction
     public function handle(FulfilmentCustomer $fulfilmentCustomer): Invoice
     {
         $invoiceData = [
-            'currency_id'     => $this->fulfilment->shop->currency_id,
-            'type'            => InvoiceTypeEnum::INVOICE,
-            'net_amount'      => 0,
-            'total_amount'    => 0,
-            'gross_amount'    => 0,
-            'tax_amount'      => 0,
-            'in_process'      => true,
+            'currency_id'  => $this->fulfilment->shop->currency_id,
+            'type'         => InvoiceTypeEnum::INVOICE,
+            'net_amount'   => 0,
+            'total_amount' => 0,
+            'gross_amount' => 0,
+            'tax_amount'   => 0,
+            'in_process'   => true,
         ];
 
-        $invoice = StoreInvoice::make()->action($fulfilmentCustomer->customer, $invoiceData);
-
-        return $invoice;
+        return StoreInvoice::make()->action($fulfilmentCustomer->customer, $invoiceData);
     }
+
     /**
      * @throws \Throwable
      */
@@ -52,9 +51,12 @@ class StoreStandaloneFulfilmentInvoice extends OrgAction
     {
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $request);
 
-        return $this->handle($fulfilmentCustomer, $this->validatedData);
+        return $this->handle($fulfilmentCustomer);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(FulfilmentCustomer $fulfilmentCustomer, $modelData, int $hydratorsDelay = 0, bool $strict = true): Invoice
     {
         $this->asAction       = true;
@@ -62,17 +64,17 @@ class StoreStandaloneFulfilmentInvoice extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromFulfilment($fulfilmentCustomer->fulfilment, $modelData);
 
-        return $this->handle($fulfilmentCustomer, $this->validatedData);
+        return $this->handle($fulfilmentCustomer);
     }
 
 
-    public function htmlResponse(Invoice $invoice)
+    public function htmlResponse(Invoice $invoice): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         return Redirect::route('grp.org.fulfilments.show.crm.customers.show.invoices.in-process.show', [
-            'organisation' => $invoice->organisation->slug,
-            'fulfilment'   => $invoice->shop->fulfilment->slug,
-            'fulfilmentCustomer'     => $invoice->customer->fulfilmentCustomer->slug,
-            'invoice'      => $invoice->slug
+            'organisation'       => $invoice->organisation->slug,
+            'fulfilment'         => $invoice->shop->fulfilment->slug,
+            'fulfilmentCustomer' => $invoice->customer->fulfilmentCustomer->slug,
+            'invoice'            => $invoice->slug
         ]);
     }
 }

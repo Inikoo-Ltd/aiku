@@ -65,7 +65,7 @@ class ShowPaymentServiceProvider extends OrgAction
                     'icon'  =>
                         [
                             'icon'  => ['fal', 'fa-cash-register'],
-                            'title' => __('payment service provider')
+                            'title' => __('Payment service provider')
                         ],
                     'title' => $paymentServiceProvider->slug,
                     /* 'actions' => [

@@ -36,15 +36,25 @@ class CreateProspectFromWebBlock extends IrisAction
     public function rules(): array
     {
         return [
-            'email' => ['required', 'email', 'max:500',
-                        new IUnique(
-                            table: 'prospects',
-                            extraConditions: [
-                                ['column' => 'shop_id', 'value' => $this->shop->id],
-                            ]
-                        )
-                ],
+            'email' => [
+                'required',
+                'email',
+                'max:500',
+                new IUnique(
+                    table: 'prospects',
+                    extraConditions: [
+                        ['column' => 'shop_id', 'value' => $this->shop->id],
+                    ],
+                    message: __('This email is already registered as a prospect in this shop.')
+                )
+            ],
         ];
+    }
+
+    public function getValidationMessages(): array
+    {
+        // Keep empty to avoid overriding messages for other rules unintentionally
+        return [];
     }
 
     public function afterValidator(Validator $validator): void
@@ -53,14 +63,24 @@ class CreateProspectFromWebBlock extends IrisAction
             abort(404);
         }
 
+
+        if ($validator->errors()->has('email')
+            && Prospect::where('email', $this->get('email'))
+                ->where('shop_id', $this->shop->id)->where(function ($query) {
+                    $query->where('dont_contact_me', true)
+                        ->orWhere('can_contact_by_email', false);
+                })
+                ->exists()) {
+            $validator->errors()->forget('email');
+            $validator->errors()->add('email', __('Owner of email address has opted out of receiving emails from this shop.'));
+        }
+
+
         if (Customer::where('email', $this->get('email'))
             ->where('shop_id', $this->shop->id)
             ->exists()) {
             $validator->errors()->add('email', __('This email is already registered as a customer in this shop.'));
         }
-
-
-
     }
 
     /**
@@ -68,7 +88,6 @@ class CreateProspectFromWebBlock extends IrisAction
      */
     public function asController(ActionRequest $request): Prospect
     {
-
         $this->initialisation($request);
 
         return $this->handle($this->validatedData);

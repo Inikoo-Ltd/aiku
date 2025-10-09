@@ -25,19 +25,19 @@ enum ShopsTabsEnum: string
     {
         return match ($this) {
             ShopsTabsEnum::SHOPS => [
-                'title' => __('shops'),
+                'title' => __('Shops'),
                 'icon'  => 'fal fa-store-alt',
             ],
             ShopsTabsEnum::DEPARTMENTS => [
-                'title' => __('departments'),
+                'title' => __('Departments'),
                 'icon'  => 'fal fa-folder-tree',
             ],
             ShopsTabsEnum::FAMILIES => [
-                'title' => __('families'),
+                'title' => __('Families'),
                 'icon'  => 'fal fa-folder',
             ],
             ShopsTabsEnum::PRODUCTS => [
-                'title' => __('products'),
+                'title' => __('Products'),
                 'icon'  => 'fal fa-cube',
             ],
 

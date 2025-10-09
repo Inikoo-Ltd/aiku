@@ -15,7 +15,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
 import { faSignOutAlt, faSensor, faLifeRing } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { capitalize, inject, ref } from "vue"
+import { inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
@@ -95,7 +95,7 @@ const onLogoutAuth = () => {
                     v-if="layout.help_portal_url"
                     :href="layout.help_portal_url"
                     class="relative group hover:underline px-4 rounded-md py-2 w-full group flex items-center text-sm gap-x-2" xclass="[open ? 'bg-black/25' : '']"
-                    v-tooltip="{ content: capitalize(helpData.tooltip), delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
+                    v-tooltip="{ content: helpData.tooltip, delay: { show: layout.leftSidebar.show ? 500 : 100, hide: 100 } }"
                     :style="{
                         color: layout?.app?.theme[1],
                     }"
@@ -104,11 +104,11 @@ const onLogoutAuth = () => {
                     <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width :icon="helpData.icon" />
                     
                     <Transition name="slide-to-left">
-                        <span v-if="layout.leftSidebar.show" class="py-0.5 capitalize leading-none whitespace-nowrap "
+                        <span v-if="layout.leftSidebar.show" class="py-0.5 leading-none whitespace-nowrap "
                             :class="[layout.leftSidebar.show ? 'truncate block md:block' : 'block md:hidden']">
                             {{ helpData.label }}
                         </span>
-                        <span v-else class="capitalize leading-none whitespace-nowrap block md:hidden">
+                        <span v-else class="leading-none whitespace-nowrap block md:hidden">
                             {{ helpData.label }}
                         </span>
                     </Transition>

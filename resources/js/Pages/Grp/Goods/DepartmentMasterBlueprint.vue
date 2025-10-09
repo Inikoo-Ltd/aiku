@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { routeType } from '@/types/route'
-import SetVisibleList from '@/Components/Departement&Family/SetVisibleList.vue';
-import EditPreviewBluprintData from "@/Components/Departement&Family/EditPreviewBluprintData.vue";
+import SetVisibleList from '@/Components/DepartmentAndFamily/SetVisibleList.vue';
+import EditPreviewBluprintData from "@/Components/DepartmentAndFamily/EditPreviewBluprintData.vue";
 
 const props = defineProps<{
     pageHead: {},

@@ -15,6 +15,7 @@ use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
@@ -24,7 +25,6 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
@@ -45,7 +45,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -130,6 +129,15 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $traffic_sources
  * @property int|null $master_shop_id
  * @property OrderPayDetailedStatusEnum|null $pay_detailed_status
+ * @property bool $is_premium_dispatch
+ * @property bool|null $has_extra_packing
+ * @property array<array-key, mixed>|null $post_submit_modification_data
+ * @property int|null $shipping_zone_schema_id
+ * @property int|null $shipping_zone_id
+ * @property OrderToBePaidByEnum|null $to_be_paid_by
+ * @property bool|null $has_insurance
+ * @property bool $is_re recargo de equivalencia
+ * @property int $number_item_transactions Count of product item transactions in the order
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -152,7 +160,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Platform|null $platform
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
  * @property-read Shop $shop
- * @property-read ShopifyUserHasFulfilment|null $shopifyOrder
  * @property-read \App\Models\Ordering\OrderStats|null $stats
  * @property-read TaxCategory $taxCategory
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $transactions
@@ -179,8 +186,9 @@ class Order extends Model implements HasMedia, Auditable
 
 
     protected $casts = [
-        'data'         => 'array',
-        'payment_data' => 'array',
+        'data'                          => 'array',
+        'payment_data'                  => 'array',
+        'post_submit_modification_data' => 'array',
 
 
         'date'                   => 'datetime',
@@ -220,12 +228,14 @@ class Order extends Model implements HasMedia, Auditable
         'pay_status'          => OrderPayStatusEnum::class,
         'pay_detailed_status' => OrderPayDetailedStatusEnum::class,
         'shipping_engine'     => OrderShippingEngineEnum::class,
-        'charges_engine'      => OrderChargesEngineEnum::class
+        'charges_engine'      => OrderChargesEngineEnum::class,
+        'to_be_paid_by'       => OrderToBePaidByEnum::class
     ];
 
     protected $attributes = [
-        'data'         => '{}',
-        'payment_data' => '{}',
+        'data'                          => '{}',
+        'payment_data'                  => '{}',
+        'post_submit_modification_data' => '{}'
     ];
 
     protected $guarded = [];
@@ -303,11 +313,6 @@ class Order extends Model implements HasMedia, Auditable
     public function collectionAddress(): BelongsTo
     {
         return $this->belongsTo(Address::class);
-    }
-
-    public function shopifyOrder(): MorphOne
-    {
-        return $this->morphOne(ShopifyUserHasFulfilment::class, 'model');
     }
 
     public function addresses(): MorphToMany

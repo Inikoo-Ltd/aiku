@@ -2,7 +2,7 @@
 import { faCube, faInfoCircle, faLink } from "@fal"
 import { faStar, faCircle, faChevronLeft, faChevronRight, faDesktop } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, computed, provide, inject, toRaw, watch } from "vue"
+import { ref, computed, provide, toRaw, watch } from "vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { router } from "@inertiajs/vue3"
@@ -63,7 +63,7 @@ const autosave = () => {
   )
 }
 
-// Create debounced version of autosave
+// Create a debounced version of autosave
 const autosaveDebounced = debounce(autosave, 1000) // delay 1000ms
 
 const onPickTemplate = (template: any) => {
@@ -77,12 +77,12 @@ const onPickTemplate = (template: any) => {
   autosaveDebounced()
 }
 
-const pickedwebpage = ref({
+const pickedWebpage = ref({
   collections : []
 })
 const onChangeWebpage = (value: any) => {
   if (layout.value?.data?.fieldValue) {
-    pickedwebpage.value.collections = value.collections || []
+    pickedWebpage.value.collections = value.collections || []
   }
 }
 
@@ -127,7 +127,7 @@ const setIframeView = (view: string) => {
           <span v-if="layout?.data?.fieldValue?.webpage?.name">
             Preview: <strong>{{ layout.data.fieldValue.webpage?.name }}</strong>
           </span>
-          <span v-else>Pick a Departement or sub-departement</span>
+          <span v-else>Pick a Department or sub-department</span>
         </div>
       </div>
 
@@ -137,7 +137,7 @@ const setIframeView = (view: string) => {
           :is="getComponent(layout.code)"
           :modelValue="{
             ...layout.data.fieldValue,
-            collections : pickedwebpage.collections
+            collections : pickedWebpage.collections
             }"
           :screenType="currentView"
           :routeEditfamily="props.data.update_family_route"
@@ -149,7 +149,7 @@ const setIframeView = (view: string) => {
           <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl" />
           <h3 class="text-lg font-semibold">No webpage selected</h3>
           <p class="text-sm max-w-xs">
-            Please pick a Departement or sub-departement to preview its data here.
+            Please pick a Department or sub-department to preview its data here.
           </p>
         </div>
         <Button :label="'Pick a webpage to preview'" @click="visibleDrawer = true" />
@@ -160,8 +160,8 @@ const setIframeView = (view: string) => {
   <Drawer v-model:visible="visibleDrawer" position="right" :pt="{ root: { style: 'width: 30vw' } }">
     <template #header>
       <div>
-        <h2 class="text-base font-semibold">Departement or sub-departement Overview</h2>
-        <p class="text-xs text-gray-500">Choose a Departement or sub-departement to preview</p>
+        <h2 class="text-base font-semibold">Department or sub-department Overview</h2>
+        <p class="text-xs text-gray-500">Choose a Department or sub-department to preview</p>
       </div>
     </template>
 

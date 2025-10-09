@@ -90,7 +90,7 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
         [
             'type'    => 'button',
             'style'   => 'red_outline',
-            'tooltip' => __('delete'),
+            'tooltip' => __('Delete'),
             'icon'    => 'fal fa-trash-alt',
             'key'     => 'delete_booked_in',
             'ask_why' => true,
@@ -108,7 +108,7 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
             'style'   => 'secondary',
             'icon'    => 'fal fa-plus',
             'key'     => 'add-service',
-            'label'   => __('add service'),
+            'label'   => __('Add service'),
             'tooltip' => __('Add single service'),
             'route'   => [
                 'name'       => 'grp.models.standalone-invoice.transaction.store',
@@ -122,7 +122,7 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
             'style'   => 'secondary',
             'icon'    => 'fal fa-plus',
             'key'     => 'add-physical-good',
-            'label'   => __('add physical good'),
+            'label'   => __('Add physical good'),
             'tooltip' => __('Add physical good'),
             'route'   => [
                 'name'       => 'grp.models.standalone-invoice.transaction.store',
@@ -151,7 +151,7 @@ class ShowStandaloneFulfilmentInvoiceInProcess extends OrgAction
         return Inertia::render(
             'Org/Accounting/InvoiceManual',
             [
-                'title'       => __('invoice'),
+                'title'       => __('Invoice'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

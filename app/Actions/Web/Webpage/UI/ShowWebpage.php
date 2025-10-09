@@ -282,7 +282,7 @@ class ShowWebpage extends OrgAction
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('new article'),
+                'label' => __('New article'),
                 'route' => [
                     'name'       => 'org.websites.show.blog.article.create',
                     'parameters' => [
@@ -294,7 +294,7 @@ class ShowWebpage extends OrgAction
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('new webpage'),
+                'label' => __('New webpage'),
                 'route' => [
                     'name'       => 'org.websites.show.webpages.show.webpages.create',
                     'parameters' => [
@@ -330,14 +330,14 @@ class ShowWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('webpage'),
+                'title'       => __('Webpage'),
                 'pageHead'    => [
                     'title'         => $webpage->code,
                     'afterTitle'    => [
                         'label' => '../'.$webpage->url,
                     ],
                     'icon'          => [
-                        'title' => __('webpage'),
+                        'title' => __('Webpage'),
                         'icon'  => 'fal fa-browser'
                     ],
                     'iconRight'     => $webpage->state->stateIcon()[$webpage->state->value],

@@ -225,7 +225,7 @@ class IndexCollections extends OrgAction
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'create',
-                'tooltip' => __('new collection'),
+                'tooltip' => __('New collection'),
                 'label'   => __('collection'),
                 'route'   => [
                     'name'       => 'grp.org.shops.show.catalogue.collections.create',

@@ -59,7 +59,7 @@ class ShowAppointment extends InertiaAction
                     'title'   => $appointment->name,
                     'icon'    => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('appointment')
+                        'title' => __('Appointment')
                     ],
                     'actions' => [
                         $this->canEdit ? [

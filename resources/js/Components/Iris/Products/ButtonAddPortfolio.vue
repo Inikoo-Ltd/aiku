@@ -73,6 +73,20 @@ const onAddToAllPortfolios = (product: ProductResource) => {
             preserveState: true,
             onStart: () => { 
                 isLoadingAllPortfolios.value = true
+                // Luigi: event add to cart
+                window?.dataLayer?.push({
+                    event: "add_to_cart",
+                    ecommerce: {
+                        currency: layout?.iris?.currency?.code,
+                        value: product.price,
+                        channel: 'all',
+                        items: [
+                            {
+                                item_id: product?.luigi_identity,
+                            }
+                        ]
+                    }
+                })
             },
             onSuccess: () => {
                 const keys = Object.keys(channelList).map(key => Number(key))
@@ -99,6 +113,7 @@ const onAddToAllPortfolios = (product: ProductResource) => {
 }
 
 // Section: Add to a specific Portfolios channel
+const isRecentlyAddPortfolio = ref(false)
 const isLoadingSpecificChannel = ref([])
 const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) => {
     if (!channel || typeof channel.id === 'undefined') {
@@ -120,6 +135,20 @@ const onAddPortfoliosSpecificChannel = (product: ProductResource, channel: any) 
             preserveState: true,
             onStart: () => {
                 isLoadingSpecificChannel.value.push(channelId)
+                // Luigi: event add to cart
+                window?.dataLayer?.push({
+                        event: "add_to_cart",
+                        ecommerce: {
+                            currency: layout?.iris?.currency?.code,
+                            value: product.price,
+                            channel: channel?.platform_slug || null,
+                            items: [
+                                {
+                                    item_id: product?.luigi_identity,
+                                }
+                            ]
+                        }
+                    })
             },
             onSuccess: () => {
                 if (!productHasPortfolioList.value?.includes(channelId)) {
@@ -182,9 +211,9 @@ watch(() => props.productHasPortfolio, (newVal) => {
                 <div class="w-full flex flex-nowrap relative">
 
                     <Button v-if="isInAllChannels"
-                        :label="CheckChannels ? 'Exist on all channels' : 'Exist on some channels'" type="tertiary" disabled
+                        :label="CheckChannels ? trans('Exist on all channels') : trans('Exist on some channels')" type="tertiary" disabled
                         class="border-none border-transparent" :class="!CheckChannels ? 'rounded-r-none' : ''" full />
-                    <Button v-else @click="() => onAddToAllPortfolios(product)" label="Add to all Portfolios"
+                    <Button v-else @click="() => onAddToAllPortfolios(product)" :label="trans('Add to all channels')"
                         :loading="isLoadingAllPortfolios" :icon="faPlus" :class="!CheckChannels ? 'rounded-r-none' : ''"
                         class="border-none border-transparent" full xsize="l" xstyle="border: 0px" />
 
@@ -234,6 +263,6 @@ watch(() => props.productHasPortfolio, (newVal) => {
     </div>
 
     <Link v-else href="/app/login" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-    {{ trans("Login to add to your portfolio") }}
+    {{ trans("Login / Register to Start") }}
     </Link>
 </template>

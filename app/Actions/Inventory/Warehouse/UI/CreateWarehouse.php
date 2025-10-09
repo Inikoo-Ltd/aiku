@@ -31,9 +31,9 @@ class CreateWarehouse extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new warehouse'),
+                'title'       => __('New warehouse'),
                 'pageHead'    => [
-                    'title'   => __('new warehouse'),
+                    'title'   => __('New warehouse'),
                     'icon'    => [
                         'title' => __('Create warehouses'),
                         'icon'  => 'fal fa-warehouse'
@@ -42,7 +42,7 @@ class CreateWarehouse extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.warehouses.index',
                                 'parameters' => $request->route()->originalParameters()

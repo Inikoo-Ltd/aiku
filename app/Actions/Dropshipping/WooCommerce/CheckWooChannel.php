@@ -14,6 +14,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class CheckWooChannel
@@ -25,18 +26,26 @@ class CheckWooChannel
     {
         $platformStatus = $canConnectToPlatform = $existInPlatform = false;
 
-        if ($wooCommerceUser->checkConnection()) {
+        $webhooks = $wooCommerceUser->registerWooCommerceWebhooks();
+
+        if (Arr::has($wooCommerceUser->checkConnection(), 'environment') && ! blank($webhooks)) {
             $platformStatus = true;
             $canConnectToPlatform = true;
             $existInPlatform = true;
         }
+
+        $this->update($wooCommerceUser, [
+            'settings' => array_merge($wooCommerceUser->settings, [
+                'webhooks' => $webhooks
+            ])
+        ]);
 
         return UpdateCustomerSalesChannel::run($wooCommerceUser->customerSalesChannel, [
             'state' => CustomerSalesChannelStateEnum::AUTHENTICATED,
             'name'                    => $wooCommerceUser->name,
             'platform_status'         => $platformStatus,
             'can_connect_to_platform' => $canConnectToPlatform,
-            'exist_in_platform'       => $existInPlatform,
+            'exist_in_platform'       => $existInPlatform
         ]);
     }
 

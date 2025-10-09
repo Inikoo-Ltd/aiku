@@ -274,22 +274,25 @@ const listType = [
         label: trans('Luigi: Top Trending'),
         value: 'luigi-trends',
         show_new_until: '2025-09-27',
-        is_disabled: false
+        is_disabled: true
     },
     {
         label: trans('Luigi: Customer Recently Ordered'),
         value: 'luigi-recently_ordered',
-        show_new_until: '2025-09-27'
+        show_new_until: '2025-09-27',
+        is_disabled: true
     },
     {
         label: trans('Luigi: Recently Viewed'),
         value: 'luigi-last_seen',
-        show_new_until: '2025-09-27'
+        show_new_until: '2025-09-27',
+        is_disabled: true
     },
     {
         label: trans('Luigi: You might also like'),
         value: 'luigi-item_detail_alternatives',
-        show_new_until: '2025-09-27'
+        show_new_until: '2025-09-27',
+        is_disabled: true
     }
 ]
 </script>
@@ -497,7 +500,7 @@ const listType = [
                 >
                     <div class=" h-fit shadow">
                         <Image
-                            :src="product.web_images.main.thumbnail"
+                            :src="product.web_images?.main?.thumbnail"
                             xclass=" object-cover rounded"
                             imageCover
                             :alt="product.name"
@@ -634,7 +637,7 @@ const listType = [
 
 <style lang="scss">
 .p-select-option.p-select-option-selected {
-    background: color-mix(in srgb, var(--grp-color-0) 85%, #00000000) !important; /* cc = 80% opacity in hex */
-    color: var(--grp-color-1) !important;
+    background: color-mix(in srgb, var(--theme-color-0) 85%, #00000000) !important; /* cc = 80% opacity in hex */
+    color: var(--theme-color-1) !important;
 }
 </style>

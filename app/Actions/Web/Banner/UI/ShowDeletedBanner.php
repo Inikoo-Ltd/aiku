@@ -78,7 +78,7 @@ class ShowDeletedBanner extends InertiaAction
                 'pageHead'                       => [
                     'title'   => $banner->name,
                     'icon'    => [
-                        'title' => __('banner'),
+                        'title' => __('Banner'),
                         'icon'  => 'fal fa-sign'
                     ],
                     'actions' => [

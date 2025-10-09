@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Catalogue\Collection\StoreCollectionsFromMasterCollection;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\Search\MasterCollectionRecordSearch;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
@@ -56,6 +57,8 @@ class StoreMasterCollection extends GrpAction
 
         AttachMasterCollectionToModel::make()->action($parent, $masterCollection);
 
+        StoreCollectionsFromMasterCollection::make()->action($parent, $masterCollection);
+
         MasterCollectionRecordSearch::dispatch($masterCollection);
         GroupHydrateMasterCollections::dispatch($masterCollection->group)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterCollections::dispatch($masterShop)->delay($this->hydratorsDelay);
@@ -78,7 +81,7 @@ class StoreMasterCollection extends GrpAction
                     table: 'master_collections',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],

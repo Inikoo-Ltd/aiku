@@ -61,7 +61,7 @@ class EditOrgSupplier extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('edit supplier'),
+                'title'       => __('Edit supplier'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

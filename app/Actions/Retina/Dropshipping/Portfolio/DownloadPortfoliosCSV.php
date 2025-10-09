@@ -24,7 +24,8 @@ class DownloadPortfoliosCSV extends RetinaAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel): BinaryFileResponse|Response
     {
-        $filename = 'portfolio'.'_'.now()->format('Ymd').'.csv';
+
+        $filename = 'portfolio_data_feed_' . $customerSalesChannel->customer->slug . '_' . now()->format('Ymd') . '.csv';
 
         $headers = $this->headings();
 

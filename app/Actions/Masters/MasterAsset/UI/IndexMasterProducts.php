@@ -32,6 +32,8 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 
 class IndexMasterProducts extends GrpAction
 {
@@ -196,7 +198,7 @@ class IndexMasterProducts extends GrpAction
             $model         = '';
             $icon          = [
                 'icon'  => ['fal', 'fa-store-alt'],
-                'title' => __('master shop')
+                'title' => __('Master shop')
             ];
             $afterTitle    = [
                 'label' => __('Master Products')
@@ -215,7 +217,7 @@ class IndexMasterProducts extends GrpAction
                 $model         = '';
                 $icon          = [
                     'icon'  => ['fal', 'fa-store-alt'],
-                    'title' => __('master shop')
+                    'title' => __('Master shop')
                 ];
                 $afterTitle    = [
                     'label' => __('Master Products')
@@ -256,11 +258,13 @@ class IndexMasterProducts extends GrpAction
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('Add a master product to this family'),
-                            'label'   => __('master product'),
+                            'label'   => __('Master product'),
                         ],
                     ] : [],
                 ],
                 'data'        => MasterProductsResource::collection($masterAssets),
+                'masterProductCategory' => $this->parent->id,
+                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($this->masterShop, 'shops')),
 
             ]
         )->table($this->tableStructure($this->parent));

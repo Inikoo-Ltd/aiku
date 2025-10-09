@@ -53,13 +53,13 @@ class CreateWebUser extends OrgAction
                     'title' => __('Create web user'),
                     'icon'  => [
                         'icon'  => 'fal fa-terminal',
-                        'title' => __('web user')
+                        'title' => __('Web user')
                     ],
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name' => match (class_basename($this->parent)) {
                                     'Customer'           => 'grp.org.shops.show.crm.customers.show',

@@ -23,7 +23,6 @@ use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\RequiredIf;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Validation\Validator;
 
 class StorePoll extends OrgAction
 {
@@ -75,7 +74,7 @@ class StorePoll extends OrgAction
                     table: 'polls',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'value' => null],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -88,7 +87,7 @@ class StorePoll extends OrgAction
                     table: 'polls',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'value' => null],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -134,10 +133,6 @@ class StorePoll extends OrgAction
         return $this->handle($shop, $this->validatedData);
     }
 
-    public function afterValidator(Validator $validator): void
-    {
-        $type = $this->get('type.type');
-    }
 
     public function htmlResponse(Poll $poll): RedirectResponse
     {

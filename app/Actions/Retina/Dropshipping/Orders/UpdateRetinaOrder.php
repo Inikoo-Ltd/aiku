@@ -13,6 +13,7 @@ use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Ordering\Order;
+use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -40,6 +41,7 @@ class UpdateRetinaOrder extends RetinaAction
         return [
             'customer_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
             'shipping_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'collection_address_id' => ['sometimes', 'nullable', Rule::exists('addresses', 'id')]
         ];
     }
 

@@ -39,7 +39,7 @@ class CreateRetinaWebUser extends RetinaAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name' => 'retina.sysadmin.web-users.index',
                                 'parameters' => $request->route()->originalParameters()

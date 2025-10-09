@@ -23,7 +23,7 @@ enum OrdersInBasketTabsEnum: string
         return match ($this) {
 
             OrdersInBasketTabsEnum::ORDERS => [
-                'title' => __('orders'),
+                'title' => __('Orders'),
                 'icon'  => 'fal fa-bars',
             ],
         };

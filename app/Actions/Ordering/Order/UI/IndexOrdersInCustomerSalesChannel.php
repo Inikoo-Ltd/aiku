@@ -111,7 +111,7 @@ class IndexOrdersInCustomerSalesChannel extends OrgAction
         $title         = $this->customerSalesChannel->customer->name.' ('.$this->customerSalesChannel->customer->reference.')';
         $iconRight  = [
             'icon'  => ['fal', 'fa-shopping-cart'],
-            'title' => __('orders').' @'.$this->customerSalesChannel->platform->name,
+            'title' => __('Orders').' @'.$this->customerSalesChannel->platform->name,
         ];
         $subNavigation = $this->getCustomerSalesChannelSubNavigation($this->customerSalesChannel);
         $actions = [];

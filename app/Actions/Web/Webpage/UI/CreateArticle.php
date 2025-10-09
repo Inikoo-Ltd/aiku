@@ -41,9 +41,9 @@ class CreateArticle extends InertiaAction
                     $blog->slug,
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new article'),
+                'title'       => __('New article'),
                 'pageHead'    => [
-                    'title'   => __('new article'),
+                    'title'   => __('New article'),
                     'actions' => [
                         [
                             'type'  => 'button',

@@ -8,6 +8,9 @@
 
 namespace App\Http\Resources\Goods;
 
+use App\Actions\Api\Retina\Dropshipping\Resource\ImageResource;
+use App\Http\Resources\Catalogue\BrandResource;
+use App\Http\Resources\Catalogue\TagsResource;
 use App\Models\Goods\TradeUnit;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -18,6 +21,15 @@ class TradeUnitResource extends JsonResource
         /** @var TradeUnit $tradeUnit */
         $tradeUnit = $this;
 
+        $ingredients = $tradeUnit->ingredients->pluck('name');
+
+        $specifications = [
+            'ingredients'       => $ingredients,
+            'gross_weight'      => $tradeUnit->gross_weight,
+            'marketing_weights' => $tradeUnit->marketing_weights,
+            'barcode'           => $tradeUnit->barcode,
+            'dimensions'        => $tradeUnit->marketing_dimensions,
+        ];
 
         return array(
             'slug'   => $tradeUnit->slug,
@@ -32,7 +44,8 @@ class TradeUnitResource extends JsonResource
             'volume'               => $tradeUnit->volume,
             'type'                 => $tradeUnit->type,
             'image_id'             => $tradeUnit->image_id,
-
+            'images'          => ImageResource::collection($tradeUnit->images),
+            'image_thumbnail' => $tradeUnit->imageSources(720, 480),
             'name'                  => $tradeUnit->name,
             'description'           => $tradeUnit->description,
             'description_title'     => $tradeUnit->description_title,
@@ -41,6 +54,9 @@ class TradeUnitResource extends JsonResource
             'description_i8n'       => $tradeUnit->getTranslations('description_i8n'),
             'description_title_i8n' => $tradeUnit->getTranslations('description_title_i8n'),
             'description_extra_i8n' => $tradeUnit->getTranslations('description_extra_i8n'),
+            'specifications'        => $specifications,
+            'brands'                => BrandResource::collection($tradeUnit->brands)->resolve(),
+            'tags'                  => TagsResource::collection($tradeUnit->tags)->resolve()
         );
     }
 

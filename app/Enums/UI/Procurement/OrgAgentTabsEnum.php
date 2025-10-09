@@ -27,29 +27,29 @@ enum OrgAgentTabsEnum: string
     {
         return match ($this) {
             OrgAgentTabsEnum::DATA => [
-                'title' => __('data'),
+                'title' => __('Data'),
                 'icon'  => 'fal fa-database',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             OrgAgentTabsEnum::IMAGES => [
-                'title' => __('images'),
+                'title' => __('Images'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             OrgAgentTabsEnum::SYSTEM_USERS => [
-                'title' => __('system user'),
+                'title' => __('System user'),
                 'icon'  => 'fal fa-terminal',
             ],
             OrgAgentTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             OrgAgentTabsEnum::SHOWCASE => [
-                'title' => __('agent'),
+                'title' => __('Agent'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

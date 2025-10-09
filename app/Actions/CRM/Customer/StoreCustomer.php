@@ -26,6 +26,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
@@ -55,6 +56,7 @@ class StoreCustomer extends OrgAction
     use WithModelAddressActions;
     use WithNoStrictRules;
     use WithProcessContactNameComponents;
+    use WithPrepareTaxNumberValidation;
 
     /**
      * @throws \Throwable
@@ -67,8 +69,7 @@ class StoreCustomer extends OrgAction
         Arr::forget($modelData, 'contact_address');
         $deliveryAddressData = Arr::get($modelData, 'delivery_address', []);
         Arr::forget($modelData, 'delivery_address');
-        $taxNumberData = Arr::get($modelData, 'tax_number');
-        Arr::forget($modelData, 'tax_number');
+        $taxNumberData = Arr::pull($modelData, 'tax_number');
 
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
@@ -172,6 +173,10 @@ class StoreCustomer extends OrgAction
             TrafficSourceHydrateCustomers::dispatch($customer->trafficSource);
         }
 
+        if ($customer->shop->is_aiku) {
+            SaveCustomerInAurora::dispatch($customer);
+        }
+
 
         return $customer;
     }
@@ -188,14 +193,12 @@ class StoreCustomer extends OrgAction
     private function getCommsBaseValues(): array
     {
         return [
-            'is_subscribed_to_newsletter'        => false,
-            'is_subscribed_to_marketing'         => false,
-            'is_subscribed_to_abandoned_cart'    => true,
-            'is_subscribed_to_reorder_reminder'  => true,
-            'is_subscribed_to_basket_low_stock'  => true,
-            'is_subscribed_to_basket_reminder_1' => true,
-            'is_subscribed_to_basket_reminder_2' => true,
-            'is_subscribed_to_basket_reminder_3' => true,
+            'is_subscribed_to_newsletter'       => false,
+            'is_subscribed_to_marketing'        => false,
+            'is_subscribed_to_abandoned_cart'   => true,
+            'is_subscribed_to_reorder_reminder' => true,
+            'is_subscribed_to_basket_low_stock' => true,
+            'is_subscribed_to_basket_reminder'  => true,
 
         ];
     }
@@ -225,7 +228,7 @@ class StoreCustomer extends OrgAction
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -239,24 +242,23 @@ class StoreCustomer extends OrgAction
             'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
 
 
-            'timezone_id'                                            => ['nullable', 'exists:timezones,id'],
-            'language_id'                                            => ['nullable', 'exists:languages,id'],
-            'data'                                                   => ['sometimes', 'array'],
-            'registered_at'                                          => ['sometimes', 'nullable', 'date'],
-            'internal_notes'                                         => ['sometimes', 'nullable', 'string'],
-            'warehouse_internal_notes'                               => ['sometimes', 'nullable', 'string'],
-            'warehouse_public_notes'                                 => ['sometimes', 'nullable', 'string'],
-            'email_subscriptions'                                    => ['sometimes', 'array'],
-            'email_subscriptions.is_subscribed_to_newsletter'        => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_marketing'         => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_abandoned_cart'    => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_reorder_reminder'  => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_low_stock'  => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_1' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_2' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_3' => ['sometimes', 'boolean'],
-            'traffic_sources'                                        => ['sometimes', 'nullable'],
-            'tax_number'                                             => ['sometimes', 'nullable', 'array'],
+            'timezone_id'                                           => ['nullable', 'exists:timezones,id'],
+            'language_id'                                           => ['nullable', 'exists:languages,id'],
+            'data'                                                  => ['sometimes', 'array'],
+            'registered_at'                                         => ['sometimes', 'nullable', 'date'],
+            'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
+            'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],
+            'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
+            'email_subscriptions'                                   => ['sometimes', 'array'],
+            'email_subscriptions.is_subscribed_to_newsletter'       => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_marketing'        => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_abandoned_cart'   => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
+            'traffic_sources'                                       => ['sometimes', 'nullable'],
+            'tax_number'                                            => ['sometimes', 'nullable', 'array'],
+            'is_re'                                                 => ['sometimes', 'boolean'],
 
 
             'password' =>
@@ -283,7 +285,7 @@ class StoreCustomer extends OrgAction
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ];
@@ -297,7 +299,7 @@ class StoreCustomer extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->get('company_name') && !$this->get('email')) {
+        if ($this->strict && (!$this->get('company_name') && !$this->get('email'))) {
             $validator->errors()->add('company_name', 'At least one of company_name or email must be provided');
         }
 

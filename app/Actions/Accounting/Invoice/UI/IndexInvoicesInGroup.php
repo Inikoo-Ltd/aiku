@@ -138,7 +138,7 @@ class IndexInvoicesInGroup extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            'title' => __('invoices')
+            'title' => __('Invoices')
         ];
 
         $afterTitle = null;
@@ -162,7 +162,7 @@ class IndexInvoicesInGroup extends OrgAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('invoices'),
+                'title'       => __('Invoices'),
                 'pageHead'    => [
 
                     'title'         => $title,

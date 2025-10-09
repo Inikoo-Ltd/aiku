@@ -72,9 +72,9 @@ class CreateBanner extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new banner'),
+                'title'       => __('New banner'),
                 'pageHead'    => [
-                    'title'   => __('banner'),
+                    'title'   => __('Banner'),
                     'actions' => [
                         [
                             'type'  => 'button',

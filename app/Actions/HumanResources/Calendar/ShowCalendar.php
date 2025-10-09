@@ -99,7 +99,7 @@ class ShowCalendar extends OrgAction
                             'route' => [
                                 'name' => 'grp.org.hr.employees.index',
                             ],
-                            'label' => __('employees')
+                            'label' => __('Employees')
                         ],
                         'model' => [
                             'route' => [

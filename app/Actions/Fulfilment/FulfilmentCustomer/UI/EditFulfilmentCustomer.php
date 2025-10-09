@@ -12,6 +12,7 @@ use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
+use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\SysAdmin\Organisation;
@@ -43,12 +44,13 @@ class EditFulfilmentCustomer extends OrgAction
 
     public function htmlResponse(FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): Response
     {
+        $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
+
         return Inertia::render(
             'EditModel',
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
                 'navigation'  => [
@@ -56,8 +58,8 @@ class EditFulfilmentCustomer extends OrgAction
                     'next'     => $this->getNext($fulfilmentCustomer, $request),
                 ],
                 'pageHead'    => [
-                    'title'    => $fulfilmentCustomer->customer->name,
-                    'actions'  => [
+                    'title'   => $fulfilmentCustomer->customer->name,
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -76,27 +78,27 @@ class EditFulfilmentCustomer extends OrgAction
                             'label'  => __('contact'),
                             'fields' => [
 
-                                'contact_name' => [
+                                'contact_name'             => [
                                     'type'  => 'input',
                                     'label' => __('contact name'),
                                     'value' => $fulfilmentCustomer->customer->contact_name
                                 ],
-                                'company_name' => [
+                                'company_name'             => [
                                     'type'  => 'input',
                                     'label' => __('company'),
                                     'value' => $fulfilmentCustomer->customer->company_name
                                 ],
-                                'email'        => [
+                                'email'                    => [
                                     'type'  => 'input',
                                     'label' => __('Email'),
                                     'value' => $fulfilmentCustomer->customer->email
                                 ],
-                                'phone'        => [
+                                'phone'                    => [
                                     'type'  => 'phone',
                                     'label' => __('Phone'),
                                     'value' => $fulfilmentCustomer->customer->phone
                                 ],
-                                'address'      => [
+                                'address'                  => [
                                     'type'    => 'address',
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($fulfilmentCustomer->customer->address)->getArray(),
@@ -104,12 +106,24 @@ class EditFulfilmentCustomer extends OrgAction
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
-                                'vat'      => [
+                                'tax_number'               => [
                                     'type'    => 'tax_number',
-                                    'label'   => __('vat'),
-                                    'value'   => null,
+                                    'label'   => __('Tax number'),
+                                    'value'   => $fulfilmentCustomer->customer->taxNumber ? TaxNumberResource::make($fulfilmentCustomer->customer->taxNumber)->getArray() : null,
                                     'country' => $fulfilmentCustomer->customer->address->country_code,
-                                ]
+                                ],
+                                'is_re'                    => [
+                                    'type'   => 'toggle',
+                                    'hidden' => $this->organisation->country_id != $spain->id || $fulfilmentCustomer->customer->address->country_id != $spain->id,
+                                    'label'  => 'Recargo de equivalencia',
+                                    'value'  => $fulfilmentCustomer->customer->is_re,
+
+                                ],
+                                'identity_document_number' => [
+                                    'type'  => 'input',
+                                    'label' => __('Identity document number'),
+                                    'value' => $fulfilmentCustomer->customer->identity_document_number
+                                ],
                             ]
                         ]
                     ],
@@ -127,7 +141,7 @@ class EditFulfilmentCustomer extends OrgAction
     }
 
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
+    public function getBreadcrumbs(array $routeParameters): array
     {
         return ShowFulfilmentCustomer::make()->getBreadcrumbs(
             routeParameters: $routeParameters,
@@ -138,7 +152,7 @@ class EditFulfilmentCustomer extends OrgAction
     {
         $previous = FulfilmentCustomer::where('slug', '<', $fulfilmentCustomer->slug)->when(true, function ($query) use ($fulfilmentCustomer, $request) {
             if ($request->route()->getName() == 'shops.show.customers.show') {
-                $query->where('customers.shop_id', $fulfilmentCustomer->shop_id);
+                $query->where('customers.shop_id', $fulfilmentCustomer->customer->shop_id);
             }
         })->orderBy('slug', 'desc')->first();
 
@@ -149,7 +163,7 @@ class EditFulfilmentCustomer extends OrgAction
     {
         $next = FulfilmentCustomer::where('slug', '>', $fulfilmentCustomer->slug)->when(true, function ($query) use ($fulfilmentCustomer, $request) {
             if ($request->route()->getName() == 'shops.show.customers.show') {
-                $query->where('customers.shop_id', $fulfilmentCustomer->shop_id);
+                $query->where('customers.shop_id', $fulfilmentCustomer->customer->shop_id);
             }
         })->orderBy('slug')->first();
 

@@ -96,7 +96,7 @@ class EditLocation extends OrgAction
                 'pageHead'    => [
                     'title'   => $location->code,
                     'icon'    => [
-                        'title' => __('locations'),
+                        'title' => __('Locations'),
                         'icon'  => 'fal fa-inventory'
                     ],
                     'actions' => [

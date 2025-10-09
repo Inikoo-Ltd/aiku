@@ -59,7 +59,7 @@ function routePallet(storageData: any) {
 		<div
 			class="flex justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums col-span-2">
 			<dl>
-				<dt class="text-base font-medium text-gray-400 capitalize">
+				<dt class="text-base font-medium text-gray-400">
 					{{ stats.pallets.label }}
 				</dt>
 				<dd class="mt-2 flex justify-between gap-x-2">
@@ -132,7 +132,7 @@ function routePallet(storageData: any) {
 		<div
 			class="flex justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums">
 			<dl>
-				<dt class="text-base font-medium text-gray-400 capitalize">
+				<dt class="text-base font-medium text-gray-400">
 					{{ stats.pallet_deliveries.label }}
 				</dt>
 				<dd class="mt-2 flex justify-between gap-x-2">
@@ -164,7 +164,7 @@ function routePallet(storageData: any) {
 		<div
 			class="flex justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums">
 			<dl>
-				<dt class="text-base font-medium text-gray-400 capitalize">
+				<dt class="text-base font-medium text-gray-400">
 					{{ stats.pallet_returns.label }}
 				</dt>
 				<dd class="mt-2 flex justify-between gap-x-2">
@@ -196,7 +196,7 @@ function routePallet(storageData: any) {
 		<div
 			class="col-span-2 flex justify-between px-4 py-5 sm:p-6 rounded-lg bg-white border border-gray-300 tabular-nums">
 			<dl>
-				<dt class="text-base font-medium text-gray-400 capitalize">
+				<dt class="text-base font-medium text-gray-400">
 					{{ stats.invoice.label }}
 				</dt>
 				<dd class="mt-2 flex justify-between gap-x-2">

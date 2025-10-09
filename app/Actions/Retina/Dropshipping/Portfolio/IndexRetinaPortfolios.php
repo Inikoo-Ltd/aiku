@@ -194,6 +194,12 @@ class IndexRetinaPortfolios extends RetinaAction
                         'customerSalesChannel' => $this->customerSalesChannel->id
                     ]
                 ],
+                PlatformTypeEnum::EBAY => [
+                    'name'       => 'retina.models.dropshipping.ebay.batch_all',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
                 default => false
             };
         }
@@ -201,9 +207,7 @@ class IndexRetinaPortfolios extends RetinaAction
         $actions = [];
 
 
-        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)->where('platform_status', false)->count();
-        } elseif ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
         } else {
             $countProductsNotSync = $this->customerSalesChannel->portfolios()->where('portfolios.status', true)
@@ -211,34 +215,6 @@ class IndexRetinaPortfolios extends RetinaAction
                 ->count();
         }
 
-        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $actions = [
-                       /*  [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Match With Existing Product'),
-                            'route' => [
-                                'method'     => 'post',
-                                'name'       => 'retina.models.dropshipping.shopify.batch_match',
-                                'parameters' => [
-                                    'customerSalesChannel' => $this->customerSalesChannel->id,
-                                ]
-                            ]
-                        ],
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('Create New Product'),
-                            'route' => [
-                                'name'       => 'retina.models.dropshipping.shopify.batch_upload',
-                                'parameters' => [
-                                    'customerSalesChannel' => $this->customerSalesChannel->id,
-                                ],
-                                'method'     => 'post'
-                            ]
-                        ] */
-                    ];
-        }
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -264,6 +240,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::SHOPIFY => [
                             'name' => 'retina.json.dropshipping.customer_sales_channel.shopify_products'
                         ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'retina.json.dropshipping.customer_sales_channel.ebay_products'
+                        ],
                         default => false
                     },
                     'single_create_new' => match ($this->customerSalesChannel->platform->type) {
@@ -273,6 +252,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         PlatformTypeEnum::SHOPIFY => [
                             'name' => 'retina.models.portfolio.store_new_shopify_product'
                         ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'retina.models.portfolio.store_new_ebay_product'
+                        ],
                         default => false
                     },
                     'single_match' => match ($this->customerSalesChannel->platform->type) {
@@ -281,6 +263,9 @@ class IndexRetinaPortfolios extends RetinaAction
                         ],
                         PlatformTypeEnum::SHOPIFY => [
                             'name' => 'retina.models.portfolio.match_to_existing_shopify_product'
+                        ],
+                        PlatformTypeEnum::EBAY => [
+                            'name' => 'retina.models.portfolio.match_to_existing_ebay_product'
                         ],
                         default => false
                     },
@@ -401,9 +386,9 @@ class IndexRetinaPortfolios extends RetinaAction
                     'count' => $this->customerSalesChannel->number_portfolios
                 ]);
 
-            $table->column(key: 'image', label: __(''), canBeHidden: false, searchable: true);
+            $table->column(key: 'image', label:'', canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('Product'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'actions', label: '', canBeHidden: false, sortable: false, searchable: false);
+            $table->column(key: 'actions', label: '', canBeHidden: false);
 
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {

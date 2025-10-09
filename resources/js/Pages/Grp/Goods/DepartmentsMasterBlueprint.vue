@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import PageHeading from '@/Components/Headings/PageHeading.vue'
-import SetVisibleList from '@/Components/Departement&Family/SetVisibleList.vue';
+import SetVisibleList from '@/Components/DepartmentAndFamily/SetVisibleList.vue';
 import { routeType } from '@/types/route';
 
 const props = defineProps<{

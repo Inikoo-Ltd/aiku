@@ -221,6 +221,9 @@ class IndexOrders extends OrgAction
                 'orders.state',
                 'orders.created_at',
                 'orders.updated_at',
+                'orders.is_premium_dispatch',
+                'orders.has_extra_packing',
+                'orders.has_insurance',
                 'orders.slug',
                 'orders.net_amount',
                 'orders.total_amount',
@@ -238,6 +241,11 @@ class IndexOrders extends OrgAction
                 'organisations.slug as organisation_slug',
                 'customers.slug as customer_slug',
                 'customers.name as customer_name',
+                'orders.customer_notes',
+                'orders.internal_notes',
+                'orders.public_notes',
+                'orders.shipping_notes',
+                'orders.to_be_paid_by'
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status']) // Ensure `id` is the first sort column
@@ -329,7 +337,7 @@ class IndexOrders extends OrgAction
         $model      = '';
         $icon       = [
             'icon'  => ['fal', 'fa-shopping-cart'],
-            'title' => __('orders')
+            'title' => __('Orders')
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -340,7 +348,7 @@ class IndexOrders extends OrgAction
             $model      = __('customer client');
             $icon       = [
                 'icon'  => ['fal', 'fa-folder'],
-                'title' => __('customer client')
+                'title' => __('Customer client')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-shopping-cart',
@@ -369,7 +377,7 @@ class IndexOrders extends OrgAction
 
             $icon       = [
                 'icon'  => ['fal', 'fa-user'],
-                'title' => __('customer')
+                'title' => __('Customer')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-shopping-cart',
@@ -388,7 +396,7 @@ class IndexOrders extends OrgAction
                         'fullLoading' => true,
                         'route'       => [
                             'method'     => 'post',
-                            'name'       => 'grp.models.customer.order.store',
+                            'name'       => 'grp.models.customer.submitted_order.store',
                             'parameters' => [
                                 'customer' => $this->parent->id
                             ]

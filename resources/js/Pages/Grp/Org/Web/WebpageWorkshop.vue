@@ -60,7 +60,7 @@ const props = defineProps<{
   url: string
   luigi_tracker_id: string
 }>();
-console.log('ss', props.webpage)
+
 provide('isInWorkshop', true);
 const layout = inject('layout', layoutStructure);
 const confirm = useConfirm();
@@ -193,9 +193,9 @@ const debounceSaveWorkshop = (block) => {
     const source = axios.CancelToken.source();
     cancelTokens.value[block.id] = source.cancel;
 
-    isLoadingBlock.value = block.id;
-    isSavingBlock.value = true;
-
+    isLoadingBlock.value = block.id;  // This made the state inside in the field will changes (like opened Select will closed)
+    isSavingBlock.value = true;  // This made the state inside in the field will changes (like opened Select will closed)
+    //pushToHistory();
     try {
       const response = await axios.patch(
         url,
@@ -253,6 +253,7 @@ const debouncedSaveSiteSettings = debounce(block => {
     { web_blocks: block },
     {
       preserveScroll: true,
+      preserveState: true,
       onStart: () => isSavingBlock.value = true,
       onFinish: () => isSavingBlock.value = false,
       onSuccess: (e) => {
@@ -387,10 +388,9 @@ const beforePublish = (route, popover) => {
   const validation = JSON.stringify(data.value.layout);
   if (props.webpage.type == "catalogue") onPublish(route, popover)
   else {
-    console.log('validation', validation)
-    validation.includes('<h1') || validation.includes('<H1')
-      ? onPublish(route, popover)
-      : confirmPublish(route, popover);
+     validation.includes('<h1') || validation.includes('<H1')
+    ? onPublish(route, popover)
+    : confirmPublish(route, popover);
   }
 
 };

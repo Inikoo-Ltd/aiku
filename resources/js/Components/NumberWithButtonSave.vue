@@ -185,10 +185,11 @@ const onClickPlusButton = () => {
 </script>
 
 <template>
-	<div class="relative w-full" :class="parentClass">
+	<div class="relative w-fit" :class="parentClass">
 		<div
 			v-if="true"
 			class="flex items-center justify-center border border-gray-300 rounded gap-y-1 px-1 py-0.5">
+			<slot name="prefix"></slot>
 			<!-- Button: Save -->
 			<button
 				v-if="!noUndoButton"

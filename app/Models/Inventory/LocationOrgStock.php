@@ -25,7 +25,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $warehouse_area_id
  * @property int $org_stock_id
  * @property int $location_id
- * @property string $quantity in units
+ * @property string $quantity
  * @property string $value total value based in cost
  * @property string $commercial_value total value based selling price
  * @property LocationStockTypeEnum $type

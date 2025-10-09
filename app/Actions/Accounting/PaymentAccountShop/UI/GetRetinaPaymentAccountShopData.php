@@ -9,8 +9,11 @@
 namespace App\Actions\Accounting\PaymentAccountShop\UI;
 
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
+use App\Enums\Catalogue\Charge\ChargeStateEnum;
+use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\PaymentAccountShop;
+use App\Models\Billables\Charge;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
 use Illuminate\Support\Arr;
@@ -40,8 +43,6 @@ class GetRetinaPaymentAccountShopData
                     'order_payment_api_point' => $orderPaymentApiPoint->ulid
                 ];
         } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::BANK) {
-
-
             return
                 [
                     'label' => __('Bank transfer'),
@@ -52,6 +53,28 @@ class GetRetinaPaymentAccountShopData
                         'account_number' => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.account'),
                         'iban'           => Arr::get($paymentAccountShop->paymentAccount->data, 'bank.iban'),
                     ]
+                ];
+        } elseif ($paymentAccountShop->type == PaymentAccountTypeEnum::CASH_ON_DELIVERY) {
+            if (!in_array($order->deliveryAddress->country_id, Arr::get($paymentAccountShop->paymentAccount->data, 'countries', []))) {
+                return null;
+            }
+
+            /** @var Charge $charge */
+            $charge      = $order->shop->charges()->where('type', ChargeTypeEnum::COD)
+                ->where('state', ChargeStateEnum::ACTIVE)
+                ->first();
+            $chargesInfo = $charge?->description;
+
+
+            return
+                [
+                    'label'   => __('Cash on delivery'),
+                    'key'     => 'cash_on_delivery',
+                    'icon'    => 'fal fa-hand-holding-usd',
+                    'content' => [
+                        'charges' => $chargesInfo
+                    ]
+
                 ];
         }
 

@@ -51,7 +51,7 @@ class HydrateModels extends HydrateModel
             $this->hydrateCatalogue($command);
         }
 
-        if ($this->checkIfCanHydrate(['billables', 'bil'], $command)) {
+        if ($this->checkIfCanHydrate(['billables', 'bil','bill'], $command)) {
             $this->hydrateBillables($command);
         }
 
@@ -121,13 +121,10 @@ class HydrateModels extends HydrateModel
 
         /** @var Shop $shop */
         foreach (Shop::where('type', ShopTypeEnum::DROPSHIPPING)->get() as $shop) {
-
-
             $command->call('hydrate:customers', [
                 '-S' => $shop->slug
             ]);
         }
-
     }
 
     protected function hydrateDispatching(Command $command): void
@@ -166,6 +163,8 @@ class HydrateModels extends HydrateModel
     {
         $command->info('Billables section 💸');
         $command->call('hydrate:charges');
+        $command->call('hydrate:shipping_zone_schemas');
+        $command->call('hydrate:shipping_zones');
     }
 
     protected function hydrateDiscount(Command $command): void

@@ -185,7 +185,7 @@ class IndexRecurringBills extends OrgAction
         $subNavigation = [];
 
         $icon       = ['fal', 'fa-receipt'];
-        $title      = __('recurring bills');
+        $title      = __('Recurring bills');
         $afterTitle = null;
         $iconRight  = null;
 

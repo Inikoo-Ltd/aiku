@@ -57,7 +57,7 @@ const emits = defineEmits<{
                 <div>
                     <div class="inline-flex items-start leading-none">
                         <FontAwesomeIcon :icon="'fas fa-asterisk'" class="font-light text-[12px] text-red-400 mr-1" />
-                        <span class="capitalize">{{ trans('comment') }}</span>
+                        <span class="">{{ trans('Comment') }}</span>
                     </div>
                     <div class="py-2.5">
                         <textarea

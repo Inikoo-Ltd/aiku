@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Client\ConnectionException;
 use Carbon\Carbon;
+use Sentry;
 
 trait WithWooCommerceApiRequest
 {
@@ -69,7 +70,7 @@ trait WithWooCommerceApiRequest
             $this->initWooCommerceApi();
         }
 
-        return $this->woocommerceApiUrl . '/wp-json/' . $this->woocommerceApiVersion;
+        return rtrim($this->woocommerceApiUrl, '/') . '/wp-json/' . $this->woocommerceApiVersion;
     }
 
     /**
@@ -97,10 +98,16 @@ trait WithWooCommerceApiRequest
         }
 
         try {
-            $response = Http::withBasicAuth(
-                $this->woocommerceConsumerKey,
-                $this->woocommerceConsumerSecret
-            );
+            $response = Http::timeout(30)
+                ->withHeaders([
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json'
+                ])
+                ->connectTimeout(30)
+                ->withBasicAuth(
+                    $this->woocommerceConsumerKey,
+                    $this->woocommerceConsumerSecret
+                );
 
             // Handle different HTTP methods
             $response = match ($method) {
@@ -128,7 +135,9 @@ trait WithWooCommerceApiRequest
                     'response' => $response->body(),
                 ]);
 
-                return [];
+                Sentry::captureMessage($response->body());
+
+                return [$response->body()];
             }
         } catch (ConnectionException $e) {
             Log::error('WooCommerce API Connection Error', [
@@ -136,6 +145,8 @@ trait WithWooCommerceApiRequest
                 'method' => $method,
                 'error' => $e->getMessage()
             ]);
+
+            Sentry::captureMessage($e->getMessage());
 
             return [];
         }
@@ -524,18 +535,18 @@ trait WithWooCommerceApiRequest
         return $this->makeWooCommerceRequest('GET', 'webhooks');
     }
 
-    public function checkConnection(): bool
+    public function checkConnection(): array
     {
         try {
             if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
                 $this->initWooCommerceApi();
             }
 
-            $response = $this->makeWooCommerceRequest('GET', 'system_status');
-
-            return !empty($response);
+            return $this->makeWooCommerceRequest('GET', 'system_status');
         } catch (\Exception $e) {
-            return false;
+            \Sentry::captureMessage($e->getMessage());
+
+            return [$e->getMessage()];
         }
     }
 

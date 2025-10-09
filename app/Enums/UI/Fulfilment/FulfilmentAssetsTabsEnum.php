@@ -24,18 +24,18 @@ enum FulfilmentAssetsTabsEnum: string
     {
         return match ($this) {
             FulfilmentAssetsTabsEnum::DASHBOARD => [
-                'title' => __('dashboard'),
+                'title' => __('Dashboard'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             FulfilmentAssetsTabsEnum::ASSETS => [
-                'title' => __('assets list'),
+                'title' => __('Assets list'),
                 'icon'  => 'fal fa-bars',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
 
             FulfilmentAssetsTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

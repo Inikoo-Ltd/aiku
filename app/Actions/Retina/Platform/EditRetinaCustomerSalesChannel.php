@@ -27,12 +27,12 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $customerSalesChannel
                 ),
-                'title'       => __('edit sales channel'),
+                'title'       => __('Edit sales channel'),
                 'pageHead'    => [
-                    'title'   => __('edit sales channel'),
+                    'title'   => __('Edit sales channel'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-code-branch'],
-                        'title' => __('sales channel')
+                        'title' => __('Sales channel')
                     ],
                     'actions' => [
                         [

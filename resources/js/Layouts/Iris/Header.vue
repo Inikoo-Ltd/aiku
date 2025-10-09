@@ -33,10 +33,15 @@ provide("isPreviewLoggedIn", isLoggedIn);
 
 const onLogoutAuth = async () => {
   try {
-    await axios.post(route("iris.logout"));
-    window.location.reload();
-  } catch {
-    console.error("error onLogoutAuth");
+    if (route().has("iris.logout")) {
+      await axios.post(route("iris.logout"));
+      window.location.reload();
+    } else {
+      await axios.post(route("retina.logout"));
+      window.location.reload();
+    }
+  } catch (e) {
+    console.error("error onLogoutAuth", e);
     notify({
       title: trans("Something went wrong"),
       text: trans("Failed to logout"),
@@ -47,7 +52,7 @@ const onLogoutAuth = async () => {
 
 
 provide("onLogout", onLogoutAuth);
-console.log('plm',props)
+
 </script>
 
 <template>

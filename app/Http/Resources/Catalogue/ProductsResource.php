@@ -73,6 +73,7 @@ class ProductsResource extends JsonResource
             'family_name'               => $this->family_name,
             'price'                     => $this->price,
             'units'                     => $this->units,
+            'unit'                      => $this->unit,
             'current_historic_asset_id' => $this->current_historic_asset_id,
             'asset_id'                  => $this->asset_id,
             'available_quantity'        => $this->available_quantity,
@@ -85,6 +86,7 @@ class ProductsResource extends JsonResource
             'stock'                     => $this->available_quantity,
             'images'                    => ImageResource::collection($this->images),
             'image_thumbnail'           => $this->imageSources(720, 480),
+            'master_product_id'         => $this->master_product_id
         ];
     }
 }

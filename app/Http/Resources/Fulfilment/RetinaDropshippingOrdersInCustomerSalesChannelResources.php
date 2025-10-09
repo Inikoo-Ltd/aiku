@@ -28,6 +28,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $order_state
  * @property mixed $payment_amount
  * @property mixed $client_ulid
+ * @property mixed $is_premium_dispatch
+ * @property mixed $has_extra_packing
+ * @property mixed $has_insurance
  */
 class RetinaDropshippingOrdersInCustomerSalesChannelResources extends JsonResource
 {
@@ -38,13 +41,13 @@ class RetinaDropshippingOrdersInCustomerSalesChannelResources extends JsonResour
     {
         if (!$this->order_state) {
             $stateIcons = [
-                'state_label'              => OrderStateEnum::labels()[$this->state->value],
-                'state_icon'               => OrderStateEnum::stateIcon()[$this->state->value]
+                'state_label' => OrderStateEnum::labels()[$this->state->value],
+                'state_icon'  => OrderStateEnum::stateIcon()[$this->state->value]
             ];
         } else {
             $stateIcons = [
-                'state_label'              => OrderStateEnum::labels()[$this->order_state],
-                'state_icon'               => OrderStateEnum::stateIcon()[$this->order_state]
+                'state_label' => OrderStateEnum::labels()[$this->order_state],
+                'state_icon'  => OrderStateEnum::stateIcon()[$this->order_state]
             ];
         }
 
@@ -54,6 +57,9 @@ class RetinaDropshippingOrdersInCustomerSalesChannelResources extends JsonResour
             'platform_order_id'        => $this->platform_order_id,
             'reference'                => $this->reference,
             'slug'                     => $this->slug,
+            'is_premium_dispatch'      => $this->is_premium_dispatch,
+            'has_extra_packing'        => $this->has_extra_packing,
+            'has_insurance'            => $this->has_insurance,
             'client_name'              => $this->client_name,
             'state'                    => $this->state,
             'total_amount'             => $this->total_amount,

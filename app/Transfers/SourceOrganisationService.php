@@ -77,8 +77,6 @@ interface SourceOrganisationService
 
     public function fetchHistoricService($id);
 
-    public function fetchDepartment($id);
-
     public function fetchFamily($id);
 
     public function fetchProduct($id);
@@ -194,12 +192,6 @@ interface SourceOrganisationService
     public function fetchEmailBulkRun($id);
 
     public function fetchSubscriptionEvent($id);
-
-    public function fetchMasterDepartment($id);
-
-    public function fetchMasterFamily($id);
-
-    public function fetchInvoiceCategory($id);
 
     public function fetchCollection($id);
 

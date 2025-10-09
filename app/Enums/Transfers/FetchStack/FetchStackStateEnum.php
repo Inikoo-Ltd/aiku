@@ -19,6 +19,7 @@ enum FetchStackStateEnum: string
     case PROCESSING = 'processing';
     case SUCCESS = 'success';
     case ERROR = 'error';
+    case DUPLICATED = 'duplicated';
 
 
 }

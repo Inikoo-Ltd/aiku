@@ -9,7 +9,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders;
 
-use App\Actions\Ordering\Order\UI\GetOrderAddressManagement;
+use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Actions\Ordering\Transaction\UI\IndexNonProductItems;
 use App\Actions\Ordering\Transaction\UI\IndexTransactions;
@@ -81,7 +81,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
                     'model'   => __('Order'),
                     'icon'    => [
                         'icon'  => 'fal fa-shopping-cart',
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
                     'actions' => $action,
                 ],
@@ -117,7 +117,7 @@ class ShowRetinaDropshippingOrder extends RetinaAction
 
                 'timelines' => $finalTimeline,
 
-                'address_management' => GetOrderAddressManagement::run(order: $order, isRetina: true),
+                'address_management' => GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true),
 
                 'box_stats' => $this->getOrderBoxStats($order),
                 'currency'  => CurrencyResource::make($order->currency)->toArray(request()),

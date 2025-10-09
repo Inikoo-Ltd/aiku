@@ -157,7 +157,7 @@ class IndexFulfilmentRentals extends OrgAction
         }
 
         if ($this->parent instanceof Group) {
-            $title = __('rentals');
+            $title = __('Rentals');
             $actions = null;
         }
 

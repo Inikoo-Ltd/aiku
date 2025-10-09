@@ -31,17 +31,17 @@ enum StockFamilyTabsEnum: string
     {
         return match ($this) {
             StockFamilyTabsEnum::STOCKS => [
-                'title' => __('stocks'),
+                'title' => __('Stocks'),
                 'icon'  => 'fal fa-box',
             ],
             StockFamilyTabsEnum::SALES => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-dollar-sign',
             ],
             StockFamilyTabsEnum::FEEDBACKS => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('issues'),
+                'title' => __('Issues'),
                 'icon'  => 'fal fa-poop',
             ],
 
@@ -49,19 +49,19 @@ enum StockFamilyTabsEnum: string
             StockFamilyTabsEnum::HISTORY => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
 
             ],
             StockFamilyTabsEnum::IMAGES => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('images'),
+                'title' => __('Images'),
                 'icon'  => 'fal fa-camera-retro',
 
             ],
             StockFamilyTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

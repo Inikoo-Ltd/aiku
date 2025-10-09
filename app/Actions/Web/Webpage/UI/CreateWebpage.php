@@ -71,9 +71,9 @@ class CreateWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new webpage'),
+                'title'       => __('New webpage'),
                 'pageHead'    => [
-                    'title'   => __('new webpage'),
+                    'title'   => __('New webpage'),
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -118,20 +118,6 @@ class CreateWebpage extends OrgAction
                                     'value'    => '',
                                     'required' => true,
                                 ],
-                                //                                'type' => [
-                                //                                    'type'     => 'select',
-                                //                                    'label'    => __('type'),
-                                //                                    'options'  => Options::forEnum(WebpageTypeEnum::class),
-                                //                                    'value'    => '',
-                                //                                    'required' => true,
-                                //                                ],
-                                //                                'sub_type' => [
-                                //                                    'type'     => 'select',
-                                //                                    'label'    => __('sub type'),
-                                //                                    'options'  => Options::forEnum(WebpageSubTypeEnum::class),
-                                //                                    'value'    => '',
-                                //                                    'required' => true,
-                                //                                ],
                                 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),
@@ -144,7 +130,6 @@ class CreateWebpage extends OrgAction
                                 ],
                                 'seo_structure_type' => [
                                     'type'     => 'select',
-                                    'required'  => true,
                                     'label'    => __('seo structure type'),
                                     'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
                                     'value'    => null,

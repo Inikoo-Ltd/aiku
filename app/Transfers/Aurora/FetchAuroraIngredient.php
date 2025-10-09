@@ -10,7 +10,6 @@ namespace App\Transfers\Aurora;
 
 use App\Actions\Goods\Ingredient\StoreIngredient;
 use App\Models\Goods\Ingredient;
-use Arr;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraIngredient extends FetchAurora
@@ -49,9 +48,6 @@ class FetchAuroraIngredient extends FetchAurora
 
         $this->parsedData['extra_ingredients'] = $extraIngredients;
 
-        //print ">>$name<<<\n";
-        //print_r(Arr::get($this->parsedData, 'trade_unit_args'));
-        //print_r($extraIngredients);
 
         $this->parsedData['ingredient'] = [
             'name'            => $name,

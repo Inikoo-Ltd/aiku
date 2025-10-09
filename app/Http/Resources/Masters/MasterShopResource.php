@@ -86,6 +86,16 @@ class MasterShopResource extends JsonResource
                          "color" => "#4f46e5",
                          'value' => $masterShop->stats->number_current_master_collections,
                      ],
+                     [
+                         'label' => __('Pending Master Families'),
+                         'route' => [
+                             'name'       => 'grp.masters.master_shops.show.master_collections.index',
+                             'parameters' => [$masterShop->slug]
+                         ],
+                         'icon'  => 'fal fa-exclamation-triangle',
+                         "color" => "#df1c1cff",
+                         'value' => $masterShop->stats->number_master_families_with_pending_master_assets,
+                     ],
                 ]
         ];
     }

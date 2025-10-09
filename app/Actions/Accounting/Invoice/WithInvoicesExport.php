@@ -55,10 +55,16 @@ trait WithInvoicesExport
             $refundData = [];
             if ($refund) {
                 foreach ($invoice->invoiceTransactions->where('model_type', 'Product') as $invoiceTransaction) {
-                    $refunded = $invoiceTransaction->quantity < $invoiceTransaction->transaction->quantity_ordered;
+
+                    $refunded = false;
+                    if ($invoiceTransaction->transaction) {
+                        $refunded = $invoiceTransaction->quantity < $invoiceTransaction->transaction->quantity_ordered;
+                    }
+
                     if ($refunded) {
                         $quantityRefunded = $invoiceTransaction->transaction->quantity_ordered - $invoiceTransaction->quantity;
                         $totalRefunded = $invoiceTransaction->historicAsset->price * $quantityRefunded;
+
                         $refundData[] = [
                             'code' => $invoiceTransaction->historicAsset->code,
                             'description' => $invoiceTransaction->historicAsset->name,

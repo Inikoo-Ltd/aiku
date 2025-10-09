@@ -160,7 +160,7 @@ class IndexOrgSuppliers extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title' => __('no suppliers'),
+                        'title' => __('No suppliers'),
                         'count' => $organisation->inventoryStats->number_warehouse_areas,
 
                     ]
@@ -223,7 +223,7 @@ class IndexOrgSuppliers extends OrgAction
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-person-dolly'],
-            'title' => __('suppliers')
+            'title' => __('Suppliers')
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -234,7 +234,7 @@ class IndexOrgSuppliers extends OrgAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('suppliers')
+                'title' => __('Suppliers')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-person-dolly',

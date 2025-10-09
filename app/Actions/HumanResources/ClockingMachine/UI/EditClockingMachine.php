@@ -75,7 +75,7 @@ class EditClockingMachine extends OrgAction
                 'formData'    => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit clocking machine'),
+                            'title'  => __('Edit clocking machine'),
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',

@@ -19,6 +19,7 @@ use App\Http\Resources\Inventory\LocationOrgStockResource;
 use App\Models\Inventory\Location;
 use App\Models\Inventory\LocationOrgStock;
 use App\Models\Inventory\OrgStock;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Illuminate\Validation\Validator;
@@ -39,7 +40,11 @@ class StoreLocationOrgStock extends OrgAction
         data_set($modelData, 'warehouse_area_id', $location->warehouse_area_id);
         data_set($modelData, 'org_stock_id', $orgStock->id);
 
+        if (!Arr::has($modelData, 'quantity')) {
+            data_set($modelData, 'quantity', 0);
+        }
 
+        /** @var LocationOrgStock $locationStock */
         $locationStock = $location->locationOrgStocks()->create($modelData);
         RepairOrgStockMissingLocationIds::dispatch($orgStock)->delay($this->hydratorsDelay);
         LocationHydrateStocks::dispatch($location)->delay($this->hydratorsDelay);
@@ -53,11 +58,11 @@ class StoreLocationOrgStock extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'data'               => ['sometimes', 'array'],
-            'settings'           => ['sometimes', 'array'],
-            'notes'              => ['sometimes', 'nullable', 'string', 'max:255'],
-            'picking_priority'   => ['sometimes', 'integer'],
-            'type'               => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
+            'data'             => ['sometimes', 'array'],
+            'settings'         => ['sometimes', 'array'],
+            'notes'            => ['sometimes', 'nullable', 'string', 'max:255'],
+            'picking_priority' => ['sometimes', 'integer'],
+            'type'             => ['sometimes', Rule::enum(LocationStockTypeEnum::class)],
         ];
 
         if (!$this->strict) {
@@ -84,13 +89,13 @@ class StoreLocationOrgStock extends OrgAction
         }
 
 
-        if ($this->strict and $this->has('type') and $this->get('type') == LocationStockTypeEnum::PICKING->value) {
-            if (LocationOrgStock::where('type', LocationStockTypeEnum::PICKING->value)->where('org_stock_id', $this->orgStock->id)
-                    ->count() > 0) {
-                $validator->errors()->add('type', __('This stock can have one picking only'));
-            }
+        if ($this->strict
+            && $this->has('type')
+            && $this->get('type') == LocationStockTypeEnum::PICKING->value
+            && LocationOrgStock::where('type', LocationStockTypeEnum::PICKING->value)->where('org_stock_id', $this->orgStock->id)->count() > 0
+        ) {
+            $validator->errors()->add('type', __('This stock can have one picking only'));
         }
-
     }
 
     public function asController(OrgStock $orgStock, Location $location, ActionRequest $request, int $hydratorsDelay = 0, bool $strict = true): void

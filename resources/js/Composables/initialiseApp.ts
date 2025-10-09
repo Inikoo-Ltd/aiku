@@ -12,7 +12,7 @@ export const initialiseApp = () => {
     const locale = useLocaleStore()
 
     // Declaring here cuz some component failing retrieve on first load (EmployeePosition.vue)
-    layout.currentParams = route().v().params
+    layout.currentParams = route().routeParams
 
     let storageLayout: any
     if (typeof window !== "undefined") {
@@ -23,6 +23,7 @@ export const initialiseApp = () => {
     const echoPersonal = useEchoGrpPersonal()
     const echoGeneral = useEchoGrpGeneral()
 
+    console.log('klklk', usePage())
     useLiveUsers().subscribe()  // Websockets: active users
     echoGeneral.subscribe(usePage().props.layout?.group?.id)  // Websockets: notification
 
@@ -32,17 +33,14 @@ export const initialiseApp = () => {
 
         router.on('navigate', (event) => {
             
-            // To see Vue filename in console (component.vue())
-            if (usePage().component) {
-                window.component = {
-                    vue: usePage().component
-                }
+            // To see Vue filename in console (component.vue)
+            if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
+                window.component.vue = usePage().component
             }
 
-            // console.log('layout env', layout.app.environment)
-            layout.currentParams = route().v().params  // current params
-            layout.currentQuery = route().v().query  // current query
-            layout.currentRoute = route().current()  // current route
+            layout.currentParams = route().routeParams  // current params
+            layout.currentQuery = route().queryParams  // current query
+            layout.currentRoute = route().current() || ''  // current route
 
             const currentRouteSplit = layout.currentRoute.split('.')  // to handle grp with route grp.xxx.zzz with org with route grp.org.xxx.zzz
             layout.currentModule = currentRouteSplit[1] == 'org' ? layout.currentRoute.split('.')[2] : layout.currentRoute.split('.')[1]  // grp.org.xxx.yyy.zzz to xxx

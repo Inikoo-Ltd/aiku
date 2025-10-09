@@ -55,7 +55,7 @@ class ShowOrgPartner extends OrgAction
                     'icon'  =>
                         [
                             'icon'  => ['fal', 'fa-users-class'],
-                            'title' => __('partner')
+                            'title' => __('Partner')
                         ],
                     'title' => $orgPartner->partner->name,
                     'subNavigation' => $this->getOrgPartnerNavigation($orgPartner),

@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Traits\HasBucketImages;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
@@ -19,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 class WebBlockProductResourceEcom extends JsonResource
 {
     use HasSelfCall;
+    use HasBucketImages;
 
     public function toArray($request): array
     {
@@ -49,13 +51,17 @@ class WebBlockProductResourceEcom extends JsonResource
         ];
 
         $favourite = false;
+        $back_in_stock = false;
+        $back_in_stock_id = null;
         $quantityOrdered = 0;
         $transactionId = null;
         if ($request->user()) {
             $customer = $request->user()->customer;
             if ($customer) {
-                $favourite = $customer->favourites()->where('product_id', $product->id)->first();
-
+                $favourite = $customer->favourites()->where('product_id', $product->id)->whereNull('unfavourited_at')->first();
+                $backInStockReminder = $customer->BackInStockReminder()->where('product_id', $product->id)->first();
+                $back_in_stock = $backInStockReminder ? true : false ;
+                $back_in_stock_id = $backInStockReminder?->id;
                 $basket = $customer->orderInBasket;
                 if ($basket) {
                     $transaction = DB::table('transactions')->where('order_id', $basket->id)
@@ -72,10 +78,10 @@ class WebBlockProductResourceEcom extends JsonResource
             }
         }
 
-        $luigi_identity = $product->group_id . ':' . $product->organisation_id . ':' . $product->shop_id . ':' . $product->webpage->website->id . ':' . $product->webpage->id;
+        // $luigi_identity = $product->group_id . ':' . $product->organisation_id . ':' . $product->shop_id . ':' . $product->webpage->website->id . ':' . $product->webpage->id;
 
         return [
-            'luigi_identity'    => $luigi_identity,
+            'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
             'code'              => $product->code,
             'name'              => $product->name,
@@ -97,12 +103,14 @@ class WebBlockProductResourceEcom extends JsonResource
             'web_images'        => $product->web_images,
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
-            'images'            => ImageResource::collection($product->images)->toArray($request),
+            'images'            => $product->image_id ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
             'transaction_id'      => $transactionId,
             'quantity_ordered'      => (int) $quantityOrdered,
-            'quantity_ordered_new'  => (int) $quantityOrdered,  // To editable in Frontend
+            'quantity_ordered_new'  => 1,  // To editable in Frontend
             'is_favourite'          => $favourite && !$favourite->unfavourited_at ?? false,
+            'is_back_in_stock'      => $back_in_stock,
+            'back_in_stock_id'      => $back_in_stock_id
         ];
     }
 

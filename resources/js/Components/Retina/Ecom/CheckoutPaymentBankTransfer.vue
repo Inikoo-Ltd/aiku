@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { trans } from 'laravel-vue-i18n'
-import { router } from '@inertiajs/vue3'
-import { ref } from 'vue'
-import { faArrowRight } from '@fas'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { trans } from "laravel-vue-i18n"
+import { router } from "@inertiajs/vue3"
+import { ref } from "vue"
+import { faArrowRight } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+
 library.add(faArrowRight)
 
-const props = defineProps<{
+defineProps<{
     data: {
         data: {
             bank_name: string
@@ -21,15 +21,13 @@ const props = defineProps<{
 
 const isLoading = ref(false)
 const onSubmitPlaceOrder = () => {
-    router.post(route('retina.models.place-order-pay-by-bank'), {
-
-    }, {
+    router.post(route("retina.models.place_order_pay_by_bank"), {}, {
         onStart: () => {
             isLoading.value = true
         },
         onFinish: () => {
             isLoading.value = false
-        },
+        }
     })
 }
 </script>

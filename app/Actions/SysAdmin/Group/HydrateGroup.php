@@ -30,6 +30,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamilies;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamiliesWithNoDepartment;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFulfilmentCustomers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateGuests;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceCategories;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterAssets;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMasterCollections;
@@ -217,6 +218,8 @@ class HydrateGroup extends HydrateModel
         GroupHydrateWebUserRequests::run($group->id);
 
         GroupHydrateMasterFamiliesWithNoDepartment::run($group);
+        GroupHydrateInvoiceCategories::dispatch($group);
+
     }
 
 }

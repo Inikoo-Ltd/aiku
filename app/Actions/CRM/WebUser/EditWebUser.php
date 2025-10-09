@@ -82,7 +82,7 @@ class EditWebUser extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('web user'),
+                'title'       => __('Web user'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -110,7 +110,7 @@ class EditWebUser extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'   => __('credentials'),
+                            'title'   => __('Credentials'),
                             'label'   => __('credentials'),
                             'icon'    => 'fa-light fa-key',
                             'current' => true,

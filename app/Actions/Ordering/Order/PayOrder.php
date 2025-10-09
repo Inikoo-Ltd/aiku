@@ -8,8 +8,12 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
+use App\Actions\Accounting\Invoice\AttachPaymentToInvoice;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\OrgAction;
+use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Models\Accounting\Payment;
@@ -26,9 +30,28 @@ class PayOrder extends OrgAction
      */
     public function handle(Order $order, PaymentAccount $paymentAccount, array $modelData): Payment
     {
+
         $payment = StorePayment::make()->action($order->customer, $paymentAccount, $modelData);
 
+
+        if ($paymentAccount->is_accounts) {
+            $creditTransactionData = [
+                'amount'     => -$payment->amount,
+                'type'       => CreditTransactionTypeEnum::PAYMENT,
+                'payment_id' => $payment->id,
+            ];
+            StoreCreditTransaction::make()->action($order->customer, $creditTransactionData);
+
+        }
+
+
         AttachPaymentToOrder::make()->action($order, $payment, []);
+
+        $invoice = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
+        if ($invoice) {
+            AttachPaymentToInvoice::make()->action($invoice, $payment, []);
+        }
+
 
         return $payment;
     }

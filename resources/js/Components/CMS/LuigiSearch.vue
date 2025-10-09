@@ -7,6 +7,7 @@ import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import { LuigiTranslation } from "@/Composables/Unique/LuigiTranslation"
 library.add(faSearch)
 
 
@@ -45,7 +46,7 @@ const LBInitAutocompleteNew = async () => {
             Layout: "heromobile",
             // TrackerId: '483878-588294',
             TrackerId: layout.iris?.luigisbox_tracker_id,
-            //Locale: 'en',
+            // Locale: layout.iris?.website_i18n?.current_language?.code || 'en',
             PriceFilter: {
                 minimumFractionDigits: 0,
                 maximumFractionDigits: 2,
@@ -53,18 +54,7 @@ const LBInitAutocompleteNew = async () => {
                 prefixed: true,
                 symbol: locale.currencySymbol(layout.iris?.currency?.code)
             },
-            // Translations: {
-            //     en: {
-            //         // showBuyTitle: 'Burrrry now', // Top Product: Button label
-            //         // priceFilter: {
-            //         //     minimumFractionDigits: 0,
-            //         //     maximumFractionDigits: 2,
-            //         //     locale: locale.language.code,
-            //         //     prefixed: true,
-            //         //     symbol: locale.currencySymbol(layout.iris?.currency?.code)
-            //         // }
-            //     }
-            // },
+            Translations: LuigiTranslation,
             RemoveFields: layout.iris.is_logged_in ? [] : ['formatted_price', 'price_amount', 'price'],
             Types: [
                 {
@@ -72,7 +62,9 @@ const LBInitAutocompleteNew = async () => {
                     heroName: "Top product",
                     type: "item",
                     size: 7,
-                    xattributes: layout.iris.is_logged_in ? ['product_code', 'formatted_price'] : ['product_code'],
+                    defaultFilters: {
+                        availability: 1,  // Filter out of stock products
+                    },
                 },
                 {
                     name: "Queries",
@@ -187,7 +179,7 @@ const visitSearchPage = () => {
     <div class="w-full relative group">
         <input
             :value="inputValue"
-            @input="(q) => (inputValue = q?.target?.value, console.log('inputValue', inputValue))"
+            @input="(q) => (inputValue = q?.target?.value)"
             xdisabled
             class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
             :id="id || 'inputLuigi'"

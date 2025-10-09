@@ -91,7 +91,7 @@ class ShowLocation extends OrgAction
                 ],
                 'pageHead'    => [
                     'icon'    => [
-                        'title' => __('locations'),
+                        'title' => __('Locations'),
                         'icon'  => 'fal fa-inventory'
                     ],
                     'model'   => __('location'),

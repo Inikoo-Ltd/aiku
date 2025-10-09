@@ -79,7 +79,7 @@ class IndexOrgAgents extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title' => __('no agents'),
+                        'title' => __('No agents'),
                         'count' => $organisation->procurementStats->number_org_agents,
 
                     ]
@@ -135,16 +135,16 @@ class IndexOrgAgents extends OrgAction
                 'title'       => __('agents'),
                 'pageHead'    => [
                     'model'   => __('Procurement'),
-                    'title'   => __('agents'),
+                    'title'   => __('Agents'),
                     'icon'    => [
-                        'title' => __('website'),
+                        'title' => __('Website'),
                         'icon'  => 'fal fa-people-arrows'
                     ],
                     'actions' => [
                         $this->canEdit && $request->route()->getName() == 'grp.org.procurement.org_agents.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new agent'),
+                            'tooltip' => __('New agent'),
                             'label'   => __('agent'),
                             'route'   => [
                                 'name'       => 'grp.org.procurement.org_agents.create',

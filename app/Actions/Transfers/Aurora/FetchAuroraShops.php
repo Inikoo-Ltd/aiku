@@ -304,7 +304,6 @@ class FetchAuroraShops extends FetchAuroraAction
                 audit: false
             );
         } else {
-            //print_r($accountData);
 
             StorePaymentAccountShop::make()->action(
                 paymentAccount: $paymentAccount,
@@ -313,7 +312,6 @@ class FetchAuroraShops extends FetchAuroraAction
                 strict: false,
                 audit: false
             );
-            // dd($accountData,$paymentAccountShopData);
 
         }
     }

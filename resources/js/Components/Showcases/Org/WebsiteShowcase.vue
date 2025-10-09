@@ -6,7 +6,7 @@
 
 <script setup lang="ts">
 import { faFragile, faGlobe, faLink, faSearch, faPencil } from "@fal"
-import { computed, ref } from "vue"
+import { computed, ref, inject } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
@@ -29,9 +29,10 @@ const props = defineProps<{
         status: string
         created_at: string
         updated_at: string
-        layout: string
+        layout: any
         stats: StatsBoxTS[]
         content_blog_stats: StatsBoxTS[]
+        website_type: string
     }
     route_storefront: routeType
     luigi_data: {
@@ -42,11 +43,27 @@ const props = defineProps<{
     }
 }>()
 
-const links = ref([
-    { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
-    { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
-    { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
-]);
+const layout = inject('layout')
+
+const links = computed(() => {
+    const baseLinks = [
+        { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
+        { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
+        { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
+    ];
+
+    // Add Edit Sidebar button only for dropshipping websites
+    if (props.data.website_type === "dropshipping") {
+        baseLinks.splice(2, 0, { 
+            label: trans("Edit Sidebar"), 
+            route_target: props.data.layout.sidebarRoute, 
+            icon: faPencil, 
+            // disabled: layout?.app.environment !== 'local' 
+        });
+    }
+
+    return baseLinks;
+});
 
 window.reindexwebsite = async () => {
     try {
@@ -62,7 +79,7 @@ window.reindexwebsite = async () => {
 
         console.log('success reindex website', response.data)
         if (response.status !== 200) {
-            
+
         }
     } catch (error: any) {
         notify({
@@ -80,8 +97,11 @@ const isAbleReindex = computed(() => {
 
     return lastReindexed30Minutes < new Date()
 })
-const dateLastReindex = new Date(props.luigi_data.last_reindexed)
-const dateAdd30MinutesLastReindex = dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30) 
+const dateAdd30MinutesLastReindex = computed(() => {
+    const dateLastReindex = new Date(props.luigi_data.last_reindexed)
+    return dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30)
+})
+
 
 </script>
 
@@ -135,7 +155,7 @@ const dateAdd30MinutesLastReindex = dateLastReindex.setMinutes(dateLastReindex.g
 
                     <div v-for="(item, index) in links" :key="index" class="px-2 py-1">
                         <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
-                            type="secondary" />
+                            type="secondary" :disabled="item?.disabled" />
                     </div>
 
                     <div class="p-2 space-y-2">
@@ -146,7 +166,7 @@ const dateAdd30MinutesLastReindex = dateLastReindex.setMinutes(dateLastReindex.g
                             }
                         }" method="post" :icon="faFragile" type="tertiary" :label="trans('Break cache')" full>
                             <template #iconRight>
-                                <div v-tooltip="trans('If you made some changes but didn\'t updated yet in the website, use this feature')" class="text-gray-400 hover:text-gray-700">
+                                <div v-tooltip="trans('If you made some changes but did not updated yet in the website, use this feature')" class="text-gray-400 hover:text-gray-700">
                                     <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
                                 </div>
                             </template>

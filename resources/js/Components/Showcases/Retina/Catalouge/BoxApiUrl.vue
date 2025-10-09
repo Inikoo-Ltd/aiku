@@ -16,7 +16,7 @@ const props = defineProps<{
     <div class="mb-6 w-fit border border-gray-300 rounded overflow-hidden">
         <div class="py-1 px-3 text-base font-bold bg-gray-100 ">
             <FontAwesomeIcon icon="fal fa-file-csv" class="opacity-70" fixed-width aria-hidden="true" />
-            Data feed Url
+            {{ trans("Data feed Url") }}
             <!-- <InformationIcon
                 :information="trans('Download all products, can be used to integrate with 3rd party app')"
             /> -->

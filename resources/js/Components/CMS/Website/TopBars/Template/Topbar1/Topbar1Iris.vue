@@ -10,6 +10,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 import { trans } from "laravel-vue-i18n"
 import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
+import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -62,16 +63,6 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 const layout = inject("layout", {})
 
 
-// Method: generate url for Login
-const urlLoginWithRedirect = () => {
-    if (route()?.current() !== "retina.login.show" && route()?.current() !== "retina.register") {
-        return `/app/login?ref=${encodeURIComponent(window?.location.pathname)}${window?.location.search ? encodeURIComponent(window?.location.search) : ""
-            }`
-    } else {
-        return "/app/login"
-    }
-}
-
 
 </script>
 
@@ -82,6 +73,8 @@ const urlLoginWithRedirect = () => {
         margin: 0,
         ...getStyles(model?.container?.properties, screenType)
     }">
+        <!-- layout?.app?.webpage_layout?.container?.properties   // TODO: should exist in Retina -->
+
         <div class="flex-shrink flex flex-col md:flex-row items-center justify-between w-full ">
             <!-- Section: Main title -->
             <div v-if="checkVisible(model?.main_title?.visible || null, isLoggedIn) && textReplaceVariables(model?.main_title?.text, layout.iris_variables)"
@@ -91,8 +84,11 @@ const urlLoginWithRedirect = () => {
 
 
 
-        <div class="action_buttons flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
-            <SwitchLanguage />
+        <div class="hidden md:flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
+            <SwitchLanguage
+                v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length"
+            />
+            
             <!-- Section: My account -->
             <ButtonWithLink type="transparent"  class="bg-transparent"
                 v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping'"
@@ -104,7 +100,7 @@ const urlLoginWithRedirect = () => {
 
             <!-- Section: Profile -->
             <ButtonWithLink v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
-                v-tooltip="trans('Profile')" url="/app/profile" icon="fal fa-user" type="transparent" :noHover="true">
+                v-tooltip="trans('Profile')" :url="layout.retina?.type == 'b2b' ? '/app/dashboard' : '/app/profile'" icon="fal fa-user" type="transparent" :noHover="true">
                  <template #icon>
                     <FontAwesomeIcon icon="fal fa-user" :style="{ color: 'white' }" fixed-width
                         aria-hidden="true" />
@@ -137,12 +133,16 @@ const urlLoginWithRedirect = () => {
             <!-- Section: Basket (cart) -->
             <ButtonWithLink
                 v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b'"
-                url="/app/basket" icon="fal fa-shopping-cart" :noHover="true">
+                url="/app/basket" :noHover="true" type="transparent">
+                <template #icon>
+                    <FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: 'white' }" fixed-width
+                        aria-hidden="true" />
+                </template>
                 <template #label>
                     <span
                         class="text-white"
                         xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
-                        v-html="textReplaceVariables('{{ items_count }} items ({{ cart_amount }})', layout.iris_variables)"
+                        v-html="textReplaceVariables(`{{ items_count }} ${trans('items')} ({{ cart_amount }})`, layout.iris_variables)"
                     >
                     </span>
                 </template>

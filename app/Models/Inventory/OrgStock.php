@@ -196,23 +196,20 @@ class OrgStock extends Model implements Auditable
 
     public function tradeUnits(): MorphToMany
     {
-        if ($this->stock_id) {
-            return $this->stock->tradeUnits();
-        }
 
-        // Used in private stocks (stock_id=null)
-        return $this->morphToMany(
-            TradeUnit::class,
-            'model',
-            'model_has_trade_units',
-            'model_id',
-            null,
-            null,
-            null,
-            'trade_units',
-        )
-            ->withPivot(['quantity', 'notes'])
-            ->withTimestamps();
+        return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
+        //        return $this->morphToMany(
+        //            TradeUnit::class,
+        //            'model',
+        //            'model_has_trade_units',
+        //            'model_id',
+        //            null,
+        //            null,
+        //            null,
+        //            'trade_units',
+        //        )
+        //            ->withPivot(['quantity', 'notes'])
+        //            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany

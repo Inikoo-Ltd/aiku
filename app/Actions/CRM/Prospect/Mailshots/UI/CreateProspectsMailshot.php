@@ -94,7 +94,7 @@ class CreateProspectsMailshot extends InertiaAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new mailshot'),
+                'title'       => __('New mailshot'),
                 'pageHead'    => [
                     'title'   => __('Prospect mailshot'),
                     'actions' => [

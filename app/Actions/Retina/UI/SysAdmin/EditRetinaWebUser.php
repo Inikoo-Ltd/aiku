@@ -39,7 +39,7 @@ class EditRetinaWebUser extends RetinaAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('web user'),
+                'title'       => __('Web user'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()

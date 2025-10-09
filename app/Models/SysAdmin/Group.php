@@ -25,6 +25,8 @@ use App\Models\Analytics\WebUserRequest;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
+use App\Models\Billables\ShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -59,6 +61,7 @@ use App\Models\Goods\Ingredient;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Query;
@@ -76,8 +79,6 @@ use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\SalesChannel;
-use App\Models\Ordering\ShippingZone;
-use App\Models\Ordering\ShippingZoneSchema;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Production\Artefact;
 use App\Models\Production\ManufactureTask;
@@ -245,6 +246,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\GroupTimeSeries> $timeSeries
  * @property-read LaravelCollection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read LaravelCollection<int, TopUp> $topUps
+ * @property-read LaravelCollection<int, TradeUnitFamily> $tradeUnitFamilies
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read LaravelCollection<int, Upload> $uploads
  * @property-read LaravelCollection<int, UserRequest> $userRequests
@@ -327,6 +329,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function tradeUnits(): HasMany
     {
         return $this->hasMany(TradeUnit::class);
+    }
+
+    public function tradeUnitFamilies(): HasMany
+    {
+        return $this->hasMany(TradeUnitFamily::class);
     }
 
     public function stockFamilies(): HasMany

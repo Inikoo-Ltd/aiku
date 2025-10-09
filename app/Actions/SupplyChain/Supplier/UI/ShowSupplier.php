@@ -81,7 +81,7 @@ class ShowSupplier extends GrpAction
                     'icon'    =>
                         [
                             'icon'  => 'fal fa-person-dolly',
-                            'title' => __('supplier')
+                            'title' => __('Supplier')
                         ],
                     'title'   => $supplier->name,
                     'subNavigation' => $this->getSupplierNavigation($supplier),

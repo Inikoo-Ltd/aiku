@@ -23,11 +23,11 @@ enum ProductionsTabsEnum: string
     {
         return match ($this) {
             ProductionsTabsEnum::PRODUCTIONS => [
-                'title' => __('factories'),
+                'title' => __('Factories'),
                 'icon'  => 'fal fa-industry',
             ],
             ProductionsTabsEnum::PRODUCTIONS_HISTORIES => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

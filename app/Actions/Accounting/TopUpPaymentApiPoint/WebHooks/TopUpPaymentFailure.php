@@ -24,7 +24,7 @@ class TopUpPaymentFailure extends RetinaWebhookAction
     use WithCheckoutCom;
     use WithCheckoutComTopUpWebhook;
 
-    public function handle(TopUpPaymentApiPoint $topUpPaymentApiPoint, array $modelData)
+    public function handle(TopUpPaymentApiPoint $topUpPaymentApiPoint, array $modelData): TopUpPaymentApiPoint
     {
         $paymentAccountShopID = Arr::get($topUpPaymentApiPoint->data, 'payment_account_shop_id.checkout');
         $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopID);
@@ -40,10 +40,9 @@ class TopUpPaymentFailure extends RetinaWebhookAction
         }
 
         return $this->processFailure($topUpPaymentApiPoint, $payment);
-
     }
 
-    public function processFailure(TopUpPaymentApiPoint $topUpPaymentApiPoint, $payment): string
+    public function processFailure(TopUpPaymentApiPoint $topUpPaymentApiPoint, $payment): TopUpPaymentApiPoint
     {
         return UpdateTopUpPaymentApiPoint::run(
             $topUpPaymentApiPoint,
@@ -70,6 +69,7 @@ class TopUpPaymentFailure extends RetinaWebhookAction
     public function asController(TopUpPaymentApiPoint $topUpPaymentApiPoint, ActionRequest $request): \Illuminate\Http\Response|\Illuminate\Http\RedirectResponse
     {
         $this->initialisation($request);
+        /** @var TopUpPaymentApiPoint $topUpPaymentApiPoint */
         $topUpPaymentApiPoint = $this->handle($topUpPaymentApiPoint, $this->validatedData);
 
 
@@ -79,10 +79,11 @@ class TopUpPaymentFailure extends RetinaWebhookAction
                 'title'  => __('Network Error, please try again'),
             ];
         } else {
-            $notification = [
+            $failureStatus = Arr::get($topUpPaymentApiPoint->data, 'payment.status');
+            $notification  = [
                 'status'  => 'failure',
-                'title'   => $this->getFailureTitle($topUpPaymentApiPoint->failure_status),
-                'message' => $this->getFailureMessage($topUpPaymentApiPoint->failure_status),
+                'title'   => $this->getFailureTitle($failureStatus),
+                'message' => $this->getFailureMessage($failureStatus),
             ];
         }
 

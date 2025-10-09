@@ -57,7 +57,7 @@ class ShowPurge extends OrgAction
                     'icon'      =>
                         [
                             'icon'  => ['fal', 'fa-trash-alt'],
-                            'title' => __('purge')
+                            'title' => __('Purge')
                         ],
                     'actions' => [
                         [

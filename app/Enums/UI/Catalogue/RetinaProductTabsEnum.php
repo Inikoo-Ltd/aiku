@@ -23,7 +23,7 @@ enum RetinaProductTabsEnum: string
     {
         return match ($this) {
             RetinaProductTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

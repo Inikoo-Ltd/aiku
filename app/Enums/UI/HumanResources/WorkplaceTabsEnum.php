@@ -27,13 +27,13 @@ enum WorkplaceTabsEnum: string
 
 
             WorkplaceTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             WorkplaceTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-info-circle',
             ],
         };

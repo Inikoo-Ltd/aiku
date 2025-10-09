@@ -54,7 +54,7 @@ class ShowAgentDispatchHub extends OrgAction
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-conveyor-belt-alt'],
-                        'title' => __('locations')
+                        'title' => __('Locations')
                     ],
                     'title' => __('Dispatching backlog'),
                 ],

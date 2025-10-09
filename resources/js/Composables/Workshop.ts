@@ -10,7 +10,11 @@ import { usePage } from "@inertiajs/vue3"
 
 // Method: format currency
 const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(usePage()?.props?.iris?.website_i18n?.current_language?.code, {
+    if (!usePage()?.props?.iris) {
+        return amount
+    }
+
+    return new Intl.NumberFormat(usePage()?.props?.iris?.website_i18n?.current_language?.code || 'en-US', {
         style: "currency",
         currency: usePage()?.props?.iris?.currency?.code || '',
     }).format(amount || 0)

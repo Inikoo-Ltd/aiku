@@ -7,12 +7,13 @@ import Textarea from "primevue/textarea"
 import Select from "primevue/select"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faBuilding, faGlobe, faPhone, faUser, faInfoCircle } from "@fal"
+import { faBuilding, faGlobe, faPhone, faUser } from "@fal"
 import { faExclamationCircle } from "@fas"
 import { IconField, InputIcon, InputText } from 'primevue'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import CustomerDataForm from '@/Components/CustomerDataForm.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import TaxNumber from "@/Components/Forms/Fields/TaxNumber.vue"
 library.add(faExclamationCircle)
 
 const props = defineProps<{
@@ -185,7 +186,7 @@ const toggleInterest = (interestValue: string) => {
 
     <!-- Field: Country -->
     <div class="sm:col-span-6">
-        <label for="address" class="capitalize block text-sm font-medium text-gray-700" >
+        <label for="address" class="block text-sm font-medium text-gray-700" >
             <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{ trans("Country") }}
         </label >
@@ -196,6 +197,22 @@ const toggleInterest = (interestValue: string) => {
             :options="{ countriesAddressData: countriesAddressData }"
             :fieldData="addressFieldData" />
     </div>
+
+
+    <!-- Field: Tax Number -->
+    <div class="sm:col-span-6">
+        <label for="tax_number" class="block text-sm font-medium text-gray-700" >
+            {{ trans("Tax number") }}
+        </label >
+        <TaxNumber
+            :form="form"
+            fieldName="tax_number"
+        >
+        </TaxNumber>
+    </div>
+
+
+
 
     <div class="sm:col-span-6">
         <hr />

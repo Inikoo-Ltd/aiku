@@ -22,24 +22,29 @@ class RepairInvoiceMissingTaxNumber
 
         if ($customer->taxNumber) {
             $invoice->update([
-                'tax_number' => $customer->taxNumber->number
+                'tax_number'        => $customer->taxNumber->number,
+                'tax_number_status' => $customer->taxNumber->status,
+                'tax_number_valid'  => $customer->taxNumber->valid
+            ]);
+        } else {
+            $invoice->update([
+                'tax_number'        => null,
+                'tax_number_status' => 'na',
+                'tax_number_valid'  => false
             ]);
         }
-
     }
 
-    public string $commandSignature = 'repair:invoice_missing_delivery';
+    public string $commandSignature = 'repair:invoice_missing_tax_number';
 
     public function asCommand(Command $command): void
     {
-        $count = Invoice::whereNull('source_id')
-            ->whereDate('date', '>', '2025-06-01')
+        $count = Invoice::where('shop_id', 30)
             ->count();
 
         $command->info("pending: $count");
 
-        Invoice::whereNull('delivery_address_id')
-            ->whereDate('date', '>', '2025-06-01')
+        Invoice::where('shop_id', 30)
             ->orderBy('date')
             ->chunk(1000, function ($invoices) {
                 foreach ($invoices as $invoice) {

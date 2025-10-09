@@ -10,7 +10,6 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\OrgAction;
-use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Inventory\OrgStock;
@@ -36,8 +35,7 @@ class IndexOrgStocksInProduct extends OrgAction
 
         $queryBuilder = QueryBuilder::for(OrgStock::class);
         $queryBuilder->leftjoin('product_has_org_stocks', 'org_stocks.id', '=', 'product_has_org_stocks.org_stock_id')
-            ->where('product_has_org_stocks.product_id', $product->id)
-            ->where('org_stocks.state', OrgStockStateEnum::ACTIVE);
+            ->where('product_has_org_stocks.product_id', $product->id);
 
         return $queryBuilder
             ->defaultSort('org_stocks.code')
@@ -46,8 +44,9 @@ class IndexOrgStocksInProduct extends OrgAction
                 'org_stocks.code',
                 'org_stocks.name',
                 'org_stocks.slug',
+                'org_stocks.state',
                 'org_stocks.unit_value',
-                'product_has_org_stocks.quantity',
+                'product_has_org_stocks.quantity as quantity',
                 'org_stocks.discontinued_in_organisation_at',
                 'org_stock_families.slug as family_slug',
                 'org_stock_families.code as family_code',
@@ -71,11 +70,13 @@ class IndexOrgStocksInProduct extends OrgAction
             $table
                 ->defaultSort('code')
                 ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
-                ->column(key: 'code', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+                ->withModelOperations($modelOperations);
+
+            $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
+            $table->column(key: 'code', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
 
             $table->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'quanitity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 }

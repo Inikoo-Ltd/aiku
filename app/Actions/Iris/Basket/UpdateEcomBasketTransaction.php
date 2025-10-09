@@ -20,14 +20,14 @@ class UpdateEcomBasketTransaction extends IrisAction
     public function handle(Transaction $transaction, array $modelData): Transaction
     {
         return UpdateTransaction::make()->action($transaction, [
-            'quantity_ordered' => Arr::get($modelData, 'quantity')
+            'quantity_ordered' => Arr::get($modelData, 'quantity_ordered')
         ]);
     }
 
     public function rules(): array
     {
         return [
-            'quantity'          => ['required', 'numeric', 'min:0'],
+            'quantity_ordered'          => ['required', 'numeric', 'min:0'],
         ];
     }
 

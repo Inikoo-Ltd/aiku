@@ -12,6 +12,7 @@ import { faCog } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { Intervals, Settings } from "@/types/Components/Dashboard"
+import DashboardCustomDateRange from "./DashboardCustomDateRange.vue"
 library.add(faCog)
 
 const props = defineProps<{
@@ -114,7 +115,14 @@ const updateDataDisplayType = (value: string) => {
 	<div class="relative px-1 md:px-4 md:mt-4">
 		<div class="mb-2 flex justify-between gap-x-2">
 			<!-- Section: Period options list -->
-			<nav class="isolate rounded border p-1 flex flex-wrap w-full" aria-label="Tabs">
+			<nav class="isolate rounded border p-1 flex flex-wrap items-center w-full" aria-label="Tabs">
+				<div v-if="layout.app.environment === 'local'" class="mr-1">
+					<DashboardCustomDateRange
+						:interval="intervals"
+						:updateInterval
+					/>
+				</div>
+
 				<div
 					v-for="(interval, idxInterval) in intervals.options"
 					:key="idxInterval"
@@ -207,7 +215,7 @@ const updateDataDisplayType = (value: string) => {
 									v-slot="{ active, checked }"
 								>
 									<div :class="[
-											'cursor-pointer focus:outline-none flex items-center justify-center py-1 md:py-3 px-3 text-sm font-medium capitalize',
+											'cursor-pointer focus:outline-none flex items-center justify-center py-1 md:py-3 px-3 text-sm font-medium',
 											checked ? 'bg-indigo-500 text-white' : ' bg-white text-gray-700 hover:bg-gray-200',
 										]"
 										v-tooltip="option.tooltip"

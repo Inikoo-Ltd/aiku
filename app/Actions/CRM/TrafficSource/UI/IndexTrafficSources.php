@@ -120,7 +120,7 @@ class IndexTrafficSources extends OrgAction
         $model         = __('Traffic Source');
         $icon          = [
             'icon'  => ['fal', 'fa-route'],
-            'title' => __('traffic sources')
+            'title' => __('Traffic sources')
         ];
         $afterTitle    = null;
         $iconRight     = null;
@@ -130,7 +130,7 @@ class IndexTrafficSources extends OrgAction
             $model      = __('traffic source');
             $icon       = [
                 'icon'  => ['fal', 'fa-route'],
-                'title' => __('traffic source')
+                'title' => __('Traffic source')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-route',

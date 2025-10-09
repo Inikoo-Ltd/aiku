@@ -46,7 +46,7 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
     <!-- {{ layout.app?.theme }} -->
     <!-- <div class="text-xxs">{{ layout.currentRoute }} <br> {{ nav.route.name }}</div> -->
     <Link :href="nav?.route?.name ? route(nav.route?.name, nav?.route?.parameters) : '#'"
-        class="group flex items-center px-2 text-sm gap-x-2" :class="[
+        class="group flex items-center px-2 text-[16px] md:text-sm gap-x-2" :class="[
             isNavigationActive(layout.currentRoute, props.nav.root)
                 ? 'navigationActive'
                 : 'navigation',
@@ -81,7 +81,7 @@ const inactiveClass = `bg-[${layout.app?.theme[4]}] text-[${layout.app?.theme[1]
 
 
             <Transition name="spin-to-right">
-                <div v-if="layout.leftSidebar.show && nav.right_label" class="leading-none rounded-full flex justify-center items-center text-xs tabular-nums mr-2 px-1 py-0.5"
+                <div v-if="layout.leftSidebar.show && nav.right_label" class="leading-none rounded-full flex justify-center items-center text-[14px] md:text-xs tabular-nums mr-2 px-1 py-0.5"
                     xclass="[
                         isNavigationActive(layout.currentRoute, props.nav.root) ? activeClass : inactiveClass,
                     ]"

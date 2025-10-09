@@ -7,32 +7,29 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { DeliveryNote } from "@/types/delivery-note"
-import { Tab } from "@headlessui/vue"
 import type { Table as TableTS } from "@/types/Table"
-import { inject } from "vue"
-import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { useFormatTime } from '@/Composables/useFormatTime'
-import Icon from "@/Components/Icon.vue"
-import { useLocaleStore } from "@/Stores/locale";
+import { RouteParams } from "@/types/route-params"
+import { Shipper } from "@/types/shipper"
 
-const props = defineProps<{
+defineProps<{
     data: TableTS,
     tab?: string
 }>()
 
-const locale = useLocaleStore();
-const layout = inject('layout', layoutStructure)
 
-function shipperRoute(shipper: {}) {
+function shipperRoute(shipper: Shipper) {
     switch (route().current()) {
-         case "grp.org.warehouses.show.dispatching.shippers.inactive.index":
-         case "grp.org.warehouses.show.dispatching.shippers.current.index":
+        case "grp.org.warehouses.show.dispatching.shippers.inactive.index":
+        case "grp.org.warehouses.show.dispatching.shippers.current.index":
             return route(
-               "grp.org.warehouses.show.dispatching.shippers.show",
-                [route().params["organisation"], route().params["warehouse"], shipper.slug])
+                "grp.org.warehouses.show.dispatching.shippers.show",
+                [
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).warehouse,
+                    shipper.slug
+                ])
         default:
-            return ''
+            return ""
     }
 }
 
@@ -40,9 +37,12 @@ function shipperRoute(shipper: {}) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-         <template #cell(code)="{ item: shipper }">
+        <template #cell(api_shipper)="{ item: shipper }">
+                {{ shipper.type }}
+        </template>
+        <template #cell(name)="{ item: shipper }">
             <Link :href="shipperRoute(shipper)" class="primaryLink">
-                {{ shipper["code"] }}
+                {{ shipper.name }}
             </Link>
         </template>
     </Table>

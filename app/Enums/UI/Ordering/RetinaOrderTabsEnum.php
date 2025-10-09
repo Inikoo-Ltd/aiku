@@ -26,7 +26,7 @@ enum RetinaOrderTabsEnum: string
         return match ($this) {
 
             RetinaOrderTabsEnum::TRANSACTIONS => [
-                'title' => __('transactions'),
+                'title' => __('Transactions'),
                 'icon'  => 'fal fa-bars',
             ],
 

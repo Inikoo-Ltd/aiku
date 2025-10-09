@@ -97,7 +97,7 @@ class IndexProductions extends OrgAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new production plant'),
+                            'tooltip' => __('New production plant'),
                             'label'   => __('production plant'),
                             'route'   => [
                                 'name'       => 'grp.org.productions.create',
@@ -133,7 +133,7 @@ class IndexProductions extends OrgAction
                 'pageHead'    => [
                     'title'   => __('Production plants'),
                     'icon'    => [
-                        'title' => __('factories'),
+                        'title' => __('Factories'),
                         'icon'  => 'fal fa-industry'
                     ],
                     'actions' => [

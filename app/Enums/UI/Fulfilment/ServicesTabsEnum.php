@@ -23,12 +23,12 @@ enum ServicesTabsEnum: string
     {
         return match ($this) {
             ServicesTabsEnum::SERVICES => [
-                'title' => __('services'),
+                'title' => __('Services'),
                 'icon'  => 'fal fa-bars',
             ],
 
             ServicesTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

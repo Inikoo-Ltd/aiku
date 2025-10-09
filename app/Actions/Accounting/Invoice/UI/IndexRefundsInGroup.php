@@ -142,7 +142,7 @@ class IndexRefundsInGroup extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-file-minus'],
-            'title' => __('refunds')
+            'title' => __('Refunds')
         ];
 
         $afterTitle = [
@@ -163,7 +163,7 @@ class IndexRefundsInGroup extends OrgAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('invoices'),
+                'title'       => __('Invoices'),
                 'pageHead'    => [
 
                     'title'         => $title,

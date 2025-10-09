@@ -63,7 +63,7 @@ class EditStockFamily extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit stock family'),
+                            'title'  => __('Edit stock family'),
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',

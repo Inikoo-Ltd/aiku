@@ -151,7 +151,7 @@ class ShowPurchaseOrder extends OrgAction
                         'style'   => 'secondary',
                         'icon'    => 'fal fa-plus',
                         'key'     => 'add-products',
-                        'label'   => __('add products'),
+                        'label'   => __('Add products'),
                         'tooltip' => __('Add products'),
                         'route'   => [
                             'name'       => 'grp.models.purchase-order.transaction.store',
@@ -164,8 +164,8 @@ class ShowPurchaseOrder extends OrgAction
                         [
                             'type'    => 'button',
                             'style'   => 'save',
-                            'tooltip' => __('submit'),
-                            'label'   => __('submit'),
+                            'tooltip' => __('Submit'),
+                            'label'   => __('Submit'),
                             'key'     => 'action',
                             'route'   => [
                                 'method'     => 'patch',
@@ -274,7 +274,7 @@ class ShowPurchaseOrder extends OrgAction
                     'icon'  =>
                     [
                         'icon'  => ['fal', 'clipboard-list'],
-                        'title' => __('purchase order')
+                        'title' => __('Purchase order')
                     ],
                     'title' => $purchaseOrder->reference,
                     'afterTitle'    => [

@@ -8,8 +8,9 @@
 
 namespace App\Actions\Ordering\Order;
 
+use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInOrders;
+use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInOrders;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
-use App\Actions\Dispatching\DeliveryNote\CopyOrderNotesToDeliveryNote;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Ordering\Order\Search\OrderRecordSearch;
@@ -21,7 +22,11 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
+use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Events\UpdateOrderNotesEvent;
 use App\Models\Ordering\Order;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -40,7 +45,11 @@ class UpdateOrder extends OrgAction
 
     public function handle(Order $order, array $modelData): Order
     {
-        $oldPlatform   = $order->platform;
+        $oldPlatform             = $order->platform;
+        $oldShippingZoneSchemaId = $order->shipping_zone_schema_id;
+        $oldShippingZoneId       = $order->shipping_zone_id;
+
+
         $order         = $this->update($order, $modelData, ['data']);
         $changedFields = $order->getChanges();
         $order->refresh();
@@ -48,7 +57,7 @@ class UpdateOrder extends OrgAction
         $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
-        if (Arr::has($changes, 'tax_category_id')) {
+        if (Arr::hasAny($changes, ['tax_category_id', 'collection_address_id'])) {
             CalculateOrderTotalAmounts::run($order);
         }
 
@@ -61,25 +70,45 @@ class UpdateOrder extends OrgAction
                 MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::dispatch($order->master_shop_id, $intervalsExceptHistorical, []);
             }
 
-            if ($order->deliveryNotes->first()) {
-                $deliveryNote = $order->deliveryNotes->first();
+            $deliveryNote = $order->deliveryNotes()->where('delivery_notes.type', DeliveryNoteTypeEnum::ORDER)->first();
+            if ($deliveryNote) {
+                if (Arr::has($changes, 'collection_address_id') && !in_array($deliveryNote->state, [DeliveryNoteStateEnum::CANCELLED, DeliveryNoteStateEnum::DISPATCHED])) {
+                    $deliveryNote->update(
+                        [
+                            'collection_address_id' => $order->collection_address_id,
+                        ]
+                    );
+                }
+
 
                 if (Arr::has($changes, 'customer_notes')) {
-                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                            'customer_notes' => true,
-                    ], true);
+                    $deliveryNote->update(
+                        [
+                            'customer_notes' => $order->customer_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
                 } elseif (Arr::has($changes, 'public_notes')) {
-                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                            'public_notes' => true,
-                    ], true);
+                    $deliveryNote->update(
+                        [
+                            'public_notes' => $order->public_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
                 } elseif (Arr::has($changes, 'internal_notes')) {
-                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                            'internal_notes' => true,
-                    ], true);
+                    $deliveryNote->update(
+                        [
+                            'internal_notes' => $order->internal_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
                 } elseif (Arr::has($changes, 'shipping_notes')) {
-                    $deliveryNote = CopyOrderNotesToDeliveryNote::make()->action($deliveryNote, [
-                            'shipping_notes' => true,
-                    ], true);
+                    $deliveryNote->update(
+                        [
+                            'shipping_notes' => $order->shipping_notes,
+                        ]
+                    );
+                    UpdateOrderNotesEvent::dispatch($deliveryNote);
                 }
             }
 
@@ -97,6 +126,27 @@ class UpdateOrder extends OrgAction
 
             if (Arr::hasAny($changedFields, ['reference', 'state', 'net_amount', 'payment_amount', 'date'])) {
                 OrderRecordSearch::dispatch($order);
+            }
+
+            if (Arr::has($changedFields, 'shipping_zone_schema_id')) {
+                if ($oldShippingZoneSchemaId) {
+                    ShippingZoneSchemaHydrateUsageInOrders::dispatch($oldShippingZoneSchemaId)->delay($this->hydratorsDelay);
+                }
+
+                if ($order->shipping_zone_schema_id) {
+                    ShippingZoneSchemaHydrateUsageInOrders::dispatch($order->shipping_zone_schema_id)->delay($this->hydratorsDelay);
+                }
+            }
+
+            if (Arr::has($changedFields, 'shipping_zone_id')) {
+                if ($oldShippingZoneId) {
+                    ShippingZoneHydrateUsageInOrders::dispatch($oldShippingZoneId)->delay($this->hydratorsDelay);
+                }
+
+                if ($order->shipping_zone_id) {
+                    ShippingZoneHydrateUsageInOrders::dispatch($order->shipping_zone_id)->delay($this->hydratorsDelay);
+
+                }
             }
         }
 
@@ -119,22 +169,27 @@ class UpdateOrder extends OrgAction
                 ),
             ],
 
-            'in_warehouse_at'     => ['sometimes', 'date'],
-            'dispatched_at'       => ['sometimes', 'nullable', 'date'],
-            'delivery_address_id' => ['sometimes', Rule::exists('addresses', 'id')],
-            'shipping_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'customer_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'public_notes'        => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'internal_notes'      => ['sometimes', 'nullable', 'string', 'max:4000'],
-            'state'               => ['sometimes', Rule::enum(OrderStateEnum::class)],
-            'sales_channel_id'    => [
+            'in_warehouse_at'         => ['sometimes', 'date'],
+            'dispatched_at'           => ['sometimes', 'nullable', 'date'],
+            'finalised_at'            => ['sometimes', 'nullable', 'date'],
+            'delivery_address_id'     => ['sometimes', Rule::exists('addresses', 'id')],
+            'collection_address_id'   => ['sometimes', 'nullable', Rule::exists('addresses', 'id')],
+            'shipping_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'customer_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'public_notes'            => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'internal_notes'          => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'state'                   => ['sometimes', Rule::enum(OrderStateEnum::class)],
+            'shipping_engine'         => ['sometimes', Rule::enum(OrderShippingEngineEnum::class)],
+            'sales_channel_id'        => [
                 'sometimes',
                 'required',
                 Rule::exists('sales_channels', 'id')->where(function ($query) {
                     $query->where('group_id', $this->shop->group_id);
                 })
             ],
-            'tax_category_id'     => ['sometimes', Rule::exists('tax_categories', 'id')],
+            'tax_category_id'         => ['sometimes', Rule::exists('tax_categories', 'id')],
+            'shipping_zone_schema_id' => ['sometimes', 'nullable'],
+            'shipping_zone_id'        => ['sometimes', 'nullable'],
         ];
 
 

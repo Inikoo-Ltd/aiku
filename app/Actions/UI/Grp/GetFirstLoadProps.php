@@ -11,9 +11,9 @@ namespace App\Actions\UI\Grp;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Http\Resources\Helpers\LanguageResource;
+use App\Http\Resources\SysAdmin\NotificationsResource;
 use App\Models\Helpers\Language;
 use App\Models\SysAdmin\User;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -23,8 +23,7 @@ class GetFirstLoadProps
 
     public function handle(?User $user): array
     {
-
-        $group = group();
+        $availableLanguages = Language::where('status', true)->pluck('id')->toArray();
 
         if ($user) {
             $language = $user->language;
@@ -32,22 +31,25 @@ class GetFirstLoadProps
             $language = Language::where('code', App::currentLocale())->first();
         }
         if (!$language) {
-            $language = Language::where('id', Arr::first($group->extra_languages ?? []))->first();
+            $language = Language::where('code', 'en')->first();
         }
 
         return
             [
-            'localeData' =>
-                [
-                    'language'        => LanguageResource::make($language)->getArray(),
-                    'languageOptions' => GetLanguagesOptions::make()->getExtraGroupLanguages($group->extra_languages),
-                    'languageAssetsOptions' => GetLanguagesOptions::make()->translated(),
-                ],
+                'localeData' =>
+                    [
+                        'language'              => LanguageResource::make($language)->getArray(),
+                        'languageOptions'       => GetLanguagesOptions::make()->getExtraGroupLanguages($availableLanguages),
+                        'languageAssetsOptions' => GetLanguagesOptions::make()->translated(),
+                    ],
 
-            'layout'      => GetLayout::run($user),
-            'environment' => app()->environment(),
-            'help_portal_url' => config('app.help_portal_url'),
+                'layout'           => GetLayout::run($user),
+                'environment'      => app()->environment(),
+                'help_portal_url'  => config('app.help_portal_url'),
+                'avatar_thumbnail' => !blank($user->image_id) ? $user->imageSources(0, 48) : null,
+                'notifications'    => NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection,
 
-        ];
+
+            ];
     }
 }

@@ -19,19 +19,19 @@ import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import { Tabs as TSTabs } from '@/types/Tabs'
 import '@vuepic/vue-datepicker/dist/main.css'
 import '@/Composables/Icon/PalletDeliveryStateEnum'
-import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
-import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
-import { Address } from "@/types/PureComponent/Address"
+// import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
+// import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
+import EcomTableOrderTransactions from "@/Components/Retina/Ecom/EcomTableOrderTransactions.vue"
+import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
+// import TableAttachments from "@/Components/Tables/Grp/Helpers/TableAttachments.vue"
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
-import { faExclamationTriangle, faExclamation } from '@fas'
+import { faExclamationTriangle, faExclamation, faStar, faBoxHeart, faShieldAlt, faEllipsisH } from '@fas'
 import { faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, } from '@fal'
 import { Currency } from '@/types/LayoutRules'
-import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
-import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
+// import TableInvoices from '@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue'
+// import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.vue'
 import { faSpinnerThird } from '@far'
-import DSCheckoutSummary from '@/Components/Retina/Dropshipping/DSCheckoutSummary.vue'
 import Timeline from '@/Components/Utils/Timeline.vue'
 import { Message } from 'primevue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -39,6 +39,13 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { debounce } from 'lodash-es'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
+import EcomCheckoutSummary from '@/Components/Retina/Ecom/EcomCheckoutSummary.vue'
+import Button from '@/Components/Elements/Buttons/Button.vue'
+// import { Checkbox, Popover as PopoverPrimevue } from 'primevue'
+import { notify } from '@kyvg/vue3-notification'
+import axios from 'axios'
+
+
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faTimes, faInfoCircle, faSpinnerThird)
 
 
@@ -46,9 +53,6 @@ const props = defineProps<{
     title: string
     tabs: TSTabs
     pageHead: PageHeadingTypes
-    order: {}
-
-
     routes: {
         update_route: routeType
         submit_route: routeType
@@ -58,7 +62,16 @@ const props = defineProps<{
     timelines: {
     }
     is_notes_editable: boolean
-
+    summary: {
+        net_amount: string
+        gross_amount: string
+        tax_amount: string
+        goods_amount: string
+        services_amount: string
+        charges_amount: string
+    }
+    balance: string
+    address_management: AddressManagement
     box_stats: {
         customer: {
             reference: string
@@ -97,6 +110,7 @@ const props = defineProps<{
     currency: Currency
     data?: {
         data: {
+            slug: string
             is_fully_paid: boolean
             unpaid_amount: number
             route_to_pay_unpaid?: routeType
@@ -128,11 +142,11 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
     const components: Component = {
-        transactions: OrderProductTable,
-        delivery_notes: TableDeliveryNotes,
-        attachments: TableAttachments,
-        invoices: TableInvoices,
-		products: TableProductList
+        transactions: EcomTableOrderTransactions,
+        // delivery_notes: TableDeliveryNotes,
+        // attachments: TableAttachments,
+        // invoices: TableInvoices,
+		// products: TableProductList
     }
 
     return components[currentTab.value]
@@ -180,14 +194,38 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
 
     <PageHeading :data="pageHead">
+        <template #other>
+            <a v-if="['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state || 'vcxzvcx')"
+                :href="route('retina.ecom.orders.proforma_invoice.download', {
+                    order: props.data?.data?.slug
+                })"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="inline-block"
+            >
+                <Button
+                    
+                    type="tertiary"
+                    :label="trans('Proforma Invoice')"
+                    icon="fal fa-file-pdf"
+                />
+            </a>
+        </template>
     </PageHeading>
 
-    <div class="mt-4 sm:mt-0 border-b border-gray-200 pb-2 max-w-5xl">
-        <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
+    <div v-if="data?.data?.has_insurance || data?.data?.is_premium_dispatch || data?.data?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
+        <FontAwesomeIcon v-if="data?.data?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="data?.data?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="data?.data?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+    </div>
+
+    <div v-if="timelines"  class="mt-4 py-3 sm:mt-0 border-b border-gray-200 w-full">
+        <div class="max-w-5xl mx-auto">
+            <Timeline :options="timelines" :state="props.data?.data?.state" :slidesPerView="6" />
+        </div>
     </div>
 
     <!-- Section: Alert if unpaid -->
@@ -209,7 +247,11 @@ const debounceDeliveryInstructions = debounce(() => onSubmitNote('shipping_notes
         </div>
     </Message>
 
-    <DSCheckoutSummary :summary="box_stats" />
+    <EcomCheckoutSummary
+        :summary
+        :balance
+        :address_management
+    />
 
     <Tabs v-if="currentTab != 'products'" :current="currentTab" :navigation="tabs?.navigation"
         @update:tab="handleTabUpdate" />

@@ -10,6 +10,7 @@
 namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\CRM\Platform\UI\ShowPlatform;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -132,28 +133,48 @@ class ShowCustomerSalesChannel extends OrgAction
             ];
         };
 
+        return match ($routeName) {
+            'grp.org.shops.show.crm.platforms.show.customer_sales_channels.show' =>
+            array_merge(
+                ShowPlatform::make()->getBreadcrumbs(
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $customerSalesChannel,
+                    [
 
-
-
-        return array_merge(
-            ShowCustomer::make()->getBreadcrumbs(
-                $routeName,
-                $routeParameters
-            ),
-            $headCrumb(
-                $customerSalesChannel,
-                [
-
-                    'index' => [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
-                        'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer'])
-                    ],
-                    'model' => [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show',
-                        'parameters' => $routeParameters
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show',
+                            'parameters' => $routeParameters
+                        ]
                     ]
-                ]
-            )
-        );
+                )
+            ),
+            default => array_merge(
+                ShowCustomer::make()->getBreadcrumbs(
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $customerSalesChannel,
+                    [
+
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ]
+                )
+            ),
+        };
     }
 }

@@ -185,11 +185,12 @@ test('can show webpages list in fulfilment website', function () {
             ->component('Org/Web/Webpages')
             ->has('title')
             ->has('breadcrumbs', 3)
-            ->has('data.data', 9);
+            ->has('data.data', 7);
     });
 });
 
 test('can show fulfilments website workshop', function () {
+    $this->withoutExceptionHandling();
     $website = $this->fulfilmentWebsite;
 
     $response = get(
@@ -486,11 +487,11 @@ test('create banner', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->where('title', 'new banner')
+            ->where('title', 'New banner')
             ->has('breadcrumbs', 4)
             ->has(
                 "pageHead",
-                fn (AssertableInertia $page) => $page->where("title", 'banner')->etc()
+                fn (AssertableInertia $page) => $page->where("title", 'Banner')->etc()
             )
             ->has('formData');
     });

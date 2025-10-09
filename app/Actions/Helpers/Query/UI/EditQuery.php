@@ -86,7 +86,7 @@ class EditQuery extends InertiaAction
                 'pageHead' => [
                     'title' => $query->name,
                     'icon'  => [
-                        'title' => __('query'),
+                        'title' => __('Query'),
                         'icon'  => 'fal fa-globe'
                     ],
 

@@ -146,10 +146,9 @@
             <div>
                 {{ __($context . ' Date') }}: <b>{{ $invoice->created_at->format('j F Y') }}</b>
             </div>
-
             @if($invoice->tax_liability_at)
                 <div style="text-align: right">
-                    {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
+                    {{ __('Tax liability dates') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
                 </div>
             @endif
 
@@ -177,11 +176,14 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                         class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
-                @if($invoice->tax_number)
+                @if($invoice->tax_number  && $invoice->tax_number_valid)
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
                             class="address_value">{{ $invoice->tax_number }}</span>
                     </div>
+                @endif
+                @if($invoice->identity_document_number)
+                    {{__('Registration Number')}}: {{$shop->identity_document_number}}
                 @endif
             </div>
         </td>
@@ -283,8 +285,10 @@
             </td>
 
             <td style="text-align:left">
-                @if($transaction->historicAsset)
+                @if($transaction->quantity==0 || $transaction->quantity==null)
                     {{ $invoice->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
+                @elseif($transaction->historicAsset)
+                    {{ $invoice->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
                 @endif
             </td>
 
@@ -316,9 +320,13 @@
 
     <tr>
         <td style="border:none" colspan="4"></td>
-        <td class="totals">{{ __('TAX') }} <br> @if($invoice->tax_number)
-                <small>Valid tax number: {{ $invoice->tax_number }}</small>
-            @endif</td>
+        <td class="totals">
+            {{ __('Tax') }}
+
+            <br><small>{{$invoice->taxCategory->name}}
+             ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
+            </small>
+        </td>
         <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
     </tr>
 
@@ -416,11 +424,11 @@
             <td width="33%" style="color:#000;text-align: left;">
                 <small>
                     {{$shop->name}}<br>
-                    @if(Arr::exists($shop->data,'vat_number'))
-                        {{__('VAT Number')}}:<b>{{Arr::get($shop->data,'vat_number')}}</b><br>
+                    @if($shop->taxNumber)
+                        {{__('VAT Number')}}:<b>{{$shop->taxNumber?->getFormattedTaxNumber()}}</b><br>
                     @endif
-                    @if(Arr::exists($shop->data,'registration_number'))
-                        {{__('Registration Number')}}: {{Arr::get($shop->data,'registration_number')}}
+                    @if($shop->identity_document_number)
+                        {{__('Registration Number')}}: {{$shop->identity_document_number}}
                     @endif
                 </small>
             </td>

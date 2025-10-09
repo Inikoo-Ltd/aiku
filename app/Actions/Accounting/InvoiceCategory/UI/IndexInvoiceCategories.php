@@ -107,18 +107,6 @@ class IndexInvoiceCategories extends OrgAction
                 'pageHead'    => [
                     'icon'      => ['fal', 'fa-sitemap'],
                     'title'     => $title,
-                    'actions'   => [
-                        [
-                            'type'    =>    'button',
-                                            'style'   => 'create',
-                                            'tooltip' => __('new invoice category'),
-                                            'label'   => __('invoice category'),
-                                            'route'   => [
-                                                'name'       => 'grp.org.accounting.invoice-categories.create',
-                                                'parameters' => $request->route()->originalParameters()
-                                            ]
-                        ]
-                    ]
                 ],
                 'data'             => InvoiceCategoriesResource::collection($invoiceCategories)
             ]

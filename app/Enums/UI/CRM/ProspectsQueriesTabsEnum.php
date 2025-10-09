@@ -25,11 +25,11 @@ enum ProspectsQueriesTabsEnum: string
     {
         return match ($this) {
             ProspectsQueriesTabsEnum::LISTS => [
-                'title' => __('lists'),
+                'title' => __('Lists'),
                 'icon'  => 'fal fa-code-branch',
             ],
             ProspectsQueriesTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

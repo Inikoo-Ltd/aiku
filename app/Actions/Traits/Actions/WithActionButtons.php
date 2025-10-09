@@ -39,7 +39,7 @@ trait WithActionButtons
             'type'    => 'button',
             'tooltip' => __('Edit'),
             'icon'    => 'fal fa-pencil',
-            'label'   => 'edit',
+            'label'   => __('Edit'),
             'style'   => 'edit',
             'route'   => [
                 'name'       => preg_replace('/(show|dashboard)$/', 'edit', $request->route()->getName()),

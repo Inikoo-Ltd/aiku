@@ -16,6 +16,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
 import {debounce, get, set} from "lodash-es"
+import PureProgressBar from "@/Components/PureProgressBar.vue"
 import {
     faConciergeBell,
     faGarage,
@@ -30,7 +31,7 @@ import {
     faExclamationCircle,
     faClone,
     faLink, faScrewdriver, faTools,
-    faRecycle, faHandPointer, faHandshakeSlash, faHandshake
+    faRecycle, faHandPointer, faHandshakeSlash, faHandshake, faTimes
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -43,6 +44,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import {routeType} from "@/types/route";
+import {Message} from "primevue"
 
 library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
@@ -85,8 +87,12 @@ const props = defineProps<{
     isPlatformManual?: boolean
     customerSalesChannel: {}
     useCheckBox?: boolean
+    progressToUploadToEcom : {}
+    count_product_not_synced : number
 }>()
 
+const errorBluk = ref([])
+const _table = ref(null)
 function portfolioRoute(product: Product) {
     if (product.type == "StoredItem") {
         return route("retina.fulfilment.itemised_storage.stored_items.show", [product.slug])
@@ -100,8 +106,7 @@ function portfolioRoute(product: Product) {
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', retinaLayoutStructure)
-
-// const selectedProducts = ref<Product[]>([])
+const selectedProducts = defineModel<number[]>('selectedProducts')
 const onUnchecked = (itemId: number) => {
     props.selectedData.products = props.selectedData.products.filter(product => product !== itemId)
 }
@@ -141,31 +146,92 @@ const debReloadPage = debounce(() => {
     })
 }, 1200)
 
-onMounted(() => {
-    props.data?.data?.forEach(porto => {
-        if (selectSocketiBasedPlatform(porto)) {
-            const xxx = window.Echo.private(selectSocketiBasedPlatform(porto)?.event).listen(
-                selectSocketiBasedPlatform(porto)?.action,
-                (eventData) => {
-                    console.log('socket in: ', porto.id, eventData)
-                    if (eventData.errors_response) {
-                        set(props.progressToUploadToShopify, [porto.id], 'error')
-                        setTimeout(() => {
-                            set(props.progressToUploadToShopify, [porto.id], null)
-                        }, 3000);
 
-                    } else {
-                        set(props.progressToUploadToShopify, [porto.id], 'success')
-                        debReloadPage()
+onMounted(() => {
+    errorBluk.value = []
+
+    const activeListeners = new Map<string | number, { event: string; action: string }>()
+    let isCompleted = false // flag untuk menandai progress sudah selesai
+
+    props.data?.data?.forEach((porto) => {
+        const socketConfig = selectSocketiBasedPlatform(porto)
+        if (!socketConfig) return
+
+        // === replace listener jika sudah ada untuk ID yang sama ===
+        if (activeListeners.has(porto.id)) {
+            const oldConfig = activeListeners.get(porto.id)
+            if (oldConfig) {
+                window.Echo.private(oldConfig.event).stopListening(oldConfig.action)
+            }
+        }
+
+        activeListeners.set(porto.id, socketConfig)
+
+        window.Echo.private(socketConfig.event).listen(socketConfig.action, (eventData) => {
+            const progress = props.progressToUploadToEcom?.data
+            if (!progress) return
+
+            // === Error handler (all platforms) ===
+            if (eventData.errors_response) {
+                set(props.progressToUploadToShopify, [porto.id], 'error')
+                setTimeout(() => {
+                    set(props.progressToUploadToShopify, [porto.id], null)
+                }, 3000)
+                return
+            }
+
+            const pf = eventData.portfolio
+
+            // ✅ kalau sudah complete, hanya simpan error tapi jangan update success/fail count lagi
+            if (isCompleted) {
+                if (!pf.has_valid_platform_product_id || !pf.platform_status || !pf.exist_in_platform) {
+                    if (!errorBluk.value.includes(pf.item_code)) {
+                        errorBluk.value.push(pf.item_code)
                     }
                 }
-            );
+                return
+            }
 
-            console.log(`Subscription porto id: ${porto.id}`, xxx)
+            // === Unified handling for ALL platforms ===
+            const isSuccess =
+                pf.has_valid_platform_product_id &&
+                pf.platform_status &&
+                pf.exist_in_platform
 
-        }
-    });
+            if (isSuccess) {
+                progress.number_success += 1
+            } else {
+                progress.number_fails += 1
+                if (!errorBluk.value.includes(pf.item_code)) {
+                    errorBluk.value.push(pf.item_code)
+                }
+            }
+
+            const totalFinished = progress.number_success + progress.number_fails
+
+            // 🚀 tandai selesai hanya sekali
+            if (
+                totalFinished === props.count_product_not_synced ||
+                totalFinished === selectedProducts.value.length
+            ) {
+                isCompleted = true
+                props.progressToUploadToEcom.done = true
+
+                setTimeout(() => {
+                    progress.number_success = 0
+                    progress.number_fails = 0
+                    selectedProducts.value = []
+                    props.progressToUploadToEcom.total = 0
+                }, 5000)
+
+                debReloadPage()
+            }
+        })
+    })
 })
+
+
+
 
 // Table: Filter out-of-stock and discontinued
 const compTableFilterStatus = computed(() => {
@@ -283,10 +349,10 @@ const fetchRoute = async () => {
     isLoadingFetchPlatformProduct.value = false
 
 }
-const debFetchShopifyProduct = debounce(() => fetchRoute(), 700)
+const debounceGetPortfoliosList = debounce(() => fetchRoute(), 700)
 
 
-const selectedProducts = defineModel<number[]>('selectedProducts')
+
 
 const onChangeCheked = (checked: boolean, item: DeliveryNote) => {
     if (!selectedProducts.value) return
@@ -316,9 +382,27 @@ const onDisableCheckbox = (item) => {
     if (item.platform_status && item.exist_in_platform && item.has_valid_platform_product_id) return true
     return false
 }
+
+
 </script>
 
 <template>
+        <Message v-if="errorBluk.length > 0 && progressToUploadToEcom.total == 0" severity="error"
+             class="relative m-4 pr-10">
+        <!-- Close Button -->
+        <button @click="errorBluk = []" class="absolute top-0 right-2 text-red-400 hover:text-red-600 transition"
+                aria-label="Close">
+            <FontAwesomeIcon :icon="faTimes" class="w-4 h-4"/>
+        </button>
+
+        <!-- Message Content -->
+        <h3 class="font-semibold mb-2 text-red-700">Upload Error(s):</h3>
+        <ul class="list-disc list-inside text-sm text-red-800">
+            <li v-for="(item, index) in errorBluk" :key="index">
+                {{ `Error when uploading item with code: ${item}` }}
+            </li>
+        </ul>
+    </Message>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="false"
            @onChecked="(item) => onChangeCheked(true, item)"
            @onUnchecked="(item) => onChangeCheked(false, item)" @onCheckedAll="(data) => onCheckedAll(data)"
@@ -339,6 +423,36 @@ const onDisableCheckbox = (item) => {
             <div></div>
         </template>
 
+
+        <template #checkbox="{ checked, data }">
+            <!-- Spinner ketika sedang upload -->
+            <FontAwesomeIcon v-if="progressToUploadToEcom.total !== 0 && selectedProducts.includes(data.id)"
+                             icon="fad fa-spinner-third" class="animate-spin text-blue-500 p-2 text-lg mx-auto block"
+                             fixed-width
+                             aria-hidden="true"/>
+
+            <!-- Checkbox aktif -->
+            <FontAwesomeIcon v-else-if="selectedProducts.includes(data.id)" @click="() => onChangeCheked(false, data)"
+                             icon="fas fa-check-square" class="text-green-500 p-2 cursor-pointer text-lg mx-auto block"
+                             fixed-width
+                             aria-hidden="true"/>
+
+            <!-- Checkbox kosong -->
+            <FontAwesomeIcon v-else @click="() => onChangeCheked(true, data)" icon="fal fa-square"
+                             class="text-gray-500 hover:text-gray-700 p-2 cursor-pointer text-lg mx-auto block"
+                             fixed-width
+                             aria-hidden="true"/>
+        </template>
+
+
+        <template #add-on-button-in-before>
+            <div class="border-r px-4">
+                <PureProgressBar v-if="progressToUploadToEcom.total != 0"
+                                 :progressBars="progressToUploadToEcom"/>
+            </div>
+        </template>
+
+
         <template #add-on-button>
             <Button @click="onClickFilterOutOfStock('out-of-stock')"
                     v-tooltip="trans('Filter the product that out of stock')" label="Out of stock" size="xs"
@@ -355,9 +469,21 @@ const onDisableCheckbox = (item) => {
         </template>
 
         <template #cell(image)="{ item: product }">
-            <div class="overflow-hidden w-10 h-10">
-                <Image :src="product.image" :alt="product.name"/>
-            </div>
+          <div class="relative group">
+				<div class="relative overflow-hidden w-10 h-10">
+					<Image :src="product.image" :alt="product.name" />
+				</div>
+				<!-- Popover with larger image -->
+				<div
+					class="absolute left-full top-0 ml-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none">
+					<div class="bg-white border border-gray-200 rounded-lg shadow-lg p-2">
+						<div class="w-64 h-64 overflow-hidden rounded">
+							<Image :src="product.full_size_image || product.image" :alt="product.name"
+								class="w-full h-full object-cover" />
+						</div>
+					</div>
+				</div>
+			</div>
         </template>
 
         <template #cell(name)="{ item: product }">
@@ -433,7 +559,7 @@ const onDisableCheckbox = (item) => {
                     <div v-if="item.platform_possible_matches?.number_matches" class="border  rounded p-1"
                          :class="selectedProducts?.includes(item.id) ? 'bg-green-200 border-green-400' : 'border-gray-300'">
                         <div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
-                            <div v-if="item.platform_possible_matches?.raw_data?.[0].images?.[0]?.src"
+                            <div v-if="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"
                                  class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
                                 <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"/>
                             </div>
@@ -443,7 +569,7 @@ const onDisableCheckbox = (item) => {
                         </div>
 
                         <ButtonWithLink v-if="item.platform_possible_matches?.number_matches"
-                                        v-tooltip="trans('Match to existing Shopify product')" :routeTarget="{
+                                        v-tooltip="trans('Match to existing :platform product', { platform: platform_data?.name || 'Platform'})" :routeTarget="{
                                 method: 'post',
                                 name: props.routes.single_match.name,
                                 parameters: {
@@ -560,7 +686,7 @@ const onDisableCheckbox = (item) => {
             <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
                  class="flex gap-x-2 items-center">
                 <ButtonWithLink
-                    v-tooltip="trans('Will create new product in Shopify')"
+                    v-tooltip="trans('Will create new product in :platform', {platform: props.platform_data.name})"
                     :routeTarget="{
                     method: 'post',
                         name: props.routes.single_create_new.name,
@@ -582,7 +708,7 @@ const onDisableCheckbox = (item) => {
 
         <!-- Column: Actions 3 -->
         <template #cell(delete)="{ item }">
-            <ButtonWithLink v-tooltip="trans('Unselect product')" type="negative" icon="fal fa-skull"
+            <ButtonWithLink v-tooltip="trans('Unselect product. This will not remove the product from :platform', {platform: props.platform_data.name})" type="negative" icon="fal fa-skull"
                             :routeTarget="item.update_portfolio" :body="{
 						'status': false,
 					}" size="xs" :bindToLink="{
@@ -603,8 +729,8 @@ const onDisableCheckbox = (item) => {
             </div>
 
             <div class="mb-2">
-                <PureInput v-model="querySearchPortfolios" aupdate:modelValue="() => debounceGetPortfoliosList()"
-                           :placeholder="trans('Input to search portfolios')"/>
+                <PureInput v-model="querySearchPortfolios" @update:modelValue="() => debounceGetPortfoliosList()"
+                           :placeholder="trans('Input sku/title to search')"/>
                 <slot name="afterInput">
                 </slot>
             </div>

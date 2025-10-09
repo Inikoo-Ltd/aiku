@@ -248,10 +248,6 @@ class IndexWebpages extends OrgAction
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CATALOGUE);
         } elseif ($bucket == 'content') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CONTENT);
-        } elseif ($bucket == 'info') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::INFO);
-        } elseif ($bucket == 'operations') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::OPERATIONS);
         } elseif ($bucket == 'blog') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
         } elseif ($bucket == 'storefront') {
@@ -368,7 +364,6 @@ class IndexWebpages extends OrgAction
         }
 
 
-
         $routeName = $request->route()->getName();
 
         $routeCreate = null;
@@ -399,13 +394,13 @@ class IndexWebpages extends OrgAction
                     $routeName,
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('webpages'),
+                'title'       => __('Webpages'),
                 'pageHead'    => [
                     'model'         => __('webpages'),
                     'title'         => ucfirst($this->bucket),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
-                        'title' => __('webpage')
+                        'title' => __('Webpage')
                     ],
                     'subNavigation' => $subNavigation,
                     'actions'       => $actions,

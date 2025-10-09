@@ -22,7 +22,6 @@ use App\Actions\Transfers\Aurora\FetchAuroraDeletedLocations;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedStocks;
 use App\Actions\Transfers\Aurora\FetchAuroraDeletedSuppliers;
 use App\Actions\Transfers\Aurora\FetchAuroraDeliveryNotes;
-use App\Actions\Transfers\Aurora\FetchAuroraDepartments;
 use App\Actions\Transfers\Aurora\FetchAuroraDispatchedEmails;
 use App\Actions\Transfers\Aurora\FetchAuroraEmailBulkRuns;
 use App\Actions\Transfers\Aurora\FetchAuroraEmailOngoingRuns;
@@ -32,11 +31,9 @@ use App\Actions\Transfers\Aurora\FetchAuroraFamilies;
 use App\Actions\Transfers\Aurora\FetchAuroraHistoricAssets;
 use App\Actions\Transfers\Aurora\FetchAuroraHistoricSupplierProducts;
 use App\Actions\Transfers\Aurora\FetchAuroraIngredients;
-use App\Actions\Transfers\Aurora\FetchAuroraInvoiceCategories;
 use App\Actions\Transfers\Aurora\FetchAuroraInvoices;
 use App\Actions\Transfers\Aurora\FetchAuroraLocations;
 use App\Actions\Transfers\Aurora\FetchAuroraMailshots;
-use App\Actions\Transfers\Aurora\FetchAuroraMasterFamilies;
 use App\Actions\Transfers\Aurora\FetchAuroraOfferCampaigns;
 use App\Actions\Transfers\Aurora\FetchAuroraOfferComponents;
 use App\Actions\Transfers\Aurora\FetchAuroraOffers;
@@ -66,17 +63,17 @@ use App\Actions\Transfers\Aurora\FetchAuroraWarehouses;
 use App\Actions\Transfers\Aurora\FetchAuroraWebpages;
 use App\Actions\Transfers\Aurora\FetchAuroraWebsites;
 use App\Actions\Transfers\Aurora\FetchAuroraWebUsers;
-use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Models\Accounting\Invoice;
-use App\Models\Accounting\InvoiceCategory;
 use App\Models\Accounting\OrgPaymentServiceProvider;
 use App\Models\Accounting\Payment;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
+use App\Models\Billables\ShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
@@ -116,13 +113,10 @@ use App\Models\Inventory\Location;
 use App\Models\Inventory\OrgStock;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
-use App\Models\Masters\MasterProductCategory;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\SalesChannel;
-use App\Models\Ordering\ShippingZone;
-use App\Models\Ordering\ShippingZoneSchema;
 use App\Models\Ordering\Transaction;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
@@ -427,14 +421,8 @@ trait WithAuroraParsers
 
     public function parseDepartment(string $sourceId): ?ProductCategory
     {
-        $department = ProductCategory::where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('source_department_id', $sourceId)->first();
-        // we no longer parsing departmetns
-        //        if (!$department) {
-        //            $sourceData = explode(':', $sourceId);
-        //            $department = FetchAuroraDepartments::run($this->organisationSource, $sourceData[1]);
-        //        }
+        return ProductCategory::where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('source_department_id', $sourceId)->first();
 
-        return $department;
     }
 
     public function parseFamily(string $sourceId): ?ProductCategory
@@ -448,16 +436,6 @@ trait WithAuroraParsers
         return $family;
     }
 
-    public function parseMasterFamily(string $sourceId): ?MasterProductCategory
-    {
-        $masterFamily = MasterProductCategory::where('type', MasterProductCategoryTypeEnum::FAMILY)->where('source_family_id', $sourceId)->first();
-        if (!$masterFamily) {
-            $sourceData = explode(':', $sourceId);
-            $masterFamily     = FetchAuroraMasterFamilies::run($this->organisationSource, $sourceData[1]);
-        }
-
-        return $masterFamily;
-    }
 
 
     public function parseCustomer(string $sourceId): ?Customer
@@ -1150,21 +1128,6 @@ trait WithAuroraParsers
         }
 
         return $query;
-    }
-
-    public function parseInvoiceCategory($sourceId): ?InvoiceCategory
-    {
-        if (!$sourceId) {
-            return null;
-        }
-
-        $invoiceCategory = InvoiceCategory::where('source_id', $sourceId)->first();
-        if (!$invoiceCategory) {
-            $sourceData      = explode(':', $sourceId);
-            $invoiceCategory = FetchAuroraInvoiceCategories::run($this->organisationSource, $sourceData[1]);
-        }
-
-        return $invoiceCategory;
     }
 
     public function parseCollection(string $sourceId): ?Collection

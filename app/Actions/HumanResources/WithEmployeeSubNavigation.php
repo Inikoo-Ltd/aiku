@@ -26,7 +26,7 @@ trait WithEmployeeSubNavigation
             'label'    => __('Employee'),
             'leftIcon' => [
                 'icon'    => 'fal fa-stream',
-                'tooltip' => __('employee'),
+                'tooltip' => __('Employee'),
             ],
 
         ];

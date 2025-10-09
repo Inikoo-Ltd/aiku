@@ -98,9 +98,9 @@ class EditRentalAgreement extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('edit rental agreement'),
+                'title'       => __('Edit rental agreement'),
                 'pageHead'    => [
-                    'title'     => __('edit rental agreement'),
+                    'title'     => __('Edit rental agreement'),
                     'actions'   => [
                         [
                             'type'  => 'button',

@@ -19,9 +19,84 @@ class FetchAuroraProductHasOrgStock extends FetchAurora
             $orgStock = $this->parseOrgStock($this->organisation->id.':'.$modelData->{'Product Part Part SKU'});
 
             if ($orgStock) {
-                list($smallestDividend, $correspondingDivisor) = findSmallestFactors($modelData->{'Product Part Ratio'});
+                $ratio = $modelData->{'Product Part Ratio'};
+
+
+                if ($ratio == 0.08400) {
+                    $ratio = 1 / 12;
+                }
+
+                if ($ratio == 0.06300) {
+                    $ratio = 1 / 16;
+                }
+
+                if ($ratio == 0.09260 || $ratio == 0.09257 || $ratio == 0.09250 || $ratio == 0.09259) {
+                    $ratio = 1 / 108;
+                }
+
+
+                if ($ratio == 0.23900) {
+                    $ratio = 1 / 42;
+                }
+
+                if ($ratio == 0.16800) {
+                    $ratio = 1 / 6;
+                }
+
+                if ($ratio == 0.02800 || $ratio == 0.27800 || $ratio == 0.27700) {
+                    $ratio = 1 / 36;
+                }
+
+
+                if ($ratio == 0.35700) {
+                    $ratio = 1 / 28;
+                }
+
+                if ($ratio == 0.04100) {
+                    $ratio = 1 / 24;
+                }
+
+                if ($ratio == 0.07100) {
+                    $ratio = 1 / 14;
+                }
+
+                if ($ratio == 0.18700) {
+                    $ratio = 3 / 16;
+                }
+
+                if ($ratio == 0.05600 || $ratio == 0.55500 || $ratio == 0.05500) {
+                    $ratio = 1 / 18;
+                }
+
+
+                list($smallestDividend, $correspondingDivisor) = findSmallestFactors($ratio);
+
+
+                $correctedRatio = $smallestDividend / $correspondingDivisor;
+
+                //                $diff = abs($correctedRatio - $ratio);
+                //
+                //                if ($diff != 0 and $diff>0.01) {
+                //         print "$ratio $smallestDividend  $correspondingDivisor  $correctedRatio   $diff  $orgStock->slug $orgStock->source_id   \n";
+                //                }
+
+
+                $ratio = $smallestDividend / $correspondingDivisor;
+
+                //                dd(
+                //                    [
+                //                        'quantity'        => $ratio,
+                //                        'notes'           => $modelData->{'Product Part Note'} ?? null,
+                //                        'source_id'       => $this->organisation->id.':'.$modelData->{'Product Part Key'},
+                //                        'dividend'        => $smallestDividend,
+                //                        'divisor'         => $correspondingDivisor,
+                //                        'last_fetched_at' => now(),
+                //                    ]
+                //                );
+
+
                 $productStocks[$orgStock->id] = [
-                    'quantity'        => $modelData->{'Product Part Ratio'},
+                    'quantity'        => $ratio,
                     'notes'           => $modelData->{'Product Part Note'} ?? null,
                     'source_id'       => $this->organisation->id.':'.$modelData->{'Product Part Key'},
                     'dividend'        => $smallestDividend,

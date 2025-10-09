@@ -118,7 +118,7 @@ const isFutureDatePassed = (futureDate: string) => {
 <style scoped lang="scss">
 /* Override PrimeVue accordion active panel header */
 .p-accordionpanel.p-accordionpanel-active > .p-accordionheader {
-  background-color:  v-bind('layout?.app?.theme[4]') !important;
+  background-color:  v-bind('layout?.app?.theme?.[4]') !important;
   border-radius: 0 !important;
   color: white !important;
   font-weight: 600;

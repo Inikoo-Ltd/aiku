@@ -308,7 +308,7 @@ class IndexPalletReturns extends OrgAction
         $subNavigation = [];
 
         $icon       = ['fal', 'fa-sign-out-alt'];
-        $title      = __('returns');
+        $title      = __('Returns');
         $afterTitle = null;
         $iconRight  = null;
         $model      = null;

@@ -9,6 +9,8 @@
 namespace App\Http\Resources\Catalogue;
 
 use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -53,10 +55,34 @@ class IrisProductsInWebpageResource extends JsonResource
             }
         }
 
+        $back_in_stock_id = null;
+        $back_in_stock = false;
+
+        if ($request->user()) {
+            $customer = $request->user()->customer;
+            if ($customer) {
+                $set_data_back_in_stock = $customer?->BackInStockReminder()
+                    ?->where('product_id', $this->id)
+                    ->first();
+
+                if ($set_data_back_in_stock) {
+                    $back_in_stock = true;
+                    $back_in_stock_id = $set_data_back_in_stock->id;
+                }
+            }
+        }
+
+        $media = null;
+        if ($this->image_id) {
+            $media = Media::find($this->image_id);
+        }
+
         return [
             'id'         => $this->id,
             'image_id'   => $this->image_id,
+            'image'      => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'code'       => $this->code,
+            'luigi_identity' => $this->getLuigiIdentity(),
             'name'       => $this->name,
             'stock'      => $this->available_quantity,
             'price'      => $this->price,
@@ -74,6 +100,8 @@ class IrisProductsInWebpageResource extends JsonResource
             'quantity_ordered' => (int) $this->quantity_ordered ?? 0,
             'quantity_ordered_new' => (int) $this->quantity_ordered ?? 0,  // To editable in Frontend
             'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
+            'is_back_in_stock' => $back_in_stock,
+            'back_in_stock_id' => $back_in_stock_id
         ];
     }
 

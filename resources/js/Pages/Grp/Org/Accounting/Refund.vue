@@ -21,7 +21,7 @@ import { routeType } from "@/types/route";
 import OrderSummary from "@/Components/Summary/OrderSummary.vue";
 import { FieldOrderSummary } from "@/types/Pallet";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
-import InvoiceRefundPay from "@/Components/Segmented/InvoiceRefund/InvoiceRefundPay.vue";
+import RefundPay from "@/Components/Segmented/InvoiceRefund/RefundPay.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
@@ -41,8 +41,11 @@ import {
   faUndoAlt,
   faStarHalfAlt,
   faArrowCircleLeft,
+  faFileInvoiceDollar, 
+  faShoppingCart,
+  faAddressCard
 } from "@fal";
-import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft, faOmega, faHockeyPuck } from "@fas";
+import { faClock, faFileInvoice, faFilePdf, faArrowAltCircleLeft, faOmega, faHockeyPuck, faExclamationCircle, faCheckCircle } from "@fas";
 import { faCheck, faTrashAlt } from "@far";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
@@ -55,10 +58,11 @@ import axios from "axios";
 import { notify } from "@kyvg/vue3-notification";
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 import invoice from "@/Pages/Grp/Org/Accounting/Invoice.vue";
+import TableHistories from "@/Components/Tables/Grp/Helpers/TableHistories.vue";
 
 
 library.add(
-  faFileMinus, faUndoAlt, faCheck, faIdCardAlt, faArrowCircleLeft, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine,
+  faFileMinus, faUndoAlt, faCheck, faIdCardAlt, faArrowCircleLeft, faMapMarkedAlt, faPhone, faFolder, faCube, faChartLine,faExclamationCircle, faCheckCircle,
   faCreditCard, faClock, faFileInvoice, faPercent, faCalendarAlt, faDollarSign, faFilePdf, faArrowAltCircleLeft, faMapMarkerAlt, faPencil, faStarHalfAlt, faOmega,
   faHockeyPuck
 );
@@ -72,6 +76,9 @@ const locale = inject("locale", aikuLocaleStructure);
 const props = defineProps<{
   title: string,
   pageHead: PageHeadingTypes
+  original_invoice_route : routeType
+  original_order : any
+  original_order_route : routeType
   tabs: {
     current: string
     navigation: {}
@@ -118,6 +125,7 @@ const props = defineProps<{
     total_refunds: number
     total_balance: number
     total_paid_in: number
+    
     total_paid_out: {
       data: {}[]
     }
@@ -132,7 +140,8 @@ const props = defineProps<{
   layout: {
     group: {}
   }
-}>();
+}>()
+
 const currentTab = ref<string>(props.tabs.current);
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 const _refComponents = ref({});
@@ -142,7 +151,7 @@ const component = computed(() => {
     items_in_process: TableInvoiceRefundsInProcessTransactions,
     payments: TablePayments,
     details: ModelDetails,
-    history: ModelChangelog
+    history: TableHistories
   };
 
   return components[currentTab.value];
@@ -161,22 +170,22 @@ const listPaymentRefund = ref([
   }
 ]);
 const listPaymentMethod = ref([]);
-const isLoadingFetch = ref(false);
-const fetchPaymentMethod = async () => {
-  try {
-    isLoadingFetch.value = true;
-    const { data } = await axios.get(route(props.box_stats.information.routes.fetch_payment_accounts.name, props.box_stats.information.routes.fetch_payment_accounts.parameters));
-    listPaymentMethod.value = data.data;
-  } catch (error) {
-    notify({
-      title: trans("Something went wrong"),
-      text: trans("Failed to fetch payment method list"),
-      type: "error"
-    });
-  } finally {
-    isLoadingFetch.value = false;
-  }
-};
+// const isLoadingFetch = ref(false);
+// const fetchPaymentMethod = async () => {
+//   try {
+//     isLoadingFetch.value = true;
+//     const { data } = await axios.get(route(props.box_stats.information.routes.fetch_payment_accounts.name, props.box_stats.information.routes.fetch_payment_accounts.parameters));
+//     listPaymentMethod.value = data.data;
+//   } catch (error) {
+//     notify({
+//       title: trans("Something went wrong"),
+//       text: trans("Failed to fetch payment method list"),
+//       type: "error"
+//     });
+//   } finally {
+//     isLoadingFetch.value = false;
+//   }
+// };
 
 const paymentData = ref({
   payment_method: null as string | null,
@@ -231,10 +240,6 @@ const onSubmitPayment = () => {
   }
 };
 
-const onPayInOnClick = () => {
-  handleTabUpdate("payments");
-};
-
 
 const afterRefundAll = () => {
   if (_refComponents.value.items_in_process) {
@@ -249,8 +254,38 @@ watch(paymentData, () => {
   }
 });
 
+// Tax number validation helper functions
+const getStatusIcon = (status: string, valid: boolean) => {
+    if (status === 'invalid' || !valid) {
+        return 'fa-exclamation-circle'
+    }
+    if (status === 'valid' || valid) {
+        return 'fa-check-circle'
+    }
+    return 'fa-spinner-third'
+}
 
-console.log(props.pageHead);
+const getStatusColor = (status: string, valid: boolean) => {
+    if (status === 'invalid' || !valid) {
+        return 'text-red-600'
+    }
+    if (status === 'valid' || valid) {
+        return 'text-green-600'
+    }
+    return 'text-yellow-600'
+}
+
+const taxNumberStatusText = computed(() => {
+    if (props.original_invoice.tax_number_status === 'invalid' || !props.original_invoice.tax_number_valid) {
+        return trans('Invalid')
+    }
+    if (props.original_invoice.tax_number_status === 'valid' || props.original_invoice.tax_number_valid) {
+        return trans('Valid')
+    }
+    return trans('Pending')
+})
+
+console.log(props);
 </script>
 
 
@@ -260,19 +295,13 @@ console.log(props.pageHead);
   <PageHeading :data="pageHead">
 
     <template #otherBefore>
-      <div v-if="props.invoiceExportOptions?.length" class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit">
+      <div v-if="props.invoiceExportOptions?.length"
+        class="flex flex-wrap border border-gray-300 rounded-md overflow-hidden h-fit">
         <a v-for="exportOption in props.invoiceExportOptions"
-           :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'"
-           target="_blank"
-           class="w-auto mt-0 sm:flex-none text-base"
-           v-tooltip="exportOption.tooltip"
-        >
-          <Button
-            :label="exportOption.label"
-            :icon="exportOption.icon"
-            type="tertiary"
-            class="rounded-none border-transparent"
-          />
+          :href="exportOption.name ? route(exportOption.name, exportOption.parameters) : '#'" target="_blank"
+          class="w-auto mt-0 sm:flex-none text-base" v-tooltip="exportOption.tooltip">
+          <Button :label="exportOption.label" :icon="exportOption.icon" type="tertiary"
+            class="rounded-none border-transparent" />
         </a>
       </div>
     </template>
@@ -280,11 +309,11 @@ console.log(props.pageHead);
     <!-- Button: delete Refund -->
     <template #button-delete-refund="{ action }">
       <div>
-        <ModalConfirmationDelete :routeDelete="action.route" isFullLoading>
+        <ModalConfirmationDelete :routeDelete="action.route" isFullLoading isWithMessage keyMessage="deleted_note">
           <template #default="{ isOpenModal, changeModel, isLoadingdelete }">
-            <Button @click="() => changeModel()" :style="'negative'" :icon="faTrashAlt"
-                    :loading="isLoadingdelete" :iconRight="action.iconRight" :label="''"
-                    :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
+            <Button @click="() => changeModel()" :style="'negative'" :icon="faTrashAlt" :loading="isLoadingdelete"
+              :iconRight="action.iconRight" :label="''" :key="`ActionButton${action.label}${action.style}`"
+              :tooltip="action.tooltip" />
 
           </template>
         </ModalConfirmationDelete>
@@ -293,18 +322,18 @@ console.log(props.pageHead);
 
 
     <template #button-finalise-refund="{ action }">
-      <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method" v-on:success="() => handleTabUpdate('items')">
-        <Button :style="action.style" :icon="action.icon"
-                :iconRight="action.iconRight" :label="action.label"
-                :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
+      <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method"
+        v-on:success="() => handleTabUpdate('items')">
+      <Button :style="action.style" :icon="action.icon" :iconRight="action.iconRight" :label="action.label"
+        :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
       </Link>
     </template>
 
     <template #button-refund-all="{ action }">
-      <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method" v-on:success="() => afterRefundAll()">
-        <Button :style="action.style" :icon="action.icon"
-                :iconRight="action.iconRight" :label="action.label"
-                :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
+      <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method"
+        v-on:success="() => afterRefundAll()">
+      <Button :style="action.style" :icon="action.icon" :iconRight="action.iconRight" :label="action.label"
+        :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
       </Link>
     </template>
 
@@ -314,29 +343,38 @@ console.log(props.pageHead);
   <div class="grid grid-cols-8 divide-x divide-gray-300 border-b border-gray-200">
     <!-- Box: Customer -->
     <BoxStatPallet class="col-span-2 py-2 px-3" icon="fal fa-user">
-
       <!-- Field: Registration Number -->
       <dl>
         <Link as="a" v-if="box_stats?.customer.reference"
-              :href="route(box_stats?.customer.route.name, box_stats?.customer.route.parameters)"
-              class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
-          <dt v-tooltip="'Company name'" class="flex-none">
-            <span class="sr-only">Registration number</span>
-            <FontAwesomeIcon icon="fal fa-id-card-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
-          </dt>
+          :href="route(box_stats?.customer.route.name, box_stats?.customer.route.parameters)"
+          class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
+        <dt v-tooltip="'Company name'" class="flex-none">
+          <span class="sr-only">Registration number</span>
+          <FontAwesomeIcon icon="fal fa-id-card-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
+        </dt>
 
 
-          <dd class="text-base text-gray-500">#{{ box_stats?.customer.reference }}</dd>
+        <dd class="text-base text-gray-500">#{{ box_stats?.customer.reference }}</dd>
         </Link>
       </dl>
 
-      <!-- Field: Contact name -->
-      <dl v-if="box_stats?.customer.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
-        <dt v-tooltip="'Contact name'" class="flex-none">
-          <span class="sr-only">Contact name</span>
+      <!-- Field: Customer name -->
+      <dl v-if="original_invoice.name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+        <dt v-tooltip="trans('Customer name')" class="flex-none">
+          <span class="sr-only">{{trans('Customer name')}}</span>
           <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
-        <dd class="text-base text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
+        <dd class="text-base text-gray-500">{{ original_invoice?.name }}</dd>
+      </dl>
+
+
+      <!-- Field: Contact name -->
+      <dl v-if="original_invoice.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+        <dt v-tooltip="'Contact name'" class="flex-none">
+          <span class="sr-only">Contact name</span>
+          <FontAwesomeIcon :icon="faAddressCard" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
+        </dt>
+        <dd class="text-base text-gray-500">{{ original_invoice.contact_name }}</dd>
       </dl>
 
       <!-- Field: Company name -->
@@ -358,16 +396,29 @@ console.log(props.pageHead);
         <dd class="text-base text-gray-500">{{ box_stats?.customer.phone }}</dd>
       </dl>
 
+      <dl v-if="original_invoice.tax_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
+        <dt v-tooltip="trans('Tax Number')" class="flex-none">
+          <span class="sr-only">Tax Number</span>
+          <FontAwesomeIcon icon="fal fa-receipt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
+        </dt>
+        <dd class="text-base text-gray-500 flex items-center gap-x-2">
+          <span>{{ original_invoice.tax_number }}</span>
+          <FontAwesomeIcon :icon="getStatusIcon(original_invoice.tax_number_status, original_invoice.tax_number_valid)"
+            :class="getStatusColor(original_invoice.tax_number_status, original_invoice.tax_number_valid)" size="xs"
+            v-tooltip="taxNumberStatusText" />
+        </dd>
+      </dl>
+
       <dl class="pl-1 flex items-start w-full gap-x-2">
         <dt v-tooltip="'Phone'" class="flex-none">
           <span class="sr-only">Phone</span>
           <FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width
-                           aria-hidden="true" />
+            aria-hidden="true" />
         </dt>
 
         <dd class="text-base text-gray-500 w-full">
-          <div v-if="invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
-            <div v-html="invoice_refund.address.formatted_address" />
+          <div v-if="original_invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
+            <div v-html="original_invoice.address.formatted_address" />
           </div>
 
           <div v-else class="text-gray-400 italic">
@@ -382,21 +433,62 @@ console.log(props.pageHead);
     <BoxStatPallet class="col-span-3 py-2 px-3 ">
       <div class="mt-1">
 
-        <dl v-tooltip="trans('Refund created')" class="flex items-center w-fit flex-none gap-x-2">
+      <!-- Refund Date -->
+      <dl v-tooltip="trans('Refund created')" class="flex items-center w-fit flex-none gap-x-2">
+        <dt class="flex-none">
+          <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" class="text-gray-500" />
+        </dt>
+        <dd class="text-base text-gray-500 ff">
+          {{ useFormatTime(props.invoice_refund.date) }}
+        </dd>
+      </dl>
+
+
+        <!-- Order -->
+        <dl v-tooltip="trans('Order')" class="flex items-center w-fit flex-none gap-x-2 my-2">
           <dt class="flex-none">
-            <FontAwesomeIcon icon="fal fa-calendar-alt" fixed-width aria-hidden="true" class="text-gray-500" />
+            <FontAwesomeIcon :icon="faShoppingCart" fixed-width aria-hidden="true" class="text-gray-500" />
           </dt>
-          <dd class="text-base text-gray-500" :class='"ff"'>
-            {{ useFormatTime(props.invoice_refund.date) }}
+          <dd class="text-base text-gray-500 ff">
+            <Link
+              class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink"
+              :href="route(original_order_route.name, original_order_route.parameters)"
+            >
+              {{ original_order?.data?.reference }}
+            </Link>
           </dd>
         </dl>
 
-        <InvoiceRefundPay v-if="!invoice_refund?.in_process && invoice_pay " :invoice_pay :routes="{
-          submit_route: invoice_pay.routes.submit_payment,
-          fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
-          payments : invoice_pay.routes.payments
-        }" @onPayInOnClick="onPayInOnClick" />
-      </div>
+        <!-- Invoice -->
+        <dl v-tooltip="trans('Invoice')" class="flex items-center w-fit flex-none gap-x-2 my-2">
+          <dt class="flex-none">
+            <FontAwesomeIcon :icon="faFileInvoiceDollar" fixed-width aria-hidden="true" class="text-gray-500" />
+          </dt>
+          <dd class="text-base text-gray-500 ff">
+            <Link
+              class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink"
+              :href="route(original_invoice_route.name, original_invoice_route.parameters)"
+            >
+              {{ original_invoice?.reference }}
+            </Link>
+          </dd>
+        </dl>
+
+      <!-- Refund Payment -->
+        <RefundPay
+          v-if="!invoice_refund?.in_process && invoice_pay"
+          :invoice_pay
+          :handleTabUpdate
+          :refund="invoice_refund"
+          :routes="{
+            submit_route: invoice_pay.routes.submit_payment,
+            fetch_payment_accounts_route: invoice_pay.routes.fetch_payment_accounts,
+            payments: invoice_pay.routes.payments
+          }"
+          :is_in_refund="true"
+        />
+    </div>
+
     </BoxStatPallet>
 
     <!-- Section: Order Summary -->
@@ -426,9 +518,9 @@ console.log(props.pageHead);
           </label>
           <div class="mt-1 grid grid-cols-2 gap-x-3">
             <div @click="() => paymentData.payment_method = item.value" v-for="item in listPaymentRefund"
-                 :key="item.value"
-                 class="flex justify-center items-center border  px-3 py-2 rounded text-center cursor-pointer"
-                 :class="paymentData.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300'">
+              :key="item.value"
+              class="flex justify-center items-center border  px-3 py-2 rounded text-center cursor-pointer"
+              :class="paymentData.payment_method === item.value ? 'bg-indigo-200 border-indigo-400' : 'border-gray-300'">
               {{ item.label }}
             </div>
           </div>
@@ -441,7 +533,7 @@ console.log(props.pageHead);
             </label>
             <div class="mt-1">
               <PureMultiselect v-model="paymentData.payment_account" :options="listPaymentMethod" label="name"
-                               valueProp="id" required caret />
+                valueProp="id" required caret />
             </div>
           </div>
         </Transition>
@@ -453,11 +545,11 @@ console.log(props.pageHead);
           </div>
           <div class="space-x-1 mt-1 ">
             <span class="text-sm  text-gray-500">{{ trans("Need to refund") }}: {{
-                locale.currencyFormat(props.invoice_refund.currency_code || "usd",
-                  Math.abs(Number(box_stats.information.pay_amount))) }}</span>
+              locale.currencyFormat(props.invoice_refund.currency_code || "usd",
+              Math.abs(Number(box_stats.information.pay_amount))) }}</span>
             <Button @click="() => paymentData.payment_amount = Math.abs(box_stats.information.pay_amount)"
-                    :disabled="paymentData.payment_amount === Math.abs(box_stats.information.pay_amount)" type="tertiary"
-                    :label="trans('Refund all')" size="sm" />
+              :disabled="paymentData.payment_amount === Math.abs(box_stats.information.pay_amount)" type="tertiary"
+              :label="trans('Refund all')" size="sm" />
           </div>
         </div>
 
@@ -466,8 +558,8 @@ console.log(props.pageHead);
 
       <div class="mt-6 mb-4 relative">
         <Button @click="() => onSubmitPayment()" label="Submit"
-                :disabled="paymentData.payment_method === 'credit_balance' ? false : !(!!paymentData.payment_account)"
-                :loading="isLoadingPayment" full />
+          :disabled="paymentData.payment_method === 'credit_balance' ? false : !(!!paymentData.payment_account)"
+          :loading="isLoadingPayment" full />
         <Transition name="spin-to-down">
           <p v-if="errorPaymentMethod" class="absolute text-red-500 italic text-sm mt-1">*{{ errorPaymentMethod }}</p>
         </Transition>

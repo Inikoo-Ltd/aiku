@@ -33,7 +33,7 @@ class StoreShipment extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData): Shipment
+    public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper, array $modelData, bool $cascade = true): Shipment
     {
         data_set($modelData, 'group_id', $parent->group_id);
         data_set($modelData, 'organisation_id', $parent->organisation_id);
@@ -48,6 +48,7 @@ class StoreShipment extends OrgAction
                 'customer_id'     => $parent->customer_id,
             ]
         );
+
 
         if ($shipper->api_shipper) {
             $shipmentData = match ($shipper->api_shipper) {
@@ -65,9 +66,13 @@ class StoreShipment extends OrgAction
                 ]
             };
 
+
             if ($shipmentData['status'] == 'success') {
                 $modelData = array_merge($modelData, $shipmentData['modelData']);
             } else {
+
+
+
                 throw ValidationException::withMessages(
                     $shipmentData['errorData']
                 );
@@ -78,6 +83,9 @@ class StoreShipment extends OrgAction
             ]);
             data_set($modelData, 'tracking_urls', []);
         }
+
+
+
         /** @var Shipment $shipment */
         $shipment = $shipper->shipments()->create($modelData);
         $shipment->refresh();

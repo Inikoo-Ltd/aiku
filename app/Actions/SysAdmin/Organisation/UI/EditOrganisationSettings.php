@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\Organisation\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
@@ -164,9 +165,25 @@ class EditOrganisationSettings extends OrgAction
                                     "copyButton" => true,
                                 ]
                             ],
-
                         ],
-
+                        [
+                            'label'  => __('Shipping'),
+                            'icon'   => 'fa-light fa-truck',
+                            'fields' => [
+                                'forbidden_dispatch_countries' => [
+                                    'type'          => 'multiselect-tags',
+                                    'label'         => __('Forbidden Countries'),
+                                    'placeholder'   => __('Select countries'),
+                                    'required'      => true,
+                                    'value'         => $organisation->forbidden_dispatch_countries ?? [],
+                                    'options'       => GetCountriesOptions::run(),
+                                    'searchable'    => true,
+                                    'mode'          => 'tags',
+                                    'labelProp'     => 'label',
+                                    'valueProp' => 'id'
+                                ]
+                            ],
+                        ],
                     ],
                     "args"      => [
                         "updateRoute" => [

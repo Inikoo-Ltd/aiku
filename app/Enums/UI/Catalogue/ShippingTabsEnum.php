@@ -27,19 +27,19 @@ enum ShippingTabsEnum: string
         return match ($this) {
 
             ShippingTabsEnum::CURRENT => [
-                'title' => __('current'),
+                'title' => __('Current'),
                 'icon'  => 'fal fa-shopping-cart',
             ],
             ShippingTabsEnum::OFFER => [
-                'title' => __('offer'),
+                'title' => __('Offer'),
                 'icon'  => 'fal fa-chart-pie',
             ],
             ShippingTabsEnum::SCHEMAS => [
-                'title' => __('schemas'),
+                'title' => __('Schemas'),
                 'icon'  => 'fal fa-tags',
             ],
             ShippingTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

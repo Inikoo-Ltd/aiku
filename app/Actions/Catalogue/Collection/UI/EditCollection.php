@@ -120,7 +120,7 @@ class EditCollection extends OrgAction
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textarea',
-                                    'label' => __('description extra'),
+                                    'label' => __('Extra description'),
                                     'value' => $collection->description_extra
                                 ],
                             ]

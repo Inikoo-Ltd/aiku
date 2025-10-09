@@ -115,7 +115,7 @@ class IndexJobPositions extends OrgAction
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
 
             if ($parent instanceof Organisation) {
-                $table->column(key: 'number_employees_currently_working', label: __('employees'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'number_employees_currently_working', label: __('Employees'), canBeHidden: false, sortable: true, searchable: true);
             } else {
                 $table->column(key: 'share', label: __('Share'), canBeHidden: false, sortable: true, searchable: true);
             }
@@ -148,7 +148,7 @@ class IndexJobPositions extends OrgAction
 
             $icon = [
                 'icon'  => ['fal', 'fa-user-hard-hat'],
-                'title' => __('employee')
+                'title' => __('Employee')
             ];
         }
 

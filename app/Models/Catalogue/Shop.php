@@ -24,6 +24,8 @@ use App\Models\Analytics\AikuSection;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
+use App\Models\Billables\ShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\SenderEmail;
@@ -57,8 +59,6 @@ use App\Models\Masters\MasterShop;
 use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
-use App\Models\Ordering\ShippingZone;
-use App\Models\Ordering\ShippingZoneSchema;
 use App\Models\Ordering\Transaction;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -136,6 +136,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property bool $registration_needs_approval
  * @property array<array-key, mixed>|null $extra_languages
  * @property bool $is_aiku
+ * @property string $cost_price_ratio
+ * @property array<array-key, mixed>|null $forbidden_dispatch_countries
+ * @property string $price_rrp_ratio
  * @property-read \App\Models\Catalogue\ShopAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -248,6 +251,7 @@ class Shop extends Model implements HasMedia, Auditable
         'settings'        => 'array',
         'location'        => 'array',
         'extra_languages' => 'array',
+        'forbidden_dispatch_countries' => 'array',
         'type'            => ShopTypeEnum::class,
         'state'           => ShopStateEnum::class,
         'fetched_at'      => 'datetime',
@@ -258,7 +262,8 @@ class Shop extends Model implements HasMedia, Auditable
         'data'     => '{}',
         'settings' => '{}',
         'location' => '{}',
-        'extra_languages' => '{}'
+        'extra_languages' => '{}',
+        'forbidden_dispatch_countries' => '{}'
     ];
 
     protected $guarded = [];

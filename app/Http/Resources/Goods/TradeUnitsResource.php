@@ -35,7 +35,7 @@ class TradeUnitsResource extends JsonResource
             'slug'                    => $this->slug,
             'code'                    => $this->code,
             'name'                    => $this->name,
-            'weight'                  => $this->net_weight !== null ? ($this->net_weight / 1000).' kg' : null,
+            'weight'                  => $this->net_weight !== null ? ($this->net_weight).' g' : null,
             'type'                    => $this->type,
             'number_current_stocks'   => $this->number_current_stocks,
             'number_current_products' => $this->number_current_products,

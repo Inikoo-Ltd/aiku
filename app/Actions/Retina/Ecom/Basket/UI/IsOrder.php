@@ -42,9 +42,44 @@ trait IsOrder
             ];
         }
 
+        $invoicesData = [];
+        foreach ($order->invoices as $invoice) {
+            if (request()->routeIs('retina.*')) {
+                $routeShow     = [
+                    'name'       => 'retina.dropshipping.invoices.show',
+                    'parameters' => [
+                        'invoice' => $invoice->slug,
+                    ]
+                ];
+                $routeDownload = null;
+            } else {
+                $routeShow = [
+                    'name'       => request()->route()->getName() . '.invoices.show',
+                    'parameters' => array_merge(request()->route()->originalParameters(), ['invoice' => $invoice->slug])
+                ];
+
+                $routeDownload = [
+                    'name'       => 'grp.org.accounting.invoices.download',
+                    'parameters' => [
+                        'organisation' => $order->organisation->slug,
+                        'invoice'      => $invoice->slug,
+                    ]
+                ];
+            }
+
+            $invoicesData[] = [
+                'reference' => $invoice->reference,
+                'routes'    => [
+                    'show'     => $routeShow,
+                    'download' => $routeDownload,
+                ]
+            ];
+        }
+
         $invoiceData = null;
         $invoice     = $order->invoices->first();
 
+        //todo vika delete this
         if ($invoice) {
             if (request()->routeIs('retina.*')) {
                 $routeShow     = [
@@ -56,11 +91,8 @@ trait IsOrder
                 $routeDownload = null;
             } else {
                 $routeShow = [
-                    'name'       => 'grp.org.accounting.invoices.show',
-                    'parameters' => [
-                        'organisation' => $order->organisation->slug,
-                        'invoice'      => $invoice->slug,
-                    ]
+                    'name'       => request()->route()->getName() . '.invoices.show',
+                    'parameters' => array_merge(request()->route()->originalParameters(), ['invoice' => $invoice->slug])
                 ];
 
                 $routeDownload = [
@@ -80,13 +112,12 @@ trait IsOrder
                 ]
             ];
         }
-
+        // ----------- end todo
         $customerClientData = null;
 
         if ($order->customerClient) {
-            $customerClientData = array_merge(
-                CustomerClientResource::make($order->customerClient)->getArray(),
-                [
+            if ($order->customer_sales_channel_id) {
+                $clientRoute = [
                     'route' => [
                         'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
                         'parameters' => [
@@ -97,18 +128,27 @@ trait IsOrder
                             'customerClient'       => $order->customerClient->ulid
                         ]
                     ]
-                ]
+                ];
+            } else {
+                $clientRoute = [];
+            }
+
+
+            $customerClientData = array_merge(
+                CustomerClientResource::make($order->customerClient)->getArray(),
+                $clientRoute
             );
         }
         $deliveryNotes     = $order->deliveryNotes;
         $deliveryNotesData = [];
 
         if ($deliveryNotes) {
-            foreach ($deliveryNotes as $deliveryNote) {
+            foreach ($deliveryNotes->sortBy('created_at') as $deliveryNote) {
                 $deliveryNotesData[] = [
                     'id'        => $deliveryNote->id,
-                    'slug'        => $deliveryNote->slug,
+                    'slug'      => $deliveryNote->slug,
                     'reference' => $deliveryNote->reference,
+                    'type'      => $deliveryNote->type,
                     'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
                     'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
                 ];
@@ -135,11 +175,15 @@ trait IsOrder
                 ]
             ),
             'customer_channel' => $customerChannel,
-            'invoice'          => $invoiceData,
+            // 'invoice'          => $invoiceData,   //todo vika delete this
+            'invoices'          => $invoicesData,
+
+
             'order_properties' => [
                 'weight' => NaturalLanguage::make()->weight($order->estimated_weight),
             ],
             'delivery_notes'   => $deliveryNotesData,
+            'shipping_notes'   => $order->shipping_notes,
             'products'         => [
                 'payment'          => [
                     'routes'       => [
@@ -162,14 +206,14 @@ trait IsOrder
                     'pay_amount'   => $roundedDiff,
                     'pay_status'   => $order->pay_status,
                 ],
-                'excesses_payment'  => [
-                    'amount'    => $order->payment_amount - $order->total_amount,
+                'excesses_payment' => [
+                    'amount'               => round($order->payment_amount - $order->total_amount, 2),
                     'route_to_add_balance' => [
                         'name'       => 'grp.models.order.return_excess_payment',
                         'parameters' => [
                             'order' => $order->id
                         ],
-                        'method' => 'post'
+                        'method'     => 'post'
                     ]
                 ],
                 'estimated_weight' => $estWeight,
@@ -180,7 +224,7 @@ trait IsOrder
             'order_summary' => [
                 [
                     [
-                        'label'       => 'Items',
+                        'label'       => __('Items'),
                         'quantity'    => $order->stats->number_item_transactions,
                         'price_base'  => 'Multiple',
                         'price_total' => $order->goods_amount
@@ -188,31 +232,31 @@ trait IsOrder
                 ],
                 [
                     [
-                        'label'       => 'Charges',
+                        'label'       => __('Charges'),
                         'information' => '',
                         'price_total' => $order->charges_amount
                     ],
                     [
-                        'label'       => 'Shipping',
+                        'label'       => __('Shipping'),
                         'information' => '',
                         'price_total' => $order->shipping_amount
                     ]
                 ],
                 [
                     [
-                        'label'       => 'Net',
+                        'label'       => __('Net'),
                         'information' => '',
                         'price_total' => $order->net_amount
                     ],
                     [
-                        'label'       => 'Tax 20%',
+                        'label'       => __('Tax 20%'),
                         'information' => '',
                         'price_total' => $order->tax_amount
                     ]
                 ],
                 [
                     [
-                        'label'       => 'Total',
+                        'label'       => __('Total'),
                         'price_total' => $order->total_amount
                     ],
                 ],

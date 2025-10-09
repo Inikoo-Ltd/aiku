@@ -40,7 +40,7 @@ class ShowRetinaSubDepartment extends RetinaAction
     public function htmlResponse(ProductCategory $subDepartment, ActionRequest $request): Response
     {
         return Inertia::render(
-            'Catalogue/RetinaSubDepartement',
+            'Catalogue/RetinaSubDepartment',
             [
                 'title'       => __('sub department'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -56,7 +56,7 @@ class ShowRetinaSubDepartment extends RetinaAction
                     'model'        => __('Sub Department'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-dot-circle'],
-                        'title' => __('sub department')
+                        'title' => __('Sub department')
                     ],
                     'iconRight' => $subDepartment->state->stateIcon()[$subDepartment->state->value],
                     'exports' => [

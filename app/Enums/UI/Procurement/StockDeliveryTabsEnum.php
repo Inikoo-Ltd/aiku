@@ -32,21 +32,21 @@ enum StockDeliveryTabsEnum: string
     {
         return match ($this) {
             StockDeliveryTabsEnum::DATA     => [
-                'title' => __('data'),
+                'title' => __('Data'),
                 'icon'  => 'fal fa-database',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             StockDeliveryTabsEnum::ITEMS  => [
-                'title' => __('items'),
+                'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
             StockDeliveryTabsEnum::SHOWCASE => [
-                'title' => __('supplier delivery'),
+                'title' => __('Supplier delivery'),
                 'icon'  => 'fal fa-info-circle',
             ],
             StockDeliveryTabsEnum::HISTORY     => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
@@ -54,7 +54,7 @@ enum StockDeliveryTabsEnum: string
             StockDeliveryTabsEnum::ATTACHMENTS => [
                 'type'  => 'icon',
                 'align' => 'right',
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
 
             ],

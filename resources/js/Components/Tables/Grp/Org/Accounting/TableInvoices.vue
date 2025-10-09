@@ -73,10 +73,26 @@ function shopRoute(invoice: Invoice) {
 }
 
 function customerRoute(invoice: Invoice) {
-  return route(
-    "grp.helpers.redirect_invoices_in_customer",
-    [invoice.id]);
+  const current = route().current();
+  const params = route().params as RouteParams;
+
+  switch (current) {
+    case "grp.org.accounting.invoice-categories.show.invoices.index":
+      return route("grp.org.shops.show.crm.customers.show", [
+        params.organisation,
+        invoice.shop_slug,
+        invoice.customer_slug,
+      ]);
+
+    default:
+      return route("grp.helpers.redirect_invoices_in_customer", [
+        invoice.id,
+      ]);
+  }
+
+  
 }
+
 </script>
 
 <template>
@@ -103,6 +119,12 @@ function customerRoute(invoice: Invoice) {
     <template #cell(customer_name)="{ item: invoice }">
       <Link :href="customerRoute(invoice)" class="secondaryLink">
         {{ invoice["customer_name"] }}
+      </Link>
+    </template>
+
+    <template #cell(customer_company)="{ item: invoice }">
+      <Link :href="customerRoute(invoice)" class="secondaryLink">
+        {{ invoice["customer_company"] }}
       </Link>
     </template>
 

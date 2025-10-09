@@ -25,21 +25,21 @@ enum WebsiteTabsEnum: string
     {
         return match ($this) {
             WebsiteTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             WebsiteTabsEnum::EXTERNAL_LINKS => [
-                'title' => __('external links'),
+                'title' => __('External links'),
                 'icon'  => 'fal fa-external-link',
             ],
 
             WebsiteTabsEnum::REDIRECTS => [
-                'title' => __('redirects'),
+                'title' => __('Redirects'),
                 'icon'  => 'fal fa-terminal',
             ],
 
             WebsiteTabsEnum::CHANGELOG => [
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

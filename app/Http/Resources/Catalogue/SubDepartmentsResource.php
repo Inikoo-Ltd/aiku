@@ -44,6 +44,12 @@ class SubDepartmentsResource extends JsonResource
             'master_product_category_id' => $this->master_product_category_id,
             'department_code' => $this->department_code,
             'department_name' => $this->department_name,
+            'shop_name'       => $this->shop_name,
+            'shop_code'       => $this->shop_code,
+            'shop_slug'       => $this->shop_slug,
+            'organisation_name'       => $this->organisation_name,
+            'organisation_code'       => $this->organisation_code,
+            'organisation_slug'       => $this->organisation_slug,
             'image'           => $this->imageSources(720, 480),
             'state'           => [
                 'label' => $this->state->labels()[$this->state->value],
@@ -56,6 +62,10 @@ class SubDepartmentsResource extends JsonResource
             'updated_at'      => $this->updated_at,
             'number_families' => $this->number_families,
             'number_products' => $this->number_products,
+            'is_name_reviewed' => $this->is_name_reviewed,
+            'is_description_title_reviewed' => $this->is_description_title_reviewed,
+            'is_description_reviewed' => $this->is_description_reviewed,
+            'is_description_extra_reviewed' => $this->is_description_extra_reviewed,
 
         ];
     }

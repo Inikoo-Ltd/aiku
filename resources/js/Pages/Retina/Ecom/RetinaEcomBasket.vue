@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { trans } from 'laravel-vue-i18n'
-import CheckoutSummary from "@/Components/Retina/Ecom/CheckoutSummary.vue"
+import EcomCheckoutSummary from "@/Components/Retina/Ecom/EcomCheckoutSummary.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Head, Link, router } from "@inertiajs/vue3"
-import { inject, ref } from "vue"
+import { inject, ref, onMounted, nextTick, onBeforeUnmount, computed } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import axios from "axios"
 import { routeType } from "@/types/route"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTag } from "@fas"
+import { faTag, faStar, faBoxHeart, faShieldAlt } from "@fas"
+import { faCheck } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { debounce } from 'lodash-es'
 import PureTextarea from "@/Components/Pure/PureTextarea.vue"
@@ -22,7 +23,22 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
-library.add(faTag)
+// import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
+import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
+import { AddressManagement } from '@/types/PureComponent/Address'
+import { ToggleSwitch } from 'primevue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+library.add(faTag, faCheck)
+
+interface ChargeResource {
+    label: string
+    name: string
+    description: string
+    state: string
+    amount: number
+    currency_code: string
+}
 
 const props = defineProps<{
     pageHead: PageHeadingTS
@@ -83,9 +99,16 @@ const props = defineProps<{
     }
     total_products: number
     is_in_basket: boolean
+    address_management: AddressManagement
+    is_unable_dispatch: boolean
+    charges: {
+        premium_dispatch?: ChargeResource
+        extra_packing?: ChargeResource
+        insurance?: ChargeResource
+    }
 }>()
 
-console.log(props)
+console.log(props.transactions)
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
@@ -95,6 +118,72 @@ const listLoadingProducts = ref({
 
 })
 const isLoadingSubmit = ref(false)
+
+// Teleport control with key for rerender
+const isTeleportReady = ref(false)
+const teleportKey = ref(0)
+
+// Responsive slides per view
+
+const checkTeleportTarget = () => {
+    try {
+        const targetElement = document.getElementById('retina-end-of-main')
+        if (targetElement && targetElement.parentNode) {
+            const rect = targetElement.getBoundingClientRect()
+            if (rect.width > 0 || rect.height > 0 || targetElement.offsetParent !== null) {
+                isTeleportReady.value = true
+                teleportKey.value += 1 // Force rerender
+                return true
+            }
+        }
+    } catch (error) {
+        console.warn('Error checking teleport target:', error)
+    }
+    return false
+}
+
+onMounted(async () => {
+    await nextTick()
+    
+    
+    // Wait a bit for layout to stabilize
+    setTimeout(async () => {
+        await nextTick()
+        
+        // Check immediately if target exists and is ready
+        if (checkTeleportTarget()) {
+            return
+        }
+        
+        // If not found, use MutationObserver to watch for the element
+        const observer = new MutationObserver(() => {
+            if (checkTeleportTarget()) {
+                observer.disconnect()
+            }
+        })
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        })
+        
+        // Fallback timeout
+        setTimeout(() => {
+            observer.disconnect()
+            try {
+                const targetElement = document.getElementById('retina-end-of-main')
+                if (targetElement) {
+                    isTeleportReady.value = true
+                    teleportKey.value += 1 // Force rerender
+                }
+            } catch (error) {
+                console.warn('Final teleport check failed:', error)
+                isTeleportReady.value = false
+            }
+        }, 2000)
+    }, 100)
+})
+
 
 // Section: Submit Note
 const noteToSubmit = ref(props?.order?.customer_notes || '')
@@ -181,11 +270,23 @@ const onAddProducts = async (product: Product) => {
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'error'
             },
             onSuccess: () => {
-                // notify({
-                //     title: trans("Success!"),
-                //     text: trans("Successfully added portfolios"),
-                //     type: "success"
-                // })
+                // Luigi: event add to cart
+                if (!product?.transaction_id) {
+                    if (!product?.transaction_id) {
+                        window?.dataLayer?.push({
+                            event: "add_to_cart",
+                            ecommerce: {
+                                currency: layout?.iris?.currency?.code,
+                                value: product.price,
+                                items: [
+                                    {
+                                        item_id: product?.luigi_identity,
+                                    }
+                                ]
+                            }
+                        })
+                    }
+                }
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
             },
             onFinish: () => {
@@ -195,6 +296,226 @@ const onAddProducts = async (product: Product) => {
                 }, 3000)
             }
         })
+}
+
+const onAddProductFromRecommender = async (productId: string, productCode: string, productLuigi: {}) => {
+    // Check if product already exists in transactions
+    const existingTransaction = props.transactions?.data?.find(transaction => 
+        transaction.asset_code === productCode
+    )
+
+    const storeRoute = {
+        route_post: route('retina.models.product.add-to-basket', {
+            product: productId
+        }),
+        method: 'post',
+        body: {
+            quantity: 1,
+        }
+    }
+    
+    const routePost = existingTransaction ? {
+        route_post: route('retina.models.transaction.update', {
+            transaction: existingTransaction.id
+        }),
+        method: 'patch',
+        body: {
+            quantity_ordered: (parseInt(existingTransaction.quantity_ordered) + 1).toString(),
+        }
+    } : storeRoute
+
+    const onlyProps = existingTransaction ? ['transactions', 'box_stats', 'total_products', 'balance', 'total_to_pay'] : {}
+
+    router[routePost.method](
+        routePost.route_post,
+        routePost.body,
+        {
+            preserveScroll: true,
+            ...onlyProps,
+            onStart: () => {
+                listLoadingProducts.value[`recommender-${productId}`] = 'loading'
+            },
+            onBefore: () => {
+                isLoadingSubmit.value = true
+            },
+            onError: (error) => {
+                notify({
+                    title: trans("Something went wrong."),
+                    text: error.products || undefined,
+                    type: "error"
+                })
+                listLoadingProducts.value[`recommender-${productId}`] = 'error'
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success!"),
+                    text: trans("Product added to basket"),
+                    type: "success"
+                })
+                
+                window?.dataLayer?.push({
+                    event: "add_to_cart",
+                    ecommerce: {
+                        currency: layout?.iris?.currency?.code,
+                        value: productLuigi?.attributes?.price || 0,
+                        items: [
+                            {
+                                item_id: productLuigi?.url,
+                            }
+                        ]
+                    }
+                })
+
+                listLoadingProducts.value[`recommender-${productId}`] = 'success'
+            },
+            onFinish: () => {
+                isLoadingSubmit.value = false
+                setTimeout(() => {
+                    listLoadingProducts.value[`recommender-${productId}`] = null
+                }, 3000)
+            }
+        })
+}
+
+const blackListProductIds = computed(() => {
+    if (!props.transactions?.data) return []
+
+    return props.transactions.data
+        .map(transaction => {
+            return transaction.id.toString()
+        })
+        .filter(Boolean)
+})
+
+// Section: Charge Priority Dispatch
+const isLoadingPriorityDispatch = ref(false)
+const onChangePriorityDispatch = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_premium_dispatch', props.order.id),
+        {
+            is_premium_dispatch: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingPriorityDispatch.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is changed to priority dispatch!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is no longer on priority dispatch."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update priority dispatch, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingPriorityDispatch.value = false
+            },
+        }
+    )
+}
+
+
+// Section: Extra Packing
+const isLoadingExtraPacking = ref(false)
+const onChangeExtraPacking = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_extra_packing', props.order.id),
+        {
+            has_extra_packing: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingExtraPacking.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is changed to extra packing!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order is no longer on extra packing."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update extra packing, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingExtraPacking.value = false
+            },
+        }
+    )
+}
+
+
+// Section: Charge Insurance
+const isLoadingInsurance = ref(false)
+const onChangeInsurance = async (val: boolean) => {
+    router.patch(
+        route('retina.models.order.update_insurance', props.order.id),
+        {
+            has_insurance: val
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingInsurance.value = true
+            },
+            onSuccess: () => {
+                if (val) {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order has insurance!"),
+                        type: "success"
+                    })
+                } else {
+                    notify({
+                        title: trans("Success"),
+                        text: trans("The order no longer has insurance."),
+                        type: "success"
+                    })
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to update insurance, try again."),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingInsurance.value = false
+            },
+        }
+    )
 }
 </script>
 
@@ -224,10 +545,17 @@ const onAddProducts = async (product: Product) => {
         </template>
     </PageHeading>
 
+    <div v-if="order?.has_insurance || order?.is_premium_dispatch || order?.has_extra_packing" class="absolute top-0 left-1/2 -translate-x-1/2 bg-yellow-500 rounded-b px-4 py-0.5 text-sm space-x-1">
+        <FontAwesomeIcon v-if="order?.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon v-if="order?.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="text-white animate-pulse" fixed-width aria-hidden="true" />
+    </div>
 
-    <CheckoutSummary
+    <EcomCheckoutSummary
         :summary
         :balance
+        :address_management
+        :is_unable_dispatch
     />
     
     <template v-if="order">
@@ -236,7 +564,79 @@ const onAddProducts = async (product: Product) => {
                 :data="transactions"
                 :updateRoute="routes.update_route"
             />
+            
+            <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
+                    <InformationIcon :information="charges.premium_dispatch?.description" />
+                    {{ charges.premium_dispatch?.label ?? charges.premium_dispatch?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.premium_dispatch?.currency_code, charges.premium_dispatch?.amount) }})</span>
+                </div>
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="order?.is_premium_dispatch"
+                        @update:modelValue="(e) => (onChangePriorityDispatch(e))"
+                        xdisabled="isLoadingPriorityDispatch"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingPriorityDispatch" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </template>
+                    </ToggleSwitch>
+                </div>
+            </div>
+            
+            <!-- Section: Charge Extra Packing -->
+            <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-end pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
+                    <InformationIcon :information="charges.extra_packing?.description" />
+                    {{ charges.extra_packing?.label ?? charges.extra_packing?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.extra_packing?.currency_code, charges.extra_packing?.amount) }})</span>
+                </div>
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="order?.has_extra_packing"
+                        @update:modelValue="(e) => (onChangeExtraPacking(e))"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingExtraPacking" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </template>
+                    </ToggleSwitch>
+                </div>
+            </div>
+            
+            <!-- Section: Charge Insurance -->
+            <div v-if="charges.insurance" class="flex gap-4 my-4 justify-end pr-6">
+                <div class="px-2 flex justify-end items-center gap-x-1 relative">
+                    <InformationIcon :information="charges.insurance?.description" />
+                    {{ charges.insurance?.label ?? charges.insurance?.name }}
+                    <span class="text-gray-400">({{ locale.currencyFormat(charges.insurance?.currency_code, charges.insurance?.amount) }})</span>
+                </div>
+                <div class="px-2 flex justify-end relative" xstyle="width: 200px;">
+                    <ToggleSwitch
+                        :modelValue="order?.has_insurance"
+                        @update:modelValue="(e) => (onChangeInsurance(e))"
+                        xdisabled="isLoadingInsurance"
+                    >
+                        <template #handle="{ checked }">
+                            <LoadingIcon v-if="isLoadingInsurance" xclass="text-sm text-gray-500" />
+                            <template v-else>
+                                <FontAwesomeIcon v-if="checked" icon="far fa-check" class="text-sm text-green-500" fixed-width aria-hidden="true" />
+                                <FontAwesomeIcon v-else icon="fal fa-times" class="text-sm text-red-500" fixed-width aria-hidden="true" />
+                            </template>
+                        </template>
+                    </ToggleSwitch>
+                </div>
+            </div>
+                
         </div>
+        
         <div class="w-full px-4 mt-8">
             <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
                 <div class="grid grid-cols-3 gap-x-4 w-full">
@@ -278,7 +678,7 @@ const onAddProducts = async (product: Product) => {
                         />
                     </div>
                 </div>
-                <div class="w-72 pt-5">
+                <div v-if="!is_unable_dispatch" class="w-72 pt-5">
                     <!-- Place Order -->
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
                         <ButtonWithLink
@@ -300,7 +700,7 @@ const onAddProducts = async (product: Product) => {
                     <ButtonWithLink
                         v-else
                         iconRight="fas fa-arrow-right"
-                        :label="trans('Pay with Checkout')"
+                        :label="trans('Go to checkout')"
                         :routeTarget="{
                             name: 'retina.ecom.checkout.show',
                             parameters: {
@@ -310,6 +710,9 @@ const onAddProducts = async (product: Product) => {
                         class="w-full"
                         full
                     />
+                </div>
+                <div v-else class="w-72 pt-5 text-sm">
+                    <div class="text-red-500">*{{ trans("We cannot deliver to :country. Please update the address or contact support.", { country: summary?.customer?.addresses?.delivery?.country?.name}) }}</div>
                 </div>
             </div>
         </div>
@@ -323,7 +726,23 @@ const onAddProducts = async (product: Product) => {
         />
     </div>
 
-      <!-- Modal: add products to Order -->
+    <!-- Section: Recommendations -->
+    <Teleport xv-if="layout.app.environment !== 'production'" to="#retina-end-of-main" :disabled="!isTeleportReady" :key="teleportKey">
+        <div class="w-full mt-2 pt-4 border-t border-gray-300 border-dashed"
+            :class="layout.leftSidebar.show ? 'max-w-[calc(1280px-200px)]' : 'max-w-[calc(1280px-(56px-0.5rem))]'"
+        >
+            <h2 class="text-2xl font-bold text-center p-4 mb-2">{{ trans('You might also like') }}</h2>
+            <div class="bg-white p-4 rounded-md shadow-lg">
+                <BasketRecommendations
+                    @add-to-basket="(productId: string, productCode: string, productLuigi: {}) => onAddProductFromRecommender(productId, productCode, productLuigi)"
+                    :listLoadingProducts
+                    :blacklistItems="blackListProductIds"
+                />
+            </div>
+        </div>
+    </Teleport>
+
+    <!-- Modal: add products to Order -->
     <Modal :isOpen="isModalProductListOpen" @onClose="isModalProductListOpen = false" width="w-full max-w-6xl" key="">
         <ProductsSelectorAutoSelect
             :headLabel="trans('Add products to basket')"

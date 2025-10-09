@@ -36,8 +36,14 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
 
     public function handle(TopUpPaymentApiPoint $topUpPaymentApiPoint, array $modelData): CreditTransaction
     {
+        if ($topUpPaymentApiPoint->state == TopUpPaymentApiPointStateEnum::SUCCESS) {
+            return CreditTransaction::where('id', $topUpPaymentApiPoint->data['credit_transaction_id'])->first();
+        }
+
+
         $paymentAccountShopId = Arr::get($topUpPaymentApiPoint->data, 'payment_account_shop_id');
         $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopId)->first();
+
 
         $checkoutComPayment = $this->getCheckOutPayment(
             $paymentAccountShop,
@@ -45,7 +51,6 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
         );
 
         return $this->processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop);
-
     }
 
     public function processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop)
@@ -88,20 +93,6 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
         ];
 
 
-        UpdateTopUpPaymentApiPoint::run(
-            $topUpPaymentApiPoint,
-            [
-                'state'        => TopUpPaymentApiPointStateEnum::SUCCESS,
-                'processed_at' => now(),
-                'data'         => [
-                    'payment_id' => $payment->id,
-                    'top_up_id'  => $topUp->id,
-                ]
-
-            ]
-        );
-
-
         $creditTransaction = StoreCreditTransaction::run(
             $topUpPaymentApiPoint->customer,
             $creditTransactionData
@@ -141,7 +132,6 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
         $this->initialisation($request);
 
         $creditTransaction = $this->handle($topUpPaymentApiPoint, $this->validatedData);
-
 
         return Redirect::route('retina.top_up.dashboard')->with(
             'notification',

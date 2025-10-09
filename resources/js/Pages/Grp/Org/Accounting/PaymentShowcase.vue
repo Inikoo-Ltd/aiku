@@ -563,7 +563,7 @@ const getStateTheme = (state: string) => {
 				<div class="flex">
 					<div class="ml-3">
 						<p class="text-sm text-yellow-700">
-							<strong>{{ trans('Info') }}:</strong> {{ trans('No credit transaction associated with thispayment') }}.
+							<strong>{{ trans('Info') }}:</strong> {{ trans('No credit transaction associated with this payment') }}.
 						</p>
 					</div>
 				</div>

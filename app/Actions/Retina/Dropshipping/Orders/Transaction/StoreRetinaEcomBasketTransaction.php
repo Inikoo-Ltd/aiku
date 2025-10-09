@@ -2,7 +2,7 @@
 
 namespace App\Actions\Retina\Dropshipping\Orders\Transaction;
 
-use App\Actions\Iris\Basket\StoreEcomBasket;
+use App\Actions\Iris\Basket\StoreEcomOrder;
 use App\Actions\IrisAction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Models\Catalogue\Product;
@@ -19,7 +19,7 @@ class StoreRetinaEcomBasketTransaction extends IrisAction
         $order = $customer->orderInBasket;
 
         if (!$order) {
-            $order = StoreEcomBasket::make()->action($customer);
+            $order = StoreEcomOrder::make()->action($customer);
         }
 
         $historicAsset = $product->currentHistoricProduct;

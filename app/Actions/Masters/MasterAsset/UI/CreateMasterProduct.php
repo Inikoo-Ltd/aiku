@@ -30,14 +30,14 @@ class CreateMasterProduct extends GrpAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new master product'),
+                'title'    => __('New master product'),
                 'pageHead' => [
-                    'title'        => __('new master product'),
+                    'title'        => __('New master product'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name' => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

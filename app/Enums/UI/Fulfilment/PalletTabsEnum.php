@@ -26,7 +26,7 @@ enum PalletTabsEnum: string
     {
         return match ($this) {
             PalletTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fas fa-info-circle',
             ],
             PalletTabsEnum::STORED_ITEMS => [
@@ -38,7 +38,7 @@ enum PalletTabsEnum: string
                 'icon'  => 'fal fa-exchange',
             ],
             PalletTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

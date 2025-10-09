@@ -104,9 +104,9 @@ class ShowMastersDashboard extends OrgAction
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-ruler-combined'],
-                        'title' => __('masters')
+                        'title' => __('Masters')
                     ],
-                    'title' => __('master catalogue'),
+                    'title' => __('Master catalogue'),
                 ],
                 'dashboard'   => $dashboard
 

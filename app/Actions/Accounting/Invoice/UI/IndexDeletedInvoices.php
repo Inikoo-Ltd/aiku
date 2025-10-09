@@ -197,7 +197,7 @@ class IndexDeletedInvoices extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            'title' => __('deleted invoices')
+            'title' => __('Deleted invoices')
         ];
 
         $afterTitle = null;
@@ -234,7 +234,7 @@ class IndexDeletedInvoices extends OrgAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('invoices'),
+                'title'       => __('Invoices'),
                 'pageHead'    => [
 
                     'title'         => $title,

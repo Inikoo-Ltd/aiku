@@ -146,7 +146,7 @@ class IndexWarehouseAreas extends OrgAction
                             'action'      => $this->canEdit && $parent->stats->number_warehouses == 0 ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new warehouse'),
+                                'tooltip' => __('New warehouse'),
                                 'label'   => __('warehouse'),
                                 'route'   => [
                                     'name'       => 'grp.org.warehouses.create',
@@ -162,7 +162,7 @@ class IndexWarehouseAreas extends OrgAction
                             'action'      => $this->canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new warehouse area'),
+                                'tooltip' => __('New warehouse area'),
                                 'label'   => __('warehouse area'),
                                 'route'   => [
                                     'name'       => 'grp.org.warehouses.show.infrastructure.warehouse_areas.create',
@@ -249,7 +249,7 @@ class IndexWarehouseAreas extends OrgAction
 
                                     'type'  => 'button',
                                     'style' => 'create',
-                                    'label' => __('areas'),
+                                    'label' => __('Areas'),
                                     'route' => [
                                         'name'       => 'grp.org.warehouses.show.infrastructure.warehouse_areas.create',
                                         'parameters' => $request->route()->originalParameters()

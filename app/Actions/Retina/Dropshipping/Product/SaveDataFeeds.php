@@ -14,7 +14,6 @@ use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Exports\Marketing\ProductsInCollectionExport;
 use App\Exports\Marketing\ProductsInProductCategoryExport;
 use App\Exports\Marketing\ProductsInShopExport;
@@ -60,7 +59,7 @@ class SaveDataFeeds extends RetinaAction
      */
     public function asCommand(Command $command): int
     {
-        $shops = Shop::where('type', ShopTypeEnum::DROPSHIPPING)
+        $shops = Shop::where('is_aiku', true)
             ->whereIn('state', [ShopStateEnum::OPEN, ShopStateEnum::CLOSING_DOWN])
             ->get();
         /** @var Shop $shop */

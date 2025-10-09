@@ -25,7 +25,7 @@ enum FulfilmentsTabsEnum: string
 
 
             FulfilmentsTabsEnum::FULFILMENT_SHOPS => [
-                'title' => __('fulfilment shops'),
+                'title' => __('Fulfilment shops'),
                 'icon'  => 'fal fa-bars',
             ],
 

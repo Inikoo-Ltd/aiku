@@ -12,7 +12,6 @@ use App\Actions\Catalogue\Product\DeleteProduct;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\Dropshipping\CustomerClient\DeleteCustomerClient;
-use App\Actions\Goods\Stock\DeleteStock;
 use App\Actions\Ordering\Order\DeleteOrder;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithOrganisationArgument;
@@ -72,7 +71,6 @@ class DeleteCustomer
         foreach ($customer->orders as $order) {
             DeleteOrder::run(
                 order: $order,
-                skipHydrate: true,
                 deletedData: $dependantDeletedData
             );
         }
@@ -85,13 +83,7 @@ class DeleteCustomer
             );
         }
 
-        foreach ($customer->stocks as $stock) {
-            DeleteStock::run(
-                stock: $stock,
-                skipHydrate: true,
-                deletedData: $dependantDeletedData
-            );
-        }
+
 
 
         $customer->delete();

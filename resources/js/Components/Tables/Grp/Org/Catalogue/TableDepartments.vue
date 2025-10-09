@@ -20,6 +20,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import { inject, ref } from "vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { faCheck, faTimesCircle, faCheckCircle } from "@fal";
 
 library.add(faSeedling,faOctopusDeploy);
 
@@ -31,7 +32,9 @@ defineProps<{
 const locale = inject('locale', aikuLocaleStructure)
 
 function departmentRoute(department: Department) {
-    switch (route().current()) {
+    const current = route().current();
+
+    switch (current) {
         case "grp.org.shops.show.catalogue.departments.index":
         case "grp.org.shops.show.catalogue.collections.show":
         case "grp.org.shops.show.catalogue.dashboard":
@@ -40,7 +43,10 @@ function departmentRoute(department: Department) {
                 [
                     (route().params as RouteParams).organisation,
                     (route().params as RouteParams).shop,
-                    department.slug]);
+                    department.slug
+                ]
+            );
+
         case "grp.org.shops.index":
         case "grp.overview.catalogue.departments.index":
             return route(
@@ -48,13 +54,25 @@ function departmentRoute(department: Department) {
                 [
                     (route().params as RouteParams).organisation,
                     department.shop_slug,
-                    department.slug]);
+                    department.slug
+                ]
+            );
 
+        case "grp.masters.master_shops.show.master_departments.show":
+            return route(
+                "grp.org.shops.show.catalogue.departments.show",
+                [
+                    department.organisation_slug,
+                    department.shop_slug,
+                    department.slug
+                ]
+            );
 
         default:
             return '';
     }
 }
+
 
 function subDepartmentsRoute(department: Department) {
     if (route().current() === "grp.org.shops.show.catalogue.departments.index") {
@@ -131,7 +149,9 @@ function masterDepartmentRoute(department: Department) {
 
 
 const isLoadingDetach = ref<string[]>([]);
-
+const dotClass = (filled: boolean) =>
+    filled ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600";
+const statusIcon = (filled: boolean) => (filled ? faCheckCircle : faTimesCircle);
 </script>
 
 <template>
@@ -154,7 +174,7 @@ const isLoadingDetach = ref<string[]>([]);
         </template>
 
         <template #cell(state)="{ item: department }">
-            <Icon :data="department.state">
+            <Icon :data="department.state" :title="department.state?.label">
             </Icon>
         </template>
         <template #cell(code)="{ item: department }">
@@ -217,6 +237,38 @@ const isLoadingDetach = ref<string[]>([]);
                     :loading="isLoadingDetach.includes('detach' + item.id)"
                 />
             </Link>
+        </template>
+          <template #cell(is_name_reviewed)="{ item }">
+            <div >
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_name_reviewed),
+                ]" :icon="statusIcon(item.is_name_reviewed)" v-tooltip="'Review name'" />
+            </div>
+        </template>
+        <template #cell(is_description_reviewed)="{ item }">
+            <div>
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_description_reviewed),
+                ]" :icon="statusIcon(item.is_description_reviewed)" v-tooltip="'Review name'" />
+            </div>
+        </template>
+        <template #cell(is_description_title_reviewed)="{ item }">
+            <div>
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_description_title_reviewed),
+                ]" :icon="statusIcon(item.is_description_title_reviewed)" v-tooltip="'Review name'" />
+            </div>
+        </template>
+        <template #cell(is_description_extra_reviewed)="{ item }">
+            <div>
+                <FontAwesomeIcon :class="[
+                    'flex items-center justify-center w-4 h-4 rounded-full',
+                    dotClass(item.is_description_extra_reviewed),
+                ]" :icon="statusIcon(item.is_description_extra_reviewed)" v-tooltip="'Review name'" />
+            </div>
         </template>
     </Table>
 </template>

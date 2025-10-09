@@ -49,7 +49,7 @@ class ShowPoll extends OrgAction
             [
                 'type'  => 'button',
                 'style' => 'edit',
-                'label' => __('edit'),
+                'label' => __('Edit'),
                 'route' => [
                     'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                     'parameters' => array_values($request->route()->originalParameters())
@@ -74,7 +74,7 @@ class ShowPoll extends OrgAction
                 'model'   => __('Poll'),
                 'icon'    => [
                     'icon'  => ['fal', 'fa-poll'],
-                    'title' => __('poll')
+                    'title' => __('Poll')
                 ],
                 'iconRight' => $poll->in_registration ? [
                     'icon'  => ['fal', 'fa-eye'],

@@ -41,10 +41,11 @@ onMounted(() => {
             {{ head_title }}
         </div>
 
-        <div class="isolate relative w-full max-w-xl mx-auto my-8 overflow-hidden pb-4">
-            <div xv-show="!isLoading" id="flow-container" class="absolute w-full border-b border-gray-300" />
-            <div class="w-full h-[623px] md:h-[511px] -z-10" :class="isLoading ? 'skeleton' : ''">
-
+        <div class="mx-auto mt-6 relative w-full max-w-xl min-h-[200px]">
+            <div id="flow-container" class="w-full" />
+            <div v-show="isLoading" class="pointer-events-none absolute top-0 h-full w-full z-10">
+                <div class="w-full min-h-[200px] h-full skeleton">
+                </div>
             </div>
         </div>
     </div>

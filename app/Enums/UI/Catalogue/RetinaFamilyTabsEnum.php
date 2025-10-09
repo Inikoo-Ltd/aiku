@@ -27,11 +27,11 @@ enum RetinaFamilyTabsEnum: string
 
         return match ($this) {
             RetinaFamilyTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             RetinaFamilyTabsEnum::PRODUCTS => [
-                'title' => __('products'). " ({$products})",
+                'title' => __('Products'). " ({$products})",
                 'icon'  => 'fal fa-cube',
                 'type'  => 'icon',
             ],

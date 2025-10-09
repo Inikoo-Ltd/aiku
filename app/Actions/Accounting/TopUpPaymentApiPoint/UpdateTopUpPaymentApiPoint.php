@@ -19,7 +19,8 @@ class UpdateTopUpPaymentApiPoint extends RetinaAction
 
     public function handle(TopUpPaymentApiPoint $topUpPaymentApiPoint, array $modelData): TopUpPaymentApiPoint
     {
-        return $this->update($topUpPaymentApiPoint, $modelData);
+        $this->update($topUpPaymentApiPoint, $modelData);
+        return $topUpPaymentApiPoint;
     }
 
 }

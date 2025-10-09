@@ -27,24 +27,24 @@ enum OrgStockFamilyTabsEnum: string
     {
         return match ($this) {
             OrgStockFamilyTabsEnum::ORG_STOCKS => [
-                'title' => __('stocks'),
+                'title' => __('Stocks'),
                 'icon'  => 'fal fa-box',
             ],
 
             OrgStockFamilyTabsEnum::HISTORY => [
                 'align' => 'right',
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
             ],
             OrgStockFamilyTabsEnum::IMAGES => [
                 'align' => 'right',
-                'title' => __('images'),
+                'title' => __('Images'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
             ],
             OrgStockFamilyTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

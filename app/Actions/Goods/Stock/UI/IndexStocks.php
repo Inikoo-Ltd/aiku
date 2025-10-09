@@ -233,7 +233,7 @@ class IndexStocks extends OrgAction
                 'action'      => $this->canEdit && $parent->goodsStats->number_stock_families == 0 ? [
                     'type'    => 'button',
                     'style'   => 'create',
-                    'tooltip' => __('new naster SKUs family'),
+                    'tooltip' => __('New master SKUs family'),
                     'label'   => __('Master SKUs family'),
                     'route'   => [
                         'name'       => 'grp.goods.stock-families.create',
@@ -249,7 +249,7 @@ class IndexStocks extends OrgAction
                 'action'      => $this->canEdit ? [
                     'type'    => 'button',
                     'style'   => 'create',
-                    'tooltip' => __('new master SKU'),
+                    'tooltip' => __('New master SKU'),
                     'label'   => __('Master SKU'),
                     'route'   => [
                         'name'       => 'inventory.stock-families.show.stocks.create',
@@ -356,7 +356,7 @@ class IndexStocks extends OrgAction
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new Master SKU'),
+                            'tooltip' => __('New Master SKU'),
                             'label'   => __('Master SKU'),
                             'route'   => match ($request->route()->getName()) {
                                 'inventory.stock-families.show.stocks.index' => [

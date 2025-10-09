@@ -25,7 +25,7 @@ class ShipmentsResource extends JsonResource
     {
         /** @var Shipment $shipment */
         $shipment    = $this->resource;
-        $isPrintable = Arr::get($shipment->group->settings, 'printnode.print_by_printnode', false) && Arr::get($shipment->group->settings, 'printnode.apikey', false);
+        $isPrintable = (bool) $shipment->shipper->api_shipper;
 
         $formattedTrackingURls = [];
         foreach ($shipment->trackings as $key => $tracking) {

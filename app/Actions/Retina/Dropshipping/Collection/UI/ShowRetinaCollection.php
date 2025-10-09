@@ -44,7 +44,7 @@ class ShowRetinaCollection extends RetinaAction
         $model      = __('collection');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('collection')
+            'title' => __('Collection')
         ];
         $afterTitle = null;
         $container  = null;

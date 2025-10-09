@@ -8,7 +8,6 @@
 
 namespace App\Actions\Fulfilment\PalletReturn;
 
-use App\Actions\Dropshipping\Shopify\Order\CancelFulfilmentRequestToShopify;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePalletReturns;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomerHydratePallets;
 use App\Actions\Fulfilment\Pallet\UpdatePallet;
@@ -79,9 +78,6 @@ class DeletePalletReturn extends OrgAction
 
             Event::dispatch(new AuditCustom($fulfilmentCustomer->customer));
 
-            if ($palletReturn->fulfilmentCustomer->customer->shopifyUser !== null) {
-                CancelFulfilmentRequestToShopify::dispatch($palletReturn);
-            }
 
             $palletReturn->delete();
             $fulfilmentCustomer->refresh();

@@ -9,43 +9,34 @@
 
 namespace App\Actions\Retina\Accounting\Payment;
 
-use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Retina\Dropshipping\Orders\WithBasketStateWarning;
 use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\CRM\Customer;
-use App\Models\Ordering\Order;
 use Lorisleiva\Actions\ActionRequest;
 
 class PlaceOrderPayByBank extends RetinaAction
 {
     use WithBasketStateWarning;
     use WithRetinaOrderPlacedRedirection;
+    use WithPlaceOrderByPaymentMethod;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Customer $customer): array
     {
-
-        $order = Order::find($customer->current_order_in_basket_id);
-        if (!$order) {
-            return [
-                'success' => false,
-                'reason'  => 'Order not found',
-                'order'   => null,
-            ];
-        }
-
-        $order = SubmitOrder::run($order);
-        return [
-            'success' => true,
-            'reason'  => 'Order submitted successfully',
-            'order'   => $order,
-        ];
-
+        return $this->placeOrderByPaymentMethod($customer, OrderToBePaidByEnum::BANK);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(ActionRequest $request): array
     {
         $this->initialisation($request);
+
         return $this->handle($this->customer);
     }
 

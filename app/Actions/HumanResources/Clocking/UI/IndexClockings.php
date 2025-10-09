@@ -158,7 +158,7 @@ class IndexClockings extends OrgAction
                 ),
                 'title'       => __('Clockings'),
                 'pageHead'    => [
-                    'title'   => __('clockings'),
+                    'title'   => __('Clockings'),
                     'actions' => [
                         $this->canEdit
                         && (
@@ -167,7 +167,7 @@ class IndexClockings extends OrgAction
                             ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('clockings'),
+                            'label' => __('Clockings'),
                             'route' =>
                                 match ($request->route()->getName()) {
                                     'grp.org.hr.workplaces.show.clockings.index' => [
@@ -197,7 +197,7 @@ class IndexClockings extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('clockings'),
+                        'label' => __('Clockings'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],

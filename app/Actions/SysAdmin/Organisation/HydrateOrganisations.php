@@ -22,6 +22,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamilies;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamiliesWithNoDepartment;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceCategories;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCreatedIntervals;
@@ -110,6 +111,7 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateOrgStocks::run($organisation);
 
         OrganisationHydrateInvoices::run($organisation);
+        OrganisationHydrateInvoiceCategories::run($organisation);
         OrganisationHydrateOrderIntervals::run($organisation);
         OrganisationHydrateSalesIntervals::run($organisation);
         OrganisationHydrateSubscription::run($organisation);

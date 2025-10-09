@@ -48,7 +48,7 @@ class ShowEmployee extends OrgAction
         return Inertia::render(
             'Org/HumanResources/Employee',
             [
-                'title'       => __('employee'),
+                'title'       => __('Employee'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     employee: $employee,
                     routeParameters: $request->route()->originalParameters()

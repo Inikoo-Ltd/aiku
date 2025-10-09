@@ -8,12 +8,16 @@
 
 namespace App\Actions\Catalogue\Product\Traits;
 
-use App\Actions\Catalogue\Product\AttachTradeUnitToProduct;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateCustomerExclusiveProducts;
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateProducts;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\OrgStock;
-use Illuminate\Support\Arr;
 
 trait WithProductOrgStocks
 {
@@ -27,27 +31,32 @@ trait WithProductOrgStocks
     protected function processOrgStocks(array $orgStocksRaw): array
     {
         $orgStocks = [];
+
         foreach ($orgStocksRaw as $orgStockId => $item) {
-            $orgStock              = OrgStock::find($orgStockId);
-            $tradeUnitsPerOrgStock = null;
+            $orgStock = OrgStock::find($orgStockId);
 
-            if ($orgStock->type == OrgStockStateEnum::ABNORMALITY) {
-                if ($orgStock->tradeUnits->count() == 1) {
-                    $tradeUnitsPerOrgStock = $orgStock->tradeUnits->first()->pivot->quantity;
-                }
-            } else {
-                $stock = $orgStock->stock;
-                if ($stock->tradeUnits->count() == 1) {
-                    $tradeUnitsPerOrgStock = $stock->tradeUnits->first()->pivot->quantity;
-                }
-            }
-
-            if ($tradeUnitsPerOrgStock != null && floor($tradeUnitsPerOrgStock) != $tradeUnitsPerOrgStock) {
+            if ($orgStock) {
                 $tradeUnitsPerOrgStock = null;
-            }
 
-            $orgStocks[$orgStockId]                              = $item;
-            $orgStocks[$orgStockId]['trade_units_per_org_stock'] = (int) $tradeUnitsPerOrgStock;
+
+                if ($orgStock->state == OrgStockStateEnum::ABNORMALITY) {
+                    if ($orgStock->tradeUnits->count() == 1) {
+                        $tradeUnitsPerOrgStock = $orgStock->tradeUnits->first()->pivot->quantity;
+                    }
+                } else {
+                    $stock = $orgStock->stock;
+                    if ($stock->tradeUnits->count() == 1) {
+                        $tradeUnitsPerOrgStock = $stock->tradeUnits->first()->pivot->quantity;
+                    }
+                }
+
+                if ($tradeUnitsPerOrgStock != null && floor($tradeUnitsPerOrgStock) != $tradeUnitsPerOrgStock) {
+                    $tradeUnitsPerOrgStock = null;
+                }
+
+                $orgStocks[$orgStockId]                              = $item;
+                $orgStocks[$orgStockId]['trade_units_per_org_stock'] = (int)$tradeUnitsPerOrgStock;
+            }
         }
 
         return $orgStocks;
@@ -57,14 +66,17 @@ trait WithProductOrgStocks
     protected function syncOrgStocks(Product $product, array $orgStocksRaw): Product
     {
         $orgStocks = $this->processOrgStocks($orgStocksRaw);
-
         $product->orgStocks()->sync($orgStocks);
+        $product->refresh();
 
+
+        $product = $this->syncTradeUnits($product);
+        $product->refresh();
 
         return $product;
     }
 
-    protected function associateTradeUnits(Product $product): Product
+    protected function syncTradeUnits(Product $product): Product
     {
         $tradeUnits = [];
         foreach ($product->orgStocks as $orgStock) {
@@ -75,14 +87,23 @@ trait WithProductOrgStocks
             }
         }
 
-        foreach ($tradeUnits as $tradeUnitId => $tradeUnitData) {
-            $tradeUnit = TradeUnit::find($tradeUnitId);
-            AttachTradeUnitToProduct::run($product, $tradeUnit, [
-                'quantity' => $tradeUnitData['quantity'],
-                'notes'    => Arr::get($tradeUnitData, 'notes'),
-            ]);
+        $product->tradeUnits()->sync($tradeUnits);
+
+        ProductHydrateGrossWeightFromTradeUnits::dispatch($product);
+        ProductHydrateBarcodeFromTradeUnit::dispatch($product);
+        ProductHydrateMarketingWeightFromTradeUnits::dispatch($product);
+        ProductHydrateMarketingDimensionFromTradeUnits::dispatch($product);
+
+        foreach ($product->tradeUnits as $tradeUnitData) {
+            $tradeUnit = TradeUnit::find($tradeUnitData->id);
+            if ($tradeUnit) {
+                if ($product->exclusive_for_customer_id) {
+                    TradeUnitsHydrateCustomerExclusiveProducts::dispatch($tradeUnit);
+                } else {
+                    TradeUnitsHydrateProducts::dispatch($tradeUnit);
+                }
+            }
         }
-        $product->refresh();
 
         return $product;
     }

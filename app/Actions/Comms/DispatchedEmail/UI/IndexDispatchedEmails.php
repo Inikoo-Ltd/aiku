@@ -20,6 +20,7 @@ use App\Models\Comms\Mailshot;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\PostRoom;
 use App\Models\CRM\Customer;
+use App\Models\CRM\Prospect;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
@@ -34,7 +35,7 @@ class IndexDispatchedEmails extends OrgAction
 {
     private Group|Organisation|Shop $parent;
 
-    public function handle(Group|Mailshot|Outbox|PostRoom|Organisation|Shop|Customer $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Mailshot|Outbox|PostRoom|Organisation|Shop|Customer|Prospect $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -73,6 +74,10 @@ class IndexDispatchedEmails extends OrgAction
                 break;
             case 'Shop':
                 $queryBuilder->where('dispatched_emails.shop_id', $parent->id);
+                break;
+            case 'Prospect':
+                $queryBuilder->where('dispatched_emails.recipient_type', 'Prospect');
+                $queryBuilder->where('dispatched_emails.recipient_id', $parent->id);
                 break;
             default:
                 abort(404);
@@ -135,7 +140,7 @@ class IndexDispatchedEmails extends OrgAction
                 ),
                 'title'       => __('dispatched emails'),
                 'pageHead'    => [
-                    'title' => __('dispatched emails'),
+                    'title' => __('Dispatched emails'),
                     'icon'  => ['fal', 'fa-paper-plane'],
                 ],
                 ...array_merge(

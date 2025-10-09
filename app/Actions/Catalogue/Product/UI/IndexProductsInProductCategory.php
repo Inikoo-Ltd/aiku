@@ -82,9 +82,12 @@ class IndexProductsInProductCategory extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
+        $queryBuilder->leftJoin('currencies', 'currencies.id', 'shops.currency_id');
+
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
+
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
@@ -116,13 +119,16 @@ class IndexProductsInProductCategory extends OrgAction
                 'products.name',
                 'products.state',
                 'products.price',
+                'products.rrp',
+                'products.unit',
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
-
+                'products.asset_id',
                 'invoices_all',
                 'sales_all',
                 'customers_invoiced_all',
+                'currencies.code as currency_code',
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
@@ -160,7 +166,11 @@ class IndexProductsInProductCategory extends OrgAction
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unit', label: __('unit'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'rrp', label: __('rrp'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -189,7 +199,7 @@ class IndexProductsInProductCategory extends OrgAction
         $title      = __('products');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('product')
+            'title' => __('Product')
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -252,7 +262,7 @@ class IndexProductsInProductCategory extends OrgAction
                         && $productCategory->type == ProductCategoryTypeEnum::FAMILY ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new product'),
+                            'tooltip' => __('New product'),
                             'label'   => __('product'),
                             'route'   => [
                                 'name'       => str_replace('index', 'create', $request->route()->getName()),
@@ -264,6 +274,8 @@ class IndexProductsInProductCategory extends OrgAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
+                'editable_table'               => true,
+                'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
                 'tabs'                         => [
                     'current'    => $this->tab,

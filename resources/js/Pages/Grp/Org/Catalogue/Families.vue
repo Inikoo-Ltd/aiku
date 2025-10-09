@@ -14,7 +14,7 @@ import { computed, ref } from "vue"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 import { useTabChange } from "@/Composables/tab-change"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faSeedling } from "@fal"
+import { faSeedling, faPenAlt } from "@fal"
 import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { inject } from 'vue'
@@ -24,7 +24,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
-library.add(faSeedling)
+library.add(faSeedling, faPenAlt)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
@@ -36,6 +36,7 @@ const props = defineProps<{
     data: {}
     index?: {}
     sales?: {}
+    need_review?: {}
     routes: {
         departments_route: routeType
         submit_route: routeType
@@ -52,6 +53,7 @@ const component = computed(() => {
     const components: any = {
         index: TableFamilies,
         sales: TableFamilies,
+        need_review: TableFamilies
     }
 
     return components[currentTab.value]

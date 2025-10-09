@@ -43,6 +43,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 }
             }
 
+
             $wooCommerceProduct = [
                 'name' => $portfolio->customer_product_name,
                 'type' => 'simple',
@@ -56,10 +57,18 @@ class StoreWooCommerceProduct extends RetinaAction
                 'manage_stock' => !is_null($product->available_quantity),
                 'stock_status' => Arr::get($product, 'stock_status', 'instock'),
                 'attributes' => Arr::get($product, 'attributes', []),
+                'sku' => $portfolio->sku,
+                'weight' => (string)$product->gross_weight,
                 'status' => $this->mapProductStateToWooCommerce($product->status->value)
             ];
 
             $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
+
+            if (Arr::get($result, 'code') === 'product_invalid_sku') {
+                $wooCommerceProduct['sku'] = Arr::get($result, 'data.unique_sku') . '-' . rand(0, 99);
+
+                $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
+            }
 
             UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($result, 'id'),

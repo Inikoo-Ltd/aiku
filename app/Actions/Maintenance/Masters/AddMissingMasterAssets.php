@@ -14,7 +14,6 @@ use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
 use App\Actions\Masters\MasterAsset\MatchAssetsToMaster;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
-use App\Actions\Masters\MasterProductCategory\UpdateMasterProductCategory;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
@@ -66,7 +65,6 @@ class AddMissingMasterAssets
             ->where('type', MasterProductCategoryTypeEnum::FAMILY->value)
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
-        $foundMasterProduct = null;
 
 
         if (!$foundMasterAssetData) {
@@ -76,6 +74,8 @@ class AddMissingMasterAssets
 
             $price = $product->price * $exchange;
 
+
+            //Todo this will only work with parent is masterfamily
             $foundMasterProduct = StoreMasterAsset::make()->action(
                 $masterFamily ?? $masterShop,
                 [
@@ -86,6 +86,7 @@ class AddMissingMasterAssets
                     'price'       => $price
                 ]
             );
+
         } else {
             $foundMasterProduct = MasterAsset::find($foundMasterAssetData->id);
 
@@ -103,34 +104,36 @@ class AddMissingMasterAssets
             );
         }
 
-        if ($foundMasterProduct) {
-            $markForDiscontinued = false;
-            $status              = true;
-            $maskForDiscontinued = null;
-            $discontinuedAt      = null;
+
+        $markForDiscontinued = false;
+        $status              = true;
+        $maskForDiscontinued = null;
+        $discontinuedAt      = null;
 
 
-            if ($product->state == ProductStateEnum::DISCONTINUED) {
-                $status              = false;
-                $discontinuedAt      = $product->discontinued_at;
-                $maskForDiscontinued = $product->mark_for_discontinued_at;
-            }
-
-            if ($product->state == ProductCategoryStateEnum::DISCONTINUING) {
-                $markForDiscontinued = true;
-                $maskForDiscontinued = $product->mark_for_discontinued_at;
-            }
-
-            UpdateMasterProductCategory::run(
-                $foundMasterProduct,
-                [
-                    'status'                   => $status,
-                    'mark_for_discontinued'    => $markForDiscontinued,
-                    'mark_for_discontinued_at' => $maskForDiscontinued,
-                    'discontinued_at'          => $discontinuedAt,
-                ]
-            );
+        if ($product->state == ProductStateEnum::DISCONTINUED) {
+            $status              = false;
+            $discontinuedAt      = $product->discontinued_at;
+            $maskForDiscontinued = $product->mark_for_discontinued_at;
         }
+
+        if ($product->state == ProductCategoryStateEnum::DISCONTINUING) {
+            $markForDiscontinued = true;
+            $maskForDiscontinued = $product->mark_for_discontinued_at;
+        }
+
+
+
+        UpdateMasterAsset::run(
+            $foundMasterProduct,
+            [
+                'status'                   => $status,
+                'mark_for_discontinued'    => $markForDiscontinued,
+                'mark_for_discontinued_at' => $maskForDiscontinued,
+                'discontinued_at'          => $discontinuedAt,
+            ]
+        );
+
 
         return $foundMasterProduct;
     }
@@ -143,7 +146,7 @@ class AddMissingMasterAssets
     {
         $masterFamily = null;
         if ($product->family) {
-            $masterFamily = AddMissingProductCategoriesToMaster::make()
+            $masterFamily = AddMissingFamiliesToMaster::make()
                 ->upsertMasterFamily($masterShop, $product->family);
         }
 

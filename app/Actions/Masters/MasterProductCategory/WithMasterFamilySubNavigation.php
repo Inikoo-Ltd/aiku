@@ -70,7 +70,7 @@ trait WithMasterFamilySubNavigation
             ],
              [
                  'label'    => __('Master Products'),
-                 'number'   => $masterFamily->stats->number_current_products,
+                 'number'   => $masterFamily->stats->number_current_master_assets,
                  'route'     => $routeProducts,
                  'leftIcon' => [
                      'icon'    => ['fal', 'fa-cube'],

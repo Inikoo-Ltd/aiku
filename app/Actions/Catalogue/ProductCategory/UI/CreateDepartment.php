@@ -66,12 +66,12 @@ class CreateDepartment extends OrgAction
                 ),
                 'title'       => __('New Department'),
                 'pageHead'    => [
-                    'title'        => __('new department'),
+                    'title'        => __('New department'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.index',
                                 'parameters' => array_values($request->route()->originalParameters())

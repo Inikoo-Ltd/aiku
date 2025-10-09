@@ -43,6 +43,8 @@ class MasterSubDepartmentsResource extends JsonResource
             'updated_at'      => $this->updated_at,
             'number_families' => $this->number_families,
             'number_products' => $this->number_products,
+            'description_title' => $this->description_title,
+            'description_extra' => $this->description_extra,
         ];
     }
 }

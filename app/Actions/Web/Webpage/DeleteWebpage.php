@@ -30,8 +30,11 @@ class DeleteWebpage extends OrgAction
      */
     public function handle(Webpage $webpage, bool $forceDelete = false): Webpage
     {
+
+
         if ($forceDelete) {
             $webpage = DB::transaction(function () use ($webpage) {
+                DB::table('web_block_histories')->where('webpage_id', $webpage->id)->delete();
                 DB::table('webpage_has_linked_webpages')->where('webpage_id', $webpage->id)->delete();
                 DB::table('web_block_has_external_link')->where('webpage_id', $webpage->id)->delete();
                 DB::table('webpage_time_series')->where('webpage_id', $webpage->id)->delete();

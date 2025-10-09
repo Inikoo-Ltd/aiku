@@ -31,6 +31,10 @@ class GetGroupNavigation
 
         ];
 
+        if ($user->hasAnyPermission(['goods.view','masters.view'])) {
+            $groupNavigation['trade-units'] = $this->getTradeUnitsNavs();
+        }
+
         if ($user->hasPermissionTo('masters.view')) {
             $groupNavigation['masters'] = $this->getMastersNavs();
         }
@@ -77,7 +81,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('agents'),
+                        'label' => __('Agents'),
                         'icon'  => ['fal', 'fa-people-arrows'],
                         'root'  => 'grp.supply-chain.agents.',
                         'route' => [
@@ -86,7 +90,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('suppliers'),
+                        'label' => __('Suppliers'),
                         'icon'  => ['fal', 'fa-person-dolly'],
                         'root'  => 'grp.supply-chain.suppliers.',
                         'route' => [
@@ -95,7 +99,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('supplier products'),
+                        'label' => __('Supplier products'),
                         'icon'  => ['fal', 'fa-box-usd'],
                         'root'  => 'grp.supply-chain.supplier_products.',
                         'route' => [
@@ -138,7 +142,7 @@ class GetGroupNavigation
     private function getSysAdminNavs(): array
     {
         return [
-            'label'   => __('sysadmin'),
+            'label'   => __('Sysadmin'),
             'icon'    => ['fal', 'fa-users-cog'],
             'root'    => 'grp.sysadmin.',
             'route'   => [
@@ -147,7 +151,7 @@ class GetGroupNavigation
             'topMenu' => [
                 'subSections' => [
                     [
-                        'label' => __('users'),
+                        'label' => __('Users'),
                         'icon'  => ['fal', 'fa-user-circle'],
                         'root'  => 'grp.sysadmin.users.',
                         'route' => [
@@ -156,7 +160,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('guests'),
+                        'label' => __('Guests'),
                         'icon'  => ['fal', 'fa-user-alien'],
                         'root'  => 'grp.sysadmin.guests.',
                         'route' => [
@@ -165,7 +169,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('analytics'),
+                        'label' => __('Analytics'),
                         'icon'  => ['fal', 'fa-analytics'],
                         'root'  => 'grp.sysadmin.analytics.',
                         'route' => [
@@ -174,7 +178,7 @@ class GetGroupNavigation
                         ]
                     ],
                     [
-                        'label' => __('system settings'),
+                        'label' => __('System settings'),
                         'icon'  => ['fal', 'fa-cog'],
                         'root'  => 'grp.sysadmin.settings.',
                         'route' => [
@@ -229,12 +233,39 @@ class GetGroupNavigation
 
                         ]
                     ],
+                ]
+            ]
+
+        ];
+    }
+
+    private function getTradeUnitsNavs(): array
+    {
+        return [
+            'label'   => __('Trade Units'),
+            'icon'    => ['fal', 'fa-atom'],
+            'root'    => 'grp.trade_units.',
+            'route'   => [
+                'name' => 'grp.trade_units.dashboard'
+            ],
+            'topMenu' => [
+                'subSections' => [
                     [
                         'label' => 'Trade Units',
                         'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.goods.trade-units.',
+                        'root'  => 'grp.trade_units.units.',
                         'route' => [
-                            'name'       => 'grp.goods.trade-units.active',
+                            'name'       => 'grp.trade_units.units.active',
+                            'parameters' => []
+
+                        ]
+                    ],
+                    [
+                        'label' => 'Trade Unit Families',
+                        'icon'  => ['fal', 'fa-atom'],
+                        'root'  => 'grp.trade_units.families.',
+                        'route' => [
+                            'name'       => 'grp.trade_units.families.index',
                             'parameters' => []
 
                         ]
@@ -278,18 +309,6 @@ class GetGroupNavigation
 
                         ]
                     ],
-                    [
-                        'label' => 'Trade Units',
-                        'icon'  => ['fal', 'fa-atom'],
-                        'root'  => 'grp.goods.trade-units.',
-                        'route' => [
-                            'name'       => 'grp.masters.trade-units.active',
-                            'parameters' => []
-
-                        ]
-                    ],
-
-
                 ]
             ]
 

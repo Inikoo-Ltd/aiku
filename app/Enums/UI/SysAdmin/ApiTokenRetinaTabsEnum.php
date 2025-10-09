@@ -27,18 +27,18 @@ enum ApiTokenRetinaTabsEnum: string
     {
         return match ($this) {
             ApiTokenRetinaTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fas fa-info-circle',
             ],
 
             ApiTokenRetinaTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             ApiTokenRetinaTabsEnum::API_TOKENS => [
-                'title' => __('api tokens'),
+                'title' => __('Api tokens'),
                 'icon'  => 'fal fa-key',
                 'type'  => 'icon',
             ],

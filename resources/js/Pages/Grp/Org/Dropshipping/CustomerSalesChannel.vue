@@ -262,11 +262,6 @@ const isModalAddress = ref(false)
         </div>
     </div>
 
-=
-  <br /><br />
-  <pre>{{customer_sales_channel}}</pre>
-  <br /><br />
-
     <!-- has_valid_platform_product_id
     exist_in_platform
     platform_status -->

@@ -17,8 +17,8 @@ enum InvoiceCategoryStateEnum: string
 
     case IN_PROCESS = 'in_process';
     case ACTIVE = 'active';
-    case CLOSED = 'closed';
     case COOLDOWN = 'cooldown';
+    case CLOSED = 'closed';
 
     public static function labels(): array
     {
@@ -35,6 +35,7 @@ enum InvoiceCategoryStateEnum: string
         return [
             'in_process' => [
                 'tooltip' => __('In process'),
+                'label'  => __('In process'),
                 'icon'    => 'fal fa-seedling',
                 'class'   => 'text-lime-500',
                 'color'   => 'lime',
@@ -45,6 +46,7 @@ enum InvoiceCategoryStateEnum: string
             ],
             'active' => [
                 'tooltip' => __('Active'),
+                'label' => __('Active'),
                 'icon'    => 'fal fa-check',
                 'class'   => 'text-green-500',
                 'color'   => 'green',
@@ -55,6 +57,7 @@ enum InvoiceCategoryStateEnum: string
             ],
             'closed' => [
                 'tooltip' => __('Closed'),
+                'label' => __('Closed'),
                 'icon'    => 'fal fa-times-circle',
                 'class'   => 'text-red-500',
                 'color'   => 'red',
@@ -65,6 +68,7 @@ enum InvoiceCategoryStateEnum: string
             ],
             'cooldown' => [
                 'tooltip' => __('Cooldown'),
+                'label' => __('Cooldown'),
                 'icon'    => 'fal fa-thermometer-empty',
                 'class'   => 'text-blue-500',
                 'color'   => 'blue',

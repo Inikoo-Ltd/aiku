@@ -50,7 +50,7 @@ class ShowMarketingDashboard extends OrgAction
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('marketing')
+                        'title' => __('Marketing')
                     ],
                     'title' => $title,
                 ],

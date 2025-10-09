@@ -49,12 +49,12 @@ class CreateSubDepartment extends OrgAction
                 ),
                 'title'       => __('New Sub-department'),
                 'pageHead'    => [
-                    'title'   => __('new Sub-department'),
+                    'title'   => __('New Sub-department'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.index',
                                 'parameters' => array_values($request->route()->originalParameters())

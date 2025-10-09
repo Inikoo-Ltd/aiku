@@ -8,10 +8,13 @@
 import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Links, Meta } from "@/types/Table"
-import { ref, onMounted, onUnmounted } from "vue"
-// import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
+import { ref, onMounted, onUnmounted, inject } from "vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-// import { faArrowRight, faTruck } from "@fal"
+import { faWeight, faBox, faClock, faBallotCheck } from "@fal"
+import { faTruck } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faWeight, faBox, faClock, faTruck)
 
 interface ShippingZone {
 	id: number
@@ -50,6 +53,8 @@ const props = defineProps<{
 	}
 	tab?: string
 }>()
+
+const locale = inject('locale', aikuLocaleStructure)
 
 // Reactive state for managing which postal code info is visible
 const activePostalInfo = ref<string | null>(null)
@@ -128,12 +133,12 @@ onUnmounted(() => {
 	<Table :resource="data" :name="tab" class="mt-5">
 		<template #cell(code)="{ item: zone }">
 			<Link :href="shopRoute(zone)" class="primaryLink">
-				{{ zone["code"] }}
+			{{ zone["code"] }}
 			</Link>
 		</template>
 		<template #cell(name)="{ item: name }">
 			<Link :href="shopRoute(name)" class="primaryLink">
-				{{ name["name"] }}
+			{{ name["name"] }}
 			</Link>
 		</template>
 		<template #cell(position)="{ item: position }">
@@ -141,43 +146,37 @@ onUnmounted(() => {
 		</template>
 		<template #cell(territories)="{ item: territories }">
 			<div class="flex gap-1 flex-wrap">
-				<div
-					v-for="(item, index) in territories.territories"
-					:key="index"
+				<div v-for="(item, index) in territories.territories" :key="index"
 					class="text-xs text-gray-800 postal-info-container">
 					<!-- Baris Utama: Country + Flag -->
-					<div
-						:class="`${
+					<div :class="`${
 							item.included_postal_codes || item.excluded_postal_codes
-								? 'bg-green-400'
+								? ''
 								: ''
-						} flex items-center gap-1 font-medium rounded p-1 relative cursor-pointer select-none`"
-						@click="
+						} flex items-center gap-1 font-medium rounded p-1 relative cursor-pointer select-none`" @click="
 							item.included_postal_codes || item.excluded_postal_codes
 								? togglePostalInfo(`${territories.id}-${index}`)
 								: null
 						">
-						<img
-							class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
+						<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
 							:src="'/flags/' + item.country_code.toLowerCase() + '.png'"
-							:alt="`Bendera ${item.country_code}`"
-							loading="lazy" />
+							:alt="`Bendera ${item.country_code}`" loading="lazy" />
 						<span>{{ item.country_code }}</span>
 
 						<!-- Exclamation Icon -->
-						<div
-							v-if="item.included_postal_codes || item.excluded_postal_codes"
-							class="absolute -top-1 -right-1 bg-yellow-400 text-yellow-800 rounded-full w-4 h-4 flex items-center justify-center text-xs font-bold z-20">
-							!
+						<div v-if="item.included_postal_codes || item.excluded_postal_codes" class="flex items-center gap-1">
+							<div 
+								class=" bg-yellow-400 text-yellow-800 rounded w-5 h-5 flex items-center justify-center text-xs font-bold z-20">
+								<FontAwesomeIcon :icon="faBallotCheck" fixed-width />
+							</div>
+							<span class="font-semibold">postcodes</span>
 						</div>
 
 						<!-- Postal Code Info (Clickable) -->
-						<div
-							v-if="
+						<div v-if="
 								(item.included_postal_codes || item.excluded_postal_codes) &&
 								activePostalInfo === `${territories.id}-${index}`
-							"
-							class="absolute left-1/2 top-[30px] transform -translate-x-1/2 bg-white p-2 rounded-md z-10 shadow border transition-all before:content-[''] before:absolute before:top-[-8px] before:left-1/2 before:transform before:-translate-x-1/2 before:border-l-8 before:border-r-8 before:border-b-8 before:border-l-transparent before:border-r-transparent before:border-b-white after:content-[''] after:absolute after:top-[-9px] after:left-1/2 after:transform after:-translate-x-1/2 after:border-l-8 after:border-r-8 after:border-b-8 after:border-l-transparent after:border-r-transparent after:border-b-gray-300">
+							" class="absolute left-1/2 top-[30px] transform -translate-x-1/2 bg-white p-2 rounded-md z-10 shadow border transition-all before:content-[''] before:absolute before:top-[-8px] before:left-1/2 before:transform before:-translate-x-1/2 before:border-l-8 before:border-r-8 before:border-b-8 before:border-l-transparent before:border-r-transparent before:border-b-white after:content-[''] after:absolute after:top-[-9px] after:left-1/2 after:transform after:-translate-x-1/2 after:border-l-8 after:border-r-8 after:border-b-8 after:border-l-transparent after:border-r-transparent after:border-b-gray-300">
 							<!-- Close button -->
 
 							<!-- Included -->
@@ -185,7 +184,7 @@ onUnmounted(() => {
 								<span class="font-semibold text-nowrap">✔ Included:</span>
 								<span class="text-gray-700 font-mono">{{
 									item.included_postal_codes
-								}}</span>
+									}}</span>
 							</div>
 
 							<!-- Excluded -->
@@ -193,7 +192,7 @@ onUnmounted(() => {
 								<span class="font-semibold">✘ Excluded:</span>
 								<span class="text-gray-700 font-mono">{{
 									item.excluded_postal_codes
-								}}</span>
+									}}</span>
 							</div>
 						</div>
 					</div>
@@ -205,51 +204,51 @@ onUnmounted(() => {
 			<div class="space-y-1 text-xs text-gray-800">
 				<!-- TBC Case -->
 				<div v-if="price.price.type === 'TBC'" class="text-gray-500 italic">
-					<font-awesome-icon icon="fas fa-clock" class="text-yellow-500 mr-1" />
+					<font-awesome-icon icon="fal fa-clock" class="text- mr-1" />
 					Shipping price: TBC
 				</div>
 
 				<!-- Step Pricing -->
 				<div v-else class="space-y-1">
-					<div
-						v-for="(priceStep, index) in price.price.steps"
-						:key="index"
+					<div v-for="(priceStep, index) in price.price.steps" :key="index"
 						class="grid grid-cols-[80px_100px_80px] items-center gap-2 text-xs">
 						<!-- Type -->
 						<div class="flex items-center gap-1 text-gray-600 text-sm">
-							<font-awesome-icon
-								:icon="
+							<font-awesome-icon :icon="
 									price.price.type === 'Step Order Estimated Weight'
-										? 'fas fa-weight'
-										: 'fas fa-box'
+										? 'fal fa-weight'
+										: 'fal fa-box'
 								"
-								class="text-blue-500" />
+								class="opacity-70"
+								fixed-width
+							/>
 							<span>
 								{{
-									price.price.type === "Step Order Estimated Weight"
-										? "Weight"
-										: "Items"
+								price.price.type === "Step Order Estimated Weight"
+								? "Weight"
+								: "Items"
 								}}
 							</span>
 						</div>
 
 						<!-- Range -->
-						<div class="flex items-center gap-1 text-gray-700 text-sm">
-							<span>£{{ priceStep.from }}</span>
-							<font-awesome-icon icon="fas fa-arrow-right" />
-							<span v-if="priceStep.to !== 'INF'">£{{ Number(priceStep.to) }}</span>
+						<div class="flex items-center gap-1 text-gray-700 text-sm tabular-nums">
+							<span>{{ locale.number(priceStep.from) }}</span>
+							<font-awesome-icon icon="fas fa-arrow-right" fixed-width />
+							<span v-if="priceStep.to !== 'INF'">{{ locale.number(priceStep.to) }}</span>
 							<span v-else>∞</span>
 						</div>
 
 						<!-- Price -->
 						<div
-							class="font-bold text-right text-sm"
-							:class="priceStep.price === 0 ? 'text-green-600' : 'text-black'">
+							class="font-bold text-right text-sm tabular-nums"
+							:class="priceStep.price === 0 ? 'text-green-600' : ''">
 							<span v-if="priceStep.price === 0">
-								<font-awesome-icon icon="fas fa-truck" class="mr-1" />
+								<!-- <font-awesome-icon icon="fas fa-truck" class="mr-1" /> -->
 								Free
 							</span>
-							<span v-else> £{{ priceStep.price }} </span>
+							<span v-else-if="typeof priceStep.price == 'number'"> {{ locale.currencyFormat(price.currency_code, priceStep.price) }} </span>
+							<span v-else> {{ priceStep.price }} </span>
 						</div>
 					</div>
 				</div>

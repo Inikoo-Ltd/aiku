@@ -73,6 +73,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read HistoricAsset|null $historicAsset
  * @property-read \App\Models\Accounting\Invoice|null $invoice
  * @property-read Model|\Eloquent $item
+ * @property-read Model|\Eloquent|null $model
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Offer> $offer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferCampaign> $offerCampaign
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferComponent> $offerComponents
@@ -184,5 +185,10 @@ class InvoiceTransaction extends Model
     public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);
+    }
+
+    public function model(): MorphTo
+    {
+        return $this->morphTo();
     }
 }

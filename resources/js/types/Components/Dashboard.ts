@@ -41,4 +41,5 @@ export interface Intervals {
         labelShort: string
     }[]
     value: string
+    range_interval: string
 }

@@ -36,7 +36,7 @@ import Department1Iris from '@/Components/CMS/Webpage/Department1/Department1Iri
 import Step2Workshop from '@/Components/CMS/Webpage/Step1/Step1Workshop.vue'
 import Carousel1Workshop from '@/Components/CMS/Webpage/Carousel-1/Carousel1Workshop.vue'
 import ProductWorkshop1 from '@/Components/CMS/Webpage/Product1/Product1Workshop.vue'
-import SubDepartments1Workshop from '@/Components/CMS/Webpage/SubDepartement1/SubDepartementWorkshop.vue'
+import SubDepartmentWorkshop from '@/Components/CMS/Webpage/SubDepartment1/SubDepartmentWorkshop.vue'
 import Families1Workshop from '@/Components/CMS/Webpage/Families1/Families1Workshop.vue'
 import Products1Workshop from '@/Components/CMS/Webpage/Products1/Products1Workshop.vue'
 import Collections1Workshop from '@/Components/CMS/Webpage/Collections1/Collections1Workshop.vue'
@@ -50,6 +50,11 @@ import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme
 
 
 
+import LuigiTrends1Workshop from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'
+import LuigiLastSeen1Workshop from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'
+import LuigiItemAlternatives1Workshop from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Workshop.vue'
+
+import RecommendationCustomerRecentlyBought1Workshop from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Workshop.vue'
 
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -71,11 +76,11 @@ export const getComponent = (componentName: string) => {
         //footer
         'footer-1': Footer1,
 
-        //departement
+        //department
         'department' : Department1Iris,
 
-        //sub-departement
-        'sub-departments-1' : SubDepartments1Workshop,
+        //sub-department
+        'sub-departments-1' : SubDepartmentWorkshop,
 
         //family
         'families-1' : Families1Workshop,
@@ -90,6 +95,12 @@ export const getComponent = (componentName: string) => {
 
         //see-also
         'see-also-1' : SeeAlso1Workshop,
+
+        // Luigi
+        'luigi-trends-1' : LuigiTrends1Workshop,
+        'luigi-last-seen-1' : LuigiLastSeen1Workshop,
+        'luigi-item-alternatives-1' : LuigiItemAlternatives1Workshop,
+        'recommendation-customer-recently-bought-1': RecommendationCustomerRecentlyBought1Workshop,
 
         'banner': WowsbarBanner,
         "bento-grid-1": BentoGrid,

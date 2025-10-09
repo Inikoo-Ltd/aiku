@@ -107,7 +107,7 @@ class IndexSnapshots extends OrgAction
         $title         = __('snapshots');
         $iconRight  = [
             'icon'  => ['fal', 'fa-shopping-cart'],
-            'title' => __('snapshots'),
+            'title' => __('Snapshots'),
         ];
 
         $afterTitle = [];

@@ -13,6 +13,7 @@ use App\Actions\Comms\Outbox\UpdateOutbox;
 use App\Actions\Traits\WithOutboxBuilder;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\Web\Website\WebsiteTypeEnum;
+use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\PostRoom;
 use App\Models\Web\Website;
@@ -31,8 +32,9 @@ class SeedWebsiteOutboxes
     public function handle(Website $website): void
     {
         foreach (OutboxCodeEnum::cases() as $case) {
-            if (in_array('Website', $case->scope()) and in_array($website->shop->type->value, $case->shopTypes())) {
+            if (in_array('Website', $case->scope()) && in_array($website->shop->type->value, $case->shopTypes())) {
                 $postRoom    = PostRoom::where('code', $case->postRoomCode()->value)->first();
+                /** @var OrgPostRoom $orgPostRoom */
                 $orgPostRoom = $postRoom->orgPostRooms()->where('organisation_id', $website->organisation->id)->first();
 
 

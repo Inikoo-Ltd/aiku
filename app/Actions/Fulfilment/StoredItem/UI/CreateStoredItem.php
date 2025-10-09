@@ -29,9 +29,9 @@ class CreateStoredItem extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'       => __('new SKU'),
+                'title'       => __('New SKU'),
                 'pageHead'    => [
-                    'title'   => __('new SKU'),
+                    'title'   => __('New SKU'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-narwhal'],
                         'title' => __('SKU')
@@ -40,7 +40,7 @@ class CreateStoredItem extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

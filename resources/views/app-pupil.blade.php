@@ -31,9 +31,9 @@
     </head>
     <!-- <body class="font-sans antialiased h-full text-slate-700"> -->
     <body class="font-sans antialiased text-slate-700">
-        @if(\Osiset\ShopifyApp\Util::useNativeAppBridge())
+        @if(\Osiset\ShopifyApp\Util::isMPAApplication())
             @include('shopify-app::partials.token_handler')
-        @endif
+       @endif
         @inertia
     </body>
 </html>

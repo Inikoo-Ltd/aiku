@@ -137,7 +137,7 @@ class IndexRetinaEcomInvoices extends RetinaAction
             'Billing/RetinaInvoices',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('invoices'),
+                'title'       => __('Invoices'),
                 'pageHead'    => [
 
                     'title'         => $title,

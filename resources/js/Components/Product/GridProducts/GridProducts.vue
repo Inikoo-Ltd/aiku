@@ -1,67 +1,3 @@
-<template>
-    <fieldset 
-        :key="`grid-${name}`" 
-        class="min-w-0" 
-        :class="{ 'opacity-75': isVisiting || isParentLoading }"
-    >
-        <!-- Header Section -->
-        <div class="py-2 sm:py-0 my-0">
-            <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4">
-                <!-- Left Section: Counter and Search -->
-                <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
-                    <!-- Record Counter -->
-                    <RecordCounter 
-                        :total="compResourceMeta?.total || 0"
-                        :labelSingular="queryBuilderProps?.labelRecord?.[0] || trans('product')"
-                        :labelPlural="queryBuilderProps?.labelRecord?.[1] || queryBuilderProps?.labelRecord?.[0] || trans('products')"
-                    />
-
-                    <!-- Search Input -->
-                    <div class="flex flex-row">
-                        <TableFilterSearch 
-                            @resetSearch="resetQuery" 
-                            :label="trans('Search products...')"
-                            :value="getSearchInputValue('global')" 
-                            :on-change="changeGlobalSearchValue"
-                            :isVisiting="isVisiting"
-                        />
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Products Grid -->
-        <TableWrapper :result="compResourceMeta?.total === 0" class="mt-2">
-            <div v-if="compResourceData.length > 0" class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 auto-rows-auto gap-4 p-4 bg-white">
-                <!-- Product Cards -->
-                <ProductCard
-                    v-for="(product, index) in compResourceData" 
-                    :key="`product-${index}`"
-                    :product="product"
-                    @toggle-favorite="toggleFavorite"
-                />
-            </div>
-
-            <!-- Empty State -->
-            <EmptyState 
-                v-else-if="!isVisiting"
-                :message="trans('No products found')"
-                :description="getSearchInputValue('global') ? trans('Try adjusting your search terms') : trans('No products are available at this time')"
-            />
-
-            <!-- Pagination -->
-            <Pagination 
-                :on-click="visit" 
-                :has-data="hasData" 
-                :meta="compResourceMeta"
-                :exportLinks="queryBuilderProps?.exportLinks"
-                :per-page-options="queryBuilderProps?.perPageOptions"
-                :on-per-page-change="onPerPageChange" 
-            />
-        </TableWrapper>
-    </fieldset>
-</template>
-
 <script setup lang="ts">
 /**
  * GridProducts Component
@@ -85,14 +21,21 @@ import { notify } from '@kyvg/vue3-notification'
 import Pagination from '@/Components/Table/Pagination.vue'
 import TableFilterSearch from '@/Components/Table/TableFilterSearch.vue'
 import TableWrapper from '@/Components/Table/TableWrapper.vue'
+import HeaderCell from '@/Components/Table/HeaderCell.vue'
+import Image from '@/Components/Image.vue'
 
 // Product Components
 import RecordCounter from './RecordCounter.vue'
 import ProductCard from './ProductCard.vue'
 import EmptyState from './EmptyState.vue'
+import ProductRenderEcom from '@/Components/CMS/Webpage/Products1/ProductRenderEcom.vue'
+
+
+import { clone } from 'lodash-es'
 
 // Types
 import type { Product, QueryBuilderData } from './types'
+import ListItem from '@tiptap/extension-list-item'
 
 
 // ============================================================================
@@ -139,7 +82,26 @@ const props = defineProps({
         default: false,
         required: false,
     },
+    gridClass: {
+        type: String,
+        default: 'lg:grid-cols-3 xl:grid-cols-4 grid grid-cols-2',
+        required: false,
+    },
+    columnsType: {
+        type: Object,
+        default: () => {
+            return {};
+        },
+        required: false,
+    },
+    basketTransactions: {
+        type: Object,
+        default: () => ({}),
+        required: false,
+    },
 })
+
+// console.log(props);
 
 // ============================================================================
 // STATE MANAGEMENT
@@ -158,7 +120,7 @@ const queryBuilderProps = computed(() => {
     return data
 })
 
-const queryBuilderData = ref<QueryBuilderData>({...queryBuilderProps.value})
+const queryBuilderData = ref<QueryBuilderData>({ ...queryBuilderProps.value })
 
 // Initialize search inputs if not present
 if (!queryBuilderData.value.searchInputs) {
@@ -186,15 +148,15 @@ const compResourceData = computed<Product[]>(() => {
     if (props.resource?.data?.length > 0) {
         return props.resource.data
     }
-    
+
     if (props.data?.length > 0) {
         return props.data
     }
-    
+
     if (Object.keys(props.resource || {}).length > 0 && !('data' in props.resource)) {
         return props.resource
     }
-    
+
     return []
 })
 
@@ -233,6 +195,17 @@ const compResourceMeta = computed(() => {
 const hasData = computed(() => {
     return compResourceData.value.length > 0 || compResourceMeta.value.total > 0
 })
+
+/**
+ * Get existing transaction for a product
+ */
+/* const getExistingTransaction = (product: Product) => {
+    if (!props.basketTransactions || !product.id) {
+        return null
+    }
+    return props.basketTransactions[product.id] || null
+} */
+console.log('basketTransactions', props.basketTransactions)
 
 // ============================================================================
 // SEARCH & FILTER FUNCTIONS
@@ -394,6 +367,30 @@ function generateNewQueryString(): string {
     return (!query || query === pageName.value + '=1') ? '' : query
 }
 
+function sortBy(column) {
+    if (queryBuilderData.value.sort === column) {
+        queryBuilderData.value.sort = `-${column}`;
+    } else {
+        queryBuilderData.value.sort = column;
+    }
+
+    queryBuilderData.value.cursor = null;
+    queryBuilderData.value.page = 1;
+}
+
+
+
+function header(key) {
+    const intKey = findDataKey('columns', key);
+    const columnData = clone(queryBuilderProps.value.columns[intKey]);
+
+    if (columnData) {
+        columnData.onSort = sortBy;
+    }
+
+    return columnData;
+}
+
 // ============================================================================
 // NAVIGATION
 // ============================================================================
@@ -457,10 +454,10 @@ watch(queryBuilderData, async () => {
 const toggleFavorite = (product: Product): void => {
     // Default to true if undefined (all products are favorited by default)
     const originalState = product.is_favourite !== undefined ? product.is_favourite : true
-    
+
     // Optimistically update the UI
     product.is_favourite = !originalState
-    
+
     // Section: Submit - Handle favorite/unfavorite API calls
     if (originalState) {
         // Product was favorited, now unfavorite it
@@ -469,7 +466,7 @@ const toggleFavorite = (product: Product): void => {
             {
                 preserveScroll: true,
                 preserveState: true,
-                onStart: () => { 
+                onStart: () => {
                     isLoading.value = true
                 },
                 onSuccess: () => {
@@ -496,6 +493,88 @@ const toggleFavorite = (product: Product): void => {
                 },
             }
         )
-    } 
+    }
 }
+
+const getDataHasInBasket = (item: Product) => {
+        return {
+                id: item?.id,
+                quantity_ordered: item.quantity_ordered || 0,
+                quantity_ordered_new: item.quantity_ordered_new || 0,
+                asset_id: item?.asset_id
+            }
+    }
+
 </script>
+
+<template>
+    <fieldset :key="`grid-${name}`" class="min-w-0" :class="{ 'opacity-75': isVisiting || isParentLoading }">
+        <!-- Header Section -->
+        <div class="py-2 sm:py-0 my-0">
+            <div class="grid grid-flow-col justify-between items-center flex-nowrap px-3 sm:px-4">
+                <!-- Left Section: Counter and Search -->
+                <div class="h-fit flex flex-wrap gap-y-0.5 gap-x-1 items-center my-0.5">
+                    <!-- Record Counter -->
+                    <RecordCounter :total="compResourceMeta?.total || 0"
+                        :labelSingular="queryBuilderProps?.labelRecord?.[0] || trans(name)"
+                        :labelPlural="queryBuilderProps?.labelRecord?.[1] || queryBuilderProps?.labelRecord?.[0] || trans('products')" />
+
+                    <!-- Search Input -->
+                    <div class="flex flex-row">
+                        <TableFilterSearch @resetSearch="resetQuery" :label="trans('Search products...')"
+                            :value="getSearchInputValue('global')" :on-change="changeGlobalSearchValue"
+                            :isVisiting="isVisiting" />
+                    </div>
+                </div>
+
+                <div>
+                    <slot v-for="column in queryBuilderProps.columns.filter(item => item.sortable)"
+                        :name="`header(${column.key})`" :header="column">
+                        <HeaderCell :key="`table-${name}-header-${column.key}`" :cell="header(column.key)"
+                            :type="columnsType[column.key]" :column="column" :resource="compResourceData">
+                        </HeaderCell>
+                    </slot>
+                </div>
+            </div>
+        </div>
+
+        <!-- Products Grid -->
+        <TableWrapper :result="compResourceMeta?.total === 0" class="mt-2">
+            <div v-if="compResourceData.length > 0" class="auto-rows-auto gap-4 p-4" :class="gridClass">
+                <!-- Product Cards -->
+                <div v-for="(item, index) in compResourceData" :key="`product-${index}`">
+                    <slot name="card" :item="item">
+                        <!-- <ProductCard 
+                            :product="item" 
+                            :existing-transaction="getExistingTransaction(item)"
+                            @toggle-favorite="toggleFavorite" 
+                        /> -->
+                        <ProductRenderEcom :product="item" :key="index" :hasInBasket="item"
+                            :dettach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"
+                            :attach-to-favourite-route="{ name: 'retina.models.product.favourite' }"
+                            :add-to-basket-route="{ name: 'retina.models.product.add-to-basket' }"
+                            :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update', method: 'patch' }"
+                            @after-on-unselect-favourite="() => router.reload()">
+                            <template #image="{ product }">
+                                <Image :src="product?.image?.source" alt="product image"
+                                    :style="{ objectFit: 'contain' }" />
+                            </template>
+                        </ProductRenderEcom>
+                    </slot>
+                </div>
+
+
+            </div>
+
+            <!-- Empty State -->
+            <EmptyState v-else-if="!isVisiting"
+                :message="getSearchInputValue('global') ? trans('No result') : (trans('Empty') + ' ' + name)"
+                :description="getSearchInputValue('global') ? trans('Try adjusting your search terms') : name + ' ' + trans('could not be found')" />
+
+            <!-- Pagination -->
+            <Pagination v-if="hasData" :on-click="visit" :has-data="hasData" :meta="compResourceMeta"
+                :exportLinks="queryBuilderProps?.exportLinks" :per-page-options="queryBuilderProps?.perPageOptions"
+                :on-per-page-change="onPerPageChange" />
+        </TableWrapper>
+    </fieldset>
+</template>

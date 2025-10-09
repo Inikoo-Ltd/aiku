@@ -75,7 +75,7 @@ class ShowWorkshopBlueprint extends OrgAction
                 'pageHead'        => [
                     'title' => $webpage->code,
                     'icon'  => [
-                        'title' => __('blueprint'),
+                        'title' => __('Blueprint'),
                         'icon'  => 'fal fa-file-code'
                     ],
                 ],

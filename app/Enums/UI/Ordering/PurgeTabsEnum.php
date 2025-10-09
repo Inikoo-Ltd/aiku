@@ -29,11 +29,11 @@ enum PurgeTabsEnum: string
     {
         return match ($this) {
             PurgeTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fal fa-info-circle',
             ],
             PurgeTabsEnum::PURGED_ORDERS => [
-                'title' => __('purged orders'),
+                'title' => __('Purged orders'),
                 'icon'  => 'fal fa-dollar-sign',
             ],
         };

@@ -67,7 +67,7 @@ class FetchAuroraDeletedInvoice extends FetchAurora
             $billingAddressData['country_id'] = $this->parsedData['parent']->shop->country_id;
         }
 
-        //  print_r($billingAddressData);
+
         $billingAddress = new Address($billingAddressData);
 
         $date = $this->parseDatetime($auroraDeletedData->{'Invoice Date'});

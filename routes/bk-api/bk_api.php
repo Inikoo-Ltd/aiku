@@ -17,7 +17,6 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteDeliveryNote;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteFavourites;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteInvoice;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeliveryNote;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraDepartment;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDispatchedEmail;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraEmailTrackingEvent;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraEmployee;
@@ -60,7 +59,6 @@ Route::name('bk_api.')->group(function () {
             Route::post('customer', ProcessAuroraCustomer::class)->name('customer');
             Route::post('delivery-note', ProcessAuroraDeliveryNote::class)->name('delivery_note');
             Route::post('delete-delivery-note', ProcessAuroraDeleteDeliveryNote::class)->name('delivery_note.delete');
-            Route::post('department', ProcessAuroraDepartment::class)->name('department');
             Route::post('dispatched-email', ProcessAuroraDispatchedEmail::class)->name('dispatched_email');
             Route::post('email-tracking-event', ProcessAuroraEmailTrackingEvent::class)->name('email_tracking_event');
             Route::post('employee', ProcessAuroraEmployee::class)->name('employee');

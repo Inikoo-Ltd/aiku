@@ -8,7 +8,7 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
-use App\Actions\Accounting\Invoice\UI\IndexInvoices;
+use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrder;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
@@ -22,7 +22,6 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -237,10 +236,8 @@ class ShowOrder extends OrgAction
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
-        $readonly = true;
-        if ($platform->type == PlatformTypeEnum::MANUAL) {
-            $readonly = false;
-        }
+        $readonly = false;
+
 
         return Inertia::render(
             'Org/Ordering/Order',
@@ -260,7 +257,7 @@ class ShowOrder extends OrgAction
                     'model'      => __('Order'),
                     'icon'       => [
                         'icon'  => 'fal fa-shopping-cart',
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
                     'afterTitle' => [
                         'label' => $order->state->labels()[$order->state->value],
@@ -277,32 +274,103 @@ class ShowOrder extends OrgAction
                     'navigation' => OrderTabsEnum::navigation()
                 ],
                 'routes'      => [
-                    'updateOrderRoute' => [
+                    'modify'   => [
+                                'name' => 'grp.models.order.modification.save',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
+                    'updateOrderRoute'  => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.update',
                         'parameters' => [
                             'order' => $order->id,
                         ]
                     ],
-                    'products_list'    => [
+                    'rollback_dispatch' => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.order.rollback_dispatch',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
+                    'products_list'     => [
                         'name'       => 'grp.json.order.products',
                         'parameters' => [
                             'order' => $order->id
                         ]
                     ],
-                    'delivery_note'    => $deliveryNoteRoute
+                    'products_list_modification'     => [
+                        'name'       => 'grp.json.order.products_for_modify',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
+                    'delivery_note'     => $deliveryNoteRoute
                 ],
 
                 'notes'                       => $this->getOrderNotes($order),
                 'timelines'                   => $finalTimeline,
                 'readonly'                    => $readonly,
-                'delivery_address_management' => $this->shop->type == ShopTypeEnum::DROPSHIPPING ? GetDropshippingOrderDeliveryAddressManagement::run(order: $order) : GetOrderAddressManagement::run(order: $order),
+                'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
 
                 'box_stats'     => $this->getOrderBoxStats($order),
                 'currency'      => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'          => OrderResource::make($order),
                 'delivery_note' => $deliveryNoteResource,
 
+                'proforma_invoice'  => [
+                    'check_list'       => [
+                        [
+                            'label' => __('Pro mode'),
+                            'value' => 'pro_mode',
+                        ],
+                        [
+                            'label' => __('Recommended retail prices'),
+                            'value' => 'rrp',
+                        ],
+                        [
+                            'label' => __('Parts'),
+                            'value' => 'parts',
+                        ],
+                        [
+                            'label' => __('Commodity Codes'),
+                            'value' => 'commodity_codes',
+                        ],
+                        [
+                            'label' => __('Barcode'),
+                            'value' => 'barcode',
+                        ],
+                        [
+                            'label' => __('Weight'),
+                            'value' => 'weight',
+                        ],
+                        [
+                            'label' => __('Country of Origin'),
+                            'value' => 'country_of_origin',
+                        ],
+                        [
+                            'label' => __('Hide Payment Status'),
+                            'value' => 'hide_payment_status',
+                        ],
+                        [
+                            'label' => __('CPNP'),
+                            'value' => 'cpnp',
+                        ],
+                        [
+                            'label' => __('Group by Tariff Code'),
+                            'value' => 'group_by_tariff_code',
+                        ],
+                    ],
+                    'route_download_pdf'    => [
+                        'name'       => 'grp.org.shops.show.ordering.proforma_invoice.download',
+                        'parameters' => [
+                            'organisation' => $order->organisation->slug,
+                            'shop' => $order->shop->slug,
+                            'order' => $order->slug
+                        ]
+                    ]
+                ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.order.attachment.attach',
@@ -371,8 +439,8 @@ class ShowOrder extends OrgAction
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
                 OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
-                    fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                    fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
                 OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
                     fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
@@ -396,8 +464,8 @@ class ShowOrder extends OrgAction
                 )
             )
             ->table(
-                IndexInvoices::make()->tableStructure(
-                    parent: $order,
+                IndexInvoicesInOrder::make()->tableStructure(
+                    order: $order,
                     prefix: OrderTabsEnum::INVOICES->value
                 )
             )

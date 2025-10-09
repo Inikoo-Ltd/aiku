@@ -271,17 +271,17 @@ const isModalEbayDuplicate = ref(false)
 
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead"/>
-    <div class="px-6">
-        <div class="text-xl py-2 w-fit">E-Commerce</div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div class="mt-4 px-4 md:px-6">
+        <div class="text-base py-2 w-fit">{{ trans("Select channel you want to create") }}:</div>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-6">
             <!-- Section: Manual -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+                    <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-9 sm:h-12">
                     <div class="flex flex-col">
-                        <div class="font-semibold">{{ trans("Web") }}/API</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.manual }} {{ trans("Channels") }}</div>
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">{{ trans("Web") }}/API</div>
+                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.manual }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
 
@@ -295,13 +295,13 @@ const isModalEbayDuplicate = ref(false)
             </div>
 
             <!-- Section: Shopify -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <div v-html="ChannelLogo('shopify')" class="h-12"></div>
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+                    <div v-html="ChannelLogo('shopify')" class="h-9 sm:h-12"></div>
                     <div class="flex flex-col">
-                        <div class="font-semibold">Shopify</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Shopify</div>
+                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
                 <!-- Button: Connect -->
@@ -311,15 +311,15 @@ const isModalEbayDuplicate = ref(false)
             </div>
 
             <!-- Section: Tiktok -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <div v-html="ChannelLogo('tiktok')" class="h-12"
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+                    <div v-html="ChannelLogo('tiktok')" class="h-9 sm:h-12"
                          :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
                     <div class="flex flex-col">
-                        <div class="font-semibold">Tiktok</div>
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Tiktok</div>
                         <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
-                             class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans("Channels") }}
+                             class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.tiktok }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
@@ -339,14 +339,14 @@ const isModalEbayDuplicate = ref(false)
             </div>
 
             <!-- Section: Woocommerce -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="truncate mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <div v-html="ChannelLogo('woocommerce')" class="h-12"></div>
+                    class="truncate md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+                    <div v-html="ChannelLogo('woocommerce')" class="h-9 sm:h-12 min-w-6"></div>
 
                     <div class="flex flex-col">
-                        <div class="font-semibold text-lg">Woocommerce</div>
-                        <div class="text-xs text-gray-500">
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Woocommerce</div>
+                        <div class="text-xs text-gray-500 text-center sm:text-left">
                             {{ total_channels?.woocommerce }} {{ trans("Channels") }}
                         </div>
                     </div>
@@ -362,17 +362,17 @@ const isModalEbayDuplicate = ref(false)
                 </div>
             </div>
             <!-- Section: Ebay -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
-                         alt="" class="h-12"
+                         alt="" class="h-9 sm:h-12"
                     >
 
                     <div class="flex flex-col">
-                        <div class="font-semibold">Ebay</div>
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Ebay</div>
                         <div
-                             class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}
+                             class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.ebay }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
@@ -380,7 +380,6 @@ const isModalEbayDuplicate = ref(false)
                 <div class="w-full flex justify-end">
 
                     <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         xtype="primary"
                         :type="total_channels?.ebay ? 'tertiary' : 'primary'"
@@ -388,23 +387,23 @@ const isModalEbayDuplicate = ref(false)
                         :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
                         @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
                     />
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
+<!--                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
 
                 </div>
             </div>
 
             <!-- Section: Amazon -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
 
-                    <div v-html="ChannelLogo('amazon_simple')" class="h-12"
+                    <div v-html="ChannelLogo('amazon_simple')" class="h-9 sm:h-12"
                          :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
 
                     <div class="flex flex-col">
-                        <div class="font-semibold">Amazon</div>
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Amazon</div>
                         <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
-                             class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}
+                             class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
@@ -425,16 +424,16 @@ const isModalEbayDuplicate = ref(false)
             </div>
 
             <!-- Section: Magento -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                      <img src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
                         alt="" class="h-12 filter"
                     >
 
                     <div class="flex flex-col">
-                        <div class="font-semibold">Magento</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.magento ?? 0 }} {{
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Magento</div>
+                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.magento ?? 0 }} {{
                                 trans("Channels")
                             }}
                         </div>
@@ -479,7 +478,7 @@ const isModalEbayDuplicate = ref(false)
                 }"
                 @keydown.enter="() => onCreateStoreShopify()"
             />
-            
+
             <div class="mt-1 text-xs text-gray-500">
                 {{ trans("Not sure which is your Shopify store name?") }} <a href="https://drive.google.com/file/d/1bdq3cQUvc3bussJfIMen5b4P4X-qw0W-/view" target="_blank" class="underline hover:text-gray-700">Click here</a>
             </div>

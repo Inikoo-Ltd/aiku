@@ -23,13 +23,13 @@ enum GrpTabsEnum: string
     {
         return match ($this) {
             GrpTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             GrpTabsEnum::SHOWCASE => [
-                'title' => __('group'),
+                'title' => __('Group'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

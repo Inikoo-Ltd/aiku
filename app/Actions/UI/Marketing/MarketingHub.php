@@ -59,7 +59,7 @@ class MarketingHub extends InertiaAction
                 ),
                 'title'       => __('marketing'),
                 'pageHead'    => [
-                    'title' => __('marketing'),
+                    'title' => __('Marketing'),
                 ],
 
 
@@ -77,7 +77,7 @@ class MarketingHub extends InertiaAction
 
                             ],
                             [
-                                'name'  => __('outboxes'),
+                                'name'  => __('Outboxes'),
                                 'icon'  => ['fal', 'fa-inbox-out'],
                                 'route'  => ['grp.marketing.outboxes.index'],
                                 'index' => [
@@ -86,7 +86,7 @@ class MarketingHub extends InertiaAction
 
                             ],
                             [
-                                'name'  => __('mailshots'),
+                                'name'  => __('Mailshots'),
                                 'icon'  => ['fal', 'fa-mail-bulk'],
                                 'route'  => ['grp.marketing.mailshots.index'],
                                 'index' => [
@@ -120,7 +120,7 @@ class MarketingHub extends InertiaAction
 
                             ],
                             [
-                                'name'  => __('outboxes'),
+                                'name'  => __('Outboxes'),
                                 'icon'  => ['fal', 'fa-inbox-out'],
                                 'route'  => ['grp.marketing.outboxes.index'],
                                 'index' => [
@@ -129,7 +129,7 @@ class MarketingHub extends InertiaAction
 
                             ],
                             [
-                                'name'  => __('mailshots'),
+                                'name'  => __('Mailshots'),
                                 'icon'  => ['fal', 'fa-mail-bulk'],
                                 'route'  => ['grp.marketing.mailshots.index'],
                                 'index' => [

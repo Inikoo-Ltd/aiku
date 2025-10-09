@@ -122,7 +122,7 @@ class IndexGuests extends GrpAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new guest'),
+                            'tooltip' => __('New guest'),
                             'label'   => __('guest'),
                             'route'   => [
                                 'name'       => 'grp.sysadmin.guests.create',
@@ -157,13 +157,13 @@ class IndexGuests extends GrpAction
             $title = __('Inactive');
             $icon  = [
                 'icon'  => ['fal', 'fa-user-slash'],
-                'title' => __('inactive guests')
+                'title' => __('Inactive guests')
             ];
         } elseif ($this->scope == 'all') {
             $title = __('All');
             $icon  = [
                 'icon'  => ['fal', 'fa-users'],
-                'title' => __('all guests')
+                'title' => __('All guests')
             ];
         }
         return Inertia::render(
@@ -180,7 +180,7 @@ class IndexGuests extends GrpAction
                         $this->canEdit && $request->route()->getName() == 'grp.sysadmin.guests.index' ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('guest'),
+                            'label' => __('Guest'),
                             'route' => [
 
                                 'name'       => 'grp.sysadmin.guests.create',

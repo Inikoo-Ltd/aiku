@@ -202,12 +202,12 @@ class IndexSubDepartmentWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('webpages'),
+                'title'       => __('Webpages'),
                 'pageHead'    => [
                     'title'         => __('sub department webpages'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
-                        'title' => __('webpage')
+                        'title' => __('Webpage')
                     ],
                     'subNavigation' => $subNavigation,
                     'actions'       => [

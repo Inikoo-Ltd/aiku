@@ -73,7 +73,7 @@ class ShowManufactureTask extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'industry'],
-                            'title' => __('manufacture task')
+                            'title' => __('Manufacture task')
                         ],
                     'title'   => $manufactureTask->name,
                     'actions' => [

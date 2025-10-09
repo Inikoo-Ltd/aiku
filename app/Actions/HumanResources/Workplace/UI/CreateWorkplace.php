@@ -35,14 +35,14 @@ class CreateWorkplace extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('new workplace'),
+                'title'       => __('New workplace'),
                 'pageHead'    => [
-                    'title'   => __('new workplace'),
+                    'title'   => __('New workplace'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.hr.workplaces.index',
                                 'parameters' => array_values($request->route()->originalParameters())

@@ -125,7 +125,7 @@ class ShowStockDelivery extends OrgAction
                                 'name' => 'grp.org.procurement.stock_deliveries.index',
                                 'parameters' => $routeParameters,
                             ],
-                            'label' => __('supplier delivery')
+                            'label' => __('Supplier delivery')
                         ],
                         'model' => [
                             'route' => [

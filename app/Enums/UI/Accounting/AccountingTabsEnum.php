@@ -28,19 +28,19 @@ enum AccountingTabsEnum: string
     {
         return match ($this) {
             AccountingTabsEnum::ITEMS => [
-                'title' => __('items'),
+                'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
             AccountingTabsEnum::PAYMENTS => [
-                'title' => __('payments'),
+                'title' => __('Payments'),
                 'icon'  => 'fal fa-dollar-sign',
             ],
             AccountingTabsEnum::PROPERTIES_OPERATIONS => [
-                'title' => __('properties/operations'),
+                'title' => __('Properties/operations'),
                 'icon'  => 'fal fa-database',
             ],
             AccountingTabsEnum::CHANGELOG => [
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-road',
                 'type'  => 'icon-only',
             ],

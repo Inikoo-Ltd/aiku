@@ -25,18 +25,18 @@ class CreateRetinaFulfilmentPlatformCustomerClient extends RetinaAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('new client'),
+                'title'       => __('New client'),
                 'pageHead'    => [
-                    'title'   => __('new client'),
+                    'title'   => __('New client'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('client')
+                        'title' => __('Client')
                     ],
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

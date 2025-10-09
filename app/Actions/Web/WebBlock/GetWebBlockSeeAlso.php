@@ -37,15 +37,17 @@ class GetWebBlockSeeAlso
         $products = Arr::get($webBlock, "{$settingsPath}.products", []);
 
         // Ensure type exists but don’t overwrite if already set
-        $type = Arr::has($webBlock, "{$settingsPath}.type")
-            ? Arr::get($webBlock, "{$settingsPath}.type")
-            : "luigi-trends";
-
+        $luigiTrackerId = data_get($webpage->website, 'settings.luigisbox.tracker_id');
         if (!Arr::has($webBlock, "{$settingsPath}.type")) {
-            data_set($webBlock, "{$settingsPath}.type", $type);
+            if ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
+                data_set($webBlock, "{$settingsPath}.type", "current-family");
+            } elseif ($luigiTrackerId) {
+                data_set($webBlock, "{$settingsPath}.type", "luigi-trends");
+            }
         }
 
-        // Section: Other Family
+
+        // Section: Another Family
         $dataOtherFamilyToWorkshop = null;
         $idOtherFamily = (int) Arr::get($webBlock, "{$settingsPath}.other_family.id");
         if ($idOtherFamily > 0 && ($modelOtherFamily = ProductCategory::find($idOtherFamily))) {
@@ -56,7 +58,10 @@ class GetWebBlockSeeAlso
                 'code'  => $modelOtherFamily->code,
                 'title' => $modelOtherFamily->title,
                 'option' => ProductsWebpageResource::collection(
-                    $modelOtherFamily->getProducts()->sortByDesc('id')->take(6)
+                    $modelOtherFamily->getProducts()
+                        // ->where('stock', '>', 0)
+                        ->sortByDesc('id')
+                        ->take(6)
                 )->resolve(),
             ];
         }
@@ -69,7 +74,7 @@ class GetWebBlockSeeAlso
             ->values()
             ->all();
 
-        $productsModel = Product::with(['images', 'category']) // eager-load to prevent N+1
+        $productsModel = Product::with(['images']) // eager-load to prevent N+1
             ->whereIn('id', $ids)
             ->get();
 

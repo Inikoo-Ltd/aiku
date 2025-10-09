@@ -58,8 +58,8 @@ class ShowRetinaSysAdminDashboard extends RetinaAction
 
                 ],
                 'users' => [
-                    'active' => 2,
-                    'inactive' => 4,
+                    'active' => $this->customer->stats->number_current_web_users,
+                    'inactive' => $this->customer->stats->number_web_users - $this->customer->stats->number_current_web_users
                 ],
                 'customer'     => CustomersResource::make($this->customer),
                 'status'              => $this->customer->status,

@@ -81,7 +81,7 @@ class ShowRetinaCustomerClient extends RetinaAction
                     'title'   => $customerClient->name,
                     'icon'    => [
                         'icon'  => ['fal', 'fa-user-friends'],
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
                     'actions' => $actions
                 ],

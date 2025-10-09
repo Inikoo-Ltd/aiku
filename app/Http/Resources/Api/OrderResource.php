@@ -39,7 +39,7 @@ class OrderResource extends JsonResource
             'net_amount'    => $order->net_amount,
             'total_amount'    => $order->total_amount,
             'item_amount' => $order->goods_amount,
-            'item_quantity' => $order->stats->number_item_transactions,
+            'item_quantity' => $order->number_item_transactions,
             'tax_amount' => $order->tax_amount,
             'shipping_amount' => $order->shipping_amount,
             'charges_amount' => $order->charges_amount,

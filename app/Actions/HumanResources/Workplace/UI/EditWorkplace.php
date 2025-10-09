@@ -108,7 +108,7 @@ class EditWorkplace extends OrgAction
                     'action' => [
                         'type'  => 'button',
                         'style' => 'delete',
-                        'label' => __('delete workplace'),
+                        'label' => __('Delete workplace'),
                         'route' => [
                             'name'       => 'customer.models.banner.delete',
                             'parameters' => [
@@ -128,7 +128,7 @@ class EditWorkplace extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('editing working place'),
+                'title'       => __('Editing working place'),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'  => [
                     'previous' => $this->getPrevious($workplace, $request),
@@ -139,7 +139,7 @@ class EditWorkplace extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'building'],
-                            'title' => __('working place')
+                            'title' => __('Working place')
                         ],
                     'actions' => [
                         [

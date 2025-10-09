@@ -52,7 +52,7 @@ class GetOrderActions
                         'style'   => 'secondary',
                         'icon'    => 'fal fa-plus',
                         'key'     => 'add-products',
-                        'label'   => __('add products'),
+                        'label'   => __('Add products'),
                         'tooltip' => __('Add products'),
                         'route'   => [
                             'name'       => 'grp.models.order.transaction.store',
@@ -65,8 +65,8 @@ class GetOrderActions
                         [
                             'type'    => 'button',
                             'style'   => 'save',
-                            'tooltip' => __('submit'),
-                            'label'   => __('submit'),
+                            'tooltip' => __('Submit'),
+                            'label'   => __('Submit'),
                             'key'     => 'action',
                             'route'   => [
                                 'method'     => 'patch',
@@ -81,8 +81,8 @@ class GetOrderActions
                     [
                         'type'    => 'button',
                         'style'   => 'save',
-                        'tooltip' => __('Send to Warehouse'),
-                        'label'   => __('send to warehouse'),
+                        'tooltip' => __('Send order to Warehouse'),
+                        'label'   => __('Send to warehouse'),
                         'key'     => 'action',
                         'route'   => [
                             'method'     => 'patch',
@@ -115,36 +115,39 @@ class GetOrderActions
 
                 OrderStateEnum::DISPATCHED => [
 
-                     $order->invoices->count() == 0 ?
-                         [
-                             'type'    => 'button',
-                             'style'   => '',
-                             'tooltip' => $generateInvoiceLabel,
-                             'label'   => $generateInvoiceLabel,
-                             'key'     => 'action',
-                             'route'   => [
-                                 'method'     => 'patch',
-                                 'name'       => 'grp.models.order.generate_invoice',
-                                 'parameters' => [
-                                     'order' => $order->id
-                                 ]
-                             ]
-                         ] : [],
-                         [
-                             'type'    => 'button',
-                             'style'   => '',
-                             'tooltip' => __('Rollback'),
-                             'label'   => __('Rollback'),
-                             'key'     => 'rollback',
-                             'route'   => [
-                                 'method'     => 'patch',
-                                 'name'       => 'grp.models.order.rollback_dispatch',
-                                 'parameters' => [
-                                     'order' => $order->id
-                                 ]
-                             ]
-                         ]
-                 ],
+                    $order->invoices->count() == 0 ?
+                        [
+                            'type'    => 'button',
+                            'style'   => '',
+                            'tooltip' => $generateInvoiceLabel,
+                            'label'   => $generateInvoiceLabel,
+                            'key'     => 'action',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.generate_invoice',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ] : [],
+                    [
+                        'type'    => 'button',
+                        'style'   => 'save',
+                        'icon'    => 'fal fa-plus',
+                        'tooltip' => __('Create a replacement'),
+                        'label'   => __('Replacement'),
+                        'key'     => 'replacement',
+                        'route'   => [
+                            'method'     => 'get',
+                            'name'       => 'grp.org.shops.show.ordering.orders.show.replacement.create',
+                            'parameters' => [
+                                'organisation' => $order->organisation->slug,
+                                'shop'         => $order->shop->slug,
+                                'order'        => $order->slug
+                            ]
+                        ]
+                    ],
+                ],
 
                 default => []
             };
@@ -161,21 +164,26 @@ class GetOrderActions
             }
 
             if ($showCancel) {
-                array_unshift($actions, [
-                    'type'  => 'button',
-                    'style' => 'cancel',
-                    'key'   => 'cancel',
-                    'label'   => __('Cancel'),
-                    'route' => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.order.state.cancelled',
-                        'parameters' => [
-                            'order' => $order->id
+                array_unshift(
+                    $actions,
+                    [
+                        'type'  => 'button',
+                        'style' => 'cancel',
+                        'key'   => 'cancel',
+                        'label' => __('Cancel'),
+                        'route' => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.state.cancelled',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
                         ]
                     ]
-                ]);
+                );
             }
         }
+
+
 
         return $actions;
     }

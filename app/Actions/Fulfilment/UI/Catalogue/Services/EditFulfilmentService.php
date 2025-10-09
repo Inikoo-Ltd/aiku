@@ -72,7 +72,7 @@ class EditFulfilmentService extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
-                            'title' => __('product')
+                            'title' => __('Product')
                         ],
                     'actions' => [
                         [

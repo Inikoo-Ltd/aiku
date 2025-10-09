@@ -32,9 +32,15 @@ class FetchAuroraProduct extends FetchAurora
             return;
         }
 
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return;
+        }
+
+
         $this->parsedData['shop'] = $shop;
 
         $this->parsedData['parent'] = $this->parsedData['shop'];
+
 
         $family = null;
         if ($this->auroraModelData->{'Product Family Category Key'}) {
@@ -46,9 +52,16 @@ class FetchAuroraProduct extends FetchAurora
             }
         }
 
+
         $this->parsedData['family'] = $family;
-        if ($shop->type != ShopTypeEnum::DROPSHIPPING) {
-            $this->parsedData['parent'] = $family;
+        $this->parsedData['parent'] = $family;
+
+
+        if ($this->parsedData['parent'] === null) {
+
+            $this->parsedData['shop'] = $shop;
+            $this->parsedData['parent'] = $shop;
+
         }
 
 
@@ -149,11 +162,6 @@ class FetchAuroraProduct extends FetchAurora
         ];
 
 
-        //        if ($grossWeight && $grossWeight < 500) {
-        //            $this->parsedData['product']['gross_weight'] = (int)ceil($grossWeight * 1000);
-        //        }
-
-
         if ($this->auroraModelData->{'is_variant'} == 'Yes') {
             $this->parsedData['product']['is_main'] = false;
             $mainProduct                            = $this->parseProduct($this->organisation->id.':'.$this->auroraModelData->{'variant_parent_id'});
@@ -165,19 +173,6 @@ class FetchAuroraProduct extends FetchAurora
         }
 
         $this->parsedData['au_data'] = $this->auroraModelData;
-        $this->parsedData['images']  = $this->parseImages();
-    }
-
-    private function parseImages(): array
-    {
-        $images = $this->getModelImagesCollection(
-            'Product',
-            $this->auroraModelData->{'Product ID'}
-        )->map(function ($auroraImage) {
-            return $this->fetchImage($auroraImage);
-        });
-
-        return $images->toArray();
     }
 
 

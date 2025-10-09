@@ -71,9 +71,9 @@ class CreateClockingMachine extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new clocking machine'),
+                'title'       => __('New clocking machine'),
                 'pageHead'    => [
-                    'title'        => __('new clocking machine'),
+                    'title'        => __('New clocking machine'),
                     'cancelCreate' => [
                         'route' =>
                             match (class_basename($parent)) {

@@ -12,6 +12,7 @@ import { trans } from 'laravel-vue-i18n'
 import { routeType } from '@/types/route'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
+import { notify } from '@kyvg/vue3-notification'
 library.add(faTimes, faExclamationTriangle, faAsterisk)
 
 const props = defineProps<{
@@ -53,6 +54,13 @@ const onClickYesButton = () => {
                     onStart: () => {
                         isLoadingdelete.value = true
                     },
+                    onError: (e) => {
+                        notify({
+                            title: trans("Something went wrong"),
+                            text: e.message || '',
+                            type: "error",
+                        })
+                    },
                     onSuccess: () => {
                         isOpenModal.value = false
                     },
@@ -73,6 +81,13 @@ const onClickYesButton = () => {
                 {
                     onStart: () => {
                         isLoadingdelete.value = true
+                    },
+                    onError: (e) => {
+                        notify({
+                            title: trans("Something went wrong"),
+                            text: e.message || '',
+                            type: "error",
+                        })
                     },
                     onSuccess: () => {
                         isOpenModal.value = false
@@ -100,7 +115,7 @@ const messageDelete = ref('')
         </slot>
 
         <TransitionRoot as="template" :show="isOpenModal">
-            <Dialog class="relative z-20" @close="isOpenModal = false">
+            <Dialog class="relative z-[21]" @close="isOpenModal = false">
                 <TransitionChild as="template" enter="ease-out duration-150" enter-from="opacity-0" enter-to="opacity-100"
                     leave="ease-in duration-100" leave-from="opacity-100" leave-to="opacity-0">
                     <div class="z-10 fixed inset-0 bg-gray-500/75 transition-opacity" />

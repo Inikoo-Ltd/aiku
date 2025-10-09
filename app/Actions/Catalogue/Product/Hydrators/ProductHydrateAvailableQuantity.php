@@ -29,6 +29,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
     public function handle(Product $product): void
     {
+
         if ($product->state == ProductStateEnum::DISCONTINUED) {
             UpdateProduct::run($product, [
                 'available_quantity' => null,
@@ -38,7 +39,7 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
             return;
         }
-
+        $currentQuantity = $product->available_quantity;
         $availableQuantity = 0;
 
         $numberOrgStocksChecked = 0;
@@ -52,11 +53,10 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
             $availableQuantityFromThisOrgStock = floor($quantityInStock / $productToOrgStockRatio);
 
-
             if ($numberOrgStocksChecked == 0) {
                 $availableQuantity = $availableQuantityFromThisOrgStock;
             } else {
-                $availableQuantity = min($availableQuantityFromThisOrgStock, $numberOrgStocksChecked);
+                $availableQuantity = min($availableQuantityFromThisOrgStock, $availableQuantity);
             }
 
             $numberOrgStocksChecked++;
@@ -67,28 +67,41 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
         }
 
 
+
         $dataToUpdate = [
             'available_quantity' => $availableQuantity,
         ];
 
+        if ($currentQuantity == 0 && $availableQuantity > 0) {
+            $dataToUpdate['back_in_stock_since'] = now();
+        }
 
         if (in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK])) {
             if ($availableQuantity == 0) {
                 $status = ProductStatusEnum::OUT_OF_STOCK;
+                $dataToUpdate['out_of_stock_since'] = now();
             } else {
                 $status = ProductStatusEnum::FOR_SALE;
             }
-
             $dataToUpdate['status'] = $status;
         }
+
+
 
         UpdateProduct::run($product, $dataToUpdate);
     }
 
-    public string $commandSignature = 'product:hydrate-available-quantity';
+    public string $commandSignature = 'product:hydrate-available-quantity {id?}';
 
     public function asCommand(Command $command): void
     {
+
+        if ($command->argument('id')) {
+            $product = Product::findOrFail($command->argument('id'));
+            $this->handle($product);
+            return;
+        }
+
         $chunkSize = 100; // Process 100 products at a time to save memory
         $count     = 0;
 

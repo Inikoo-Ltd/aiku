@@ -15,10 +15,10 @@ export const blueprint = (productCategory: number) => {
 					valueProp: "id",
 					labelProp: "name",
 					fetchRoute: {
-						name: route().params["organisation"]
+						name: typeof route === "function" && route().params["organisation"]
 							? "grp.json.tags.index"
 							: "iris.json.tags.index",
-						parameters: route().params["organisation"] ? {} : { productCategory },
+						parameters: typeof route === "function" && route().params["organisation"] ? {} : { productCategory },
 					},
 				},
 			},
@@ -31,10 +31,10 @@ export const blueprint = (productCategory: number) => {
 					valueProp: "id",
 					labelProp: "name",
 					fetchRoute: {
-						name: route().params["organisation"]
+						name: typeof route === "function" && route().params["organisation"]
 							? "grp.json.brands.index"
 							: "iris.json.brands.index",
-						parameters: route().params["organisation"] ? {} : { productCategory },
+						parameters: typeof route === "function" && route().params["organisation"] ? {} : { productCategory },
 					},
 				},
 			},

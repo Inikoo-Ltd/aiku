@@ -7,6 +7,8 @@
  */
 
 use App\Actions\Accounting\Invoice\IrisPdfInvoice;
+use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
+use App\Actions\Helpers\Media\UI\DownloadAttachment;
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
 use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\IndexIrisBlogWebpages;
@@ -15,6 +17,11 @@ use App\Actions\Web\Webpage\Iris\ShowIrisBlogWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
+
+Route::get('wi/{image}', function () {
+    return redirect('/image_not_found.png');
+})->where('image', '.*')->name('wi.not_found');
+
 
 Route::get(".well-known/apple-developer-merchantid-domain-association", function () {
     return config('services.apple_pay.verification_string', '');
@@ -27,6 +34,10 @@ Route::prefix("disclosure")
 Route::prefix("unsubscribe")
     ->name("unsubscribe.")
     ->group(__DIR__."/unsubscribe.php");
+
+
+Route::get('/unsubscribe.php', ShowUnsubscribeFromAurora::class)->name('unsubscribe.aurora');
+
 
 Route::prefix("json")
     ->name("json.")
@@ -51,6 +62,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::group([], __DIR__.'/system.php');
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
+        Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
         Route::get('/blog/articles', IndexIrisBlogWebpages::class)->name('iris_blog.articles.index');
         Route::get('/blog/articles/{webpage}', ShowIrisBlogWebpage::class)->name('iris_blog.articles.show');

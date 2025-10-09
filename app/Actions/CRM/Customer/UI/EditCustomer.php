@@ -30,7 +30,6 @@ class EditCustomer extends OrgAction
     }
 
 
-
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, ActionRequest $request): Customer
     {
         $this->initialisationFromShop($shop, $request);
@@ -40,16 +39,7 @@ class EditCustomer extends OrgAction
 
     public function htmlResponse(Customer $customer, ActionRequest $request): Response
     {
-        $contactName = trim($customer->contact_name ?? '');
-        $firstName = '';
-        $lastName = '';
-
-        if ($contactName !== '') {
-            $parts = preg_split('/\s+/', $contactName, 2); // split into 2 parts only
-            $firstName = $parts[0];
-            $lastName = $parts[1] ?? ''; // in case there's no last name
-        }
-
+        $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
 
         return Inertia::render(
             'EditModel',
@@ -59,13 +49,13 @@ class EditCustomer extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'                            => [
+                'navigation'  => [
                     'previous' => $this->getPrevious($customer, $request),
                     'next'     => $this->getNext($customer, $request),
                 ],
                 'pageHead'    => [
-                    'title'    => $customer->name,
-                    'actions'  => [
+                    'title'   => $customer->name,
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -77,28 +67,29 @@ class EditCustomer extends OrgAction
                     ],
                 ],
 
+
                 'formData' => [
                     'blueprint' => [
                         [
                             'title'  => __('contact information'),
                             'label'  => __('contact'),
                             'fields' => [
-                                'contact_name' => [
+                                'contact_name'             => [
                                     'type'  => 'input',
                                     'label' => __('contact name'),
                                     'value' => $customer->contact_name
                                 ],
-                                'company_name' => [
+                                'company_name'             => [
                                     'type'  => 'input',
                                     'label' => __('company'),
                                     'value' => $customer->company_name
                                 ],
-                                'phone'        => [
+                                'phone'                    => [
                                     'type'  => 'phone',
                                     'label' => __('Phone'),
                                     'value' => $customer->phone
                                 ],
-                                'contact_address' => [
+                                'contact_address'          => [
                                     'type'    => 'address',
                                     'label'   => __('Address'),
                                     'value'   => AddressFormFieldsResource::make($customer->address)->getArray(),
@@ -106,12 +97,24 @@ class EditCustomer extends OrgAction
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
-                                'vat'      => [
+                                'tax_number'               => [
                                     'type'    => 'tax_number',
                                     'label'   => __('Tax number'),
                                     'value'   => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : null,
                                     'country' => $customer->address->country_code,
-                                ]
+                                ],
+                                'is_re'                    => [
+                                    'type'   => 'toggle',
+                                    'hidden' => $this->organisation->country_id != $spain->id || $customer->address->country_id != $spain->id,
+                                    'label'  => 'Recargo de equivalencia',
+                                    'value'  => $customer->is_re,
+
+                                ],
+                                'identity_document_number' => [
+                                    'type'  => 'input',
+                                    'label' => __('identity document number'),
+                                    'value' => $customer->identity_document_number
+                                ],
                             ]
                         ]
                     ],
@@ -135,13 +138,12 @@ class EditCustomer extends OrgAction
         return ShowCustomer::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '(' . __('Editing') . ')'
+            suffix: '('.__('Editing').')'
         );
     }
 
     public function getPrevious(Customer $customer, ActionRequest $request): ?array
     {
-
         $previous = Customer::where('slug', '<', $customer->slug)->when(true, function ($query) use ($customer, $request) {
             if ($request->route()->getName() == 'shops.show.customers.show') {
                 $query->where('customers.shop_id', $customer->shop_id);
@@ -172,7 +174,7 @@ class EditCustomer extends OrgAction
             'grp.org.shops.show.crm.customers.edit' => [
                 'label' => $customer->name,
                 'route' => [
-                    'name'      => $routeName,
+                    'name'       => $routeName,
                     'parameters' => [
                         'organisation' => $customer->organisation->slug,
                         'shop'         => $customer->shop->slug,

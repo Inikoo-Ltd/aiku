@@ -187,7 +187,7 @@ return [
     |
     */
 
-    'api_version' => env('SHOPIFY_API_VERSION', '2024-07'),
+    'api_version' => env('SHOPIFY_API_VERSION', '2025-07'),
 
     /*
     |--------------------------------------------------------------------------
@@ -617,7 +617,7 @@ return [
     | No changes are made for Vue.js and Blade.
     |
     */
-    'frontend_engine'                => env('SHOPIFY_FRONTEND_ENGINE', 'VUE'),
+    'frontend_type' => env('SHOPIFY_FRONTEND_TYPE', 'SPA'),
 
     'iframe_ancestors' => '',
 ];

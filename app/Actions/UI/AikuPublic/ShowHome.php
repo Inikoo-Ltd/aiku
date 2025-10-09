@@ -18,9 +18,7 @@ class ShowHome
 
     public function handle(): Response
     {
-        return Inertia::render(
-            'Home'
-        );
+        return Inertia::render('Home');
     }
 
 }

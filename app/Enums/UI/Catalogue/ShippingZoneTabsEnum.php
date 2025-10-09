@@ -26,11 +26,11 @@ enum ShippingZoneTabsEnum: string
         return match ($this) {
 
             ShippingZoneTabsEnum::SHOWCASE => [
-                'title' => __('details'),
+                'title' => __('Details'),
                 'icon'  => 'fal fa-shopping-cart',
             ],
             ShippingZoneTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

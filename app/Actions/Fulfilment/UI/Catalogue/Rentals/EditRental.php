@@ -59,7 +59,7 @@ class EditRental extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
-                            'title' => __('rental')
+                            'title' => __('Rental')
                         ],
                     'actions' => [
                         [

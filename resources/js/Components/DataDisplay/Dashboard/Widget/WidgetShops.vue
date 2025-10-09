@@ -119,7 +119,7 @@ const isLoadingVisit = ref<number | null>(null)
 <template>
     <div class="flex justify-between gap-x-4 px-4 py-5 sm:p-6 rounded-lg bg-gray-50 border border-gray-200 tabular-nums">
         <dd class="flex flex-col gap-x-2">
-            <div class="text-base mb-1 text-gray-400 capitalize">
+            <div class="text-base mb-1 text-gray-400">
                 {{ trans('Shops sales') }}
                 <FontAwesomeIcon v-tooltip="trans('The graph of column sales. Only active shop is shown.')" :icon="faInfoCircle" class="hover:text-gray-600" fixed-width aria-hidden="true" />
             </div>
@@ -128,9 +128,9 @@ const isLoadingVisit = ref<number | null>(null)
                 <!-- Total Count -->
                 <div v-if="!tableData?.tables?.organisations"
                     class="flex gap-x-2 items-end"
-                    v-tooltip="props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency?.[intervals.value].formatted_value"
+                    v-tooltip="props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency?.[intervals.value]?.formatted_value"
                 >
-                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency_minified?.[intervals.value].formatted_value }}
+                    {{ props.tableData?.tables?.shops?.totals?.columns?.sales_org_currency_minified?.[intervals.value]?.formatted_value }}
                 </div>
 
                 <!-- Case Breakdown -->
@@ -171,10 +171,10 @@ const isLoadingVisit = ref<number | null>(null)
         <div class="w-28">
             <Pie
                 :data="{
-                    labels: dataSetsSplit.map(bod => bod.columns.label.formatted_value),
+                    labels: dataSetsSplit.map(bod => bod.columns.label?.formatted_value),
                     datasets: [
                         {
-                            data: dataSetsSplit.map(bod => bod.columns.sales_org_currency[intervals.value].raw_value),
+                            data: dataSetsSplit.map(bod => bod.columns.sales_org_currency?.[intervals.value]?.raw_value),
                             backgroundColor: [
                                 ...dataSetsSplit.map((dCase, idx) => useStringToHex(dCase.columns.label.formatted_value)),
                             ],

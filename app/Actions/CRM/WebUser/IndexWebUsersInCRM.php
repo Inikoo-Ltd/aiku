@@ -89,7 +89,7 @@ class IndexWebUsersInCRM extends OrgAction
     public function htmlResponse(LengthAwarePaginator $webUsers, ActionRequest $request): Response
     {
         $icon       = ['fal', 'fa-terminal'];
-        $title      = __('web users');
+        $title      = __('Web users');
         $afterTitle = null;
         $iconRight  = null;
 
@@ -131,7 +131,7 @@ class IndexWebUsersInCRM extends OrgAction
                         ($this->canEdit && $this->parent instanceof Customer) ? [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => __('website user'),
+                            'label' => __('Website user'),
                             'route' => [
                                 'name'       => 'grp.org.shops.show.crm.customers.show.web_users.create',
                                 'parameters' => $request->route()->originalParameters()
@@ -168,7 +168,7 @@ class IndexWebUsersInCRM extends OrgAction
                                 [
                                     'type'    => 'button',
                                     'style'   => 'create',
-                                    'tooltip' => __('new website user'),
+                                    'tooltip' => __('New website user'),
                                     'label'   => __('website user'),
                                     'route'   => [
                                         'name'       => 'grp.org.shops.show.crm.customers.show.web_users.create',

@@ -96,7 +96,7 @@ class ShowCollection extends OrgAction
         $model      = __('collection');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('collection')
+            'title' => __('Collection')
         ];
         $afterTitle = null;
         $container  = null;
@@ -113,17 +113,17 @@ class ShowCollection extends OrgAction
             if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $icon = [
                     'icon'  => ['fal', 'fa-folder-tree'],
-                    'title' => __('department')
+                    'title' => __('Department')
                 ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::FAMILY) {
                 $icon = [
                     'icon'  => ['fal', 'fa-folder'],
-                    'title' => __('family')
+                    'title' => __('Family')
                 ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $icon = [
                     'icon'  => ['fal', 'fa-dot-circle'],
-                    'title' => __('sub department')
+                    'title' => __('Sub department')
                 ];
             }
         } else {

@@ -13,7 +13,9 @@ use App\Actions\Accounting\InvoiceTransaction\UI\IndexInvoiceTransactions;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
+use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Enums\UI\Accounting\FulfilmentInvoiceTabsEnum;
@@ -23,12 +25,19 @@ use App\Http\Resources\Accounting\InvoiceTransactionsResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Accounting\RefundResource;
 use App\Http\Resources\Accounting\RefundsResource;
+use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -47,7 +56,7 @@ class ShowInvoice extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request): Invoice
+    public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request)
     {
         $this->parent = $organisation;
 
@@ -71,6 +80,38 @@ class ShowInvoice extends OrgAction
         return $this->handle($invoice);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderShop(Organisation $organisation, Shop $shop, Order $order, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
+
+        return $this->handle($invoice);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
+
+        return $this->handle($invoice);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderInCustomerClientInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
+
+        return $this->handle($invoice);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderInPlatformInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
+
+        return $this->handle($invoice);
+    }
 
 
     /**
@@ -139,7 +180,6 @@ class ShowInvoice extends OrgAction
 
     public function getExportOptions(Invoice $invoice): array
     {
-
         $options = [
             [
                 'type'       => 'pdf',
@@ -171,8 +211,19 @@ class ShowInvoice extends OrgAction
         return $options;
     }
 
-    public function htmlResponse(Invoice $invoice, ActionRequest $request): Response
+    public function htmlResponse(Invoice $invoice, ActionRequest $request): Response|RedirectResponse
     {
+
+        if ($invoice->type == InvoiceTypeEnum::REFUND) {
+
+            if ($request->route()->getName() == 'grp.org.accounting.invoices.show') {
+                return Redirect::route('grp.org.accounting.refunds.show', [
+                    $invoice->organisation->slug,
+                    $invoice->slug
+                ]);
+            }
+        }
+
         if ($invoice->shop->type == ShopTypeEnum::FULFILMENT) {
             return ShowFulfilmentInvoice::make()->htmlResponse($invoice, $request, $this->tab);
         }
@@ -184,7 +235,7 @@ class ShowInvoice extends OrgAction
         $exportInvoiceOptions = $this->getExportOptions($invoice);
 
 
-        $deliveryNoteRoute    = null;
+        $deliveryNoteRoute = null;
 
         /** @var DeliveryNote $firstDeliveryNote */
         $firstDeliveryNote = $invoice->order?->deliveryNotes()->first();
@@ -195,8 +246,8 @@ class ShowInvoice extends OrgAction
                     'name'       => 'grp.org.shops.show.ordering.orders.show.delivery-note',
                     'parameters' => [
                         'organisation' => $invoice->organisation->slug,
-                        'shop' => $invoice->shop->slug,
-                        'order' => $invoice->order->slug,
+                        'shop'         => $invoice->shop->slug,
+                        'order'        => $invoice->order->slug,
                         'deliveryNote' => $firstDeliveryNote->slug
                     ]
                 ],
@@ -209,10 +260,11 @@ class ShowInvoice extends OrgAction
             ];
         }
 
+
         return Inertia::render(
             'Org/Accounting/Invoice',
             [
-                'title'       => __('invoice'),
+                'title'       => __('Invoice'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $invoice,
                     $request->route()->getName(),
@@ -242,8 +294,8 @@ class ShowInvoice extends OrgAction
                 ...$payBoxData,
 
                 'invoiceExportOptions' => $exportInvoiceOptions,
-                'routes'      => [
-                    'delivery_note'    => $deliveryNoteRoute
+                'routes'               => [
+                    'delivery_note' => $deliveryNoteRoute
                 ],
 
                 'box_stats'    => $this->getBoxStats($invoice),
@@ -272,11 +324,15 @@ class ShowInvoice extends OrgAction
                     fn () => PaymentsResource::collection(IndexPayments::run($invoice))
                     : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($invoice))),
 
+                InvoiceTabsEnum::HISTORY->value => $this->tab == InvoiceTabsEnum::HISTORY->value ?
+                    fn () => HistoryResource::collection(IndexHistory::run($invoice))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($invoice))),
 
             ]
         )->table(IndexPayments::make()->tableStructure($invoice, [], InvoiceTabsEnum::PAYMENTS->value))
             ->table(IndexRefunds::make()->tableStructure(parent: $invoice, prefix: InvoiceTabsEnum::REFUNDS->value))
             ->table(IndexDispatchedEmails::make()->tableStructure($invoice->customer, prefix: InvoiceTabsEnum::EMAIL->value))
+            ->table(IndexHistory::make()->tableStructure(prefix: InvoiceTabsEnum::HISTORY->value))
             ->table(IndexInvoiceTransactions::make()->tableStructure(InvoiceTabsEnum::INVOICE_TRANSACTIONS->value));
     }
 

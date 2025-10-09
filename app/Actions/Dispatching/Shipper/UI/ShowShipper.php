@@ -48,7 +48,7 @@ class ShowShipper extends OrgAction
                     'model'     => __('shipper'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-shipping-fast'],
-                        'title' => __('shipper')
+                        'title' => __('Shipper')
                     ],
                     'actions'    => [
                         [

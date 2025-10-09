@@ -64,9 +64,9 @@ class EditManufactureTask extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('edit manufacture task'),
+                'title'       => __('Edit manufacture task'),
                 'pageHead'    => [
-                    'title'     => __('edit manufacture task'),
+                    'title'     => __('Edit manufacture task'),
                     // 'actions'   => [
                     //     [
                     //         'type'  => 'button',
@@ -215,7 +215,7 @@ class EditManufactureTask extends OrgAction
                 [
                     'type'         => 'editingModel',
                     'editingModel' => [
-                        'label' => __('editing raw material'),
+                        'label' => __('Editing raw material'),
                     ]
                 ]
             ]
