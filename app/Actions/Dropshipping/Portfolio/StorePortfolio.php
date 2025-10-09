@@ -74,6 +74,14 @@ class StorePortfolio extends OrgAction
             data_set($modelData, 'margin', CalculationsProfitMargin::run($rrp, $item->price));
         }
 
+        if ($customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
+            data_set($modelData, 'status', true);
+            data_set($modelData, 'platform_status', true);
+            data_set($modelData, 'has_valid_platform_product_id', true);
+            data_set($modelData, 'exist_in_platform', true);
+            data_set($modelData, 'platform_status', true);
+        }
+
         $portfolio = DB::transaction(function () use ($customerSalesChannel, $modelData) {
             /** @var Portfolio $portfolio */
             $portfolio = $customerSalesChannel->portfolios()->create($modelData);
