@@ -19,6 +19,23 @@ enum AnnouncementTabsEnum: string
     case SHOWCASE = 'showcase';
     case SNAPSHOTS = 'snapshots';
 
+    public function blueprint(): array
+    {
+        return match ($this) {
+            AnnouncementTabsEnum::SHOWCASE => [
+                'align' => 'right',
+                'title' => __('Showcase'),
+                'icon' => 'fal fa-money-bill',
+                'type' => 'icon',
+            ],
+            AnnouncementTabsEnum::SNAPSHOTS => [
+                'align' => 'right',
+                'title' => __('Snapshots'),
+                'icon' => 'fal fa-money-bill',
+                'type' => 'icon',
+            ],
+        };
+    }
 
     public static function labels(): array
     {

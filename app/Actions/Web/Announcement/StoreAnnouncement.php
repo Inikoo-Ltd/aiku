@@ -33,6 +33,8 @@ class StoreAnnouncement extends OrgAction
     {
         $this->parent = $parent;
 
+        data_set($modelData, 'group_id', $parent->group_id);
+        data_set($modelData, 'organisation_id', $parent->organisation_id);
         data_set($modelData, 'ulid', Str::ulid());
 
         /** @var Announcement $announcement */

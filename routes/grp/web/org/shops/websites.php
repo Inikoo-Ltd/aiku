@@ -159,7 +159,7 @@ Route::prefix('{website}/banners')->name('banners.')->group(function () {
 Route::prefix('{website}/announcements')->name('announcements.')->group(function () {
     Route::get('', IndexAnnouncements::class)->name('index');
     Route::get('/{announcement}/workshop', ShowAnnouncementWorkshop::class)->name('workshop');
-    Route::get('/{announcement}', ShowAnnouncement::class)->name('show');
+    Route::get('/{announcement:ulid}', ShowAnnouncement::class)->name('show')->withoutScopedBindings();
 });
 
 Route::prefix('{website}/analytics')->name('analytics.')->group(function () {
