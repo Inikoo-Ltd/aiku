@@ -73,6 +73,6 @@ task('deploy', [
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
-    'artisan:inertia:stop-ssr',
+ //   'artisan:inertia:stop-ssr',
     'artisan:refresh_vue',
 ]);
