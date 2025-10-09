@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\Media;
 
+use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -31,8 +32,12 @@ class DetachAttachmentFromModel extends OrgAction
     public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn|TradeUnitFamily|Product $model, Media $attachment): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn|TradeUnitFamily|Product
     {
         $model->attachments()->detach($attachment->id);
-
-
+        $model->refresh();
+        if($model instanceof TradeUnit){
+            foreach($model->products as $product){
+                CloneProductAttachmentsFromTradeUnits::run($product);
+            }
+        }
         return $model;
     }
 
