@@ -16,6 +16,7 @@ use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Actions\Traits\HasBucketAttachment;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Inventory\OrgStocksResource;
 
@@ -23,6 +24,7 @@ class GetProductShowcase
 {
     use AsObject;
     use HasBucketImages;
+    use HasBucketAttachment;
 
     public function handle(Product $product): array
     {
@@ -116,6 +118,8 @@ class GetProductShowcase
                 ],
             ],
             'images' => $this->getImagesData($product),
+            'attachment_box'=>  $this->getAttachmentData($product),
+
         ];
     }
 
