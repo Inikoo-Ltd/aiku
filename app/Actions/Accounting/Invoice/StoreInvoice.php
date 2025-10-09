@@ -12,6 +12,7 @@ use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoi
 use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Comms\Email\SendInvoiceToFulfilmentCustomerEmail;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
+use App\Actions\CRM\Customer\MatchCustomerProspects;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateInvoices;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxCategory\GetTaxCategory;
@@ -203,13 +204,17 @@ class StoreInvoice extends OrgAction
             SendInvoiceToFulfilmentCustomerEmail::dispatch($invoice);
         }
 
-        if (!$invoice->in_procexss) {
+        if (!$invoice->in_process) {
             if ($invoice->shipping_zone_id) {
                 ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($this->hydratorsDelay);
             }
             if ($invoice->shipping_zone_schema_id) {
                 ShippingZoneSchemaHydrateUsageInInvoices::dispatch($invoice->shipping_zone_schema_id)->delay($this->hydratorsDelay);
             }
+        }
+
+        if ($invoice->customer && $invoice->shop->is_aiku) {
+            MatchCustomerProspects::dispatch($invoice->customer);
         }
 
         return $invoice;

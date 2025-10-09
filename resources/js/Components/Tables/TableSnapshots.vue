@@ -63,9 +63,9 @@ function snapshotRoute(data: {}) {
         <!-- Date Published -->
         <template #cell(published_at)="{ item: user }">
             <div class="text-gray-500">
-              <!--   <Link :href="snapshotRoute(user)" class="primaryLink"> -->
+                <Link :href="snapshotRoute(user)" class="primaryLink">
                   {{ useFormatTime(user['published_at'], { localeCode: locale.language.code, formatTime: 'hm' }) }}
-              <!--   </Link> -->
+                </Link>
             </div>
         </template>
 
