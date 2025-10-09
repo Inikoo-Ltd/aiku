@@ -101,7 +101,7 @@ class ShowCustomerSalesChannel extends OrgAction
                         'name'                    => $name,
                         'number_orders'           => $customerSalesChannel->number_orders,
                         'number_customer_clients' => $customerSalesChannel->number_customer_clients,
-                        'number_portfolios'       => $customerSalesChannel->number_portfolios
+                        'number_portfolios'       => $customerSalesChannel->number_portfolios,
                     ]
                 ]
             ]
