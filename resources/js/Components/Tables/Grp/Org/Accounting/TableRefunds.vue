@@ -111,7 +111,6 @@ function customerRoute(invoice: Invoice) {
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-
         <template #cell(reference)="{ item: refund }">
             <Link :href="refundRoute(refund) as string" class="primaryLink py-0.5">
                 {{ refund.reference }}
@@ -157,8 +156,15 @@ function customerRoute(invoice: Invoice) {
 
         <!-- Column: Total -->
         <template #cell(total_amount)="{ item: refund }">
-            <div :class="refund.total_amount >= 0 ? 'text-gray-500' : 'text-red-400'">
+          <div :class="refund.total_amount >= 0 ? 'text-gray-500' : 'text-red-400'">
                 {{ useLocaleStore().currencyFormat(refund.currency_code, refund.total_amount) }}
+            </div>
+        </template>
+
+        <!-- Column: Total -->
+        <template #cell(total_to_pay)="{ item: refund }">
+          <div>
+                {{ useLocaleStore().currencyFormat(refund.currency_code, refund.total_to_pay) }}
             </div>
         </template>
 

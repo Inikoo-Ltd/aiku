@@ -42,10 +42,18 @@ class AttachAttachmentToModel extends OrgAction
             SaveModelAttachment::make()->action($model, $attachmentData);
         }
 
-        if ($model instanceof TradeUnit) {
-            foreach ($model->products as $product) {
-                CloneProductAttachmentsFromTradeUnits::run($product);
-            }
+        if ($model instanceof TradeUnit || $model instanceof TradeUnitFamily) {
+            if($model instanceof TradeUnitFamily){
+                foreach ($model->tradeUnits as $tradeUnit) {
+                    foreach ($tradeUnit->products as $product) {
+                        CloneProductAttachmentsFromTradeUnits::run($product);
+                    }
+                }
+            } else {
+                foreach ($model->products as $product) {
+                    CloneProductAttachmentsFromTradeUnits::run($product);
+                }
+            } 
         }
     }
 

@@ -67,6 +67,8 @@ class RefundsResource extends JsonResource
                     'icon'    => 'fal fa-check',
                 ],
             'pay_status'          => $this->pay_status->typeIcon()[$this->pay_status->value],
+            'payment_amount'      => $this->payment_amount,
+            'total_to_pay'        => $this->total_amount - $this->payment_amount,
             'tax_liability_at'    => $this->tax_liability_at,
             'paid_at'             => $this->paid_at,
             'shop_id'             => $this->shop_id,

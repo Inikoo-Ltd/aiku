@@ -42,6 +42,7 @@ import { faSpinnerThird } from '@fad'
 import { Tooltip } from 'floating-vue'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import EmailSubscribetion from "@/Components/EmailSubscribetion.vue"
+import CustomerHistory from "@/Components/CustomerHistory.vue"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt)
 
@@ -113,6 +114,7 @@ const props = defineProps<{
         }
         type_options: {}
         tax_number: {}
+        stats: any
     },
     tab: string
     handleTabUpdate?: Function
@@ -201,7 +203,7 @@ const getStatusText = (status: string, valid: boolean) => {
 
 <template>
     <!-- Section: Stats box -->
-    <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-2 gap-8">
+    <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-8">
         <div v-if="data.require_approval && data.customer.status === 'pending_approval'"
             class="w-full max-w-md justify-self-end">
             <div class="p-5 border rounded-lg bg-white">
@@ -406,59 +408,62 @@ const getStatusText = (status: string, valid: boolean) => {
         </div>
 
 
-        <div class="justify-self-end ">
-            <div
-                class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
-                <div class="w-full flex justify-between items-center">
-                    <div>
-                        <div class="text-base">
-                            {{ trans("Balance") }}
-                        </div>
-                    </div>
-                    <div class="flex flex-col items-end">
-                        <div class="text-2xl font-bold">
-                            <CountUp :endVal="data.customer.balance" :decimalPlaces="2" :duration="1.5"
-                                :scrollSpyOnce="true" :options="{
-                                formattingFn: (value) =>
-                                    locale.currencyFormat(data.currency?.code, value),
-                            }" />
-                        </div>
-                        <div class="flex items-center">
-                            <div @click="() => isModalBalanceIncrease = true"
-                                v-tooltip="trans('Increase customer balance')"
-                                class="cursor-pointer text-gray-400 hover:text-indigo-600">
-                                <FontAwesomeIcon :icon="faArrowAltFromBottom" class="text-base"
-                                    tooltip="Decrease Balance" fixed-width aria-hidden="true" />
-                            </div>
-                            <span class="mx-2 text-gray-400">|</span>
-                            <div @click="() => isModalBalanceDecrease = true"
-                                v-tooltip="trans('Decrease customer balance')"
-                                class="cursor-pointer text-gray-400 hover:text-indigo-600">
-                                <FontAwesomeIcon :icon="faArrowAltFromTop" class="text-base" tooltip="Decrease Balance"
-                                    fixed-width aria-hidden="true" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div >
+                <CustomerHistory v-if="layout.app.environment === 'local'" :data="data?.stats" />
+            </div>
+            <div class="justify-self-end ">
+                <div
+                    class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
+                    <div class="w-full flex justify-between items-center">
+                        <div>
+                            <div class="text-base">
+                                {{ trans("Balance") }}
                             </div>
                         </div>
+                        <div class="flex flex-col items-end">
+                            <div class="text-2xl font-bold">
+                                <CountUp :endVal="data.customer.balance" :decimalPlaces="2" :duration="1.5"
+                                    :scrollSpyOnce="true" :options="{
+                                        formattingFn: (value) =>
+                                            locale.currencyFormat(data.currency?.code, value),
+                                    }" />
+                            </div>
+                            <div class="flex items-center">
+                                <div @click="() => isModalBalanceIncrease = true"
+                                    v-tooltip="trans('Increase customer balance')"
+                                    class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                                    <FontAwesomeIcon :icon="faArrowAltFromBottom" class="text-base"
+                                        tooltip="Decrease Balance" fixed-width aria-hidden="true" />
+                                </div>
+                                <span class="mx-2 text-gray-400">|</span>
+                                <div @click="() => isModalBalanceDecrease = true"
+                                    v-tooltip="trans('Decrease customer balance')"
+                                    class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                                    <FontAwesomeIcon :icon="faArrowAltFromTop" class="text-base"
+                                        tooltip="Decrease Balance" fixed-width aria-hidden="true" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"
+                        class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
+                        {{ trans("See all transactions list") }}
                     </div>
                 </div>
 
-                <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"
-                    class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
-                    {{ trans("See all transactions list") }}
+                <div class="mt-4 w-64 border border-gray-300 rounded-md p-2">
+                    <div v-for="(item, index) in links" :key="index" class="p-2">
+                        <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
+                            type="secondary" />
+                    </div>
                 </div>
-            </div>
 
-            <div class="mt-4 w-64 border border-gray-300 rounded-md p-2">
-                <div v-for="(item, index) in links" :key="index" class="p-2">
-                    <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
-                        type="secondary" />
-                </div>
+                <!-- Email Subscriptions Section -->
+                <EmailSubscribetion v-if="data?.customer?.email_subscriptions"
+                    :emailSubscriptions="data.customer.email_subscriptions" />
             </div>
-
-            <!-- Email Subscriptions Section -->
-            <EmailSubscribetion 
-                v-if="data?.customer?.email_subscriptions"
-                :emailSubscriptions="data.customer.email_subscriptions"
-            />
         </div>
     </div>
 

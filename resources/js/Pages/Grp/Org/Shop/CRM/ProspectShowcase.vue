@@ -233,6 +233,16 @@ const getStatusText = (status: string, valid: boolean) => {
     return trans('Pending')
 }
 
+// Map prospect state to PrimeVue Tag severity
+const prospectStateSeverity = computed(() => {
+    const stateMap: Record<string, "secondary" | "info" | "success" | "warn" | "danger" | "contrast"> = {
+        'success': 'success',
+        'fail': 'danger',
+        'contacted': 'info'
+    }
+    return stateMap[props.data?.prospect?.state] || 'secondary'
+})
+
 // Create contact preferences data from prospect data
 const contactPreferencesData = computed(() => {
     if (!props.data?.prospect || !props.data?.update_route) return null
@@ -284,7 +294,7 @@ const contactPreferencesData = computed(() => {
                 <!-- Status state section -->
                 <div v-if="layout?.app?.environment === 'local'" class="p-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
                     <div class="flex items-center gap-3">
-                        <Tag :severity="data.prospect.state" :value="data.prospect.state_label" class="text-sm font-medium" />
+                        <Tag :severity="prospectStateSeverity" :value="data.prospect.state_label" class="text-sm font-medium" />
                         <div v-if="data.prospect.state === 'success' || data.prospect.state === 'fail' || data.prospect.state === 'contacted'" 
                              class="flex items-center gap-2 px-3 py-1 bg-white rounded-lg shadow-sm border border-gray-200">
                             <span class="text-sm text-gray-600">{{ trans('Status') }}:</span>
