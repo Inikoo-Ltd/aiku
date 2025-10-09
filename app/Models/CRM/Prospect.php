@@ -114,31 +114,31 @@ class Prospect extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'data'                 => 'array',
-        'location'             => 'array',
-        'contact_name_components'     => 'array',
-        'state'                => ProspectStateEnum::class,
-        'contacted_state'      => ProspectContactedStateEnum::class,
-        'fail_status'          => ProspectFailStatusEnum::class,
-        'success_status'       => ProspectSuccessStatusEnum::class,
-        'dont_contact_me'      => 'boolean',
-        'last_contacted_at'    => 'datetime',
-        'last_opened_at'       => 'datetime',
-        'last_clicked_at'      => 'datetime',
-        'dont_contact_me_at'   => 'datetime',
-        'failed_at'            => 'datetime',
-        'registered_at'        => 'datetime',
-        'invoiced_at'          => 'datetime',
-        'last_soft_bounced_at' => 'datetime',
-        'fetched_at'           => 'datetime',
-        'last_fetched_at'      => 'datetime',
+        'data'                    => 'array',
+        'location'                => 'array',
+        'contact_name_components' => 'array',
+        'state'                   => ProspectStateEnum::class,
+        'contacted_state'         => ProspectContactedStateEnum::class,
+        'fail_status'             => ProspectFailStatusEnum::class,
+        'success_status'          => ProspectSuccessStatusEnum::class,
+        'dont_contact_me'         => 'boolean',
+        'last_contacted_at'       => 'datetime',
+        'last_opened_at'          => 'datetime',
+        'last_clicked_at'         => 'datetime',
+        'dont_contact_me_at'      => 'datetime',
+        'failed_at'               => 'datetime',
+        'registered_at'           => 'datetime',
+        'invoiced_at'             => 'datetime',
+        'last_soft_bounced_at'    => 'datetime',
+        'fetched_at'              => 'datetime',
+        'last_fetched_at'         => 'datetime',
 
     ];
 
     protected $attributes = [
         'contact_name_components' => '{}',
-        'data'     => '{}',
-        'location' => '{}',
+        'data'                    => '{}',
+        'location'                => '{}',
     ];
 
     protected $guarded = [];

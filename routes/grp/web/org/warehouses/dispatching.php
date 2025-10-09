@@ -6,6 +6,9 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
+use App\Actions\Dispatching\Box\UI\CreateBox;
+use App\Actions\Dispatching\Box\UI\IndexBoxes;
+use App\Actions\Dispatching\DeliveryNote\PdfDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;
@@ -63,5 +66,7 @@ Route::get('shippers/create', CreateShipper::class)->name('shippers.create');
 Route::get('shippers/{shipper}', ShowShipper::class)->name('shippers.show');
 Route::get('shippers/{shipper}/edit', EditShipper::class)->name('shippers.edit');
 
+Route::get('boxes', IndexBoxes::class)->name('boxes.index');
+Route::get('boxes/create', CreateBox::class)->name('boxes.create');
 Route::get('picking-sessions', IndexPickingSessions::class)->name('picking_sessions.index');
 Route::get('picking-sessions/{pickingSession}', ShowPickingSession::class)->name('picking_sessions.show');

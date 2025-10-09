@@ -285,7 +285,29 @@ const taxNumberStatusText = computed(() => {
     return trans('Pending')
 })
 
-console.log(props);
+// Method: get Invoice route
+const getInvoiceRoute = () => {
+    if (['grp.org.shops.show.dashboard.invoices.refunds.show', 'grp.org.shops.show.dashboard.invoices.show.refunds.show'].includes(route().current())) {
+        return route('grp.org.shops.show.dashboard.invoices.show', {
+            organisation: (route().params as RouteParams).organisation,
+            shop: (route().params as RouteParams).shop,
+            invoice: props.original_invoice.slug
+
+        });
+    } else if (route().current() === 'grp.org.fulfilments.show.operations.invoices.show.refunds.show') {
+        return route('grp.org.fulfilments.show.operations.invoices.show', {
+            organisation: (route().params as RouteParams).organisation,
+            fulfilment: (route().params as RouteParams).fulfilment,
+            invoice: props.original_invoice.slug
+
+        });
+    } else {
+        return route('grp.org.accounting.invoices.show', {
+            organisation: (route().params as RouteParams).organisation,
+            invoice: props.original_invoice.slug
+        });
+    }
+}
 </script>
 
 
@@ -322,7 +344,7 @@ console.log(props);
 
 
     <template #button-finalise-refund="{ action }">
-      <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method"
+      <Link :href="action.route?.name ? route(action.route?.name,action.route?.parameters) : ''" :method="action.route?.method"
         v-on:success="() => handleTabUpdate('items')">
       <Button :style="action.style" :icon="action.icon" :iconRight="action.iconRight" :label="action.label"
         :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
@@ -330,7 +352,7 @@ console.log(props);
     </template>
 
     <template #button-refund-all="{ action }">
-      <Link :href="route(action.route?.name,action.route?.parameters)" :method="action.route?.method"
+      <Link :href="action.route?.name ? route(action.route?.name,action.route?.parameters) : ''" :method="action.route?.method"
         v-on:success="() => afterRefundAll()">
       <Button :style="action.style" :icon="action.icon" :iconRight="action.iconRight" :label="action.label"
         :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
@@ -346,7 +368,7 @@ console.log(props);
       <!-- Field: Registration Number -->
       <dl>
         <Link as="a" v-if="box_stats?.customer.reference"
-          :href="route(box_stats?.customer.route.name, box_stats?.customer.route.parameters)"
+          :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : ''"
           class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
         <dt v-tooltip="'Company name'" class="flex-none">
           <span class="sr-only">Registration number</span>
@@ -359,7 +381,7 @@ console.log(props);
       </dl>
 
       <!-- Field: Customer name -->
-      <dl v-if="original_invoice.name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+      <dl v-if="original_invoice?.name" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="trans('Customer name')" class="flex-none">
           <span class="sr-only">{{trans('Customer name')}}</span>
           <FontAwesomeIcon icon="fal fa-user" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
@@ -369,12 +391,12 @@ console.log(props);
 
 
       <!-- Field: Contact name -->
-      <dl v-if="original_invoice.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+      <dl v-if="original_invoice?.contact_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="'Contact name'" class="flex-none">
           <span class="sr-only">Contact name</span>
           <FontAwesomeIcon :icon="faAddressCard" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
-        <dd class="text-base text-gray-500">{{ original_invoice.contact_name }}</dd>
+        <dd class="text-base text-gray-500">{{ original_invoice?.contact_name }}</dd>
       </dl>
 
       <!-- Field: Company name -->
@@ -396,13 +418,13 @@ console.log(props);
         <dd class="text-base text-gray-500">{{ box_stats?.customer.phone }}</dd>
       </dl>
 
-      <dl v-if="original_invoice.tax_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
+      <dl v-if="original_invoice?.tax_number" class="pl-1 flex items-center w-full flex-none gap-x-2">
         <dt v-tooltip="trans('Tax Number')" class="flex-none">
           <span class="sr-only">Tax Number</span>
           <FontAwesomeIcon icon="fal fa-receipt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
         </dt>
         <dd class="text-base text-gray-500 flex items-center gap-x-2">
-          <span>{{ original_invoice.tax_number }}</span>
+          <span>{{ original_invoice?.tax_number }}</span>
           <FontAwesomeIcon :icon="getStatusIcon(original_invoice.tax_number_status, original_invoice.tax_number_valid)"
             :class="getStatusColor(original_invoice.tax_number_status, original_invoice.tax_number_valid)" size="xs"
             v-tooltip="taxNumberStatusText" />
@@ -417,8 +439,8 @@ console.log(props);
         </dt>
 
         <dd class="text-base text-gray-500 w-full">
-          <div v-if="original_invoice.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
-            <div v-html="original_invoice.address.formatted_address" />
+          <div v-if="original_invoice?.address" class="relative bg-gray-50 border border-gray-300 rounded px-2 py-1">
+            <div v-html="original_invoice?.address.formatted_address" />
           </div>
 
           <div v-else class="text-gray-400 italic">
@@ -444,34 +466,34 @@ console.log(props);
       </dl>
 
 
-        <!-- Order -->
-        <dl v-tooltip="trans('Order')" class="flex items-center w-fit flex-none gap-x-2 my-2">
-          <dt class="flex-none">
-            <FontAwesomeIcon :icon="faShoppingCart" fixed-width aria-hidden="true" class="text-gray-500" />
-          </dt>
-          <dd class="text-base text-gray-500 ff">
-            <Link
-              class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink"
-              :href="route(original_order_route.name, original_order_route.parameters)"
-            >
-              {{ original_order?.data?.reference }}
-            </Link>
-          </dd>
+        <!-- Section: Order -->
+        <dl v-if="original_order" v-tooltip="trans('Order')" class="flex items-center w-fit flex-none gap-x-2 my-2">
+            <dt class="flex-none">
+                <FontAwesomeIcon :icon="faShoppingCart" fixed-width aria-hidden="true" class="text-gray-500" />
+            </dt>
+            <dd class="text-base text-gray-500 ff">
+                <Link
+                class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink"
+                :href="original_order_route?.name ? route(original_order_route.name, original_order_route.parameters) : ''"
+                >
+                    {{ original_order?.data?.reference }}
+                </Link>
+            </dd>
         </dl>
 
         <!-- Invoice -->
         <dl v-tooltip="trans('Invoice')" class="flex items-center w-fit flex-none gap-x-2 my-2">
-          <dt class="flex-none">
-            <FontAwesomeIcon :icon="faFileInvoiceDollar" fixed-width aria-hidden="true" class="text-gray-500" />
-          </dt>
-          <dd class="text-base text-gray-500 ff">
-            <Link
-              class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink"
-              :href="route(original_invoice_route.name, original_invoice_route.parameters)"
-            >
-              {{ original_invoice?.reference }}
-            </Link>
-          </dd>
+            <dt class="flex-none">
+                <FontAwesomeIcon :icon="faFileInvoiceDollar" fixed-width aria-hidden="true" class="text-gray-500" />
+            </dt>
+            <dd class="text-base text-gray-500 ff">
+                <Link
+                class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink"
+                :href="getInvoiceRoute()"
+                >
+                    {{ original_invoice?.reference }}
+                </Link>
+            </dd>
         </dl>
 
       <!-- Refund Payment -->
@@ -545,7 +567,7 @@ console.log(props);
           </div>
           <div class="space-x-1 mt-1 ">
             <span class="text-sm  text-gray-500">{{ trans("Need to refund") }}: {{
-              locale.currencyFormat(props.invoice_refund.currency_code || "usd",
+              locale.currencyFormat(props.invoice_refund.currency_code,
               Math.abs(Number(box_stats.information.pay_amount))) }}</span>
             <Button @click="() => paymentData.payment_amount = Math.abs(box_stats.information.pay_amount)"
               :disabled="paymentData.payment_amount === Math.abs(box_stats.information.pay_amount)" type="tertiary"

@@ -34,6 +34,11 @@ class GetFirstLoadProps
             $language = Language::where('code', 'en')->first();
         }
 
+        $image = null;
+        if ($user && !blank($user->image_id)) {
+            $image = $user->imageSources(0, 48);
+        }
+
         return
             [
                 'localeData' =>
@@ -46,8 +51,8 @@ class GetFirstLoadProps
                 'layout'           => GetLayout::run($user),
                 'environment'      => app()->environment(),
                 'help_portal_url'  => config('app.help_portal_url'),
-                'avatar_thumbnail' => !blank($user->image_id) ? $user->imageSources(0, 48) : null,
-                'notifications'    => NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection,
+                'avatar_thumbnail' => $image,
+                'notifications'    => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
 
 
             ];

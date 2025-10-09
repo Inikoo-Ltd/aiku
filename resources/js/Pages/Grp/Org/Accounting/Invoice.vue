@@ -433,6 +433,7 @@ const generateShowOrderRoute = () => {
                     </component>
                 </dl>
 
+                <!-- Section: Invoice date -->
                 <dl
                     class="flex items-center flex-none gap-x-2 w-fit">
                     <dt v-tooltip="trans('Invoice date')" class="flex-none">
@@ -443,7 +444,8 @@ const generateShowOrderRoute = () => {
                     </dd>
                 </dl>
 
-                <dl
+                <!-- Section: Category -->
+                <dl v-if="props.invoice?.category?.name"
                     class="flex items-center flex-none gap-x-2 w-fit">
                     <dt v-tooltip="trans('Category')" class="flex-none">
                         <FontAwesomeIcon icon="fal fa-shapes" fixed-width aria-hidden="true" class="text-gray-500"/>
@@ -453,6 +455,7 @@ const generateShowOrderRoute = () => {
                     </dd>
                 </dl>
 
+                <!-- Section: Order -->
                 <dl
                     v-if="props.invoice_pay.order_slug"
                     class="flex items-center flex-none gap-x-2 w-fit">

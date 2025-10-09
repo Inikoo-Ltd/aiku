@@ -85,6 +85,8 @@ use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
+use App\Actions\Dispatching\Box\StoreBox;
+use App\Actions\Dispatching\Box\UpdateBox;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
 use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
@@ -313,6 +315,7 @@ use App\Actions\Web\Webpage\SetWebpageAsOffline;
 use App\Actions\Web\Webpage\SetWebpageAsOnline;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
@@ -476,6 +479,10 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::patch('shop/{shop:id}', UpdateShop::class)->name('shop.update')->withoutScopedBindings();
     Route::post('fulfilment', StoreFulfilmentFromUI::class)->name('fulfilment.store');
 
+    Route::prefix('boxes')->name('boxes.')->group(function () {
+        Route::post('/', StoreBox::class)->name('store');
+        Route::patch('{box:id}', UpdateBox::class)->name('update')->withoutScopedBindings();
+    });
 
     Route::prefix('fulfilment/{fulfilment:id}/rentals')->name('fulfilment.rentals.')->group(function () {
         Route::post('/', StoreRental::class)->name('store');
@@ -793,6 +800,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
+    Route::patch('web-block-check', WebpageWorkshopCheckWebBlock::class)->name('web_block_check');
     Route::patch('delete', DeleteWebpage::class)->name('delete');
     Route::patch('set-online', SetWebpageAsOnline::class)->name('set_online');
     Route::patch('set-offline', SetWebpageAsOffline::class)->name('set_offline');
