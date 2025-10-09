@@ -38,10 +38,8 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
 
         foreach ($publicAttachments as $publicAttachment) {
             $attachments[$publicAttachment->id] = [
-                'is_public'       => true,
                 'scope'           => $publicAttachment->pivot->scope,
                 'caption'         => $publicAttachment->pivot->caption,
-                'organisation_id' => $product->organisation_id,
                 'group_id'        => $product->group_id,
                 'created_at'      => now(),
                 'updated_at'      => now(),

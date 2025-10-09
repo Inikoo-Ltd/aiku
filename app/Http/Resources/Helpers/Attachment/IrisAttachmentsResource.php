@@ -9,6 +9,7 @@
 
 namespace App\Http\Resources\Helpers\Attachment;
 
+use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class IrisAttachmentsResource extends JsonResource
@@ -18,8 +19,10 @@ class IrisAttachmentsResource extends JsonResource
         return [
             'caption'    => $this->caption,
             'scope'      => $this->scope,
+            'label' => TradeAttachmentScopeEnum::labels()[$this->scope],
             'media_id'   => $this->media_id,
             'media_ulid'   => $this->media_ulid,
+            'mime_type'  => $this->mime_type,
             'download_route' => [
                 'name' => 'iris.iris_attachment',
                 'parameters' => ['media' => $this->media_ulid],

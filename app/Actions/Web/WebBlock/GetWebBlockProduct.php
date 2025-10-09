@@ -31,7 +31,7 @@ class GetWebBlockProduct
                     ->where('model_has_attachments.model_type', '=', 'Product')
                     ->where('model_has_attachments.model_id', $webpage->model_id);
             })
-            ->select(['model_has_attachments.caption','model_has_attachments.scope', 'model_has_attachments.media_id', 'media.ulid as media_ulid'])
+            ->select(['model_has_attachments.caption','model_has_attachments.scope', 'model_has_attachments.media_id', 'media.ulid as media_ulid', 'media.mime_type as mime_type'])
             ->whereIn('model_has_attachments.scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
             ->get();
 
