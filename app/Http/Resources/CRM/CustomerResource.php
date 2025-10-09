@@ -93,6 +93,7 @@ class CustomerResource extends JsonResource
             'tax_number'          => $customer->taxNumber ? TaxNumberResource::make($customer->taxNumber)->getArray() : [],
             'state'               => $customer->state,
             'status'              => $customer->status,
+            'currency_code'       => $customer->shop?->currency?->code,
             'email_subscriptions' => [
                 'update_route'  => [
                     'method'     => 'patch',
