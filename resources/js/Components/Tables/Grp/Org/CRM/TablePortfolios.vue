@@ -229,7 +229,7 @@ const onDisableCheckbox = (item) => {
             <div class="text-gray-500">{{ useFormatTime(portfolio["created_at"], {
                 localeCode: locale.language.code,
                 formatTime: "hm"
-            }) }}
+                }) }}
             </div>
         </template>
 
@@ -259,7 +259,7 @@ const onDisableCheckbox = (item) => {
                     <div v-if="item.platform_possible_matches?.number_matches" class="border  rounded p-1"
                         :class="selectedProducts?.includes(item.id) ? 'bg-green-200 border-green-400' : 'border-gray-300'">
                         <div class="flex gap-x-2 items-center border border-gray-300 rounded p-1">
-                            <div v-if="item.platform_possible_matches?.raw_data?.[0].images?.[0]?.src"
+                            <div v-if="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src"
                                 class="min-h-5 h-auto max-h-9 min-w-9 w-auto max-w-9 shadow border border-gray-300 rounded">
                                 <img :src="item.platform_possible_matches?.raw_data?.[0]?.images?.[0]?.src" />
                             </div>
@@ -288,8 +288,7 @@ const onDisableCheckbox = (item) => {
                         :label="trans('Choose another product from your shop')" size="xxs"
                         type="tertiary" />
                     <Button v-else @click="() => { fetchRoute(), isOpenModal = true, selectedPortfolio = item }"
-                        :label="trans('Match it with an existing product in your shop')" size="xxs"
-                        type="tertiary" />
+                        :label="trans('Match it with an existing product in your shop')" size="xxs" type="tertiary" />
                 </template>
 
                 <template v-else>
@@ -406,7 +405,7 @@ const onDisableCheckbox = (item) => {
                                             <div v-if="!item.no_price" xclick="() => selectProduct(item)"
                                                 v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
                                                 {{
-                                                    locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
+                                                locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
                                                 }}
                                             </div>
                                         </div>
