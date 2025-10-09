@@ -293,9 +293,9 @@ onMounted(() => {
                 <div
                     v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
                     <ShipmentSection
-                        :shipments="shipments?.shipment.shipments"
-                        :shipments_routes="shipments.shipment.shipments_routes"
-                        :address="data.delivery_note.address"
+                        :shipments="shipments?.shipment?.shipments"
+                        :shipments_routes="shipments?.shipment?.shipments_routes"
+                        :address="data?.delivery_note?.address"
                         @addSuccsess="getDataShipment()"
                         @editAddressSuccsess="getDataDeliveryNote()"
                         @deleteSuccsess="getDataShipment()"

@@ -706,7 +706,7 @@ watch(selectRow, () => {
 }, {deep: true})
 
 defineExpose({
-    data : props.resource.data,
+    data : props?.resource?.data,
     queryBuilderData : queryBuilderData,
     selectRow : selectRow,
     compResourceData : compResourceData.value
