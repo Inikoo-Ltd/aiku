@@ -147,6 +147,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Artefact> $artefacts
  * @property-read LaravelCollection<int, Asset> $assets
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read LaravelCollection<int, Box> $boxes
  * @property-read \App\Models\SysAdmin\OrganisationCatalogueStats|null $catalogueStats
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, CustomerClient> $clients

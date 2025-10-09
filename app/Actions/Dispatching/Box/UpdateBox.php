@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Arya Permana - Kirin
  * created on 10-07-2025-16h-18m
@@ -24,7 +25,7 @@ class UpdateBox extends OrgAction
 
     public function handle(Box $box, array $modelData): Box
     {
-        if(Arr::exists($modelData, 'height') || Arr::exists($modelData, 'depth') || Arr::exists($modelData, 'width')) {
+        if (Arr::exists($modelData, 'height') || Arr::exists($modelData, 'depth') || Arr::exists($modelData, 'width')) {
             $dimension = Arr::get($modelData, 'height', $box->height) . 'x' . Arr::get($modelData, 'width', $box->width) . 'x' . Arr::get($modelData, 'depth', $box->depth);
             data_set($modelData, 'dimension', $dimension);
         }

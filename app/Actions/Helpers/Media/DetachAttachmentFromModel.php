@@ -33,8 +33,8 @@ class DetachAttachmentFromModel extends OrgAction
     {
         $model->attachments()->detach($attachment->id);
         $model->refresh();
-        if($model instanceof TradeUnit){
-            foreach($model->products as $product){
+        if ($model instanceof TradeUnit) {
+            foreach ($model->products as $product) {
                 CloneProductAttachmentsFromTradeUnits::run($product);
             }
         }

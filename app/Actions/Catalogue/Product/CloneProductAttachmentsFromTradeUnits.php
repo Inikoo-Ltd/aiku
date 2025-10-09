@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateImages;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;

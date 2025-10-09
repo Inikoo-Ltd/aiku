@@ -10,10 +10,7 @@ namespace App\Actions\CRM\Prospect\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
-use App\Http\Resources\Helpers\TaxNumberResource;
-use App\Models\CRM\Customer;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Prospect;
 use App\Models\SysAdmin\Organisation;
@@ -42,15 +39,11 @@ class EditProspect extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('prospect'),
+                'title'       => __('Prospect'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                // 'navigation'  => [
-                //     'previous' => $this->getPrevious($prospect, $request),
-                //     'next'     => $this->getNext($prospect, $request),
-                // ],
                 'pageHead'    => [
                     'title'   => $prospect->name,
                     'actions' => [
@@ -68,9 +61,9 @@ class EditProspect extends OrgAction
 
                 'formData' => [
                     'blueprint' => [
-                        [
-                            'title'  => __('contact information'),
-                            'label'  => __('contact'),
+                    'properties'=>    [
+                            'title'  => __('Contact information'),
+                            'label'  => __('Contact'),
                             'fields' => [
                                 'contact_name'             => [
                                     'type'  => 'input',
@@ -98,13 +91,13 @@ class EditProspect extends OrgAction
                             ]
                         ]
                     ],
-                    // 'args'      => [
-                    //     'updateRoute' => [
-                    //         'name'       => 'grp.models.customer.update',
-                    //         'parameters' => [$customer->id]
+                     'args'      => [
+                         'updateRoute' => [
+                             'name'       => 'grp.models.prospect.update',
+                             'parameters' => [$prospect->id]
 
-                    //     ],
-                    // ]
+                         ],
+                     ]
 
                 ],
 
@@ -122,39 +115,5 @@ class EditProspect extends OrgAction
         );
     }
 
-    // public function getPrevious(Prospect $prospect, ActionRequest $request): ?array
-    // {
-    //     $previous = Prospect::where('slug', '<', $prospect->slug)->orderBy('slug', 'desc')->first();
 
-    //     return $this->getNavigation($previous, $request->route()->getName());
-    // }
-
-    // public function getNext(Prospect $prospect, ActionRequest $request): ?array
-    // {
-    //     $next = Prospect::where('slug', '>', $prospect->slug)->orderBy('slug')->first();
-
-    //     return $this->getNavigation($next, $request->route()->getName());
-    // }
-
-    // private function getNavigation(?Prospect $prospect, string $routeName): ?array
-    // {
-    //     if (!$prospect) {
-    //         return null;
-    //     }
-
-    //     return match ($routeName) {
-    //         'grp.org.shops.show.crm.customers.edit' => [
-    //             'label' => $customer->name,
-    //             'route' => [
-    //                 'name'       => $routeName,
-    //                 'parameters' => [
-    //                     'organisation' => $customer->organisation->slug,
-    //                     'shop'         => $customer->shop->slug,
-    //                     'customer'     => $customer->slug
-    //                 ]
-
-    //             ]
-    //         ]
-    //     };
-    // }
 }

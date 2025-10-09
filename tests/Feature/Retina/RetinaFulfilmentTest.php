@@ -173,7 +173,7 @@ beforeEach(function () {
 
     $this->webUser = createWebUser($this->customer);
 
-    $palletRental =  Rental::where('auto_assign_asset_type',PalletTypeEnum::PALLET)->first();
+    $palletRental =  Rental::where('auto_assign_asset_type', PalletTypeEnum::PALLET)->first();
     if (!$palletRental) {
 
         $palletRental         = StoreRental::make()->action(
@@ -190,9 +190,9 @@ beforeEach(function () {
     }
     $this->palletRental   = $palletRental;
 
-    $oversizeRental = Rental::where('auto_assign_asset_type',PalletTypeEnum::OVERSIZE)->first();
+    $oversizeRental = Rental::where('auto_assign_asset_type', PalletTypeEnum::OVERSIZE)->first();
 
-    if(!$oversizeRental) {
+    if (!$oversizeRental) {
         $oversizeRental = StoreRental::make()->action(
             $this->fulfilment->shop,
             [
@@ -206,8 +206,8 @@ beforeEach(function () {
         );
     }
     $this->oversizeRental = $oversizeRental;
-    $boxRental= Rental::where('auto_assign_asset_type',PalletTypeEnum::BOX)->first();
-    if(!$boxRental) {
+    $boxRental = Rental::where('auto_assign_asset_type', PalletTypeEnum::BOX)->first();
+    if (!$boxRental) {
         $boxRental            = StoreRental::make()->action(
             $this->fulfilment->shop,
             [

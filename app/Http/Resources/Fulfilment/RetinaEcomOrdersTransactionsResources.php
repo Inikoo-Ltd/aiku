@@ -10,7 +10,6 @@
 namespace App\Http\Resources\Fulfilment;
 
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use App\Models\Web\Webpage;

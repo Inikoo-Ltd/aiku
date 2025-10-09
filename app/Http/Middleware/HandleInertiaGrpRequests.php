@@ -37,7 +37,7 @@ class HandleInertiaGrpRequests extends Middleware
         $firstLoadOnlyProps = [];
 
 
-        if (!$request->inertia() || Session::get('reloadLayout')  ) {
+        if (!$request->inertia() || Session::get('reloadLayout')) {
 
             $firstLoadOnlyProps          = GetFirstLoadProps::run($user);
             $firstLoadOnlyProps['ziggy'] = function () use ($request) {

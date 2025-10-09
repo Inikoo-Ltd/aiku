@@ -27,7 +27,7 @@ class GetIrisLastOrderedProducts extends IrisAction
             ->join('transactions', function ($join) {
                 $join->on('transactions.model_id', '=', 'products.id')
                     ->where('transactions.model_type', '=', 'Product')
-                    ->whereIn('transactions.state',  [TransactionStateEnum::SUBMITTED, TransactionStateEnum::IN_WAREHOUSE, TransactionStateEnum::HANDLING, TransactionStateEnum::PACKED, TransactionStateEnum::FINALISED])
+                    ->whereIn('transactions.state', [TransactionStateEnum::SUBMITTED, TransactionStateEnum::IN_WAREHOUSE, TransactionStateEnum::HANDLING, TransactionStateEnum::PACKED, TransactionStateEnum::FINALISED])
                     ->whereRaw(
                         'transactions.submitted_at = (
                             SELECT MAX(t2.submitted_at)

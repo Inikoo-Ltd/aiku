@@ -27,7 +27,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachAttachmentToModel extends OrgAction
 {
-
     public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn|Product|TradeUnitFamily $model, array $modelData): void
     {
         foreach (Arr::get($modelData, 'attachments') as $attachment) {

@@ -8,7 +8,6 @@
 
 use App\Actions\Dispatching\Box\UI\CreateBox;
 use App\Actions\Dispatching\Box\UI\IndexBoxes;
-use App\Actions\Dispatching\DeliveryNote\PdfDeliveryNote;
 use App\Actions\Dispatching\DeliveryNote\UI\IndexDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\UI\ShowDeliveryNote;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletReturns;

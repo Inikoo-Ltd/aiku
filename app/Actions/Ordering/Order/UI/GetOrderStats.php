@@ -29,7 +29,7 @@ class GetOrderStats
         $avgPurchaseValue = 0;  // TODO
         $avgPurchaseFrequency = 0;   // TODO
         $avgCustomerLifespan = 0;  // TODO
-        
+
         if ($parent instanceof Shop) {
             $lifetimeValue = $avgPurchaseValue * $avgPurchaseFrequency * $avgCustomerLifespan;
         }

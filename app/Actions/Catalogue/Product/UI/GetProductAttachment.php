@@ -3,12 +3,10 @@
 namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Traits\HasBucketAttachment;
-use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Models\Catalogue\Product;
-use App\Models\Goods\TradeUnitFamily;
 
 class GetProductAttachment
 {

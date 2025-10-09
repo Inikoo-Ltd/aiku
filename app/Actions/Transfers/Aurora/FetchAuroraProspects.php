@@ -27,50 +27,50 @@ class FetchAuroraProspects extends FetchAuroraAction
     {
         if ($prospectData = $organisationSource->fetchProspect($organisationSourceId)) {
 
-           //print_r($prospectData['prospect']);
+            //print_r($prospectData['prospect']);
 
             if ($prospect = Prospect::withTrashed()->where('source_id', $prospectData['prospect']['source_id'])
                 ->first()) {
-              //  try {
-                    $prospect = UpdateProspect::make()->action(
-                        $prospect,
-                        $prospectData['prospect'],
-                        60,
-                        false,
-                        audit: false
-                    );
-                    $this->recordChange($organisationSource, $prospect->wasChanged());
-//                } catch (Exception $e) {
-//                    $this->recordError($organisationSource, $e, $prospectData['prospect'], 'Prospect', 'update');
-//
-//                    return null;
-//                }
+                //  try {
+                $prospect = UpdateProspect::make()->action(
+                    $prospect,
+                    $prospectData['prospect'],
+                    60,
+                    false,
+                    audit: false
+                );
+                $this->recordChange($organisationSource, $prospect->wasChanged());
+                //                } catch (Exception $e) {
+                //                    $this->recordError($organisationSource, $e, $prospectData['prospect'], 'Prospect', 'update');
+                //
+                //                    return null;
+                //                }
             } else {
 
-               // try {
-                    $prospect = StoreProspect::make()->action(
-                        $prospectData['shop'],
-                        $prospectData['prospect'],
-                        60,
-                        false,
-                        audit: false
-                    );
-                    Prospect::enableAuditing();
-                    $this->saveMigrationHistory(
-                        $prospect,
-                        Arr::except($prospectData['prospect'], ['fetched_at', 'last_fetched_at', 'source_id'])
-                    );
-                    $this->recordNew($organisationSource);
+                // try {
+                $prospect = StoreProspect::make()->action(
+                    $prospectData['shop'],
+                    $prospectData['prospect'],
+                    60,
+                    false,
+                    audit: false
+                );
+                Prospect::enableAuditing();
+                $this->saveMigrationHistory(
+                    $prospect,
+                    Arr::except($prospectData['prospect'], ['fetched_at', 'last_fetched_at', 'source_id'])
+                );
+                $this->recordNew($organisationSource);
 
-                    $sourceData = explode(':', $prospect->source_id);
-                    DB::connection('aurora')->table('Prospect Dimension')
-                        ->where('Prospect Key', $sourceData[1])
-                        ->update(['aiku_id' => $prospect->id]);
-//                } catch (Exception|Throwable $e) {
-//                    $this->recordError($organisationSource, $e, $prospectData['prospect'], 'Prospect', 'store');
-//
-//                    return null;
-//                }
+                $sourceData = explode(':', $prospect->source_id);
+                DB::connection('aurora')->table('Prospect Dimension')
+                    ->where('Prospect Key', $sourceData[1])
+                    ->update(['aiku_id' => $prospect->id]);
+                //                } catch (Exception|Throwable $e) {
+                //                    $this->recordError($organisationSource, $e, $prospectData['prospect'], 'Prospect', 'store');
+                //
+                //                    return null;
+                //                }
             }
 
 

@@ -19,7 +19,6 @@ use Psr\Container\NotFoundExceptionInterface;
 
 class SetLocale
 {
-
     public function handle(Request $request, Closure $next)
     {
         $locale = $this->getLocale();
@@ -36,9 +35,9 @@ class SetLocale
     {
 
         try {
-            $locale = session()->get('aiku_language',Cookie::get('aiku_language'));
-        }catch (NotFoundExceptionInterface|ContainerExceptionInterface) {
-            $locale=null;
+            $locale = session()->get('aiku_language', Cookie::get('aiku_language'));
+        } catch (NotFoundExceptionInterface|ContainerExceptionInterface) {
+            $locale = null;
         }
         if ($locale) {
             return $locale;
@@ -53,7 +52,7 @@ class SetLocale
             $locale = substr(locale_accept_from_http(Arr::get($_SERVER, 'HTTP_ACCEPT_LANGUAGE', 'en')), 0, 2);
         }
 
-        if(!$locale){
+        if (!$locale) {
             $locale = 'en';
         }
 
