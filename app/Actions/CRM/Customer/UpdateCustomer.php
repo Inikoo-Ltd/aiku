@@ -169,6 +169,11 @@ class UpdateCustomer extends OrgAction
         }
 
 
+        if (Arr::has($changes, 'email') && $customer->shop->is_aiku) {
+            MatchCustomerProspects::run($customer);
+        }
+
+
         return $customer;
     }
 

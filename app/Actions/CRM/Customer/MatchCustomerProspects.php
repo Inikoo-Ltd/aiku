@@ -16,17 +16,30 @@ use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\DispatchedEmail;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
+use App\Models\SysAdmin\Group;
 use Illuminate\Console\Command;
 
 class MatchCustomerProspects extends OrgAction
 {
     use WithActionUpdate;
 
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(Customer $customer): string
+    {
+        return $customer->id;
+    }
+
+
+
     public function handle(Customer $customer): Customer
     {
-        $prospect = Prospect::where('email', $customer->email)->where('shop_id', $customer->shop_id)->first();
+        $prospect = Prospect::whereRaw('LOWER(email) = ?', [strtolower((string)$customer->email)])
+            ->where('shop_id', $customer->shop_id)
+            ->first();
         if ($prospect) {
             $fistInvoice    = null;
             $numberInvoices = $customer->invoices()->count();
