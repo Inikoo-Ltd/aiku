@@ -44,7 +44,7 @@ const props = defineProps<{
     pageHead: {}
     title: string
     // data: {},
-    announcement_data: {
+    showcase: {
         container_properties: {
             
         }
@@ -92,14 +92,13 @@ const props = defineProps<{
     is_announcement_active: string  // 'inactive' | 'active'
     last_published_date: string | null
     is_announcement_dirty?: boolean
-    portfolio_website: {
-        name: string
-        url: string
-    }
+    // portfolio_website: {
+    //     name: string
+    //     url: string
+    // }
 }>()
 
-const announcementData = ref(props.announcement_data)
-console.log('ann', announcementData.value)
+const announcementData = ref(props.showcase)
 provide('announcementData', announcementData.value)
 
 const isModalOpen = ref(false)
@@ -389,7 +388,7 @@ const onSectionSetting = () => {
     <!-- Section: Workshop -->
     <div v-show="selectedTab === 0" class="flex border-t border-gray-300">
         <!-- Section: Side editor -->
-        <!-- <div class="w-[600px] py-2 px-3 ">
+        <div class="w-[600px] py-2 px-3 ">
             <div class="w-full text-lg font-semibold flex items-center justify-between gap-3 border-b border-gray-300">
                 <div class="flex items-center gap-3">
                     {{ trans('Announcement') }}
@@ -407,7 +406,7 @@ const onSectionSetting = () => {
                     :blueprint="_component_template_Announcement?.fieldSideEditor"
                 />
             </div>
-        </div> -->
+        </div>
 
         <!-- Section: Preview -->
         <div class="w-full h-full flex flex-col py-2 px-3">
@@ -427,7 +426,7 @@ const onSectionSetting = () => {
                 </div>
             </div>
 
-            <!-- <div class="border-2 h-full w-full">
+            <div class="border-2 h-full w-full">
                 <div class="h-full w-full bg-white relative">
                     <div v-if="announcementData.template_code"
                         ref="_parentComponent"
@@ -456,7 +455,7 @@ const onSectionSetting = () => {
 
                     </div>
                 </div>
-            </div> -->
+            </div>
         </div>
     </div>
 
@@ -464,15 +463,14 @@ const onSectionSetting = () => {
     <div v-show="selectedTab === 1">
         <div class="max-w-4xl mx-auto px-4 relative pt-4 pb-2 transition-all duration-500" :class="sectionClass">
             <!-- Section: Target -->
-            <!-- <AnnouncementSettings
-                :domain="portfolio_website.url"
+            <AnnouncementSettings
                 :onPublish
                 :isLoadingPublish
             />
 
             <div v-if="isLoadingPublish" class="rounded-md bg-black/20 text-white text-[60px] absolute inset-0 flex items-center justify-center">
                 <LoadingIcon />
-            </div> -->
+            </div>
 
         </div>
     </div>

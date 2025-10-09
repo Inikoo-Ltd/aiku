@@ -33,37 +33,20 @@ class AnnouncementResource extends JsonResource
             'show_pages'                     => $extractedSettings['show_pages'],
             'hide_pages'                     => $extractedSettings['hide_pages'],
 
-            // container_properties: {
-            
-            // }
-            // created_at: string
-            // fields: {
-            //     close_button: {
-            //         size: string
-            //         text_color: string
-            //         block_properties: {
-            //             position: {
-            //                 x: string
-            //                 y: string
-            //                 type: string  // 'absolute' | 'relative'
-            //             }
-            //         }
-            //     }
-                
-            // }
-            // id: number
-            // icon?: string
-            // name: string
-            // schedule_at?: string
-            // schedule_finish_at?: string
-            // settings: {
-    
-            // }
-            // state: string
-            // status: string
-            // ulid: string
-            // template_code: string
-            // updated_at: string
+            'container_properties'           => $announcement->container_properties,
+            'created_at'                     => $announcement->created_at,
+            'fields'                         => $announcement->fields,
+            'id'                             => $announcement->id,
+            'icon'                           => $announcement->icon,
+            'name'                           => $announcement->name,
+            'schedule_at'                    => $announcement->schedule_at,
+            'schedule_finish_at'             => $announcement->schedule_finish_at,
+            'settings'                       => $announcement->settings,
+            'state'                          => $announcement->state,
+            'status'                         => $announcement->status,
+            'ulid'                           => $announcement->ulid,
+            'template_code'                  => 'announcement-promo-2-countdown',
+            'updated_at'                     => $announcement->updated_at,
         ];
     }
 }

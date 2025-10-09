@@ -19,7 +19,7 @@ import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 library.add(faLink)
 
 const props = defineProps<{
-    domain: string
+    // domain: string
     onPublish: Function
     isLoadingPublish: boolean
 }>()
@@ -182,7 +182,7 @@ const settingsUser = ref({
                         </div>
                         <div class="min-w-80 w-fit max-w-96">
                             <InputGroup v-show="specificNew.when === 'matches'">
-                                <InputGroupAddon>{{ domain }}/</InputGroupAddon>
+                                <InputGroupAddon>{{ 'domain' }}/</InputGroupAddon>
                                 <InputText @keydown.enter="() => specificNew.url ? addSpecificPage() : ''" type="text" v-model="specificNew.url" placeholder="blog/subpage" />
                             </InputGroup>
                             <InputText

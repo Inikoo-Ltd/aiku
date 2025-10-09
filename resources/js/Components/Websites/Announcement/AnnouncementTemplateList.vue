@@ -13,6 +13,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import { AnnouncementData } from '@/types/Announcement'
 import Checkbox from 'primevue/checkbox'
 import { set } from 'lodash'
+import { layoutStructure } from '@/Composables/useLayoutStructure'
 
 
 
@@ -28,6 +29,8 @@ const props = withDefaults(defineProps<{
 const emits = defineEmits<{
     (e: 'afterSubmit'): void
 }>()
+
+const layout = inject('layout', layoutStructure)
 
 const announcementData = inject<AnnouncementData | null>('announcementData', null)
 console.log('qqq', announcementData)
@@ -103,12 +106,12 @@ const onSubmitTemplate = (template) => {
 const isLoadingFetch = ref(false)
 const fetchAnnouncementList = async () => {
     isLoadingFetch.value = true
+    console.log('vvvvv', layout.currentParams)
     try {
         const response = await axios.get(
-            route('grp.org.shops.show.web.announcements.index', route().queryParams),
+            route('grp.org.shops.show.web.announcements.index', layout.currentParams),
         )
 
-        console.log('respo', response.data)
         announcements_list.value = response.data.data
 
         // Set category announcement
@@ -161,7 +164,7 @@ onMounted(() => {
                     class="capitalize group flex items-center gap-x-2 p-3 text-sm font-semibold cursor-pointer"
                 >
                     {{ category }}
-                    <FontAwesomeIcon v-if="category.icon" :icon='category.icon' class='text-sm text-gray-400' fixed-width aria-hidden='true' />
+                    <FontAwesomeIcon v-if="category?.icon" :icon='category?.icon' class='text-sm text-gray-400' fixed-width aria-hidden='true' />
                 </li>
             </ul>
 
