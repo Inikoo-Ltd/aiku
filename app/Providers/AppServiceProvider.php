@@ -146,6 +146,7 @@ class AppServiceProvider extends ServiceProvider
                 'Stock'                         => 'App\Models\Goods\Stock',
                 'StockFamily'                   => 'App\Models\Goods\StockFamily',
                 'TradeUnit'                     => 'App\Models\Goods\TradeUnit',
+                'TradeUnitFamily'               => 'App\Models\Goods\TradeUnitFamily',
 
 
                 // Helpers
