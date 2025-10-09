@@ -46,7 +46,7 @@ const props = defineProps<{
     // data: {},
     announcement_data: {
         container_properties: {
-            
+
         }
         created_at: string
         fields: {
@@ -61,7 +61,7 @@ const props = defineProps<{
                     }
                 }
             }
-            
+
         }
         id: number
         icon?: string
@@ -89,7 +89,7 @@ const props = defineProps<{
     is_announcement_active: string  // 'inactive' | 'active'
     last_published_date: string | null
     is_announcement_dirty?: boolean
-    portfolio_website: {
+    website: {
         name: string
         url: string
     }
@@ -234,7 +234,7 @@ const onClickToggleActivate = async (newVal: string) => {
     if (props.is_announcement_active === newVal) return
 
     if(cancelTokenActivate.value) return
-    
+
     router[props.routes_list.activated_route.method || 'patch'](
         route(props.routes_list.activated_route.name, props.routes_list.activated_route.parameters),
         { is_published: newVal },
@@ -270,11 +270,11 @@ provide('openFieldWorkshop', openFieldWorkshop)
 const getDeliveryUrlXx = () => {
     console.log('envi', usePage().props.environment)
     if (usePage().props.environment === 'local') {
-        return `http://delivery.wowsbar.test/announcement?logged_in=true&domain=${new URL(props.portfolio_website.url).hostname}`
+        return `http://delivery.wowsbar.test/announcement?logged_in=true&domain=${new URL(props.website.url).hostname}`
     } else if (usePage().props.environment === 'staging') {
-        return `https://delivery-staging.wowsbar.com/announcement?logged_in=true&domain=${new URL(props.portfolio_website.url).hostname}`
+        return `https://delivery-staging.wowsbar.com/announcement?logged_in=true&domain=${new URL(props.website.url).hostname}`
     } else if (usePage().props.environment === 'production') {
-        return `https://delivery.wowsbar.com/announcement?logged_in=true&domain=${new URL(props.portfolio_website.url).hostname}`
+        return `https://delivery.wowsbar.com/announcement?logged_in=true&domain=${new URL(props.website.url).hostname}`
     }
 
     return '#'
@@ -386,7 +386,7 @@ const onSectionSetting = () => {
         <!-- <Button @click="onSave" label="save" :loading="isLoadingSave" :style="'tertiary'" icon="fal fa-save" /> -->
 
     </div>
-    
+
     <!-- Section: Workshop -->
     <div v-show="selectedTab === 0" class="flex border-t border-gray-300">
         <!-- Section: Side editor -->
@@ -430,7 +430,7 @@ const onSectionSetting = () => {
 
                     <a :href="deliveryUrl"
                         target="_blank" class="py-1 px-2 cursor-pointer" title="Desktop view" v-tooltip="'Preview'">
-                        What will showed in <span class="font-semibold">{{ portfolio_website.name }}</span>?
+                        What will showed in <span class="font-semibold">{{ website.name }}</span>?
                         <FontAwesomeIcon icon='fal fa-external-link' aria-hidden='true' />
                     </a>
                 </div>
@@ -457,7 +457,7 @@ const onSectionSetting = () => {
 
                     <div v-else class="text-center pb-14">
                         <EmptyState :data="{ title: trans('No Announcement selected')}" />
-                        
+
                         <div class="mx-auto mt-4">
                             <Button @click="() => isModalOpen = true" :style="'tertiary'"
                                 label="Select from template" />
@@ -477,7 +477,7 @@ const onSectionSetting = () => {
         <div class="max-w-4xl mx-auto px-4 relative pt-4 pb-2 transition-all duration-500" :class="sectionClass">
             <!-- Section: Target -->
             <AnnouncementSettings
-                :domain="portfolio_website.url"
+                :domain="website.url"
                 :onPublish
                 :isLoadingPublish
             />

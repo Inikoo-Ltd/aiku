@@ -10,6 +10,7 @@ namespace App\Actions\Web\Announcement\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Http\Resources\Web\BannerResource;
 use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
@@ -82,6 +83,89 @@ class ShowAnnouncementWorkshop extends OrgAction
                     ],
                 ],
                 'banner'            => BannerResource::make($announcement)->getArray(),
+                'website' => [
+                    'name' => $announcement->website->name,
+                    'url' => $announcement->website->getUrl(),
+                ],
+                'is_announcement_dirty'       => $announcement->is_dirty,
+                'is_announcement_started'     => $this->isAnnouncementStarted($announcement),
+                'is_announcement_closed'      => $this->isAnnouncementClosed($announcement),
+                'portfolio_website'           => $announcement->website,
+                'announcement_data'           => $announcement->toArray(),
+                'is_announcement_published'   => $announcement->unpublishedSnapshot->state === SnapshotStateEnum::LIVE,
+                'is_announcement_active'      => $announcement->status,
+                'last_published_date'         => $announcement->ready_at,
+                'routes_list' => [
+                    'publish_route' => [
+                        'name'       => 'grp.models.shop.website.announcement.publish',
+                        'parameters' => [
+                            'shop' => $announcement->website->shop_id,
+                            'website' => $announcement->website_id,
+                            'announcement'     => $announcement->id
+                        ],
+                        'method'    => 'patch'
+                    ],
+                    'update_route' => [
+                        'name'       => 'grp.models.shop.website.announcement.update',
+                        'parameters' => [
+                            'shop' => $announcement->website->shop_id,
+                            'website' => $announcement->website_id,
+                            'announcement'     => $announcement->id
+                        ],
+                        'method'    => 'patch'
+                    ],
+                    'reset_route' => [
+                        'name'       => 'grp.models.shop.website.announcement.reset',
+                        'parameters' => [
+                            'shop' => $announcement->website->shop_id,
+                            'website' => $announcement->website_id,
+                            'announcement'     => $announcement->id
+                        ]
+                    ],
+                    'close_route' => [
+                        'name'       => 'grp.models.shop.website.announcement.close',
+                        'parameters' => [
+                            'shop' => $announcement->website->shop_id,
+                            'website' => $announcement->website_id,
+                            'announcement'     => $announcement->id
+                        ],
+                        'method'    => 'patch'
+                    ],
+                    'start_route' => [
+                        'name'       => 'grp.models.shop.website.announcement.start',
+                        'parameters' => [
+                            'shop' => $announcement->website->shop_id,
+                            'website' => $announcement->website_id,
+                            'announcement'     => $announcement->id
+                        ],
+                        'method'    => 'patch'
+                    ],
+                    'activated_route'     => [
+                        'name'          => 'grp.models.shop.website.announcement.toggle',
+                        'parameters'    => [
+                            'shop' => $announcement->website->shop_id,
+                            'website' => $announcement->website_id,
+                            'announcement'     => $announcement->id
+                        ],
+                        'method'    => 'patch'
+                    ],
+                    'upload_image_route'     => [
+                        'name'          => 'grp.models.shop.website.announcement.upload-images.store',
+                        'parameters'    => [
+                            'shop' => $announcement->website->shop_id,
+                            'website' => $announcement->website_id
+                        ],
+                        'method'    => 'post'
+                    ],
+                    'delete_announcement_route'     => [
+                        'name'          => 'grp.models.shop.website.announcement.delete',
+                        'parameters'    => [
+                            'shop' => $announcement->website->shop_id,
+                            'website' => $announcement->website_id
+                        ],
+                        'method'    => 'delete'
+                    ]
+                ],
                 'autoSaveRoute'     => [
                     // 'name'       => 'grp.models.banner.layout.update',
                     // 'parameters' => [
@@ -112,6 +196,41 @@ class ShowAnnouncementWorkshop extends OrgAction
         );
     }
 
+    /**
+     * Determine if the announcement has started.
+     */
+    public function isAnnouncementStarted($announcement): bool
+    {
+        if (! $announcement->live_at) {
+            return false;
+        }
+
+        if (!$announcement->schedule_finish_at) {
+            return true;
+        }
+
+        if ($announcement->live_at->lessThan(now()) && !$announcement->schedule_at) {
+            return true;
+        }
+
+        return $announcement->live_at->lessThan(now()) || now()->between($announcement->schedule_finish_at, $announcement->schedule_at);
+    }
+
+    /**
+     * Determine if the announcement is closed.
+     */
+    public function isAnnouncementClosed($announcement): bool
+    {
+        if (! $announcement->live_at) {
+            return true;
+        }
+
+        if (!$announcement->closed_at) {
+            return false;
+        }
+
+        return !$announcement->live_at->lessThan(now()) || now()->isAfter($announcement->closed_at);
+    }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
