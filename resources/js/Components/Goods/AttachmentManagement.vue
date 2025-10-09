@@ -267,6 +267,7 @@ const getIcon = (type: string) => {
                     </div>
 
                     <!-- Drop Zone / Preview -->
+                     {{ categoryBox }}
                     <div
                         class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden relative">
                         <template v-if="categoryBox.attachment">
