@@ -158,7 +158,7 @@ Route::prefix('{website}/banners')->name('banners.')->group(function () {
 
 Route::prefix('{website}/announcements')->name('announcements.')->group(function () {
     Route::get('', IndexAnnouncements::class)->name('index');
-    Route::get('/{announcement}/workshop', ShowAnnouncementWorkshop::class)->name('workshop');
+    Route::get('/{announcement:ulid}/workshop', ShowAnnouncementWorkshop::class)->name('workshop');
     Route::get('/{announcement:ulid}', ShowAnnouncement::class)->name('show')->withoutScopedBindings();
 });
 

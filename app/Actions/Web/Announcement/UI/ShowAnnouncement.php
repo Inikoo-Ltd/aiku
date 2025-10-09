@@ -84,22 +84,95 @@ class ShowAnnouncement extends OrgAction
                     'navigation' => AnnouncementTabsEnum::navigation()
                 ],
 
+                'routes_list' => [
+                    'publish_route' => [
+                        'name'       => 'grp.models.shop.website.announcement.publish',
+                        'parameters' => [
+                            'shop' => $announcement->website->shop->slug,
+                            'website' => $announcement->website->slug,
+                            'announcement'     => $announcement->ulid
+                        ],
+                        'method'    => 'patch'
+                    ],
+                    'update_route' => [
+                        'name'       => 'grp.models.shop.website.announcement.update',
+                        'parameters' => [
+                            'shop' => $announcement->website->shop->slug,
+                            'website' => $announcement->website->slug,
+                            'announcement'     => $announcement->ulid
+                        ],
+                        'method'    => 'patch'
+                    ],
+                    'reset_route' => [
+                        'name'       => 'grp.models.shop.website.announcement.reset',
+                        'parameters' => [
+                            'shop' => $announcement->website->shop->slug,
+                            'website' => $announcement->website->slug,
+                            'announcement'     => $announcement->ulid
+                        ],
+                        'method'    => 'delete'
+                    ],
+                    'close_route' => [
+                        'name'       => 'grp.models.shop.website.announcement.close',
+                        'parameters' => [
+                            'shop' => $announcement->website->shop->slug,
+                            'website' => $announcement->website->slug,
+                            'announcement'     => $announcement->ulid
+                        ],
+                        'method'    => 'patch'
+                    ],
+                    'start_route' => [
+                        'name'       => 'grp.models.shop.website.announcement.start',
+                        'parameters' => [
+                            'shop' => $announcement->website->shop->slug,
+                            'website' => $announcement->website->slug,
+                            'announcement'     => $announcement->ulid
+                        ],
+                        'method'    => 'patch'
+                    ],
+                    'activated_route'     => [
+                        'name'          => 'grp.models.shop.website.announcement.toggle',
+                        'parameters'    => [
+                            'shop' => $announcement->website->shop->slug,
+                            'website' => $announcement->website->slug,
+                            'announcement'     => $announcement->ulid
+                        ],
+                        'method'    => 'patch'
+                    ],
+                    'upload_image_route'     => [
+                        'name'          => 'grp.models.shop.website.announcement.upload-images.store',
+                        'parameters'    => [
+                            'shop' => $announcement->website->shop->slug,
+                            'website' => $announcement->portfolio_website_id
+                        ],
+                        'method'    => 'post'
+                    ],
+                    'delete_announcement_route'     => [
+                        'name'          => 'grp.models.shop.website.announcement.delete',
+                        'parameters'    => [
+                            'shop' => $announcement->website->shop->slug,
+                            'website' => $announcement->portfolio_website_id
+                        ],
+                        'method'    => 'delete'
+                    ]
+                ],
+
                 AnnouncementTabsEnum::SHOWCASE->value => $this->tab == AnnouncementTabsEnum::SHOWCASE->value
                     ?
-                    fn () => AnnouncementResource::make($announcement)->getArray()
+                    fn() => AnnouncementResource::make($announcement)->getArray()
                     : Inertia::lazy(
-                        fn () => AnnouncementResource::make($announcement)->getArray()
+                        fn() => AnnouncementResource::make($announcement)->getArray()
                     ),
 
                 AnnouncementTabsEnum::SNAPSHOTS->value => $this->tab == AnnouncementTabsEnum::SNAPSHOTS->value
                     ?
-                    fn () => SnapshotResource::collection(
+                    fn() => SnapshotResource::collection(
                         IndexSnapshots::run(
                             parent: $announcement,
                             prefix: AnnouncementTabsEnum::SNAPSHOTS->value
                         )
                     )
-                    : Inertia::lazy(fn () => SnapshotResource::collection(
+                    : Inertia::lazy(fn() => SnapshotResource::collection(
                         IndexSnapshots::run(
                             parent: $announcement,
                             prefix: AnnouncementTabsEnum::SNAPSHOTS->value

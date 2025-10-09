@@ -11,9 +11,9 @@ namespace App\Actions\Web\Announcement\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Http\Resources\Web\BannerResource;
+use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Web\Banner;
 use App\Models\Web\Website;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -26,21 +26,21 @@ class ShowAnnouncementWorkshop extends OrgAction
 
     private Website $parent;
 
-    public function handler(Website $parent, Banner $banner): Banner
+    public function handler(Website $parent, Announcement $announcement): Announcement
     {
         $this->parent = $parent;
 
-        return $banner;
+        return $announcement;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Website $website, Banner $announcement, ActionRequest $request): Banner
+    public function asController(Organisation $organisation, Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): Announcement
     {
         $this->initialisationFromShop($shop, $request);
 
         return $this->handler($website, $announcement);
     }
 
-    public function htmlResponse(Banner $banner, ActionRequest $request): Response
+    public function htmlResponse(Announcement $announcement, ActionRequest $request): Response
     {
         return Inertia::render(
             'Websites/AnnouncementWorkshop',
@@ -51,16 +51,16 @@ class ShowAnnouncementWorkshop extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'navigation'        => [
-                    'previous' => $this->getPrevious($banner, $request),
-                    'next'     => $this->getNext($banner, $request),
+                    'previous' => $this->getPrevious($announcement, $request),
+                    'next'     => $this->getNext($announcement, $request),
                 ],
                 'pageHead'          => [
 
                     'title'     => __('Workshop'),
                     'container' => [
                         'icon'    => ['fal', 'fa-sign'],
-                        'tooltip' => __('Banner'),
-                        'label'   => Str::possessive($banner->name)
+                        'tooltip' => __('Announcement'),
+                        'label'   => Str::possessive($announcement->name)
                     ],
                     'iconRight' =>
                         [
@@ -81,28 +81,28 @@ class ShowAnnouncementWorkshop extends OrgAction
                         ],
                     ],
                 ],
-                'banner'            => BannerResource::make($banner)->getArray(),
+                'banner'            => BannerResource::make($announcement)->getArray(),
                 'autoSaveRoute'     => [
                     // 'name'       => 'grp.models.banner.layout.update',
                     // 'parameters' => [
-                    //     'banner'  => $banner->id
+                    //     'banner'  => $announcement->id
                     // ]
                 ],
                 'publishRoute'      => [
                     // 'name'       => 'grp.models.banner.publish',
                     // 'parameters' => [
-                    //     'banner' => $banner->id
+                    //     'banner' => $announcement->id
                     // ]
                 ],
                 'imagesUploadRoute' => [
                     // 'name'       => 'grp.models.banner.images.store',
                     // 'parameters' => [
-                    //     'banner' => $banner->id
+                    //     'banner' => $announcement->id
                     // ]
                 ],
                 'galleryRoute'      => [
                     // 'stock_images'    => [
-                    //     'name' => "grp.gallery.stock-images.banner.$banner->type.index"
+                    //     'name' => "grp.gallery.stock-images.banner.$announcement->type.index"
                     // ],
                     // 'uploaded_images' => [
                     //     'name' => 'grp.gallery.uploaded-images.banner.index'
@@ -122,29 +122,29 @@ class ShowAnnouncementWorkshop extends OrgAction
         );
     }
 
-    public function getPrevious(Banner $banner, ActionRequest $request): ?array
+    public function getPrevious(Announcement $announcement, ActionRequest $request): ?array
     {
-        $previous = Banner::where('slug', '<', $banner->slug)->orderBy('slug', 'desc')->first();
+        $previous = Announcement::where('ulid', '<', $announcement->ulid)->orderBy('ulid', 'desc')->first();
 
         return $this->getNavigation($previous, $request->route()->getName(), $request->route()->parameters);
     }
 
-    public function getNext(Banner $banner, ActionRequest $request): ?array
+    public function getNext(Announcement $announcement, ActionRequest $request): ?array
     {
-        $next = Banner::where('slug', '>', $banner->slug)->orderBy('slug')->first();
+        $next = Announcement::where('ulid', '>', $announcement->ulid)->orderBy('ulid')->first();
 
         return $this->getNavigation($next, $request->route()->getName(), $request->route()->parameters);
     }
 
-    private function getNavigation(?Banner $banner, string $routeName, array $routeParameters): ?array
+    private function getNavigation(?Announcement $announcement, string $routeName, array $routeParameters): ?array
     {
-        if (!$banner) {
+        if (!$announcement) {
             return null;
         }
 
         return match ($routeName) {
             'grp.org.shops.show.web.announcements.workshop' => [
-                'label' => $banner->name,
+                'label' => $announcement->name,
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => $routeParameters

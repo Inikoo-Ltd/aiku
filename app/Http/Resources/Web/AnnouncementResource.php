@@ -32,6 +32,38 @@ class AnnouncementResource extends JsonResource
             'status'                         => $announcement->status->statusIcon()[$announcement->status->value],
             'show_pages'                     => $extractedSettings['show_pages'],
             'hide_pages'                     => $extractedSettings['hide_pages'],
+
+            // container_properties: {
+            
+            // }
+            // created_at: string
+            // fields: {
+            //     close_button: {
+            //         size: string
+            //         text_color: string
+            //         block_properties: {
+            //             position: {
+            //                 x: string
+            //                 y: string
+            //                 type: string  // 'absolute' | 'relative'
+            //             }
+            //         }
+            //     }
+                
+            // }
+            // id: number
+            // icon?: string
+            // name: string
+            // schedule_at?: string
+            // schedule_finish_at?: string
+            // settings: {
+    
+            // }
+            // state: string
+            // status: string
+            // ulid: string
+            // template_code: string
+            // updated_at: string
         ];
     }
 }
