@@ -24,7 +24,7 @@ import { inject, ref, computed } from "vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
 import { Address, AddressManagement } from "@/types/PureComponent/Address"
-import Tag from "@/Components/Tag.vue"
+import Tag from 'primevue/tag';
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import ButtonPrimeVue from "primevue/button"
 import ToggleSwitch from "primevue/toggleswitch"
@@ -279,12 +279,27 @@ const contactPreferencesData = computed(() => {
 
         <!-- Section: Profile box -->
         <div>
+
             <div class="rounded-lg shadow-sm ring-1 ring-gray-900/5">
+                <!-- Status state section -->
+                <div v-if="layout?.app?.environment === 'local'" class="p-6 bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+                    <div class="flex items-center gap-3">
+                        <Tag :severity="data.prospect.state" :value="data.prospect.state_label" class="text-sm font-medium" />
+                        <div v-if="data.prospect.state === 'success' || data.prospect.state === 'fail' || data.prospect.state === 'contacted'" 
+                             class="flex items-center gap-2 px-3 py-1 bg-white rounded-lg shadow-sm border border-gray-200">
+                            <span class="text-sm text-gray-600">{{ trans('Status') }}:</span>
+                            <span class="text-sm font-semibold text-gray-900">
+                                {{ data.prospect.state === 'success' ? data.prospect.success_status_label : 
+                                   data.prospect.state === 'fail' ? data.prospect.fail_status_label : 
+                                   data.prospect.contacted_state_label }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
                 <dl class="flex flex-wrap">
-
-
                     <!-- Section: Field -->
                     <div class="flex flex-col gap-y-3 border-t border-gray-900/5 w-full py-6">
+
                         <!-- Field: Contact name -->
                         <div v-if="data?.prospect?.customer?.data?.contact_name"
                             class="flex items-center w-full flex-none gap-x-4 px-6">
@@ -356,7 +371,8 @@ const contactPreferencesData = computed(() => {
                             </dt>
                             <dd class="w-full text-gray-500">
                                 <div class="relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                                    <span class="" v-html="data?.prospect?.customer?.data?.address?.formatted_address" />
+                                    <span class=""
+                                        v-html="data?.prospect?.customer?.data?.address?.formatted_address" />
 
                                     <div v-if="data?.address_management?.can_open_address_management"
                                         @click="() => isModalAddress = true"
@@ -425,11 +441,13 @@ const contactPreferencesData = computed(() => {
                                                             <div class="text-sm space-y-1">
                                                                 <p><span class="font-medium">{{ trans('Country')
                                                                         }}:</span> {{
-                                                                    data?.prospect?.customer?.tax_number?.country?.name }}
+                                                                    data?.prospect?.customer?.tax_number?.country?.name
+                                                                    }}
                                                                 </p>
                                                                 <p><span class="font-medium">{{ trans('Country Code')
                                                                         }}:</span> {{
-                                                                    data?.prospect?.customer?.tax_number?.country?.code }}
+                                                                    data?.prospect?.customer?.tax_number?.country?.code
+                                                                    }}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -457,8 +475,7 @@ const contactPreferencesData = computed(() => {
         <div class="justify-self-end ">
 
             <!-- Contact Preferences Section -->
-            <ContactPreferences v-if="contactPreferencesData"
-                :contactPreferences="contactPreferencesData" />
+            <ContactPreferences v-if="contactPreferencesData" :contactPreferences="contactPreferencesData" />
 
             <!-- Email Subscriptions Section -->
             <!-- <EmailSubscribetion v-if="data?.prospect?.customer?.data?.email_subscriptions"
