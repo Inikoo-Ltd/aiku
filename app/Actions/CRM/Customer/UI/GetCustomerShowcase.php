@@ -46,6 +46,7 @@ class GetCustomerShowcase
                     'customer' => $customer->id
                 ]
             ],
+            'stats' => $customer->stats,
             'currency'  => CurrencyResource::make($customer->shop->currency)->toArray(request()),
             'balance'  => [
                 'route_store'    => [
