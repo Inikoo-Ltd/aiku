@@ -13,14 +13,14 @@ trait HasBucketAttachment
     public function getAttachmentData(MasterAsset|Product|TradeUnit|TradeUnitFamily $model): array
     {
         $attachments = $model->attachments()->get()->keyBy(fn($att) => $att->pivot->scope);
-
+        // dd($model->id);
         $attachmentConfigs = [
             'public' => [
-                ['label' => __('IFRA'), 'scope' => 'IFRA', 'enum' => TradeAttachmentScopeEnum::IFRA],
-                ['label' => __('SDS'), 'scope' => 'SDS', 'enum' => TradeAttachmentScopeEnum::SDS],
+                ['label' => __('IFRA'), 'scope' => 'ifra', 'enum' => TradeAttachmentScopeEnum::IFRA],
+                ['label' => __('SDS'), 'scope' => 'sds', 'enum' => TradeAttachmentScopeEnum::SDS],
                 ['label' => __('Allergen Declarations'), 'scope' => 'allergen_declarations', 'enum' => TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS],
-                ['label' => __('Declaration of Conformity'), 'scope' => 'declaration_of_conformity', 'enum' => TradeAttachmentScopeEnum::DOC],
-                ['label' => __('CPSR'), 'scope' => 'CPSR', 'enum' => TradeAttachmentScopeEnum::CPSR],
+                ['label' => __('Declaration of Conformity'), 'scope' => 'doc', 'enum' => TradeAttachmentScopeEnum::DOC],
+                ['label' => __('CPSR'), 'scope' => 'cpsr', 'enum' => TradeAttachmentScopeEnum::CPSR],
             ],
             'private' => [
                 ['label' => __('IFRA Private'), 'scope' => 'ifra_private', 'enum' => TradeAttachmentScopeEnum::IFRA_PRIVATE],
@@ -48,7 +48,7 @@ trait HasBucketAttachment
                 ];
             }, $configs);
         };
-
+        
         $public = $mapAttachments($attachmentConfigs['public']);
         $private = $mapAttachments($attachmentConfigs['private']);
 
