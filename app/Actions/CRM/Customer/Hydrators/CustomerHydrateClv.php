@@ -97,16 +97,16 @@ class CustomerHydrateClv implements ShouldBeUnique
         }
 
         // Calculate average time between orders (only once, currency-independent)
-        $firstOrderDate = $orders->min('created_at');
-        $lastOrderDate = $orders->max('created_at');
+        $firstOrderDate = $orders->min('date');
+        $lastOrderDate = $orders->max('date');
         $daysBetweenFirstAndLast = $firstOrderDate->diffInDays($lastOrderDate);
 
         $averageTimeBetweenOrders = $daysBetweenFirstAndLast > 0
-            ? $daysBetweenFirstAndLast / max($orders->count() - 1, 1)
+            ? ceil($daysBetweenFirstAndLast / max($orders->count() - 1, 1))
             : null;
 
         // Calculate days since last order
-        $daysSinceLastOrder = $lastOrderDate->diffInDays(now());
+        $daysSinceLastOrder = (int)$lastOrderDate->diffInDays(now());
 
         // Calculate churn interval (predicted days until customer churns)
         // Using a common formula: expected lifetime remaining based on purchase pattern
