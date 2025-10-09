@@ -168,6 +168,29 @@ class GetRetinaEcomNavigation
             ]
         ];
 
+
+        $groupNavigation['marketing'] = [
+            'label'   => __('manage email'),
+            'icon'    => ['fal', 'fa-envelope'],
+            'root'    => 'retina.email.',
+            'route'   => [
+                'name' => 'retina.email.settings.edit'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('email'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'retina.email.settings.',
+                        'route' => [
+                            'name' => 'retina.email.settings.edit',
+
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
         return $groupNavigation;
     }
 }
