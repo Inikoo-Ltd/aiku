@@ -13,6 +13,7 @@ use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Fulfilment\Pallet\PalletStateEnum;
+use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\StoredItem;
@@ -39,18 +40,30 @@ class IndexStoredItemPallets extends OrgAction
 
     private StoredItem $storedItem;
 
-    protected function getElementGroups(): array
+    protected function getElementGroups(StoredItem $storedItem): array
     {
         return [
-            'state' => [
-                'label'    => __('State'),
-                'elements' => array_merge_recursive(
-                    PalletStateEnum::labels(),
-                    PalletStateEnum::count($this->organisation)
-                ),
+            'status' => [
+                'label'    => __('Status'),
+                'elements' => [
+                    'active' => [
+                        'Active',
+                        $storedItem->number_pallets
+                    ],
+                    'all' => [
+                        'All', 
+                        $storedItem->palletStoredItems->count()
+                    ],
+                ],
 
                 'engine' => function ($query, $elements) {
-                    $query->whereIn('state', $elements);
+                   if (in_array('all', $elements)) {
+                        return;
+                    }
+                    
+                    if (in_array('active', $elements)) {
+                        $query->whereIn('pallets.status', [PalletStatusEnum::STORING, PalletStatusEnum::RETURNING]);
+                    }
                 }
 
             ],
@@ -77,6 +90,16 @@ class IndexStoredItemPallets extends OrgAction
         $query->leftJoin('locations', 'locations.id', 'pallets.location_id');
         $query->leftJoin('fulfilment_customers', 'fulfilment_customers.id', 'pallets.fulfilment_customer_id');
         $query->where('pallet_stored_items.stored_item_id', $storedItem->id);
+
+        foreach ($this->getElementGroups($storedItem) as $key => $elementGroup) {
+            $query->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix
+            );
+        }
+
         $query->defaultSort('-pallet_stored_items.quantity')
             ->select(
                 'pallets.id',
@@ -102,7 +125,6 @@ class IndexStoredItemPallets extends OrgAction
             );
 
         return $query->defaultSort('-pallet_stored_items.quantity')
-            ->allowedSorts(['customer_reference', 'pallets.reference'])
             ->allowedFilters([$globalSearch, 'customer_reference'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -117,6 +139,13 @@ class IndexStoredItemPallets extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
+            foreach ($this->getElementGroups($storedItem) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
+            }
 
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
@@ -131,7 +160,7 @@ class IndexStoredItemPallets extends OrgAction
                 ->withModelOperations($modelOperations);
 
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: false, searchable: true);
 
             //  if ($storedItem) {
             //      $table->column(key: 'fulfilment_customer_slug', label: __('Customer'), canBeHidden: false, searchable: true);
