@@ -55,11 +55,6 @@ class ShowRetinaEmailManagement extends RetinaAction
                             'label'  => __('marketing'),
                             'icon'    => 'fa-light fa-envelope',
                             'fields' => [
-                                    'email' => [
-                                        'type'  => 'input',
-                                        'label' => __('email'),
-                                        'value' => $customer->email
-                                    ],
                                     'email_subscriptions' => [
                                         'type'  => 'email_subscriptions',
                                         'full' => true,
