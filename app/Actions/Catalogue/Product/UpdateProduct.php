@@ -196,7 +196,7 @@ class UpdateProduct extends OrgAction
             )
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(2);
-            ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 10);
+            ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
         }
 
 

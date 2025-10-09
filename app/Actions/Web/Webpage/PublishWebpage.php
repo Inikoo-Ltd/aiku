@@ -98,7 +98,7 @@ class PublishWebpage extends OrgAction
         $webpage->update($updateData);
 
         BreakWebpageCache::run($webpage);
-        ReindexWebpageLuigiData::dispatch($webpage);
+        ReindexWebpageLuigiData::dispatch($webpage)->delay(60 * 15);
 
         return $webpage;
     }
