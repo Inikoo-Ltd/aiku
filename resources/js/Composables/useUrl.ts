@@ -3,7 +3,7 @@ import { inject } from "vue"
 
 // from "http://app.aiku.test/org/sk/inventory" to "/org/sk/inventory"
 export const removeDomain = (fullUrl: string, domain: string) => {
-    if(!fullUrl) return ''
+    if (!fullUrl) return ''
 
     const domainRegex = new RegExp(`https?://${domain}`, 'i')
 
@@ -17,12 +17,27 @@ export const isRouteSameAsCurrentUrl = (expectedRoute: string) => {
 
 // routeRoot: the route.root to indicates a group of Navigation ('grp.org.fulfilments.show.operations.pallets.current.index' is exist in 'grp.org.fulfilments.show.operations.')
 export const isNavigationActive = (layoutRoute: string, routeRoot: string | undefined) => {
-    const injectLayout = inject('layout')
-    
-    if(!routeRoot) return false
+    const injectLayout = inject('layout') as any
+
+    // old logic
+    //  const isCurrentRouteIncludesRouteRoot = layoutRoute.includes(routeRoot)
+	// 	const isRootActiveIncludesNavRoot = injectLayout?.root_active
+	// 		? injectLayout?.root_active?.includes(routeRoot)
+	// 		: false
+
+    if (!routeRoot || typeof layoutRoute !== 'string') return false
 
     const isCurrentRouteIncludesRouteRoot = layoutRoute.includes(routeRoot)
-    const isRootActiveIncludesNavRoot = injectLayout?.root_active ? injectLayout?.root_active?.includes(routeRoot) : false
+
+    let isRootActiveIncludesNavRoot = false
+    const rootActive: unknown = injectLayout?.root_active
+    if (Array.isArray(rootActive)) {
+        isRootActiveIncludesNavRoot = rootActive.includes(routeRoot)
+    } else if (typeof rootActive === 'string') {
+        isRootActiveIncludesNavRoot = rootActive.includes(routeRoot)
+    } else {
+        isRootActiveIncludesNavRoot = false
+    }
 
     // console.log('2 isRootActiveIncludesNavRoot', layoutRoute, injectLayout?.root_active, isRootActiveIncludesNavRoot)
     return isCurrentRouteIncludesRouteRoot || isRootActiveIncludesNavRoot

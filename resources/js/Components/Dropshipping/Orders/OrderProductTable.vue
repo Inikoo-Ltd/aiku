@@ -280,7 +280,7 @@ defineExpose({
 
       <template #cell(image)="{ item }">
          <!-- <pre>{{ item }}</pre> -->
-          <Image :src="item.image.thumbnail.original" class="h-[50px] aspect-square" />
+          <Image :src="item.image.thumbnail" class="h-[50px] aspect-square" />
       </template>
 
       <!-- Column: Code -->

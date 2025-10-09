@@ -5,7 +5,7 @@ import {
     faBox, faBullhorn, faCameraRetro, faCube, faFolder,
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
-    faFolderTree, faBrowser, faLanguage,faFolders
+    faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -31,6 +31,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue'
 import { routeType } from '@/types/route'
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
+import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
 
 
 library.add(
@@ -50,6 +51,7 @@ library.add(
     faMinus,
     faBrowser,
     faLanguage,
+    faPaperclip,
     faFolderTree
 )
 
@@ -71,6 +73,7 @@ const props = defineProps<{
     history?: {}
     stocks?: {}
     images?: {}
+    attachments?: {}
     master : boolean
     mini_breadcrumbs? : any[]
     masterRoute?: routeType
@@ -113,6 +116,7 @@ const component = computed(() => {
         stocks: TableOrgStocks,
         images: TradeUnitImagesManagement,
         translation: ProductTranslation,
+        attachments : AttachmentManagement
     }
     console.log(currentTab.value)
     return components[currentTab.value]
