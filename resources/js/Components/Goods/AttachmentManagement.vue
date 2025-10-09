@@ -144,6 +144,7 @@ const getIcon = (type: string) => {
 </script>
 
 <template>
+    <!-- <pre>{{ props.data.attachments }}</pre> -->
     <div v-if="!editable" class="px-10 pt-4">
         <Message severity="warn" closable>
             <template #icon>

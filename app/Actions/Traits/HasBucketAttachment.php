@@ -5,11 +5,12 @@ namespace App\Actions\Traits;
 use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Masters\MasterAsset;
 
 trait HasBucketAttachment
 {
-    public function getAttachmentData(MasterAsset|Product|TradeUnit $model): array
+    public function getAttachmentData(MasterAsset|Product|TradeUnit|TradeUnitFamily $model): array
     {
         $attachments = $model->attachments()->get()->keyBy(fn($att) => $att->pivot->scope);
 

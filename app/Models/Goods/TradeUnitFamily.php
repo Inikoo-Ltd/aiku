@@ -8,6 +8,7 @@
 
 namespace App\Models\Goods;
 
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasUniversalSearch;
 use App\Models\Traits\InGroup;
@@ -52,6 +53,7 @@ class TradeUnitFamily extends Model implements Auditable
     use HasHistory;
     use HasUniversalSearch;
     use HasFactory;
+    use HasAttachments;
 
     protected $table = 'trade_unit_families';
 
