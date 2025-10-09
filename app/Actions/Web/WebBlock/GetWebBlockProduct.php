@@ -35,27 +35,31 @@ class GetWebBlockProduct
             ->whereIn('model_has_attachments.scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
             ->get();
 
-        $familyAttachments = DB::table('media')
-            ->join('model_has_attachments', function ($join) use ($webpage) {
-                $join->on('model_has_attachments.media_id', '=', 'media.id')
-                    ->where('model_has_attachments.model_type', '=', 'TradeUnitFamily')
-                    ->where('model_has_attachments.model_id', $webpage->model->tradeUnits->first()->tradeUnitFamily->id);
-            })
-            ->select(['model_has_attachments.caption','model_has_attachments.scope', 'model_has_attachments.media_id', 'media.ulid as media_ulid', 'media.mime_type as mime_type'])
-            ->whereIn('model_has_attachments.scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
-            ->get();
-
+        $attachmentsFromFamily = [];
+        if ($webpage->model->tradeUnits->first()->tradeUnitFamily) {
+            $familyAttachments = DB::table('media')
+                ->join('model_has_attachments', function ($join) use ($webpage) {
+                    $join->on('model_has_attachments.media_id', '=', 'media.id')
+                        ->where('model_has_attachments.model_type', '=', 'TradeUnitFamily')
+                        ->where('model_has_attachments.model_id', $webpage->model->tradeUnits->first()->tradeUnitFamily->id);
+                })
+                ->select(['model_has_attachments.caption','model_has_attachments.scope', 'model_has_attachments.media_id', 'media.ulid as media_ulid', 'media.mime_type as mime_type'])
+                ->whereIn('model_has_attachments.scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
+                ->get();
+            
+            $attachmentsFromFamily = IrisAttachmentsResource::collection($familyAttachments)->resolve();
+        }
+            
         if ($webpage->shop->type == ShopTypeEnum::B2B) {
             $resourceWebBlockProduct = WebBlockProductResourceEcom::make($webpage->model)->toArray(request());
         } else {
             $resourceWebBlockProduct = WebBlockProductResource::make($webpage->model)->toArray(request());
         }
-
         data_set($webBlock, 'web_block.layout.data.permissions', $permissions);
         data_set($webBlock, 'web_block.layout.data.fieldValue', $webpage->website->published_layout['product']['data']['fieldValue'] ?? []);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product', $resourceWebBlockProduct);
         data_set($webBlock, 'web_block.layout.data.fieldValue.product.attachments', IrisAttachmentsResource::collection($attachments)->resolve());
-        data_set($webBlock, 'web_block.layout.data.fieldValue.product.family_attachments', IrisAttachmentsResource::collection($familyAttachments)->resolve());
+        data_set($webBlock, 'web_block.layout.data.fieldValue.product.family_attachments', $attachmentsFromFamily);
 
         return $webBlock;
     }
