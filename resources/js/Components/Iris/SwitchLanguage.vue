@@ -74,7 +74,7 @@ const compFilterLanguageOptions = computed(() => {
 </script>
 
 <template>
-    <div v-if="layout.app.environment === 'local' && Object.keys(layout.iris.website_i18n?.language_options).length > 0">
+    <div>
         <div @click="(e) => _popover?.toggle(e)">
             <slot :isLoadingChangeLanguage>
                 <Button
@@ -92,6 +92,7 @@ const compFilterLanguageOptions = computed(() => {
                 </Button>
             </slot>
         </div>
+
         <Popover ref="_popover">
             <div>
                 <!-- Language Options -->
@@ -134,7 +135,6 @@ const compFilterLanguageOptions = computed(() => {
                 <div v-else class="text-xs text-gray-400 py-2 px-3">
                     {{ trans("Nothing to show here") }}
                 </div>
-
             </div>
         </Popover>
     </div>
