@@ -105,9 +105,7 @@ const fetchAnnouncementList = async () => {
     isLoadingFetch.value = true
     try {
         const response = await axios.get(
-            route('customer.portfolio.websites.announcements.templates.index', {  // TODO: Announcement change route
-                'portfolioWebsite': route().params['portfolioWebsite']
-            }),
+            route('grp.org.shops.show.web.announcements.index', route().queryParams),
         )
 
         console.log('respo', response.data)

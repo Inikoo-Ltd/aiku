@@ -61,7 +61,9 @@ class StoreAnnouncement extends OrgAction
 
     public function htmlResponse(Announcement $announcement): Response
     {
-        return Redirect::route('customer.portfolio.websites.announcements.show', [
+        return Redirect::route('grp.org.shops.show.web.announcements.show', [
+            'organisation' => $announcement->website->organisation->slug,
+            'shop' => $announcement->website->shop->slug,
             'website' => $announcement->website->slug,
             'announcement'     => $announcement->ulid
         ]);

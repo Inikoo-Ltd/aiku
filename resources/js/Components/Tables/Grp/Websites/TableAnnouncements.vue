@@ -24,9 +24,13 @@ const props = defineProps<{
 }>()
 
 function announcementRoute(announcement) {
-    return route(
-        'customer.portfolio.websites.announcements.show',
-        [route().params['portfolioWebsite'], announcement.ulid]);
+    return ''
+    // return route(
+    //     'grp.org.shops.show.web.announcements.show',
+    //     {
+    //         ...route().queryParams,
+    //         announcement: announcement.ulid,
+    //     })
 }
 </script>
 
