@@ -32,6 +32,7 @@ import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue";
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from 'primevue/breadcrumb'
+import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue";
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
     faMoneyBillWave, faFolderOpen, faAtom, faFolderTree
@@ -51,6 +52,7 @@ const props = defineProps<{
     trade_units?: {}
     images?: {}
     mini_breadcrumbs?: any[]
+    attachments?: {}
 
 }>();
 
@@ -65,6 +67,7 @@ const component = computed(() => {
         products: TableProducts,
         images: TradeUnitImagesManagement,
         trade_units: TableTradeUnits,
+        attachments : AttachmentManagement
     };
     return components[currentTab.value];
 
