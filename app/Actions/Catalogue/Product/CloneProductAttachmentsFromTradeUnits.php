@@ -33,7 +33,7 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
 
         $tradeUnit = $product->tradeUnits->first();
         $publicAttachments = $tradeUnit->attachments()
-            ->wherePivotIn('scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA])
+            ->wherePivotIn('scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
             ->get();
 
         foreach ($publicAttachments as $publicAttachment) {
