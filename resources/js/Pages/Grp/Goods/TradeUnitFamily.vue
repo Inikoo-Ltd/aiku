@@ -20,6 +20,7 @@ import { trans } from "laravel-vue-i18n" // ✅ import trans
 // PrimeVue
 import Dialog from "primevue/dialog"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue"
 
 library.add(
   faInventory, faArrowRight, faBox, faClock, faCameraRetro, faPaperclip, faCube,
@@ -39,8 +40,9 @@ const props = defineProps<{
   }
   showcase?: object,
   trade_units?: Object
+  attachments?:any
 }>()
-
+console.log(props)
 const currentTab = ref(props.tabs.current)
 const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
@@ -51,10 +53,13 @@ const isModalOpen = ref(false)
 const component = computed(() => {
   const components = {
     showcase: TradeUnitFamiliesShowcase,
-    trade_units: TableTradeUnits
+    trade_units: TableTradeUnits,
+    attachments : AttachmentManagement
   }
   return components[currentTab.value]
 })
+
+
 
 /**
  * Attach selected trade units

@@ -217,7 +217,9 @@ const emits = defineEmits<{
                     </template>
                 </ButtonWithLink>
 
-                <SwitchLanguage />
+                <SwitchLanguage
+                    v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length"
+                />
             </div>
 
             <Image
@@ -254,6 +256,7 @@ const emits = defineEmits<{
 
         <div class="col-span-2 flex md:justify-end md:items-center gap-x-4 ">
             <SwitchLanguage
+                v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length"
                 class="hidden md:block"
             />
             <!-- Section: LogoutRetina -->

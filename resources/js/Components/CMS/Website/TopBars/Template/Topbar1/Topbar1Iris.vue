@@ -85,7 +85,9 @@ const layout = inject("layout", {})
 
 
         <div class="hidden md:flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
-            <SwitchLanguage />
+            <SwitchLanguage
+                v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length"
+            />
             
             <!-- Section: My account -->
             <ButtonWithLink type="transparent"  class="bg-transparent"

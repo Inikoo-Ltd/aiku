@@ -64,7 +64,7 @@ const isLoading = ref(false)
 
 <template>
     <component :is="data?.route?.name ? Link : 'div'" as="a"
-        :href="data?.route?.name ? route(data?.route.name, data?.route.parameters) : ''"
+        :href="data?.route?.name ? route(data?.route?.name, data?.route?.parameters) : ''"
         class="flex gap-x-2 items-center border-b border-gray-300" @start="() => (isLoading = true)" @finish="() => emits('finishVisit', false)">
         <div v-if="isLoading"
             class="fixed inset-0 bottom-0 bg-black/50 flex flex-col justify-center items-center text-white cursor-default">

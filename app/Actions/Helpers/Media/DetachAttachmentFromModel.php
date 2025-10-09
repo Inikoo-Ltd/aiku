@@ -9,10 +9,12 @@
 namespace App\Actions\Helpers\Media;
 
 use App\Actions\OrgAction;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Goods\TradeUnit;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Media;
 use App\Models\HumanResources\Employee;
 use App\Models\Ordering\Order;
@@ -26,7 +28,7 @@ class DetachAttachmentFromModel extends OrgAction
 {
     use AsAction;
 
-    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn $model, Media $attachment): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn
+    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn|TradeUnitFamily|Product $model, Media $attachment): Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn|TradeUnitFamily|Product
     {
         $model->attachments()->detach($attachment->id);
 
@@ -54,6 +56,18 @@ class DetachAttachmentFromModel extends OrgAction
     public function authorize(ActionRequest $request)
     {
         return true;
+    }
+
+    public function inProduct(Product $product, Media $attachment)
+    {
+        $this->initialisation($product->organisation, []);
+        $this->handle($product, $attachment);
+    }
+
+    public function inTradeUnitFamily(TradeUnitFamily $tradeUnitFamily, Media $attachment)
+    {
+        $this->initialisationFromGroup($tradeUnitFamily->group, []);
+        $this->handle($tradeUnitFamily, $attachment);
     }
 
     public function inEmployee(Employee $employee, Media $attachment)
