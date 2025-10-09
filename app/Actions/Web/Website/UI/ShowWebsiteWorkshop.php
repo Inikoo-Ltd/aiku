@@ -10,13 +10,13 @@ namespace App\Actions\Web\Website\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
-use App\Actions\Web\Website\GetWebsiteWorkshopCollection;
 use App\Actions\Web\Website\GetWebsiteWorkshopDepartment;
 use App\Actions\Web\Website\GetWebsiteWorkshopFamily;
 use App\Actions\Web\Website\GetWebsiteWorkshopLayout;
 use App\Actions\Web\Website\GetWebsiteWorkshopProduct;
 use App\Actions\Web\Website\GetWebsiteWorkshopSubDepartment;
 use App\Enums\UI\Web\WebsiteWorkshopTabsEnum;
+use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
@@ -71,7 +71,6 @@ class ShowWebsiteWorkshop extends OrgAction
             unset($navigation[WebsiteWorkshopTabsEnum::PRODUCTS->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::SUB_DEPARTMENT->value]);
             unset($navigation[WebsiteWorkshopTabsEnum::FAMILY->value]);
-            unset($navigation[WebsiteWorkshopTabsEnum::COLLECTION->value]);
         }
 
         $tabs = [
@@ -110,12 +109,6 @@ class ShowWebsiteWorkshop extends OrgAction
                 fn () => GetWebsiteWorkshopDepartment::run($website)
             );
 
-        $tabs[WebsiteWorkshopTabsEnum::COLLECTION->value] = $this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value
-            ?
-            fn () => GetWebsiteWorkshopCollection::run($website)
-            : Inertia::lazy(
-                fn () => GetWebsiteWorkshopCollection::run($website)
-            );
 
 
         $publishRoute = [
@@ -154,14 +147,6 @@ class ShowWebsiteWorkshop extends OrgAction
             $publishRoute = [
                 'method'     => 'post',
                 'name'       => 'grp.models.website.publish.products',
-                'parameters' => [
-                    'website' => $website->id
-                ]
-            ];
-        } elseif ($this->tab == WebsiteWorkshopTabsEnum::COLLECTION->value) {
-            $publishRoute = [
-                'method'     => 'post',
-                'name'       => 'grp.models.website.publish.collection',
                 'parameters' => [
                     'website' => $website->id
                 ]
@@ -211,6 +196,7 @@ class ShowWebsiteWorkshop extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => $navigation,
                 ],
+                'currency'  => $this->parent instanceof Shop ? CurrencyResource::make($this->parent->currency)->resolve() : null,
                 'settings' => $website->settings,
                 ...$tabs
             ]

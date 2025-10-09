@@ -145,7 +145,7 @@ class ShowPallet extends OrgAction
                         'supervisor' => true,
                         'type'       => 'button',
                         'style'      => 'red_outline',
-                        'tooltip'    => __('delete'),
+                        'tooltip'    => __('Delete'),
                         'icon'       => 'fal fa-trash-alt',
                         'key'        => 'delete_booked_in',
                         'ask_why'    => true,
@@ -184,7 +184,7 @@ class ShowPallet extends OrgAction
                 $actions[] = [
                     'type'    => 'button',
                     'style'   => 'red_outline',
-                    'tooltip' => __('delete'),
+                    'tooltip' => __('Delete'),
                     'icon'    => 'fal fa-trash-alt',
                     'key'     => 'delete_booked_in',
                     'ask_why' => true,
@@ -296,7 +296,7 @@ class ShowPallet extends OrgAction
         $actions[] = [
             'type'    => 'button',
             'style'   => 'edit',
-            'tooltip' => __('edit pallet'),
+            'tooltip' => __('Edit pallet'),
             'route'   => [
                 'name'       => $routeName,
                 'parameters' => array_values(request()->route()->originalParameters())

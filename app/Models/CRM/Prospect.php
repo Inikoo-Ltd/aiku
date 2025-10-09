@@ -83,6 +83,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $source_id
  * @property bool $is_opt_in
  * @property array<array-key, mixed>|null $contact_name_components
+ * @property string|null $post_source_id
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -97,7 +98,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Prospect newQuery()
  * @method static Builder<static>|Prospect onlyTrashed()
  * @method static Builder<static>|Prospect query()
- * @method static Builder<static>|Prospect withTrashed()
+ * @method static Builder<static>|Prospect withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Prospect withoutTrashed()
  * @mixin Eloquent
  */
@@ -113,31 +114,31 @@ class Prospect extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'data'                 => 'array',
-        'location'             => 'array',
-        'contact_name_components'     => 'array',
-        'state'                => ProspectStateEnum::class,
-        'contacted_state'      => ProspectContactedStateEnum::class,
-        'fail_status'          => ProspectFailStatusEnum::class,
-        'success_status'       => ProspectSuccessStatusEnum::class,
-        'dont_contact_me'      => 'boolean',
-        'last_contacted_at'    => 'datetime',
-        'last_opened_at'       => 'datetime',
-        'last_clicked_at'      => 'datetime',
-        'dont_contact_me_at'   => 'datetime',
-        'failed_at'            => 'datetime',
-        'registered_at'        => 'datetime',
-        'invoiced_at'          => 'datetime',
-        'last_soft_bounced_at' => 'datetime',
-        'fetched_at'           => 'datetime',
-        'last_fetched_at'      => 'datetime',
+        'data'                    => 'array',
+        'location'                => 'array',
+        'contact_name_components' => 'array',
+        'state'                   => ProspectStateEnum::class,
+        'contacted_state'         => ProspectContactedStateEnum::class,
+        'fail_status'             => ProspectFailStatusEnum::class,
+        'success_status'          => ProspectSuccessStatusEnum::class,
+        'dont_contact_me'         => 'boolean',
+        'last_contacted_at'       => 'datetime',
+        'last_opened_at'          => 'datetime',
+        'last_clicked_at'         => 'datetime',
+        'dont_contact_me_at'      => 'datetime',
+        'failed_at'               => 'datetime',
+        'registered_at'           => 'datetime',
+        'invoiced_at'             => 'datetime',
+        'last_soft_bounced_at'    => 'datetime',
+        'fetched_at'              => 'datetime',
+        'last_fetched_at'         => 'datetime',
 
     ];
 
     protected $attributes = [
         'contact_name_components' => '{}',
-        'data'     => '{}',
-        'location' => '{}',
+        'data'                    => '{}',
+        'location'                => '{}',
     ];
 
     protected $guarded = [];

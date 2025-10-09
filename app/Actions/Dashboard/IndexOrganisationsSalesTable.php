@@ -40,7 +40,7 @@ class IndexOrganisationsSalesTable extends OrgAction
             ])
             ->selectRaw('\''.$group->currency->code.'\' as group_currency_code')
             ->allowedSorts(['code', 'name', 'type'])
-            ->withPaginator(null)
+            ->withPaginator(null, 1000)
             ->withQueryString();
     }
 

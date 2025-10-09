@@ -37,6 +37,7 @@ class GetPickerUsers extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Employee::class)
                 ->where('employees.organisation_id', $organisation->id)
+                ->whereIn('employees.state', ['working','leaving'])
                 ->leftJoin('employee_has_job_positions', 'employee_has_job_positions.employee_id', '=', 'employees.id')
                 ->leftJoin('job_positions', 'employee_has_job_positions.job_position_id', '=', 'job_positions.id')
                 ->where('job_positions.organisation_id', $organisation->id)
@@ -68,10 +69,7 @@ class GetPickerUsers extends OrgAction
             ->withQueryString();
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        return $request->user()->authTo("human-resources.{$this->organisation->id}.view");
-    }
+
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {

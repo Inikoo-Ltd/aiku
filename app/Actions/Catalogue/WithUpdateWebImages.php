@@ -19,15 +19,27 @@ trait WithUpdateWebImages
     public function updateWebImages(Product|ProductCategory|Collection $model): Product|ProductCategory|Collection
     {
         $webImagesData = [
-            'main' => $this->getMainWebImageData($model)
+            'main' => $this->getMainWebImageData($model),
+            'all'  => $this->getAllWebImageData($model)
         ];
+
 
         $model->update(
             [
                 'web_images' => $webImagesData
             ]
         );
+
+
+        if ($model instanceof Product && $model->wasChanged('web_images')) {
+            $model->update([
+                'images_updated_at' => now()
+            ]);
+        }
+
+
         $model->refresh();
+
         return $model;
     }
 
@@ -43,7 +55,7 @@ trait WithUpdateWebImages
         }
 
         $imageOriginal  = $media->getImage();
-        $imageGallery   = $media->getImage()->resize(0, 300);
+        $imageGallery   = $media->getImage()->resize(0, 600);
         $imageThumbnail = $media->getImage()->resize(0, 48);
 
         return [
@@ -52,4 +64,26 @@ trait WithUpdateWebImages
             'thumbnail' => GetPictureSources::run($imageThumbnail),
         ];
     }
+
+    public function getAllWebImageData(Product|ProductCategory|Collection $model): array
+    {
+        $images = [];
+
+        /** @var Media $media */
+        foreach ($model->images()->orderBy('model_has_media.position')->get() as $media) {
+            $imageOriginal  = $media->getImage();
+            $imageGallery   = $media->getImage()->resize(0, 600);
+            $imageThumbnail = $media->getImage()->resize(0, 48);
+
+            $images[] = [
+                'original'  => GetPictureSources::run($imageOriginal),
+                'gallery'   => GetPictureSources::run($imageGallery),
+                'thumbnail' => GetPictureSources::run($imageThumbnail),
+            ];
+        }
+
+        return $images;
+    }
+
+
 }

@@ -11,6 +11,7 @@
 namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
+use App\Enums\Catalogue\MasterCollection\MasterCollectionStateEnum;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +31,7 @@ class GroupHydrateMasterCollections implements ShouldBeUnique
     {
         $stats = [
             'number_master_collections'         => DB::table('master_collections')->where('group_id', $group->id)->count(),
-            'number_current_master_collections' => DB::table('master_collections')->where('group_id', $group->id)->where('status', true)->count()
+            'number_current_master_collections' => DB::table('master_collections')->where('group_id', $group->id)->where('state', MasterCollectionStateEnum::ACTIVE)->count()
         ];
 
         $group->goodsStats()->update($stats);

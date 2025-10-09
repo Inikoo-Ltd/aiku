@@ -30,6 +30,13 @@ class ShopHydrateSubDepartments implements ShouldBeUnique
     {
         $stats = [
             'number_sub_departments' => $shop->subDepartments()->count(),
+            'number_current_sub_departments' => $shop->subDepartments()->whereIn(
+                'state',
+                [
+                    ProductCategoryStateEnum::ACTIVE,
+                    ProductCategoryStateEnum::DISCONTINUING
+                ]
+            )->count(),
         ];
 
         $stats = array_merge(

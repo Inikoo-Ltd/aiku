@@ -22,9 +22,9 @@ enum CustomerSalesChannelStatusEnum: string
     public static function labels(): array
     {
         return [
-            'open'   => __('Open'),
+            'open'     => __('Open'),
             'inactive' => __('Inactive'),
-            'closed' => __('Closed'),
+            'closed'   => __('Closed'),
         ];
     }
 

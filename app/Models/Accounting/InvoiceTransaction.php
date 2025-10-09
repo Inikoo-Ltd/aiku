@@ -30,8 +30,6 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -75,6 +73,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read HistoricAsset|null $historicAsset
  * @property-read \App\Models\Accounting\Invoice|null $invoice
  * @property-read Model|\Eloquent $item
+ * @property-read Model|\Eloquent|null $model
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Offer> $offer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferCampaign> $offerCampaign
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferComponent> $offerComponents
@@ -89,7 +88,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|InvoiceTransaction newQuery()
  * @method static Builder<static>|InvoiceTransaction onlyTrashed()
  * @method static Builder<static>|InvoiceTransaction query()
- * @method static Builder<static>|InvoiceTransaction withTrashed()
+ * @method static Builder<static>|InvoiceTransaction withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|InvoiceTransaction withoutTrashed()
  * @mixin Eloquent
  */
@@ -186,5 +185,10 @@ class InvoiceTransaction extends Model
     public function taxCategory(): BelongsTo
     {
         return $this->belongsTo(TaxCategory::class);
+    }
+
+    public function model(): MorphTo
+    {
+        return $this->morphTo();
     }
 }

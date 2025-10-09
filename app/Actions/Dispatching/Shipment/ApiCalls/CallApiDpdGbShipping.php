@@ -10,9 +10,10 @@
 
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
+use App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
-use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -23,6 +24,7 @@ use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
+use Spatie\Browsershot\Browsershot;
 
 class CallApiDpdGbShipping extends OrgAction
 {
@@ -32,6 +34,7 @@ class CallApiDpdGbShipping extends OrgAction
     private string $geoSession = '';
     private int $geoSessionDate = 0;
     private string $accountNumber = '';
+
     public function getBaseUrl(): string
     {
         return 'https://api.dpd.co.uk/';
@@ -49,16 +52,18 @@ class CallApiDpdGbShipping extends OrgAction
 
     public function getHeaders(Shipper $shipper, string $accept = 'application/json'): array
     {
-        if (empty($this->geoSession) ||
-            Carbon::now()->timestamp - $this->geoSessionDate > 43200) {
+        if (
+            empty($this->geoSession)
+            || Carbon::now()->timestamp - $this->geoSessionDate > 43200
+        ) {
             $this->login($shipper);
         }
 
         return [
-            "GeoSession" => $this->geoSession,
-            "Accept" => $accept,
+            "GeoSession"   => $this->geoSession,
+            "Accept"       => $accept,
             "Content-Type" => "application/json",
-            "GeoClient" => "account/" . $this->accountNumber,
+            "GeoClient"    => "account/".$this->accountNumber,
         ];
     }
 
@@ -67,25 +72,25 @@ class CallApiDpdGbShipping extends OrgAction
     {
         [$username, $password, $accountNumber] = array_values($this->getAccessToken($shipper));
         $headers = [
-            "Authorization" => "Basic " . base64_encode($username . ':' . $password),
-            "Content-Type" => "application/json",
-            "Accept" => "application/json",
-            "GeoClient" => "account/" . $accountNumber
+            "Authorization" => "Basic ".base64_encode($username.':'.$password),
+            "Content-Type"  => "application/json",
+            "Accept"        => "application/json",
+            "GeoClient"     => "account/".$accountNumber
         ];
 
         try {
-            $response = Http::withHeaders($headers)->post($this->getBaseUrl() . 'user?action=login');
+            $response = Http::withHeaders($headers)->post($this->getBaseUrl().'user?action=login');
         } catch (\Exception $e) {
             Sentry::captureException($e);
+
             return;
         }
 
         $apiResponse = $response->json();
 
-        $this->geoSession = Arr::get($apiResponse, 'data.geoSession', '');
+        $this->geoSession     = Arr::get($apiResponse, 'data.geoSession', '');
         $this->geoSessionDate = Carbon::now()->timestamp;
-        $this->accountNumber = $accountNumber;
-
+        $this->accountNumber  = $accountNumber;
     }
 
 
@@ -127,7 +132,7 @@ class CallApiDpdGbShipping extends OrgAction
         $params = trim($params, '&');
 
         $response = Http::withHeaders($this->getHeaders($shipper))
-            ->get($this->getBaseUrl() . $url, $params);
+            ->get($this->getBaseUrl().$url, $params);
 
         return $response->json();
     }
@@ -139,19 +144,26 @@ class CallApiDpdGbShipping extends OrgAction
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         $url = 'shipping/shipment';
-        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
+
+        if ($parent instanceof PalletReturn) {
+            $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
+        } else {
+            $parentResource = GetShippingDeliveryNoteData::run($parent);
+        }
+
         $parcels = $parent->parcels;
 
         data_set($parentResource, 'reference', $parent->reference);
-        data_set($parentResource, 'customer_notes', $parent->customer_notes ?? '');
+        data_set($parentResource, 'shipping_notes', $parent->shipping_notes ?? '');
 
         $params = $this->prepareShipmentParams($parentResource, $parcels);
 
         $response = Http::withHeaders($this->getHeaders($shipper))
-            ->post($this->getBaseUrl() . $url, $params);
+            ->retry(3, 100)
+            ->post($this->getBaseUrl().$url, $params);
 
         $apiResponse = $response->json();
-        $statusCode = $response->status();
+        $statusCode  = $response->status();
 
         $modelData = [
             'api_response' => $apiResponse,
@@ -159,14 +171,31 @@ class CallApiDpdGbShipping extends OrgAction
         $errorData = [];
 
         if ($statusCode == 200 && Arr::get($apiResponse, 'error') == null) {
-            $status = 'success';
+            $status         = 'success';
             $trackingNumber = Arr::get($apiResponse, 'data.consignmentDetail.0.consignmentNumber');
-            $shipmentId = Arr::get($apiResponse, 'data.shipmentId');
+            $shipmentId     = Arr::get($apiResponse, 'data.shipmentId');
 
-            $modelData['tracking'] = $trackingNumber;
-            $modelData['label'] = $this->getLabel($shipmentId, $shipper, 'text/html');
-            $modelData['label_type'] = ShipmentLabelTypeEnum::HTML;
+            $htmlBase64                  = $this->getLabel($shipmentId, $shipper, 'text/html');
+            $modelData['tracking']       = $trackingNumber;
+            $modelData['label']          = $htmlBase64;
+            $modelData['label_type']     = ShipmentLabelTypeEnum::HTML;
             $modelData['number_parcels'] = count($parcels);
+            $modelData['trackings']      = [$trackingNumber];
+            $modelData['tracking_urls']  = [];
+            try {
+                $htmlContent = base64_decode($htmlBase64);
+                $pdfContent  = Browsershot::html($htmlContent)
+                    ->setOption('no-stop-slow-scripts', true)
+                    ->setOption('timeout', 5000)
+                    ->margins(10, 10, 10, 10)
+                    ->pdf();
+
+                $modelData['label']          = base64_encode($pdfContent);
+                $modelData['label_type']     = ShipmentLabelTypeEnum::PDF;
+                $modelData['number_parcels'] = count($parcels);
+            } catch (\Exception $e) {
+                Sentry::captureException($e);
+            }
         } else {
             $status = 'fail';
             $errors = Arr::get($apiResponse, 'error', []);
@@ -179,7 +208,7 @@ class CallApiDpdGbShipping extends OrgAction
         }
 
         return [
-            'status' => $status,
+            'status'    => $status,
             'modelData' => $modelData,
             'errorData' => $errorData,
         ];
@@ -188,17 +217,23 @@ class CallApiDpdGbShipping extends OrgAction
 
     protected function processError(array $error, array &$errorData): void
     {
-        $obj = Arr::get($error, 'obj', '');
+        $obj          = Arr::get($error, 'obj', '');
         $errorMessage = Arr::get($error, 'errorMessage', 'Unknown error');
 
         if (Str::contains($obj, 'consignment.networkCode')) {
-            $errorData['service'] = 'Invalid service';
+            $errorMessage         = 'Invalid network code';
+            $errorData['service'] = $errorMessage;
         } elseif (Str::contains($obj, 'address')) {
+            $errorMessage         = 'Invalid address';
             $errorData['address'] = $errorMessage;
         } elseif (Str::contains($obj, 'contact')) {
+            $errorMessage         = 'Invalid contact details';
             $errorData['contact'] = $errorMessage;
         } else {
-            $errorData['others'][] = $errorMessage . ' (' . $obj . ')';
+            $errorData['others'][] = $errorMessage;
+        }
+        if (!isset($errorData['message'])) {
+            $errorData['message'] = $errorMessage;
         }
     }
 
@@ -211,63 +246,65 @@ class CallApiDpdGbShipping extends OrgAction
 
         $totalWeight = max($totalWeight, 0.1);
 
-        $now = Carbon::now();
-        $collectionDate = $now->format('Y-m-d') . 'T' . $now->format('H:i') . ':00';
+        $now            = Carbon::now();
+        $collectionDate = $now->format('Y-m-d').'T'.$now->format('H:i').':00';
+
+        $shippingNotes = $parentResource['shipping_notes'] ?? '';
 
         return [
-            'jobId' => null,
+            'jobId'                => null,
             'collectionOnDelivery' => false,
-            'invoice' => null,
-            'collectionDate' => $collectionDate,
-            'consolidate' => false,
-            'consignment' => [
+            'invoice'              => null,
+            'collectionDate'       => $collectionDate,
+            'consolidate'          => false,
+            'consignment'          => [
                 [
-                    'consignmentNumber' => null,
-                    'consignmentRef' => null,
-                    'parcels' => [],
-                    'collectionDetails' => [
+                    'consignmentNumber'    => null,
+                    'consignmentRef'       => null,
+                    'parcels'              => [],
+                    'collectionDetails'    => [
                         'contactDetails' => [
                             'contactName' => Arr::get($parentResource, 'from_contact_name', 'Unknown'),
-                            'telephone' => preg_replace('/\s+/', '', Arr::get($parentResource, 'from_phone')),
+                            'telephone'   => preg_replace('/\s+/', '', Arr::get($parentResource, 'from_phone')),
                         ],
-                        'address' => [
+                        'address'        => [
                             'organisation' => Arr::get($parentResource, 'from_company_name', 'Unknown'),
-                            'countryCode' => Arr::get($parentResource, 'from_address.country_code', 'Unknown'),
-                            'street' => Arr::get($parentResource, 'from_address.address_line_1', 'Unknown'),
-                            'town' => Arr::get($parentResource, 'from_address.locality', 'Unknown'),
-                            'county' => Arr::get($parentResource, 'from_address.administrative_area', 'Unknown'),
-                            'postcode' => Arr::get($parentResource, 'from_address.postal_code', '')
+                            'countryCode'  => Arr::get($parentResource, 'from_address.country_code', 'Unknown'),
+                            'street'       => Arr::get($parentResource, 'from_address.address_line_1', 'Unknown'),
+                            'town'         => Arr::get($parentResource, 'from_address.locality', 'Unknown'),
+                            'county'       => Arr::get($parentResource, 'from_address.administrative_area', 'Unknown'),
+                            'postcode'     => Arr::get($parentResource, 'from_address.postal_code', '')
                         ],
                     ],
-                    'deliveryDetails' => [
-                        'contactDetails' => [
+                    'deliveryDetails'      => [
+                        'contactDetails'      => [
                             'contactName' => Arr::get($parentResource, 'to_contact_name'),
-                            'telephone' => preg_replace('/\s+/', '', Arr::get($parentResource, 'to_phone')),
+                            'telephone'   => preg_replace('/\s+/', '', Arr::get($parentResource, 'to_phone')),
                         ],
-                        'address' =>  [
+                        'address'             => [
                             'organisation' => Arr::get($parentResource, 'to_company_name'),
-                            'countryCode' => Arr::get($parentResource, 'to_address.country_code'),
-                            'street' => Arr::get($parentResource, 'to_address.address_line_1'),
-                            'town' => Arr::get($parentResource, 'to_address.locality'),
-                            'county' => Arr::get($parentResource, 'to_address.administrative_area'),
-                            'postcode' => Arr::get($parentResource, 'to_address.postal_code', '')
+                            'countryCode'  => Arr::get($parentResource, 'to_address.country_code'),
+                            'street'       => Arr::get($parentResource, 'to_address.address_line_1'),
+                            'town'         => Arr::get($parentResource, 'to_address.locality'),
+                            'county'       => Arr::get($parentResource, 'to_address.administrative_area'),
+                            'postcode'     => Arr::get($parentResource, 'to_address.postal_code', '')
                         ],
                         'notificationDetails' => [
-                            'email' => Arr::get($parentResource, 'to_email'),
+                            'email'  => Arr::get($parentResource, 'to_email'),
                             'mobile' => preg_replace('/\s+/', '', Arr::get($parentResource, 'to_phone')),
                         ]
                     ],
-                    'networkCode' => '1^12', // Default network code could be configurable
-                    'numberOfParcels' => count($parcels),
-                    'totalWeight' => $totalWeight,
-                    'shippingRef1' => Arr::get($parentResource, 'reference', ''),
-                    'shippingRef2' => null,
-                    'shippingRef3' => null,
-                    'customsValue' => null,
-                    'deliveryInstructions' => Arr::get($parentResource, 'customer_notes', 'test_development_aiku'),
-                    'parcelDescription' => 'test_development_aiku',
-                    'liabilityValue' => null,
-                    'liability' => false
+                    'networkCode'          => '1^12', // Default network code could be configurable
+                    'numberOfParcels'      => count($parcels),
+                    'totalWeight'          => $totalWeight,
+                    'shippingRef1'         => Arr::get($parentResource, 'reference', ''),
+                    'shippingRef2'         => null,
+                    'shippingRef3'         => null,
+                    'customsValue'         => null,
+                    'deliveryInstructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($shippingNotes), 60)),
+                    'parcelDescription'    => app()->isProduction() ? '' : 'test_development_aiku',
+                    'liabilityValue'       => null,
+                    'liability'            => false
                 ]
             ],
         ];
@@ -278,9 +315,10 @@ class CallApiDpdGbShipping extends OrgAction
      */
     public function getLabel(string $shipmentId, Shipper $shipper, string $output): string
     {
-
         $response = Http::withHeaders($this->getHeaders($shipper, $output))
-            ->get($this->getBaseUrl() . 'shipping/shipment/' . $shipmentId . '/label');
+            ->timeout(120)
+            ->retry(3, 100)
+            ->get($this->getBaseUrl().'shipping/shipment/'.$shipmentId.'/label');
 
         if ($response->successful()) {
             return base64_encode($response->body());

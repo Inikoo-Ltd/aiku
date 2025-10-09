@@ -11,7 +11,6 @@
 namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\IrisAction;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 

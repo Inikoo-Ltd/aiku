@@ -97,6 +97,7 @@ class UpdateGroupSettings extends GrpAction
             'client_id'                         => ['sometimes', 'string', 'nullable'],
             'client_secret'                     => ['sometimes', 'string', 'nullable'],
             'grant_type'                        => ['sometimes', 'string', 'nullable'],
+            'extra_languages'                   => ['sometimes', 'array', 'nullable'],
             'printnode_api_key' => ['sometimes', 'string', 'nullable'],
             'print_by_printnode' => ['sometimes', 'boolean', 'nullable'],
         ];

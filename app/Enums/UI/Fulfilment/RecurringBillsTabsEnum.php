@@ -28,7 +28,7 @@ enum RecurringBillsTabsEnum: string
             ],
 
             RecurringBillsTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

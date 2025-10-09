@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\LocationOrgStock;
 
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
+use App\Actions\Maintenance\Dispatching\RepairOrgStockMissingLocationIds;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Inventory\LocationStock\LocationStockTypeEnum;
@@ -31,6 +32,8 @@ class UpdateLocationOrgStock extends OrgAction
         if ($locationOrgStock->wasChanged('quantity')) {
             OrgStockHydrateQuantityInLocations::dispatch($locationOrgStock->orgStock);
         }
+
+        RepairOrgStockMissingLocationIds::dispatch($locationOrgStock->orgStock);
 
         return $locationOrgStock;
     }

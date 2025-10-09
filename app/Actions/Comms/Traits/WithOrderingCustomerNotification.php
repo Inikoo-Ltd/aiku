@@ -36,7 +36,7 @@ trait WithOrderingCustomerNotification
         return '';
     }
 
-    public function getTrackingUrl(Order $order): string
+    public function getTrackingUrl(Order $order): ?string
     {
         $deliveryNote = $order->deliveryNotes->first();
 
@@ -77,6 +77,34 @@ trait WithOrderingCustomerNotification
         }
 
         //todo for ecom and others
+        return '';
+    }
+
+    public function getPdfInvoiceLink(?Invoice $invoice): string
+    {
+        if (!$invoice || $invoice->ulid == '') {
+            return '';
+        }
+
+        $shop     = $invoice->shop;
+        $shopType = $shop->type;
+
+        if ($shopType == ShopTypeEnum::FULFILMENT) {
+            $baseUrl = 'https://fulfilment.test';
+            if (app()->isProduction()) {
+                $baseUrl = 'https://'.$shop->website->domain;
+            }
+
+            return $baseUrl.'/invoice/'.$invoice->ulid;
+        } elseif ($shopType == ShopTypeEnum::DROPSHIPPING) {
+            $baseUrl = 'https://ds.test';
+            if (app()->isProduction()) {
+                $baseUrl = 'https://'.$shop->website->domain;
+            }
+
+            return $baseUrl.'/invoice/'.$invoice->ulid;
+        }
+
         return '';
     }
 

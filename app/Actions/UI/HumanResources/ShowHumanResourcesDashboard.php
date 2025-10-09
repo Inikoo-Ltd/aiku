@@ -51,7 +51,7 @@ class ShowHumanResourcesDashboard extends OrgAction
                 ],
                 'stats'       => [
                     [
-                        'name'  => __('employees'),
+                        'name'  => __('Employees'),
                         'stat'  => $this->organisation->humanResourcesStats->number_employees_state_working,
                         'route' => [
                             'name'       => 'grp.org.hr.employees.index',

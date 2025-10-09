@@ -35,9 +35,9 @@ class CreateEmployee extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('new employee'),
+                'title'       => __('New employee'),
                 'pageHead'    => [
-                    'title'   => __('new employee'),
+                    'title'   => __('New employee'),
                     'actions' => [
                         [
                             'type'  => 'button',
@@ -126,7 +126,7 @@ class CreateEmployee extends OrgAction
                                     'value'     => EmployeeTypeEnum::EMPLOYEE->value,
                                     'options'   => [
                                         [
-                                            'title'       => __('employee'),
+                                            'title'       => __('Employee'),
                                             'value'       => EmployeeTypeEnum::EMPLOYEE->value
                                         ],
                                         [
@@ -138,7 +138,7 @@ class CreateEmployee extends OrgAction
                                             'value'       => EmployeeTypeEnum::TEMPORAL_WORKER->value
                                         ],
                                         [
-                                            'title'       => __('work experience'),
+                                            'title'       => __('Work experience'),
                                             'value'       => EmployeeTypeEnum::WORK_EXPERIENCE->value
                                         ],
 

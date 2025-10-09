@@ -15,11 +15,11 @@ enum CreditTransactionReasonEnum: string
 {
     use EnumHelperTrait;
 
-    case PAY_FOR_SHIPPING      = 'pay_for_shipping';
-    case COMPENSATE_CUSTOMER   = 'compensate_customer';
-    case TRANSFER              = 'transfer';
-    case MONEY_BACK              = 'money_back';
-    case OTHER                 = 'other';
+    case PAY_FOR_SHIPPING = 'pay_for_shipping';
+    case COMPENSATE_CUSTOMER = 'compensate_customer';
+    case TRANSFER = 'transfer';
+    case MONEY_BACK = 'money_back';
+    case OTHER = 'other';
 
     public function label(): string
     {
@@ -28,7 +28,7 @@ enum CreditTransactionReasonEnum: string
             CreditTransactionReasonEnum::COMPENSATE_CUSTOMER => 'Compensate customer',
             CreditTransactionReasonEnum::TRANSFER => 'Transfer from other customer account',
             CreditTransactionReasonEnum::MONEY_BACK => 'Customer want money back',
-            CreditTransactionReasonEnum::OTHER => 'Othe reason',
+            CreditTransactionReasonEnum::OTHER => 'Other reason',
         };
     }
 

@@ -51,7 +51,7 @@ class SendInvoiceToFulfilmentCustomerEmail extends OrgAction
         );
     }
 
-    public function asController(Invoice $invoice, ActionRequest $request): DispatchedEmail
+    public function asController(Invoice $invoice, ActionRequest $request): ?DispatchedEmail
     {
         $this->initialisationFromShop($invoice->shop, $request);
 

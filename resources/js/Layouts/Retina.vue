@@ -9,9 +9,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
-import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink } from '@fal'
-import { faSearch, faBell } from '@far'
-import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
+import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSkull } from '@fal'
 import { onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
@@ -22,15 +20,29 @@ import { usePage } from "@inertiajs/vue3"
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
 import { isArray } from "lodash-es"
-library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell)
+
+import { confetti } from '@tsparticles/confetti'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faTrashAlt, faCopy } from "@fal"
+import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote } from "@fal"
 import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faInfo, faCircle } from '@fas'
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faTrashAlt, faCopy)
+import { faSearch, faBell, faPlus } from '@far'
+import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
+
+library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote)
+library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
+
+
+interface Notification {
+    title: string
+    description?: string
+    message?: string
+    type: 'success' | 'error' | 'info' | 'warning' | 'failure'
+    status?: 'success' | 'error' | 'info' | 'warning' | 'failure'
+}
 
 
 provide('layout', useLayoutStore())
@@ -39,32 +51,109 @@ initialiseRetinaApp()
 
 const layout = useLayoutStore()
 
-watch(() => usePage().props?.flash?.notification, (notif) => {
-    console.log('notif ret', notif)
-    if (!notif) return
 
-    notify({
-        title: notif.title,
-        text: notif.description,
-        type: notif.status,
-    })
+
+// Flash: Confetti
+const defaults = {
+    spread: 360,
+    ticks: 50,
+    gravity: 0,
+    decay: 0.94,
+    startVelocity: 30,
+    shapes: ["star"],
+    zIndex: 100,
+};
+
+const shootConfetti = () => {
+    // console.log('1x')
+    confetti('retina-confetti', {
+        ...defaults,
+        particleCount: 40,
+        scalar: 1.2,
+        shapes: ["star"],
+    });
+
+    confetti('retina-confetti', {
+        ...defaults,
+        particleCount: 10,
+        scalar: 0.75,
+        shapes: ["circle"],
+    });
+}
+
+const shootMultipleConfetti = () => {
+    setTimeout(() => {
+        setTimeout(() => shootConfetti(), 0)
+        setTimeout(() => shootConfetti(), 100)
+        setTimeout(() => shootConfetti(), 200)
+        setTimeout(() => shootConfetti(), 300)
+    }, 500);
+}
+
+// Flash: Confetti
+watch(() => usePage().props?.flash?.confetti, (newVal) => {
+    // console.log('confettixx ret', newVal)
+    if (!newVal) return
+    
+    shootMultipleConfetti()
+}, {
+    deep: true,
+    immediate: true
 })
 
-// Section: Modal
+// Flash: GTM
+watch(() => usePage().props?.flash?.gtm, (newValue) => {
+    console.log('gtm ret', newValue)
+    if (!newValue) return
+
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+        event: newValue.event,
+        ...newValue.data_to_submit,
+    });
+}, {
+    deep: true,
+    immediate: true
+})
+
+
+// Flash: Modal
 interface Modal {
     title: string
     description: string
     type: 'success' | 'error' | 'info' | 'warning'
 }
-const selectedModal = ref<Modal | null>(null)
+const selectedModal = ref<Notification | null>(null)
 const isModalOpen = ref(false)
-watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
-    console.log('modal ret', modal)
+watch(() => usePage().props?.flash?.modal, (modal: Notification) => {
+    // console.log('modal ret', modal)
     if (!modal) return
 
     selectedModal.value = modal
     isModalOpen.value = true
+}, {
+    deep: true,
+    immediate: true
 })
+
+
+// Flash: Notification
+watch(() => usePage().props?.flash?.notification, (notification: Notification) => {
+    // console.log('ret', notification)
+    if (!notification) return
+
+    setTimeout(() => {
+        notify({
+            title: notification.title ?? '',
+            text: notification.description || notification.message,
+            type: notification.type || notification.status,
+        })
+    }, 500);
+}, {
+    deep: true,
+    immediate: true
+})
+
 
 // Section: To open/close the mobile menu
 const isOpenMenuMobile = ref(false)
@@ -72,30 +161,63 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 
 
 // Method: Hide the superchat widget
-// const hideSuperchatWidget = () => {
-//     const time = ref(0)
-//     const xxInterval = setInterval(() => {
-//         time.value += 150
-//         const _superchatWidget = document.querySelector('#superchat-widget')
-//         if (_superchatWidget) {
-//             _superchatWidget.style.display = 'none'
-//             clearInterval(xxInterval)
-//             console.log('Cleared interval')
-//         }
+const hideSuperchatWidget = () => {
+    const time = ref(0)
+    const xxInterval = setInterval(() => {
+        time.value += 150
+        // const _superchatWidget = document.querySelector('#superchat-widget')
+        const _superchatWidget = document.querySelector('#cookiescript_badge')
+        if (_superchatWidget) {
+            _superchatWidget.style.display = 'none'
+            clearInterval(xxInterval)
+            console.log('Cleared interval')
+        }
 
-//         // To safety if GTM exist but don't have superchat
-//         if (time.value > 10000) {
-//             clearInterval(xxInterval)
-//             console.log('Cleared interval due to timeout')
-//         }
-//     }, 150)
-// }
+        // To safety if GTM exist but don't have superchat
+        if (time.value > 7000) {
+            clearInterval(xxInterval)
+            console.log('Cleared interval due to timeout')
+        }
+    }, 900)
+}
 
 onMounted(() => {
     // if (layout.iris?.is_have_gtm) {
-    //     hideSuperchatWidget()
+        hideSuperchatWidget()
     // }
 })
+
+
+const getTextColorDependsOnStatus = (status: string) => {
+    switch (status) {
+        case 'success':
+            return 'text-green-500'
+        case 'error':
+        case 'failure':
+            return 'text-red-500'
+        case 'warning':
+            return 'text-yellow-500'
+        case 'info':
+            return 'text-gray-500'
+        default:
+            return ''
+    }
+}
+const getBgColorDependsOnStatus = (status: string) => {
+    switch (status) {
+        case 'success':
+            return 'bg-green-100'
+        case 'error':
+        case 'failure':
+            return 'bg-red-100'
+        case 'warning':
+            return 'bg-yellow-100'
+        case 'info':
+            return 'bg-gray-100'
+        default:
+            return ''
+    }
+}
 </script>
 
 <template>
@@ -155,12 +277,16 @@ onMounted(() => {
         <slot />
     </div>
 
-    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="w-full max-w-lg">
+    <Modal :isOpen="isModalOpen" aonClose="isModalOpen = false" width="w-full max-w-lg">
         <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
-            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full"
+                :class="getTextColorDependsOnStatus(selectedModal?.status)"
+            >
                 <div>
-                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100">
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'error'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100"
+                        :class="getBgColorDependsOnStatus(selectedModal?.status)"
+                    >
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'error' || selectedModal?.status == 'failure'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' />
                         <FontAwesomeIcon v-if="selectedModal?.status == 'info'" icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
@@ -170,15 +296,19 @@ onMounted(() => {
                         <div as="h3" class="font-semibold text-2xl">
                             {{ selectedModal?.title }}
                         </div>
-                        <div class="mt-2 text-sm text-gray-500">
+                        <div v-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
                             {{ selectedModal?.description }}
+                        </div>
+                        <div v-if="selectedModal?.message" class="mt-2 text-sm opacity-75">
+                            {{ selectedModal?.message }}
                         </div>
                     </div>
                 </div>
+
                 <div class="mt-5 sm:mt-6">
                     <Button
                         @click="() => isModalOpen = false"
-                        :label="trans('Ok, Get it')"
+                        :label="trans('Okay')"
                         full
                     />
                 </div>
@@ -204,6 +334,35 @@ onMounted(() => {
 // * {
 //     --color-primary: v-bind('layout.app.theme[0]');
 // }
+
+/* For Notification */
+.custom-style-notification {
+    @apply mt-2 bg-white rounded-md mr-3;
+
+    .notification-title {
+        @apply font-bold
+    }
+
+    .notification-content {
+        @apply text-sm
+    }
+
+    &.success {
+        @apply bg-lime-50 border-l-8 border border-lime-300 text-lime-600
+    }
+    &.warning {
+        @apply bg-yellow-50 border-l-8 border border-yellow-400  text-amber-600
+    }
+    &.info {
+        @apply bg-gray-100 border-l-8 border border-slate-500  text-slate-500
+    }
+    &.error {
+        @apply bg-red-400 border-l-8 border border-red-600 text-white
+    }
+    &.failure {
+        @apply bg-red-400 border-l-8 border border-red-600 text-white
+    }
+}
 
 /* Navigation: Aiku */
 .navigationActive {
@@ -278,8 +437,7 @@ onMounted(() => {
     width: 100%;
 }
 
-// Hide Checkout Apple Pay
-#flow-container #googlepayAccordionContainer {
-    display: none !important;
+#retina-confetti {
+    pointer-events: none;
 }
 </style>

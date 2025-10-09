@@ -46,7 +46,7 @@ class GetPupilDropshippingNavigation
                 ]
             ];
 
-            $groupNavigation = array_merge($groupNavigation, GetPupilDropshippingPlatformNavigation::run($shopifyUser, Platform::where('slug', PlatformTypeEnum::SHOPIFY->value)->first()));
+            // $groupNavigation = array_merge($groupNavigation, GetPupilDropshippingPlatformNavigation::run($shopifyUser, Platform::where('slug', PlatformTypeEnum::SHOPIFY->value)->first()));
         }
 
         return $groupNavigation;

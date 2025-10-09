@@ -99,7 +99,7 @@ class IndexWorkplaces extends OrgAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new working place'),
+                            'tooltip' => __('New working place'),
                             'label'   => __('working place'),
                             'route'   => [
                                 'name'       => 'grp.org.hr.workplaces.create',
@@ -131,7 +131,7 @@ class IndexWorkplaces extends OrgAction
             'Org/HumanResources/Workplaces',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
-                'title'       => __('working places'),
+                'title'       => __('Working places'),
                 'pageHead'    => [
                     'icon'    => ['fal', 'building'],
                     'title'   => __('Working places'),

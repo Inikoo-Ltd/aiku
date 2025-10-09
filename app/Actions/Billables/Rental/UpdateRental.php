@@ -9,7 +9,7 @@
 namespace App\Actions\Billables\Rental;
 
 use App\Actions\Billables\Rental\Search\RentalRecordSearch;
-use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRentals;
 use App\Actions\OrgAction;
@@ -52,7 +52,7 @@ class UpdateRental extends OrgAction
             );
         }
 
-        UpdateAsset::run($rental->asset, [], $this->hydratorsDelay);
+        UpdateAssetFromModel::run($rental->asset, [], $this->hydratorsDelay);
 
 
         if (Arr::hasAny($rental->getChanges(), ['state'])) {
@@ -63,14 +63,6 @@ class UpdateRental extends OrgAction
         return $rental;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return true; //TODO: Fix Auth
-    }
 
     public function rules(): array
     {
@@ -85,7 +77,7 @@ class UpdateRental extends OrgAction
                     table: 'rentals',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->rental->id, 'operator' => '!=']
                     ]
                 ),

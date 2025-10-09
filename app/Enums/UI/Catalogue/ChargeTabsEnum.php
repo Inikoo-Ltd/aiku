@@ -25,11 +25,11 @@ enum ChargeTabsEnum: string
         return match ($this) {
 
             ChargeTabsEnum::SHOWCASE => [
-                'title' => __('details'),
+                'title' => __('Details'),
                 'icon'  => 'fal fa-shopping-cart',
             ],
             ChargeTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

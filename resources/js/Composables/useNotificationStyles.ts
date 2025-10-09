@@ -13,14 +13,16 @@ export const getNotificationData = (notif: FlashNotificationType) => {
             title: notif.title,
             class: "bg-green-200 text-green-600 border border-green-300",
             icon: "fas fa-check-circle",
-            description: notif.description
+            description: notif.description,
+            message: notif.message,
         }
     } else {
         return {
             title: notif.title,
             class: "bg-red-200 text-red-600 border border-red-300",
             icon: "fad fa-exclamation-triangle",
-            description: notif.description
+            description: notif.description,
+            message: notif.message,
         }
     }
 }

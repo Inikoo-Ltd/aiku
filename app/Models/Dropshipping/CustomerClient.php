@@ -79,7 +79,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @method static Builder<static>|CustomerClient newQuery()
  * @method static Builder<static>|CustomerClient onlyTrashed()
  * @method static Builder<static>|CustomerClient query()
- * @method static Builder<static>|CustomerClient withTrashed()
+ * @method static Builder<static>|CustomerClient withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|CustomerClient withoutTrashed()
  * @mixin Eloquent
  */

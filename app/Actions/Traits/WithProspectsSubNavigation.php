@@ -8,19 +8,13 @@
 
 namespace App\Actions\Traits;
 
-use App\Models\Fulfilment\Fulfilment;
+use App\Models\Catalogue\Shop;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithProspectsSubNavigation
 {
-    public function getSubNavigation(ActionRequest $request): array
+    public function getSubNavigation(Shop $shop, ActionRequest $request): array
     {
-        $parent = $this->parent;
-
-        if ($parent instanceof Fulfilment) {
-            $parent = $parent->shop;
-        }
-
 
         $meta = [];
 
@@ -36,25 +30,25 @@ trait WithProspectsSubNavigation
                     ]
                 )
             ],
-            'number'   => $parent->crmStats->number_prospects,
+            'number'   => $shop->crmStats->number_prospects,
             'label'    => __('Prospects'),
             'leftIcon' => [
                 'icon'    => 'fal fa-transporter',
-                'tooltip' => __('prospects')
+                'tooltip' => __('Prospects')
             ]
         ];
 
-        if ($parent->crmStats->number_prospects > 0) {
+        if ($shop->crmStats->number_prospects > 0) {
             $meta[] = [
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.prospects.mailshots.index',
                     'parameters' => $request->route()->originalParameters()
                 ],
-                'number'   => $parent->commsStats->number_mailshots_type_prospect_mailshot,
+                'number'   => $shop->commsStats->number_mailshots_type_prospect_mailshot,
                 'label'    => __('Mailshots'),
                 'leftIcon' => [
                     'icon'    => 'fal fa-mail-bulk',
-                    'tooltip' => __('mailshots')
+                    'tooltip' => __('Mailshots')
                 ]
             ];
         }
@@ -64,7 +58,7 @@ trait WithProspectsSubNavigation
             //     'name'       => 'grp.org.shops.show.crm.prospects.lists.index',
             //     'parameters' => $request->route()->originalParameters()
             // ],
-            'number'   => $parent->crmStats->number_prospect_queries,
+            'number'   => $shop->crmStats->number_prospect_queries,
             'label'    => __('Lists'),
             'leftIcon' => [
                 'icon'    => 'fal fa-code-branch',

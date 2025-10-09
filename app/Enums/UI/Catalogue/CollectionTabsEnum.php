@@ -42,43 +42,43 @@ enum CollectionTabsEnum: string
     {
         return match ($this) {
             // DepartmentTabsEnum::DATA => [
-            //     'title' => __('database'),
+            //     'title' => __('Database'),
             //     'icon'  => 'fal fa-database',
             //     'type'  => 'icon',
             //     'align' => 'right',
             // ],
             // DepartmentTabsEnum::PRODUCTS => [
-            //     'title' => __('products'),
+            //     'title' => __('Products'),
             //     'icon'  => 'fal fa-cube',
             // ],
             // DepartmentTabsEnum::FAMILIES => [
-            //     'title' => __('families'),
+            //     'title' => __('Families'),
             //     'icon'  => 'fal fa-cubes',
             // ],
             // DepartmentTabsEnum::SALES => [
-            //     'title' => __('sales'),
+            //     'title' => __('Sales'),
             //     'icon'  => 'fal fa-money-bill-wave',
             // ],
             // DepartmentTabsEnum::CUSTOMERS => [
-            //     'title' => __('customers'),
+            //     'title' => __('Customers'),
             //     'icon'  => 'fal fa-user',
             // ],DepartmentTabsEnum::OFFERS => [
-            //     'title' => __('offers'),
+            //     'title' => __('Offers'),
             //     'icon'  => 'fal fa-tags',
             // ],DepartmentTabsEnum::MAILSHOTS => [
-            //     'title' => __('mailshots'),
+            //     'title' => __('Mailshots'),
             //     'icon'  => 'fal fa-bullhorn',
             // ],DepartmentTabsEnum::RELATED_CATEGORIES => [
-            //     'title' => __('related categories'),
+            //     'title' => __('Related categories'),
             //     'icon'  => 'fal fa-project-diagram',
             // ],DepartmentTabsEnum::IMAGES=> [
-            //     'title' => __('images'),
+            //     'title' => __('Images'),
             //     'icon'  => 'fal fa-camera-retro',
             //     'type'  => 'icon',
             //     'align' => 'right',
             // ],
             CollectionTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

@@ -35,9 +35,9 @@ trait WithSetAutoServices
             /** @var FulfilmentTransaction $transaction */
             $transaction = $model->transactions()->where('asset_id', $assetId)->first();
 
-            if ($transaction and $quantity == 0) {
-                DeleteFulfilmentTransaction::make()->action($transaction, );
-            } elseif ($quantity > 0 and $transaction) {
+            if ($transaction && $quantity == 0) {
+                DeleteFulfilmentTransaction::make()->action($transaction);
+            } elseif ($quantity > 0 && $transaction) {
                 UpdateFulfilmentTransaction::make()->action($transaction, ['quantity' => $quantity]);
             } elseif ($quantity > 0) {
                 $asset = Asset::find($assetId);
@@ -56,6 +56,9 @@ trait WithSetAutoServices
         return $model;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function processStoredItemAutoServices(PalletReturn $model, $autoServices, $totalStoredItems, $debug = false): PalletReturn
     {
 
@@ -64,9 +67,9 @@ trait WithSetAutoServices
             /** @var FulfilmentTransaction $transaction */
             $transaction = $model->transactions()->where('asset_id', $service->asset_id)->first();
 
-            if ($transaction and $totalStoredItems == 0) {
+            if ($transaction && $totalStoredItems == 0) {
                 DeleteFulfilmentTransaction::make()->action($transaction);
-            } elseif ($totalStoredItems > 0 and $transaction) {
+            } elseif ($totalStoredItems > 0 && $transaction) {
                 UpdateFulfilmentTransaction::make()->action($transaction, ['quantity' => $totalStoredItems]);
             } elseif ($totalStoredItems > 0) {
                 $asset = Asset::find($service->asset_id);

@@ -11,8 +11,6 @@ namespace App\Models\Dropshipping;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id

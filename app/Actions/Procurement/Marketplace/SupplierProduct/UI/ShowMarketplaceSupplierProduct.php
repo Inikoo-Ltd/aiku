@@ -66,6 +66,46 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
         return $this->handle($supplierProduct);
     }
 
+    public function getOrderNotes(): array
+    {
+        return [
+            "note_list" => [
+                [
+                    "label"       => __("Delivery Instructions"),
+                    "note"        => '',
+                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
+                    "editable"    => true,
+                    "bgColor"     => "#38bdf8",
+                    "field"       => "shipping_notes"
+                ],
+                [
+                    "label"       => __("Customer"),
+                    "note"        => '',
+                    "information" => __("This note is from customer in the platform. Not editable."),
+                    "editable"    => false,
+                    "bgColor"     => "#FF7DBD",
+                    "field"       => "customer_notes"
+                ],
+                [
+                    "label"       => __("Public"),
+                    "note"        =>  '',
+                    "information" => __("This note will be visible to public, both staff and the customer can see."),
+                    "editable"    => true,
+                    "bgColor"     => "#94DB84",
+                    "field"       => "public_notes"
+                ],
+                [
+                    "label"       => __("Private"),
+                    "note"        => '',
+                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
+                    "editable"    => true,
+                    "bgColor"     => "#FCF4A3",
+                    "field"       => "internal_notes"
+                ]
+            ]
+        ];
+    }
+
     public function htmlResponse(SupplierProduct $supplierProduct, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -80,11 +120,12 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
                     'previous' => $this->getPrevious($supplierProduct, $request),
                     'next'     => $this->getNext($supplierProduct, $request),
                 ],
+                'notes'                       => $this->getOrderNotes(),
                 'pageHead'    => [
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'box-usd'],
-                            'title' => __('supplier product marketplaces')
+                            'title' => __('Supplier product marketplaces')
                         ],
                     'title' => $supplierProduct->name,
 
@@ -121,7 +162,7 @@ class ShowMarketplaceSupplierProduct extends InertiaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('supplier product marketplaces')
+                            'label' => __('Supplier product marketplaces')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

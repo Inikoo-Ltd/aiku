@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
 use App\Models\Dropshipping\WooCommerceUser;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -23,24 +24,27 @@ class GetProductForWooCommerce
     /**
      * @throws \Exception
      */
-    public function handle(WooCommerceUser $wooCommerceUser)
+    private function transformToStandardFormat($product): array
     {
-        $products = $wooCommerceUser->getWooCommerceProducts();
+        return [
+            'id' => $product['id'],
+            'name' => $product['name'],
+            'slug' => $product['slug'],
+            'images' => Arr::get($product, 'images.0')
+        ];
+    }
 
-        if (!$products) {
-            return collect([]);
-        }
+    public function handle(WooCommerceUser $wooCommerceUser, $query = '')
+    {
+        $products = $wooCommerceUser->getWooCommerceProducts([
+            'search' => $query
+        ]);
 
-        dd($products);
+        return array_map([$this, 'transformToStandardFormat'], $products);
     }
 
     public function asController(WooCommerceUser $wooCommerceUser, ActionRequest $request)
     {
         return $this->handle($wooCommerceUser);
-    }
-
-    public function asCommand()
-    {
-        $this->handle(WooCommerceUser::first());
     }
 }

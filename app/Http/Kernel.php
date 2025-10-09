@@ -22,6 +22,7 @@ use App\Http\Middleware\SameSiteSession;
 use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
+use App\Http\Middleware\CaptureTrafficSource;
 use App\Http\Middleware\CheckWebsiteState;
 use App\Http\Middleware\DetectWebsite;
 use App\Http\Middleware\HandleAikuPublicInertiaRequests;
@@ -41,6 +42,7 @@ use App\Http\Middleware\PreventRequestsDuringMaintenance;
 use App\Http\Middleware\RedirectIfAuthenticated;
 use App\Http\Middleware\SetGrpApiTreblle;
 use App\Http\Middleware\SetRetinaApiTreblle;
+use App\Http\Middleware\SetWebUserLocale;
 use App\Http\Middleware\TrimStrings;
 use App\Http\Middleware\TrustProxies;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -175,11 +177,13 @@ class Kernel extends HttpKernel
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
+            SetWebUserLocale::class,
             HandleInertiaCrossToRetina::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             LogWebUserRequestMiddleware::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
+            CaptureTrafficSource::class,
         ],
         'retina'      => [
             DisableSSR::class,
@@ -192,10 +196,12 @@ class Kernel extends HttpKernel
             VerifyCsrfToken::class,
             SubstituteBindings::class,
             HandleInertiaCrossToIris::class,
+            SetWebUserLocale::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
             LogWebUserRequestMiddleware::class,
-            InspectorOctaneMiddleware::class
+            InspectorOctaneMiddleware::class,
+            CaptureTrafficSource::class,
         ],
         'pupil'       => [
             DisableSSR::class,

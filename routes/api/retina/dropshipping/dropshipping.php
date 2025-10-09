@@ -49,16 +49,14 @@ Route::prefix('transaction')->as('transaction.')->group(function () {
     Route::delete('{transaction:id}/delete', DeleteApiOrderTransaction::class)->name('delete');
 });
 
-Route::prefix('portfolios')->as('portfolios.')->group(function () {
-    Route::get('', GetPortfolios::class)->name('index');
-    Route::post('product/{product:id}/store', StoreApiPortfolio::class)->name('store')->withoutScopedBindings();
-    Route::get('{portfolio:id}', ShowApiPortfolio::class)->name('show');
-    Route::patch('{portfolio:id}/update', UpdateApiPortfolio::class)->name('update');
-    Route::delete('{portfolio:id}/delete', DeleteApiPortfolio::class)->name('delete');
-});
 
 Route::prefix('products')->as('products.')->group(function () {
     Route::get('', GetProducts::class)->name('index');
+    Route::get('my-products', GetPortfolios::class)->name('my_product.index');
+    Route::post('my-products/{product:id}/store', StoreApiPortfolio::class)->name('my_product.store')->withoutScopedBindings();
+    Route::get('my-products/{portfolio:id}', ShowApiPortfolio::class)->name('my_product.show');
+    Route::patch('my-products/{portfolio:id}/update', UpdateApiPortfolio::class)->name('my_product.update');
+    Route::delete('my-products/{portfolio:id}/delete', DeleteApiPortfolio::class)->name('my_product.delete');
 });
 
 Route::prefix('images')->as('images.')->group(function () {

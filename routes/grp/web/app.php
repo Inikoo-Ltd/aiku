@@ -22,8 +22,12 @@ Route::middleware(["auth"])->group(function () {
     if (!app()->isProduction()) {
         Route::get('routes', function () {
             $routeCollection = Route::getRoutes();
-
-            echo "<table style='width:100%'>";
+            echo "<style>
+                table.route-table tr:hover { background-color: #ffff0055 !important; }
+                table.route-table td { padding: 10px 6px; }
+                * { font-family: sans-serif; }
+            </style>";
+            echo "<table class='route-table' style='width:100%'>";
             echo "<th>";
             echo "<td><h4>HTTP Method</h4></td>";
             echo "<td><h4>Route</h4></td>";
@@ -72,6 +76,9 @@ Route::middleware(["auth"])->group(function () {
     Route::prefix("masters")
         ->name("masters.")
         ->group(__DIR__."/masters.php");
+    Route::prefix("trade-units")
+        ->name("trade_units.")
+        ->group(__DIR__."/trade_units.php");
     Route::prefix("goods")
         ->name("goods.")
         ->group(__DIR__."/goods.php");
@@ -111,6 +118,10 @@ Route::middleware(["auth"])->group(function () {
     Route::prefix("helpers")
         ->name("helpers.")
         ->group(__DIR__."/helpers.php");
+
+    Route::prefix("pdfs")
+        ->name("pdfs.")
+        ->group(__DIR__."/pdfs.php");
 
     Route::fallback(function () {
         $status = 404;

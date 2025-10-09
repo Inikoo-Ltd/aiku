@@ -81,15 +81,15 @@ class IndexCalendars extends OrgAction
             'Org/HumanResources/Calendar',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('employees'),
+                'title'       => __('Employees'),
                 'pageHead'    => [
-                    'title'  => __('employees'),
+                    'title'  => __('Employees'),
                     'create' => $this->canEdit ? [
                         'route' => [
                             'name'       => 'grp.org.hr.employees.create',
                             'parameters' => array_values(request()->route()->originalParameters())
                         ],
-                        'label' => __('employee')
+                        'label' => __('Employee')
                     ] : false,
                 ],
                 'data'        => EmployeesResource::collection($employees),
@@ -118,7 +118,7 @@ class IndexCalendars extends OrgAction
                             'name'       => 'grp.org.hr.employees.index',
                             'parameters' => array_values(request()->route()->originalParameters())
                         ],
-                        'label' => __('employees'),
+                        'label' => __('Employees'),
                         'icon'  => 'fal fa-bars',
                     ],
 

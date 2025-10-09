@@ -49,6 +49,14 @@ function outboxRoute(outbox: Outbox) {
                 'grp.org.shops.show.dashboard.comms.outboxes.show',
                 [outbox.organisation_slug, outbox.shop_slug, outbox.slug])
         case 'grp.org.shops.show.dashboard.comms.outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.cold_email_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.customer_notification_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.marketing_notification_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.marketing_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.newsletter_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.push_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.test_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.user_notification_outboxes.index':
         return route(
                 'grp.org.shops.show.dashboard.comms.outboxes.show',
                 [route().params['organisation'], route().params['shop'], outbox.slug])
@@ -61,7 +69,7 @@ function outboxRoute(outbox: Outbox) {
                 'grp.org.fulfilments.show.operations.comms.outboxes.show',
                 [route().params['organisation'], route().params['fulfilment'], outbox.slug])
         default:
-            return null
+            return ''
     }
 }
 
@@ -72,7 +80,7 @@ function outboxRoute(outbox: Outbox) {
 <template>
     <Table :resource="data" :name="tab">
         <template #cell(name)="{ item: outbox }">
-            <Link :href="outboxRoute(outbox)" class="primaryLink">
+            <Link v-if="outboxRoute(outbox)" :href="outboxRoute(outbox)" class="primaryLink">
                 {{ outbox["name"] }}
             </Link>
         </template>

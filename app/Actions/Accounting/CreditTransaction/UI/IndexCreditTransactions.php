@@ -10,6 +10,7 @@
 namespace App\Actions\Accounting\CreditTransaction\UI;
 
 use App\Actions\OrgAction;
+use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Http\Resources\Accounting\CreditTransactionsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\CreditTransaction;
@@ -18,11 +19,12 @@ use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexCreditTransactions extends OrgAction
 {
+    use WithCRMAuthorisation;
+
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -53,10 +55,11 @@ class IndexCreditTransactions extends OrgAction
                 'credit_transactions.amount',
                 'credit_transactions.running_amount',
                 'payments.reference as payment_reference',
+                'payments.id as payment_id',
                 'payments.type as payment_type',
                 'currencies.code as currency_code',
             ])
-            ->allowedSorts(['amount', 'running_amount'])
+            ->allowedSorts(['amount', 'running_amount', 'type', 'created_at','payment_reference'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -90,19 +93,13 @@ class IndexCreditTransactions extends OrgAction
                 );
 
 
-            $table->column(key: 'created_at', label: __('Created at'), type: 'date', canBeHidden: false, searchable: true);
-            $table->column(key: 'type', label: __('type'), canBeHidden: false, searchable: true);
-            $table->column(key: 'payment_reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'amount', label: __('amount'), type: 'currency', canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'running_amount', label: __('running amount'), type: 'currency', canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hm');
+            $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'payment_reference', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+            $table->column(key: 'running_amount', label: __('running amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
+            $table->column(key: 'actions', label: __('Actions'));
         };
-    }
-
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo("crm.{$this->shop->id}.view");
-
-        return $request->user()->authTo("crm.{$this->shop->id}.view");
     }
 
     public function jsonResponse(LengthAwarePaginator $creditTransactions): AnonymousResourceCollection

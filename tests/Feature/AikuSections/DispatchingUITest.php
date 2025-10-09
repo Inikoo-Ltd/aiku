@@ -113,7 +113,7 @@ test("UI Index dispatching delivery-notes", function () {
 test("UI Index dispatching show delivery-notes", function () {
     $this->withoutExceptionHandling();
     $response = get(
-        route("grp.org.warehouses.show.dispatching.delivery-notes.show", [
+        route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
             $this->organisation->slug,
             $this->warehouse->slug,
             $this->deliveryNote->slug
@@ -142,7 +142,7 @@ test("UI Index dispatching show delivery-notes", function () {
 
 test("UI Index dispatching show delivery-notes (tab picking)", function () {
     $response = get(
-        route("grp.org.warehouses.show.dispatching.delivery-notes.show", [
+        route("grp.org.warehouses.show.dispatching.delivery_notes.show", [
             $this->organisation->slug,
             $this->warehouse->slug,
             $this->deliveryNote->slug
@@ -166,13 +166,12 @@ test("UI Index dispatching show delivery-notes (tab picking)", function () {
             ->has("timelines")
             ->has("box_stats")
             ->has("routes")
-            ->has(DeliveryNoteTabsEnum::PICKINGS->value)
             ->has("tabs");
     });
 })->todo();
 
 test('UI get section route dispatching show', function () {
-    $sectionScope = GetSectionRoute::make()->handle('grp.org.warehouses.show.dispatching.delivery-notes.show', [
+    $sectionScope = GetSectionRoute::make()->handle('grp.org.warehouses.show.dispatching.delivery_notes.show', [
         'organisation' => $this->organisation->slug,
         'warehouse' =>  $this->warehouse->slug,
         'deliveryNote' => $this->deliveryNote->slug

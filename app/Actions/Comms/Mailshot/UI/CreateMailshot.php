@@ -116,9 +116,9 @@ class CreateMailshot extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new mailshot'),
+                'title'    => __('New mailshot'),
                 'pageHead' => [
-                    'title' => __('new mailshot')
+                    'title' => __('New mailshot')
                 ],
                 'formData' => [
                     'fullLayout' => true,

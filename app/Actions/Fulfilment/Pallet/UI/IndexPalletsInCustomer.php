@@ -36,35 +36,9 @@ class IndexPalletsInCustomer extends OrgAction
     use WithFulfilmentCustomerSubNavigation;
 
 
-    private bool $selectStoredPallets = false;
-
     private FulfilmentCustomer $fulfilmentCustomer;
     private FulfilmentCustomer $parent;
 
-    //    protected function getElementGroups(FulfilmentCustomer $fulfilmentCustomer, string $prefix): array
-    //    {
-    //        $elements = [];
-    //
-    //        if ($prefix == 'all') {
-    //            $elements = [
-    //                'status' => [
-    //                    'label'    => __('Status'),
-    //                    'elements' => array_merge_recursive(
-    //                        PalletStatusEnum::labels($fulfilmentCustomer),
-    //                        PalletStatusEnum::count($fulfilmentCustomer)
-    //                    ),
-    //
-    //                    'engine' => function ($query, $elements) {
-    //                        $query->whereIn('pallets.status', $elements);
-    //                    }
-    //                ],
-    //
-    //
-    //            ];
-    //        }
-    //
-    //        return $elements;
-    //    }
 
     public function handle(FulfilmentCustomer $fulfilmentCustomer, $prefix = null): LengthAwarePaginator
     {
@@ -98,16 +72,6 @@ class IndexPalletsInCustomer extends OrgAction
         }
 
 
-        //        foreach ($this->getElementGroups($fulfilmentCustomer, $prefix) as $key => $elementGroup) {
-        //            $query->whereElementGroup(
-        //                key: $key,
-        //                allowedElements: array_keys($elementGroup['elements']),
-        //                engine: $elementGroup['engine'],
-        //                prefix: $prefix
-        //            );
-        //        }
-
-
         $query->leftjoin('locations', 'pallets.location_id', '=', 'locations.id');
 
         $query->defaultSort('pallets.id')
@@ -133,7 +97,7 @@ class IndexPalletsInCustomer extends OrgAction
             );
 
 
-        return $query->allowedSorts(['customer_reference', 'reference', 'dispatched_at', 'fulfilment_customer_name'])
+        return $query->allowedSorts(['customer_reference', 'reference', 'dispatched_at', 'fulfilment_customer_name', 'location_code'])
             ->allowedFilters([$globalSearch, 'customer_reference', 'reference'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -148,13 +112,6 @@ class IndexPalletsInCustomer extends OrgAction
                     ->pageName($prefix.'Page');
             }
 
-            //            foreach ($this->getElementGroups($fulfilmentCustomer, $prefix) as $key => $elementGroup) {
-            //                $table->elementGroup(
-            //                    key: $key,
-            //                    label: $elementGroup['label'],
-            //                    elements: $elementGroup['elements']
-            //                );
-            //            }
 
             $count = 0;
 
@@ -348,7 +305,7 @@ class IndexPalletsInCustomer extends OrgAction
     public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, ActionRequest $request): LengthAwarePaginator
     {
         $this->fulfilmentCustomer = $fulfilmentCustomer;
-        $this->parent             = $fulfilmentCustomer;// This is needed fot authorisation checks
+        $this->parent             = $fulfilmentCustomer;// This is needed for authorisation checks
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(FulfilmentCustomerPalletsTabsEnum::values());
 
         return $this->handle($fulfilmentCustomer, $request->get('tab', FulfilmentCustomerPalletsTabsEnum::STORING->value));

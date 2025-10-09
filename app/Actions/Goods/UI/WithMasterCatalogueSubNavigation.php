@@ -48,8 +48,25 @@ trait WithMasterCatalogueSubNavigation
             ],
 
             [
+
+                'number'   => $masterShop->stats->number_current_master_product_categories_type_sub_department,
+                'label'    => __('Master Sub-departments'),
+                'tooltip'  => __('Master Sub-departments'),
+                'route'    => [
+                    'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
+                    'parameters' => [
+                        'masterShop' => $masterShop->slug
+                    ]
+                ],
+                'leftIcon' => [
+                    'icon'    => ['fal', 'fa-stream'],
+                    'tooltip' => __('Master Sub Departments')
+                ]
+            ],
+
+            [
                 'number'   => $masterShop->stats->number_current_master_product_categories_type_family,
-                'label'    => __('Families'),
+                'label'    => __('Master Families'),
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_families.index',
                     'parameters' => [
@@ -64,9 +81,9 @@ trait WithMasterCatalogueSubNavigation
 
             [
                 'number'   => $masterShop->stats->number_current_master_assets_type_product,
-                'label'    => __('Products'),
+                'label'    => __('Master Products'),
                 'route'    => [
-                    'name'       => 'grp.masters.master_shops.show.products.index',
+                    'name'       => 'grp.masters.master_shops.show.master_products.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
@@ -76,22 +93,22 @@ trait WithMasterCatalogueSubNavigation
                     'tooltip' => __('Master Products')
                 ]
             ],
+
             [
-                'align'    => 'right',
-                'number'   => $masterShop->stats->number_current_master_product_categories_type_sub_department,
-                'label'    => __('Subs'),
-                'tooltip'  => __('Sub Departments'),
+                'number'   => $masterShop->stats->number_master_collections,
+                'label'    => __('Master Collections'),
                 'route'    => [
-                    'name'       => 'grp.masters.master_shops.show.master_sub_departments.index',
+                    'name'       => 'grp.masters.master_shops.show.master_collections.index',
                     'parameters' => [
                         'masterShop' => $masterShop->slug
                     ]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
-                    'tooltip' => __('Master Sub Departments')
+                    'tooltip' => __('Master Collections')
                 ]
             ],
+
 
         ];
     }

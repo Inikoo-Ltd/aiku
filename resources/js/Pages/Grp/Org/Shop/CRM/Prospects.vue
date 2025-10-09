@@ -22,9 +22,10 @@ import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 import type { Component } from 'vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faFileInvoice, faSeedling } from "@fal"
+import { faFileInvoice, faSeedling, faDownload } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faFileInvoice, faSeedling)
+import { routeType } from "@/types/route"
+library.add(faFileInvoice, faSeedling, faDownload)
 
 const props = defineProps<{
   title: string
@@ -43,6 +44,10 @@ const props = defineProps<{
       tagsList : {}
       tagRoute : {}
       upload_spreadsheet?: {}
+      download_route: {
+        xlsx: routeType
+        csv: routeType
+      }
 }>()
 
 console.log(props)
@@ -67,12 +72,31 @@ const component = computed(() => {
       return components[currentTab.value]
   })
 
+
+const downloadUrl = (type: string) => {
+    if (props.download_route?.[type]?.name) {
+        return route(props.download_route[type].name, props.download_route[type].parameters);
+    } else {
+        return ''
+    }
+};
 </script>
 
 <template>
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
       <template #other>
+
+          <div v-if="currentTab === 'prospects'" class="rounded-md ">
+              <a :href="(downloadUrl('csv') as string)" target="_blank" rel="noopener">
+                  <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
+              </a>
+
+              <a :href="(downloadUrl('xlsx') as string)" target="_blank" rel="noopener">
+                  <Button :icon="faDownload" label="xlsx" type="tertiary" class="border-l-0  rounded-l-none"/>
+              </a>
+            </div>
+            
           <Button
               v-if="upload_spreadsheet"
               @click="() => isModalUploadOpen = true"

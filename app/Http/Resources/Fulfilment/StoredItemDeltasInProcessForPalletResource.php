@@ -45,7 +45,7 @@ class StoredItemDeltasInProcessForPalletResource extends JsonResource
             'name'                  => (string)$this->name,
             'pallet_id'             => $this->pallet_id,
             'pallet_stored_item_id' => $this->pallet_stored_item_id,
-            'pallet_stored_item_quantity'   => (int)$this->pallet_stored_item_quantity,
+            'pallet_stored_item_quantity'   => this->pallet_stored_item_quantity,
             'audit_notes'   => $this->audit_notes,
             'audited_quantity'  => $this->audited_quantity,
             'delta_state'   => $this->delta_state,

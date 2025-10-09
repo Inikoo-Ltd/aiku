@@ -25,11 +25,11 @@ enum FulfilmentServiceTabsEnum: string
     {
         return match ($this) {
             FulfilmentServiceTabsEnum::SHOWCASE => [
-                'title' => __('service'),
+                'title' => __('Service'),
                 'icon'  => 'fas fa-info-circle',
             ],
             FulfilmentServiceTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

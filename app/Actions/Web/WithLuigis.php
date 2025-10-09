@@ -23,6 +23,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -44,7 +45,7 @@ trait WithLuigis
         if (app()->environment('production')) {
             return array_filter([Arr::get($website->settings, 'luigisbox.tracker_id'), Arr::get($website->settings, 'luigisbox.private_key')]);
         } else {
-            return [config('app.sandbox.luigisbox.tracker_id'), config('app.sandbox.luigisbox.private_key')];
+            return array_filter([config('app.sandbox.luigisbox.tracker_id'), config('app.sandbox.luigisbox.private_key')]);
         }
     }
 
@@ -58,7 +59,9 @@ trait WithLuigis
         $offsetSeconds = 0;
         $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds) . ' GMT';
 
-        [$publicKey, $privateKey] = $this->getAccessToken($parent);
+        $accessToken = $this->getAccessToken($parent);
+
+        [$publicKey, $privateKey] = $accessToken;
 
         $signature  = $this->digest(
             $privateKey,
@@ -83,6 +86,7 @@ trait WithLuigis
         }
 
         $response = Http::withHeaders($header)
+            ->retry(3, 100)
             ->withBody($body, $content_type)
             ->{strtolower($method)}('https://live.luigisbox.com/' . $endPoint);
 
@@ -101,6 +105,11 @@ trait WithLuigis
      */
     public function reindex(Website|Webpage $parent): void
     {
+        $accessToken = $this->getAccessToken($parent);
+        if (count($accessToken) < 2) {
+            Log::error('Luigi\'s Box access token is not configured properly');
+            return;
+        }
         if ($parent instanceof Website) {
             $website = $parent;
             $website->webpages()
@@ -121,8 +130,12 @@ trait WithLuigis
                         'objects' => $objects
                     ];
                     $compressed = count($objects) >= 1000;
-                    $this->request($website, '/v1/content', $body, 'post', $compressed);
-                    print "Reindexed count " . count($objects) . " from website: {$website->name}\n";
+                    try {
+                        $this->request($website, '/v1/content', $body, 'post', $compressed);
+                    } catch (Exception $e) {
+                        print "Failed to reindex website {$website->domain}: " . $e->getMessage() . "\n";
+                        return;
+                    }
                 });
         } else {
             $webpage = $parent;
@@ -135,8 +148,11 @@ trait WithLuigis
             $body = [
                 'objects' => $objects
             ];
-            $this->request($parent, '/v1/content', $body, 'post');
-            print "Reindexed webpage: {$webpage->title} ({$webpage->url})\n";
+            try {
+                $this->request($parent, '/v1/content', $body, 'post');
+            } catch (Exception $e) {
+                Log::error("Failed to reindex webpage {$webpage->title}: " . $e->getMessage());
+            }
         }
     }
 
@@ -340,19 +356,20 @@ trait WithLuigis
             }
 
             $object =  [
-                "identity" => $identity,
-                "type" => "item",
-                "fields" => array_filter([
-                    "title" => $webpage->title,
-                    "web_url" => $this->getWebpageUrl($webpage),
-                    "availability" => intval($model->state == ProductStateEnum::ACTIVE),
-                    "stock_qty" => $model->available_quantity ?? 0,
-                    "price" => $model->price ?? 0,
-                    "formatted_price" => $model->currency->symbol . $model->price . '/' . $model->unit,
-                    "image_link" => Arr::get($model->imageSources(200, 200), 'original'),
-                    "product_code" => $model->code,
-                    "introduced_at" => $model?->created_at ? $model->created_at->format('c') : null,
-                    "description" => $model->description,
+                "identity"  => $identity,
+                "type"      => "item",
+                "fields"    => array_filter([
+                    "title"             => $webpage->title,
+                    "web_url"           => $this->getWebpageUrl($webpage),
+                    "availability"      => intval($model->state == ProductStateEnum::ACTIVE),
+                    "stock_qty"         => $model->available_quantity ?? 0,
+                    "price"             => (float) $model->price ?? 0,
+                    "formatted_price"   => $model->currency->symbol . $model->price . '/' . $model->unit,
+                    "image_link"        => Arr::get($model->imageSources(200, 200), 'original'),
+                    "product_code"      => $model->code,
+                    "product_id"        => $model->id,
+                    "introduced_at"     => $model?->created_at ? $model->created_at->format('c') : null,
+                    "description"       => $model->description,
                 ]),
                 ...($family || $department || $subDepartment || $brandObject || $tagsObject ? [
                     "nested" => array_values(array_filter([
@@ -361,36 +378,36 @@ trait WithLuigis
                         (
                             $family && $family?->webpage ?
                             [
-                                "type" => "category",
-                                "identity" => $this->getWebpageUrl($family?->webpage),
-                                "fields" => array_filter([
-                                    "title" => $family?->webpage?->title,
-                                    "web_url" => $this->getWebpageUrl($family?->webpage),
-                                    "description" => $family?->webpage?->description,
-                                    "image_link" => Arr::get($family?->imageSources(200, 200), 'original'),
+                                "type"          => "category",
+                                "identity"      => $this->getWebpageUrl($family?->webpage),
+                                "fields"        => array_filter([
+                                    "title"         => $family?->webpage?->title,
+                                    "web_url"       => $this->getWebpageUrl($family?->webpage),
+                                    "description"   => $family?->webpage?->description,
+                                    "image_link"    => Arr::get($family?->imageSources(200, 200), 'original'),
                                 ])
                             ] : []
                         ),
                         ($subDepartment && $subDepartment?->webpage ?
                             [
-                                "type" => "sub_department",
-                                "identity" => $this->getWebpageUrl($subDepartment?->webpage),
-                                "fields" => array_filter([
-                                    "title" => $subDepartment?->webpage?->title,
-                                    "web_url" => $this->getWebpageUrl($subDepartment?->webpage),
-                                    "description" => $subDepartment?->webpage?->description,
-                                    "image_link" => Arr::get($subDepartment?->imageSources(200, 200), 'original'),
+                                "type"          => "sub_department",
+                                "identity"      => $this->getWebpageUrl($subDepartment?->webpage),
+                                "fields"        => array_filter([
+                                    "title"         => $subDepartment?->webpage?->title,
+                                    "web_url"       => $this->getWebpageUrl($subDepartment?->webpage),
+                                    "description"   => $subDepartment?->webpage?->description,
+                                    "image_link"    => Arr::get($subDepartment?->imageSources(200, 200), 'original'),
                                 ]),
                             ] : []),
                         ($department && $department?->webpage ?
                             [
-                                "type" => "department",
-                                "identity" => $this->getWebpageUrl($department?->webpage),
-                                "fields" => array_filter([
-                                    "title" => $department?->webpage?->title,
-                                    "web_url" => $this->getWebpageUrl($department?->webpage),
-                                    "description" => $department?->webpage?->description,
-                                    "image_link" => Arr::get($department?->imageSources(200, 200), 'original'),
+                                "type"          => "department",
+                                "identity"      => $this->getWebpageUrl($department?->webpage),
+                                "fields"        => array_filter([
+                                    "title"         => $department?->webpage?->title,
+                                    "web_url"       => $this->getWebpageUrl($department?->webpage),
+                                    "description"   => $department?->webpage?->description,
+                                    "image_link"    => Arr::get($department?->imageSources(200, 200), 'original'),
                                 ]),
                             ]
                             : []),

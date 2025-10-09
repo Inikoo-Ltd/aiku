@@ -87,7 +87,7 @@ class AuthShopifyUser extends AuthController
         $target = $request->query('target');
         $query = parse_url($target, PHP_URL_QUERY);
 
-        $cleanTarget = $target;
+
         if ($query) {
             // remove "token" from the target's query string
             $params = Util::parseQueryString($query);

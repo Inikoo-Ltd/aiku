@@ -19,8 +19,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property string $slug
@@ -36,6 +34,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property array<array-key, mixed> $sources
  * @property array<array-key, mixed> $source_data
  * @property array<array-key, mixed> $source_extra_ingredients
+ * @property string|null $may_contain
+ * @property string|null $ration
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Goods\TradeUnit> $tradeUnits

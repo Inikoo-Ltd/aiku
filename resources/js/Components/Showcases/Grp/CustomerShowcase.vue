@@ -5,29 +5,45 @@
   -->
 
 <script setup lang="ts">
-import { useFormatTime } from "@/Composables/useFormatTime"
-import { routeType } from "@/types/route"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faLink } from "@far"
-import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faPencil, faArrowAltFromTop, faArrowAltFromBottom } from "@fal"
-import { library } from "@fortawesome/fontawesome-svg-core"
-import { trans } from "laravel-vue-i18n"
-import { inject, ref } from "vue"
+import {useFormatTime} from "@/Composables/useFormatTime"
+import {routeType} from "@/types/route"
+import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
+import {faLink} from "@far"
+import {
+    faSync,
+    faCalendarAlt,
+    faEnvelope,
+    faPhone,
+    faMapMarkerAlt,
+    faMale,
+    faPencil,
+    faArrowAltFromTop,
+    faArrowAltFromBottom,
+    faReceipt
+} from "@fal"
+import {library} from "@fortawesome/fontawesome-svg-core"
+import {trans} from "laravel-vue-i18n"
+import {inject, ref, computed} from "vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import CustomerAddressManagementModal from "@/Components/Utils/CustomerAddressManagementModal.vue"
-import { Address, AddressManagement } from "@/types/PureComponent/Address"
+import {Address, AddressManagement} from "@/types/PureComponent/Address"
 import Tag from "@/Components/Tag.vue"
-import { faCheck, faTimes } from "@fas"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import ButtonPrimeVue from "primevue/button"
-import { Link } from "@inertiajs/vue3"
+import ToggleSwitch from "primevue/toggleswitch"
+import {Link, router} from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import CountUp from "vue-countup-v3"
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import CustomerDSBalanceIncrease from "@/Components/Dropshipping/CustomerDSBalanceIncrease.vue"
 import CustomerDSBalanceDecrease from "@/Components/Dropshipping/CustomerDSBalanceDecrease.vue"
+import { faExclamationCircle, faCheckCircle, faCheck, faTimes } from '@fas'
+import { faSpinnerThird } from '@fad'
+import { Tooltip } from 'floating-vue'
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import EmailSubscribetion from "@/Components/EmailSubscribetion.vue"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt)
 
 interface Customer {
     slug: string
@@ -48,6 +64,27 @@ interface Customer {
     number_current_customer_clients: number | null
     address: Address
     is_dropshipping: boolean
+    email_subscriptions?: {
+        update_route: {
+            method: string
+            name: string
+            parameters: number[]
+        }
+        suspended: {
+            label: string
+            is_suspended: boolean
+            suspended_at: string | null
+            suspended_cause: string | null
+        }
+        subscriptions: {
+            [key: string]: {
+                label: string
+                field: string
+                is_subscribed: boolean
+                unsubscribed_at: string | null
+            }
+        }
+    }
 }
 
 const props = defineProps<{
@@ -65,7 +102,8 @@ const props = defineProps<{
         editWebUser: routeType
         balance: {
             route_store: routeType
-            route_update: routeType
+            route_increase: routeType
+            route_decrease: routeType
             increaase_reasons_options: {}[]
             decrease_reasons_options: {}[]
         }
@@ -74,12 +112,18 @@ const props = defineProps<{
             symbol: string
         }
         type_options: {}
+        tax_number: {}
     },
     tab: string
     handleTabUpdate?: Function
 }>()
 
+console.log(props);
+
 const locale = inject('locale', aikuLocaleStructure)
+const layout = inject('layout')
+
+// console.log(layout);
 
 const isModalAddress = ref(false)
 const isModalUploadOpen = ref(false)
@@ -107,6 +151,52 @@ const links = ref([
 // Section: Balance increase and decrease
 const isModalBalanceDecrease = ref(false)
 const isModalBalanceIncrease = ref(false)
+
+
+
+// Tax number validation helper functions
+const formatDate = (dateString: string | null) => {
+    if (!dateString) return null
+
+    try {
+        return useFormatTime(dateString, {
+            formatTime: 'dd MMM yyyy',
+        })
+    } catch (error) {
+        console.error('Error formatting date:', error)
+        return dateString
+    }
+}
+
+const getStatusIcon = (status: string, valid: boolean) => {
+    if (status === 'invalid' || !valid) {
+        return 'fa-exclamation-circle'
+    }
+    if (status === 'valid' || valid) {
+        return 'fa-check-circle'
+    }
+    return 'fa-spinner-third'
+}
+
+const getStatusColor = (status: string, valid: boolean) => {
+    if (status === 'invalid' || !valid) {
+        return 'text-red-600'
+    }
+    if (status === 'valid' || valid) {
+        return 'text-green-600'
+    }
+    return 'text-yellow-600'
+}
+
+const getStatusText = (status: string, valid: boolean) => {
+    if (status === 'invalid' || !valid) {
+        return trans('Invalid')
+    }
+    if (status === 'valid' || valid) {
+        return trans('Valid')
+    }
+    return trans('Pending')
+}
 </script>
 
 <template>
@@ -154,7 +244,7 @@ const isModalBalanceIncrease = ref(false)
 
                         <div class="flex-none self-end px-6">
                             <dt class="sr-only">state</dt>
-                            <dd class="capitalize">
+                            <dd class="">
                                 <Tag :label="data?.customer?.state" :theme="data?.customer?.state === 'active'
                                     ? 3
                                     : data?.customer?.state === 'lost'
@@ -243,8 +333,75 @@ const isModalBalanceIncrease = ref(false)
                                 </div>
                             </dd>
                         </div>
+
+
                     </div>
+
+
                 </dl>
+            </div>
+            <!-- Field: Tax Number -->
+            <div v-if="data?.customer.tax_number && data.customer.tax_number.number"
+                class="flex items-start w-full flex-none gap-x-4 px-6 mt-6">
+                <dt v-tooltip="trans('Tax Number')" class="flex-none pt-1">
+                    <span class="sr-only">Tax Number</span>
+                    <FontAwesomeIcon icon="fal fa-receipt" class="text-gray-400" fixed-width aria-hidden="true" />
+                </dt>
+                <dd class="w-full text-gray-500">
+                    <div class="space-y-2">
+                        <!-- Tax Number Display -->
+                        <div class="text-gray-900 font-medium">{{ data.customer.tax_number.number }}</div>
+
+                        <!-- Validation Status Display -->
+                        <div class="p-3 bg-gray-50 rounded-lg border">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-center space-x-2">
+                                    <FontAwesomeIcon
+                                        :icon="getStatusIcon(data.customer.tax_number.status, data.customer.tax_number.valid)"
+                                        :class="getStatusColor(data.customer.tax_number.status, data.customer.tax_number.valid)"
+                                        class="text-sm" />
+
+
+                                    <div class="space-y-2">
+                                        <p class="text-sm text-gray-900">
+                                            <span class="font-medium ">
+                                                {{ getStatusText(data.customer.tax_number.status,
+                                                data.customer.tax_number.valid) }}
+                                            </span>
+                                            <!-- Country -->
+                                            <Tooltip v-if="data.customer.tax_number.country" class="inline ml-1">
+                                                <div class="inline hover:underline cursor-default">({{
+                                                    data.customer.tax_number.country.data.name }})</div>
+
+                                                <template #popper>
+                                                    <div class="p-1 max-w-xs">
+                                                        <div class="space-y-2">
+                                                            <div class="text-sm space-y-1">
+                                                                <p><span class="font-medium">{{ trans('Country')
+                                                                        }}:</span> {{
+                                                                    data.customer.tax_number.country.data.name }}</p>
+                                                                <p><span class="font-medium">{{ trans('Country Code')
+                                                                        }}:</span> {{
+                                                                    data.customer.tax_number.country.data.code }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </template>
+                                            </Tooltip>
+
+                                            <!-- Last checked date -->
+                                            <span v-if="data.customer.tax_number.checked_at"
+                                                v-tooltip="trans('Last checked :date', { date: formatDate(data.customer.tax_number.checked_at) })"
+                                                class="ml-1 cursor-default hover:underline">
+                                                {{ formatDate(data.customer.tax_number.checked_at) }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </dd>
             </div>
         </div>
 
@@ -254,44 +411,38 @@ const isModalBalanceIncrease = ref(false)
                 class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
                 <div class="w-full flex justify-between items-center">
                     <div>
-                        <div class="text-base capitalize">
-                            {{ trans("balance") }}
+                        <div class="text-base">
+                            {{ trans("Balance") }}
                         </div>
-                        
-                        <!-- <div class="text-gray-700/60 text-sm leading-4 font-normal">
-                            {{ data.customer.balance }} credit transactions
-                        </div> -->
                     </div>
                     <div class="flex flex-col items-end">
                         <div class="text-2xl font-bold">
-                            <CountUp :endVal="data.customer.balance" :duration="1.5" :scrollSpyOnce="true" :options="{
+                            <CountUp :endVal="data.customer.balance" :decimalPlaces="2" :duration="1.5"
+                                :scrollSpyOnce="true" :options="{
                                 formattingFn: (value) =>
                                     locale.currencyFormat(data.currency?.code, value),
                             }" />
                         </div>
                         <div class="flex items-center">
-                            <div @click="() => isModalBalanceIncrease = true" v-tooltip="trans('Increase customer balance')" class="cursor-pointer text-gray-400 hover:text-indigo-600">
-                                <FontAwesomeIcon
-                                    :icon="faArrowAltFromBottom"
-                                    class="text-base"
-                                    tooltip="Decrease Balance"
-                                    fixed-width
-                                    aria-hidden="true" />
+                            <div @click="() => isModalBalanceIncrease = true"
+                                v-tooltip="trans('Increase customer balance')"
+                                class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                                <FontAwesomeIcon :icon="faArrowAltFromBottom" class="text-base"
+                                    tooltip="Decrease Balance" fixed-width aria-hidden="true" />
                             </div>
                             <span class="mx-2 text-gray-400">|</span>
-                            <div @click="() => isModalBalanceDecrease = true" v-tooltip="trans('Decrease customer balance')" class="cursor-pointer text-gray-400 hover:text-indigo-600">
-                                <FontAwesomeIcon
-                                    :icon="faArrowAltFromTop"
-                                    class="text-base"
-                                    tooltip="Decrease Balance"
-                                    fixed-width
-                                    aria-hidden="true" />
+                            <div @click="() => isModalBalanceDecrease = true"
+                                v-tooltip="trans('Decrease customer balance')"
+                                class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                                <FontAwesomeIcon :icon="faArrowAltFromTop" class="text-base" tooltip="Decrease Balance"
+                                    fixed-width aria-hidden="true" />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')" class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
+                <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"
+                    class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
                     {{ trans("See all transactions list") }}
                 </div>
             </div>
@@ -302,6 +453,12 @@ const isModalBalanceIncrease = ref(false)
                         type="secondary" />
                 </div>
             </div>
+
+            <!-- Email Subscriptions Section -->
+            <EmailSubscribetion 
+                v-if="data?.customer?.email_subscriptions"
+                :emailSubscriptions="data.customer.email_subscriptions"
+            />
         </div>
     </div>
 
@@ -312,25 +469,44 @@ const isModalBalanceIncrease = ref(false)
 
     <!-- Modal: Increase balance -->
     <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
-        <CustomerDSBalanceIncrease
-            v-model="isModalBalanceIncrease"
-            :routeSubmit="data.balance.route_store"
-            :options="data.balance.increaase_reasons_options"
-            :currency="data.currency"
-            :types="data.balance.type_options"
-        />
+        <CustomerDSBalanceIncrease v-model="isModalBalanceIncrease" :routeSubmit="data.balance.route_increase"
+            :options="data.balance.increaase_reasons_options" :currency="data.currency"
+            :types="data.balance.type_options" />
     </Modal>
-    
+
     <!-- Modal: Decrease balance -->
     <Modal :isOpen="isModalBalanceDecrease" @onClose="() => (isModalBalanceDecrease = false)" width="max-w-2xl w-full">
-        <CustomerDSBalanceDecrease
-            v-model="isModalBalanceDecrease"
-            :routeSubmit="data.balance.route_store"
-            :options="data.balance.decrease_reasons_options"
-            :currency="data.currency"
-            :types="data.balance.type_options"
-        />
+        <CustomerDSBalanceDecrease v-model="isModalBalanceDecrease" :routeSubmit="data.balance.route_decrease"
+            :options="data.balance.decrease_reasons_options" :currency="data.currency"
+            :types="data.balance.type_options" />
     </Modal>
 
     <ModalRejected v-model="isModalUploadOpen" :customerID="customerID" :customerName="customerName" />
 </template>
+
+<style scoped>
+/* Toggle Switch Active (Green) */
+.toggle-switch-active :deep(.p-toggleswitch-slider) {
+    background-color: #10b981 !important; /* green-500 */
+}
+
+.toggle-switch-active :deep(.p-toggleswitch-slider:hover) {
+    background-color: #059669 !important; /* green-600 */
+}
+
+/* Toggle Switch Inactive (Red) */
+.toggle-switch-inactive :deep(.p-toggleswitch-slider) {
+    background-color: #ef4444 !important; /* red-500 */
+}
+
+.toggle-switch-inactive :deep(.p-toggleswitch-slider:hover) {
+    background-color: #dc2626 !important; /* red-600 */
+}
+
+/* Handle (circle) styling */
+.toggle-switch-active :deep(.p-toggleswitch-handle),
+.toggle-switch-inactive :deep(.p-toggleswitch-handle) {
+    background-color: white !important;
+    border: 2px solid white !important;
+}
+</style>

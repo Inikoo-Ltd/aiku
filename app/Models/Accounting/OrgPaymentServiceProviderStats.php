@@ -2,7 +2,7 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Tue, 09 Apr 2024 20:35:54 Central Indonesia Time, Bali Office , Indonesia
+ * Created: Tue, 09 Apr 2024 20:35:54 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
@@ -29,7 +29,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_payment_accounts_type_hokodo
  * @property int $number_payment_accounts_type_pastpay
  * @property int $number_payment_accounts_type_cash_on_delivery
- * @property int $number_payment_accounts_type_xendit
  * @property int $number_payments
  * @property int $number_payments_type_payment
  * @property int $number_payments_type_refund

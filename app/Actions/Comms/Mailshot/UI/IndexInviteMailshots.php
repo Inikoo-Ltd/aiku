@@ -134,7 +134,7 @@ class IndexInviteMailshots extends OrgAction
             [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('mailshot'),
+                'label' => __('Mailshot'),
                 'route' => [
                     'name'       => 'grp.org.shops.show.marketing.mailshots.create',
                     'parameters' => array_values($request->route()->originalParameters())
@@ -142,10 +142,10 @@ class IndexInviteMailshots extends OrgAction
             ]
         ];
 
-        $title = __('mailshots');
+        $title = __('Mailshots');
         if ($this->parent instanceof Group) {
             $actions = [];
-            $title   = __('invite mailshots');
+            $title   = __('Invite mailshots');
         }
 
         return Inertia::render(

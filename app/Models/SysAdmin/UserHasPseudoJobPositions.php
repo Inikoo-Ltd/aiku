@@ -11,8 +11,6 @@ namespace App\Models\SysAdmin;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserHasPseudoJobPositions newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserHasPseudoJobPositions newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserHasPseudoJobPositions query()

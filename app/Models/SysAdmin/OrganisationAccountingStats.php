@@ -39,7 +39,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_payment_accounts_type_hokodo
  * @property int $number_payment_accounts_type_pastpay
  * @property int $number_payment_accounts_type_cash_on_delivery
- * @property int $number_payment_accounts_type_xendit
  * @property int $number_payments
  * @property int $number_payments_type_payment
  * @property int $number_payments_type_refund
@@ -83,6 +82,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_top_ups_status_fail
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_invoice_categories
+ * @property int $number_current_invoice_categories
+ * @property int $number_invoice_categories_state_in_process
+ * @property int $number_invoice_categories_state_active
+ * @property int $number_invoice_categories_state_closed
+ * @property int $number_invoice_categories_state_cooldown
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationAccountingStats newModelQuery()
  * @method static Builder<static>|OrganisationAccountingStats newQuery()

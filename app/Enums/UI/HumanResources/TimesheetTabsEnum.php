@@ -25,17 +25,17 @@ enum TimesheetTabsEnum: string
     {
         return match ($this) {
             TimesheetTabsEnum::TIME_TRACKERS => [
-                'title' => __('working periods'),
+                'title' => __('Working periods'),
                 'icon'  => 'fal fa-arrows-h',
             ],
             TimesheetTabsEnum::CLOCKINGS => [
-                'title' => __('clockings'),
+                'title' => __('Clockings'),
                 'icon'  => 'fal fa-vote-yea',
 
             ],
 
             TimesheetTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

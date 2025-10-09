@@ -146,10 +146,9 @@
             <div>
                 {{ __($context . ' Date') }}: <b>{{ $invoice->created_at->format('j F Y') }}</b>
             </div>
-
             @if($invoice->tax_liability_at)
                 <div style="text-align: right">
-                    {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
+                    {{ __('Tax liability dates') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
                 </div>
             @endif
 
@@ -161,36 +160,38 @@
         <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;">
             <div>
                 <div>
-                    {{ __('Payment State') }}: <b>{{ $invoice->order?->payment }}</b>
+                    {{ __('Payment State') }}: <b>{{ $invoice->pay_status->labels()[$invoice->pay_status->value] }}</b>
                 </div>
                 <div>
                     {{ __('Customer') }}: <b>{{ $invoice->customer['name'] }}</b>
                     ({{ $invoice->customer['reference'] }})
                 </div>
-                <div class=" {if !$customer->get('Customer Main Plain Mobile')}hide{/if}">
-                    <span class="address_label">{{ __('Mobile') }}:</span> <span
-                        class="address_value">{{ $invoice->customer['phone'] }}</span>
+
+                <div>
+                    <span class="address_label">{{ __('Email') }}:</span> <span
+                        class="address_value">{{ $invoice->customer['email'] }}</span>
                 </div>
 
-                <div class=" {if !$customer->get('Customer Main Plain Telephone')}hide{/if}">
+                <div>
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                         class="address_value">{{ $invoice->customer['phone'] }}</span>
                 </div>
+                @if($invoice->tax_number  && $invoice->tax_number_valid)
+                    <div>
+                        <span class="address_label">{{ __('Tax Number') }}:</span> <span
+                            class="address_value">{{ $invoice->tax_number }}</span>
+                    </div>
+                @endif
+                @if($invoice->identity_document_number)
+                    {{__('Registration Number')}}: {{$shop->identity_document_number}}
+                @endif
             </div>
         </td>
-        <!--        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
-
-                    <div style="text-align:right;">
-                        <b>1 box</b>
-                    </div>
-                    <div style="text-align: right">Weight: <b>2Kg</b></div>
-
-                    <div style="text-align: right">
-                        Courier: <b> <span
-                                id="formatted_consignment">XIWSKU</span></b>
-                    </div>
-
-                </td>-->
+        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
+            @if($deliveryNote?->estimated_weight)
+                <div style="text-align: right">Weight: <b>{{ $deliveryNote?->estimated_weight }} g</b></div>
+            @endif
+        </td>
     </tr>
 </table>
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
@@ -219,27 +220,27 @@
             </td>
             <td width="10%">&nbsp;</td>
         @endif
-        @if($invoice->deliveryAddress)
+        @if($deliveryAddress)
             <td width="45%" style="border: 0.1mm solid #888888;">
                 <span
                     style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
                 <div>
-                    {{ $invoice->deliveryAddress->address_line_1 }}
+                    {{ $deliveryAddress->address_line_1 }}
                 </div>
                 <div>
-                    {{ $invoice->deliveryAddress->address_line_2 }}
+                    {{ $deliveryAddress->address_line_2 }}
                 </div>
                 <div>
-                    {{ $invoice->deliveryAddress->administrative_area }}
+                    {{ $deliveryAddress->administrative_area }}
                 </div>
                 <div>
-                    {{ $invoice->deliveryAddress->locality }}
+                    {{ $deliveryAddress->locality }}
                 </div>
                 <div>
-                    {{ $invoice->deliveryAddress->postal_code }}
+                    {{ $deliveryAddress->postal_code }}
                 </div>
                 <div>
-                    {{ $invoice->deliveryAddress->country->name }}
+                    {{ $deliveryAddress->country->name }}
                 </div>
             </td>
         @else
@@ -284,12 +285,14 @@
             </td>
 
             <td style="text-align:left">
-                @if($transaction->historicAsset)
+                @if($transaction->quantity==0 || $transaction->quantity==null)
                     {{ $invoice->currency->symbol . ' ' . optional($transaction->historicAsset)->price }}
+                @elseif($transaction->historicAsset)
+                    {{ $invoice->currency->symbol . ' ' . $transaction->net_amount / $transaction->quantity }}
                 @endif
             </td>
 
-            <td style="text-align:right">{{ (int) $transaction->quantity }}</td>
+            <td style="text-align:right">{{  (int) $transaction->quantity }}</td>
 
             <td style="text-align:right">{{ $invoice->currency->symbol . $transaction->net_amount }}</td>
         </tr>
@@ -299,8 +302,8 @@
     <tbody class="totals">
     <tr>
         <td style="border:none" colspan="4"></td>
-        <td>{{ __('Items Net') }}</td>
-        <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
+        <td>{{ __('Charges') }}</td>
+        <td>{{ $invoice->currency->symbol . $invoice->charges_amount }}</td>
     </tr>
 
     <tr>
@@ -312,12 +315,18 @@
     <tr class="total_net">
         <td style="border:none" colspan="4"></td>
         <td>{{__('Total Net')}}</td>
-        <td>{{ $invoice->currency->symbol . number_format($invoice->net_amount + $invoice->shipping_amount, 2, '.', '') }}</td>
+        <td>{{ $invoice->currency->symbol . $invoice->net_amount }}</td>
     </tr>
 
     <tr>
         <td style="border:none" colspan="4"></td>
-        <td class="totals">{{ __('TAX') }} <br> <small></small></td>
+        <td class="totals">
+            {{ __('Tax') }}
+
+            <br><small>{{$invoice->taxCategory->name}}
+             ({{__('rate')}}:{{percentage($invoice->taxCategory->rate,1)}})
+            </small>
+        </td>
         <td class="totals">{{ $invoice->currency->symbol . $invoice->tax_amount }}</td>
     </tr>
 
@@ -330,6 +339,39 @@
 
 </table>
 
+<br>
+@if (!empty($refunds))
+    <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
+        <tr class="title">
+            <td colspan="6">{{ __('Refunds') }}</td>
+        </tr>
+
+        <tr class="title">
+            <td style="width:14%;text-align:left">{{ __('Code') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
+            <td style="text-align:left;width:20%">{{ __('Price') }}</td>
+            <td style="text-align:left">{{ __('Qty') }}</td>
+            <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
+        </tr>
+
+        <tbody>
+        @foreach($refunds as $refund)
+            <tr class="@if($loop->last) last @endif">
+                <td style="text-align:left">
+                    {{ $refund['code'] }}
+                </td>
+                <td style="text-align:left" colspan="2">
+                    {{ $refund['description'] }}
+                </td>
+                <td style="text-align:left">{{  $invoice->currency->symbol . $refund['price'] }}</td>
+                <td style="text-align:right">{{ $refund['quantity'] }}</td>
+                <td style="text-align:right">{{ $invoice->currency->symbol . $refund['total'] }}</td>
+            </tr>
+        @endforeach
+        </tbody>
+
+    </table>
+@endif
 <br>
 
 @if($invoice->payments->count() >0)
@@ -382,11 +424,11 @@
             <td width="33%" style="color:#000;text-align: left;">
                 <small>
                     {{$shop->name}}<br>
-                    @if(Arr::exists($shop->data,'vat_number'))
-                        {{__('VAT Number')}}:<b>{{Arr::get($shop->data,'vat_number')}}</b><br>
+                    @if($shop->taxNumber)
+                        {{__('VAT Number')}}:<b>{{$shop->taxNumber?->getFormattedTaxNumber()}}</b><br>
                     @endif
-                    @if(Arr::exists($shop->data,'registration_number'))
-                        {{__('Registration Number')}}: {{Arr::get($shop->data,'registration_number')}}
+                    @if($shop->identity_document_number)
+                        {{__('Registration Number')}}: {{$shop->identity_document_number}}
                     @endif
                 </small>
             </td>

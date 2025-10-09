@@ -62,7 +62,24 @@ class IndexDeliveryNotes extends OrgAction
             $model     = __('Goods Out');
         }
 
+        $todo = $this->bucket == 'unassigned' || $this->bucket == 'queued';
 
+        $pickingSessionRoute = [
+                    'name' => 'grp.models.warehouse.picking_session.store',
+                    'parameters' => [
+                        'warehouse' => $this->warehouse->id
+                    ]
+        ];
+
+        if ($this->bucket == 'queued') {
+            $pickingSessionRoute = [
+                    'name' => 'grp.models.warehouse.queued_picking_session.store',
+                    'parameters' => [
+                        'warehouse' => $this->warehouse->id
+                    ]
+            ];
+
+        }
         return Inertia::render(
             'Org/Dispatching/DeliveryNotes',
             [
@@ -81,8 +98,10 @@ class IndexDeliveryNotes extends OrgAction
                     'actions'       => $actions
                 ],
                 'data'        => DeliveryNotesResource::collection($deliveryNotes),
+                "todo"        => $todo,
+                'picking_session_route' => $pickingSessionRoute
             ]
-        )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket));
+        )->table($this->tableStructure(parent: $this->parent, bucket: $this->bucket, shopType: $this->shopType));
     }
 
     public function asController(Organisation $organisation, Warehouse $warehouse, ActionRequest $request): LengthAwarePaginator

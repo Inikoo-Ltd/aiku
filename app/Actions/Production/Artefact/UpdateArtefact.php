@@ -8,7 +8,6 @@
 
 namespace App\Actions\Production\Artefact;
 
-use App\Actions\Inventory\OrgStock\Search\OrgStockRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Production\ArtefactResource;
@@ -29,10 +28,8 @@ class UpdateArtefact extends OrgAction
 
     public function handle(Artefact $artefact, array $modelData): Artefact
     {
-        $stock = $this->update($artefact, $modelData, ['data', 'settings']);
-        OrgStockRecordSearch::dispatch($stock);
+        return  $this->update($artefact, $modelData, ['data', 'settings']);
 
-        return $stock;
     }
 
     public function authorize(ActionRequest $request): bool

@@ -22,8 +22,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -53,7 +51,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Artefact withoutTrashed()
  * @mixin \Eloquent
  */

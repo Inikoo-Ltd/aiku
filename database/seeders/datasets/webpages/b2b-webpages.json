@@ -3,49 +3,49 @@
     "code": "about_us",
     "url": "about_us",
     "title": "About us",
-    "type": "info",
+    "type": "content",
     "sub_type": "about-us",
     "children": [
       {
         "code": "contact",
         "url": "contact",
         "title": "Contact",
-        "type": "info",
+        "type": "content",
         "sub_type": "contact"
       },
       {
         "code": "returns",
         "url": "returns",
         "title": "Returns",
-        "type": "info",
+        "type": "content",
         "sub_type": "returns"
       },
       {
         "code": "shipping",
         "url": "shipping",
         "title": "Shipping",
-        "type": "info",
+        "type": "content",
         "sub_type": "shipping"
       },
       {
         "code": "terms_and_conditions",
         "url": "terms-and-conditions",
         "title": "Terms and Conditions",
-        "type": "info",
+        "type": "content",
         "sub_type": "terms-and-conditions",
         "children": [
           {
             "code": "privacy",
             "title": "Privacy",
             "url": "privacy",
-            "type": "info",
+            "type": "content",
             "sub_type": "privacy"
           },
           {
             "code": "cookie_policy",
             "title": "Cookie Policy",
             "url": "cookie-policy",
-            "type": "info",
+            "type": "content",
             "sub_type": "cookies-policy"
           }
         ]
@@ -56,22 +56,8 @@
     "code": "showroom",
     "url": "showroom",
     "title": "Showroom",
-    "type": "info",
+    "type": "content",
     "sub_type": "showroom"
-  },
-  {
-    "code": "catalogue",
-    "url": "catalogue",
-    "title": "Catalogue",
-    "type": "catalogue",
-    "sub_type": "catalogue"
-  },
-  {
-    "code": "products",
-    "url": "products",
-    "title": "Products",
-    "type": "catalogue",
-    "sub_type": "products"
   }
 
 ]

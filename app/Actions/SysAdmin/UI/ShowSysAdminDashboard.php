@@ -47,9 +47,9 @@ class ShowSysAdminDashboard extends OrgAction
                 'pageHead'    => [
                     'icon'  => [
                         'icon'  => ['fal', 'fa-users-cog'],
-                        'title' => __('system administration')
+                        'title' => __('System administration')
                     ],
-                    'title' => __('system administration'),
+                    'title' => __('System administration'),
                 ],
                 'stats'       => [
                     [

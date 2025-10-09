@@ -34,6 +34,7 @@ class IndexProductImages extends OrgAction
             ->defaultSort('media.id')
             ->select([
                 'media.*',
+                'model_has_media.sub_scope as sub_scope',
             ]);
 
         return $queryBuilder->allowedSorts(['size', 'name'])

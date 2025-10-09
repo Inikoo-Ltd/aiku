@@ -5,20 +5,15 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
-import { FulfilmentCustomer } from "@/types/Customer"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
-import { inject } from "vue"
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
 }>()
 
-const locale = inject('locale', aikuLocaleStructure)
 
 </script>
 

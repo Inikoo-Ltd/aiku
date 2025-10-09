@@ -35,7 +35,7 @@ class PurchaseOrdersResource extends JsonResource
             'parent_name'       => $this->parent_name,
             'parent_slug'       => $this->parent->slug,
             'slug'              => $this->slug,
-            'number_of_items'   => $this->number_current_purchase_order_transactions,
+            'number_current_purchase_order_transactions'   => $this->number_current_purchase_order_transactions,
             'date'              => $this->date,
             'org_currency_code'     => $this->org_currency_code,
             'org_total_cost'    => $this->org_total_cost,

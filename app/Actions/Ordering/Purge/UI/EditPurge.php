@@ -70,7 +70,7 @@ class EditPurge extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit purge'),
+                            'title'  => __('Edit purge'),
                             'fields' => [
                                 'type' => [
                                     'type'  => 'select',

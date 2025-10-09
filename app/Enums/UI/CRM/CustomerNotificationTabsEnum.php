@@ -30,29 +30,29 @@ enum CustomerNotificationTabsEnum: string
     {
         return match ($this) {
             CustomerNotificationTabsEnum::SETTINGS => [
-                'title' => __('setting'),
+                'title' => __('Setting'),
                 'icon'  => 'fal fa-sliders-h',
             ],
             CustomerNotificationTabsEnum::NOTIFICATIONS_TO_BE_SEND_NEXT_SHOT => [
-                'title' => __('notifications to be send next shot'),
+                'title' => __('Notifications to be send next shot'),
                 'icon'  => 'fal fa-user-clock',
             ],
             CustomerNotificationTabsEnum::WORKSHOP => [
-                'title' => __('workshop'),
+                'title' => __('Workshop'),
                 'icon'  => 'fal fa-wrench',
             ],
             CustomerNotificationTabsEnum::MAILSHOTS => [
-                'title' => __('mailshots'),
+                'title' => __('Mailshots'),
                 'icon'  => 'fal fa-container-storage',
                 'type'  => 'icon-only',
             ],
             CustomerNotificationTabsEnum::SENT_EMAILS => [
-                'title' => __('sent emails'),
+                'title' => __('Sent emails'),
                 'icon'  => 'fal fa-paper-plane',
                 'type'  => 'icon-only',
             ],
             CustomerNotificationTabsEnum::CHANGELOG => [
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-road',
                 'type'  => 'icon-only',
             ],

@@ -32,12 +32,14 @@ enum RetinaCustomerClientsTabsEnum: string
     {
         return match ($this) {
             RetinaCustomerClientsTabsEnum::ACTIVE => [
-                'title' => __('active'),
+                'title' => __('Active'),
                 'icon'  => 'fal fa-user-friends',
             ],
             RetinaCustomerClientsTabsEnum::INACTIVE => [
-                'title' => __('inactive'),
-                'icon'  => 'fal fa-users-slash',
+                'title' => __('Inactive'),
+                'icon'  => 'fal fa-skull',
+                'align' => 'right',
+                'class' => 'text-red-500',
             ],
         };
     }

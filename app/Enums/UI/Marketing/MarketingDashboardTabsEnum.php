@@ -22,7 +22,7 @@ enum MarketingDashboardTabsEnum: string
     {
         return match ($this) {
             MarketingDashboardTabsEnum::DASHBOARD => [
-                'title' => __('dashboard'),
+                'title' => __('Dashboard'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

@@ -71,7 +71,7 @@ class IndexWebUsersInGroup extends OrgAction
     {
 
         $icon       = ['fal', 'fa-terminal'];
-        $title      = __('web users');
+        $title      = __('Web users');
         $afterTitle = null;
         $iconRight  = null;
 
@@ -83,7 +83,7 @@ class IndexWebUsersInGroup extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'       => __('web users'),
+                'title'       => __('Web users'),
                 'pageHead'    => [
                     'title'         => $title,
                     'afterTitle'    => $afterTitle,

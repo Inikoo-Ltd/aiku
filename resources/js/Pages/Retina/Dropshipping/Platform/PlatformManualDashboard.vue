@@ -80,15 +80,14 @@ const locale = inject('locale', aikuLocaleStructure)
             <p class="mt-6 text-justify text-gray-600" v-html="headline.description">
             </p>
 
-            <div class="mt-10">
+            <a href="https://drive.google.com/drive/folders/1NdUdvzwTL-bw749wEmAMVuEcnuxO56Za" target="_blank" class="block mt-10 w-fit">
                 <Button
-                    :label="trans('View tutorial') + ` (0)`"
-                    disabled
+                    :label="trans('View tutorials') + ` (6)`"
                     type="tertiary"
-                    v-tooltip="trans('This feature is on progress.')"
+                    av-tooltip="trans('This feature is on progress.')"
                     iconRight="fal fa-external-link"
                 />
-            </div>
+            </a>
         </div>
     </div>
 

@@ -5,6 +5,12 @@ export default {
 			key: ["container", "properties"],
 			replaceForm: [
 				{
+                    key: ["dimension"],
+                    label : "Dimension",
+                    type: "dimension",
+					useIn : ["desktop", "tablet", "mobile"],
+                },
+				{
 					key: ["padding"],
 					label : "Padding",
 					type: "padding",

@@ -11,8 +11,6 @@ namespace App\Models\Web;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WebsiteTimeSeriesRecord query()

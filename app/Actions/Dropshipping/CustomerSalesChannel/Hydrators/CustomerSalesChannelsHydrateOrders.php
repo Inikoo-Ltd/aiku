@@ -26,7 +26,7 @@ class CustomerSalesChannelsHydrateOrders implements ShouldBeUnique
 
     public function getJobUniqueId(CustomerSalesChannel $customerSalesChannel): string
     {
-        return $customerSalesChannel->id;
+        return "{$customerSalesChannel->id}-hydrate-orders";
     }
 
     public function handle(CustomerSalesChannel $customerSalesChannel): void
@@ -89,5 +89,4 @@ class CustomerSalesChannelsHydrateOrders implements ShouldBeUnique
             $customerSalesChannel->update($stats);
         }
     }
-
 }

@@ -33,7 +33,7 @@ class ShowProfilePageHeadTabs extends OrgAction
                         'type'  => 'button',
                         'key'   => 'edit-profile',
                         'style' => 'edit',
-                        'label' => __('edit profile'),
+                        'label' => __('Edit profile'),
                         'route' => [
                             'name'       => 'grp.profile.edit',
                             'parameters' => array_values(request()->route()->originalParameters())

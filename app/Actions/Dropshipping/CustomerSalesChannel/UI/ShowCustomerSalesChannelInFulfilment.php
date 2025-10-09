@@ -56,7 +56,7 @@ class ShowCustomerSalesChannelInFulfilment extends OrgAction
                 ),
                 'pageHead'    => [
                     'icon'          => [
-                        'title' => __('platform'),
+                        'title' => __('Platform'),
                         'icon'  => 'fal fa-user',
                     ],
                     'model'         => __('Platform'),

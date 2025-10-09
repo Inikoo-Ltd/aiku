@@ -14,10 +14,6 @@ trait WithCRMAuthorisation
 {
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction) {
-            return true;
-        }
-
         $routeName = $request->route()->getName();
 
         if (str_starts_with($routeName, 'grp.overview.')) {
@@ -39,14 +35,26 @@ trait WithCRMAuthorisation
             if (str_ends_with($routeName, '.edit') || str_ends_with($routeName, '.create')) {
                 return $this->canEdit;
             }
+
             return $request->user()->authTo(
                 [
                     "crm.{$this->shop->id}.view",
                     "accounting.{$this->shop->organisation_id}.view"
                 ]
             );
-        }
+        } elseif (str_starts_with($routeName, 'grp.org.fulfilments.show.crm.')) {
+            $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->shop->fulfilment->id}.edit");
+            if (str_ends_with($routeName, '.edit') || str_ends_with($routeName, '.create')) {
+                return $this->canEdit;
+            }
 
+            return $request->user()->authTo(
+                [
+                    "fulfilment-shop.{$this->shop->fulfilment->id}.view",
+                    "accounting.{$this->shop->organisation_id}.view"
+                ]
+            );
+        }
 
         return false;
     }

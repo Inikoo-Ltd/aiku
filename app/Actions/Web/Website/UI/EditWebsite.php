@@ -117,28 +117,30 @@ class EditWebsite extends OrgAction
                     'placeholder' => 'GTM-ABC456GH',
                     'required'    => false,
                 ],
-                'luigisbox_private_key' => [
-                    'information' => __('Private key for API Luigi search'),
-                    'type'        => 'purePassword',
-                    'label'       => __('Luigi Search Private Key'),
-                    'value'       => Arr::get($website->settings, "luigisbox.private_key"),
-                    'placeholder' => 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-                    'required'    => false,
-                ],
                 'luigisbox_tracker_id'  => [
-                    'information' => __('For Luigi search in the header'),
                     'type'        => 'input',
                     'label'       => __('Luigi Search Tracker ID'),
+                    'information' => __('To showing the result search. This code will be placed the header. e.g. 123456-123456'),
                     'value'       => Arr::get($website->settings, "luigisbox.tracker_id"),
-                    'placeholder' => '123456-123456',
+                    'placeholder' => '',
                     'required'    => false,
                 ],
-                'luigisbox_script_lbx'  => [
-                    'information' => __('Script for Luigi search in the header'),
+                'luigisbox_private_key' => [
+                    'type'                 => 'purePassword',
+                    'label'                => __('Luigi Search Private Key'),
+                    'information'          => __('Private key for API Luigi search. We need it for indexing the data.'),
+                    'value'                => Arr::get($website->settings, "luigisbox.private_key"),
+                    'placeholder'          => '',
+                    'current_value_length' => strlen(Arr::get($website->settings, "luigisbox.private_key", '')),
+                    'required'             => false,
+                ],
+
+                'luigisbox_lbx_code'    => [
                     'type'        => 'input',
-                    'label'       => __('Script LBX Luigi Search'),
-                    'value'       => Arr::get($website->settings, "luigisbox.script_lbx"),
-                    'placeholder' => '<script async src="https://scripts.luigisbox.com/LBX-xxxxxx.js"></script>',
+                    'label'       => __('Luigi LBX Tracker Script'),
+                    'information' => __('If this not provided, the statistics will not be collected. e.g. LBX-123456'),
+                    'value'       => Arr::get($website->settings, "luigisbox.lbx_code"),
+                    'placeholder' => '',
                     'required'    => false,
                 ],
                 "image"                 => [
@@ -167,39 +169,16 @@ class EditWebsite extends OrgAction
                 'label'  => __('Registrations'),
                 'icon'   => 'fa-light fa-id-card',
                 'fields' => [
+
                     'approval'           => [
+                        'hidden'   => true,
                         'type'     => 'toggle',
                         'label'    => __('Registrations Approval'),
                         'value'    => false,
-                        'required' => true,
                     ],
-                    'registrations_type' => [
-                        'type'     => 'radio',
-                        'mode'     => 'card',
-                        'label'    => __('Registration Type'),
-                        'value'    => [
-                            'title'       => "type B",
-                            'description' => 'This user able to create and delete',
-                            'label'       => '17 users left',
-                            'value'       => "typeB",
-                        ],
-                        'required' => true,
-                        'options'  => [
-                            [
-                                'title'       => "type A",
-                                'description' => 'This user able to edit',
-                                'label'       => '425 users left',
-                                'value'       => "typeA",
-                            ],
-                            [
-                                'title'       => "type B",
-                                'description' => 'This user able to create and delete',
-                                'label'       => '17 users left',
-                                'value'       => "typeB",
-                            ],
-                        ]
-                    ],
+
                     'web_registrations'  => [
+                        'hidden'   => true,
                         'type'     => 'webRegistrations',
                         'label'    => __('Web Registration'),
                         'value'    => [

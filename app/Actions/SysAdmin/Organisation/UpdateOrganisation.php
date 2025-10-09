@@ -117,6 +117,7 @@ class UpdateOrganisation extends OrgAction
             'currency_id'             => ['sometimes', 'exists:currencies,id'],
             'email'                   => ['sometimes', 'nullable', 'email'],
             'phone'                   => ['sometimes', 'nullable', new Phone()],
+            'forbidden_dispatch_countries'          => ['sometimes', 'array', 'nullable'],
             'logo'                    => [
                 'sometimes',
                 'nullable',

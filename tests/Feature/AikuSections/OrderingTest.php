@@ -16,6 +16,8 @@ use App\Actions\Accounting\InvoiceTransaction\StoreInvoiceTransaction;
 use App\Actions\Accounting\InvoiceTransaction\UpdateInvoiceTransaction;
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Billables\Charge\StoreCharge;
+use App\Actions\Billables\ShippingZone\StoreShippingZone;
+use App\Actions\Billables\ShippingZoneSchema\StoreShippingZoneSchema;
 use App\Actions\Catalogue\Product\Json\GetOrderProducts;
 use App\Actions\Catalogue\Shop\StoreShop;
 use App\Actions\CRM\Customer\StoreCustomer;
@@ -25,23 +27,19 @@ use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
 use App\Actions\Ordering\Adjustment\StoreAdjustment;
 use App\Actions\Ordering\Adjustment\UpdateAdjustment;
+use App\Actions\Ordering\Order\FinaliseOrder;
 use App\Actions\Ordering\Order\HydrateOrders;
 use App\Actions\Ordering\Order\Search\ReindexOrdersSearch;
 use App\Actions\Ordering\Order\SendOrderToWarehouse;
 use App\Actions\Ordering\Order\StoreOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Ordering\Order\UpdateOrder;
-use App\Actions\Ordering\Order\FinaliseOrder;
 use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
 use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\Ordering\Purge\HydratePurges;
 use App\Actions\Ordering\Purge\StorePurge;
 use App\Actions\Ordering\Purge\UpdatePurge;
 use App\Actions\Ordering\PurgedOrder\UpdatePurgedOrder;
-use App\Actions\Ordering\ShippingZone\StoreShippingZone;
-use App\Actions\Ordering\ShippingZone\UpdateShippingZone;
-use App\Actions\Ordering\ShippingZoneSchema\StoreShippingZoneSchema;
-use App\Actions\Ordering\ShippingZoneSchema\UpdateShippingZoneSchema;
 use App\Actions\Ordering\Transaction\DeleteTransaction;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\Ordering\Transaction\StoreTransactionFromAdjustment;
@@ -60,6 +58,8 @@ use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Billables\Charge;
+use App\Models\Billables\ShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -71,8 +71,6 @@ use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\PurgedOrder;
-use App\Models\Ordering\ShippingZone;
-use App\Models\Ordering\ShippingZoneSchema;
 use App\Models\Ordering\Transaction;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Date;
@@ -110,30 +108,6 @@ beforeEach(function () {
     actingAs($this->user);
 });
 
-
-test('create shipping zone schema', function () {
-    $shippingZoneSchema = StoreShippingZoneSchema::make()->action($this->shop, ShippingZoneSchema::factory()->definition());
-    expect($shippingZoneSchema)->toBeInstanceOf(ShippingZoneSchema::class);
-
-    return $shippingZoneSchema;
-});
-
-test('update shipping zone schema', function ($shippingZoneSchema) {
-    $shippingZoneSchema = UpdateShippingZoneSchema::make()->action($shippingZoneSchema, ShippingZoneSchema::factory()->definition());
-    $this->assertModelExists($shippingZoneSchema);
-})->depends('create shipping zone schema');
-
-test('create shipping zone', function ($shippingZoneSchema) {
-    $shippingZone = StoreShippingZone::make()->action($shippingZoneSchema, ShippingZone::factory()->definition());
-    $this->assertModelExists($shippingZoneSchema);
-
-    return $shippingZone;
-})->depends('create shipping zone schema');
-
-test('update shipping zone', function ($shippingZone) {
-    $shippingZone = UpdateShippingZone::make()->action($shippingZone, ShippingZone::factory()->definition());
-    $this->assertModelExists($shippingZone);
-})->depends('create shipping zone');
 
 
 test('create order', function () {
@@ -421,7 +395,7 @@ test('update order state to Handling', function (Order $order) {
 })->depends('update order state to in warehouse');
 
 test('update order state to Packed ', function (Order $order) {
-    $order = UpdateOrderStateToPacked::make()->action($order);
+    $order = UpdateOrderStateToPacked::make()->action($order, false);
     $order->refresh();
     expect($order)->toBeInstanceOf(Order::class)
         ->and($order->state)->toEqual(OrderStateEnum::PACKED);
@@ -623,12 +597,12 @@ test('UI create asset shipping', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->where('title', 'new schema')
+            ->where('title', 'New schema')
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'new schema')
+                    ->where('title', 'New schema')
                     ->etc()
             )
             ->has('formData');
@@ -681,12 +655,12 @@ test('UI show ordering backlog', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Ordering/OrdersBacklog')
-            ->where('title', 'orders backlog')
+            ->where('title', 'Orders backlog')
             ->has('breadcrumbs', 4)
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'orders backlog')
+                    ->where('title', 'Orders backlog')
                     ->etc()
             );
     });
@@ -698,7 +672,7 @@ test('UI index ordering purges', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Ordering/Purges')
-            ->where('title', 'purges')
+            ->where('title', 'Purges')
             ->has('breadcrumbs', 3)
             ->has('data')
             ->has(
@@ -716,7 +690,7 @@ test('UI create ordering purge', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('CreateModel')
-            ->where('title', 'new purge')
+            ->where('title', 'New purge')
             ->has('breadcrumbs', 4)
             ->has('formData', fn ($page) => $page
                 ->where('route', [
@@ -729,7 +703,7 @@ test('UI create ordering purge', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'new purge')
+                    ->where('title', 'New purge')
                     ->etc()
             );
     });

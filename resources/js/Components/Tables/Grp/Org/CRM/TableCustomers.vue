@@ -5,19 +5,17 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3";
-import Table from "@/Components/Table/Table.vue";
-import { FulfilmentCustomer } from "@/types/Customer";
-import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue";
-import { useFormatTime } from "@/Composables/useFormatTime";
-import { useLocaleStore } from "@/Stores/locale";
+import { Link } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import { FulfilmentCustomer } from "@/types/fulfilment-customer"
+import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
+import { useLocaleStore } from "@/Stores/locale"
+import { RouteParams } from "@/types/route-params"
 
-const props = defineProps<{
+defineProps<{
     data: object,
     tab?: string
-}>();
-
-const locale = useLocaleStore();
+}>()
 
 
 function customerRoute(customer: FulfilmentCustomer) {
@@ -25,45 +23,38 @@ function customerRoute(customer: FulfilmentCustomer) {
         case "shops.show.customers.index":
             return route(
                 "grp.org.shops.show.crm.customers.show",
-                [customer.shop_slug, customer.slug]);
+                [customer.shop_slug, customer.slug])
         case "grp.fulfilment.customers.index":
             return route(
                 "grp.fulfilment.customers.show",
-                [customer.slug]);
+                [customer.slug])
         case "grp.overview.crm.customers.index":
-            return null;
+            return null
         case "grp.org.overview.customers.index":
         case "grp.org.overview.crm.customers.index":
-            return null;
+            return null
         default:
             return route(
                 "grp.org.shops.show.crm.customers.show",
                 [
-                    route().params["organisation"],
-                    route().params["shop"],
+                    (route().params as RouteParams).organisation,
+                    (route().params as RouteParams).shop,
                     customer.slug
-                ]);
+                ])
     }
 }
 
 function shopRoute(customer: FulfilmentCustomer) {
-    switch (route().current()) {
-        case "shops.show.customers.index":
-            return route(
-                "shops.show",
-                [customer.shop_slug]);
-        default:
-            return route(
-                "shops.show",
-                [customer.shop_slug]);
-    }
+    return route(
+        "shops.show",
+        [customer.shop_slug])
 }
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(reference)="{ item: customer }">
-            <Link :href="customerRoute(customer)" class="primaryLink">
+            <Link :href="customerRoute(customer) as string" class="primaryLink">
                 {{ customer["reference"] }}
             </Link>
         </template>
@@ -77,12 +68,10 @@ function shopRoute(customer: FulfilmentCustomer) {
         </template>
 
         <template #cell(invoiced_net_amount)="{ item: customer }">
-            <div class="text-gray-500">{{ useLocaleStore().currencyFormat( customer.currency_code, customer.sales_all)  }}</div>
+            <div class="text-gray-500">{{ useLocaleStore().currencyFormat(customer.currency_code, customer.sales_all) }}</div>
         </template>
         <template #cell(sales_all)="{ item: customer }">
-            <div class="text-gray-500">{{ useLocaleStore().currencyFormat( customer.currency_code, customer.sales_all)  }}</div>
+            <div class="text-gray-500">{{ useLocaleStore().currencyFormat(customer.currency_code, customer.sales_all) }}</div>
         </template>
     </Table>
 </template>
-
-

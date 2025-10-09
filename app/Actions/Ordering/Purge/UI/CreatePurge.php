@@ -29,14 +29,14 @@ class CreatePurge extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new purge'),
+                'title'    => __('New purge'),
                 'pageHead' => [
-                    'title'        => __('new purge'),
+                    'title'        => __('New purge'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.shops.show.ordering.purges.index',
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -56,7 +56,6 @@ class CreatePurge extends OrgAction
                                         'label'    => __('type'),
                                         'required' => true,
                                         'options'  => Options::forEnum(PurgeTypeEnum::class),
-                                        'required' => true,
                                     ],
                                     'scheduled_at' => [
                                         'type'     => 'date',

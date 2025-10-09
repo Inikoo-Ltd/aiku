@@ -45,7 +45,7 @@ enum PalletStatusEnum: string
         ];
 
 
-        if ($parent instanceof Fulfilment or $parent instanceof Warehouse) {
+        if ($parent instanceof Fulfilment || $parent instanceof Warehouse) {
             unset($labels['in_process']);
             unset($labels['not_received']);
             unset($labels['incident']);
@@ -138,7 +138,7 @@ enum PalletStatusEnum: string
     ): array {
         if ($parent instanceof FulfilmentCustomer) {
             $stats = $parent;
-        } elseif ($parent instanceof Organisation or $parent instanceof Group) {
+        } elseif ($parent instanceof Organisation || $parent instanceof Group) {
             $stats = $parent->fulfilmentStats;
         } else {
             $stats = $parent->stats;
@@ -153,7 +153,7 @@ enum PalletStatusEnum: string
             'incident'     => $stats->number_pallets_status_incident,
             'returned'     => $stats->number_pallets_status_returned,
         ];
-        if ($parent instanceof Fulfilment  or $parent instanceof Warehouse) {
+        if ($parent instanceof Fulfilment  || $parent instanceof Warehouse) {
             unset($counts['in_process']);
             unset($counts['not_received']);
             unset($counts['incident']);

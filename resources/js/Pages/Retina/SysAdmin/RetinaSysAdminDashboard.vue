@@ -66,7 +66,7 @@ const props = defineProps<{
 		<!-- Section: Radio -->
 		<div class="space-y-3 relative w-full max-w-[500px]">
 			<div class="flex justify-between items-center mb-2">
-				<h2 class="text-xl font-semibold">Your users</h2>
+				<h2 class="text-xl font-semibold">{{ trans("Your users") }}</h2>
 			</div>
 
 			<div

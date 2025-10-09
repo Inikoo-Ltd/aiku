@@ -7,8 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- *
- *
  * @property int $id
  * @property int $task_id
  * @property int $number_users
@@ -24,7 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|TaskStat withoutTrashed()
  * @mixin \Eloquent
  */

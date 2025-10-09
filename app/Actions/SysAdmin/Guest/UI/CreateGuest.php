@@ -24,14 +24,14 @@ class CreateGuest extends InertiaAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('new guest'),
+                'title'       => __('New guest'),
                 'pageHead'    => [
-                    'title'   => __('new guest'),
+                    'title'   => __('New guest'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.sysadmin.guests.index',
                                 'parameters' => []
@@ -45,12 +45,12 @@ class CreateGuest extends InertiaAction
                             'title' => __('Credentials'),
 
                             'fields' => [
-                                'username' => [
+                                'user.username' => [
                                     'type'     => 'input',
                                     'label'    => __('username'),
                                     'required' => true
                                 ],
-                                'password' => [
+                                'user.password' => [
                                     'type'     => 'password',
                                     'label'    => __('password'),
                                     'required' => true

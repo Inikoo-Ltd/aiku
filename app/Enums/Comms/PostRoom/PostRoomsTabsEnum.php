@@ -25,19 +25,19 @@ enum PostRoomsTabsEnum: string
     {
         return match ($this) {
             PostRoomsTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             PostRoomsTabsEnum::OUTBOXES => [
-                'title' => __('outboxes'),
+                'title' => __('Outboxes'),
                 'icon'  => 'fal fa-inbox-out',
             ],
             PostRoomsTabsEnum::MAILSHOTS => [
-                'title' => __('mailshots'),
+                'title' => __('Mailshots'),
                 'icon'  => 'fal fa-folder',
             ],
             PostRoomsTabsEnum::DISPATCHED_EMAILS => [
-                'title' => __('dispatched emails'),
+                'title' => __('Dispatched emails'),
                 'icon'  => 'fal fa-envelope',
             ],
 

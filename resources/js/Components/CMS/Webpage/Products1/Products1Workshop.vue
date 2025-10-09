@@ -8,6 +8,12 @@ import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import { getStyles } from "@/Composables/styles";
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faFileDownload } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { trans } from "laravel-vue-i18n"
+library.add(faFileDownload)
+
 const props = defineProps<{
   modelValue: any
   screenType: "mobile" | "tablet" | "desktop";
@@ -65,12 +71,23 @@ const responsiveGridClass = computed(() => {
         </aside>
       </transition>
 
-      <main class="flex-1">
-        <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+      <main class="flex-1 mt-4">
+        <!-- <div class="px-4 xpt-4 mb-2 text-base font-normal">
+            <div
+                v-tooltip="trans('This is not work in workshop, try in website.')"
+                xhref="route().has('iris.catalogue.feeds.product_category.download') ? route('iris.catalogue.feeds.product_category.download', { productCategory: props.modelValue.model_slug }) : '#'"
+                xtarget="_blank"
+                class="group hover:underline w-fit">
+                <FontAwesomeIcon icon="fas fa-file-download" class="text-sm opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                <span class="text-sm font-normal opacity-70 group-hover:opacity-100">Download products (csv)</span>
+            </div>
+        </div> -->
+
+        <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
           <div class="flex items-center w-full md:w-1/3 gap-2">
             <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
               aria-label="Open Filters" />
-            <div v-else class="py-4">
+            <div v-else class="">
               <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto" aria-label="Open Filters" />
             </div>
 

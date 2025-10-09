@@ -8,9 +8,10 @@
 
 namespace App\Actions\Catalogue\Product;
 
-use App\Actions\Catalogue\Asset\UpdateAsset;
+use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
+use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
@@ -20,11 +21,9 @@ use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
 use App\Http\Resources\Catalogue\ProductResource;
-use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Product;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
-use Cache;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,38 +33,117 @@ class UpdateProduct extends OrgAction
     use WithActionUpdate;
     use WithProductHydrators;
     use WithNoStrictRules;
+    use WithProductOrgStocks;
 
     private Product $product;
 
     public function handle(Product $product, array $modelData): Product
     {
+        $oldHistoricProduct = $product->current_historic_asset_id;
+
         if (Arr::has($modelData, 'family_id')) {
             UpdateProductFamily::make()->action($product, [
                 'family_id' => Arr::pull($modelData, 'family_id'),
             ]);
         }
 
+        $orgStocks = null;
 
         if (Arr::has($modelData, 'org_stocks')) {
             $orgStocksRaw = Arr::pull($modelData, 'org_stocks', []);
 
-            $orgStocks = [];
-            foreach ($orgStocksRaw as $orgStockId => $item) {
-                $orgStocks[$orgStockId] = Arr::only($item, ['quantity', 'notes', 'source_id', 'last_fetched_at']);
-            }
 
+            $orgStocksRaw = array_column($orgStocksRaw, null, 'org_stock_id');
 
-            $product->orgStocks()->sync($orgStocks);
+            $orgStocksRaw = array_map(function ($item) {
+                $filtered             = Arr::only($item, ['org_stock_id', 'quantity', 'notes']);
+                $filtered['quantity'] = (float)$filtered['quantity']; // or (int) if you want integers
+
+                return $filtered;
+            }, $orgStocksRaw);
+
+            $orgStocks = $orgStocksRaw;
         }
 
+        if (Arr::has($modelData, 'well_formatted_org_stocks')) {
+            $orgStocks = Arr::pull($modelData, 'well_formatted_org_stocks', []);
+        }
+
+        if ($orgStocks !== null) {
+            $this->syncOrgStocks($product, $orgStocks);
+        }
 
         $assetData = [];
         if (Arr::has($modelData, 'follow_master')) {
             data_set($assetData, 'follow_master', Arr::pull($modelData, 'follow_master'));
         }
 
+        if (Arr::has($modelData, 'name_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'name' => Arr::pull($modelData, 'name_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_title_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description_title' => Arr::pull($modelData, 'description_title_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description' => Arr::pull($modelData, 'description_i8n')
+                ]
+            ]);
+        }
+
+        if (Arr::has($modelData, 'description_extra_i8n')) {
+            UpdateProductTranslations::make()->action($product, [
+                'translations' => [
+                    'description_extra' => Arr::pull($modelData, 'description_extra_i8n')
+                ]
+            ]);
+        }
+
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if (Arr::has($changed, 'name')) {
+            UpdateProductAndMasterTranslations::make()->action($product, [
+                'translations' => [
+                    'name' => [$product->shop->language->code => Arr::pull($modelData, 'name')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changed, 'description_title')) {
+            UpdateProductAndMasterTranslations::make()->action($product, [
+                'translations' => [
+                    'description_title' => [$product->shop->language->code => Arr::pull($modelData, 'description_title')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changed, 'description')) {
+            UpdateProductAndMasterTranslations::make()->action($product, [
+                'translations' => [
+                    'description' => [$product->shop->language->code => Arr::pull($modelData, 'description')]
+                ]
+            ]);
+        }
+
+        if (Arr::has($changed, 'description_extra')) {
+            UpdateProductAndMasterTranslations::make()->action($product, [
+                'translations' => [
+                    'description_extra' => [$product->shop->language->code => Arr::pull($modelData, 'description_extra')]
+                ]
+            ]);
+        }
 
 
         if (Arr::hasAny($changed, ['name', 'code', 'price', 'units', 'unit'])) {
@@ -79,7 +157,7 @@ class UpdateProduct extends OrgAction
             );
         }
 
-        UpdateAsset::run($product->asset, $assetData, $this->hydratorsDelay);
+        UpdateAssetFromModel::run($product->asset, $assetData, $this->hydratorsDelay);
 
         if (Arr::hasAny($changed, ['state', 'status', 'exclusive_for_customer_id'])) {
             $this->productHydrators($product);
@@ -103,37 +181,45 @@ class UpdateProduct extends OrgAction
             ProductRecordSearch::dispatch($product);
         }
 
-        if (
-            Arr::hasAny(
+        if ($product->webpage
+            && Arr::hasAny(
                 $changed,
                 [
                     'code',
                     'name',
                     'description',
                     'state',
+                    'status',
                     'price',
                     'available_quantity'
                 ]
             )
-            && $product->webpage
         ) {
-            $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_in_'.$product->webpage->id;
-            Cache::forget($key);
-            $key = config('iris.cache.webpage.prefix').'_'.$product->webpage->website_id.'_out_'.$product->webpage->id;
-            Cache::forget($key);
-            ReindexWebpageLuigiData::dispatch($product->webpage)->delay($this->hydratorsDelay);
+            BreakProductInWebpagesCache::dispatch($product)->delay(2);
+            ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 10);
         }
 
-        if (Arr::hasAny(
-            $changed,
-            [
-                'code',
-                'name',
-                'state',
-                'price',
-            ]
-        )) {
-            BreakProductInWebpagesCache::dispatch($product);
+
+        if (Arr::has($changed, 'available_quantity')) {
+            $product->updateQuietly([
+                'available_quantity_updated_at' => now()
+            ]);
+        }
+
+        if (Arr::has($changed, 'master_product_id')) {
+            $product->asset->updateQuietly([
+                'master_asset_id' => $product->master_product_id
+            ]);
+        }
+
+        if (Arr::has($changed, 'price')) {
+            $product->updateQuietly([
+                'price_updated_at' => now()
+            ]);
+        }
+
+        if ($oldHistoricProduct != $product->current_historic_asset_id) {
+            UpdateHistoricProductInBasketTransactions::dispatch($product);
         }
 
 
@@ -153,7 +239,7 @@ class UpdateProduct extends OrgAction
                     table: 'products',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->product->id, 'operator' => '!=']
                     ]
                 ),
@@ -171,7 +257,9 @@ class UpdateProduct extends OrgAction
             'state'             => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
             'trade_config'      => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
             'follow_master'     => ['sometimes', 'boolean'],
+            'cost_price_ratio'  => ['sometimes', 'numeric', 'min:0'],
             'family_id'         => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
+            'master_product_id' => ['sometimes', 'nullable', 'integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
             'barcode'           => [
                 'sometimes',
                 'nullable',
@@ -184,6 +272,7 @@ class UpdateProduct extends OrgAction
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
             'units'                     => ['sometimes', 'numeric'],
+            'unit'                      => ['sometimes', 'string'],
             'exclusive_for_customer_id' => [
                 'sometimes',
                 'nullable',
@@ -191,7 +280,15 @@ class UpdateProduct extends OrgAction
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
 
-            'org_stocks' => ['sometimes', 'present', 'array']
+            'org_stocks'                => ['sometimes', 'present', 'array'],
+            'well_formatted_org_stocks' => ['sometimes', 'present', 'array'],
+            'name_i8n'                  => ['sometimes', 'array'],
+            'description_title_i8n'     => ['sometimes', 'array'],
+            'description_i8n'           => ['sometimes', 'array'],
+            'description_extra_i8n'     => ['sometimes', 'array'],
+            'gross_weight'              => ['sometimes', 'numeric'],
+            'marketing_weight'          => ['sometimes', 'numeric'],
+            'marketing_dimensions'      => ['sometimes'],
         ];
 
 
@@ -230,7 +327,7 @@ class UpdateProduct extends OrgAction
         return $this->handle($product, $this->validatedData);
     }
 
-    public function jsonResponse(Asset $product): ProductResource
+    public function jsonResponse(Product $product): ProductResource
     {
         return new ProductResource($product);
     }

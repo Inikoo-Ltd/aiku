@@ -46,6 +46,13 @@ class StoreTransaction extends OrgAction
         }
 
 
+        if (!is_numeric($net)) {
+            $net = 0;
+        }
+        if (!is_numeric($gross)) {
+            $gross = 0;
+        }
+
 
         data_set($modelData, 'shop_id', $order->shop_id);
         data_set($modelData, 'customer_id', $order->customer_id);
@@ -65,7 +72,7 @@ class StoreTransaction extends OrgAction
         $unitWeight = $historicAsset->model->gross_weight ?? 0;
 
         $estimatedWeight = $unitWeight * Arr::get($modelData, 'quantity_ordered', 1);
-
+        $estimatedWeight = (int)ceil($estimatedWeight);
 
 
         data_set($modelData, 'estimated_weight', $estimatedWeight);

@@ -16,7 +16,7 @@ enum ProspectFailStatusEnum: string
 {
     use EnumHelperTrait;
 
-    case NA             = 'no_applicable';
+    case NA = 'no_applicable';
     case NOT_INTERESTED = 'not_interested';
     case UNSUBSCRIBED = 'unsubscribed';
     case HARD_BOUNCED = 'hard_bounced';

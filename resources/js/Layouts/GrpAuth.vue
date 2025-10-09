@@ -29,7 +29,7 @@ console.log('environment:', useLayoutStore().app.environment)
 <template>
     <ScreenWarning v-if="layout.app.environment === 'staging'" />
     <div :style="{'background-image': `${'url(/art/background-guest.webp'}`, 'background-repeat': 'no-repeat', 'background-size': 'cover', 'background-position': 'center'}"
-        class="relative h-screen w-screen bg-gradient-to-bl from-indigo-400 to-indigo-600 pt-64 sm:px-6 lg:px-8">
+        class="relative h-screen w-screen flex items-center justify-center bg-gradient-to-bl from-indigo-400 to-indigo-600 sm:px-6 lg:px-8">
         <div class="absolute bottom-5 left-10 flex items-center justify-center gap-x-2">
             <img class="h-12 w-auto" src="/art/logo-yellow.svg" alt="Aiku" />
             <span style="font-family: Fira, sans-serif" class="text-4xl text-white leading-none">aiku</span>

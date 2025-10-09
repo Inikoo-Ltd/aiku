@@ -19,7 +19,7 @@ import { faHome } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
-import { getStyles } from '@/Composables/styles'
+import { irisStyleVariables } from '@/Composables/Workshop'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
@@ -34,6 +34,7 @@ const navigation = usePage().props?.iris?.menu
 const footer = usePage().props?.iris?.footer
 const theme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const customSidebar = usePage().props?.iris?.sidebar
 
 const isFirstVisit = () => {
     if (typeof window !== "undefined") {
@@ -80,11 +81,16 @@ onMounted(() => {
     if (layout.app.environment === 'local') {
         console.log('Iris Layout', layout)
     }
+
+    irisStyleVariables(theme?.color)
+    
 })
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
 })
+
+console.log('handle', usePage().props)
 
 </script>
 
@@ -119,8 +125,14 @@ onBeforeUnmount(() => {
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
 
-            <IrisHeader v-if="header.header" :data="header" :colorThemed="theme" :menu="navigation"
-                :screen-type="screenType" />
+            <IrisHeader
+                v-if="header?.header"
+                :data="header"
+                :colorThemed="theme"
+                :menu="navigation"
+                :screen-type="screenType"
+                :custom-sidebar="customSidebar"
+            />
 
             <Breadcrumbs v-if="usePage().props.breadcrumbs?.length" id="iris_breadcrumbs"
                 class="md:py-4 px-2 w-full xborder-b-0 mx-auto transition-all xbg-gray-100 border-b-0 border-transparent"
@@ -134,11 +146,16 @@ onBeforeUnmount(() => {
                 </div>
             </main>
 
-            <Footer v-if="footer && !isArray(footer)" :data="footer" :colorThemed="theme" />
+            <Footer
+                v-if="footer && !isArray(footer)"
+                v-once
+                :data="footer"
+                :colorThemed="theme"
+            />
         </div>
     </div>
 
-    <notifications dangerously-set-inner-html :max="3" xwidth="500" classes="custom-style-notification"
+    <notifications dangerously-set-inner-html :max="3" width="500" classes="custom-style-notification"
         :pauseOnHover="true">
         <template #body="props">
             <Notification :notification="props" />

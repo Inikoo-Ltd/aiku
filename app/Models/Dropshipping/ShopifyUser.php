@@ -11,9 +11,9 @@ namespace App\Models\Dropshipping;
 use App\Actions\Dropshipping\ShopifyUser\Traits\WithInitShopifyClient;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
 use App\Enums\CRM\WebUser\WebUserTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
+use App\Models\DebugWebhooks;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -25,7 +25,6 @@ use Eloquent;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -71,12 +70,16 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property int|null $platform_id
  * @property int|null $customer_sales_channel_id
+ * @property string|null $shopify_shop_id
+ * @property string|null $shopify_fulfilment_service_id
+ * @property string|null $shopify_location_id
  * @property WebUserTypeEnum $state
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Collection<int, \Osiset\ShopifyApp\Storage\Models\Charge> $charges
  * @property-read Collection<int, \App\Models\Dropshipping\PlatformHasClient> $clients
  * @property-read Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
+ * @property-read Collection<int, DebugWebhooks> $debugWebhooks
  * @property-read Group|null $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -87,7 +90,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Organisation|null $organisation
  * @property-read Collection<int, \Spatie\Permission\Models\Permission> $permissions
  * @property-read \Osiset\ShopifyApp\Storage\Models\Plan|null $plan
- * @property-read Collection<int, Product> $products
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read Shop|null $shop
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
@@ -97,7 +99,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|ShopifyUser onlyTrashed()
  * @method static Builder<static>|ShopifyUser permission($permissions, $without = false)
  * @method static Builder<static>|ShopifyUser query()
- * @method static Builder<static>|ShopifyUser withTrashed()
+ * @method static Builder<static>|ShopifyUser withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|ShopifyUser withoutPermission($permissions)
  * @method static Builder<static>|ShopifyUser withoutTrashed()
  * @mixin Eloquent
@@ -152,11 +154,6 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
             ->saveSlugsTo('slug');
     }
 
-    public function products(): BelongsToMany
-    {
-        return $this->morphToMany(Product::class, 'product', 'shopify_user_has_products')
-            ->withTimestamps();
-    }
 
     public function orders(): MorphToMany
     {
@@ -167,6 +164,11 @@ class ShopifyUser extends Authenticatable implements HasMedia, Auditable, IShopM
     public function clients(): MorphMany
     {
         return $this->morphMany(PlatformHasClient::class, 'userable');
+    }
+
+    public function debugWebhooks(): MorphMany
+    {
+        return $this->morphMany(DebugWebhooks::class, 'model');
     }
 
     public function customerSalesChannel(): BelongsTo

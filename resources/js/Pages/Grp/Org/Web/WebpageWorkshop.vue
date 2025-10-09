@@ -7,9 +7,10 @@
 <script setup lang="ts">
 import {
   ref, onMounted, provide, watch, computed, inject,
-  IframeHTMLAttributes
+  IframeHTMLAttributes, onUnmounted, toRaw
 } from "vue";
 import { Head, router } from "@inertiajs/vue3";
+import * as Sentry from "@sentry/vue"
 import { capitalize } from "@/Composables/capitalize";
 import axios from "axios";
 import { debounce } from 'lodash-es';
@@ -37,7 +38,10 @@ import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
   faStars, faTimes, faBars, faExternalLink, faExpandWide, faCompressWide,
   faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull,
-  faEye
+  faEye,
+  faWindWarning,
+  faUndo,
+  faRedo
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -53,9 +57,10 @@ const props = defineProps<{
   pageHead: PageHeadingTypes,
   webpage: RootWebpage,
   webBlockTypes: Root
-  url : string
+  url: string
+  luigi_tracker_id: string
 }>();
-console.log('ss', props.webpage)
+
 provide('isInWorkshop', true);
 const layout = inject('layout', layoutStructure);
 const confirm = useConfirm();
@@ -77,13 +82,16 @@ const debounceTimers = ref({});
 const addBlockCancelToken = ref<Function | null>(null);
 const orderBlockCancelToken = ref<Function | null>(null);
 const deleteBlockCancelToken = ref<Function | null>(null);
-const addBlockParentIndex = ref({ parentIndex: data.value.layout.web_blocks.length ,type: "current" });
+const addBlockParentIndex = ref({ parentIndex: data.value.layout.web_blocks.length, type: "current" });
 const isLoadingDeleteBlock = ref<number | null>(null);
 const comment = ref("");
 const isLoadingPublish = ref(false);
 const fullScreen = ref(false);
 const filterBlock = ref('all');
+const history = ref<any[]>([]);
+const future = ref<any[]>([]);
 
+provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
 provide('openedBlockSideEditor', openedBlockSideEditor);
 provide('openedChildSideEditor', openedChildSideEditor);
@@ -100,36 +108,38 @@ const sendToIframe = (data: any) => {
 // Block Handlers
 const addNewBlock = async ({ block, type }) => {
   if (addBlockCancelToken.value) addBlockCancelToken.value();
-  let position  = data.value.layout.web_blocks.length
-  if(type == 'before' ) {
-    position =  addBlockParentIndex.value.parentIndex
-  }else if(type == 'after'){
-    position =  addBlockParentIndex.value.parentIndex + 1;
+  let position = data.value.layout.web_blocks.length
+  if (type == 'before') {
+    position = addBlockParentIndex.value.parentIndex
+  } else if (type == 'after') {
+    position = addBlockParentIndex.value.parentIndex + 1;
   }
 
 
   router.post(
     route(props.webpage.add_web_block_route.name, props.webpage.add_web_block_route.parameters),
-    { web_block_type_id: block.id, position  : position },
+    { web_block_type_id: block.id, position: position },
     {
       onStart: () => isAddBlockLoading.value = "addBlock" + block.id,
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
-        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length ,type: "current" };
+        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length, type: "current" };
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
-        data.value = e.props.webpage;
+        data.value = e.props.webpage
+        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => {
-        console.log('sss',error)
+        console.log('sss', error)
         notify({
-        title: trans("Something went wrong"),
-        text: error.message,
-        type: "error"
-      })}
+          title: trans("Something went wrong"),
+          text: error.message,
+          type: "error"
+        })
+      }
     }
   );
 };
@@ -146,11 +156,12 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
-        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length ,type: "current" }
+        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length, type: "current" }
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
+        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
@@ -162,19 +173,29 @@ const duplicateBlock = async (modelHasWebBlock = Number) => {
   );
 };
 
-
 const debounceSaveWorkshop = (block) => {
-  if (debounceTimers.value[block.id]) clearTimeout(debounceTimers.value[block.id]);
+  // Clear any pending debounce timers for this block
+  if (debounceTimers.value[block.id]) {
+    clearTimeout(debounceTimers.value[block.id]);
+  }
 
   debounceTimers.value[block.id] = setTimeout(async () => {
-    const url = route(props.webpage.update_model_has_web_blocks_route.name, { modelHasWebBlocks: block.id });
+    const url = route(props.webpage.update_model_has_web_blocks_route.name, {
+      modelHasWebBlocks: block.id,
+    });
 
-    isLoadingBlock.value = block.id;
-    isSavingBlock.value = true;
+    // Cancel any previous request for this block
+    if (cancelTokens.value[block.id]) {
+      cancelTokens.value[block.id](); // call previous cancel function
+    }
 
+    // Create a new cancel token
     const source = axios.CancelToken.source();
     cancelTokens.value[block.id] = source.cancel;
 
+    isLoadingBlock.value = block.id;  // This made the state inside in the field will changes (like opened Select will closed)
+    isSavingBlock.value = true;  // This made the state inside in the field will changes (like opened Select will closed)
+    //pushToHistory();
     try {
       const response = await axios.patch(
         url,
@@ -191,14 +212,29 @@ const debounceSaveWorkshop = (block) => {
           },
         }
       );
-   /*    data.value = response.data.data */
+
+      // Reload the preview
+      data.value.layout = response.data.data.layout;
+      saveState()
       sendToIframe({ key: "reload", value: {} });
     } catch (error) {
-      console.log(error)
-      if (!axios.isCancel(error)) {
+      if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
+        console.log(error)
+        return;
+      }
+
+      Sentry.captureException(error);
+
+      if (error?.response?.data?.message) {
         notify({
-          title: trans("Something went wrong"),
-          text: error?.response?.data?.message || error.message,
+          title: "Failed to auto save",
+          text: error.response.data.message,
+          type: "error",
+        });
+      } else {
+        notify({
+          title: "Failed to auto save",
+          text: error.message,
           type: "error",
         });
       }
@@ -217,9 +253,12 @@ const debouncedSaveSiteSettings = debounce(block => {
     { web_blocks: block },
     {
       preserveScroll: true,
+      preserveState: true,
       onStart: () => isSavingBlock.value = true,
       onFinish: () => isSavingBlock.value = false,
-      onSuccess: () => {
+      onSuccess: (e) => {
+        data.value = e.props.webpage;
+        saveState()
         sendToIframe({ key: 'reload', value: {} })
       },
       onError: error => notify({
@@ -254,7 +293,7 @@ const onSaveWorkshopFromId = (blockId, from) => {
     key: 'setWebpage',
     value: JSON.parse(JSON.stringify(data.value))
   });
-    if (block) debounceSaveWorkshop(block);
+  if (block) debounceSaveWorkshop(block);
 };
 
 provide('onSaveWorkshopFromId', onSaveWorkshopFromId);
@@ -273,6 +312,7 @@ const sendOrderBlock = async block => {
       onCancelToken: token => orderBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
+        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
@@ -297,6 +337,7 @@ const sendDeleteBlock = async (block: Daum) => {
       onCancelToken: token => deleteBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
+        saveState()
         sendToIframe({ key: 'reload', value: {} });
       },
       onError: error => notify({
@@ -345,9 +386,13 @@ const onPublish = async (action: routeType, popover) => {
 
 const beforePublish = (route, popover) => {
   const validation = JSON.stringify(data.value.layout);
-  validation.includes('<h1') || validation.includes('<H1')
+  if (props.webpage.type == "catalogue") onPublish(route, popover)
+  else {
+     validation.includes('<h1') || validation.includes('<H1')
     ? onPublish(route, popover)
     : confirmPublish(route, popover);
+  }
+
 };
 
 const confirmPublish = (route, popover) => {
@@ -413,12 +458,91 @@ const SyncAurora = () => {
 };
 
 
+
+const saveState = () => {
+  history.value.push(JSON.parse(JSON.stringify(data.value.layout)));
+  localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+  future.value = [];
+};
+
+const undo = async () => {
+  if (history.value.length > 1) {
+    const prevState = history.value[history.value.length - 2]; // the one before last
+    const current = history.value.pop()!; // remove current
+    future.value.unshift(current);
+
+    await afterUndoRedo(JSON.parse(JSON.stringify(prevState)));
+
+    // update localStorage AFTER server confirms
+    localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+  }
+};
+
+const redo = async () => {
+  if (future.value.length > 0) {
+    const nextState = future.value.shift()!;
+    history.value.push(nextState);
+
+    await afterUndoRedo(JSON.parse(JSON.stringify(nextState)));
+
+    // update localStorage AFTER server confirms
+    localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+  }
+};
+
+const afterUndoRedo = async (value) => {
+  try {
+    const payload = { layout: value };
+
+    const response = await axios.patch(
+      route('grp.models.webpage.web_block_check', {
+        webpage: props.webpage.id,
+      }),
+      payload
+    );
+
+    data.value = { ...data.value, layout: response.data };
+    console.log('sss', response.data)
+
+    sendToIframe({
+      key: "setWebpage",
+      value: JSON.parse(JSON.stringify(data.value)),
+    });
+  } catch (error: any) {
+    if (axios.isAxiosError(error)) {
+      console.error("Axios error:", error.response?.data || error.message);
+    } else {
+      console.error("Unexpected error:", error);
+    }
+  }
+};
+
+
+
+// Clear all history
+const clearHistory = () => {
+  history.value = [];
+  future.value = [];
+  localStorage.removeItem(data.value.code);
+};
+
+// When component is unmounted
+onUnmounted(() => {
+  clearHistory();
+});
+
+// Also clear when navigating away or closing tab
+window.addEventListener('beforeunload', () => {
+  clearHistory();
+});
+
+
 onMounted(() => {
   window.addEventListener("message", (event) => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
     switch (key) {
-      case 'autosave': return onSaveWorkshop(value,false);
+      case 'autosave': return onSaveWorkshop(value, false);
       case 'activeBlock': return openedBlockSideEditor.value = value;
       case 'activeChildBlock': return openedChildSideEditor.value = value;
       case 'addBlock':
@@ -430,7 +554,13 @@ onMounted(() => {
         break;
       case 'deleteBlock': return sendDeleteBlock(value);
     }
-  });
+  })
+  const savedData = localStorage.getItem(data.value.code);
+  if (savedData) {
+  } else {
+    localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
+  }
+  history.value = [JSON.parse(JSON.stringify(data.value.layout))];
 });
 
 watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
@@ -439,16 +569,18 @@ watch(filterBlock, (newValue) => sendToIframe({ key: 'isPreviewLoggedIn', value:
 
 const compUsersEditThisPage = computed(() => {
 
-	return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
+  return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
 })
 
 const openWebsite = () => {
   window.open(props.url, '_blank')
 }
-console.log('props',props)
+const canUndo = computed(() => history.value.length > 1);
+const canRedo = computed(() => future.value.length > 0);
 </script>
 
 <template>
+
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
@@ -461,14 +593,18 @@ console.log('props',props)
     </template>
 
     <template #other>
-      <div class="px-2 cursor-pointer"  v-tooltip="trans('Go to website')" @click="openWebsite">
+      <div class="px-2 cursor-pointer" v-tooltip="trans('Go to website')" @click="openWebsite">
         <FontAwesomeIcon :icon="faExternalLink" size="xl" aria-hidden="true" />
       </div>
     </template>
   </PageHeading>
 
 
-  <ConfirmDialog group="alert-publish" />
+  <ConfirmDialog group="alert-publish">
+    <template #icon>
+      <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-500" />
+    </template>
+  </ConfirmDialog>
 
   <div class="flex">
     <div v-if="!fullScreen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
@@ -490,6 +626,20 @@ console.log('props',props)
           <div v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" class="cursor-pointer">
             <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
           </div>
+          <!-- Undo -->
+          <!-- Undo -->
+          <div class="py-1 px-2" v-tooltip="'undo'"
+            :class="canUndo ? 'cursor-pointer hover:text-amber-600' : 'opacity-40 cursor-not-allowed'"
+            @click="() => canUndo && undo()">
+            <FontAwesomeIcon :icon="faUndo" fixed-width aria-hidden="true" />
+          </div>
+
+          <!-- Redo -->
+          <div class="py-1 px-2" v-tooltip="'redo'"
+            :class="canRedo ? 'cursor-pointer hover:text-amber-600' : 'opacity-40 cursor-not-allowed'"
+            @click="() => canRedo && redo()">
+            <FontAwesomeIcon :icon="faRedo" fixed-width aria-hidden="true" />
+          </div>
         </div>
 
         <div v-if="compUsersEditThisPage?.length > 1"
@@ -503,7 +653,7 @@ console.log('props',props)
 
         <div class="flex items-center gap-2 text-sm text-gray-700">
           <label v-if="props.webpage.allow_fetch" for="sync-toggle">Connected with aurora</label>
-            <label v-else for="sync-toggle">Disconnected from aurora</label>
+          <label v-else for="sync-toggle">Disconnected from aurora</label>
           <ToggleSwitch id="sync-toggle" v-model="props.webpage.allow_fetch"
             @update:modelValue="(e) => SyncAurora(e)" />
         </div>

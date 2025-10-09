@@ -12,21 +12,16 @@ namespace App\Actions\Api\Retina\Dropshipping\Image;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\ImageResource;
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Api\PortfoliosResource;
 use App\Models\Catalogue\Product;
-use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Fulfilment\StoredItem;
 use App\Models\Helpers\Media;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Illuminate\Validation\Validator;
-
 
 class GetImages extends RetinaApiAction
 {

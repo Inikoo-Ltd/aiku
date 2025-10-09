@@ -24,17 +24,17 @@ enum ManufactureTaskTabsEnum: string
     {
         return match ($this) {
             ManufactureTaskTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fal fa-drone',
             ],
             ManufactureTaskTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'
             ],
             ManufactureTaskTabsEnum::ARTEFACT => [
-                'title' => __('artefact'),
+                'title' => __('Artefact'),
                 'icon'  => 'fal fa-drone',
             ]
         };

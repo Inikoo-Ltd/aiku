@@ -6,7 +6,13 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
+use App\Actions\Catalogue\Product\Json\GetRetinaPortfoliosInProduct;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetEbayProducts;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductCategorySalesChannelIds;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
+use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
+use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentServices;
 use App\Actions\Retina\GetCheckoutComTokenToPayOrder;
@@ -20,3 +26,13 @@ Route::get('pallet-return/{palletReturn}/pallets', GetPalletsInReturnPalletWhole
 Route::get('/{order}/recent-uploads', \App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads::class)->name('recent_uploads');
 
 Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComTokenToPayOrder::class)->name('get_checkout_com_token_to_pay_order');
+
+Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', DownloadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.portfolio_images_zip');
+
+Route::get('dropshipping/{product:id}/channels_list', GetRetinaPortfoliosInProduct::class)->name('dropshipping.product.channels_list');
+
+Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerProductCategorySalesChannelIds::class)->name('product_category.channel_ids.index');
+
+Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
+Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');

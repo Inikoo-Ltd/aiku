@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Product;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use Cache;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class BreakProductInWebpagesCache
@@ -19,6 +20,8 @@ class BreakProductInWebpagesCache
 
     public function handle(Product $product): void
     {
+        $this->breakCache($product->webpage);
+
         if ($product->family && $product->family->webpage) {
             $this->breakCache($product->family->webpage);
         }
@@ -44,7 +47,20 @@ class BreakProductInWebpagesCache
             Cache::forget($key);
         }
 
+    }
 
+    protected function commandSignature(): string
+    {
+        return 'webpages:break_cache {id}';
+    }
+
+    protected function asCommand(Command $command): int
+    {
+
+        $product = Product::findOrFail($command->argument('id'));
+        $this->handle($product);
+
+        return 0;
     }
 
 }

@@ -54,7 +54,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Query withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Query withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Query withoutTrashed()
  * @mixin \Eloquent
  */

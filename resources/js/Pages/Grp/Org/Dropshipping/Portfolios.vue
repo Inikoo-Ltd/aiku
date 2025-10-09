@@ -5,31 +5,40 @@
   -->
 
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
-import PageHeading from '@/Components/Headings/PageHeading.vue'
-import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
+import { Head, router } from "@inertiajs/vue3"
+import PageHeading from "@/Components/Headings/PageHeading.vue"
+import TablePortfolios from "@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue"
+import TablePortfoliosShopify from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosShopify.vue"
+import TablePortfoliosManual from "@/Components/Tables/Grp/Org/CRM/TablePortfoliosManual.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import { inject, ref } from 'vue'
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import { layoutStructure } from '@/Composables/useLayoutStructure'
-import Modal from '@/Components/Utils/Modal.vue'
-import { trans } from 'laravel-vue-i18n'
-import { RouteParams } from '@/types/route-params'
-import ProductsSelector from '@/Components/Dropshipping/ProductsSelector.vue'
-import { notify } from '@kyvg/vue3-notification'
+import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
+import { ref, onMounted } from "vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import Modal from "@/Components/Utils/Modal.vue"
+import ProductsSelector from "@/Components/Dropshipping/ProductsSelector.vue"
+import { notify } from "@kyvg/vue3-notification"
+import { Customer } from "@/types/customer"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { faBookmark } from "@fal"
+import { ulid } from "ulid"
+import {debounce} from "lodash-es"
+import axios from "axios"
+import { trans } from "laravel-vue-i18n"
+
+library.add(faBookmark)
 
 const props = defineProps<{
     data: {}
     title: string
     pageHead: PageHeadingTypes
-    customer: {}
+    customer: Customer
     is_show_add_products_modal: boolean
     customerSalesChannelId: number
+    platform: {}
+    customerSalesChannel: {}
+    routes:{}
 }>()
 
-const layout = inject('layout', layoutStructure)
-const locale = inject('locale', null)
 
 const isOpenModalPortfolios = ref(false)
 
@@ -37,7 +46,7 @@ const isOpenModalPortfolios = ref(false)
 // Method: Submit the selected item
 const isLoadingSubmit = ref(false)
 const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: number) => {
-    router.post(route('grp.models.customer_sales_channel.portfolio.store_multiple_manual', { customerSalesChannel: customerSalesChannelId} ), {
+    router.post(route("grp.models.customer_sales_channel.portfolio.store_multiple_manual", { customerSalesChannel: customerSalesChannelId }), {
         items: idProduct
     }, {
         onBefore: () => isLoadingSubmit.value = true,
@@ -49,10 +58,10 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
             })
         },
         onSuccess: () => {
-            router.reload({only: ['data']})
+            router.reload({ only: ["data"] })
             notify({
                 title: trans("Success!"),
-                text: trans("Successfully added portfolios"),
+                text: trans("Successfully added the portfolio"),
                 type: "success"
             })
             isOpenModalPortfolios.value = false
@@ -60,39 +69,99 @@ const onSubmitAddItem = async (idProduct: number[], customerSalesChannelId: numb
         onFinish: () => isLoadingSubmit.value = false
     })
 }
+const loadingAction= ref([])
+const selectedProducts = ref<number[]>([])
+const key = ref(ulid())
+
+const progessbar = ref({
+    data: {
+        number_success: 0,
+        number_fails: 0
+    },
+    done: true,
+    total: selectedProducts.value.length,
+})
+
+
+const onSuccessEditCheckmark = () => {
+  progessbar.value = {...progessbar.value , done : false, total : selectedProducts.value.length}
+}
+
+const onFailedEditCheckmark = (error: any) => {
+    notify({
+        title: "Something went wrong.",
+        text: error?.products || "An error occurred.",
+        type: "error",
+    })
+}
+
+
+const submitPortfolioAction = async (action: any) => {
+  try {
+    loadingAction.value.push(action.label)
+
+    const method = action.route?.method?.toLowerCase() || 'get'
+    const url = route(action.route.name, action.route?.parameters)
+
+    const payload = { portfolios: selectedProducts.value }
+
+    let response
+
+    if (method === 'get') {
+      response = await axios.get(url, { params: payload })
+    } else {
+      response = await axios[method](url, payload)
+    }
+
+    onSuccessEditCheckmark(response.data)
+  } catch (error: any) {
+    onFailedEditCheckmark(error)
+  } finally {
+    loadingAction.value = []
+  }
+}
+
+
 
 </script>
 
 <template>
-    <Head :title="capitalize(title)" />
+    <Head :title="capitalize(title)" ></Head>
     <PageHeading :data="pageHead">
         <template v-if="is_show_add_products_modal" #other>
-            <Button
-                @click="() => isOpenModalPortfolios = true"
-                :type="'secondary'"
-                icon="fal fa-plus"
-                :xxstooltip="'action.tooltip'"
-                :label="trans('Add products to portfolios')"
-            />
+            <Button @click="() => isOpenModalPortfolios = true" :type="'secondary'" icon="fal fa-plus"
+                :label="trans('Add products to portfolio')" />
+        </template>
+
+        <template #button-match-with-existing-product="{ action }">
+            <Button v-if="selectedProducts.length > 0" :type="action.style" :label="action.label"
+                 :loading="loadingAction.includes(action.label)"
+                @click="() => submitPortfolioAction(action)" />
+            <div v-else></div>
+        </template>
+
+        <template #button-create-new-product="{ action }">
+            <Button v-if="selectedProducts.length > 0" :type="action.style" :label="action.label"
+                :loading="loadingAction.includes(action.label)"
+                @click="() => submitPortfolioAction(action)" />
+            <div v-else></div>
         </template>
     </PageHeading>
-    
-    <TablePortfolios :data="data" />
 
-    <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false" width="w-full max-w-6xl">
-        <ProductsSelector
-            :headLabel="trans('Add products to portfolios')"
-            :route-fetch="{
-                name: 'grp.org.shops.show.crm.customers.show.portfolios.filtered-products',
-                parameters: {
-                    organisation: layout?.currentParams?.organisation,
-                    shop: layout?.currentParams?.shop,
-                    customer: layout?.currentParams?.customer,
-                }
-            }"
-            :isLoadingSubmit
-            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id), customerSalesChannelId)"
-        >
+    <TablePortfoliosShopify v-if="platform.type === 'shopify'" :data="data" :customerSalesChannel v-model:selectedProducts="selectedProducts" :key="key" :progressToUploadToShopifyAll="progessbar"/>
+    <TablePortfoliosManual v-else-if="platform.type === 'manual'" :data="data" :customerSalesChannel />
+    <TablePortfolios v-else :data="data" :customerSalesChannel  v-model:selectedProducts="selectedProducts" :key="key"    :progressToUploadToShopifyAll="progessbar"  :routes="props.routes"/>
+
+
+    <Modal v-if="is_show_add_products_modal" :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
+        width="w-full max-w-6xl">
+        <ProductsSelector :headLabel="trans('Add products to portfolios')" :route-fetch="{
+            name: 'grp.json.products_for_portfolio_select',
+            parameters: {
+                customerSalesChannel: customerSalesChannelId
+            }
+        }" :isLoadingSubmit
+            @submit="(products: {}[]) => onSubmitAddItem(products.map((product: any) => product.id), customerSalesChannelId)">
         </ProductsSelector>
     </Modal>
 </template>

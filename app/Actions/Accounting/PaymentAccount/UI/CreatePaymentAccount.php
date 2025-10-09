@@ -27,14 +27,14 @@ class CreatePaymentAccount extends OrgAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('new payment account'),
+                'title'       => __('New payment account'),
                 'pageHead'    => [
-                    'title'        => __('new payment account'),
+                    'title'        => __('New payment account'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.accounting.payment-accounts.index',
                                 'parameters' => array_values(request()->route()->originalParameters())

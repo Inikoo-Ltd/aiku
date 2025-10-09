@@ -25,20 +25,20 @@ enum EmployeeTabsEnum: string
     {
         return match ($this) {
             EmployeeTabsEnum::ATTACHMENTS => [
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
 
             EmployeeTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             EmployeeTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

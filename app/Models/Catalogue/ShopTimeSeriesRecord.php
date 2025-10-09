@@ -11,8 +11,6 @@ namespace App\Models\Catalogue;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopTimeSeriesRecord query()

@@ -33,7 +33,7 @@ const layout = inject('layout', layoutStructure)
             class="py-1 px-2 cursor-pointer"
             :class="[screenView == 'mobile' ? 'selected-bg' : 'unselected-bg']"
             @click="screenView = 'mobile', $emit('screenView', 'mobile')"
-            v-tooltip="trans('Mobile view')"
+            :v-tooltip="trans('Mobile view')"
         >
             <FontAwesomeIcon icon='fal fa-mobile-android-alt' fixed-width aria-hidden='true' />
         </div>
@@ -42,7 +42,7 @@ const layout = inject('layout', layoutStructure)
             class="py-1 px-2 cursor-pointer  md:block hidden"
             :class="[screenView == 'tablet' ? 'selected-bg' : 'unselected-bg']"
             @click="screenView = 'tablet', $emit('screenView', 'tablet')"
-            v-tooltip="trans('Tablet view')"
+            :v-tooltip="trans('Tablet view')"
         >
             <FontAwesomeIcon icon='fal fa-tablet-android-alt' fixed-width aria-hidden='true' />
         </div>
@@ -51,7 +51,7 @@ const layout = inject('layout', layoutStructure)
             class="py-1 px-2 cursor-pointer lg:block hidden"
             :class="[screenView == 'desktop' ? 'selected-bg' : 'unselected-bg']"
             @click="screenView = 'desktop', $emit('screenView', 'desktop')"
-            v-tooltip="trans('Desktop view')"
+            :v-tooltip="trans('Desktop view')"
         >
             <FontAwesomeIcon icon='fal fa-desktop' class='' fixed-width aria-hidden='true' />
         </div>
@@ -60,14 +60,14 @@ const layout = inject('layout', layoutStructure)
 
 <style lang="scss" scoped>
 .selected-bg {
-    background-color: v-bind('layout?.app?.theme[0]') !important;
-    color: v-bind('layout?.app?.theme[1]') !important;
+    background-color: v-bind('layout?.app?.theme?.[0]') !important;
+    color: v-bind('layout?.app?.theme?.[1]') !important;
 }
 .unselected-bg {
     @apply text-gray-500;
 }
 .unselected-bg:hover {
-    color: v-bind('layout?.app?.theme[0]') !important;
+    color: v-bind('layout?.app?.theme?.[0]') !important;
 }
 </style>
 

@@ -8,7 +8,7 @@
 
 namespace App\Actions\UI\Profile;
 
-use App\Actions\Dispatching\Printer\Json\GetPrinters;
+use App\Actions\Dispatching\Printer\Json\GetPrintNodePrinters;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\UI\WithInertia;
 use App\Http\Resources\UI\LoggedUserResource;
@@ -38,19 +38,15 @@ class EditProfileSettings
     public function generateBlueprint(User $user): array
     {
         try {
-            $cacheKey = "user_printers";
-            $cachedPrinters = cache()->get($cacheKey);
-            if ($cachedPrinters) {
-                $printers = $cachedPrinters;
-            } else {
-                $printers = GetPrinters::make()->action([])->map(function ($printer) {
+            $cacheKey = "user_printers_" . $user->id;
+            $printers = cache()->remember($cacheKey, now()->addMinutes(1), function () {
+                return GetPrintNodePrinters::make()->action([])->map(function ($printer) {
                     return [
                         'value' => $printer->id,
-                        'label' => $printer->name,
+                        'label' => $printer->name . ' (' . $printer->computer->name . ')'  . ' - ' . $printer->state,
                     ];
                 })->values()->toArray();
-                cache()->put($cacheKey, $printers, now()->addMinutes(5));
-            }
+            });
         } catch (\Throwable $e) {
             Log::error('Failed to fetch printers: ' . $e->getMessage());
             $printers = [];
@@ -87,9 +83,9 @@ class EditProfileSettings
 
                             ],
                             'preferred_printer' => [
-                                'type'     => 'select',
+                                'type'     => 'select_printer',
                                 'label'    => __('preferred printer'),
-                                'required' => true,
+                                'required' => false,
                                 'options'  => $printers,
                                 'value'    => Arr::get($user->settings, 'preferred_printer_id'),
                             ],

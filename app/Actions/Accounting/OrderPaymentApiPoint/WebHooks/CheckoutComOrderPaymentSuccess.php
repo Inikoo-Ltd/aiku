@@ -8,6 +8,7 @@
 
 namespace App\Actions\Accounting\OrderPaymentApiPoint\WebHooks;
 
+use App\Actions\Accounting\OrderPaymentApiPoint\UpdateOrderPaymentApiPoint;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\WithCheckoutCom;
 use App\Actions\IrisAction;
@@ -15,6 +16,7 @@ use App\Actions\Ordering\Order\AttachPaymentToOrder;
 use App\Actions\Ordering\Order\SubmitOrder;
 use App\Actions\Retina\Dropshipping\Orders\SettleRetinaOrderWithBalance;
 use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
+use App\Enums\Accounting\OrderPaymentApiPoint\OrderPaymentApiPointStateEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
@@ -37,8 +39,19 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
      */
     public function handle(OrderPaymentApiPoint $orderPaymentApiPoint, array $modelData): array
     {
+        if ($orderPaymentApiPoint->state == OrderPaymentApiPointStateEnum::SUCCESS) {
+            return [
+                'status'   => 'success',
+                'success'  => true,
+                'reason'   => 'Order paid successfully',
+                'order'    => $orderPaymentApiPoint->order,
+                'order_id' => $orderPaymentApiPoint->order->id,
+
+            ];
+        }
+
         $paymentAccountShopID = Arr::get($orderPaymentApiPoint->data, 'payment_methods.checkout');
-        $paymentAccountShop = PaymentAccountShop::find($paymentAccountShopID);
+        $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopID);
 
         $checkoutComPayment = $this->getCheckOutPayment(
             $paymentAccountShop,
@@ -46,6 +59,14 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
         );
 
 
+        return $this->processSuccessfulPayment($orderPaymentApiPoint, $paymentAccountShop, $checkoutComPayment);
+    }
+
+    /**
+     * @throws \Throwable
+     */
+    public function processSuccessfulPayment(OrderPaymentApiPoint $orderPaymentApiPoint, PaymentAccountShop $paymentAccountShop, array $checkoutComPayment): array
+    {
         $amount = Arr::get($checkoutComPayment, 'amount', 0) / 100;
 
         $paymentData = [
@@ -61,7 +82,6 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
 
 
         $order = DB::transaction(function () use ($orderPaymentApiPoint, $paymentAccountShop, $paymentData) {
-
             $payment = StorePayment::make()->action($orderPaymentApiPoint->order->customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             $order = $orderPaymentApiPoint->order;
@@ -71,30 +91,42 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
             ]);
 
 
-
             if ($order->total_amount > $order->payment_amount && $order->customer->balance > 0) {
                 SettleRetinaOrderWithBalance::run($order);
             }
 
+            UpdateOrderPaymentApiPoint::run(
+                $orderPaymentApiPoint,
+                [
+                    'state'        => OrderPaymentApiPointStateEnum::SUCCESS,
+                    'processed_at' => now(),
+                    'data'         => [
+                        'payment_id' => $payment->id,
+                    ]
+                ]
+            );
+
+
             $order->refresh();
+
             return SubmitOrder::run($order);
         });
 
         return [
-            'success' => true,
-            'reason'  => 'Order paid successfully',
-            'order'   => $order,
+            'status'   => 'success',
+            'success'  => true,
+            'reason'   => 'Order paid successfully',
+            'order'    => $order,
+            'order_id' => $order->id,
+
         ];
-
-
     }
+
 
     public function rules(): array
     {
         return [
-            'cko-payment-session-id' => ['sometimes', 'string'],
-            'cko-session-id'         => ['sometimes', 'string'],
-            'cko-payment-id'         => ['sometimes', 'string'],
+            'cko-payment-id' => ['required', 'string'],
         ];
     }
 
@@ -104,6 +136,7 @@ class CheckoutComOrderPaymentSuccess extends IrisAction
     public function asController(OrderPaymentApiPoint $orderPaymentApiPoint, ActionRequest $request): array
     {
         $this->initialisation($request);
+
         return $this->handle($orderPaymentApiPoint, $this->validatedData);
     }
 

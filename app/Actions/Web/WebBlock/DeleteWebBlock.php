@@ -58,7 +58,6 @@ class DeleteWebBlock extends OrgAction
 
         $webBlock->externalLinks()->detach();
 
-
         /** @var Media $media */
         foreach ($mediaIds as $mediaId) {
             $usage = DB::table('model_has_media')->where('media_id', $mediaId)->count();
@@ -67,8 +66,8 @@ class DeleteWebBlock extends OrgAction
             }
         }
 
-
         $webBlock->deletePreservingMedia();
+        $webBlock->forceDelete();
 
     }
 

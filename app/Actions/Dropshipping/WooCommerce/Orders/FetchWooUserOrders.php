@@ -10,7 +10,9 @@ namespace App\Actions\Dropshipping\WooCommerce\Orders;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
@@ -23,6 +25,16 @@ class FetchWooUserOrders extends OrgAction
     use WithAttributes;
     use WithActionUpdate;
 
+
+    public string $commandSignature = 'fetch:woo-user-orders {slug}';
+
+    public function asCommand(Command $command): void
+    {
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('slug'))->first();
+
+        $this->handle($customerSalesChannel->user);
+    }
+
     public function handle(WooCommerceUser $wooCommerceUser): void
     {
         $wooOrders = $wooCommerceUser->getWooCommerceOrders(
@@ -32,6 +44,10 @@ class FetchWooUserOrders extends OrgAction
                 'after'    => now()->subDays(14)->toISOString(),
             ]
         );
+
+        if ($wooOrders === null) {
+            return;
+        }
 
         foreach ($wooOrders as $wooOrder) {
             if (DB::table('orders')

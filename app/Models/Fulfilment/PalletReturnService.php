@@ -11,8 +11,6 @@ namespace App\Models\Fulfilment;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnService newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnService newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PalletReturnService query()

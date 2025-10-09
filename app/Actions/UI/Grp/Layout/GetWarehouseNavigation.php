@@ -29,7 +29,7 @@ class GetWarehouseNavigation
         ])) {
             $navigation["inventory"] = [
                 "root"    => "grp.org.warehouses.show.inventory.",
-                "label"   => __("inventory"),
+                "label"   => __("Inventory"),
                 "icon"    => ["fal", "fa-pallet-alt"],
                 "route"   => [
                     "name"       => "grp.org.warehouses.show.inventory.dashboard",
@@ -135,7 +135,7 @@ class GetWarehouseNavigation
                         ],
                         $user->hasPermissionTo("incoming.$warehouse->id.view") ?
                         [
-                            'label' => __('stock deliveries'),
+                            'label' => __('Stock deliveries'),
                             'icon'  => ['fal', 'fa-truck-container'],
                             'root'  => 'grp.org.warehouses.show.incoming.stock_deliveries.',
                             'route' => [
@@ -148,7 +148,7 @@ class GetWarehouseNavigation
                         ] : null,
                         $user->hasPermissionTo("fulfilment.$warehouse->id.view") ?
                         [
-                            'label' => __('fulfilment deliveries'),
+                            'label' => __('Fulfilment deliveries'),
                             'icon'  => ['fal', 'fa-truck-couch'],
                             'root'  => 'grp.org.warehouses.show.incoming.pallet_deliveries.',
                             'route' => [
@@ -193,7 +193,7 @@ class GetWarehouseNavigation
                         ],
                         $user->hasPermissionTo("dispatching.$warehouse->id.view") ?
                         [
-                            'label' => __('delivery notes'),
+                            'label' => __('Delivery notes'),
                             'icon'  => ['fal', 'fa-truck'],
                             'root'  => 'grp.org.warehouses.show.dispatching.delivery-notes',
                             'route' => [
@@ -215,9 +215,22 @@ class GetWarehouseNavigation
                                 'parameters' => [$warehouse->organisation->slug, $warehouse->slug]
                             ],
                         ] : null,
+                        $user->hasPermissionTo("dispatching.$warehouse->id.view") ?
                         [
-                            'label' => __('shippers'),
-                            'tooltip' => __('shippers'),
+                            'label' => __('Picking sessions'),
+                            'icon'  => ['fab', 'fa-stack-overflow'],
+                            'root'  => 'grp.org.warehouses.show.dispatching.picking_sessions.',
+                            'route' => [
+                                "name"       => "grp.org.warehouses.show.dispatching.picking_sessions.index",
+                                "parameters" => [
+                                    $warehouse->organisation->slug,
+                                    $warehouse->slug
+                                ],
+                            ]
+                        ] : null,
+                        [
+                            'label' => __('Shippers'),
+                            'tooltip' => __('Shippers'),
                             'icon'  => ['fal', 'fa-shipping-fast'],
                             'root'  => 'grp.org.warehouses.show.dispatching.shippers.',
                             'route' => [

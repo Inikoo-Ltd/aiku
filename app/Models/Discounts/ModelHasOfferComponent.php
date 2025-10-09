@@ -16,8 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- *
- *
  * @property-read Model|\Eloquent $model
  * @property-read \App\Models\Discounts\Offer|null $offer
  * @property-read \App\Models\Discounts\OfferCampaign|null $offerCampaign

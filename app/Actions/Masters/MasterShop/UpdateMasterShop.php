@@ -47,12 +47,14 @@ class UpdateMasterShop extends GrpAction
                     table: 'master_shops',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
             'name'   => ['sometimes', 'max:250', 'string'],
-            'status' => ['sometimes', 'required', 'boolean'],
+            'cost_price_ratio'   => ['sometimes', 'min:0'],
+            'price_rrp_ratio'   => ['sometimes', 'min:0'],
+            'status' => ['sometimes', 'required', 'boolean']
         ];
     }
 

@@ -10,6 +10,7 @@
 namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
+use App\Actions\CRM\Platform\UI\ShowPlatform;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -17,6 +18,10 @@ use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\ShopifyUser;
+use App\Models\Dropshipping\TiktokUser;
+use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -33,21 +38,42 @@ class ShowCustomerSalesChannel extends OrgAction
         return $customerSalesChannel;
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inPlatform(Organisation $organisation, Shop $shop, Platform $platform, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
+    {
+        $this->initialisationFromShop($customerSalesChannel->shop, $request)->withTab(CustomerPlatformTabsEnum::values());
+        return $this->handle($customerSalesChannel);
+    }
+
     public function asController(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, ActionRequest $request): CustomerSalesChannel
     {
         $this->initialisationFromShop($shop, $request)->withTab(CustomerPlatformTabsEnum::values());
-
-
         return $this->handle($customerSalesChannel);
     }
+
 
     public function htmlResponse(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
     {
         $navigation = CustomerPlatformTabsEnum::navigation();
 
         $actions = [];
+
+        $name = $customerSalesChannel->customer->name;
+        if (in_array($customerSalesChannel->platform->type, [
+            PlatformTypeEnum::SHOPIFY,
+            PlatformTypeEnum::WOOCOMMERCE,
+            PlatformTypeEnum::TIKTOK
+        ])) {
+            /** @var ShopifyUser|WooCommerceUser|TiktokUser $platformUser */
+            $platformUser = $customerSalesChannel->user;
+            if ($platformUser) {
+                $name = $platformUser->name;
+            }
+        }
+
+
         return Inertia::render(
-            'Org/Dropshipping/PlatformInCustomer',
+            'Org/Dropshipping/CustomerSalesChannel',
             [
                 'title'       => __('customer'),
                 'breadcrumbs' => $this->getBreadcrumbs(
@@ -56,18 +82,8 @@ class ShowCustomerSalesChannel extends OrgAction
                     $request->route()->originalParameters()
                 ),
                 'pageHead'    => [
-                    'icon'          => [
-                        'icon'  => ['fal', 'fa-code-branch'],
-                        'icon_rotation' => 90,
-                        'title' => __('channel')
-                    ],
-
-                    'subNavigation' => $this->getCustomerPlatformSubNavigation($customerSalesChannel, $request),
-                    'title'         => $customerSalesChannel->reference,
-                    'afterTitle'    => [
-                        'label' => ' @'.$customerSalesChannel->platform->name,
-                    ],
-                    'actions'       => $actions
+                    ...$this->getCustomerSalesChannelSubNavigationHead($customerSalesChannel),
+                    'actions' => $actions
                 ],
 
                 'tabs' => [
@@ -75,17 +91,17 @@ class ShowCustomerSalesChannel extends OrgAction
                     'navigation' => $navigation
                 ],
 
+                'platform'               => $customerSalesChannel->platform,
+                'customer_sales_channel' => $customerSalesChannel,
+                'platform_user'          => $customerSalesChannel->user,
+
+
                 'showcase' => [
                     'stats' => [
-                        'name' => match ($customerSalesChannel->platform->type) {
-                            PlatformTypeEnum::SHOPIFY => $customerSalesChannel->customer->shopifyUser->name,
-                            PlatformTypeEnum::WOOCOMMERCE => $customerSalesChannel->customer->wooCommerceUser->name,
-                            PlatformTypeEnum::TIKTOK => $customerSalesChannel->customer->tiktokUser->name,
-                            default => $customerSalesChannel->customer->name,
-                        },
-                        'number_orders' => $customerSalesChannel->number_orders,
+                        'name'                    => $name,
+                        'number_orders'           => $customerSalesChannel->number_orders,
                         'number_customer_clients' => $customerSalesChannel->number_customer_clients,
-                        'number_portfolios' => $customerSalesChannel->number_portfolios
+                        'number_portfolios'       => $customerSalesChannel->number_portfolios
                     ]
                 ]
             ]
@@ -94,6 +110,7 @@ class ShowCustomerSalesChannel extends OrgAction
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array
     {
+
         $headCrumb = function (CustomerSalesChannel $customerSalesChannel, array $routeParameters, string $suffix = '') {
             return [
                 [
@@ -116,26 +133,48 @@ class ShowCustomerSalesChannel extends OrgAction
             ];
         };
 
+        return match ($routeName) {
+            'grp.org.shops.show.crm.platforms.show.customer_sales_channels.show' =>
+            array_merge(
+                ShowPlatform::make()->getBreadcrumbs(
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $customerSalesChannel,
+                    [
 
-        return array_merge(
-            ShowCustomer::make()->getBreadcrumbs(
-                $routeName,
-                $routeParameters
-            ),
-            $headCrumb(
-                $customerSalesChannel,
-                [
-
-                    'index' => [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
-                        'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer'])
-                    ],
-                    'model' => [
-                        'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show',
-                        'parameters' => $routeParameters
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show',
+                            'parameters' => $routeParameters
+                        ]
                     ]
-                ]
-            )
-        );
+                )
+            ),
+            default => array_merge(
+                ShowCustomer::make()->getBreadcrumbs(
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    $customerSalesChannel,
+                    [
+
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.index',
+                            'parameters' => Arr::only($routeParameters, ['organisation', 'shop', 'customer'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ]
+                )
+            ),
+        };
     }
 }

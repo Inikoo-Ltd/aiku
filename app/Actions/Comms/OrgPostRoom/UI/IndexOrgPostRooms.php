@@ -145,7 +145,7 @@ class IndexOrgPostRooms extends OrgAction
         $title = __('Post Room');
         $icon  = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('post rooms')
+            'title' => __('Post rooms')
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -168,7 +168,7 @@ class IndexOrgPostRooms extends OrgAction
                     //     $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.catalogue.collections.index' ? [
                     //         'type'    => 'button',
                     //         'style'   => 'create',
-                    //         'tooltip' => __('new collection'),
+                    //         'tooltip' => __('New collection'),
                     //         'label'   => __('collection'),
                     //         'route'   => [
                     //             'name'       => 'grp.org.shops.show.catalogue.collections.create',

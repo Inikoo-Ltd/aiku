@@ -29,7 +29,7 @@ class UpdateOrgStock extends OrgAction
     public function handle(OrgStock $orgStock, array $modelData): OrgStock
     {
         $orgStock = $this->update($orgStock, $modelData, ['data', 'settings']);
-        OrgStockRecordSearch::dispatch($orgStock);
+
         $changes = $orgStock->getChanges();
 
         if (Arr::has($changes, 'state')) {
@@ -45,6 +45,11 @@ class UpdateOrgStock extends OrgAction
             }
         }
 
+        if (Arr::hasAny($changes, ['code', 'name', 'state'])) {
+            OrgStockRecordSearch::dispatch($orgStock);
+        }
+
+
         return $orgStock;
     }
 
@@ -59,10 +64,12 @@ class UpdateOrgStock extends OrgAction
 
     public function rules(): array
     {
-        $rules = [];
+        $rules = [
+            'unit_cost'           => ['sometimes','numeric','min:0'],
+        ];
         if (!$this->strict) {
             $rules['discontinued_in_organisation_at'] = ['sometimes', 'nullable', 'date'];
-            $rules = $this->noStrictUpdateRules($rules);
+            $rules                                    = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;

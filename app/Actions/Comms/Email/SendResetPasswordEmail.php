@@ -14,7 +14,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Comms\DispatchedEmail\DispatchedEmailProviderEnum;
-use App\Enums\Comms\Outbox\OutboxTypeEnum;
+use App\Enums\Comms\Outbox\OutboxStateEnum;
 use App\Models\Comms\DispatchedEmail;
 use App\Models\Comms\Email;
 use App\Models\Comms\Outbox;
@@ -28,16 +28,18 @@ class SendResetPasswordEmail extends OrgAction
 
     private Email $email;
 
-    public function handle(WebUser $webUser, array $modelData): DispatchedEmail
+    public function handle(WebUser $webUser, array $modelData): ?DispatchedEmail
     {
         /** @var Outbox $outbox */
         $outbox = $webUser->shop->outboxes()->where('code', 'password_reminder')->first();
-        $outboxDispatch = $webUser->shop->outboxes()->where('type', OutboxTypeEnum::CUSTOMER_NOTIFICATION)->first();
+        if ($outbox->state != OutboxStateEnum::ACTIVE) {
+            return null;
+        }
 
         $recipient       = $webUser;
         $dispatchedEmail = StoreDispatchedEmail::run($outbox->emailOngoingRun, $recipient, [
             'is_test'       => false,
-            'outbox_id'     => $outboxDispatch->id,
+            'outbox_id'     => $outbox->id,
             'email_address' => $recipient->email,
             'provider'      => DispatchedEmailProviderEnum::SES
         ]);

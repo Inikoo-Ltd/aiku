@@ -66,9 +66,9 @@ class EditRawMaterial extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('edit raw material'),
+                'title'       => __('Edit raw material'),
                 'pageHead'    => [
-                    'title'     => __('edit raw material'),
+                    'title'     => __('Edit raw material'),
                     // 'actions'   => [
                     //     [
                     //         'type'  => 'button',
@@ -195,7 +195,7 @@ class EditRawMaterial extends OrgAction
                 [
                     'type'         => 'editingModel',
                     'editingModel' => [
-                        'label' => __('editing raw material'),
+                        'label' => __('Editing raw material'),
                     ]
                 ]
             ]

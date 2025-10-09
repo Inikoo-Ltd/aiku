@@ -61,7 +61,7 @@ class ShowFulfilmentService extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-concierge-bell'],
-                            'title' => __('service')
+                            'title' => __('Service')
                         ],
                     'iconRight' => ServiceStateEnum::stateIcon()[$service->state->value],
                     'actions' => [

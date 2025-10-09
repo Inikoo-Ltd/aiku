@@ -27,19 +27,19 @@ enum FulfilmentLocationTabsEnum: string
         return match ($this) {
 
             FulfilmentLocationTabsEnum::PALLETS => [
-                'title' => __('pallets'),
+                'title' => __('Pallets'),
                 'icon'  => 'fal fa-pallet',
             ],
 
             FulfilmentLocationTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
 
             FulfilmentLocationTabsEnum::SHOWCASE => [
-                'title' => __('location'),
+                'title' => __('Location'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

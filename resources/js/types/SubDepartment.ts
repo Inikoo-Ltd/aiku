@@ -9,6 +9,9 @@ export interface SubDepartmentx {
     shop_slug: string,
     shop_code: string,
     shop_name: string,
+    organisation_slug: string,
+    organisation_code: string,
+    organisation_name: string,
     department_slug: string,
     department_code: string,
     department_name: string,
@@ -18,4 +21,5 @@ export interface SubDepartmentx {
     description: string
     created_at: string
     updated_at: string
+    master_product_category_id: number
 }

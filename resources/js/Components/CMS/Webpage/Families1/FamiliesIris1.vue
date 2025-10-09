@@ -6,6 +6,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import Family1Render from './Families1Render.vue'
 import { getStyles } from "@/Composables/styles"
 import { computed, inject} from "vue"
+import { trans } from "laravel-vue-i18n"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -49,7 +50,7 @@ const layout: any = inject("layout", {})
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(fieldValue.container?.properties, screenType)
     }">
-      <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
+      <h2 class="text-2xl font-bold mb-6">{{ trans("Browse By Product Lines:") }}</h2>
       <div :class="['grid gap-8', responsiveGridClass]">
         <a v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`${item.url}`">
           <Family1Render :data="item" />

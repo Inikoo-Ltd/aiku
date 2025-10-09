@@ -24,14 +24,14 @@ class CreateAgent extends GrpAction
             'CreateModel',
             [
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'title'       => __('new agent'),
+                'title'       => __('New agent'),
                 'pageHead'    => [
-                    'title'   => __('new agent'),
+                    'title'   => __('New agent'),
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.supply-chain.agents.index',
                                 'parameters' => array_values($request->route()->originalParameters())

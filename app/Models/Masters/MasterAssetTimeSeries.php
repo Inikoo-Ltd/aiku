@@ -13,8 +13,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- *
- *
  * @property int $id
  * @property int $master_asset_id
  * @property TimeSeriesFrequencyEnum $frequency

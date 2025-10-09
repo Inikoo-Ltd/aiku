@@ -14,14 +14,9 @@ import { getIrisComponent } from '@/Composables/getIrisComponents'
 
 
 const props = defineProps<{
-  meta: {
-    meta_title: string,
-    meta_description: string,
-    image: string,
-    structured_data: JSON
-  },
+  webpage : any
   web_blocks: any,
-  script_website : any
+  webpage_img : any,
 }>()
 defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
@@ -67,7 +62,7 @@ onMounted(() => {
   // Inject structured data as script
   const script = document.createElement('script')
   script.type = 'application/ld+json'
-  let structuredData = props.meta.structured_data
+  let structuredData = props.webpage.structured_data
 
   if (typeof structuredData !== 'string') {
     try {
@@ -88,6 +83,7 @@ onMounted(() => {
 
   checkScreenType()
   window.addEventListener('resize', checkScreenType)
+  window.listWebBlocks = props.web_blocks
 })
 
 
@@ -97,29 +93,36 @@ onBeforeUnmount(() => {
 
 const layout: any = inject("layout", {});
 
+
 </script>
 
 <template>
- <Head>
-  <title>{{ meta.meta_title }}</title>
-    <meta name="description" :content="meta.meta_description" />
-    <meta property="og:type" content="website" />
-    <meta property="og:title" :content="meta.meta_title" />
-    <meta property="og:description" :content="meta.meta_description" />
-    <meta property="og:url" :content="currentUrl" />
-    <meta property="og:image" :content="meta?.image?.png" />
-    <meta property="og:image:alt" :content="meta.meta_title" />
-    <meta property="og:locale" content="en_US" />
-    <meta property="og:site_name" :content="meta.meta_title" />>
-</Head>
+    <Head>
+        <title>{{ webpage.title }}</title>
+        <meta name="description" :content="webpage.description" />
+        <meta property="og:type" content="website" />
+        <meta property="og:title" :content="webpage.title" />
+        <meta property="og:description" :content="webpage.description" />
+        <meta property="og:url" :content="currentUrl" />
+        <meta property="og:image" :content="webpage_img.png" />
+        <meta property="og:image:alt" :content="webpage.title" />
+        <meta property="og:locale" content="en_US" />
+        <meta property="og:site_name" :content="webpage.title" />
+    </Head>
 
 
 
   <div class="bg-white">
-      <div v-for="(web_block_data, web_block_data_idx) in props.web_blocks" :key="'block' + web_block_data.id" class="w-full">
+      <div v-for="(web_block_data, web_block_data_idx) in props.web_blocks"
+        :key="'block' + web_block_data.id"
+        class="w-full"
+        :id="`v-${web_block_data.type}`"
+      >
         <component
           :screenType="screenType"
-          :is="getIrisComponent(web_block_data.type)"
+          :is="getIrisComponent(web_block_data.type, {
+            shop_type: layout.retina.type
+          })"
           :theme="layout?.app?.theme" :key="web_block_data_idx"
           :fieldValue="web_block_data.web_block.layout.data.fieldValue" />
       </div>

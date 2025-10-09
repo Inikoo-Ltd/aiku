@@ -41,7 +41,7 @@ class DeliveryNoteRecordSearch
                 'haystack_tier_2'   => $deliveryNote->email,
                 'result'            => [
                     'route'      => [
-                        'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.show',
+                        'name'       => 'grp.org.warehouses.show.dispatching.delivery_notes.show',
                         'parameters' => [
                             'organisation' => $deliveryNote->organisation->slug,
                             'warehouse'     => $deliveryNote->warehouse->slug,

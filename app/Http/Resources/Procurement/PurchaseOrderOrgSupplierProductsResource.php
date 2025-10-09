@@ -25,7 +25,10 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
     public function toArray($request): array
     {
 
-        $stock = Stock::find($this->stock_id)->first();
+        $stock = Stock::find($this->stock_id);
+
+        $imageThumbnail = $stock ? $stock->imageSources(40, 40) : null;
+
         /** @var Stock $stock */
         return [
             'id'              => $this->id,
@@ -34,7 +37,8 @@ class PurchaseOrderOrgSupplierProductsResource extends JsonResource
             'code'            => $this->code,
             'name'            => $this->name,
             'supplier_name'   => $this->supplier_name,
-            'image_thumbnail' => $stock->imageSources(40, 40),
+            // 'image_thumbnail' => $stock->imageSources(40, 40),
+            'image_thumbnail' => $imageThumbnail,
             'quantity_ordered' => $this->quantity_ordered ?? 0,
             'purchase_order_transaction_id' => $this->purchase_order_transaction_id,
             'purchase_order_id'  => $this->purchase_order_id,

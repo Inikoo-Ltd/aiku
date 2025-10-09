@@ -13,7 +13,9 @@
   import { computed, defineAsyncComponent, ref } from "vue"
   import type { Component } from 'vue'
   import Tabs from "@/Components/Navigation/Tabs.vue"
-
+  import ProspectShowcase from './ProspectShowcase.vue'
+import TableDispatchedEmails  from '@/Components/Tables/TableDispatchedEmails.vue'
+import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
   
   import { capitalize } from "@/Composables/capitalize"
   import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
@@ -41,14 +43,21 @@
           current: string
           navigation: {}
       }
+      showcase: any
+      dispatched_emails: any
+      history: any
   }>()
-  
+
+  console.log(props);
   
   const currentTab = ref(props.tabs.current)
   const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
   
   const component = computed(() => {
       const components: {[key: string]: Component} = {
+        'showcase' : ProspectShowcase,
+        'dispatched_emails': TableDispatchedEmails,
+        'history' : TableHistories
       }
   
       return components[currentTab.value]

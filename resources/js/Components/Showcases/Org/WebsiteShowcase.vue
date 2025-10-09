@@ -5,16 +5,20 @@
   -->
 
 <script setup lang="ts">
-import { faFragile, faGlobe, faLink, faPencil } from "@fal"
-import { ref } from "vue"
+import { faFragile, faGlobe, faLink, faSearch, faPencil } from "@fal"
+import { computed, ref, inject } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { trans } from "laravel-vue-i18n"
 import { StatsBoxTS } from "@/types/Components/StatsBox"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
+import { routeType } from "@/types/route"
+import axios from "axios"
+import { notify } from "@kyvg/vue3-notification"
+import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 
-library.add(faGlobe, faLink)
+library.add(faGlobe, faLink, faSearch)
 
 const props = defineProps<{
     data: {
@@ -25,20 +29,82 @@ const props = defineProps<{
         status: string
         created_at: string
         updated_at: string
-        layout: string
+        layout: any
         stats: StatsBoxTS[]
         content_blog_stats: StatsBoxTS[]
-        
-    },
+        website_type: string
+    }
+    route_storefront: routeType
+    luigi_data: {
+        last_reindexed: string
+        luigisbox_tracker_id: string
+        luigisbox_private_key: string
+        luigisbox_lbx_code: string
+    }
 }>()
 
-const links = ref([
-    { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
-    { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
-    { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
-]);
+const layout = inject('layout')
+
+const links = computed(() => {
+    const baseLinks = [
+        { label: trans("Edit Header"), route_target: props.data.layout.headerRoute, icon: faPencil },
+        { label: trans("Edit Menu"), route_target: props.data.layout.menuRoute, icon: faPencil },
+        { label: trans("Edit Footer"), route_target: props.data.layout.footerRoute, icon: faPencil }
+    ];
+
+    // Add Edit Sidebar button only for dropshipping websites
+    if (props.data.website_type === "dropshipping") {
+        baseLinks.splice(2, 0, { 
+            label: trans("Edit Sidebar"), 
+            route_target: props.data.layout.sidebarRoute, 
+            icon: faPencil, 
+            // disabled: layout?.app.environment !== 'local' 
+        });
+    }
+
+    return baseLinks;
+});
+
+window.reindexwebsite = async () => {
+    try {
+        const response = await axios.post(
+            route(
+                'grp.models.website_luigi.reindex',
+                {
+                    website: props.data?.id
+                }
+            ),
+            { }
+        )
+
+        console.log('success reindex website', response.data)
+        if (response.status !== 200) {
+
+        }
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    }
+}
+
+// Section: Button reindex website search
+const isAbleReindex = computed(() => {
+    const lastReindexed30Minutes = new Date(props.luigi_data.last_reindexed)
+    lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
+
+    return lastReindexed30Minutes < new Date()
+})
+const dateAdd30MinutesLastReindex = computed(() => {
+    const dateLastReindex = new Date(props.luigi_data.last_reindexed)
+    return dateLastReindex.setMinutes(dateLastReindex.getMinutes() + 30)
+})
+
 
 </script>
+
 <template>
     <!-- Box: Url and Buttons in a single row -->
     <div class="px-6 py-12 lg:px-8">
@@ -62,16 +128,16 @@ const links = ref([
                         {{trans('Product Catalogue')}}
                     </div>
 
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
                         <StatsBox
                             v-for="stat in props.data.stats"
                             :stat
                         />
                     </div>
-                    <div class="font-semibold w-fit text-lg mb-2">
+                    <div class="mt-6 font-semibold w-fit text-lg mb-2">
                         {{trans('Content & Blog')}}
                     </div>
-                    <div class="grid grid-cols-2 gap-2">
+                    <div class="grid grid-cols-2 gap-2 md:max-w-lg">
                         <StatsBox
                             v-for="stat in props.data.content_blog_stats"
                             :stat
@@ -83,18 +149,64 @@ const links = ref([
             <!-- Buttons Card (in the right part of the grid) -->
             <div class="flex justify-end">
                 <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
-                    <div v-for="(item, index) in links" :key="index" class="p-2">
-                        <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
-                            type="secondary" />
+                    <div class="p-2">
+                        <ButtonWithLink :routeTarget="route_storefront" icon="fal fa-home" type="tertiary" :label="trans('Storefront')" full />
                     </div>
 
-                    <div class="p-2">
+                    <div v-for="(item, index) in links" :key="index" class="px-2 py-1">
+                        <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
+                            type="secondary" :disabled="item?.disabled" />
+                    </div>
+
+                    <div class="p-2 space-y-2">
                         <ButtonWithLink :routeTarget="{
                             name: 'grp.models.website.break_cache',
                             parameters: {
                                 website: data?.id
                             }
-                        }" method="post" :icon="faFragile" type="tertiary" :label="trans('Break cache')" full />
+                        }" method="post" :icon="faFragile" type="tertiary" :label="trans('Break cache')" full>
+                            <template #iconRight>
+                                <div v-tooltip="trans('If you made some changes but did not updated yet in the website, use this feature')" class="text-gray-400 hover:text-gray-700">
+                                    <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
+                                </div>
+                            </template>
+                        </ButtonWithLink>
+
+                        <ButtonWithLink
+                            v-if="luigi_data?.luigisbox_tracker_id"s
+                            v-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
+                            :disabled="!isAbleReindex"
+                            :routeTarget="{
+                                name: 'grp.models.website_luigi.reindex',
+                                parameters: {
+                                    website: data?.id
+                                }
+                            }"
+                            icon="fal fa-search"
+                            method="post"
+                            :type="!isAbleReindex || luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'"
+                            full
+                        >
+                            <template #label>
+                                <span class="text-xs">
+                                    {{ trans('Reindex Website Search') }}
+                                </span>
+                            </template>
+                            <template v-if="isAbleReindex" #iconRight>
+                                <div v-if="luigi_data?.luigisbox_private_key" v-tooltip="trans('This will reindexing the product that will appear in the search feature')" class="text-gray-400 hover:text-gray-700">
+                                    <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
+                                </div>
+                                <div v-else v-tooltip="trans('Please input Luigi Private Key do start reindexing')" class="text-amber-500">
+                                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                                </div>
+                            </template>
+                        </ButtonWithLink>
+
+                        <!-- {{ useFormatTime(lastReindexed30Minutes, {
+                            formatTime: 'hm'
+                        }) }}
+                        <br>
+                        {{ props.luigi_data.last_reindexed }} -->
                     </div>
                 </div>
             </div>

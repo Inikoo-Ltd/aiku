@@ -11,7 +11,6 @@ namespace App\Actions\Goods\TradeUnit\UI;
 use App\Actions\Catalogue\Product\UI\IndexProductsInTradeUnit;
 use App\Actions\Goods\Stock\UI\IndexStocksInTradeUnit;
 use App\Actions\Goods\TradeUnit\IndexTradeUnitImages;
-use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
@@ -19,8 +18,6 @@ use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
-use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
-use App\Http\Resources\Helpers\ImagesResource;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -44,80 +41,6 @@ class ShowTradeUnit extends GrpAction
         return $this->handle($tradeUnit);
     }
 
-
-    public function getImagesData(TradeUnit $tradeUnit): array
-    {
-        $imagesData = [];
-
-        if ($this->tab == TradeUnitTabsEnum::IMAGES->value) {
-            $imagesData = [
-                [
-                            'label' => __('Main'),
-                            'type'  => 'image',
-                            'key_in_db' => 'image_id',
-                            'images' => $tradeUnit->imageSources(),
-                        ],
-                        [
-                            'label' => __('Video'),
-                            'type'  => 'video',
-                            'information' => __('You can use YouTube or Vimeo links'),
-                            'key_in_db' => 'video_url',
-                            'url' => $tradeUnit->video_url,
-                        ],
-                        [
-                            'label' => __('Front side'),
-                            'type'  => 'image',
-                            'key_in_db' => 'front_image_id',
-                            'images' => $tradeUnit->imageSources(getImage:'frontImage'),
-                        ],
-                        [
-                            'label' => __('Left side'),
-                            'type'  => 'image',
-                            'key_in_db' => 'left_image_id',
-                            'images' => $tradeUnit->imageSources(getImage:'leftImage'),
-                        ],
-                        [
-                            'label' => __('3/4 angle side'),
-                            'type'  => 'image',
-                            'key_in_db' => '34_image_id',
-                            'images' => $tradeUnit->imageSources(getImage:'threeQuarterImage'),
-                        ],
-                        [
-                            'label' => __('Right side'),
-                            'type'  => 'image',
-                            'key_in_db' => 'right_image_id',
-                            'images' => $tradeUnit->imageSources(getImage:'rightImage'),
-                        ],
-                        [
-                            'label' => __('Back side'),
-                            'type'  => 'image',
-                            'key_in_db' => 'back_image_id',
-                            'images' => $tradeUnit->imageSources(getImage:'backImage'),
-                        ],
-                        [
-                            'label' => __('Top side'),
-                            'type'  => 'image',
-                            'key_in_db' => 'top_image_id',
-                            'images' => $tradeUnit->imageSources(getImage:'topImage'),
-                        ],
-                        [
-                            'label' => __('Bottom side'),
-                            'type'  => 'image',
-                            'key_in_db' => 'bottom_image_id',
-                            'images' => $tradeUnit->imageSources(getImage:'bottomImage'),
-                        ],
-                        [
-                            'label' => __('Comparison image'),
-                            'type'  => 'image',
-                            'key_in_db' => 'size_comparison_image_id',
-                            'images' => $tradeUnit->imageSources(getImage:'sizeComparisonImage'),
-                        ],
-            ];
-        }
-
-        return $imagesData;
-    }
-
     public function htmlResponse(TradeUnit $tradeUnit, ActionRequest $request): Response
     {
         return Inertia::render(
@@ -135,10 +58,13 @@ class ShowTradeUnit extends GrpAction
                 ],
                 'pageHead'         => [
                     'icon'    => [
-                        'title' => __('trade unit'),
+                        'title' => __('Trade unit'),
                         'icon'  => 'fal fa-atom'
                     ],
                     'title'   => $tradeUnit->code,
+                    'afterTitle' => [
+                      'label' => $tradeUnit->status->labels()[$tradeUnit->status->value]
+                    ],
                     'actions' => [
                         $this->canEdit ? [
                             'type'  => 'button',
@@ -150,35 +76,9 @@ class ShowTradeUnit extends GrpAction
                         ] : false,
                     ]
                 ],
-                'attachmentRoutes' => [
-                    'attachRoute' => [
-                        'name'       => 'grp.models.trade-unit.attachment.attach',
-                        'parameters' => [
-                            'tradeUnit' => $tradeUnit->id,
-                        ]
-                    ],
-                    'detachRoute' => [
-                        'name'       => 'grp.models.trade-unit.attachment.detach',
-                        'parameters' => [
-                            'tradeUnit' => $tradeUnit->id,
-                        ],
-                        'method'     => 'delete'
-                    ]
-                ],
-
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => TradeUnitTabsEnum::navigation()
-
-                ],
-
-                'images_category_box' => $this->getImagesData($tradeUnit),
-                'images_update_route' => [
-                    'name'       => 'grp.models.trade-unit.update_images',
-                    'parameters' => [
-                        'tradeUnit' => $tradeUnit->id,
-                    ],
-                    'method'     => 'patch'
                 ],
 
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?
@@ -186,12 +86,12 @@ class ShowTradeUnit extends GrpAction
                     : Inertia::lazy(fn () => GetTradeUnitShowcase::run($tradeUnit)),
 
                 TradeUnitTabsEnum::ATTACHMENTS->value => $this->tab == TradeUnitTabsEnum::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($tradeUnit))),
+                    fn () =>  GetTradeUnitAttachment::run($tradeUnit)
+                    : Inertia::lazy(fn () => GetTradeUnitAttachment::run($tradeUnit)),
 
                 TradeUnitTabsEnum::IMAGES->value => $this->tab == TradeUnitTabsEnum::IMAGES->value ?
-                    fn () => ImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))
-                    : Inertia::lazy(fn () => ImagesResource::collection(IndexTradeUnitImages::run($tradeUnit))),
+                    fn () =>  GetTradeUnitImages::run($tradeUnit)
+                    : Inertia::lazy(fn () => GetTradeUnitImages::run($tradeUnit)),
 
                 TradeUnitTabsEnum::PRODUCTS->value => $this->tab == TradeUnitTabsEnum::PRODUCTS->value ?
                     fn () => ProductsResource::collection(IndexProductsInTradeUnit::run($tradeUnit))
@@ -238,9 +138,9 @@ class ShowTradeUnit extends GrpAction
         };
 
         return match ($routeName) {
-            'grp.goods.trade-units.show' =>
+            'grp.trade_units.units.show' =>
             array_merge(
-                ShowGoodsDashboard::make()->getBreadcrumbs(),
+                ShowTradeUnitsDashboard::make()->getBreadcrumbs(),
                 $headCrumb(
                     $tradeUnit,
                     [
@@ -280,9 +180,9 @@ class ShowTradeUnit extends GrpAction
             return null;
         }
 
-
         return match ($routeName) {
-            'grp.goods.trade-units.show' => [
+
+            'grp.trade_units.units.show' => [
                 'label' => $tradeUnit->name,
                 'route' => [
                     'name'       => $routeName,

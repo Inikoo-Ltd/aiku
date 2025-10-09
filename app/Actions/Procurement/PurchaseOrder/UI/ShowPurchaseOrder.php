@@ -88,7 +88,6 @@ class ShowPurchaseOrder extends OrgAction
 
     public function htmlResponse(PurchaseOrder $purchaseOrder, ActionRequest $request): Response
     {
-        // dd($purchaseOrder->id);
         $this->validateAttributes();
 
         $timeline = [];
@@ -96,7 +95,7 @@ class ShowPurchaseOrder extends OrgAction
             if ($state === PurchaseOrderStateEnum::IN_PROCESS) {
                 $timestamp = $purchaseOrder->created_at;
             } else {
-                $timestamp = $purchaseOrder->{$state->snake().'_at'} ? $purchaseOrder->{$state->snake().'_at'} : null;
+                $timestamp = $purchaseOrder->{$state->snake() . '_at'} ? $purchaseOrder->{$state->snake() . '_at'} : null;
             }
 
             // If all possible values are null, set the timestamp to null explicitly
@@ -106,7 +105,6 @@ class ShowPurchaseOrder extends OrgAction
                 'label'     => $state->labels()[$state->value],
                 'tooltip'   => $state->labels()[$state->value],
                 'key'       => $state->value,
-                /* 'icon'    => $palletDelivery->state->stateIcon()[$state->value]['icon'], */
                 'timestamp' => $timestamp
             ];
         }
@@ -153,7 +151,7 @@ class ShowPurchaseOrder extends OrgAction
                         'style'   => 'secondary',
                         'icon'    => 'fal fa-plus',
                         'key'     => 'add-products',
-                        'label'   => __('add products'),
+                        'label'   => __('Add products'),
                         'tooltip' => __('Add products'),
                         'route'   => [
                             'name'       => 'grp.models.purchase-order.transaction.store',
@@ -166,8 +164,8 @@ class ShowPurchaseOrder extends OrgAction
                         [
                             'type'    => 'button',
                             'style'   => 'save',
-                            'tooltip' => __('submit'),
-                            'label'   => __('submit'),
+                            'tooltip' => __('Submit'),
+                            'label'   => __('Submit'),
                             'key'     => 'action',
                             'route'   => [
                                 'method'     => 'patch',
@@ -274,10 +272,10 @@ class ShowPurchaseOrder extends OrgAction
                 ],
                 'pageHead'    => [
                     'icon'  =>
-                        [
-                            'icon'  => ['fal', 'clipboard-list'],
-                            'title' => __('purchase order')
-                        ],
+                    [
+                        'icon'  => ['fal', 'clipboard-list'],
+                        'title' => __('Purchase order')
+                    ],
                     'title' => $purchaseOrder->reference,
                     'afterTitle'    => [
                         'label' => __($purchaseOrder->parent_type)
@@ -462,7 +460,7 @@ class ShowPurchaseOrder extends OrgAction
             ),
             'grp.org.procurement.org_suppliers.show.purchase-orders.show'
             => array_merge(
-                (new ShowOrgSupplier())->getBreadcrumbs($routeParameters),
+                (new ShowOrgSupplier())->getBreadcrumbs('grp.org.procurement.org_suppliers.show', $routeParameters),
                 $headCrumb(
                     $purchaseOrder,
                     [

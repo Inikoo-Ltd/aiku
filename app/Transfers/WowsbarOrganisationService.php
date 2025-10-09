@@ -176,16 +176,6 @@ class WowsbarOrganisationService implements SourceOrganisationService
         return null;
     }
 
-    public function fetchMasterAssetHasStock($id): ?array
-    {
-        return null;
-    }
-
-    public function fetchDepartment($id): ?array
-    {
-        return null;
-    }
-
     public function fetchFamily($id): ?array
     {
         return null;
@@ -502,26 +492,6 @@ class WowsbarOrganisationService implements SourceOrganisationService
     }
 
     public function fetchSubscriptionEvent($id): ?array
-    {
-        return null;
-    }
-
-    public function fetchMasterDepartment($id): ?array
-    {
-        return null;
-    }
-
-    public function fetchMasterFamily($id): ?array
-    {
-        return null;
-    }
-
-    public function fetchMasterAsset($id): ?array
-    {
-        return null;
-    }
-
-    public function fetchInvoiceCategory($id): ?array
     {
         return null;
     }

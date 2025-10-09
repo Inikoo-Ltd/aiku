@@ -34,11 +34,11 @@ return new class () extends Migration {
             $table->unsignedInteger('current_historic_asset_id')->index()->nullable();
             $table->string('state')->default(AssetStateEnum::IN_PROCESS)->index();
             $table->boolean('status')->default(true)->index();
-            $table->string('code')->index()->collation('und_ns')->comment('mirror of asset model');
-            $table->string('name', 255)->nullable()->comment('mirror of asset model');
-            $table->decimal('price', 18)->nullable()->comment('mirror of asset model');
-            $table->decimal('units', 9, 3)->comment('mirror of asset model');
-            $table->string('unit')->nullable()->comment('mirror of asset model');
+            $table->string('code')->index()->collation('und_ns')->comment('mirror of the asset model');
+            $table->string('name', 255)->nullable()->comment('mirror of the asset model');
+            $table->decimal('price', 18)->nullable()->comment('mirror of the asset model');
+            $table->decimal('units', 9, 3)->comment('mirror of the asset model');
+            $table->string('unit')->nullable()->comment('mirror of the asset model');
 
 
             $table->unsignedSmallInteger('currency_id');

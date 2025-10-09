@@ -8,7 +8,6 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\Goods\UI\ShowGoodsDashboard;
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
@@ -93,6 +92,7 @@ class IndexTradeUnits extends GrpAction
 
         $queryBuilder = QueryBuilder::for(TradeUnit::class);
         $queryBuilder->where('trade_units.group_id', $this->group->id);
+        $queryBuilder->leftJoin('trade_unit_stats', 'trade_unit_stats.trade_unit_id', 'trade_units.id');
 
         if ($bucket == 'in_process') {
             $queryBuilder->where('trade_units.status', TradeUnitStatusEnum::IN_PROCESS);
@@ -115,11 +115,14 @@ class IndexTradeUnits extends GrpAction
                 'trade_units.net_weight',
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
-                'trade_units.type'
+                'trade_units.type',
+                'trade_unit_stats.number_current_stocks',
+                'trade_unit_stats.number_current_products',
+                'trade_units.id'
             ]);
 
 
-        return $queryBuilder->allowedSorts(['code', 'type', 'name'])
+        return $queryBuilder->allowedSorts(['code', 'type', 'name','number_current_stocks','number_current_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -147,8 +150,18 @@ class IndexTradeUnits extends GrpAction
                     }
                 )
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+
+            $routeName = request()->route()->getName();
+
+            if (str_starts_with($routeName, 'grp.goods.')) {
+                $table->column(key: 'number_current_stocks', label: __('SKUs'), canBeHidden: false, sortable: true, searchable: true);
+            } else {
+                $table->column(key: 'number_current_products', label: __('Products'), canBeHidden: false, sortable: true, searchable: true);
+            }
+
+
+            $table->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
@@ -168,6 +181,7 @@ class IndexTradeUnits extends GrpAction
             'anomality' => __('Anomality Trade Units'),
             default => __('Trade Units')
         };
+
         return Inertia::render(
             'Goods/TradeUnits',
             [
@@ -178,8 +192,8 @@ class IndexTradeUnits extends GrpAction
                 'title'       => $title,
                 'pageHead'    => [
                     'subNavigation' => $this->getTradeUnitsSubNavigation(),
-                    'title'     => $title,
-                    'iconRight' => [
+                    'title'         => $title,
+                    'iconRight'     => [
                         'icon'  => ['fal', 'fa-atom'],
                         'title' => $title,
                     ],
@@ -208,7 +222,7 @@ class IndexTradeUnits extends GrpAction
         };
 
         return array_merge(
-            ShowGoodsDashboard::make()->getBreadcrumbs(),
+            ShowTradeUnitsDashboard::make()->getBreadcrumbs(),
             $headCrumb(
                 [
                     'name'       => $routeName,
@@ -225,37 +239,37 @@ class IndexTradeUnits extends GrpAction
 
             [
                 'label'  => __('Active'),
-                'root'   => 'grp.goods.trade-units.active',
+                'root'   => 'grp.trade_units.units.active',
                 'route'  => [
-                    'name'       => 'grp.goods.trade-units.active',
+                    'name'       => 'grp.trade_units.units.active',
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units_status_active
             ],
             [
                 'label'  => __('In process'),
-                'root'   => 'grp.goods.trade-units.in_process',
+                'root'   => 'grp.trade_units.units.in_process',
                 'route'  => [
-                    'name'       => 'grp.goods.trade-units.in_process',
+                    'name'       => 'grp.trade_units.units.in_process',
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units_status_in_process
             ],
             [
                 'label'  => __('Discontinued'),
-                'root'   => 'grp.goods.trade-units.discontinued',
+                'root'   => 'grp.trade_units.units.discontinued',
                 'route'  => [
-                    'name'       => 'grp.goods.trade-units.discontinued',
+                    'name'       => 'grp.trade_units.units.discontinued',
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units_status_discontinued
             ],
             [
                 'label'  => __('Anomality'),
-                'root'   => 'grp.goods.trade-units.anomality',
+                'root'   => 'grp.trade_units.units.anomality',
                 'align'  => 'right',
                 'route'  => [
-                    'name'       => 'grp.goods.trade-units.anomality',
+                    'name'       => 'grp.trade_units.units.anomality',
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units_status_anomality
@@ -263,10 +277,10 @@ class IndexTradeUnits extends GrpAction
             [
                 'label'  => __('All'),
                 'icon'   => 'fal fa-bars',
-                'root'   => 'grp.goods.trade-units.index',
+                'root'   => 'grp.trade_units.units.index',
                 'align'  => 'right',
                 'route'  => [
-                    'name'       => 'grp.goods.trade-units.index',
+                    'name'       => 'grp.trade_units.units.index',
                     'parameters' => []
                 ],
                 'number' => $this->group->goodsStats->number_trade_units

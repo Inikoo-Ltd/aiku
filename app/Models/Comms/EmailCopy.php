@@ -12,8 +12,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- *
- *
  * @property int $id
  * @property int $dispatched_email_id
  * @property string $subject
@@ -23,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
+ * @property bool $is_body_encoded
  * @property-read \App\Models\Comms\DispatchedEmail $dispatchedEmail
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailCopy newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|EmailCopy newQuery()
@@ -34,6 +33,7 @@ class EmailCopy extends Model
     protected $casts = [
         'fetched_at'         => 'datetime',
         'last_fetched_at'    => 'datetime',
+        'is_body_encoded'    => 'boolean',
     ];
 
     protected $guarded = [];

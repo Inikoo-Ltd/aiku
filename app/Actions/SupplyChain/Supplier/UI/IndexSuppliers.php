@@ -125,7 +125,7 @@ class IndexSuppliers extends GrpAction
                             'action'      => $this->canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new supplier'),
+                                'tooltip' => __('New supplier'),
                                 'label'   => __('supplier'),
                                 'route'   => [
                                     'name'       => 'grp.supply-chain.suppliers.create',
@@ -140,7 +140,7 @@ class IndexSuppliers extends GrpAction
                             'action'      => $canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new supplier'),
+                                'tooltip' => __('New supplier'),
                                 'label'   => __('supplier'),
                                 'route'   => [
                                     'name'       => 'grp.supply-chain.agent.show.suppliers.create',
@@ -195,7 +195,7 @@ class IndexSuppliers extends GrpAction
         $model = '';
         $icon  = [
             'icon'  => ['fal', 'fa-person-dolly'],
-            'title' => __('suppliers')
+            'title' => __('Suppliers')
         ];
         $afterTitle = null;
         $iconRight = null;
@@ -218,7 +218,7 @@ class IndexSuppliers extends GrpAction
             $model = '';
             $icon  = [
                 'icon'  => ['fal', 'fa-people-arrows'],
-                'title' => __('suppliers')
+                'title' => __('Suppliers')
             ];
             $iconRight    = [
                 'icon' => 'fal fa-person-dolly',

@@ -31,7 +31,7 @@ class GetOrderActions
         }
 
         if ($canEdit) {
-            $actions = match ($order->state) {
+            $actions    = match ($order->state) {
                 OrderStateEnum::CREATING => [
                     $platform && $platform->type == PlatformTypeEnum::MANUAL ? [
                         'type'   => 'buttonGroup',
@@ -52,7 +52,7 @@ class GetOrderActions
                         'style'   => 'secondary',
                         'icon'    => 'fal fa-plus',
                         'key'     => 'add-products',
-                        'label'   => __('add products'),
+                        'label'   => __('Add products'),
                         'tooltip' => __('Add products'),
                         'route'   => [
                             'name'       => 'grp.models.order.transaction.store',
@@ -65,8 +65,8 @@ class GetOrderActions
                         [
                             'type'    => 'button',
                             'style'   => 'save',
-                            'tooltip' => __('submit'),
-                            'label'   => __('submit'),
+                            'tooltip' => __('Submit'),
+                            'label'   => __('Submit'),
                             'key'     => 'action',
                             'route'   => [
                                 'method'     => 'patch',
@@ -81,8 +81,8 @@ class GetOrderActions
                     [
                         'type'    => 'button',
                         'style'   => 'save',
-                        'tooltip' => __('Send to Warehouse'),
-                        'label'   => __('send to warehouse'),
+                        'tooltip' => __('Send order to Warehouse'),
+                        'label'   => __('Send to warehouse'),
                         'key'     => 'action',
                         'route'   => [
                             'method'     => 'patch',
@@ -94,9 +94,7 @@ class GetOrderActions
                     ]
                 ],
 
-
-
-                OrderStateEnum::FINALISED, OrderStateEnum::DISPATCHED => [
+                OrderStateEnum::FINALISED => [
 
                     $order->invoices->count() == 0 ?
                         [
@@ -112,31 +110,80 @@ class GetOrderActions
                                     'order' => $order->id
                                 ]
                             ]
-                        ] : []
+                        ] : [],
                 ],
+
+                OrderStateEnum::DISPATCHED => [
+
+                    $order->invoices->count() == 0 ?
+                        [
+                            'type'    => 'button',
+                            'style'   => '',
+                            'tooltip' => $generateInvoiceLabel,
+                            'label'   => $generateInvoiceLabel,
+                            'key'     => 'action',
+                            'route'   => [
+                                'method'     => 'patch',
+                                'name'       => 'grp.models.order.generate_invoice',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ]
+                        ] : [],
+                    [
+                        'type'    => 'button',
+                        'style'   => 'save',
+                        'icon'    => 'fal fa-plus',
+                        'tooltip' => __('Create a replacement'),
+                        'label'   => __('Replacement'),
+                        'key'     => 'replacement',
+                        'route'   => [
+                            'method'     => 'get',
+                            'name'       => 'grp.org.shops.show.ordering.orders.show.replacement.create',
+                            'parameters' => [
+                                'organisation' => $order->organisation->slug,
+                                'shop'         => $order->shop->slug,
+                                'order'        => $order->slug
+                            ]
+                        ]
+                    ],
+                ],
+
                 default => []
             };
             $showCancel = true;
 
-            if (!in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE]) || $order->invoices()->count() > 0 || $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->count() > 0) {
+            if (in_array($order->state, [
+                    OrderStateEnum::CANCELLED,
+                    OrderStateEnum::DISPATCHED,
+                    OrderStateEnum::FINALISED
+                ])
+                || $order->invoices()->count() > 0
+                || $order->deliveryNotes()->where('state', DeliveryNoteStateEnum::DISPATCHED)->count() > 0) {
                 $showCancel = false;
             }
 
             if ($showCancel) {
-                array_unshift($actions, [
-                    'type'    => 'button',
-                    'style'   => 'cancel',
-                    'key'     => 'action',
-                    'route'   => [
-                        'method'     => 'patch',
-                        'name'       => 'grp.models.order.state.cancelled',
-                        'parameters' => [
-                            'order' => $order->id
+                array_unshift(
+                    $actions,
+                    [
+                        'type'  => 'button',
+                        'style' => 'cancel',
+                        'key'   => 'cancel',
+                        'label' => __('Cancel'),
+                        'route' => [
+                            'method'     => 'patch',
+                            'name'       => 'grp.models.order.state.cancelled',
+                            'parameters' => [
+                                'order' => $order->id
+                            ]
                         ]
                     ]
-                ]);
+                );
             }
         }
+
+
 
         return $actions;
     }

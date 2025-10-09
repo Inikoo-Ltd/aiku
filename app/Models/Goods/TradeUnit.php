@@ -15,6 +15,7 @@ use App\Models\Helpers\Brand;
 use App\Models\Helpers\Media;
 use App\Models\Helpers\Tag;
 use App\Models\Inventory\OrgStock;
+use App\Models\Masters\MasterAsset;
 use App\Models\SupplyChain\SupplierProduct;
 use App\Models\SysAdmin\Group;
 use App\Models\Traits\HasAttachments;
@@ -35,6 +36,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Spatie\Translatable\HasTranslations;
 
 /**
  * App\Models\Goods\TradeUnit
@@ -100,6 +102,26 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $duty_rate
  * @property string|null $hts_us
  * @property string|null $marketing_ingredients
+ * @property array<array-key, mixed>|null $name_i8n
+ * @property array<array-key, mixed>|null $description_i8n
+ * @property array<array-key, mixed>|null $description_title_i8n
+ * @property array<array-key, mixed>|null $description_extra_i8n
+ * @property string|null $description_title
+ * @property string|null $description_extra
+ * @property string|null $cost_price
+ * @property int|null $lifestyle_image_id
+ * @property bool|null $bucket_images images following the buckets
+ * @property int|null $art1_image_id
+ * @property int|null $art2_image_id
+ * @property int|null $art3_image_id
+ * @property int|null $art4_image_id
+ * @property int|null $art5_image_id
+ * @property int|null $trade_unit_family_id
+ * @property-read Media|null $art1Image
+ * @property-read Media|null $art2Image
+ * @property-read Media|null $art3Image
+ * @property-read Media|null $art4Image
+ * @property-read Media|null $art5Image
  * @property-read MediaCollection<int, Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
@@ -112,6 +134,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read MediaCollection<int, Media> $images
  * @property-read Collection<int, \App\Models\Goods\Ingredient> $ingredients
  * @property-read Media|null $leftImage
+ * @property-read Media|null $lifestyleImage
+ * @property-read Collection<int, MasterAsset> $masterAssets
  * @property-read MediaCollection<int, Media> $media
  * @property-read Collection<int, OrgStock> $orgStocks
  * @property-read Collection<int, Product> $products
@@ -124,12 +148,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
  * @property-read Media|null $topImage
+ * @property-read \App\Models\Goods\TradeUnitFamily|null $tradeUnitFamily
+ * @property-read mixed $translations
  * @method static \Database\Factories\Goods\TradeUnitFactory factory($count = null, $state = [])
  * @method static Builder<static>|TradeUnit newModelQuery()
  * @method static Builder<static>|TradeUnit newQuery()
  * @method static Builder<static>|TradeUnit onlyTrashed()
  * @method static Builder<static>|TradeUnit query()
- * @method static Builder<static>|TradeUnit withTrashed()
+ * @method static Builder<static>|TradeUnit whereJsonContainsLocale(string $column, string $locale, ?mixed $value, string $operand = '=')
+ * @method static Builder<static>|TradeUnit whereJsonContainsLocales(string $column, array $locales, ?mixed $value, string $operand = '=')
+ * @method static Builder<static>|TradeUnit whereLocale(string $column, string $locale)
+ * @method static Builder<static>|TradeUnit whereLocales(string $column, array $locales)
+ * @method static Builder<static>|TradeUnit withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|TradeUnit withoutTrashed()
  * @mixin Eloquent
  */
@@ -141,7 +171,10 @@ class TradeUnit extends Model implements HasMedia, Auditable
     use HasFactory;
     use HasHistory;
     use HasAttachments;
+    use HasTranslations;
 
+
+    public array $translatable = ['name_i8n', 'description_i8n', 'description_title_i8n', 'description_extra_i8n'];
 
     protected $casts = [
         'status'               => TradeUnitStatusEnum::class,
@@ -194,22 +227,27 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     public function stocks(): MorphToMany
     {
-        return $this->morphedByMany(Stock::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(Stock::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function products(): MorphToMany
     {
-        return $this->morphedByMany(Product::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(Product::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
+    }
+
+    public function masterAssets(): MorphToMany
+    {
+        return $this->morphedByMany(MasterAsset::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function orgStocks(): MorphToMany
     {
-        return $this->morphedByMany(OrgStock::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(OrgStock::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function supplierProducts(): MorphToMany
     {
-        return $this->morphedByMany(SupplierProduct::class, 'model', 'model_has_trade_units');
+        return $this->morphedByMany(SupplierProduct::class, 'model', 'model_has_trade_units')->withPivot(['quantity']);
     }
 
     public function barcode(): BelongsTo
@@ -220,6 +258,11 @@ class TradeUnit extends Model implements HasMedia, Auditable
     public function brands(): MorphToMany
     {
         return $this->morphToMany(Brand::class, 'model', 'model_has_brands');
+    }
+
+    public function tradeUnitFamily(): BelongsTo
+    {
+        return $this->belongsTo(TradeUnitFamily::class);
     }
 
     public function brand(): ?Brand
@@ -296,13 +339,44 @@ class TradeUnit extends Model implements HasMedia, Auditable
 
     public function bottomImage(): HasOne
     {
-        return $this->hasOne(Media::class, 'id', 'top_image_id');
+        return $this->hasOne(Media::class, 'id', 'bottom_image_id');
     }
 
     public function sizeComparisonImage(): HasOne
     {
         return $this->hasOne(Media::class, 'id', 'size_comparison_image_id');
     }
+
+    public function lifestyleImage(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'lifestyle_image_id');
+    }
+
+    public function art1Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art1_image_id');
+    }
+
+    public function art2Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art2_image_id');
+    }
+
+    public function art3Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art3_image_id');
+    }
+
+    public function art4Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art4_image_id');
+    }
+
+    public function art5Image(): HasOne
+    {
+        return $this->hasOne(Media::class, 'id', 'art5_image_id');
+    }
+
 
 
 }

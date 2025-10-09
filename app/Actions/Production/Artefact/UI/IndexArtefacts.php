@@ -148,7 +148,7 @@ class IndexArtefacts extends OrgAction
                             'action'      => $canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new artefact'),
+                                'tooltip' => __('New artefact'),
                                 'label'   => __('artefact'),
                                 'route'   => [
                                     'name'       => 'grp.org.productions.show.crafts.artefacts.create',
@@ -190,7 +190,7 @@ class IndexArtefacts extends OrgAction
                     'title'     => __('artefacts'),
                     'icon'      => [
                         'icon'  => ['fal', 'fa-hamsa'],
-                        'title' => __('artefacts'),
+                        'title' => __('Artefacts'),
                     ],
                     'actions'   => [
                         $this->canEdit && $this->parent instanceof Production ? [

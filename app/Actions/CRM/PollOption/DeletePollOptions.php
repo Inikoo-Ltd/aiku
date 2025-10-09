@@ -22,6 +22,7 @@ class DeletePollOptions extends OrgAction
         $poll = $pollOption->poll;
 
         $pollOption->pollReplies()->delete();
+        $pollOption->stats()->delete();
 
         if ($forceDelete) {
             $pollOption->forceDelete();

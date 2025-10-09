@@ -9,11 +9,16 @@ export default {
                     label: "Background",
                     type: "background",
                 },
-                {
+                /* {
                     key: ["text","fontFamily"],
                     label: "fontFamily",
                     type: "fontFamily",
-                },
+                }, */
+               {
+					key: ["text"],
+					label: "Text",
+					type: "textProperty",
+				},
                 {
                     key: ["padding"],
                     label: "Padding",

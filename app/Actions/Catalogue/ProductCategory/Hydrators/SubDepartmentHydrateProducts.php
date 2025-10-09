@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\ProductCategory\Hydrators;
 use App\Actions\Catalogue\ProductCategory\UpdateProductCategory;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -30,6 +31,11 @@ class SubDepartmentHydrateProducts implements ShouldBeUnique
 
     public function handle(ProductCategory $subDepartment): void
     {
+
+        if ($subDepartment->type !== ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            return;
+        }
+
         $stats = [
             'number_products' => $subDepartment->getproducts()->where('is_main', true)->whereNull('exclusive_for_customer_id')->count()
         ];

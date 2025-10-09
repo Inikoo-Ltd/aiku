@@ -11,8 +11,6 @@ namespace App\Models\SysAdmin;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserTimeSeriesRecord query()

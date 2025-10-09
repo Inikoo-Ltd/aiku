@@ -10,6 +10,8 @@ namespace App\Actions\Goods\Stock;
 
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateStocks;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Goods\Stock;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -20,6 +22,7 @@ class SyncStockTradeUnits
     public function handle(Stock $stock, array $tradeUnitsData): Stock
     {
         $stock->tradeUnits()->sync($tradeUnitsData);
+        $stock = ModelHydrateSingleTradeUnits::run($stock);
 
         foreach ($stock->tradeUnits as $tradeUnit) {
             TradeUnitsHydrateStocks::dispatch($tradeUnit);
@@ -27,6 +30,9 @@ class SyncStockTradeUnits
 
         StockHydrateGrossWeightFromTradeUnits::dispatch($stock);
 
+        foreach ($stock->orgStocks as $orgStock) {
+            OrgStockHydratePackedIn::dispatch($orgStock);
+        }
 
         return $stock;
     }

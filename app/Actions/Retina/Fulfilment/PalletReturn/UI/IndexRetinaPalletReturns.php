@@ -122,7 +122,7 @@ class IndexRetinaPalletReturns extends RetinaAction
                 'type'    => 'button',
                 'style'   => 'create',
                 'tooltip' => __('Create new dispatch (Selected SKUs)'),
-                'label'   => __('Dropship Dispatch'),
+                'label'   => __('Dropshipping dispatch'),
                 'route'   => [
                     'method'     => 'post',
                     'name'       => 'retina.models.pallet-return-stored-items.store',
@@ -136,13 +136,13 @@ class IndexRetinaPalletReturns extends RetinaAction
             'Storage/RetinaPalletReturns',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'    => __('goods out'),
+                'title'    => __('Goods out'),
                 'pageHead' => [
                     'title'     => __('Goods Out'),
                     'model'     => __('Storage'),
                     'icon' => [
                         'icon'  => ['fal', 'fa-truck-ramp'],
-                        'title' => __('return')
+                        'title' => __('Return')
                     ],
                     'actions'       => $actions
                 ],

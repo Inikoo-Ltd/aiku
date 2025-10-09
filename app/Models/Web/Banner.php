@@ -33,8 +33,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -76,7 +74,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner withoutTrashed()
  * @mixin \Eloquent
  */

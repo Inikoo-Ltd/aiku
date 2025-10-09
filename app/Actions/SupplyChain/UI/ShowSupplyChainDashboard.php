@@ -45,9 +45,9 @@ class ShowSupplyChainDashboard extends GrpAction
                 'pageHead'     => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-box-usd'],
-                        'title' => __('supply chain')
+                        'title' => __('Supply chain')
                     ],
-                    'title' => __('supply chain'),
+                    'title' => __('Supply chain'),
                 ],
                 'flatTreeMaps' => [
 
@@ -73,7 +73,7 @@ class ShowSupplyChainDashboard extends GrpAction
 
                         ],
                         [
-                            'name'      => __('supplier products'),
+                            'name'      => __('Supplier products'),
                             'shortName' => __('products'),
                             'icon'      => ['fal', 'fa-box-usd'],
                             'route'      => ['name' => 'grp.supply-chain.supplier_products.index'],
@@ -116,7 +116,7 @@ class ShowSupplyChainDashboard extends GrpAction
 
                                         ],
                                         [
-                                            'name'      => __('supplier products'),
+                                            'name'      => __('Supplier products'),
                                             'shortName' => __('products'),
                                             'icon'      => ['fal', 'fa-box-usd'],
                                             'route'      => ['name' => 'grp.supply-chain.supplier_products.index'],

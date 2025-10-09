@@ -2,14 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Delivery Note - {{ $deliverynote->reference }}</title>
+    <title>Delivery Note - {{ $deliveryNote->reference }}</title>
     <style>
-        body { font-family: sans-serif; font-size: 10pt; }
+        body { font-family: sans-serif; font-size: 8pt; }
         h1 { font-size: 14pt; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         td, th { padding: 8px; border: 0.1mm solid #000; }
         .header, .footer { font-size: 9pt; text-align: center; }
-        .address { font-size: 9pt; color: #555; }
         .items td { border: 0.1mm solid #000; }
         .items thead td { background-color: #EEEEEE; text-align: center; }
         .totals td { text-align: right; border: 0.1mm solid #000; }
@@ -21,7 +20,7 @@
 <!-- Header Section -->
 <div class="header">
     <h1>Delivery Note</h1>
-    <p>Delivery Note No: {{ $deliverynote->reference }} | Date: {{ \Carbon\Carbon::parse($deliverynote->date)->format('Y-m-d') }}</p>
+    <p>Delivery Note No: {{ $deliveryNote->reference }} | Date: {{ \Carbon\Carbon::parse($deliveryNote->date)->format('jS F, Y') }}</p>
 </div>
 
 <!-- Company and Customer Details -->
@@ -29,17 +28,19 @@
     <tr>
         <td style="width: 50%;">
             <strong>From:</strong> <br>
-            AW Aromatics Ltd <br>
-            Unit 15, Parkwood Business Park <br>
-            Sheffield S3 8AL, United Kingdom <br>
-            Phone: 00441144384914 <br>
-            Email: sales@aw-aromatics.com
+            {{$deliveryNote->shop->name}} <br>
+            {!! nl2br($shopAddress ?? 'Delivery Address') !!}<br>
+            @if($shop->phone)
+            Phone: {{$shop->phone}} <br>
+            @endif
+            @if($shop->email)
+            Email: {{$shop->email}}
+            @endif
         </td>
         <td style="width: 50%;">
             <strong>To:</strong> <br>
             {{ $customer->name ?? 'Customer Name' }}<br>
-            {{ $deliveryAddress ?? 'Delivery Address' }}<br>
-            United Kingdom
+            {!! nl2br($deliveryAddress ?? 'Delivery Address') !!}<br>
         </td>
     </tr>
 </table>
@@ -48,7 +49,7 @@
 <table>
     <tr>
         <td><strong>Order Number:</strong> {{ $order->reference }}</td>
-        <td><strong>Issued Date:</strong> {{ \Carbon\Carbon::parse($order->in_warehouse_at)->format('Y-m-d') }}</td>
+        <td><strong>Issued Date:</strong> {{ \Carbon\Carbon::parse($order->in_warehouse_at)->format('jS F, Y') }}</td>
     </tr>
 </table>
 
@@ -58,9 +59,9 @@
         <tr>
             <td>Item Code</td>
             <td>Item Name</td>
-            <td>Quantity Required</td>
-            <td>Quantity Picked</td>
-            <td>Quantity Packed</td>
+            <td>Required</td>
+            <td>Picked</td>
+            <td>Packed</td>
         </tr>
     </thead>
     <tbody>
@@ -77,8 +78,9 @@
 </table>
 
 <!-- Footer Section -->
-<div class="footer"> <p>Thank you for your hard work and attention to detail!</p> 
-<p>If you have any questions or need further information about this order, please don't hesitate to contact us at +44 9999999 or <a href="mailto:dummy@aw-dummy.com">sales@aw-dummy.com</a>.</p> </div>
+<div class="footer">
+
+</div>
 
 </body>
 </html>

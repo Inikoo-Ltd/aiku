@@ -46,7 +46,7 @@ class EditAgent extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('edit marketplace agent'),
+                'title'       => __('Edit marketplace agent'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $agent,
                     $request->route()->originalParameters()
@@ -140,7 +140,7 @@ class EditAgent extends OrgAction
                             ]
                         ],
                         // [
-                        //     'title'     => __('delete'),
+                        //     'title'     => __('Delete'),
                         //     'icon'      => 'fa-light fa-trash-alt',
                         //     'operation' => [
                         //         [

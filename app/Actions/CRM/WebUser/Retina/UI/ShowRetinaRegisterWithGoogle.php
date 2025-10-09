@@ -28,7 +28,8 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
     public function handle(ActionRequest $request): Response
     {
         $shop          = $this->shop;
-        $polls         = Poll::where('shop_id', $shop->id)->where('in_registration', true)->where('in_iris', true)->get();
+        $polls         = Poll::where('shop_id', $shop->id)->where('in_registration', true)->get();
+
         $pollsResource = PollsResource::collection($polls)->toArray($request);
 
 
@@ -94,5 +95,4 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
 
         return $this->handle($request);
     }
-
 }

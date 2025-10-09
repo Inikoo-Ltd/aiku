@@ -45,14 +45,14 @@ class FamiliesInCollectionResource extends JsonResource
 
             'image'                   => $imageSources,
             'state'                   => [
-                'tooltip' => $this->state->labels()[$this->state->value],
-                'icon'    => $this->state->stateIcon()[$this->state->value]['icon'],
-                'class'   => $this->state->stateIcon()[$this->state->value]['class']
-            ],
+                'tooltip' => $this->state?->labels()[$this->state->value] ?? null,
+                'icon'    => $this->state?->stateIcon()[$this->state->value]['icon'] ?? null,
+                'class'   => $this->state?->stateIcon()[$this->state->value]['class'] ?? null
+            ] ?? [],
             'code'                    => $this->code,
             'name'                    => $this->name,
             'description'             => $this->description,
-            'number_current_products' => $this->number_current_products,
+            'number_current_products' => $this->number_current_products ?? 0,
 
         ];
     }

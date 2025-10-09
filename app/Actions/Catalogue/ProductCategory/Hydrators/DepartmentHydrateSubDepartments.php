@@ -58,6 +58,4 @@ class DepartmentHydrateSubDepartments implements ShouldBeUnique
 
         $productCategory->stats()->update($stats);
     }
-
-
 }

@@ -79,7 +79,7 @@ class ShowRetinaPalletReturn extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPalletReturn',
             [
-                'title'       => __('goods return'),
+                'title'       => __('Goods return'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -95,7 +95,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                         'title' => $palletReturn->reference
                     ],
                     'afterTitle' => $afterTitle,
-                    'model'      => __('goods out'),
+                    'model'      => __('Goods out'),
                     'actions'    => $actions
                 ],
 
@@ -304,7 +304,7 @@ class ShowRetinaPalletReturn extends RetinaAction
                     'modelWithIndex' => [
                         'index' => [
                             'route' => $routeParameters['index'],
-                            'label' => __('goods out')
+                            'label' => __('Goods out')
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],

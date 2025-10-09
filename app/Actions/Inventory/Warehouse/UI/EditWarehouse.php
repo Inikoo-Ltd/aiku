@@ -71,7 +71,7 @@ class EditWarehouse extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'                            => __('edit warehouse'),
+                'title'                            => __('Edit warehouse'),
                 'breadcrumbs'                      => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'navigation'                       => [
                     'previous' => $this->getPrevious($warehouse, $request),

@@ -32,14 +32,14 @@ class CreateProduct extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'    => __('new product'),
+                'title'    => __('New product'),
                 'pageHead' => [
-                    'title'        => __('new product'),
+                    'title'        => __('New product'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name' => match ($request->route()->getName()) {
                                     'shops.show.products.create'    => 'shops.show.products.index',
@@ -130,6 +130,13 @@ class CreateProduct extends OrgAction
     }
 
     public function inFamilyInSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): Response
+    {
+        $this->parent = $family;
+        $this->initialisationFromShop($shop, $request);
+        return $this->handle($family, $request);
+    }
+
+    public function inFamilyInSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): Response
     {
         $this->parent = $family;
         $this->initialisationFromShop($shop, $request);

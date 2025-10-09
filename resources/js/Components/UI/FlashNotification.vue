@@ -31,8 +31,11 @@ defineProps<{
                 
                 <div class="ml-3">
                     <h3 class="text-sm font-bold">{{ getNotificationData(notification).title }}</h3>
-                    <div class="text-xs opacity-90 ">
+                    <div v-if="notification.description" class="text-xs opacity-90 ">
                         <p>{{ getNotificationData(notification).description }}</p>
+                    </div>
+                    <div v-if="notification.message" class="text-xs opacity-90 ">
+                        <p>{{ getNotificationData(notification).message }}</p>
                     </div>
                 </div>
             </div>

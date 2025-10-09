@@ -40,7 +40,7 @@ class UnFavourite extends OrgAction
         );
 
 
-        CustomerHydrateFavourites::dispatch($customer)->delay($this->hydratorsDelay);
+        CustomerHydrateFavourites::run($customer);
         ProductHydrateCustomersWhoFavourited::dispatch($product)->delay($this->hydratorsDelay);
         ProductHydrateCustomersWhoFavouritedInCategories::dispatch($product)->delay($this->hydratorsDelay);
 

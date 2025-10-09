@@ -9,13 +9,18 @@
 namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
+use App\Actions\Helpers\CurrencyExchange\GetCurrencyExchange;
+use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithOrderExchanges;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Models\Accounting\Invoice;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Str;
 
 class StoreRefund extends OrgAction
 {
@@ -28,8 +33,18 @@ class StoreRefund extends OrgAction
      */
     public function handle(Invoice $invoice, array $modelData): Invoice
     {
-        $count     = $invoice->refunds->count() + 1;
-        $reference = $invoice->reference.'-refund-'.$count;
+
+
+        if (Arr::get($invoice->shop->settings, 'invoicing.stand_alone_refund_numbers')) {
+            $reference = GetSerialReference::run(
+                container: $this->shop,
+                modelType: SerialReferenceModelEnum::REFUND
+            );
+        } else {
+            $count     = $invoice->refunds->count() + 1;
+            $reference = $invoice->reference.'-refund-'.$count;
+        }
+
 
         data_set($modelData, 'reference', $reference);
         data_set($modelData, 'type', InvoiceTypeEnum::REFUND);
@@ -46,13 +61,32 @@ class StoreRefund extends OrgAction
         data_set($modelData, 'currency_id', $invoice->currency_id);
         data_set($modelData, 'tax_category_id', $invoice->tax_category_id);
 
+        data_set($modelData, 'uuid', Str::uuid());
+        data_set($modelData, 'invoice_category_id', $invoice->invoice_category_id);
+        data_set($modelData, 'platform_id', $invoice->platform_id);
+        data_set($modelData, 'customer_sales_channel_id', $invoice->customer_sales_channel_id);
+        data_set($modelData, 'master_shop_id', $invoice->master_shop_id);
+        data_set($modelData, 'address_id', $invoice->address_id);
+        data_set($modelData, 'billing_country_id', $invoice->billing_country_id);
+        data_set($modelData, 'tax_liability_at', $invoice->tax_liability_at);
+        data_set($modelData, 'order_id', $invoice->order_id);
+
+
+
         $date = now();
         data_set($modelData, 'date', $date, overwrite: false);
+
+        $orgExchange = GetCurrencyExchange::run($invoice->shop->currency, $invoice->organisation->currency);
+        $grpExchange = GetCurrencyExchange::run($invoice->shop->currency, $invoice->group->currency);
+
+        data_set($modelData, 'org_exchange', $orgExchange);
+        data_set($modelData, 'grp_exchange', $grpExchange);
 
 
         data_set($modelData, 'group_id', $invoice->group_id);
         data_set($modelData, 'organisation_id', $invoice->organisation_id);
         data_set($modelData, 'shop_id', $invoice->shop_id);
+        data_set($modelData, 'effective_total', Arr::get($modelData, 'total_amount', 0));
 
         return DB::transaction(function () use ($invoice, $modelData) {
             /** @var Invoice $refund */

@@ -29,5 +29,7 @@ enum SerialReferenceModelEnum: string
     case TOP_UP = 'top_up';
     case PURGE = 'purge';
     case INVOICE = 'invoice';
+    case PICKING_SESSION = 'picking_session';
+    case REFUND = 'refund';
 
 }

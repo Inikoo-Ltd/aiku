@@ -65,7 +65,7 @@ const onChangeEstimateDate = async (close: Function) => {
 }
 
 onMounted(() => {
-	JsBarcode("#palletDeliveryBarcode", route().v().params.palletDelivery, {
+	JsBarcode("#palletDeliveryBarcode", route().routeParams.palletDelivery, {
 		lineColor: "rgb(41 37 36)",
 		width: 2,
 		height: 50,

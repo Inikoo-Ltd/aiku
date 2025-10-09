@@ -30,12 +30,17 @@ class UpdateOrderStateToHandling extends OrgAction
             'state' => OrderStateEnum::HANDLING
         ];
 
-        if (in_array($order->state, [OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE])) {
+        if (in_array($order->state, [
+            OrderStateEnum::SUBMITTED,
+            OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::HANDLING,
+            OrderStateEnum::PACKED,
+        ])) {
             $order->transactions()->update([
                 'state' => TransactionStateEnum::HANDLING
             ]);
 
-            $data['handling_at']                = now();
+            $data['handling_at'] = now();
 
             $this->update($order, $data);
 
@@ -44,7 +49,7 @@ class UpdateOrderStateToHandling extends OrgAction
             return $order;
         }
 
-        throw ValidationException::withMessages(['status' => 'You can not change the status to handling']);
+        throw ValidationException::withMessages(['status' => 'Can not change the status to handling (current status is '.$order->state->value.')']);
     }
 
     /**
@@ -54,6 +59,7 @@ class UpdateOrderStateToHandling extends OrgAction
     {
         $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
+
         return $this->handle($order);
     }
 
@@ -63,6 +69,7 @@ class UpdateOrderStateToHandling extends OrgAction
     public function asController(Order $order, ActionRequest $request): Order
     {
         $this->initialisationFromShop($order->shop, $request);
+
         return $this->handle($order);
     }
 }

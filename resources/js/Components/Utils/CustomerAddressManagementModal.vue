@@ -35,7 +35,7 @@ const onSubmitNewAddress = async (address: Address) => {
   const filterDataAddress = { ...address };
   delete filterDataAddress.formatted_address;
   delete filterDataAddress.country;
-  delete filterDataAddress.id;  // Remove id cuz create new one
+  delete filterDataAddress.id;  // Remove id cuz create a new one
 
   router[props.addresses.routes_list.store_route.method || "post"](
     route(props.addresses.routes_list.store_route.name, props.addresses.routes_list.store_route.parameters),
@@ -254,7 +254,7 @@ const onDeleteAddress = (addressID: number) => {
           <div v-html="selectedAddress?.formatted_address" class="px-3 py-2"></div>
         </div>
 
-        <!-- Form: Edit address -->
+        <!-- Form: Edit address Customer-->
         <div class="relative bg-gray-100 p-4 rounded-md">
           <div @click="() => (isEditAddress = false, selectedAddress = null)"
                class="absolute top-2 right-2 cursor-pointer">
@@ -350,17 +350,6 @@ const onDeleteAddress = (addressID: number) => {
                     <div v-else class="text-xs italic whitespace-nowrap text-gray-400">
                       ({{ trans("No label") }})
                     </div>
-                 <!--    <div class="relative">
-                      <Button
-                        v-if="addresses.current_selected_address_id === address.id"
-                            @click="() => onSelectAddress(address)"
-                            :label="isSelectAddressLoading == address.id ? '' : 'Use this'"
-                            size="xxs"
-                            type="tertiary"
-                            :loading="isSelectAddressLoading == address.id"
-                            v-tooltip="'Apply to this section only'"
-                        />
-                    </div> -->
                   </div>
                   <div class="flex items-center">
                     <LoadingIcon v-if="isLoading === 'onPinned' + address.id" class="px-0.5" />
@@ -397,5 +386,3 @@ const onDeleteAddress = (addressID: number) => {
 
   </div>
 </template>
-
-<style scoped></style>

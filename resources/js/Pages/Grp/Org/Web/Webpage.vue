@@ -44,7 +44,10 @@ const props = defineProps<{
     snapshots?: object,
     redirects?: {},
     external_links?: {}
+    labeled_snapshots?: {}
     analytics:any
+    webpage_url?: string
+
 }>()
 
 
@@ -60,7 +63,8 @@ const component = computed(() => {
         'webpages': TableWebpages,
         'snapshots': TableSnapshots,
         'redirects': TableRedirects,
-        'external_links': TableExternalLinks
+        'external_links': TableExternalLinks,
+        'labeled_snapshots': TableSnapshots
     }
 
     return components[currentTab.value]
@@ -84,7 +88,7 @@ onUnmounted(() => {
 
     <PageHeading :data="pageHead">
         <template #other>
-            <a :href="showcase.url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
+            <a :href="webpage_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
                 <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
             </a>
         </template>

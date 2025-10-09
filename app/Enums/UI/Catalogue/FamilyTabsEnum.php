@@ -30,37 +30,37 @@ enum FamilyTabsEnum: string
         return match ($this) {
 
             FamilyTabsEnum::SALES => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
             FamilyTabsEnum::CUSTOMERS => [
-                'title' => __('customers'),
+                'title' => __('Customers'),
                 'icon'  => 'fal fa-user',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             FamilyTabsEnum::OFFERS => [
-                'title' => __('offers'),
+                'title' => __('Offers'),
                 'icon'  => 'fal fa-tags',
             ],
             // FamilyTabsEnum::MAILSHOTS => [
-            //     'title' => __('mailshots'),
+            //     'title' => __('Mailshots'),
             //     'icon'  => 'fal fa-bullhorn',
             // ],
             FamilyTabsEnum::IMAGES => [
-                'title' => __('images'),
+                'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             FamilyTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             FamilyTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

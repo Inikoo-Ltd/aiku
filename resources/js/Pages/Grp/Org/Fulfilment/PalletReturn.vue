@@ -464,18 +464,6 @@ provide("listError", listError.value)
 					<div class="w-[350px]">
 						<span class="text-xs px-1 my-2">{{ trans("Services") }}: </span>
 						<div class="">
-							<!-- <PureMultiselect
-                                v-model="formAddService.service_id"
-                                autofocus
-                                caret
-                                required
-                                searchable
-                                placeholder="Services"
-                                :options="dataServiceList"
-                                label="name"
-                                valueProp="id"
-                            /> -->
-
 							<PureMultiselectInfiniteScroll
 								v-model="formAddService.service_id"
 								:fetchRoute="props.service_list_route"
@@ -573,26 +561,6 @@ provide("listError", listError.value)
 						<div class="w-[350px]">
 							<span class="text-xs px-1 my-2">{{ trans("Physical Goods") }}: </span>
 							<div>
-								<!-- <PureMultiselect
-                                    v-model="formAddPhysicalGood.outer_id"
-                                    autofocus
-                                    caret
-                                    required
-                                    searchable
-                                    placeholder="Physical Goods"
-                                    :options="dataPGoodList"
-                                    label="name"
-                                    valueProp="id"
-                                >
-                                    <template #label="{ value }">
-                                        <div class="w-full text-left pl-4">{{ value.name }} <span class="text-gray-400">({{ value.code }})</span></div>
-                                    </template>
-
-                                    <template #option="{ option, isSelected, isPointed }">
-                                        <div class="">{{ option.name }} <span :class="isSelected ? 'text-indigo-200' : 'text-gray-400'">({{ option.code }})</span></div>
-                                    </template>
-                                </PureMultiselect> -->
-
 								<PureMultiselectInfiniteScroll
 									v-model="formAddPhysicalGood.outer_id"
 									:fetchRoute="physical_good_list_route"
@@ -757,9 +725,7 @@ provide("listError", listError.value)
 					v-for="sip in 3"
 					class="skeleton w-full max-w-52 h-20 rounded"
 				>
-					
 				</div>
-
 				<div v-else
 					v-for="(shipment, index) in optionShippingList.filter(shipment => shipment.api_shipper)"
 					@click="() => formTrackingNumber.shipping_id = shipment"
@@ -778,7 +744,6 @@ provide("listError", listError.value)
 					<div class="text-xs text-gray-500 italic">
 						{{ shipment.tracking_url }}
 					</div>
-					
 					<FontAwesomeIcon v-tooltip="trans('Barcode print')" icon="fal fa-print" class="text-gray-500 absolute top-3 right-3" fixed-width aria-hidden="true" />
 				</div>
 

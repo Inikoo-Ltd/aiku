@@ -22,7 +22,7 @@ class DeleteOrder extends OrgAction
     use WithOrderingEditAuthorisation;
     use WithActionUpdate;
 
-    public string $commandSignature = 'cancel:order {id}';
+    public string $commandSignature = 'cancel:delete {id}';
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -38,7 +38,7 @@ class DeleteOrder extends OrgAction
             return $order;
         }
 
-        throw ValidationException::withMessages(['purchase_order' => 'You can not delete this order']);
+        throw ValidationException::withMessages(['order' => 'You can not delete this order']);
     }
 
     /**

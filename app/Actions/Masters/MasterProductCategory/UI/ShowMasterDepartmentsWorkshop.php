@@ -54,13 +54,13 @@ class ShowMasterDepartmentsWorkshop extends GrpAction
                     'title' => $masterShop->name,
                     'icon'  => [
                         'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('department'),
+                        'title' => __('Department'),
                     ],
                 ],
 
                 'update_route' => [
                     'method'     => 'patch',
-                    'name'       => 'grp.models.master_product.update',
+                    'name'       => 'grp.models.master_product_category.update',
                     'parameters' => []
                 ],
                 'departments' => MasterDepartmentsResource::collection($masterShop->getMasterDepartments())

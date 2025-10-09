@@ -8,6 +8,8 @@
 
 namespace App\Http\Resources\Ordering;
 
+use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Helpers\Media;
 use App\Models\SysAdmin\User;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -42,6 +44,11 @@ class TransactionsResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $media = null;
+        if ($this->product_image_id) {
+            $media = Media::find($this->product_image_id);
+        }
+
         return [
             'id'                  => $this->id,
             'state'               => $this->state,
@@ -57,6 +64,7 @@ class TransactionsResource extends JsonResource
             'asset_code'          => $this->asset_code,
             'asset_name'          => $this->asset_name,
             'asset_type'          => $this->asset_type,
+            'image'               => $this->product_image_id ? ImageResource::make($media)->getArray() : null,
             'product_slug'        => $this->product_slug,
             'created_at'          => $this->created_at,
             'currency_code'       => $this->currency_code,

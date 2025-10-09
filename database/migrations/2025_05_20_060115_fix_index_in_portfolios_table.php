@@ -26,7 +26,6 @@ return new class () extends Migration {
         Schema::table('portfolios', function (Blueprint $table) {
             $table->dropUnique(['customer_sales_channel_id', 'item_id']);
             $table->unique(['customer_id', 'index_id']);
-
         });
     }
 };

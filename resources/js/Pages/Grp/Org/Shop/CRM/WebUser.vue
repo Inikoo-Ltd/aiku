@@ -8,17 +8,18 @@
 import { Head } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faGlobe } from '@fal'
+import { faGlobe, faTrashAlt } from '@fal'
 import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-import ShowcaseStats from '@/Components/ShowcaseStats.vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import { trans } from 'laravel-vue-i18n'
 import AddressLocation from '@/Components/Elements/Info/AddressLocation.vue'
 import Tag from '@/Components/Tag.vue'
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue";
 
 
-library.add(faGlobe)
+library.add(faGlobe, faTrashAlt)
 
 const props = defineProps<{
     title: string
@@ -26,11 +27,11 @@ const props = defineProps<{
     data: {}
 }>()
 
-const dataCompany = [
+const dataWebUser = [
     {
         label: trans('Contact name'),
         key: 'contact',
-        value: props.data.customer?.contact_name
+        value: props.data.contact_name || '-'
     },
     {
         label: trans('Username'),
@@ -40,28 +41,28 @@ const dataCompany = [
     {
         label: trans('Email'),
         key: 'email',
-        value: props.data.customer?.email
+        value: props.data.email
     },
     {
         label: trans('Last login'),
         key: 'last_login',
-        value: '-'
+        value: props.data.last_login
     },
     {
         label: trans('Created at'),
         key: 'created_At',
-        value: useFormatTime(props.data.customer?.created_at)
+        value: useFormatTime(props.data.created_at)
     },
     {
         label: trans('Status'),
         key: 'status',
         value: props.data.status
     },
-    {
-        label: trans('Location'),
-        key: 'location',
-        value: props.data.customer?.location
-    },
+    // {
+    //     label: trans('Location'),
+    //     key: 'location',
+    //     value: props.data.customer?.location
+    // },
 ]
 console.log(props)
 </script>
@@ -69,14 +70,32 @@ console.log(props)
 
 <template>
     <Head :title="capitalize(title)" />
-    <PageHeading :data="pageHead"></PageHeading>
+    <PageHeading :data="pageHead">
+    
+        <template #otherBefore>
+            <ModalConfirmationDelete
+                :routeDelete="props.data.delete_route"
+                :title="trans('Are you sure you want to delete this web user?')"
+                isFullLoading
+            >
+                <template #default="{ isOpenModal, changeModel }">
+                    <Button
+                        icon="fal fa-trash-alt"
+                        type="negative"
+                        @click="changeModel"
+                    />
+                </template>
+            </ModalConfirmationDelete>
+
+        </template>
+    </PageHeading>
     <div class="grid grid-cols-2 py-4 px-6">
 
         <!-- Section: field data -->
         <div>
             <div class="text-xl font-bold mb-2">{{ trans('Web user details') }}</div>
             <div class="h-fit w-80 relative grid grid-cols-1 divide-y divide-gray-300 border border-gray-300 rounded-md">
-                <div v-for="(print, index) in dataCompany" :key="index" class="py-2.5 px-4">
+                <div v-for="(print, index) in dataWebUser" :key="index" class="py-2.5 px-4">
                     <div class="text-gray-400 text-xs">
                         {{ print.label }}
                     </div>
@@ -89,22 +108,5 @@ console.log(props)
             </div>
         </div>
 
-        <!-- Company Data -->
-        <!-- <div class="justify-self-end bg-slate-50 px-6 py-4 space-y-4 w-80 border border-gray-200 rounded-md shadow">
-            <div v-for="print,index in dataCompany" class="">
-                <div class="font-semibold text-sm">{{ print.label }}</div>
-                <template v-if="print.key !== 'location'">
-                    <div class="text-gray-500">
-                        {{ print.value }}
-                    </div>
-                </template>
-                <div v-else>
-                    <AddressLocation :data="print.value" />
-                </div>
-            </div>
-        </div> -->
-
-
     </div>
-        <!-- <pre>{{ data }}</pre> -->
 </template>

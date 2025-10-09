@@ -54,7 +54,7 @@ class ShowEmailBulkRun extends OrgAction
                     'icon'      =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
-                            'title' => __('email bulk run')
+                            'title' => __('Email bulk run')
                         ],
                     'actions' => []
                     // 'subNavigation' => $this->getCollectionSubNavigation($collection),

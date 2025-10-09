@@ -12,7 +12,6 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -40,8 +39,8 @@ class MasterFamilyHydrateFamilies implements ShouldBeUnique
         $stats = [
             'number_families' => DB::table('product_categories')->where('type', ProductCategoryTypeEnum::FAMILY)->where('master_product_category_id', $masterFamily->id)->count(),
             'number_current_families' => DB::table('product_categories')->where('type', ProductCategoryTypeEnum::FAMILY)->where('master_product_category_id', $masterFamily->id)->whereIn('state', [
-                ShopStateEnum::OPEN,
-                ShopStateEnum::CLOSING_DOWN,
+                ProductCategoryStateEnum::ACTIVE,
+                ProductCategoryStateEnum::DISCONTINUING,
             ])->count()
         ];
 

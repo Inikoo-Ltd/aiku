@@ -26,7 +26,7 @@ defineProps<{
         <template #label>
             <div class="whitespace-nowrap space-x-1.5">
                 <FontAwesomeIcon :icon='stateIcon.icon' class='' fixed-width aria-hidden='true' />
-                <span class="whitespace-nowrap capitalize">{{ stateIcon?.tooltip }}</span>
+                <span class="whitespace-nowrap">{{ stateIcon?.tooltip }}</span>
             </div>
         </template>
     </Tag>

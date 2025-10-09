@@ -74,6 +74,7 @@ class StorePoll extends OrgAction
                     table: 'polls',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -86,6 +87,7 @@ class StorePoll extends OrgAction
                     table: 'polls',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -130,6 +132,8 @@ class StorePoll extends OrgAction
         $this->initialisationFromShop($shop, $request);
         return $this->handle($shop, $this->validatedData);
     }
+
+
     public function htmlResponse(Poll $poll): RedirectResponse
     {
         return Redirect::route('grp.org.shops.show.crm.polls.index', [
@@ -150,5 +154,4 @@ class StorePoll extends OrgAction
 
         return $this->handle($shop, $this->validatedData);
     }
-
 }

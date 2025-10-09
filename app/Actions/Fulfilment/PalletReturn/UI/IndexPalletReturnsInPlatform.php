@@ -121,7 +121,7 @@ class IndexPalletReturnsInPlatform extends OrgAction
         $title      = $this->customerSalesChannel->customer->name;
         $iconRight  = [
             'icon'  => ['fal', 'fa-shopping-cart'],
-            'title' => __('orders')
+            'title' => __('Orders')
         ];
         $subNavigation = $this->getFulfilmentCustomerPlatformSubNavigation($this->customerSalesChannel, $request);
 

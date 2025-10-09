@@ -86,7 +86,7 @@ class IndexQuery extends InertiaAction
                 'pageHead' => [
                     'title'     => __('images'),
                     'iconRight' => [
-                        'title' => __('image'),
+                        'title' => __('Image'),
                         'icon'  => 'fal fa-images'
                     ],
                 ],

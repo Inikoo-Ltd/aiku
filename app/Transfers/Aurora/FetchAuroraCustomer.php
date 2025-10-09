@@ -26,6 +26,14 @@ class FetchAuroraCustomer extends FetchAurora
             return;
         }
 
+        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
+            return;
+        }
+
+        if ($shop->is_aiku) {
+            return;
+        }
+
 
         $this->parsedData['shop'] = $shop;
 
@@ -42,7 +50,7 @@ class FetchAuroraCustomer extends FetchAurora
             $state = CustomerStateEnum::LOST->value;
         }
 
-        if (!$shop->registration_needs_approval  &&  $status == CustomerStatusEnum::PENDING_APPROVAL->value) {
+        if (!$shop->registration_needs_approval && $status == CustomerStatusEnum::PENDING_APPROVAL->value) {
             $status = CustomerStatusEnum::APPROVED->value;
         }
 
@@ -121,9 +129,7 @@ class FetchAuroraCustomer extends FetchAurora
             'is_subscribed_to_abandoned_cart'    => true,
             'is_subscribed_to_reorder_reminder'  => true,
             'is_subscribed_to_basket_low_stock'  => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
-            'is_subscribed_to_basket_reminder_1' => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
-            'is_subscribed_to_basket_reminder_2' => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
-            'is_subscribed_to_basket_reminder_3' => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
+            'is_subscribed_to_basket_reminder' => $this->auroraModelData->{'Customer Send Basket Emails'} == 'Yes',
 
 
         ];
@@ -156,6 +162,8 @@ class FetchAuroraCustomer extends FetchAurora
         $asEmployeeID = null;
 
 
+        $isRe = $this->auroraModelData->{'Customer Recargo Equivalencia'} == 'Yes';
+
         $this->parsedData['customer'] =
             [
                 'reference'           => sprintf('%05d', $this->auroraModelData->{'Customer Key'}),
@@ -171,7 +179,8 @@ class FetchAuroraCustomer extends FetchAurora
                 'last_fetched_at'     => now(),
                 'is_vip'              => $isVip,
                 'as_organisation_id'  => $AsOrganisation?->id,
-                'as_employee_id'      => $asEmployeeID
+                'as_employee_id'      => $asEmployeeID,
+                'is_re'               => $isRe,
             ];
 
 

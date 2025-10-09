@@ -71,6 +71,7 @@ class StoreWarehouseArea extends OrgAction
                 ),
             ],
             'name' => ['required', 'max:250', 'string'],
+            'picking_position' => ['nullable', 'numeric', 'min:0'],
         ];
 
         if (!$this->strict) {

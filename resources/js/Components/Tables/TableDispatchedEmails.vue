@@ -85,7 +85,8 @@ const locale = inject("locale", aikuLocaleStructure);
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(state)="{ item: dispatchedEmail }">
-            <Icon :data="dispatchedEmail.state" />
+            <Icon v-if="dispatchedEmail.state" :data="dispatchedEmail.state" />
+            <Icon v-if="dispatchedEmail.state_icon" :data="dispatchedEmail.state_icon" />
         </template>
         <template #cell(email_address)="{ item: dispatchedEmail }">
             <Link v-if="dispatchedEmailRoute(dispatchedEmail)" :href="dispatchedEmailRoute(dispatchedEmail) as string" class="primaryLink">

@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrganisationsArgument;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 
@@ -31,6 +32,9 @@ class CalculateOrderTotalAmounts extends OrgAction
         $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
+        if ($order->collection_address_id) {
+            $shippingAmount = 0;
+        }
 
         $netAmount = $itemsNet + $shippingAmount + $chargesAmount;
 
@@ -49,6 +53,8 @@ class CalculateOrderTotalAmounts extends OrgAction
         data_set($modelData, 'shipping_amount', $shippingAmount);
         data_set($modelData, 'charges_amount', $chargesAmount);
         data_set($modelData, 'estimated_weight', $estimatedWeight);
+        data_set($modelData, 'number_item_transactions', $numberItemTransactions);
+
 
         $order->update($modelData);
         $order->stats->update(
@@ -73,10 +79,27 @@ class CalculateOrderTotalAmounts extends OrgAction
             }
         }
 
+        if (in_array($order->state, [
+            OrderStateEnum::CREATING,
+            OrderStateEnum::SUBMITTED,
+            OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::PACKED,
+        ])) {
 
-        if ($calculateShipping && in_array($order->state, [OrderStateEnum::CREATING, OrderStateEnum::SUBMITTED, OrderStateEnum::IN_WAREHOUSE, OrderStateEnum::IN_WAREHOUSE]) && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
-            CalculateOrderShipping::run($order);
-            CalculateOrderHangingCharges::run($order);
+            $calculateCharges = false;
+            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'number_item_transactions'])) {
+                CalculateOrderDiscounts::run($order);
+                $calculateCharges = true;
+            }
+
+            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
+                CalculateOrderShipping::run($order);
+                $calculateCharges = true;
+            }
+
+            if ($calculateCharges) {
+                CalculateOrderHangingCharges::run($order);
+            }
         }
     }
 
@@ -87,7 +110,9 @@ class CalculateOrderTotalAmounts extends OrgAction
         $exitCode = 0;
         if (!$command->option('slugs')) {
             if ($command->argument('organisations')) {
-                $this->organisation = $this->getOrganisations($command)->first();
+                /** @var Organisation $organisation */
+                $organisation       = $this->getOrganisations($command)->first();
+                $this->organisation = $organisation;
             }
 
             $this->loopAll($command);

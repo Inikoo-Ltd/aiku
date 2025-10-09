@@ -37,9 +37,9 @@ const layout: any = inject("layout", {})
       aria-label="Family Description Section">
 
       <!-- Description Title (SEO: Heading) -->
-      <h2 v-if="fieldValue.family.description_title" class="text-[1.5rem] leading-[2rem] font-semibold text-gray-800">
+      <h1 v-if="fieldValue.family.description_title" class="text-[1.5rem] leading-[2rem] font-semibold text-gray-800">
         {{ fieldValue.family.description_title }}
-      </h2>
+      </h1>
 
       <!-- Main Description -->
       <div v-if="fieldValue.family.description" :style="{ marginTop: 0 }" v-html="fieldValue.family.description"></div>
@@ -50,7 +50,7 @@ const layout: any = inject("layout", {})
           <div v-if="showExtra" v-html="fieldValue.family.description_extra"></div>
         </transition>
         <button @click="toggleShowExtra"
-          class="text-sm text-gray-800 font-semibold hover:underline focus:outline-none transition-colors">
+          class="text-sm text-gray-800 font-semibold hover:underline focus:outline-none transition-colors py-4">
           {{ showExtra ? 'Show Less' : 'Read More' }}
         </button>
       </div>

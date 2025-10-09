@@ -11,8 +11,6 @@ namespace App\Models\Inventory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WarehouseTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WarehouseTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WarehouseTimeSeriesRecord query()

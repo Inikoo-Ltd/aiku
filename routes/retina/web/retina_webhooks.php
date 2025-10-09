@@ -8,8 +8,10 @@
 
 use App\Actions\Accounting\MitSavedCard\WebHooks\CheckoutComMitSavedCardFailure;
 use App\Actions\Accounting\MitSavedCard\WebHooks\CheckoutComMitSavedCardSuccess;
+use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentCompleted;
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentFailure;
 use App\Actions\Accounting\OrderPaymentApiPoint\WebHooks\CheckoutComOrderPaymentSuccess;
+use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentCompleted;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentFailure;
 use App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks\TopUpPaymentSuccess;
 use App\Actions\CRM\Prospect\UI\CreateProspectFromWebBlock;
@@ -22,9 +24,11 @@ Route::name('webhooks.')->prefix('webhooks')->group(function () {
 
         Route::get('order-payment-success/{orderPaymentApiPoint:ulid}', CheckoutComOrderPaymentSuccess::class)->name('order_payment_success');
         Route::get('order-payment-failure/{orderPaymentApiPoint:ulid}', CheckoutComOrderPaymentFailure::class)->name('order_payment_failure');
+        Route::post('order-payment-completed/{orderPaymentApiPoint:ulid}', CheckoutComOrderPaymentCompleted::class)->name('order_payment_completed');
 
         Route::get('top-up-payment-success/{topUpPaymentApiPoint:ulid}', TopUpPaymentSuccess::class)->name('top_up_payment_success');
         Route::get('top-up-payment-failure/{topUpPaymentApiPoint:ulid}', TopUpPaymentFailure::class)->name('top_up_payment_failure');
+        Route::post('top-up-payment-completed/{topUpPaymentApiPoint:ulid}', TopUpPaymentCompleted::class)->name('top_up_payment_completed');
 
         Route::get('mit-saved-card-success/{mitSavedCard:ulid}', CheckoutComMitSavedCardSuccess::class)->name('mit_saved_card_success');
         Route::get('mit-saved-card-failure/{mitSavedCard:ulid}', CheckoutComMitSavedCardFailure::class)->name('mit_saved_card_failure');

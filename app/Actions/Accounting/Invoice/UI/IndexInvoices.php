@@ -60,7 +60,7 @@ class IndexInvoices extends OrgAction
 
     public function handle(Organisation|Fulfilment|Customer|FulfilmentCustomer|InvoiceCategory|Shop|Order|OrgPaymentServiceProvider $parent, $prefix = null): LengthAwarePaginator
     {
-
+        $additionalSelects = [];
 
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -114,6 +114,23 @@ class IndexInvoices extends OrgAction
         $queryBuilder->leftjoin('organisations', 'invoices.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftjoin('shops', 'invoices.shop_id', '=', 'shops.id');
 
+        if ($parent instanceof Shop || $parent instanceof Organisation || $parent instanceof InvoiceCategory) {
+            $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id');
+
+            $additionalSelects = [
+                'customers.name as customer_name', 'customers.slug as customer_slug', 'customers.company_name as customer_company'
+            ];
+        }
+
+        if ($parent instanceof Fulfilment) {
+            $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
+                ->leftJoin('fulfilment_customers', 'customers.id', '=', 'fulfilment_customers.customer_id');
+
+            $additionalSelects = [
+                'customers.name as customer_name', 'fulfilment_customers.slug as customer_slug', 'customers.company_name as customer_company'
+            ];
+        }
+
         $queryBuilder->defaultSort('-date')
             ->select([
                 'invoices.id',
@@ -134,21 +151,10 @@ class IndexInvoices extends OrgAction
                 'shops.code as shop_code',
                 'organisations.name as organisation_name',
                 'organisations.slug as organisation_slug',
+                ...$additionalSelects
             ])
             ->leftJoin('currencies', 'invoices.currency_id', 'currencies.id')
             ->leftJoin('invoice_stats', 'invoices.id', 'invoice_stats.invoice_id');
-
-
-        if ($parent instanceof Shop || $parent instanceof Organisation) {
-            $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
-                ->addSelect('customers.name as customer_name', 'customers.slug as customer_slug');
-        }
-
-        if ($parent instanceof Fulfilment) {
-            $queryBuilder->leftJoin('customers', 'invoices.customer_id', '=', 'customers.id')
-                ->leftJoin('fulfilment_customers', 'customers.id', '=', 'fulfilment_customers.customer_id')
-                ->addSelect('customers.name as customer_name', 'fulfilment_customers.slug as customer_slug');
-        }
 
         return $queryBuilder->allowedSorts(['number', 'pay_status', 'total_amount', 'net_amount', 'date', 'customer_name', 'reference'])
             ->allowedFilters([$globalSearch])
@@ -163,7 +169,7 @@ class IndexInvoices extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table->betweenDates(['date']);
@@ -191,15 +197,17 @@ class IndexInvoices extends OrgAction
 
 
             $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
-
-            if ($parent instanceof Shop || $parent instanceof Fulfilment || $parent instanceof Organisation) {
-                $table->column(key: 'customer_name', label: __('customer'), canBeHidden: false, sortable: true, searchable: true);
+            if ($parent instanceof Organisation) {
+                $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'customer_company', label: __('Company'), canBeHidden: false, sortable: true, searchable: true);
+            } else if ($parent instanceof InvoiceCategory || $parent instanceof Shop) {
+                $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             }
 
-            $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
+            $table->column(key: 'date', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
             $table->column(key: 'pay_status', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true, type: 'icon');
-            $table->column(key: 'net_amount', label: __('net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
-            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
+            $table->column(key: 'net_amount', label: __('Net'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'total_amount', label: __('Total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('-date');
         };
     }
@@ -228,6 +236,15 @@ class IndexInvoices extends OrgAction
             $parameters = array_filter([
                 'organisation' => $this->organisation->slug,
                 'shop'         => $this->shop->slug,
+                'filter'       => $filter,
+                'bucket'       => $this->bucket,
+                'type'         => 'invoice',
+            ]);
+        } elseif ($this->parent instanceof InvoiceCategory) {
+            $route      = 'grp.org.accounting.invoice-categories.show.invoices.index.omega';
+            $parameters = array_filter([
+                'organisation' => $this->organisation->slug,
+                'invoiceCategory' => $this->parent->slug,
                 'filter'       => $filter,
                 'bucket'       => $this->bucket,
                 'type'         => 'invoice',
@@ -279,7 +296,7 @@ class IndexInvoices extends OrgAction
 
         $icon = [
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
-            'title' => __('invoices')
+            'title' => __('Invoices')
         ];
 
         $afterTitle = null;
@@ -318,18 +335,18 @@ class IndexInvoices extends OrgAction
             $title      = $this->parent->name;
             $icon       = [
                 'icon'  => ['fal', 'fa-user'],
-                'title' => __('customer')
+                'title' => __('Customer')
             ];
         } elseif ($this->parent instanceof InvoiceCategory) {
             $model = __('Invoices');
             $title = $this->parent->name;
             $icon  = [
                 'icon'  => ['fal', 'fa-file-invoice-dollar'],
-                'title' => __('invoice category')
+                'title' => __('Invoice category')
             ];
         } elseif ($this->parent instanceof Organisation) {
             $afterTitle = [
-                'label' => __('In organisation').': '.$this->parent->name
+                'label' => __('In organisation') . ': ' . $this->parent->name
             ];
         } elseif ($this->parent instanceof Shop) {
             $afterTitle = [
@@ -395,7 +412,7 @@ class IndexInvoices extends OrgAction
                     $routeName,
                     $routeParameters
                 ),
-                'title'       => __('invoices'),
+                'title'       => __('Invoices'),
                 'pageHead'    => [
                     'title'         => $title,
                     'model'         => $model,
@@ -560,7 +577,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('All').') ')
+                    trim('(' . __('All') . ') ')
                 )
             ),
             'grp.org.accounting.unpaid_invoices.index' =>
@@ -571,7 +588,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Unpaid').') ')
+                    trim('(' . __('Unpaid') . ') ')
                 )
             ),
 
@@ -583,7 +600,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Unpaid').') ')
+                    trim('(' . __('Unpaid') . ') ')
                 ),
             ),
 
@@ -617,7 +634,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Unpaid').') ')
+                    trim('(' . __('Unpaid') . ') ')
                 )
             ),
             'grp.org.accounting.invoices.paid_invoices.index' =>
@@ -628,7 +645,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Paid').') ')
+                    trim('(' . __('Paid') . ') ')
                 )
             ),
             'grp.org.fulfilments.show.operations.invoices.all.index' =>
@@ -639,7 +656,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('All').') ')
+                    trim('(' . __('All') . ') ')
                 )
             ),
             'grp.org.fulfilments.show.operations.invoices.paid_invoices.index' =>
@@ -650,7 +667,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Paid').') ')
+                    trim('(' . __('Paid') . ') ')
                 )
             ),
             'grp.org.fulfilments.show.operations.invoices.unpaid_invoices.index' =>
@@ -661,7 +678,7 @@ class IndexInvoices extends OrgAction
                         'name'       => $routeName,
                         'parameters' => $routeParameters
                     ],
-                    trim('('.__('Unpaid').') ')
+                    trim('(' . __('Unpaid') . ') ')
                 )
             ),
             'grp.org.shops.show.crm.customers.show.invoices.index' =>

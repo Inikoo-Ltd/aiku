@@ -12,6 +12,7 @@ namespace App\Actions\Accounting\TopUp\UI;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\OrgAction;
 use App\Enums\UI\Accounting\TopUpTabsEnum;
+use App\Http\Resources\Accounting\TopUpResource;
 use App\Models\Accounting\TopUp;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -28,7 +29,7 @@ class ShowTopUp extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, TopUp $topUp, ActionRequest $request): TopUp
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(TopUpTabsEnum::values());
 
         return $this->handle($topUp);
     }
@@ -43,13 +44,14 @@ class ShowTopUp extends OrgAction
                 'breadcrumbs'                           => $this->getBreadcrumbs($topUp, $request->route()->getName(), $request->route()->originalParameters()),
                 'pageHead'    => [
                     'model'     => __('top up'),
-                    'icon'      => 'fal fa-shopping-basket',
+                    'icon'      => 'fal fa-money-bill-wave',
                     'title'     => $title,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => TopUpTabsEnum::navigation()
                 ],
+                'showcase'  => TopUpResource::make($topUp)->resolve(),
 
             ]
         );

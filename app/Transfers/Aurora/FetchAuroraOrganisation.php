@@ -11,7 +11,6 @@ namespace App\Transfers\Aurora;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\SourceOrganisationService;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraOrganisation
@@ -33,12 +32,8 @@ class FetchAuroraOrganisation
 
     protected function parseModel(): void
     {
-        if (App::environment('local') or App::environment('testing')) {
-            /** @noinspection HttpUrlsUsage */
-            $auroraURL = "http://".env('AURORA_DOMAIN', 'aurora.local');
-        } else {
-            $auroraURL = "https://$this->organisation->code.".env('AURORA_DOMAIN', 'aurora.systems');
-        }
+        $subdomain = strtolower($this->organisation->code);
+        $auroraURL = "https://$subdomain.".config('app.aurora.domain');
 
 
         $this->parsedData['organisation'] = [

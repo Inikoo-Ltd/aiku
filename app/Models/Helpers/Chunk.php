@@ -16,8 +16,6 @@ use Pgvector\Laravel\HasNeighbors;
 use Pgvector\Laravel\Vector;
 
 /**
- *
- *
  * @property int $id
  * @property string $guid
  * @property string $sort_order

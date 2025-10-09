@@ -48,7 +48,7 @@ class EditPoll extends OrgAction
         $optionsPool = [];
         $options     = $poll->pollOptions;
         if ($options->isNotEmpty()) {
-            $optionsPool = PollOptionsResource::collection($poll->pollOptions)->toArray($request);
+            $optionsPool = PollOptionsResource::collection($options)->toArray($request);
         }
 
         return Inertia::render(
@@ -63,7 +63,7 @@ class EditPoll extends OrgAction
                     'title'   => $poll->name,
                     'model'   => __('Edit Poll'),
                     'icon'    => [
-                        'title' => __('polls'),
+                        'title' => __('Polls'),
                         'icon'  => 'fal fa-poll'
                     ],
                     'actions' => [
@@ -81,7 +81,7 @@ class EditPoll extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit poll'),
+                            'title'  => __('Edit poll'),
                             'label'  => __('Basic Information'),
                             'fields' => [
                                 'name'                     => [
@@ -102,7 +102,7 @@ class EditPoll extends OrgAction
                                     'options'      => Options::forEnum(PollTypeEnum::class),
                                     'value'        => [
                                         'type'         => $poll->type->value,
-                                        'poll_options' => $optionsPool
+                                        'poll_options' => $optionsPool,
                                     ]
                                 ],
                                 'in_registration'           => [
@@ -138,7 +138,7 @@ class EditPoll extends OrgAction
         return ShowPoll::make()->getBreadcrumbs(
             routeName: preg_replace('/edit$/', 'show', $routeName),
             routeParameters: $routeParameters,
-            suffix: '('.__('Editing').')'
+            suffix: '(' . __('Editing') . ')'
         );
     }
 }

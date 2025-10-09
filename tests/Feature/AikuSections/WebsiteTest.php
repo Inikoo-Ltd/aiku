@@ -83,7 +83,7 @@ test('create b2b website', function () {
 
     expect($website)->toBeInstanceOf(Website::class)
         ->and($website->storefront)->toBeInstanceOf(Webpage::class)
-        ->and($website->webStats->number_webpages)->toBe(15);
+        ->and($website->webStats->number_webpages)->toBe(9);
 
 
     return $website;
@@ -251,7 +251,7 @@ test('create fulfilment website', function () {
         ->and($website->type)->toBe(WebsiteTypeEnum::FULFILMENT)
         ->and($website->state)->toBe(WebsiteStateEnum::IN_PROCESS)
         ->and($website->storefront)->toBeInstanceOf(Webpage::class)
-        ->and($website->webStats->number_webpages)->toBe(9);
+        ->and($website->webStats->number_webpages)->toBe(7);
 
     /** @var Webpage $homeWebpage */
     $homeWebpage = $website->webpages()->first();

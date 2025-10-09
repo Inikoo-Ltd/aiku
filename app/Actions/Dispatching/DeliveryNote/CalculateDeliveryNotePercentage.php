@@ -9,6 +9,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Dispatching\PickingSession\CalculatePickingSessionPicks;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
@@ -27,12 +28,12 @@ class CalculateDeliveryNotePercentage extends OrgAction
 
         // Picking percentage: picked vs required
         if ($pickingRequired > 0) {
-            $pickingPercentage = ($pickingPicked / $pickingRequired) * 100;
+            $pickingPercentage = min(($pickingPicked / $pickingRequired) * 100, 100);
         }
 
         // Packing percentage: packed vs picked
         if ($pickingPicked > 0) {
-            $packingPercentage = ($packingPacked / $pickingPicked) * 100;
+            $packingPercentage = min(($packingPacked / $pickingPicked) * 100, 100);
         }
 
         // Optionally round them
@@ -40,9 +41,17 @@ class CalculateDeliveryNotePercentage extends OrgAction
         $packingPercentage = round($packingPercentage, 2);
 
         $deliveryNote = $this->update($deliveryNote, [
+            'quantity_picked'    =>  $pickingPicked,
+            'quantity_packed'    =>  $packingPacked,
             'picking_percentage' => $pickingPercentage,
             'packing_percentage' => $packingPercentage
         ]);
+
+        if ($deliveryNote->pickingSessions) {
+            foreach ($deliveryNote->pickingSessions as $pickingSession) {
+                CalculatePickingSessionPicks::run($pickingSession);
+            }
+        }
 
         return $deliveryNote;
     }

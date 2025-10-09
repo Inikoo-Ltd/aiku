@@ -62,7 +62,7 @@ class AuthorizeRetinaWooCommerceUser extends OrgAction
     {
         return [
             'name' => ['required', 'string', 'max:255', Rule::unique('woo_commerce_users', 'name')],
-            'url' => ['required', 'string']
+            'url' => ['required', 'string', 'url', 'regex:/^https:\/\//']
         ];
     }
 

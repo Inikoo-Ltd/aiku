@@ -9,20 +9,15 @@
 
 namespace App\Actions\Retina\Dropshipping\Product;
 
-use App\Actions\Dropshipping\Aiku\StoreMultipleManualPortfolios;
-use App\Actions\Dropshipping\Shopify\Product\StorePortfolioShopify;
+use App\Actions\Dropshipping\Portfolio\StoreMultiplePortfolios;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreRetinaProductManual extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     /**
@@ -31,11 +26,7 @@ class StoreRetinaProductManual extends RetinaAction
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
         DB::transaction(function () use ($customerSalesChannel, $modelData) {
-            if ($customerSalesChannel->platform_user_type == "ShopifyUser") {
-                StorePortfolioShopify::run($customerSalesChannel->user, $modelData);
-            } else {
-                StoreMultipleManualPortfolios::run($customerSalesChannel, $modelData);
-            }
+            StoreMultiplePortfolios::run($customerSalesChannel, $modelData);
         });
     }
 
@@ -61,6 +52,9 @@ class StoreRetinaProductManual extends RetinaAction
         $this->handle($customerSalesChannel, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(CustomerSalesChannel $customerSalesChannel, array $modelData): void
     {
         $this->initialisationActions($customerSalesChannel->customer, $modelData);

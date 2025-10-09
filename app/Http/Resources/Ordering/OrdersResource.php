@@ -8,7 +8,9 @@
 
 namespace App\Http\Resources\Ordering;
 
-use App\Models\Ordering\Order;
+use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -17,7 +19,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $created_at
  * @property mixed $updated_at
  * @property string $name
- * @property string $state
+ * @property OrderStateEnum $state
  * @property string $shop_slug
  * @property string $date
  * @property string $reference
@@ -35,38 +37,71 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $organisation_code
  * @property mixed $shop_code
  * @property mixed $updated_by_customer_at
+ * @property mixed $payment_amount
+ * @property OrderPayDetailedStatusEnum $pay_detailed_status
+ * @property mixed $is_premium_dispatch
+ * @property mixed $has_extra_packing
+ * @property mixed $customer_notes
+ * @property mixed $internal_notes
+ * @property mixed $public_notes
+ * @property mixed $shipping_notes
+ * @property mixed $to_be_paid_by
  *
  */
 class OrdersResource extends JsonResource
 {
     public function toArray($request): array
     {
-        /** @var Order $order */
-        $order = $this;
+        $payDetailedStatus = '';
+        $payDetailedStatusTooltip = '';
+
+        if ($this->pay_detailed_status == OrderPayDetailedStatusEnum::UNPAID && $this->to_be_paid_by) {
+            if ($this->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
+                $payDetailedStatusTooltip = __('To be paid by cash on delivery');
+                $payDetailedStatus        = __('To be paid by COD');
+            } elseif ($this->to_be_paid_by == OrderToBePaidByEnum::BANK) {
+                $payDetailedStatusTooltip = __('To be paid by bank transfer');
+                $payDetailedStatus        = __('To be paid by bank');
+            }
+        } else {
+            $payDetailedStatus        = $this->pay_detailed_status ? $this->pay_detailed_status->labels()[$this->pay_detailed_status->value] : '';
+            $payDetailedStatusTooltip = $payDetailedStatus;
+        }
+
 
         return [
-            'slug'                   => $this->slug,
-            'reference'              => $this->reference,
-            'date'                   => $this->date,
-            'name'                   => $this->name,
-            'state'                  => $this->state,
-            'state_icon'             => $order->state->stateIcon()[$order->state->value],
-            'net_amount'             => $this->net_amount,
-            'total_amount'           => $this->total_amount,
-            'customer_name'          => $this->customer_name,
-            'customer_slug'          => $this->customer_slug,
-            'payment_state'          => $this->payment_state,
-            'payment_status'         => $this->payment_status,
-            'currency_code'          => $this->currency_code,
-            'currency_id'            => $this->currency_id,
-            'organisation_name'      => $this->organisation_name,
-            'organisation_code'      => $this->organisation_code,
-            'organisation_slug'      => $this->organisation_slug,
-            'shop_name'              => $this->shop_name,
-            'shop_code'              => $this->shop_code,
-            'shop_slug'              => $this->shop_slug,
-            'created_at'             => $this->created_at,
-            'updated_by_customer_at' => $this->updated_by_customer_at,
+            'slug'                        => $this->slug,
+            'reference'                   => $this->reference,
+            'date'                        => $this->date,
+            'name'                        => $this->name,
+            'state'                       => $this->state,
+            'state_icon'                  => $this->state->stateIcon()[$this->state->value],
+            'net_amount'                  => $this->net_amount,
+            'payment_amount'              => $this->payment_amount,
+            'total_amount'                => $this->total_amount,
+            'customer_name'               => $this->customer_name,
+            'customer_slug'               => $this->customer_slug,
+            'payment_state'               => $this->payment_state,
+            'payment_status'              => $this->payment_status,
+            'pay_detailed_status'         => $payDetailedStatus,
+            'pay_detailed_status_tooltip' => $payDetailedStatusTooltip,
+            'currency_code'               => $this->currency_code,
+            'currency_id'                 => $this->currency_id,
+            'organisation_name'           => $this->organisation_name,
+            'organisation_code'           => $this->organisation_code,
+            'organisation_slug'           => $this->organisation_slug,
+            'shop_name'                   => $this->shop_name,
+            'shop_code'                   => $this->shop_code,
+            'shop_slug'                   => $this->shop_slug,
+            'created_at'                  => $this->created_at,
+            'is_premium_dispatch'         => $this->is_premium_dispatch,
+            'has_extra_packing'           => $this->has_extra_packing,
+            'has_insurance'               => $this->has_insurance,
+            'updated_by_customer_at'      => $this->updated_by_customer_at,
+            'customer_notes'              => $this->customer_notes,
+            'internal_notes'              => $this->internal_notes,
+            'public_notes'                => $this->public_notes,
+            'shipping_notes'              => $this->shipping_notes,
         ];
     }
 }

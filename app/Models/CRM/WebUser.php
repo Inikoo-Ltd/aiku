@@ -32,6 +32,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\Permission\Traits\HasPermissions;
 use Spatie\Sluggable\SlugOptions;
+use App\Models\Traits\HasHistory;
 
 /**
  * App\Models\CRM\WebUser
@@ -93,7 +94,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|WebUser permission($permissions, $without = false)
  * @method static Builder<static>|WebUser query()
  * @method static Builder<static>|WebUser role($roles, $guard = null, $without = false)
- * @method static Builder<static>|WebUser withTrashed()
+ * @method static Builder<static>|WebUser withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|WebUser withoutPermission($permissions)
  * @method static Builder<static>|WebUser withoutRole($roles, $guard = null)
  * @method static Builder<static>|WebUser withoutTrashed()
@@ -107,6 +108,7 @@ class WebUser extends Authenticatable implements HasMedia, Auditable
     use HasImage;
     use InCustomer;
     use HasRoles;
+    use HasHistory;
 
     protected $casts = [
 
@@ -124,8 +126,7 @@ class WebUser extends Authenticatable implements HasMedia, Auditable
         'settings' => '{}',
     ];
 
-    protected $guarded = [
-    ];
+    protected $guarded = [];
 
     public function generateTags(): array
     {
@@ -184,5 +185,4 @@ class WebUser extends Authenticatable implements HasMedia, Auditable
     {
         return $this->hasMany(WebUserPasswordReset::class);
     }
-
 }

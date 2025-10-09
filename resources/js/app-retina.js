@@ -71,9 +71,8 @@ createInertiaApp(
   {
     resolve: async name => {
       const pages = import.meta.glob("./Pages/Retina/**/*.vue");
-      if (!pages) console.error(
-        `File './Pages/Retina/${name}.vue' is not exist`);
-      let page = await pages[`./Pages/Retina/${name}.vue`]();
+      let page = await pages?.[`./Pages/Retina/${name}.vue`]?.();
+      if (!page) console.error(`File './Pages/Retina/${name}.vue' is not exist`);
       page.default.layout = page.default?.layout || Layout;
       return page;
     },
@@ -89,15 +88,6 @@ createInertiaApp(
                       replaysOnErrorSampleRate: 1.0,
                       integrations            : [new Sentry.Replay()]
                     });
-      }
-
-      // To see Vue filename in console (component.vue())
-      if (import.meta.env.VITE_APP_ENV === 'local') {
-        window.component = {
-          vue: () => {
-            return props.initialPage.component
-          }
-        }
       }
 
       app.use(plugin).

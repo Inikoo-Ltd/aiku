@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Catalogue;
 
+use App\Enums\Ordering\ShippingZoneSchema\ShippingZoneSchemaStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ShippingZoneSchemasResource extends JsonResource
@@ -17,6 +18,7 @@ class ShippingZoneSchemasResource extends JsonResource
         return [
             'id'                       => $this->id,
             'slug'                     => $this->slug,
+            'state_icon'               => ShippingZoneSchemaStateEnum::stateIcon()[$this->state->value],
             'name'                     => $this->name,
             'created_at'               => $this->created_at,
             'number_customers'         => $this->number_customers,
@@ -25,7 +27,8 @@ class ShippingZoneSchemasResource extends JsonResource
             'amount'                   => $this->amount,
             'first_used'               => $this->first_used_at,
             'last_used'                => $this->last_used_at,
-            'organisation_name' => $this->organisation_name,
+            'organisation_name'     => $this->organisation_name,
+            'currency_code'             => $this->currency_code,
             'organisation_slug' => $this->organisation_slug,
             'shop_name'         => $this->shop_name,
             'shop_slug'         => $this->shop_slug,

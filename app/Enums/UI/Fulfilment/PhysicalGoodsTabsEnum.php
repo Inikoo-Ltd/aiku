@@ -24,12 +24,12 @@ enum PhysicalGoodsTabsEnum: string
         return match ($this) {
 
             PhysicalGoodsTabsEnum::PHYSICAL_GOODS => [
-                'title' => __('goods'),
+                'title' => __('Goods'),
                 'icon'  => 'fal fa-bars',
             ],
 
             PhysicalGoodsTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

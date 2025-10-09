@@ -11,6 +11,8 @@ import { capitalize } from "@/Composables/capitalize"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { faBooks } from '@fal'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
+import Dashboard from '@/Components/DataDisplay/Dashboard/Dashboard.vue'
+import { Dashboard as DashboardTS } from '@/types/Components/Dashboard'
 library.add(faBooks)
 
 defineProps<{
@@ -20,10 +22,7 @@ defineProps<{
         description?: string
         icon?: string
     }
-    flatTreeMaps: Array<any>
-    stats: {
-
-    }
+    dashboard: DashboardTS
 }>()
 
 </script>
@@ -35,12 +34,7 @@ defineProps<{
 
     <!-- Stats: box -->
     <div class="p-6">
-        <dl class="grid grid-cols-1 gap-2 lg:gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <StatsBox
-                v-for="(stat, idxStat) in stats"
-                :stat="stat"
-            >
-            </StatsBox>
-        </dl>
+        <Dashboard :dashboard="dashboard" />
+        <!-- <pre>{{dashboard}}</pre> -->
     </div>
 </template>

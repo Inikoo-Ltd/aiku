@@ -18,8 +18,30 @@ trait WithInventoryAuthorisation
             return $request->user()->authTo("group-overview");
         }
 
-        $this->canEdit = $request->user()->authTo("inventory.{$this->organisation->id}.edit");
+        $warehousesIDs = $this->organisation->warehouses()->pluck('id')->toArray();
 
-        return $request->user()->authTo("inventory.{$this->organisation->id}.view");
+        $editPermissions = [
+            "inventory.{$this->organisation->id}.edit",
+        ];
+        foreach ($warehousesIDs as $warehouseId) {
+            $editPermissions[] = "supervisor-stocks.$warehouseId.view";
+        }
+
+        $this->canEdit = $request->user()->authTo(
+            $editPermissions
+        );
+
+        $viewPermissions = [
+            "inventory.{$this->organisation->id}.view",
+        ];
+        foreach ($warehousesIDs as $warehouseId) {
+            $viewPermissions[] = "supervisor-stocks.$warehouseId.view";
+            $viewPermissions[] = "stocks.$warehouseId.view";
+            $viewPermissions[] = "fulfilment.view.$warehouseId.view";
+        }
+
+        return $request->user()->authTo(
+            $viewPermissions
+        );
     }
 }

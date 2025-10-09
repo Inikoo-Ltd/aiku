@@ -11,8 +11,6 @@ namespace App\Models\Catalogue;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $product_category_id
  * @property string|null $last_order_created_at

@@ -49,6 +49,4 @@ class ShowStandAloneRegistration extends IrisAction
 
         return $this->handle($request);
     }
-
-
 }

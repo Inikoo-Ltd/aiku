@@ -34,11 +34,9 @@ class CreateStoredItemAuditFromPallet extends OrgAction
     {
         $storedItemAudit = $pallet->storedItemAudits()->where('state', StoredItemAuditStateEnum::IN_PROCESS)->first();
 
-
         if (!$storedItemAudit) {
             $storedItemAudit = StoreStoredItemAuditFromPallet::make()->action($pallet, $modelData);
         }
-
 
         return $storedItemAudit;
     }
@@ -54,7 +52,6 @@ class CreateStoredItemAuditFromPallet extends OrgAction
         ]);
     }
 
-
     public function asController(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, Pallet $pallet, ActionRequest $request): StoredItemAudit
     {
         $this->parent = $fulfilment;
@@ -63,6 +60,4 @@ class CreateStoredItemAuditFromPallet extends OrgAction
 
         return $this->handle($pallet, $this->validatedData);
     }
-
-
 }

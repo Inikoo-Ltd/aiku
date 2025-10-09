@@ -169,7 +169,7 @@ class ShowFulfilmentCustomer extends OrgAction
                 ],
                 'pageHead'    => [
                     'icon'          => [
-                        'title' => __('customer'),
+                        'title' => __('Customer'),
                         'icon'  => 'fal fa-user',
                     ],
                     'iconRight'     => FulfilmentCustomerStatusEnum::statusIcon()[$fulfilmentCustomer->status->value],

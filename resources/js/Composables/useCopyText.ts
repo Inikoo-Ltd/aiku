@@ -1,4 +1,5 @@
 import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
 
 
 // To copy a text to clipboard
@@ -13,8 +14,8 @@ export const useCopyText = (textToCopy?: string | number) => {
     textarea.remove()
     
     notify({
-        // title: "Failed to Update Banner",
-        text: 'Text successfully copied to clipboard.',
-        type: "success"
+        // title: trans(''),
+        title: trans('Text successfully copied to clipboard.'),
+        type: "info"
     });
 }

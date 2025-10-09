@@ -32,9 +32,7 @@ class GetRetinaOrdersFromMagento extends OrgAction
             $existingOrderKeys = $magentoUser
                 ->customerSalesChannel
                 ->orders()
-                ->pluck('data')
-                ->map(fn ($data) => Arr::get($data, 'entity_id'))
-                ->filter()
+                ->pluck('platform_order_id')
                 ->toArray();
 
             $searchCriteria = [
@@ -58,7 +56,7 @@ class GetRetinaOrdersFromMagento extends OrgAction
             ]);
 
             foreach ($response['items'] as $order) {
-                if (in_array(Arr::get($order, 'entity_id'), $existingOrderKeys, true)) {
+                if (in_array(Arr::get($order, 'entity_id'), $existingOrderKeys)) {
                     continue;
                 }
 

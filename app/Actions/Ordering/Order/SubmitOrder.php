@@ -11,13 +11,16 @@ namespace App\Actions\Ordering\Order;
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
 use App\Models\Ordering\Order;
@@ -53,17 +56,29 @@ class SubmitOrder extends OrgAction
 
         $transactions = $order->transactions()->where('state', TransactionStateEnum::CREATING)->get();
         /** @var Transaction $transaction */
-        foreach ($transactions as $transaction) {
-            $transactionData = ['state' => TransactionStateEnum::SUBMITTED];
-            if ($transaction->submitted_at == null) {
-                data_set($transactionData, 'submitted_at', $date);
-                data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
-            }
+        if ($transactions->isNotEmpty()) {
+            foreach ($transactions as $transaction) {
+                $transactionData = ['state' => TransactionStateEnum::SUBMITTED];
+                if ($transaction->submitted_at == null) {
+                    data_set($transactionData, 'submitted_at', $date);
+                    data_set($transactionData, 'status', TransactionStatusEnum::PROCESSING);
+                    data_set($transactionData, 'submitted_quantity_ordered', $transaction->quantity_ordered); //Copy quantity
+                }
 
-            $transaction->update($transactionData);
+                $transaction->update($transactionData);
+            }
         }
 
         $this->update($order, $modelData);
+
+        if ($order->shop->masterShop) {
+            $order->shop->masterShop->orderingStats->update(
+                [
+                    'last_order_submitted_at' => now()
+                ]
+            );
+        }
+
 
         if ($order->customer_client_id) {
             CustomerClientHydrateBasket::run($order->customerClient);
@@ -72,13 +87,19 @@ class SubmitOrder extends OrgAction
         }
 
         $this->orderHydrators($order);
-        SendNewOrderEmailToSubscribers::dispatch($order);
-        SendNewOrderEmailToCustomer::dispatch($order);
+        SendNewOrderEmailToSubscribers::dispatch($order->id);
+        SendNewOrderEmailToCustomer::dispatch($order->id);
 
-        if ($order->pay_status == OrderPayStatusEnum::PAID) {
+        if ($order->pay_status == OrderPayStatusEnum::PAID || $order->to_be_paid_by == OrderToBePaidByEnum::CASH_ON_DELIVERY) {
             SendOrderToWarehouse::make()->action($order, []);
         }
 
+        $customerSalesChannel = $order->customerSalesChannel;
+        if ($customerSalesChannel) {
+            CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
+        }
+
+        CustomerHydrateTrafficSource::dispatch($order->customer);
 
         return $order;
     }
@@ -86,7 +107,7 @@ class SubmitOrder extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->order->state == OrderStateEnum::CREATING && !$this->order->transactions->count()) {
+        if ($this->order->state == OrderStateEnum::CREATING && !$this->order->transactions->count() && !$this->asAction) {
             $validator->errors()->add('state', __('Can not submit an order without any transactions'));
         } elseif ($this->order->state == OrderStateEnum::SUBMITTED) {
             $validator->errors()->add('state', __('Order is already submitted'));

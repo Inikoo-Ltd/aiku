@@ -33,8 +33,7 @@ const props = defineProps<{
     withQuantity?: boolean
     label_result?: string
     valueToRefetch?: string
-    listLoadingProducts: {
-        
+    listLoadingProducts: {       
     }
 }>()
 

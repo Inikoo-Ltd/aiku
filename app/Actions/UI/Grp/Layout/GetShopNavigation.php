@@ -69,7 +69,7 @@ class GetShopNavigation
             $navigation["catalogue"] = [
                 "root"    => "grp.org.shops.show.catalogue.",
                 "icon"    => ["fal", "fa-books"],
-                "label"   => __("catalogue"),
+                "label"   => __("Catalogue"),
                 "route"   => [
                     "name"       => 'grp.org.shops.show.catalogue.dashboard',
                     "parameters" => [$shop->organisation->slug, $shop->slug],
@@ -77,7 +77,7 @@ class GetShopNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
-                            "tooltip" => __("catalogue"),
+                            "tooltip" => __("Catalogue"),
                             "icon"    => ["fal", "fa-books"],
                             'root'    => 'grp.org.shops.show.catalogue.dashboard',
                             "route"   => [
@@ -86,7 +86,7 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("departments"),
+                            "label"   => __("Departments"),
                             "tooltip" => __("Departments"),
                             "icon"    => ["fal", "fa-folder-tree"],
                             'root'    => 'grp.org.shops.show.catalogue.departments.',
@@ -96,7 +96,7 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("families"),
+                            "label"   => __("Families"),
                             "tooltip" => __("Families"),
                             "icon"    => ["fal", "fa-folder"],
                             'root'    => 'grp.org.shops.show.catalogue.families.',
@@ -106,7 +106,7 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("products"),
+                            "label"   => __("Products"),
                             "tooltip" => __("Products"),
                             "icon"    => ["fal", "fa-cube"],
                             'root'    => 'grp.org.shops.show.catalogue.products.',
@@ -116,7 +116,7 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("collections"),
+                            "label"   => __("Collections"),
                             "tooltip" => __("Collections"),
                             "icon"    => ["fal", "fa-album-collection"],
                             'root'    => 'grp.org.shops.show.catalogue.collections.',
@@ -140,7 +140,7 @@ class GetShopNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
-                            "tooltip" => __("shop"),
+                            "tooltip" => __("Shop"),
                             "icon"    => ["fal", "fa-store-alt"],
                             'root'    => 'grp.org.shops.show.billables.dashboard',
                             "route"   => [
@@ -195,7 +195,7 @@ class GetShopNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
-                            "tooltip" => __("offers dashboard"),
+                            "tooltip" => __("Offers dashboard"),
                             "icon"    => ["fal", "fa-chart-network"],
                             'root'    => 'grp.org.shops.show.discounts.dashboard',
                             "route"   => [
@@ -204,8 +204,8 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("campaigns"),
-                            "tooltip" => __("campaigns"),
+                            "label"   => __("Campaigns"),
+                            "tooltip" => __("Campaigns"),
                             "icon"    => ["fal", "fa-comment-dollar"],
                             'root'    => 'grp.org.shops.show.discounts.campaigns.',
                             "route"   => [
@@ -214,8 +214,8 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("offers"),
-                            "tooltip" => __("offers"),
+                            "label"   => __("Offers"),
+                            "tooltip" => __("Offers"),
                             "icon"    => ["fal", "fa-badge-percent"],
                             'root'    => 'grp.org.shops.show.discounts.offers.',
                             "route"   => [
@@ -240,7 +240,7 @@ class GetShopNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
-                            "tooltip" => __("marketing dashboard"),
+                            "tooltip" => __("Marketing dashboard"),
                             "icon"    => ["fal", "fa-chart-network"],
                             'root'    => 'grp.org.shops.show.marketing.dashboard',
                             "route"   => [
@@ -249,8 +249,8 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("newsletters"),
-                            "tooltip" => __("newsletters"),
+                            "label"   => __("Newsletters"),
+                            "tooltip" => __("Newsletters"),
                             "icon"    => ["fal", "fa-newspaper"],
                             'root'    => 'grp.org.shops.show.marketing.newsletters.',
                             "route"   => [
@@ -259,12 +259,22 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("mailshots"),
-                            "tooltip" => __("marketing mailshots"),
+                            "label"   => __("Mailshots"),
+                            "tooltip" => __("Marketing mailshots"),
                             "icon"    => ["fal", "fa-mail-bulk"],
                             'root'    => 'grp.org.shops.show.marketing.mailshots.',
                             "route"   => [
                                 "name"       => "grp.org.shops.show.marketing.mailshots.index",
+                                "parameters" => [$shop->organisation->slug, $shop->slug],
+                            ],
+                        ],
+                        [
+                            "label"   => __("Traffic sources"),
+                            "tooltip" => __("Traffic sources"),
+                            "icon"    => ["fal", "fa-chart-line"],
+                            'root'    => 'grp.org.shops.show.marketing.traffic_sources.',
+                            "route"   => [
+                                "name"       => "grp.org.shops.show.marketing.traffic_sources.index",
                                 "parameters" => [$shop->organisation->slug, $shop->slug],
                             ],
                         ],
@@ -295,7 +305,7 @@ class GetShopNavigation
 
                             [
                                 "label"   => __("Website"),
-                                "tooltip" => __("website"),
+                                "tooltip" => __("Website"),
                                 "icon"    => ["fal", "fa-globe"],
                                 "root"    => "grp.org.shops.show.web.websites.",
 
@@ -305,7 +315,7 @@ class GetShopNavigation
                                 ],
                             ],
                             [
-                                "label"   => __("webpages"),
+                                "label"   => __("Webpages"),
                                 "tooltip" => __("Webpages"),
                                 "icon"    => ["fal", "fa-browser"],
                                 "root"    => "grp.org.shops.show.web.webpages.",
@@ -316,8 +326,19 @@ class GetShopNavigation
                                 ],
                             ],
                             [
-                                "label"   => __("banners"),
-                                "tooltip" => __("banners"),
+                                "label"   => __("Blogs"),
+                                "tooltip" => __("Blogs"),
+                                "icon"    => ["fal", "fa-newspaper"],
+                                "root"    => "grp.org.shops.show.web.blogs.",
+
+                                "route" => [
+                                    "name"       => "grp.org.shops.show.web.blogs.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
+                                ],
+                            ],
+                            [
+                                "label"   => __("Banners"),
+                                "tooltip" => __("Banners"),
                                 "icon"    => ["fal", "fa-sign"],
                                 'root'    => 'grp.org.shops.show.web.banners.',
                                 "route"   => [
@@ -326,8 +347,8 @@ class GetShopNavigation
                                 ],
                             ],
                             [
-                                "label"   => __("analytics"),
-                                "tooltip" => __("analytics"),
+                                "label"   => __("Analytics"),
+                                "tooltip" => __("Analytics"),
                                 "icon"    => ["fal", "fa-analytics"],
                                 'root'    => 'grp.org.shops.show.web.analytics.',
                                 "route"   => [
@@ -381,7 +402,7 @@ class GetShopNavigation
                     "subSections" => [
 
                         [
-                            "label"   => __("customers"),
+                            "label"   => __("Customers"),
                             "tooltip" => __("Customers"),
                             "icon"    => ["fal", "fa-user"],
                             "route"   => [
@@ -390,7 +411,7 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("prospects"),
+                            "label"   => __("Prospects"),
                             "tooltip" => __("Prospects"),
                             "icon"    => ["fal", "fa-user-plus"],
                             "route"   => [
@@ -407,7 +428,7 @@ class GetShopNavigation
             $navigation["ordering"] = [
                 "root"    => "grp.org.shops.show.ordering.",
                 "scope"   => "shops",
-                "label"   => __("orders"),
+                "label"   => __("Orders"),
                 "icon"    => ["fal", "fa-shopping-cart"],
                 "route"   => [
                     "name"       => "grp.org.shops.show.ordering.orders.index",
@@ -416,7 +437,7 @@ class GetShopNavigation
                 "topMenu" => [
                     "subSections" => [
                         [
-                            "tooltip" => __("ordering dashboard"),
+                            "tooltip" => __("Ordering dashboard"),
                             "icon"    => ["fal", "fa-chart-network"],
                             'root'    => 'grp.org.shops.show.ordering.dashboard',
                             "route"   => [
@@ -435,7 +456,7 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("orders"),
+                            "label"   => __("Orders"),
                             "tooltip" => __("Orders"),
                             "icon"    => ["fal", "fa-shopping-cart"],
                             'root'    => 'grp.org.shops.show.ordering.orders.',
@@ -445,7 +466,7 @@ class GetShopNavigation
                             ],
                         ],
                         [
-                            "label"   => __("delivery notes"),
+                            "label"   => __("Delivery notes"),
                             "tooltip" => __("Delivery notes"),
                             "icon"    => ["fal", "fa-truck"],
                             'root'    => 'grp.org.shops.show.ordering.delivery-notes.',
@@ -469,9 +490,7 @@ class GetShopNavigation
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "topMenu" => [
-                    "subSections" => [
-
-                    ],
+                    "subSections" => [],
                 ],
             ];
         }

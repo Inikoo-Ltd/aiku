@@ -124,7 +124,7 @@ class IndexDepartmentWebpages extends OrgAction
                 'product_category_stats.number_current_products',
                 'product_category_stats.number_current_sub_departments',
             ])
-            ->allowedSorts(['code', 'type', 'level', 'url'])
+            ->allowedSorts(['code', 'type', 'level', 'url', 'number_current_sub_departments', 'number_current_families', 'number_current_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -136,7 +136,7 @@ class IndexDepartmentWebpages extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             if (!($parent instanceof Group)) {
@@ -155,9 +155,9 @@ class IndexDepartmentWebpages extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withEmptyState(
                     [
-                            'title' => __("No webpages found"),
-                            'count' => $parent->webStats->number_webpages,
-                        ]
+                        'title' => __("No webpages found"),
+                        'count' => $parent->webStats->number_webpages,
+                    ]
                 )
                 ->column(key: 'level', label: '', icon: 'fal fa-sort-amount-down-alt', tooltip: __('Level'), canBeHidden: false, sortable: true, type: 'icon');
             $table->column(key: 'type', label: '', icon: 'fal fa-shapes', tooltip: __('Type'), canBeHidden: false, type: 'icon');
@@ -191,25 +191,25 @@ class IndexDepartmentWebpages extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('webpages'),
+                'title'       => __('Webpages'),
                 'pageHead'    => [
                     'title'         => __('department webpages'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-browser'],
-                        'title' => __('webpage')
+                        'title' => __('Webpage')
                     ],
                     'subNavigation' => $subNavigation,
-                    'actions'       => [
-                        [
-                            'type'  => 'button',
-                            'style' => 'create',
-                            'label' => __('webpage'),
-                            'route' => [
-                                'name'       => $routeCreate,
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ],
-                        ]
-                    ]
+                    // 'actions'       => [
+                    //     [
+                    //         'type'  => 'button',
+                    //         'style' => 'create',
+                    //         'label' => __('webpage'),
+                    //         'route' => [
+                    //             'name'       => $routeCreate,
+                    //             'parameters' => array_values($request->route()->originalParameters())
+                    //         ],
+                    //     ]
+                    // ]
                 ],
                 'data'        => ProductCategoryWebpagesResource::collection($webpages),
 

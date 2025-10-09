@@ -33,7 +33,7 @@ class RefundInProcessTransactionsResource extends JsonResource
         return [
             'code'                           => $this->code,
             'name'                           => $this->name,
-            'quantity'                       => (int)$this->quantity,
+            'quantity'                       => $this->quantity,
             'net_amount'                     => $this->net_amount,
             'max_refundable_amount'          => max(0, $this->net_amount - $totalLastRefund),
             'currency_code'                  => $this->currency_code,

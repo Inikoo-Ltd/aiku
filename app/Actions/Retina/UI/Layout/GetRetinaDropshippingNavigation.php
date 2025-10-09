@@ -9,8 +9,10 @@
 namespace App\Actions\Retina\UI\Layout;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetRetinaDropshippingNavigation
@@ -35,17 +37,77 @@ class GetRetinaDropshippingNavigation
 
                 ]
             ];
+            $groupNavigation['catalogue'] = [
+                'label'   => __('Catalogue'),
+                'icon'    => ['fal', 'fa-books'],
+                'root'    => 'retina.catalogue.',
+                'route'   => [
+                    'name' => 'retina.catalogue.dashboard'
+                ],
+                'topMenu' => [
+                    'subSections' =>
+                        [
+                            [
+                                'label' => __('Catalogue'),
+                                'icon'  => ['far', 'fa-books'],
+                                'root'  => 'retina.catalogue.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.dashboard'
+                                ]
+                            ],
+                            [
+                                'label' => __('Departments'),
+                                'icon'  => ['far', 'fa-folder-tree'],
+                                'root'  => 'retina.catalogue.departments.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.departments.index'
+                                ]
+                            ],
+                            [
+                                'label' => __('Sub Departments'),
+                                'icon'  => ['far', 'fa-dot-circle'],
+                                'root'  => 'retina.catalogue.sub_departments.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.sub_departments.index'
+                                ]
+                            ],
+                            [
+                                'label' => __('Collections'),
+                                'icon'  => ['far', 'fa-album-collection'],
+                                'root'  => 'retina.catalogue.collections.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.collections.index'
+                                ]
+                            ],
+                            [
+                                'label' => __('Families'),
+                                'icon'  => ['far', 'fa-folder'],
+                                'root'  => 'retina.catalogue.families.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.families.index'
+                                ]
+                            ],
+                            [
+                                'label' => __('Products'),
+                                'icon'  => ['far', 'fa-cube'],
+                                'root'  => 'retina.catalogue.products.',
+                                'route' => [
+                                    'name' => 'retina.catalogue.products.index'
+                                ]
+                            ],
+                        ]
+                ]
+            ];
         }
 
 
         $platforms_navigation = [];
 
 
+        /** @var CustomerSalesChannel $customerSalesChannels */
         foreach (
-            $customer->customerSalesChannels as $customerSalesChannels
+            $customer->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::OPEN)->get() as $customerSalesChannels
         ) {
-
-
             $reference = $customerSalesChannels->name ?? 'n/a';
 
             $platforms_navigation[] = [
@@ -54,7 +116,7 @@ class GetRetinaDropshippingNavigation
                 'slug'          => $customerSalesChannels->slug,
                 'key'           => $customerSalesChannels->slug,
                 'label'         => $reference,
-                'img'           => $this->getPlatformLogo($customerSalesChannels),
+                'img'           => $this->getPlatformLogo($customerSalesChannels->platform->code),
                 'img_tooltip'   => $customerSalesChannels->platform->name,
                 'route'         => [
                     'name'       => 'retina.dropshipping.customer_sales_channels.show',
@@ -87,25 +149,12 @@ class GetRetinaDropshippingNavigation
 
 
         $groupNavigation['invoice'] = [
-            'label'   => __('Invoice'),
-            'icon'    => ['fal', 'fa-file-invoice-dollar'],
-            'root'    => 'retina.dropshipping.invoices.',
-            'route'   => [
+            'label' => __('Invoices'),
+            'icon'  => ['fal', 'fa-file-invoice-dollar'],
+            'root'  => 'retina.dropshipping.invoices.',
+            'route' => [
                 'name' => 'retina.dropshipping.invoices.index'
             ],
-            // 'topMenu' => [
-            //     'subSections' => [
-            //         [
-            //             'label' => __('View Top ups'),
-            //             'icon'  => ['far', 'fa-eye'],
-            //             'root'  => 'retina.top_up.',
-            //             'route' => [
-            //                 'name' => 'retina.top_up.index',
-
-            //             ]
-            //         ],
-            //     ]
-            // ]
         ];
 
         $groupNavigation['top_up'] = [
@@ -145,13 +194,13 @@ class GetRetinaDropshippingNavigation
 
         if ($hasNonManualChannels || $hasApiTokens || $hasCreditCards) {
             $groupNavigation['saved_credit_cards'] = [
-                'label' => __('Saved Cards'),
-                'icon'  => ['fal', 'fa-credit-card'],
-                'root'  => 'retina.dropshipping.mit_saved_cards.',
-                'route' => [
+                'label'     => __('Saved Cards'),
+                'icon'      => ['fal', 'fa-credit-card'],
+                'root'      => 'retina.dropshipping.mit_saved_cards.',
+                'route'     => [
                     'name' => 'retina.dropshipping.mit_saved_cards.dashboard'
                 ],
-                'indicator' => ! $hasCreditCards
+                'indicator' => !$hasCreditCards
             ];
         }
 
@@ -160,10 +209,19 @@ class GetRetinaDropshippingNavigation
             'icon'    => ['fal', 'fa-users-cog'],
             'root'    => 'retina.sysadmin.',
             'route'   => [
-                'name' => 'retina.sysadmin.dropshipping.dashboard'
+                'name' => 'retina.sysadmin.settings.edit'
             ],
             'topMenu' => [
                 'subSections' => [
+                    [
+                        'label' => __('account settings'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'retina.sysadmin.settings.',
+                        'route' => [
+                            'name' => 'retina.sysadmin.settings.edit',
+
+                        ]
+                    ],
                     [
                         'label' => __('users'),
                         'icon'  => ['fal', 'fa-user-circle'],
@@ -174,19 +232,32 @@ class GetRetinaDropshippingNavigation
                         ]
                     ],
 
-                    [
-                        'label' => __('account settings'),
-                        'icon'  => ['fal', 'fa-cog'],
-                        'root'  => 'retina.sysadmin.settings.',
-                        'route' => [
-                            'name' => 'retina.sysadmin.settings.edit',
 
-                        ]
-                    ],
                 ]
             ]
         ];
 
+        $groupNavigation['marketing'] = [
+            'label'   => __('manage email'),
+            'icon'    => ['fal', 'fa-envelope'],
+            'root'    => 'retina.email.',
+            'route'   => [
+                'name' => 'retina.email.settings.edit'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('email'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'retina.email.settings.',
+                        'route' => [
+                            'name' => 'retina.email.settings.edit',
+
+                        ]
+                    ]
+                ]
+            ]
+        ];
 
         return $groupNavigation;
     }

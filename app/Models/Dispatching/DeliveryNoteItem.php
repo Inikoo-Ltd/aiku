@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemCancelStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemSalesTypeEnum;
 use App\Models\Inventory\OrgStock;
@@ -70,11 +71,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $invoice_id
  * @property int $estimated_required_weight grams
  * @property int $estimated_picked_weight grams
- * @property string $quantity_not_picked
+ * @property string|null $quantity_not_picked
  * @property bool $is_handled
  * @property bool|null $need_packing
  * @property bool|null $is_packed
  * @property bool $is_done
+ * @property DeliveryNoteItemCancelStateEnum|null $cancel_state
+ * @property int|null $picking_session_id
+ * @property string|null $original_quantity_required
  * @property-read \App\Models\Dispatching\DeliveryNote $deliveryNote
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read OrgStock|null $orgStock
@@ -98,6 +102,7 @@ class DeliveryNoteItem extends Model
         'data'       => 'array',
         'state'      => DeliveryNoteItemStateEnum::class,
         'sales_type' => DeliveryNoteItemSalesTypeEnum::class,
+        'cancel_state' => DeliveryNoteItemCancelStateEnum::class,
 
         'date'               => 'datetime',
         'order_submitted_at' => 'datetime',

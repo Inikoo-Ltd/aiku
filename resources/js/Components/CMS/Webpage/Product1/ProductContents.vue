@@ -160,7 +160,7 @@ const openDisclosureId = ref<number | null>(null)
 <template>
     <div class="w-full">
         <!-- Product Specification Section (Static, Read-Only, No Loop) -->
-        <div v-if="setting.product_specs" class="mb-6 relative" >
+        <div v-if="setting?.product_specs" class="mb-6 relative" >
             <div class="space-y-2">
                 <!-- Spec Item #1 -->
                 <div class="relative hover:bg-gray-50 rounded transition">
@@ -180,7 +180,7 @@ const openDisclosureId = ref<number | null>(null)
 
 
         <!-- FAQ Section -->
-        <div v-if="setting.faqs" class="mb-6 relative">
+        <div v-if="setting?.faqs" class="mb-6 relative">
             <div class="text-sm text-gray-500 mb-1 font-semibold" :style="getStyles(styleData?.title)">Frequently Asked Questions (FAQs)</div>
 
             <div v-if="faqContents.length === 0 && !loadingAdd && templateEdit == 'webpage'"

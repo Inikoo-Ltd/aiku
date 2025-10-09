@@ -186,7 +186,7 @@ trait WithCustomerSubNavigation
                 'label'    => __('Client'),
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show',
-                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerSalesChannel->id, $customerClient->ulid]
+                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerSalesChannel->slug, $customerClient->ulid]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-stream'],
@@ -198,7 +198,7 @@ trait WithCustomerSubNavigation
                 'number'   => $customerClient->stats->number_orders ?? 0,
                 'route'     => [
                     'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index',
-                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerSalesChannel->id, $customerClient->ulid]
+                    'parameters' => [$this->organisation->slug, $customerClient->shop->slug, $customerClient->customer->slug, $customerSalesChannel->slug, $customerClient->ulid]
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-shopping-cart'],

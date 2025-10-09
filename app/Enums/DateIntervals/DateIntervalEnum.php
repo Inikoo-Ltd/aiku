@@ -54,19 +54,19 @@ enum DateIntervalEnum: string
     {
         return [
             'all' => __('All'),
-            '1y'  => __('1y'),
-            '1q'  => __('1q'),
-            '1m'  => __('1m'),
-            '1w'  => __('1w'),
-            '3d'  => __('3d'),
-            'ytd' => __('YTD'),
-            'qtd' => __('QTD'),
-            'mtd' => __('MTD'),
-            'wtd' => __('WTD'),
-            'tdy' => __('Today'),
-            'lm'  => __('LM'),
-            'lw'  => __('LW'),
-            'ld'  => __('YDAY'),
+            '1y'  => '1y',
+            '1q'  => '1q',
+            '1m'  => '1m',
+            '1w'  => '1w',
+            '3d'  => '3d',
+            'ytd' => 'YTD',
+            'qtd' => 'QTD',
+            'mtd' => 'MTD',
+            'wtd' => 'WTD',
+            'tdy' => 'Today',
+            'lm'  => 'LM',
+            'lw'  => 'LW',
+            'ld'  => 'YDAY',
 
         ];
     }
@@ -75,7 +75,7 @@ enum DateIntervalEnum: string
     public static function lastYearValues(): array
     {
         $intervals = self::values();
-        unset($intervals[0]); // This only work if all is the first value
+        unset($intervals[0]); // This only works if all is the first value
 
         return $intervals;
     }

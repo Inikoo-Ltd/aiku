@@ -74,7 +74,7 @@ class ShowArtefact extends OrgAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-map-signs'],
-                            'title' => __('warehouse area')
+                            'title' => __('Warehouse area')
                         ],
                     'model'   => __('artefact'),
                     'title'   => $artefact->name,
@@ -83,8 +83,8 @@ class ShowArtefact extends OrgAction
                         //     [
                         //         'type'    => 'button',
                         //         'style'   => 'create',
-                        //         'tooltip' => __('new location'),
-                        //         'label'   => __('new location'),
+                        //         'tooltip' => __('New location'),
+                        //         'label'   => __('New location'),
                         //         'route'   => [
                         //             'name'       => $request->route()->getName().'.locations.create',
                         //             'parameters' => $request->route()->originalParameters()

@@ -36,70 +36,70 @@ enum ServiceTabsEnum: string
     {
         return match ($this) {
             ServiceTabsEnum::SHOWCASE => [
-                'title' => __('product'),
+                'title' => __('Product'),
                 'icon'  => 'fas fa-info-circle',
             ],
             // ServiceTabsEnum::VARIATIONS => [
-            //     'title' => __('variations'),
+            //     'title' => __('Variations'),
             //     'icon'  => 'fal fa-stream',
             // ],
             // ServiceTabsEnum::WEBPAGES => [
-            //     'title' => __('webpages'),
+            //     'title' => __('Webpages'),
             //     'icon'  => 'fal fa-globe',
             // ],
             ServiceTabsEnum::SALES => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
             ServiceTabsEnum::ORDERS => [
-                'title' => __('orders'),
+                'title' => __('Orders'),
                 'icon'  => 'fal fa-shopping-cart',
             ],
             ServiceTabsEnum::CUSTOMERS => [
-                'title' => __('customers'),
+                'title' => __('Customers'),
                 'icon'  => 'fal fa-users',
 
             ],
             ServiceTabsEnum::MAILSHOTS => [
-                'title' => __('mailshots'),
+                'title' => __('Mailshots'),
                 'icon'  => 'fal fa-bullhorn',
 
             ],
 
 
             ServiceTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             ServiceTabsEnum::DATA => [
-                'title' => __('data'),
+                'title' => __('Data'),
                 'icon'  => 'fal fa-database',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             ServiceTabsEnum::PARTS => [
-                'title' => __('parts'),
+                'title' => __('Parts'),
                 'icon'  => 'fal fa-box',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             // ServiceTabsEnum::SERVICE => [
-            //     'title' => __('service'),
+            //     'title' => __('Service'),
             //     'icon'  => 'fal fa-box',
             //     'type'  => 'icon',
             //     'align' => 'right',
             // ],
             // ServiceTabsEnum::RENTAL => [
-            //     'title' => __('rental'),
+            //     'title' => __('Rental'),
             //     'icon'  => 'fal fa-box',
             //     'type'  => 'icon',
             //     'align' => 'right',
             // ],
 
             ServiceTabsEnum::IMAGES => [
-                'title' => __('images'),
+                'title' => __('Images'),
                 'icon'  => 'fal fa-camera-retro',
                 'type'  => 'icon',
                 'align' => 'right',

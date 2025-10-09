@@ -13,21 +13,23 @@ use App\Actions\Dropshipping\Amazon\CallbackRetinaAmazonUser;
 use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\CallbackRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\StoreMagentoUser;
-use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
+use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
 use App\Actions\Fulfilment\Pallet\DownloadDropshippingClientTemplate;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\ShowRetinaMitSavedCardsDashboard;
+use App\Actions\Retina\Billing\RetinaPdfInvoice;
 use App\Actions\Retina\Billing\UI\IndexRetinaDropshippingInvoices;
 use App\Actions\Retina\Billing\UI\ShowRetinaDropshippingInvoice;
-use App\Actions\Retina\Dropshipping\ApiToken\UI\IndexRetinaApiDropshipping;
 use App\Actions\Retina\Dropshipping\ApiToken\UI\ShowRetinaApiDropshippingDashboard;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaBaskets;
 use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaDropshippingProductsForBasket;
+use App\Actions\Retina\Dropshipping\Basket\UI\IndexRetinaDropshippingProductsForEmptyBasket;
 use App\Actions\Retina\Dropshipping\Checkout\UI\ShowRetinaDropshippingCheckout;
 use App\Actions\Retina\Dropshipping\Client\FetchRetinaCustomerClientFromShopify;
 use App\Actions\Retina\Dropshipping\Client\UI\CreateRetinaCustomerClient;
@@ -40,15 +42,15 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Retina\Dropshipping\Orders\IndexRetinaDropshippingOrders;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingBasket;
 use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
-use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolios;
+use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
-use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaProductsInDropshipping;
 use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use Illuminate\Support\Facades\Route;
 
+Route::get('select-products-for-empty-basket', IndexRetinaDropshippingProductsForEmptyBasket::class)->name('select_products_for_empty_basket');
 Route::get('select-products-for-basket/{order:id}', IndexRetinaDropshippingProductsForBasket::class)->name('select_products_for_basket');
 
 
@@ -59,10 +61,11 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
 Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
-    Route::delete('shopify-user', DeleteRetinaShopifyUser::class)->name('shopify_user.delete');
+    Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
 
     Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
-    Route::delete('wc-user', DeleteRetinaShopifyUser::class)->name('wc.delete');
+    Route::post('wc-user/{customerSalesChannel}/test-connection', TestConnectionWooCommerceUser::class)->name('wc.test_connection');
+    Route::delete('wc-user', DeleteShopifyUser::class)->name('wc.delete');
 
     Route::post('ebay-user/authorize', AuthorizeRetinaEbayUser::class)->name('ebay.authorize');
     Route::get('ebay-user-callback', CallbackRetinaEbayUser::class)->name('ebay.callback');
@@ -98,9 +101,8 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('my-products')->as('portfolios.')->group(function () {
         Route::get('', IndexRetinaPortfolios::class)->name('index');
-        Route::get('download', DownloadPortfolios::class)->name('download');
+        Route::get('download', DownloadPortfoliosCSV::class)->name('download');
         Route::get('{portfolio}', ShowRetinaDropshippingPortfolio::class)->name('show');
-        Route::get('products', IndexRetinaProductsInDropshipping::class)->name('products.index');
     });
 
     Route::prefix('orders')->as('orders.')->group(function () {
@@ -110,7 +112,6 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
 
     Route::prefix('api')->as('api.')->group(function () {
         Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
-        // Route::get('/history', IndexRetinaApiDropshipping::class)->name('index');
     });
 
 
@@ -127,6 +128,7 @@ Route::prefix('tiktok')->name('tiktok.')->group(function () {
 Route::prefix('invoices')->name('invoices.')->group(function () {
     Route::get('', IndexRetinaDropshippingInvoices::class)->name('index');
     Route::get('{invoice}', ShowRetinaDropshippingInvoice::class)->name('show');
+    Route::get('{invoice}/pdf', RetinaPdfInvoice::class)->name('pdf');
 });
 
 Route::prefix('saved-credit-cards')->name('mit_saved_cards.')->group(function () {

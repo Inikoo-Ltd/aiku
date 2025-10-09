@@ -9,6 +9,7 @@
 namespace App\Models\Dropshipping;
 
 use App\Actions\Utils\Abbreviate;
+use App\Enums\Dropshipping\CustomerSalesChannelConnectionStatusEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\CRM\Customer;
@@ -19,13 +20,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int|null $organisation_id
@@ -61,6 +63,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $slug
  * @property string|null $name
  * @property CustomerSalesChannelStateEnum|null $state
+ * @property CustomerSalesChannelConnectionStatusEnum|null $connection_status
+ * @property \Illuminate\Support\Carbon|null $closed_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property bool $can_connect_to_platform
+ * @property bool $exist_in_platform
+ * @property bool $platform_status
+ * @property int $number_portfolio_broken
+ * @property int $ping_error_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders
@@ -74,30 +84,37 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Model|\Eloquent|null $user
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel query()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withTrashed(bool $withTrashed = true)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|CustomerSalesChannel withoutTrashed()
  * @mixin \Eloquent
  */
-class CustomerSalesChannel extends Model
+class CustomerSalesChannel extends Model implements Authenticatable
 {
     use InShop;
     use HasSlug;
     use HasApiTokens;
+    use SoftDeletes;
+    use AuthenticatableTrait;
 
     protected $table = 'customer_sales_channels';
 
     protected $guarded = [];
 
     protected $casts = [
-        'data'   => 'array',
-        'status' => CustomerSalesChannelStatusEnum::class,
-        'state' => CustomerSalesChannelStateEnum::class
+        'data'              => 'array',
+        'status'            => CustomerSalesChannelStatusEnum::class,
+        'state'             => CustomerSalesChannelStateEnum::class,
+        'connection_status' => CustomerSalesChannelConnectionStatusEnum::class,
+        'closed_at'         => 'datetime'
     ];
 
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return  Abbreviate::run($this->platform->type->value).'-'.$this->reference;
+                return Abbreviate::run($this->platform->type->value) . '-' . $this->reference;
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128)
@@ -144,5 +161,4 @@ class CustomerSalesChannel extends Model
     {
         return $this->hasMany(Portfolio::class);
     }
-
 }

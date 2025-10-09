@@ -30,7 +30,7 @@ const inAdministrativeAreas = (administrativeArea: string, countryID: number) =>
 
 // Return the fields of the selected country
 const addressFields = (countryID: number) => {
-    return props.options.countriesAddressData[countryID].fields
+    return props.options.countriesAddressData?.[countryID]?.fields
 }
 
 </script>
@@ -40,7 +40,7 @@ const addressFields = (countryID: number) => {
         
         <!-- Country Options -->
         <div v-if="fieldLabel" class="col-span-2">
-            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+            <label for="selectCountry" class="mb-1 block text-xs font-medium">
                 {{ trans('Label') }}
             </label>
             <PureInput v-model="modelValue.label" placeholder="Enter address name" />
@@ -48,7 +48,7 @@ const addressFields = (countryID: number) => {
         
         <!-- Country Options -->
         <div class="col-span-2">
-            <label for="selectCountry" class="mb-1 capitalize block text-xs font-medium">
+            <label for="selectCountry" class="mb-1 block text-xs font-medium">
                 {{ trans('Country') }}
             </label>
             <Multiselect v-model="modelValue.country_id" searchable :options="countries" placeholder="Select a country" :canDeselect="false" :canClear="false" />
@@ -59,7 +59,7 @@ const addressFields = (countryID: number) => {
             <div class="grid col-span-2">
                 <div class="w-full ">
                     <div v-if="`${addressField}` === 'administrative_area'">
-                        <label for="administrative_area" class="capitalize block text-sm font-medium">
+                        <label for="administrative_area" class="block text-sm font-medium">
                             {{ addressFieldData.label }}
                         </label>
 
@@ -79,7 +79,7 @@ const addressFields = (countryID: number) => {
                     </div>
                     
                     <div v-else>
-                        <label :for="`${addressField}`" class="capitalize block text-xs font-medium">
+                        <label :for="`${addressField}`" class="block text-xs font-medium">
                             {{ addressFieldData.label }}
                         </label>
 

@@ -45,8 +45,6 @@ END;"
 
         DB::statement('CREATE EXTENSION IF NOT EXISTS vector');
         DB::statement('CREATE EXTENSION IF NOT EXISTS pg_stat_statements');
-
-
     }
 
     public function down(): void

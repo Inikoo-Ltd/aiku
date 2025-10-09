@@ -14,14 +14,11 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraBarcode;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraCharge;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraCredit;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraCustomer;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraCustomerClient;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraCustomerNote;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteCustomerClient;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteDeliveryNote;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteFavourites;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeleteInvoice;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDeliveryNote;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraDepartment;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraDispatchedEmail;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraEmailTrackingEvent;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraEmployee;
@@ -37,8 +34,8 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraOfferComponent;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOrder;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOrgStockMovement;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPayment;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraPortfolio;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraProduct;
+use App\Actions\Transfers\Aurora\Api\ProcessAuroraProductOrgStocks;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraProspect;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPurchaseOrder;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPurge;
@@ -46,10 +43,10 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraShop;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraStock;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraStockDelivery;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraStockFamily;
+use App\Actions\Transfers\Aurora\Api\ProcessAuroraStockLocations;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraSupplier;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraSupplierProduct;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraTimesheet;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraTopUp;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraWarehouse;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraWarehouseArea;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraWebpage;
@@ -76,6 +73,7 @@ class ProcessFetchStack
             'bg'             => $bg
         ];
 
+
         if ($fetchStack->operation == 'DeleteFavourite') {
             $modelData['unfavourited_at'] = $fetchStack->submitted_at;
         }
@@ -90,11 +88,8 @@ class ProcessFetchStack
             'Barcode' => ProcessAuroraBarcode::make()->action($organisation, $modelData),
             'Change' => ProcessAuroraCharge::make()->action($organisation, $modelData),
             'Credit' => ProcessAuroraCredit::make()->action($organisation, $modelData),
-            'CustomerClient' => ProcessAuroraCustomerClient::make()->action($organisation, $modelData),
-            'DeleteCustomerClient' => ProcessAuroraDeleteCustomerClient::make()->action($organisation, $modelData),
             'CustomerNote' => ProcessAuroraCustomerNote::make()->action($organisation, $modelData),
             'DeleteDeliveryNote' => ProcessAuroraDeleteDeliveryNote::make()->action($organisation, $modelData),
-            'Department' => ProcessAuroraDepartment::make()->action($organisation, $modelData),
             'EmailTrackingEvent' => ProcessAuroraEmailTrackingEvent::make()->action($organisation, $modelData),
             'Staff', 'Employee' => ProcessAuroraEmployee::make()->action($organisation, $modelData),
             'Family' => ProcessAuroraFamily::make()->action($organisation, $modelData),
@@ -115,12 +110,10 @@ class ProcessFetchStack
             'SupplierPart' => ProcessAuroraSupplierProduct::make()->action($organisation, $modelData),
             'Supplier' => ProcessAuroraSupplier::make()->action($organisation, $modelData),
             'Timesheet' => ProcessAuroraTimesheet::make()->action($organisation, $modelData),
-            'TopUp' => ProcessAuroraTopUp::make()->action($organisation, $modelData),
             'WarehouseArea' => ProcessAuroraWarehouseArea::make()->action($organisation, $modelData),
             'Warehouse' => ProcessAuroraWarehouse::make()->action($organisation, $modelData),
             'Favourite' => ProcessAuroraFavourites::make()->action($organisation, $modelData),
             'WebsiteUser' => ProcessAuroraWebUser::make()->action($organisation, $modelData),
-            'Portfolio' => ProcessAuroraPortfolio::make()->action($organisation, $modelData),
             'Order' => ProcessAuroraOrder::make()->action($organisation, array_merge($modelData, ['with' => 'transactions,payments'])),
             'Invoice' => ProcessAuroraInvoice::make()->action($organisation, array_merge($modelData, ['with' => 'transactions,payments'])),
             'DispatchedEmailWithFull' => ProcessAuroraDispatchedEmail::make()->action($organisation, array_merge($modelData, ['with' => 'full'])),
@@ -128,7 +121,9 @@ class ProcessFetchStack
             'DeliveryNote' => ProcessAuroraDeliveryNote::make()->action($organisation, array_merge($modelData, ['with' => 'transactions'])),
             'PurchaseOrder' => ProcessAuroraPurchaseOrder::make()->action($organisation, array_merge($modelData, ['with' => 'transactions'])),
             'Customer' => ProcessAuroraCustomer::make()->action($organisation, $modelData),
-            'Stock' => ProcessAuroraStock::make()->action($organisation, $modelData),
+            'Stock', 'Part' => ProcessAuroraStock::make()->action($organisation, $modelData),
+            'StockLocations' => ProcessAuroraStockLocations::make()->action($organisation, $modelData),
+            'Product_Parts' => ProcessAuroraProductOrgStocks::make()->action($organisation, $modelData),
             'DeleteFavourite' => ProcessAuroraDeleteFavourites::make()->action($organisation, $modelData),
             'Webpage' => ProcessAuroraWebpage::make()->action($organisation, $modelData),
             'PublishWebpage' => ProcessAuroraWebpage::make()->action($organisation, array_merge($modelData, ['with' => 'web_blocks'])),

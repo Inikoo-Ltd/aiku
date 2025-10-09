@@ -10,12 +10,10 @@
 namespace App\Actions\Retina\Platform;
 
 use App\Actions\RetinaAction;
-use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Spatie\LaravelOptions\Options;
 
 class EditRetinaCustomerSalesChannel extends RetinaAction
 {
@@ -29,14 +27,14 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $customerSalesChannel
                 ),
-                'title'       => __('edit sales channel'),
+                'title'       => __('Edit sales channel'),
                 'pageHead'    => [
-                    'title'        => __('edit sales channel'),
-                    'icon'         => [
+                    'title'   => __('Edit sales channel'),
+                    'icon'    => [
                         'icon'  => ['fal', 'fa-code-branch'],
-                        'title' => __('sales channel')
+                        'title' => __('Sales channel')
                     ],
-                    'actions'      => [
+                    'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
@@ -60,22 +58,16 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                         'label' => __('store name'),
                                         'value' => $customerSalesChannel->name
                                     ],
-                                    'status' => [
-                                        'type'     => 'select',
-                                        'label'    => __('status'),
-                                        'value'    => $customerSalesChannel->status,
-                                        'options'  => Options::forEnum(CustomerSalesChannelStatusEnum::class)
-                                    ],
                                 ]
                             ],
                         ],
-                    'args' => [
-                        'updateRoute'     => [
-                            'name'      => 'retina.models.customer_sales_channel.update',
+                    'args'      => [
+                        'updateRoute' => [
+                            'name'       => 'retina.models.customer_sales_channel.update',
                             'parameters' => [
                                 'customerSalesChannel' => $customerSalesChannel->id
                             ],
-                            'method' => 'patch'
+                            'method'     => 'patch'
                         ]
                     ]
                 ]
@@ -83,10 +75,8 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
         );
     }
 
-    public function asController(
-        CustomerSalesChannel $customerSalesChannel,
-        ActionRequest $request
-    ): Response {
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): Response
+    {
         $this->initialisation($request);
 
         return $this->handle($customerSalesChannel, $request);

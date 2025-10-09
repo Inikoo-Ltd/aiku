@@ -16,7 +16,7 @@ enum InvoicePayStatusEnum: string
 
     case UNPAID = 'unpaid';
     case PAID = 'paid';
-    case UNKNOWN = 'unknown'; // If invoice is older than 3 years and has No Payments
+    case UNKNOWN = 'unknown'; // If the invoice is older than 3 years old and has No Payments
 
     public static function labels(): array
     {

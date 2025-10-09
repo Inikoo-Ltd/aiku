@@ -8,6 +8,8 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Actions\Traits\HasBucketImages;
+use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Catalogue\Product;
@@ -17,6 +19,8 @@ use App\Http\Resources\Helpers\ImageResource;
 class WebBlockProductResource extends JsonResource
 {
     use HasSelfCall;
+    use HasBucketImages;
+
 
     public function toArray($request): array
     {
@@ -35,14 +39,21 @@ class WebBlockProductResource extends JsonResource
 
 
         $specifications = [
+            'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
             'ingredients'       => $ingredients,
             'gross_weight'      => $product->gross_weight,
             'marketing_weights' => $tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all(),
             'barcode'           => $product->barcode,
-            'dimensions'        => $tradeUnits->pluck('dimensions')->flatten()->filter()->values()->all(),
+            'dimensions'        => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
+            'cpnp'              => $product->cpnp_number,
+            'net_weight'        => $product->marketing_weight,
+            'unit'              => $product->unit,
         ];
 
+        $luigi_identity = $product->group_id . ':' . $product->organisation_id . ':' . $product->shop_id . ':' . $product->webpage?->website?->id . ':' . $product->webpage?->id;
+
         return [
+            'luigi_identity'    => $luigi_identity,
             'slug'              => $product->slug,
             'code'              => $product->code,
             'name'              => $product->name,
@@ -64,7 +75,7 @@ class WebBlockProductResource extends JsonResource
             'web_images'        => $product->web_images,
             'created_at'        => $product->created_at,
             'updated_at'        => $product->updated_at,
-            'images'            => ImageResource::collection($product->images)->toArray($request),
+            'images'            => $product->bucket_images ? $this->getImagesData($product) : ImageResource::collection($product->images)->toArray($request),
             'tags'              => TagResource::collection($product->tradeUnitTagsViaTradeUnits())->toArray($request),
         ];
     }

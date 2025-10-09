@@ -140,11 +140,13 @@ class AppServiceProvider extends ServiceProvider
                 // Goods
                 'Ingredient'                    => 'App\Models\Goods\Ingredient',
                 'MasterAsset'                   => 'App\Models\Masters\MasterAsset',
+                'MasterCollection'              => 'App\Models\Masters\MasterCollection',
                 'MasterProductCategory'         => 'App\Models\Masters\MasterProductCategory',
                 'MasterShop'                    => 'App\Models\Masters\MasterShop',
                 'Stock'                         => 'App\Models\Goods\Stock',
                 'StockFamily'                   => 'App\Models\Goods\StockFamily',
                 'TradeUnit'                     => 'App\Models\Goods\TradeUnit',
+                'TradeUnitFamily'               => 'App\Models\Goods\TradeUnitFamily',
 
 
                 // Helpers
@@ -224,8 +226,8 @@ class AppServiceProvider extends ServiceProvider
                 'Order'                         => 'App\Models\Ordering\Order',
                 'Purge'                         => 'App\Models\Ordering\Purge',
                 'SalesChannel'                  => 'App\Models\Ordering\SalesChannel',
-                'ShippingZone'                  => 'App\Models\Ordering\ShippingZone',
-                'ShippingZoneSchema'            => 'App\Models\Ordering\ShippingZoneSchema',
+                'ShippingZone'                  => 'App\Models\Billables\ShippingZone',
+                'ShippingZoneSchema'            => 'App\Models\Billables\ShippingZoneSchema',
                 'Transaction'                   => 'App\Models\Ordering\Transaction',
 
                 // Procurement

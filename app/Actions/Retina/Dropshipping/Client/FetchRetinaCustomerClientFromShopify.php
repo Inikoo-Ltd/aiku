@@ -33,7 +33,7 @@ class FetchRetinaCustomerClientFromShopify extends RetinaAction
                 $address = Arr::get($customer, 'default_address', []);
                 $existsClient = $this->customer->clients()->where('email', $customer['email'])->first();
 
-                $attributes = $this->getAttributes($customer, $address);
+                $attributes = $this->getShopifyAttributesFromWebhook($customer, $address);
 
                 if (blank($address)) {
                     data_set($attributes, 'address', $shopifyUser->customer?->deliveryAddress?->toArray());

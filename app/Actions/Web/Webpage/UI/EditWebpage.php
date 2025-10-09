@@ -56,7 +56,7 @@ class EditWebpage extends OrgAction
         return [
             'code'     => $webpage->code,
             'id'       => $webpage->id,
-            'href'     => 'https://'.$webpage->website->domain.'/'.$webpage->url,
+            'href'     => 'https://' . $webpage->website->domain . '/' . $webpage->url,
             "typeIcon" => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
         ];
     }
@@ -66,11 +66,12 @@ class EditWebpage extends OrgAction
      */
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
+        $isBlog = $webpage->type == WebpageTypeEnum::BLOG;
 
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __("Webpage's settings"),
+                'title'       => $isBlog ? __("Blog's Settings") : __("Webpage's settings"),
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
 
                 'pageHead' => [
@@ -79,7 +80,7 @@ class EditWebpage extends OrgAction
                         'icon'  => ['fal', 'sliders-h'],
                         'title' => __("Webpage settings")
                     ],
-                    'model' => __('Webpage'),
+                    'model' => $isBlog ? __('Blog') : __('Webpage'),
                     'iconRight' => WebpageStateEnum::stateIcon()[$webpage->state->value],
                     'afterTitle' => [
                         'label' => $webpage->getUrl(),
@@ -100,26 +101,8 @@ class EditWebpage extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'label'  => __('Webpage'),
+                            'label'  => $isBlog ? __('Blog') : __('Webpage'),
                             'icon'   => 'fal fa-browser',
-                            'fields' => [
-                                'title'       => [
-                                    'type'                => 'input',
-                                    'label'               => __('Title'),
-                                    'label_no_capitalize' => true,
-                                    'value'               => $webpage->title,
-                                    'required'            => true,
-                                ],
-                                'allow_fetch' => [
-                                    'type'  => 'toggle',
-                                    'label' => __('Allow fetch'),
-                                    'value' => $webpage->allow_fetch,
-                                ],
-                            ]
-                        ],
-                        [
-                            'label'  => __('Link Preview'),
-                            'icon'   => 'fal fa-image',
                             'fields' => [
                                 "seo_image"         => [
                                     "type"    => "image_crop_square",
@@ -130,23 +113,45 @@ class EditWebpage extends OrgAction
                                         "maxAspectRatio" => 12 / 4,
                                     ]
                                 ],
-                                'seo_title'         => [
+                                'code'       => [
                                     'type'                => 'input',
-                                    'label'               => __('Preview Title'),
+                                    'label'               => __('Code'),
                                     'label_no_capitalize' => true,
-                                    'value'               => $webpage->seo_title,
-                                    'required'            => false,
+                                    'value'               => $webpage->code,
+                                    'required'            => true,
                                 ],
-                                'description_title' => [
+                                'title'       => [
+                                    'type'                => 'input',
+                                    'label'               => __('Title'),
+                                    'label_no_capitalize' => true,
+                                    'value'               => $webpage->title,
+                                    'required'            => true,
+                                ],
+                                'url' => [
+                                    'type'      => 'inputWithAddOn',
+                                    'label'     => __('URL'),
+                                    'label_no_capitalize' => true,
+                                    'leftAddOn' => [
+                                        'label' => $isBlog ? 'https://' . $webpage->website->domain . '/blog' : 'https://' . $webpage->website->domain . '/'
+                                    ],
+                                    'value'     => $webpage->url,
+                                    'required'  => true,
+                                ],
+                                'description'       => [
                                     'type'                => 'textarea',
-                                    'label'               => __('Preview Description'),
+                                    'label'               => __('Description'),
                                     'label_no_capitalize' => true,
-                                    'value'               => $webpage->seo_description,
-                                    'required'            => false,
+                                    'value'               => $webpage->description,
+                                    'required'            => true,
+                                    "maxLength"     => 150,
+                                    "counter"       => true,
                                 ],
-
-
-                            ],
+                                'allow_fetch' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Allow fetch'),
+                                    'value' => $webpage->allow_fetch,
+                                ],
+                            ]
                         ],
                         [
                             'label'  => __('Structured data'),
@@ -206,7 +211,6 @@ class EditWebpage extends OrgAction
                                         'method'     => 'patch',
                                         'name'       => 'grp.models.webpage.delete',
                                         'parameters' => [
-                                            // 'shop'    => $webpage->shop->id,
                                             'webpage' => $webpage->id,
                                         ]
                                     ],
@@ -231,12 +235,17 @@ class EditWebpage extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {
+        if ($routeName == 'grp.org.shops.show.web.blogs.edit') {
+            return ShowBlogWebpage::make()->getBreadcrumbs(
+                $routeName,
+                $routeParameters,
+                suffix: '(' . __('settings') . ')'
+            );
+        }
         return ShowWebpage::make()->getBreadcrumbs(
             $routeName,
             $routeParameters,
-            suffix: '('.__('settings').')'
+            suffix: '(' . __('settings') . ')'
         );
     }
-
-
 }

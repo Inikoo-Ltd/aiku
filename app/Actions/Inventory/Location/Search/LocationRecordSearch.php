@@ -36,7 +36,6 @@ class LocationRecordSearch
                 'sections'          => ['infrastructure'],
                 'haystack_tier_1'   => $location->code,
                 'keyword'           => $location->barcode,
-                'keyword_2'         => $location->code,
                 'result'            => [
                     'route' => [
                         'name'       => 'grp.org.warehouses.show.infrastructure.locations.show',

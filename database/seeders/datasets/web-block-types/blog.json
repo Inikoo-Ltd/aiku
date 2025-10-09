@@ -1,0 +1,15 @@
+{
+	"slug": "blog",
+	"code": "blog",
+	"name": "Blog",
+	"scope": "webpage",
+	"category": "blog",
+    "fixed": true,
+	"icon": ["fal", "rectangle-wide"],
+	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
+	"data": {
+		"fieldValue": {
+            "data" : null
+        }
+	}
+}

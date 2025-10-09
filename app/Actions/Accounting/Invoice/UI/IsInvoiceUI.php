@@ -11,12 +11,15 @@ namespace App\Actions\Accounting\Invoice\UI;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
+use App\Actions\Ordering\Order\UI\ShowOrder;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
+use App\Http\Resources\Dispatching\ShipmentsResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Comms\Outbox;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use Arr;
 use Lorisleiva\Actions\ActionRequest;
@@ -27,20 +30,20 @@ trait IsInvoiceUI
     {
         if ($this->parent instanceof Fulfilment) {
             $customerRoute = [
-                'name' => 'grp.org.fulfilments.show.crm.customers.show',
+                'name'       => 'grp.org.fulfilments.show.crm.customers.show',
                 'parameters' => [
-                    'organisation' => $invoice->organisation->slug,
-                    'fulfilment' => $invoice->customer->fulfilmentCustomer->fulfilment->slug,
+                    'organisation'       => $invoice->organisation->slug,
+                    'fulfilment'         => $invoice->customer->fulfilmentCustomer->fulfilment->slug,
                     'fulfilmentCustomer' => $invoice->customer->fulfilmentCustomer->slug,
                 ]
             ];
         } else {
             $customerRoute = [
-                'name' => 'grp.org.shops.show.crm.customers.show',
+                'name'       => 'grp.org.shops.show.crm.customers.show',
                 'parameters' => [
                     'organisation' => $invoice->organisation->slug,
-                    'shop' => $invoice->shop->slug,
-                    'customer' => $invoice->customer->slug,
+                    'shop'         => $invoice->shop->slug,
+                    'customer'     => $invoice->customer->slug,
                 ]
             ];
         }
@@ -68,7 +71,7 @@ trait IsInvoiceUI
             'name'       => 'grp.org.shops.show.dashboard.comms.outboxes.workshop',
             'parameters' => [
                 'organisation' => $invoice->organisation->slug,
-                'shop'   => $invoice->customer->shop->slug,
+                'shop'         => $invoice->customer->shop->slug,
                 'outbox'       => $outbox->slug
             ]
         ];
@@ -76,20 +79,41 @@ trait IsInvoiceUI
 
     public function getBoxStats(Invoice $invoice): array
     {
-        return  [
-            'customer'    => [
+        $deliveryNotesData = [];
+
+
+        $order = $invoice->order;
+        if ($order) {
+            $deliveryNotes = $invoice->order->deliveryNotes;
+
+
+            if ($deliveryNotes) {
+                foreach ($deliveryNotes as $deliveryNote) {
+                    $deliveryNotesData[] = [
+                        'id'        => $deliveryNote->id,
+                        'slug'      => $deliveryNote->slug,
+                        'reference' => $deliveryNote->reference,
+                        'state'     => $deliveryNote->state->stateIcon()[$deliveryNote->state->value],
+                        'shipments' => $deliveryNote?->shipments ? ShipmentsResource::collection($deliveryNote->shipments()->with('shipper')->get())->resolve() : null
+                    ];
+                }
+            }
+        }
+
+        return [
+            'customer'       => [
                 'slug'         => $invoice->customer->slug,
                 'reference'    => $invoice->customer->reference,
                 'route'        => $this->getCustomerRoute($invoice),
-                'contact_name' => $invoice->customer->contact_name,
-                'company_name' => $invoice->customer->company_name,
+                'name'         => $invoice->customer_name,
+                'contact_name' => $invoice->customer_contact_name,
                 'location'     => $invoice->customer->location,
                 'phone'        => $invoice->customer->phone,
-                // 'address'      => AddressResource::collection($invoice->customer->addresses),
             ],
-            'information' => [
-                'paid_amount'    => $invoice->payment_amount,
-                'pay_amount'     => round($invoice->total_amount - $invoice->payment_amount, 2)
+            'delivery_notes' => $deliveryNotesData,
+            'information'    => [
+                'paid_amount' => $invoice->payment_amount,
+                'pay_amount'  => round($invoice->total_amount - $invoice->payment_amount, 2)
             ]
         ];
     }
@@ -124,13 +148,14 @@ trait IsInvoiceUI
                     ? [
                     'supervisor' => true,
                     'type'       => 'button',
+                    'label' => __('Delete'),
                     'style'      => 'red_outline',
-                    'tooltip'    => __('delete'),
+                    'tooltip'    => __('Delete'),
                     'icon'       => $trashIcon,
                     'key'        => 'delete_booked_in',
                     'ask_why'    => true,
                     'route'      => [
-                        'method'     => 'delete',
+                        'method'     => 'post',
                         'name'       => 'grp.models.invoice.delete',
                         'parameters' => [
                             'invoice' => $invoice->id
@@ -153,7 +178,7 @@ trait IsInvoiceUI
                     'key'               => 'delete_booked_in',
                     'ask_why'           => true,
                     'route'             => [
-                        'method'     => 'delete',
+                        'method'     => 'post',
                         'name'       => 'grp.models.invoice.delete',
                         'parameters' => [
                             'invoice' => $invoice->id
@@ -165,13 +190,15 @@ trait IsInvoiceUI
                 [
                     'supervisor' => true,
                     'type'       => 'button',
-                    'style'      => 'red_outline',
-                    'tooltip'    => __('delete'),
+                    'style'      => 'edit',
+                    'class' =>  ['color' => 'red !important'],
+                    'tooltip'    => __('Delete'),
+                    'label'      => __('Delete'),
                     'icon'       => $trashIcon,
                     'key'        => 'delete_booked_in',
                     'ask_why'    => true,
                     'route'      => [
-                        'method'     => 'delete',
+                        'method'     => 'post',
                         'name'       => 'grp.models.invoice.delete',
                         'parameters' => [
                             'invoice' => $invoice->id
@@ -184,7 +211,8 @@ trait IsInvoiceUI
             $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
-                'label' => __('edit'),
+                'icon'  => 'fal fa-pencil',
+                'label' => __('Edit'),
                 'route' => [
                     'name'       => 'grp.org.accounting.invoices.edit',
                     'parameters' => $request->route()->originalParameters()
@@ -194,7 +222,7 @@ trait IsInvoiceUI
             $wrappedActions[] = [
                 'type'  => 'button',
                 'style' => 'edit',
-                'label' => __('edit'),
+                'label' => __('Edit'),
                 'route' => [
                     'name'       => 'grp.org.fulfilments.show.crm.customers.show.invoices.edit',
                     'parameters' => $request->route()->originalParameters()
@@ -206,8 +234,9 @@ trait IsInvoiceUI
         $wrappedActions[] =
             [
                 'type'  => 'button',
-                'style' => 'tertiary',
-                'label' => __('send invoice'),
+                'style' => 'edit',
+                'label' => __('Send invoice'),
+                'icon'  => 'fal fa-envelope',
                 'key'   => 'send-invoice',
                 'route' => [
                     'method'     => 'post',
@@ -222,8 +251,9 @@ trait IsInvoiceUI
             $wrappedActions[] =
                 [
                     'type'  => 'button',
-                    'style' => 'create',
-                    'label' => __('create refund'),
+                    'style' => 'edit',
+                    'icon' => 'fal fa-plus',
+                    'label' => __('Create refund'),
                     'route' => [
                         'method'     => 'post',
                         'name'       => 'grp.models.refund.create',
@@ -240,9 +270,6 @@ trait IsInvoiceUI
                     ],
                 ];
         }
-
-
-
 
 
         return $wrappedActions;
@@ -306,6 +333,8 @@ trait IsInvoiceUI
 
                 ]
             ],
+
+            default => null
         };
     }
 

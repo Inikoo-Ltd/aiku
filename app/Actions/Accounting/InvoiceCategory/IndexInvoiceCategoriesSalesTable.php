@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\InvoiceCategory;
 
 use App\Actions\OrgAction;
+use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInGroupSalesResource;
 use App\Http\Resources\Dashboards\DashboardInvoiceCategoriesInOrganisationSalesResource;
 use App\Models\Accounting\InvoiceCategory;
@@ -18,7 +19,7 @@ use App\Services\QueryBuilder;
 
 class IndexInvoiceCategoriesSalesTable extends OrgAction
 {
-    public function handle(Group|Organisation $parent)
+    public function handle(Group|Organisation $parent): \Illuminate\Contracts\Pagination\Paginator|\Illuminate\Contracts\Pagination\LengthAwarePaginator
     {
         $queryBuilder = QueryBuilder::for(InvoiceCategory::class);
         $queryBuilder->leftJoin('invoice_category_sales_intervals', 'invoice_categories.id', 'invoice_category_sales_intervals.invoice_category_id');
@@ -32,6 +33,7 @@ class IndexInvoiceCategoriesSalesTable extends OrgAction
             $queryBuilder->where('invoice_categories.group_id', $parent->id);
         }
 
+        $queryBuilder->whereIn('invoice_categories.state', [InvoiceCategoryStateEnum::ACTIVE, InvoiceCategoryStateEnum::COOLDOWN]);
 
         $queryBuilder
             ->defaultSort('invoice_categories.name')
@@ -44,6 +46,7 @@ class IndexInvoiceCategoriesSalesTable extends OrgAction
                 'invoice_categories.currency_id as category_currency_id',
                 'organisations.currency_id as organisation_currency_id',
                 'organisations.slug as organisation_slug',
+                'organisations.code as organisation_code',
                 'invoice_categories.organisation_id',
                 'invoice_category_sales_intervals.*',
                 'invoice_category_ordering_intervals.*',
@@ -56,7 +59,7 @@ class IndexInvoiceCategoriesSalesTable extends OrgAction
         }
 
         return $queryBuilder->allowedSorts(['name', 'state'])
-            ->withPaginator(null)
+            ->withPaginator(null, 1000)
             ->withQueryString();
     }
 
@@ -68,12 +71,11 @@ class IndexInvoiceCategoriesSalesTable extends OrgAction
         } else {
             $this->initialisation($parent, []);
         }
-        $shops = $this->handle($parent);
-
+        $invoiceCategories = $this->handle($parent);
         if ($parent instanceof Group) {
-            return json_decode(DashboardInvoiceCategoriesInGroupSalesResource::collection($shops)->toJson(), true);
+            return json_decode(DashboardInvoiceCategoriesInGroupSalesResource::collection($invoiceCategories)->toJson(), true);
         } else {
-            return json_decode(DashboardInvoiceCategoriesInOrganisationSalesResource::collection($shops)->toJson(), true);
+            return json_decode(DashboardInvoiceCategoriesInOrganisationSalesResource::collection($invoiceCategories)->toJson(), true);
         }
     }
 

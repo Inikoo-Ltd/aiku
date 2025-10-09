@@ -58,7 +58,7 @@ class ShowWorkplace extends OrgAction
                     'icon'        =>
                         [
                             'icon'  => ['fal', 'building'],
-                            'title' => __('working place')
+                            'title' => __('Working place')
                         ],
                     'title'       => $workplace->name,
                     'model'       => __('workplace'),

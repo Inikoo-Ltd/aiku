@@ -30,7 +30,6 @@ class SnapshotsResource extends JsonResource
             'recyclable' => $this->recyclable,
             'comment' => $this->comment,
             'publisher' => $this->publisher->contact_name ?? null,
-
         ];
     }
 }

@@ -17,8 +17,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -43,7 +41,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RentalAgreementClause withoutTrashed()
  * @mixin \Eloquent
  */

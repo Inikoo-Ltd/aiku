@@ -5,8 +5,6 @@ namespace App\Models\Helpers;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id

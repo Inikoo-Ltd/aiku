@@ -10,9 +10,11 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Catalogue\ProductCategory\UI\ShowDepartment;
 use App\Actions\Catalogue\ProductCategory\UI\ShowFamily;
+use App\Actions\Catalogue\ProductCategory\UI\ShowSubDepartment;
 use App\Actions\Catalogue\Shop\UI\ShowCatalogue;
 use App\Actions\Catalogue\WithDepartmentSubNavigation;
 use App\Actions\Catalogue\WithFamilySubNavigation;
+use App\Actions\Catalogue\WithSubDepartmentSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\Catalogue\Product\ProductStateEnum;
@@ -38,6 +40,7 @@ class IndexProductsInProductCategory extends OrgAction
     use WithDepartmentSubNavigation;
     use WithFamilySubNavigation;
     use WithCatalogueAuthorisation;
+    use WithSubDepartmentSubNavigation;
 
 
     private ProductCategory $parent;
@@ -79,9 +82,12 @@ class IndexProductsInProductCategory extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->orderBy('products.state');
         $queryBuilder->leftJoin('shops', 'products.shop_id', 'shops.id');
+        $queryBuilder->leftJoin('currencies', 'currencies.id', 'shops.currency_id');
+
         $queryBuilder->leftJoin('organisations', 'products.organisation_id', '=', 'organisations.id');
         $queryBuilder->leftJoin('asset_sales_intervals', 'products.asset_id', 'asset_sales_intervals.asset_id');
         $queryBuilder->leftJoin('asset_ordering_intervals', 'products.asset_id', 'asset_ordering_intervals.asset_id');
+
         $queryBuilder->where('products.is_main', true);
         $queryBuilder->whereNull('products.exclusive_for_customer_id');
 
@@ -89,6 +95,8 @@ class IndexProductsInProductCategory extends OrgAction
             $queryBuilder->where('products.department_id', $productCategory->id);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             $queryBuilder->where('products.family_id', $productCategory->id);
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $queryBuilder->where('products.sub_department_id', $productCategory->id);
         } else {
             abort(419);
         }
@@ -111,13 +119,16 @@ class IndexProductsInProductCategory extends OrgAction
                 'products.name',
                 'products.state',
                 'products.price',
+                'products.rrp',
+                'products.unit',
                 'products.created_at',
                 'products.updated_at',
                 'products.slug',
-
+                'products.asset_id',
                 'invoices_all',
                 'sales_all',
                 'customers_invoiced_all',
+                'currencies.code as currency_code',
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
@@ -155,7 +166,11 @@ class IndexProductsInProductCategory extends OrgAction
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unit', label: __('unit'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'rrp', label: __('rrp'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: true);
         };
     }
 
@@ -176,13 +191,15 @@ class IndexProductsInProductCategory extends OrgAction
             $subNavigation = $this->getDepartmentSubNavigation($productCategory);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
             $subNavigation = $this->getFamilySubNavigation($productCategory, $this->grandParent ?? $productCategory->shop, $request);
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $subNavigation = $this->getSubDepartmentSubNavigation($productCategory);
         }
 
 
         $title      = __('products');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('product')
+            'title' => __('Product')
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -205,6 +222,17 @@ class IndexProductsInProductCategory extends OrgAction
             $icon  = [
                 'icon'  => ['fal', 'fa-folder'],
                 'title' => __('Family')
+            ];
+            $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
+            $afterTitle = [
+                'label' => __('Products')
+            ];
+        } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            $title = $productCategory->name;
+            $model = '';
+            $icon  = [
+                'icon'  => ['fal', 'fa-dot-circle'],
+                'title' => __('Sub Department')
             ];
             $iconRight  = $productCategory->state->stateIcon()[$productCategory->state->value];
             $afterTitle = [
@@ -234,7 +262,7 @@ class IndexProductsInProductCategory extends OrgAction
                         && $productCategory->type == ProductCategoryTypeEnum::FAMILY ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new product'),
+                            'tooltip' => __('New product'),
                             'label'   => __('product'),
                             'route'   => [
                                 'name'       => str_replace('index', 'create', $request->route()->getName()),
@@ -246,6 +274,8 @@ class IndexProductsInProductCategory extends OrgAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
+                'editable_table'               => true,
+                'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
                 'tabs'                         => [
                     'current'    => $this->tab,
@@ -294,6 +324,15 @@ class IndexProductsInProductCategory extends OrgAction
 
         return $this->handle(productCategory: $family, prefix: ProductsTabsEnum::INDEX->value);
     }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFamilyInSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ProductCategory $family, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->grandParent = $subDepartment;
+        $this->parent      = $family;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+
+        return $this->handle(productCategory: $family, prefix: ProductsTabsEnum::INDEX->value);
+    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ActionRequest $request): LengthAwarePaginator
@@ -303,6 +342,26 @@ class IndexProductsInProductCategory extends OrgAction
 
         return $this->handle(productCategory: $department, prefix: ProductsTabsEnum::INDEX->value);
     }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInDepartment(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+
+        return $this->handle(productCategory: $subDepartment, prefix: ProductsTabsEnum::INDEX->value);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(ProductsTabsEnum::values());
+
+        return $this->handle(productCategory: $subDepartment, prefix: ProductsTabsEnum::INDEX->value);
+    }
+
+
 
 
     public function getBreadcrumbs(ProductCategory $productCategory, string $routeName, array $routeParameters, string $suffix = null): array
@@ -412,11 +471,42 @@ class IndexProductsInProductCategory extends OrgAction
                     $suffix
                 )
             ),
+            'grp.org.shops.show.catalogue.departments.show.sub_departments.show.product.index',
+            'grp.org.shops.show.catalogue.sub_departments.show.products.index' =>
+            array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs(
+                    $productCategory,
+                    $routeName,
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show.products.index' =>
             array_merge(
                 ShowFamily::make()->getBreadcrumbs(
                     $productCategory,
                     'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => $routeName,
+                        'parameters' => $routeParameters
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.sub_departments.show.families.show.products.index' =>
+            array_merge(
+                ShowFamily::make()->getBreadcrumbs(
+                    $productCategory,
+                    $routeName,
                     $routeParameters
                 ),
                 $headCrumb(

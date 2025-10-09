@@ -11,12 +11,7 @@
 namespace App\Actions\Api\Retina\Dropshipping\Image;
 
 use App\Actions\RetinaApiAction;
-use App\Http\Resources\Helpers\ImageResource;
-use App\Models\Dropshipping\Portfolio;
 use App\Models\Helpers\Media;
-use App\Services\QueryBuilder;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Storage;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;

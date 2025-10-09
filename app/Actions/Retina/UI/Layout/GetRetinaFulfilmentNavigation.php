@@ -39,7 +39,7 @@ class GetRetinaFulfilmentNavigation
             if ($webUser->customer?->fulfilmentCustomer?->number_pallets_status_storing) {
                 $additionalSubsections = [
                     [
-                        'label' => __('goods out'),
+                        'label' => __('Goods out'),
                         'icon'  => ['fal', 'fa-truck-ramp'],
                         'root'  => 'retina.fulfilment.storage.pallet_returns.',
                         'route' => [
@@ -60,7 +60,7 @@ class GetRetinaFulfilmentNavigation
                 'topMenu' => [
                     'subSections' => [
                         [
-                            'label' => __('goods'),
+                            'label' => __('Goods'),
                             'icon'  => ['fal', 'fa-pallet'],
                             'root'  => 'retina.fulfilment.storage.pallets.',
                             'route' => [
@@ -68,7 +68,7 @@ class GetRetinaFulfilmentNavigation
                             ]
                         ],
                         [
-                            'label' => __('goods In'),
+                            'label' => __('Goods In'),
                             'icon'  => ['fal', 'fa-truck'],
                             'root'  => 'retina.fulfilment.storage.pallet_deliveries.',
                             'route' => [
@@ -98,7 +98,7 @@ class GetRetinaFulfilmentNavigation
                         'type'          => $customerSalesChannel->platform->type,
                         'slug'          => $customerSalesChannel->slug,
                         'key'           => $customerSalesChannel->slug,
-                        'img'           => $this->getPlatformLogo($customerSalesChannel),
+                        'img'           => $this->getPlatformLogo($customerSalesChannel->platform->code),
                         'label'         => $customerSalesChannel->platform->name.' ('.$reference.')',
                         'route'         => [
                             'name'       => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
@@ -230,7 +230,7 @@ class GetRetinaFulfilmentNavigation
                     'icon'    => ['fal', 'fa-users-cog'],
                     'root'    => 'retina.sysadmin.',
                     'route'   => [
-                        'name' => 'retina.sysadmin.dashboard'
+                        'name' => 'retina.sysadmin.fulfilment.dashboard'
                     ],
                     'topMenu' => [
                         'subSections' => [
@@ -258,17 +258,7 @@ class GetRetinaFulfilmentNavigation
                 ];
             }
 
-            // if (!app()->environment('production')) {
-            //     $groupNavigation['api'] = [
-            //         'label'   => __('API'),
-            //         'icon'    => ['fal', 'fa-key'],
-            //         'root'    => '',
-            //         'route'   => [
-            //             'name' => ''
-            //         ],
-            //         'topMenu' => []
-            //     ];
-            // }
+
         }
 
         return $groupNavigation;

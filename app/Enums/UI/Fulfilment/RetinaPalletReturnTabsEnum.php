@@ -33,14 +33,14 @@ enum RetinaPalletReturnTabsEnum: string
     {
         return match ($this) {
             RetinaPalletReturnTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             RetinaPalletReturnTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon'
             ],

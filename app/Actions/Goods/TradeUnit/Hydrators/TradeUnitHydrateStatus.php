@@ -33,7 +33,7 @@ class TradeUnitHydrateStatus implements ShouldBeUnique
             return;
         }
 
-        $status = $this->getTradeUnitStatusFromStocks($tradeUnit->stats);
+        $status = $this->getTradeUnitStatusFromChildren($tradeUnit->stats);
 
         $tradeUnit->update([
             'status' => $status,
@@ -46,16 +46,16 @@ class TradeUnitHydrateStatus implements ShouldBeUnique
     }
 
 
-    public function getTradeUnitStatusFromStocks(TradeUnitStats $stats): TradeUnitStatusEnum
+    public function getTradeUnitStatusFromChildren(TradeUnitStats $stats): TradeUnitStatusEnum
     {
 
 
-        if ($stats->number_stocks_state_active > 0 || $stats->number_stocks_state_discontinuing > 0) {
+        if ($stats->number_current_stocks > 0  && ($stats->number_current_products > 0 || $stats->number_customer_exclusive_current_products > 0)) {
             return TradeUnitStatusEnum::ACTIVE;
         }
 
 
-        if ($stats->number_stocks_state_discontinued == 0 && $stats->number_stocks_state_suspended == 0) {
+        if ($stats->number_stocks_state_discontinued == 0 && $stats->number_stocks_state_suspended == 0  &&  $stats->number_products_state_discontinued == 0 && $stats->number_customer_exclusive_products_state_discontinued) {
             return TradeUnitStatusEnum::IN_PROCESS;
         }
 

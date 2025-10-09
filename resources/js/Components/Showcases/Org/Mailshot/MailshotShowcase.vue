@@ -83,7 +83,7 @@ const dataSet = {
                     class="bg-gradient-to-tr flex flex-col justify-between px-6 py-2 rounded-lg shadow-lg sm:h-auto">
                     <div class="flex justify-between items-center mb-2">
                         <div>
-                            <div class="text-lg font-semibold capitalize">{{ item.label }}</div>
+                            <div class="text-lg font-semibold">{{ item.label }}</div>
                         </div>
                         <div class="rounded-full bg-white/20 p-2">
                             <FontAwesomeIcon :icon="item.icon" class="text-xl" />

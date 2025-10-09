@@ -13,27 +13,28 @@ namespace App\Actions\Accounting\Invoice;
 use App\Actions\OrgAction;
 use App\Enums\Accounting\Invoice\InvoicePayStatusEnum;
 use App\Models\Accounting\Invoice;
+use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\Response;
-use Arr;
 use Illuminate\Support\Carbon;
 
 class OmegaManyInvoice extends OrgAction
 {
-    public function handle(Organisation $organisation, array $modelData, ?Shop $shop = null): Response
+    public function handle(Organisation $organisation, array $modelData, ?Shop $shop = null, ?InvoiceCategory $invoiceCategory = null): Response
     {
         $filter   = Arr::pull($modelData, 'filter', 'all');
-        $filename = 'omega-invoice-'.$filter.'.txt';
+        $filename = 'omega-invoice-' . $filter . '.txt';
 
         $query = Invoice::where('organisation_id', $organisation->id);
 
         if ($filter != 'all') {
             [$start, $end] = explode('-', $filter);
 
-            $start = trim($start).' 00:00:00';
-            $end   = trim($end).' 23:59:59';
+            $start = trim($start) . ' 00:00:00';
+            $end   = trim($end) . ' 23:59:59';
             $start = Carbon::createFromFormat('Ymd H:i:s', $start)->format('Y-m-d H:i:s');
             $end   = Carbon::createFromFormat('Ymd H:i:s', $end)->format('Y-m-d H:i:s');
 
@@ -53,6 +54,9 @@ class OmegaManyInvoice extends OrgAction
             $query->where('shop_id', $shop->id);
         }
 
+        if ($invoiceCategory && $invoiceCategory->id) {
+            $query->where('invoice_category_id', $invoiceCategory->id);
+        }
 
         set_time_limit(0);
         ini_set('max_execution_time', 0);
@@ -74,12 +78,11 @@ class OmegaManyInvoice extends OrgAction
             200,
             [
                 'Content-Type'        => 'text/plain',
-                'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
                 'X-Accel-Buffering'   => 'no'
             ]
         );
     }
-
 
     public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): Response
     {
@@ -98,6 +101,15 @@ class OmegaManyInvoice extends OrgAction
         return $this->handle(organisation: $organisation, shop: null, modelData: $modelData);
     }
 
+    public function inInvoiceCategory(Organisation $organisation, InvoiceCategory $invoiceCategory, ActionRequest $request): Response
+    {
+        $this->initialisation($organisation, $request);
+
+        $modelData = $this->validatedData;
+
+        return $this->handle(organisation: $organisation, shop: null, modelData: $modelData, invoiceCategory: $invoiceCategory);
+    }
+
     public function rules(): array
     {
         return [
@@ -106,5 +118,4 @@ class OmegaManyInvoice extends OrgAction
             'type'   => 'string',
         ];
     }
-
 }

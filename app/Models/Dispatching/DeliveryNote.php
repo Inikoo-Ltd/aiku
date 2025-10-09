@@ -13,10 +13,13 @@ use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Feedback;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\HumanResources\Employee;
+use App\Models\Inventory\PickingSession;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Group;
@@ -118,11 +121,27 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $number_items_done
  * @property bool $is_picked
  * @property bool $is_packed
+ * @property string|null $customer_notes
+ * @property string|null $public_notes
+ * @property string|null $internal_notes
+ * @property string|null $shipping_notes
+ * @property string|null $quantity_picked
+ * @property string|null $quantity_packed
+ * @property int|null $collection_address_id
+ * @property bool $is_premium_dispatch
+ * @property bool|null $has_extra_packing
+ * @property string|null $company_name recipient company name
+ * @property string|null $contact_name recipient contact name
+ * @property bool $is_cash_on_delivery
+ * @property int|null $shipping_zone_schema_id
+ * @property int|null $shipping_zone_id
+ * @property bool|null $has_insurance
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
  * @property-read CustomerClient|null $customerClient
+ * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress
  * @property-read Collection<int, \App\Models\Dispatching\DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
@@ -135,7 +154,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, \App\Models\Dispatching\Packing> $packings
  * @property-read Employee|null $picker
  * @property-read User|null $pickerUser
+ * @property-read Collection<int, PickingSession> $pickingSessions
  * @property-read Collection<int, \App\Models\Dispatching\Picking> $pickings
+ * @property-read Platform|null $platform
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
  * @property-read Shop $shop
  * @property-read UniversalSearch|null $universalSearch
@@ -144,7 +165,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|DeliveryNote newQuery()
  * @method static Builder<static>|DeliveryNote onlyTrashed()
  * @method static Builder<static>|DeliveryNote query()
- * @method static Builder<static>|DeliveryNote withTrashed()
+ * @method static Builder<static>|DeliveryNote withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|DeliveryNote withoutTrashed()
  * @mixin Eloquent
  */
@@ -286,6 +307,26 @@ class DeliveryNote extends Model implements Auditable
     public function customerClient(): BelongsTo
     {
         return $this->belongsTo(CustomerClient::class);
+    }
+
+    public function platform(): BelongsTo
+    {
+        return $this->belongsTo(Platform::class);
+    }
+
+    public function customerSalesChannel(): BelongsTo
+    {
+        return $this->belongsTo(CustomerSalesChannel::class);
+    }
+
+    public function pickingSessions(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PickingSession::class,
+            'picking_session_has_delivery_notes',
+            'delivery_note_id',
+            'picking_session_id'
+        );
     }
 
 }

@@ -119,7 +119,7 @@ class IndexFulfilmentCustomersApproved extends OrgAction
                         'action'      => [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new customer'),
+                            'tooltip' => __('New customer'),
                             'label'   => __('customer'),
                             'route'   => [
                                 'name'       => 'grp.org.fulfilments.show.crm.customers.create',

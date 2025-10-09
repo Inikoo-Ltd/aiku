@@ -8,6 +8,7 @@
 
 namespace App\Models\SysAdmin;
 
+use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
@@ -24,6 +25,8 @@ use App\Models\Analytics\WebUserRequest;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
+use App\Models\Billables\ShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -58,6 +61,7 @@ use App\Models\Goods\Ingredient;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\Goods\TradeUnit;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\Helpers\Barcode;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\Query;
@@ -75,8 +79,6 @@ use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\SalesChannel;
-use App\Models\Ordering\ShippingZone;
-use App\Models\Ordering\ShippingZoneSchema;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Production\Artefact;
 use App\Models\Production\ManufactureTask;
@@ -111,8 +113,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property string $ulid
  * @property string $slug
@@ -131,6 +131,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property array<array-key, mixed>|null $extra_languages
  * @property-read \App\Models\SysAdmin\GroupAccountingStats|null $accountingStats
  * @property-read LaravelCollection<int, Adjustment> $adjustments
  * @property-read LaravelCollection<int, Agent> $agents
@@ -245,6 +246,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\SysAdmin\GroupTimeSeries> $timeSeries
  * @property-read LaravelCollection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
  * @property-read LaravelCollection<int, TopUp> $topUps
+ * @property-read LaravelCollection<int, TradeUnitFamily> $tradeUnitFamilies
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
  * @property-read LaravelCollection<int, Upload> $uploads
  * @property-read LaravelCollection<int, UserRequest> $userRequests
@@ -262,7 +264,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Group newQuery()
  * @method static Builder<static>|Group onlyTrashed()
  * @method static Builder<static>|Group query()
- * @method static Builder<static>|Group withTrashed()
+ * @method static Builder<static>|Group withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Group withoutTrashed()
  * @mixin Eloquent
  */
@@ -284,6 +286,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
             'limits'   => 'array',
             'data'     => 'array',
             'settings' => 'array',
+            'extra_languages' => 'array'
         ];
     }
 
@@ -291,6 +294,7 @@ class Group extends Authenticatable implements Auditable, HasMedia
         'limits'   => '{}',
         'data'     => '{}',
         'settings' => '{}',
+        'extra_languages' => '{}'
     ];
 
     public function getSlugOptions(): SlugOptions
@@ -325,6 +329,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function tradeUnits(): HasMany
     {
         return $this->hasMany(TradeUnit::class);
+    }
+
+    public function tradeUnitFamilies(): HasMany
+    {
+        return $this->hasMany(TradeUnitFamily::class);
     }
 
     public function stockFamilies(): HasMany
@@ -943,5 +952,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     {
         return $this->hasMany(WebUserRequest::class);
     }
+
+    public function getMasterFamilies(): LaravelCollection
+    {
+        return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
+    }
+
 
 }

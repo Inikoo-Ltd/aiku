@@ -65,13 +65,13 @@ class ShowProcurementDashboard extends OrgAction
                 'pageHead'     => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-box-usd'],
-                        'title' => __('procurement')
+                        'title' => __('Procurement')
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('procurement')
+                        'title' => __('Procurement')
                     ],
-                    'title' => __('procurement'),
+                    'title' => __('Procurement'),
                 ],
                 'flatTreeMaps' => [
 
@@ -89,8 +89,8 @@ class ShowProcurementDashboard extends OrgAction
                             ],
                         ],
                         [
-                            'name'         => __('supplier products'),
-                            'shortName'    => __('products'),
+                            'name'         => __('Supplier products'),
+                            'shortName'    => __('Products'),
                             'icon'         => ['fal', 'fa-box-usd'],
                             'route'         => [
                                 'name'       => 'grp.org.procurement.org_supplier_products.index',

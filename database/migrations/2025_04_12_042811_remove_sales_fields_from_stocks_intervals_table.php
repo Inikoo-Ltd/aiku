@@ -38,19 +38,19 @@ return new class () extends Migration {
 
             $subjects = ['revenue_grp_currency', 'profit_grp_currency'];
             foreach ($subjects as $subject) {
-                $subject = $subject ? $subject.'_' : '';
+                $subject = $subject ? $subject . '_' : '';
 
                 foreach (DateIntervalEnum::values() as $col) {
-                    $table->dropColumn($subject.$col);
+                    $table->dropColumn($subject . $col);
                 }
                 foreach (DateIntervalEnum::lastYearValues() as $col) {
-                    $table->dropColumn($subject.$col.'_ly');
+                    $table->dropColumn($subject . $col . '_ly');
                 }
                 foreach (PreviousYearsEnum::values() as $col) {
-                    $table->dropColumn($subject.$col);
+                    $table->dropColumn($subject . $col);
                 }
                 foreach (PreviousQuartersEnum::values() as $col) {
-                    $table->dropColumn($subject.$col);
+                    $table->dropColumn($subject . $col);
                 }
             }
         });

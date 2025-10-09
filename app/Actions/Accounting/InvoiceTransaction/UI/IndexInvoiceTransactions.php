@@ -52,7 +52,7 @@ class IndexInvoiceTransactions extends OrgAction
             ]);
 
 
-        return $queryBuilder->allowedSorts(['id', 'code', 'description'])
+        return $queryBuilder->allowedSorts(['id', 'code', 'description', 'quantity', 'net_amount'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
@@ -63,7 +63,7 @@ class IndexInvoiceTransactions extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table
@@ -77,6 +77,4 @@ class IndexInvoiceTransactions extends OrgAction
             $table->defaultSort('code');
         };
     }
-
-
 }

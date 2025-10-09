@@ -187,7 +187,7 @@ class IndexCustomersInOverview extends OrgAction
                     'title'         => __('customers'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('customer')
+                        'title' => __('Customer')
                     ],
                     'subNavigation' => $subNavigation,
                 ]),

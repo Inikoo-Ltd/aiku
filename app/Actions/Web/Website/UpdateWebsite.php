@@ -58,8 +58,16 @@ class UpdateWebsite extends OrgAction
             data_set($modelData, "settings.luigisbox.script_lbx", Arr::pull($modelData, "luigisbox_script_lbx"));
         }
 
+        if (Arr::has($modelData, "luigisbox_lbx_code")) {
+            data_set($modelData, "settings.luigisbox.lbx_code", Arr::pull($modelData, "luigisbox_lbx_code"));
+        }
+
         if (Arr::has($modelData, "luigisbox_private_key")) {
             data_set($modelData, "settings.luigisbox.private_key", Arr::pull($modelData, "luigisbox_private_key"));
+        }
+
+        if (Arr::has($modelData, "last_reindex_at")) {
+            data_set($modelData, "settings.luigisbox.last_reindex_at", Arr::pull($modelData, "last_reindex_at"));
         }
 
         if (Arr::has($modelData, "return_policy")) {
@@ -165,7 +173,14 @@ class UpdateWebsite extends OrgAction
                 'nullable',
                 'string',
             ],
+            'luigisbox_lbx_code' => [
+                'sometimes',
+                'nullable',
+                'string',
+                'regex:/^LBX-\d{6}$/',
+            ],
             'luigisbox_private_key' => ['sometimes', 'nullable', 'string'],
+            'last_reindex_at' => ['sometimes', 'nullable', 'string'],
             'return_policy' => ['sometimes', 'string'],
             'image'       => [
                 'sometimes',

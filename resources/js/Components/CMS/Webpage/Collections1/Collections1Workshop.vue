@@ -11,7 +11,7 @@ const props = defineProps<{
   webpageData?: any;
   blockData?: object;
   screenType: "mobile" | "tablet" | "desktop";
-  routeEditSubDepartement?: routeType;
+  routeEditSubDepartment?: routeType;
 }>();
 
 const defaultCols = {
@@ -70,5 +70,4 @@ const gridColsClass = computed(() => {
   </div>
 </template>
 
-<style scoped>
-</style>
+

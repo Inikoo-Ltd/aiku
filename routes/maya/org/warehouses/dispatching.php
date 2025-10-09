@@ -13,14 +13,12 @@ use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletsInReturnAtMaya;
 use App\Actions\Dispatching\GoodsOut\UI\IndexWarehousePalletStoredItemsInReturn;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehousePalletReturn;
 use App\Actions\Dispatching\GoodsOut\UI\ShowWarehouseStoredItemReturn;
-use App\Actions\Dispatching\Picking\UI\IndexPickings;
 use App\Actions\UI\Dispatch\ShowDispatchHub;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowDispatchHub::class)->name('backlog');
 Route::get('/delivery-notes', IndexDeliveryNotes::class)->name('delivery-notes');
 Route::get('/delivery-notes/{deliveryNote:id}', [ShowDeliveryNote::class, 'inWarehouse'])->name('delivery-notes.show')->withoutScopedBindings();
-Route::get('delivery-notes/{deliveryNote:id}/items', IndexPickings::class)->name('delivery-notes.items.index');
 
 Route::get('handling-fulfilment-returns', [IndexWarehousePalletReturns::class, 'inWarehouseHandling'])->name('pallet_returns.handling.index');
 Route::get('dispatched-fulfilment-returns', [IndexWarehousePalletReturns::class, 'inWarehouseDispatched'])->name('pallet_returns.dispatched.index');

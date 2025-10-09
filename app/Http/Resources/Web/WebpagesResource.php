@@ -37,7 +37,7 @@ class WebpagesResource extends JsonResource
 
     public function toArray($request): array
     {
-        $href = '';
+        $href = '/';
 
         if (app()->isProduction()) {
             $href = 'https://www.';

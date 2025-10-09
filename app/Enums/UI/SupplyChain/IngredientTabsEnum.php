@@ -26,7 +26,7 @@ enum IngredientTabsEnum: string
     {
         return match ($this) {
             IngredientTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

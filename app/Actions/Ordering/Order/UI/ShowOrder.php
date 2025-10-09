@@ -8,7 +8,8 @@
 
 namespace App\Actions\Ordering\Order\UI;
 
-use App\Actions\Accounting\Invoice\UI\IndexInvoices;
+use App\Actions\Accounting\Invoice\UI\IndexInvoicesInOrder;
+use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
@@ -25,6 +26,7 @@ use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
+use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
@@ -87,17 +89,16 @@ class ShowOrder extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inPlatformInCustomer(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
-        $this->parent        = $customerSalesChannel;
+        $this->parent = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
         return $this->handle($order);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, Platform $platform, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
+    public function inCustomerClient(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, ActionRequest $request): Order
     {
-        $customerSalesChannel       = CustomerSalesChannel::where('customer_id', $customerClient->customer_id)->where('platform_id', $platform->id)->first();
-        $this->parent              = $customerClient;
+        $this->parent               = $customerClient;
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromShop($shop, $request)->withTab(OrderTabsEnum::values());
 
@@ -107,7 +108,7 @@ class ShowOrder extends OrgAction
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentCustomerClient(Organisation $organisation, Fulfilment $fulfilment, FulfilmentCustomer $fulfilmentCustomer, CustomerClient $customerClient, CustomerSalesChannel $customerSalesChannel, Order $order, ActionRequest $request): Order
     {
-        $this->parent              = $customerClient;
+        $this->parent               = $customerClient;
         $this->customerSalesChannel = $customerSalesChannel;
         $this->initialisationFromFulfilment($fulfilment, $request)->withTab(OrderTabsEnum::values());
 
@@ -161,25 +162,36 @@ class ShowOrder extends OrgAction
         return [
             "note_list" => [
                 [
-                    "label"    => __("Customer"),
-                    "note"     => $order->customer_notes ?? '',
-                    "editable" => false,
-                    "bgColor"  => "#FF7DBD",
-                    "field"    => "customer_notes"
+                    "label"       => __("Delivery Instructions"),
+                    "note"        => $order->shipping_notes ?? '',
+                    "information" => __("This note is from the customer. Will be printed in the shipping label."),
+                    "editable"    => true,
+                    "bgColor"     => "#38bdf8",
+                    "field"       => "shipping_notes"
                 ],
                 [
-                    "label"    => __("Public"),
-                    "note"     => $order->public_notes ?? '',
-                    "editable" => true,
-                    "bgColor"  => "#94DB84",
-                    "field"    => "public_notes"
+                    "label"       => __("Customer"),
+                    "note"        => $order->customer_notes ?? '',
+                    "information" => __("This note is from customer in the platform. Not editable."),
+                    "editable"    => false,
+                    "bgColor"     => "#FF7DBD",
+                    "field"       => "customer_notes"
                 ],
                 [
-                    "label"    => __("Private"),
-                    "note"     => $order->internal_notes ?? '',
-                    "editable" => true,
-                    "bgColor"  => "#FCF4A3",
-                    "field"    => "internal_notes"
+                    "label"       => __("Public"),
+                    "note"        => $order->public_notes ?? '',
+                    "information" => __("This note will be visible to public, both staff and the customer can see."),
+                    "editable"    => true,
+                    "bgColor"     => "#94DB84",
+                    "field"       => "public_notes"
+                ],
+                [
+                    "label"       => __("Private"),
+                    "note"        => $order->internal_notes ?? '',
+                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
+                    "editable"    => true,
+                    "bgColor"     => "#FCF4A3",
+                    "field"       => "internal_notes"
                 ]
             ]
         ];
@@ -209,10 +221,8 @@ class ShowOrder extends OrgAction
                     ])
                 ],
                 'deliveryNotePdfRoute' => [
-                    'name'       => 'grp.org.warehouses.show.dispatching.delivery-notes.pdf',
+                    'name'       => 'grp.pdfs.delivery-notes',
                     'parameters' => [
-                        'organisation' => $order->organisation->slug,
-                        'warehouse'    => $firstDeliveryNote->warehouse->slug,
                         'deliveryNote' => $firstDeliveryNote->slug,
                     ],
                 ]
@@ -221,15 +231,14 @@ class ShowOrder extends OrgAction
             $deliveryNoteResource = DeliveryNotesResource::make($firstDeliveryNote);
         }
 
-        $platform  = $order->platform;
+        $platform = $order->platform;
         if (!$platform) {
             $platform = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
         }
 
-        $readonly = true;
-        if ($platform->type == PlatformTypeEnum::MANUAL) {
-            $readonly = false;
-        }
+        $readonly = false;
+
+
         return Inertia::render(
             'Org/Ordering/Order',
             [
@@ -244,49 +253,124 @@ class ShowOrder extends OrgAction
                     'next'     => $this->getNext($order, $request),
                 ],
                 'pageHead'    => [
-                    'title'   => $order->reference,
-                    'model'   => __('Order'),
-                    'icon'    => [
+                    'title'      => $order->reference,
+                    'model'      => __('Order'),
+                    'icon'       => [
                         'icon'  => 'fal fa-shopping-cart',
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
-                    'actions' => $actions,
-                    'platform' => $platform ? [
-                                            'icon'  => $platform->imageSources(24, 24),
-                                            'title' => $platform->name,
-                                            ] : null,
+                    'afterTitle' => [
+                        'label' => $order->state->labels()[$order->state->value],
+                    ],
+                    'actions'    => $actions,
+                    'platform'   => $platform ? [
+                        'icon'  => $platform->imageSources(24, 24),
+                        'type'  => $platform->type,
+                        'title' => __('Platform :platform', ['platform' => $platform->name]),
+                    ] : null,
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => OrderTabsEnum::navigation()
                 ],
                 'routes'      => [
-                    'updateOrderRoute' => [
+                    'modify'   => [
+                                'name' => 'grp.models.order.modification.save',
+                                'parameters' => [
+                                    'order' => $order->id
+                                ]
+                            ],
+                    'updateOrderRoute'  => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.update',
                         'parameters' => [
                             'order' => $order->id,
                         ]
                     ],
-                    'products_list'    => [
+                    'rollback_dispatch' => [
+                        'method'     => 'patch',
+                        'name'       => 'grp.models.order.rollback_dispatch',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
+                    'products_list'     => [
                         'name'       => 'grp.json.order.products',
                         'parameters' => [
                             'order' => $order->id
                         ]
                     ],
-                    'delivery_note'    => $deliveryNoteRoute
+                    'products_list_modification'     => [
+                        'name'       => 'grp.json.order.products_for_modify',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
+                    'delivery_note'     => $deliveryNoteRoute
                 ],
 
-                'notes'     => $this->getOrderNotes($order),
-                'timelines' => $finalTimeline,
-                'readonly' => $readonly,
-                'address_management' => GetOrderAddressManagement::run(order: $order),
+                'notes'                       => $this->getOrderNotes($order),
+                'timelines'                   => $finalTimeline,
+                'readonly'                    => $readonly,
+                'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
 
                 'box_stats'     => $this->getOrderBoxStats($order),
                 'currency'      => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'          => OrderResource::make($order),
                 'delivery_note' => $deliveryNoteResource,
 
+                'proforma_invoice'  => [
+                    'check_list'       => [
+                        [
+                            'label' => __('Pro mode'),
+                            'value' => 'pro_mode',
+                        ],
+                        [
+                            'label' => __('Recommended retail prices'),
+                            'value' => 'rrp',
+                        ],
+                        [
+                            'label' => __('Parts'),
+                            'value' => 'parts',
+                        ],
+                        [
+                            'label' => __('Commodity Codes'),
+                            'value' => 'commodity_codes',
+                        ],
+                        [
+                            'label' => __('Barcode'),
+                            'value' => 'barcode',
+                        ],
+                        [
+                            'label' => __('Weight'),
+                            'value' => 'weight',
+                        ],
+                        [
+                            'label' => __('Country of Origin'),
+                            'value' => 'country_of_origin',
+                        ],
+                        [
+                            'label' => __('Hide Payment Status'),
+                            'value' => 'hide_payment_status',
+                        ],
+                        [
+                            'label' => __('CPNP'),
+                            'value' => 'cpnp',
+                        ],
+                        [
+                            'label' => __('Group by Tariff Code'),
+                            'value' => 'group_by_tariff_code',
+                        ],
+                    ],
+                    'route_download_pdf'    => [
+                        'name'       => 'grp.org.shops.show.ordering.proforma_invoice.download',
+                        'parameters' => [
+                            'organisation' => $order->organisation->slug,
+                            'shop' => $order->shop->slug,
+                            'order' => $order->slug
+                        ]
+                    ]
+                ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
                         'name'       => 'grp.models.order.attachment.attach',
@@ -304,21 +388,21 @@ class ShowOrder extends OrgAction
                 ],
 
                 'upload_excel' => [
-                    'title' => [
-                        'label' => __('Upload product'),
+                    'title'               => [
+                        'label'       => __('Upload product'),
                         'information' => __('The list of column file: code, quantity')
                     ],
-                    'progressDescription'   => __('Adding Products'),
+                    'progressDescription' => __('Adding Products'),
                     'preview_template'    => [
                         'header' => ['code', 'quantity'],
-                        'rows' => [
+                        'rows'   => [
                             [
-                                'code' => 'product-001',
+                                'code'     => 'product-001',
                                 'quantity' => '1'
                             ]
                         ]
                     ],
-                    'upload_spreadsheet'    => [
+                    'upload_spreadsheet'  => [
                         'event'           => 'action-progress',
                         'channel'         => 'grp.personal.'.$this->organisation->id,
                         'required_fields' => ['code', 'quantity'],
@@ -355,8 +439,8 @@ class ShowOrder extends OrgAction
                     : Inertia::lazy(fn () => TransactionsResource::collection(IndexTransactions::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
                 OrderTabsEnum::INVOICES->value => $this->tab == OrderTabsEnum::INVOICES->value ?
-                    fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
-                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run(parent: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
+                    fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))
+                    : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoicesInOrder::run(order: $order, prefix: OrderTabsEnum::TRANSACTIONS->value))),
 
                 OrderTabsEnum::DELIVERY_NOTES->value => $this->tab == OrderTabsEnum::DELIVERY_NOTES->value ?
                     fn () => DeliveryNotesResource::collection(IndexDeliveryNotes::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
@@ -365,6 +449,10 @@ class ShowOrder extends OrgAction
                 OrderTabsEnum::ATTACHMENTS->value => $this->tab == OrderTabsEnum::ATTACHMENTS->value ?
                     fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))
                     : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run(parent: $order, prefix: OrderTabsEnum::DELIVERY_NOTES->value))),
+
+                OrderTabsEnum::PAYMENTS->value => $this->tab == OrderTabsEnum::PAYMENTS->value ?
+                    fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))
+                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run(parent: $order, prefix: OrderTabsEnum::PAYMENTS->value))),
 
             ]
         )
@@ -376,14 +464,20 @@ class ShowOrder extends OrgAction
                 )
             )
             ->table(
-                IndexInvoices::make()->tableStructure(
-                    parent: $order,
+                IndexInvoicesInOrder::make()->tableStructure(
+                    order: $order,
                     prefix: OrderTabsEnum::INVOICES->value
                 )
             )
             ->table(
                 IndexAttachments::make()->tableStructure(
                     prefix: OrderTabsEnum::ATTACHMENTS->value
+                )
+            )
+            ->table(
+                IndexPayments::make()->tableStructure(
+                    parent: $order,
+                    prefix: OrderTabsEnum::PAYMENTS->value
                 )
             )
             ->table(
@@ -536,6 +630,24 @@ class ShowOrder extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.fulfilments.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show'
+            => array_merge(
+                (new ShowCustomerClient())->getBreadcrumbs($this->customerSalesChannel, 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show', $routeParameters),
+                $headCrumb(
+                    $order,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.index',
+                            'parameters' => Arr::except($routeParameters, ['order'])
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.show.orders.show',
                             'parameters' => $routeParameters
                         ]
                     ],

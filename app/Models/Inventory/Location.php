@@ -61,6 +61,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property string|null $sort_code
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
@@ -77,7 +78,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Location newQuery()
  * @method static Builder<static>|Location onlyTrashed()
  * @method static Builder<static>|Location query()
- * @method static Builder<static>|Location withTrashed()
+ * @method static Builder<static>|Location withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Location withoutTrashed()
  * @mixin Eloquent
  */

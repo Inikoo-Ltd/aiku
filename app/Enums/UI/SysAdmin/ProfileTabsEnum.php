@@ -38,11 +38,11 @@ enum ProfileTabsEnum: string
                 'icon'  => 'fal fa-clipboard-list-check',
             ],
             ProfileTabsEnum::TODO => [
-                'title' => __('to do'),
+                'title' => __('To do'),
                 'icon'  => 'fal fa-clipboard-list-check',
             ],
             ProfileTabsEnum::NOTIFICATIONS => [
-                'title' => __('notifications'),
+                'title' => __('Notifications'),
                 'icon'  => 'fal fa-bell',
             ],
 
@@ -53,16 +53,16 @@ enum ProfileTabsEnum: string
             ],
 
             ProfileTabsEnum::VISIT_LOGS => [
-                'title' => __('visit logs'),
+                'title' => __('Visit logs'),
                 'icon'  => 'fal fa-eye',
             ],
             ProfileTabsEnum::TIMESHEETS => [
-                'title' => __('timesheets'),
+                'title' => __('Timesheets'),
                 'icon'  => 'fal fa-stopwatch',
             ],
 
             ProfileTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

@@ -20,6 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $families
  * @property int $products
  * @property int $used_in
+ * @property mixed $sub_departments
  */
 class MasterShopsResource extends JsonResource
 {
@@ -28,13 +29,14 @@ class MasterShopsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'slug'        => $this->slug,
-            'code'        => $this->code,
-            'name'        => $this->name,
-            'used_in'     => $this->used_in,
-            'departments' => $this->departments,
-            'families'    => $this->families,
-            'products'    => $this->products,
+            'slug'            => $this->slug,
+            'code'            => $this->code,
+            'name'            => $this->name,
+            'used_in'         => $this->used_in,
+            'departments'     => $this->departments,
+            'sub_departments' => $this->sub_departments,
+            'families'        => $this->families,
+            'products'        => $this->products,
 
         ];
     }

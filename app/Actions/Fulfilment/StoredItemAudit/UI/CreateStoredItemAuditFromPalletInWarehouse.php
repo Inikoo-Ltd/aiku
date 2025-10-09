@@ -29,7 +29,8 @@ class CreateStoredItemAuditFromPalletInWarehouse extends OrgAction
 
     public function handle(Pallet $pallet, array $modelData): StoredItemAudit
     {
-        return CreateStoredItemAuditFromPallet::run($modelData, $pallet);
+        // return CreateStoredItemAuditFromPallet::run($modelData, $pallet);
+        return CreateStoredItemAuditFromPallet::run($pallet, $modelData);
     }
 
     public function htmlResponse(StoredItemAudit $storedItemAudit, ActionRequest $request): RedirectResponse
@@ -42,7 +43,6 @@ class CreateStoredItemAuditFromPalletInWarehouse extends OrgAction
         ]);
     }
 
-
     public function asController(Organisation $organisation, Warehouse $warehouse, Pallet $pallet, ActionRequest $request): StoredItemAudit
     {
         $this->parent = $warehouse;
@@ -51,6 +51,4 @@ class CreateStoredItemAuditFromPalletInWarehouse extends OrgAction
 
         return $this->handle($pallet, $this->validatedData);
     }
-
-
 }

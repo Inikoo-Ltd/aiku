@@ -42,7 +42,7 @@ class EditFulfilmentPhysicalGoods extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('goods'),
+                'title'       => __('Goods'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters()
@@ -56,7 +56,7 @@ class EditFulfilmentPhysicalGoods extends OrgAction
                     'icon'     =>
                         [
                             'icon'  => ['fal', 'fa-cube'],
-                            'title' => __('goods')
+                            'title' => __('Goods')
                         ],
                     'actions'  => [
                         [

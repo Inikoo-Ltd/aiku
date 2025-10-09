@@ -21,7 +21,7 @@ const props = defineProps<{
                 :method="button.method ?? 'get'"
             >
                 <Button :style="button.style" :label="button.label" :icon="button.icon"
-                    class="capitalize inline-flex items-center h-full rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0">
+                    class="inline-flex items-center h-full rounded-none text-sm border-none font-medium shadow-sm focus:ring-transparent focus:ring-offset-transparent focus:ring-0">
                 </Button>
             </Link>
         </template>

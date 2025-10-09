@@ -27,7 +27,7 @@ enum ProductStatusEnum: string
     case DISCONTINUED = 'discontinued';
 
 
-    public static function labels($bucket = null): array
+    public static function labels(): array
     {
         return [
             'in_process'   => __('In Process'),

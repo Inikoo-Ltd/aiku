@@ -10,10 +10,12 @@ namespace App\Models\Ordering;
 
 use App\Enums\Ordering\Order\OrderChargesEngineEnum;
 use App\Enums\Ordering\Order\OrderHandingTypeEnum;
+use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
 use App\Enums\Ordering\Order\OrderShippingEngineEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Order\OrderStatusEnum;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\OrderPaymentApiPoint;
 use App\Models\Accounting\Payment;
@@ -23,7 +25,6 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\ShopifyUserHasFulfilment;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\TaxCategory;
@@ -44,7 +45,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -53,8 +53,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -127,6 +125,19 @@ use Spatie\Sluggable\SlugOptions;
  * @property OrderChargesEngineEnum $charges_engine
  * @property int|null $customer_sales_channel_id
  * @property string|null $platform_order_id
+ * @property string|null $shipping_notes
+ * @property string|null $traffic_sources
+ * @property int|null $master_shop_id
+ * @property OrderPayDetailedStatusEnum|null $pay_detailed_status
+ * @property bool $is_premium_dispatch
+ * @property bool|null $has_extra_packing
+ * @property array<array-key, mixed>|null $post_submit_modification_data
+ * @property int|null $shipping_zone_schema_id
+ * @property int|null $shipping_zone_id
+ * @property OrderToBePaidByEnum|null $to_be_paid_by
+ * @property bool|null $has_insurance
+ * @property bool $is_re recargo de equivalencia
+ * @property int $number_item_transactions Count of product item transactions in the order
  * @property-read Collection<int, Address> $addresses
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $attachments
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -149,7 +160,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Platform|null $platform
  * @property-read \App\Models\Ordering\SalesChannel|null $salesChannel
  * @property-read Shop $shop
- * @property-read ShopifyUserHasFulfilment|null $shopifyOrder
  * @property-read \App\Models\Ordering\OrderStats|null $stats
  * @property-read TaxCategory $taxCategory
  * @property-read Collection<int, \App\Models\Ordering\Transaction> $transactions
@@ -159,7 +169,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Order newQuery()
  * @method static Builder<static>|Order onlyTrashed()
  * @method static Builder<static>|Order query()
- * @method static Builder<static>|Order withTrashed()
+ * @method static Builder<static>|Order withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Order withoutTrashed()
  * @mixin Eloquent
  */
@@ -176,8 +186,9 @@ class Order extends Model implements HasMedia, Auditable
 
 
     protected $casts = [
-        'data'         => 'array',
-        'payment_data' => 'array',
+        'data'                          => 'array',
+        'payment_data'                  => 'array',
+        'post_submit_modification_data' => 'array',
 
 
         'date'                   => 'datetime',
@@ -211,17 +222,20 @@ class Order extends Model implements HasMedia, Auditable
         'payment_amount'   => 'decimal:2',
 
 
-        'state'           => OrderStateEnum::class,
-        'status'          => OrderStatusEnum::class,
-        'handing_type'    => OrderHandingTypeEnum::class,
-        'pay_status'      => OrderPayStatusEnum::class,
-        'shipping_engine' => OrderShippingEngineEnum::class,
-        'charges_engine'  => OrderChargesEngineEnum::class
+        'state'               => OrderStateEnum::class,
+        'status'              => OrderStatusEnum::class,
+        'handing_type'        => OrderHandingTypeEnum::class,
+        'pay_status'          => OrderPayStatusEnum::class,
+        'pay_detailed_status' => OrderPayDetailedStatusEnum::class,
+        'shipping_engine'     => OrderShippingEngineEnum::class,
+        'charges_engine'      => OrderChargesEngineEnum::class,
+        'to_be_paid_by'       => OrderToBePaidByEnum::class
     ];
 
     protected $attributes = [
-        'data'         => '{}',
-        'payment_data' => '{}',
+        'data'                          => '{}',
+        'payment_data'                  => '{}',
+        'post_submit_modification_data' => '{}'
     ];
 
     protected $guarded = [];
@@ -301,11 +315,6 @@ class Order extends Model implements HasMedia, Auditable
         return $this->belongsTo(Address::class);
     }
 
-    public function shopifyOrder(): MorphOne
-    {
-        return $this->morphOne(ShopifyUserHasFulfilment::class, 'model');
-    }
-
     public function addresses(): MorphToMany
     {
         return $this->morphToMany(Address::class, 'model', 'model_has_addresses')->withTimestamps();
@@ -345,7 +354,6 @@ class Order extends Model implements HasMedia, Auditable
     {
         return $this->hasMany(OrderPaymentApiPoint::class);
     }
-
 
 
 }

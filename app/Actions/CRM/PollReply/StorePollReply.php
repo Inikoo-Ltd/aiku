@@ -26,11 +26,8 @@ class StorePollReply extends OrgAction
 
     public function handle(Poll $poll, array $modelData): PollReply
     {
-        $pollReplay = $poll->pollReplies()->create($modelData);
+        return $poll->pollReplies()->create($modelData);
 
-        //todo add Poll,Store,Org,Group hydrators here
-
-        return $pollReplay;
     }
 
     public function rules(): array

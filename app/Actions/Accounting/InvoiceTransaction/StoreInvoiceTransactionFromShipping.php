@@ -13,7 +13,7 @@ use App\Actions\Traits\WithOrderExchanges;
 use App\Actions\Traits\WithStoreNoProductTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\InvoiceTransaction;
-use App\Models\Ordering\ShippingZone;
+use App\Models\Billables\ShippingZone;
 use Illuminate\Validation\Validator;
 
 class StoreInvoiceTransactionFromShipping extends OrgAction
@@ -39,7 +39,7 @@ class StoreInvoiceTransactionFromShipping extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if ($this->shippingZone and $this->shippingZone->shop_id != $this->shop->id) {
+        if ($this->shippingZone && $this->shippingZone->shop_id != $this->shop->id) {
             $validator->errors()->add('shipping_zone', 'Shipping Zone does not belong to this shop');
         }
     }

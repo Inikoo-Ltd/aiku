@@ -71,10 +71,10 @@ class IndexTopUps extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('Topups'),
+                'title'       => __('Top ups'),
                 'pageHead'    => [
                     'subNavigation' => $this->getSubNavigationShop($this->parent),
-                    'title' => __('Topups'),
+                    'title' => __('Top ups'),
                     'icon'  => 'fal fa-shopping-basket'
                 ],
 
@@ -94,14 +94,14 @@ class IndexTopUps extends OrgAction
 
             $emptyStateData = [
                 'icons' => ['fal fa-pallet'],
-                'title' => __("No topup exist"),
+                'title' => __("No top up exist"),
                 'count' => 0
             ];
 
             $table->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title' => __('no topups'),
+                        'title' => __('No top ups'),
                         'count' => 0,
                     ]
                 )
@@ -125,7 +125,7 @@ class IndexTopUps extends OrgAction
                             'name'       => $routeName,
                             'parameters' => $routeParameters
                         ],
-                        'label' => __('Topups'),
+                        'label' => __('Top ups'),
                         'icon'  => 'fal fa-bars',
 
                     ],

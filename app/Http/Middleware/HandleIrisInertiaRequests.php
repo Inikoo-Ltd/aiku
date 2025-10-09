@@ -9,6 +9,7 @@
 namespace App\Http\Middleware;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
@@ -48,19 +49,22 @@ class HandleIrisInertiaRequests extends Middleware
                 ->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
                 ->select('customer_sales_channels.id', 'customer_sales_channels.name as customer_sales_channel_name', 'platform_id', 'platforms.slug', 'platforms.code', 'platforms.name')
                 ->where('customer_id', $webUser->customer_id)
+                ->where('status', CustomerSalesChannelStatusEnum::OPEN->value)
+                ->whereNull('deleted_at')
                 ->get();
 
             foreach ($channels as $channel) {
                 $customerSalesChannels[$channel->id] = [
-                    'customer_sales_channel_id' => $channel->id,
+                    'customer_sales_channel_id'   => $channel->id,
                     'customer_sales_channel_name' => $channel->customer_sales_channel_name,
-                    'platform_id'               => $channel->platform_id,
-                    'platform_slug'             => $channel->slug,
-                    'platform_code'             => $channel->code,
-                    'platform_name'             => $channel->name,
+                    'platform_id'                 => $channel->platform_id,
+                    'platform_slug'               => $channel->slug,
+                    'platform_code'               => $channel->code,
+                    'platform_name'               => $channel->name,
                 ];
             }
         }
+
 
         return array_merge(
             $firstLoadOnlyProps,

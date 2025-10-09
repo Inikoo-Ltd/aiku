@@ -16,6 +16,7 @@ class InvoiceOrderFromDeliveryNoteFinalisation extends OrgAction
 {
     /**
      * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
      */
     public function handle(Order $order): Order
     {
@@ -28,6 +29,7 @@ class InvoiceOrderFromDeliveryNoteFinalisation extends OrgAction
 
     /**
      * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
      */
     public function action(Order $order): Order
     {

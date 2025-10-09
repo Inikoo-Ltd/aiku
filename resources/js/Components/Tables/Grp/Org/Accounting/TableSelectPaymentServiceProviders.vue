@@ -25,7 +25,6 @@ import pastpay from '@/../art/payment_service_providers/pastpay.svg'
 import paypal from '@/../art/payment_service_providers/paypal.svg'
 import sofort from '@/../art/payment_service_providers/sofort.svg'
 import worldpay from '@/../art/payment_service_providers/worldpay.svg'
-import xendit from '@/../art/payment_service_providers/xendit.svg'
 import bank from '@/../art/payment_service_providers/bank.svg'
 import accounts from '@/../art/payment_service_providers/accounts.svg'
 import cond from '@/../art/payment_service_providers/cond.svg'
@@ -147,8 +146,6 @@ const selectImage = (code: string) => {
             return sofort
         case 'worldpay':
             return worldpay
-        case 'xendit':
-            return xendit
         default:
             return null
     }
@@ -161,7 +158,6 @@ const selectImage = (code: string) => {
     <Table :resource="data" class="mt-5">
         <!-- Column: State -->
         <template #cell(adoption)="{ item: item }">
-            <!--   <pre>{{ item }}</pre> -->
             <div class="flex justify-center">
                 <template v-if="item.state == 'active'">
                     <div v-if="item.number_payment_accounts && item.number_payment_accounts > 0" v-tooltip="trans('Account')">
@@ -169,7 +165,6 @@ const selectImage = (code: string) => {
                     </div>
                     <div v-else v-tooltip="'Create Account'">
                         <Button @click="() => onOpenModal(item)" icon="fas fa-plus" size="xs" type="tertiary" />
-                        <!-- <FontAwesomeIcon icon='fas fa-plus' class="px-1 cursor-pointer text-gray-400 hover:text-gray-600" fixed-width aria-hidden='true' /> -->
                     </div>
                 </template>
 
@@ -180,7 +175,6 @@ const selectImage = (code: string) => {
         <!-- Column: Logo -->
         <template #cell(logo)="{ item: paymentServiceProvider }">
             <div class="w-20">
-                <!-- {{ paymentServiceProvider.code }} -->
                 <img v-if="selectImage(paymentServiceProvider.code)" :src="selectImage(paymentServiceProvider.code)" :alt="paymentServiceProvider.name" :title="paymentServiceProvider.name" class="mx-auto aspect-auto h-auto max-h-7 w-auto max-w-20">
                 <div v-else class="h-12 w-20 text-gray-400 flex items-center justify-center">
                     {{ trans('No image') }}

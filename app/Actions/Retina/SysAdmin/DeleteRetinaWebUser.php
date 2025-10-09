@@ -21,12 +21,10 @@ class DeleteRetinaWebUser extends RetinaAction
 {
     use WithActionUpdate;
 
-    private bool $action = false;
-    public function handle(WebUser $webUser, array $deletedData = [], bool $skipHydrate = false): void
+    public function handle(WebUser $webUser): void
     {
-        DeleteWebUser::run($webUser, $deletedData, $skipHydrate);
+        DeleteWebUser::run($webUser, true);
     }
-
 
 
     public function htmlResponse(): RedirectResponse

@@ -11,8 +11,6 @@ namespace App\Models\HumanResources;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $job_position_id
  * @property int $number_employees

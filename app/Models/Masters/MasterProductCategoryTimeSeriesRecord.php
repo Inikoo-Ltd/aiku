@@ -11,8 +11,6 @@ namespace App\Models\Masters;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterProductCategoryTimeSeriesRecord query()

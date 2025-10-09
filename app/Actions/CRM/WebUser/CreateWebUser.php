@@ -53,13 +53,13 @@ class CreateWebUser extends OrgAction
                     'title' => __('Create web user'),
                     'icon'  => [
                         'icon'  => 'fal fa-terminal',
-                        'title' => __('web user')
+                        'title' => __('Web user')
                     ],
                     'actions' => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name' => match (class_basename($this->parent)) {
                                     'Customer'           => 'grp.org.shops.show.crm.customers.show',
@@ -85,13 +85,21 @@ class CreateWebUser extends OrgAction
                                             ]
                                         ]
                                     ],
+                                    'contact_name' => [
+                                        'type'  => 'input',
+                                        'label' => __('Contact name'),
+                                        'placeholder' => __('Contact name'),
+                                        'value' => ''
+                                    ],
                                     'email' => [
                                         'type'  => 'input',
                                         'label' => __('email'),
+                                        'placeholder' => __('example@email.com'),
                                         'value' => $this->customer->hasUsers() ? '' : $this->customer->email
                                     ],
                                     'username' => [
                                         'type'  => 'input',
+                                        'placeholder' => __('username'),
                                         'label' => __('username'),
                                         'value' => ''
                                     ],

@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUser } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { Link } from '@inertiajs/vue3'
-import { FulfilmentCustomer } from '@/types/Customer'
+import { FulfilmentCustomer } from '@/types/fulfilment-customer'
 import { useFormatTime } from '@/Composables/useFormatTime'
 library.add(faUser)
 

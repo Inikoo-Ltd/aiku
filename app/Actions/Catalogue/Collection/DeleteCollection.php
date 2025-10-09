@@ -95,7 +95,7 @@ class DeleteCollection extends OrgAction
     public function htmlResponse(Collection $collection): RedirectResponse
     {
         return redirect()->route(
-            'grp.org.shops.show.catalogue.collections.index',
+            'grp.org.shops.show.catalogue.collections.inactive.index',
             [
                 'organisation' => $collection->organisation->slug,
                 'shop'         => $collection->shop->slug

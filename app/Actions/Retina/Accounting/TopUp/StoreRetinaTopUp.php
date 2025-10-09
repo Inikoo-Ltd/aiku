@@ -15,7 +15,7 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
-use App\Http\Resources\Fulfilment\RetinaTopupResources;
+use App\Http\Resources\Fulfilment\RetinaTopUpResources;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\TopUp;
 use App\Models\CRM\Customer;
@@ -57,9 +57,9 @@ class StoreRetinaTopUp extends RetinaAction
         ];
     }
 
-    public function htmlResponse(TopUp $topUp): RetinaTopupResources
+    public function htmlResponse(TopUp $topUp): RetinaTopUpResources
     {
-        return RetinaTopupResources::make($topUp);
+        return RetinaTopUpResources::make($topUp);
     }
 
     public function asController(PaymentAccount $paymentAccount, ActionRequest $request)

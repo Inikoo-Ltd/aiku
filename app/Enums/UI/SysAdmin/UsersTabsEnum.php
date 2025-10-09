@@ -26,15 +26,15 @@ enum UsersTabsEnum: string
     {
         return match ($this) {
             UsersTabsEnum::ACTIVE_USERS => [
-                'title' => __('active users'),
+                'title' => __('Active users'),
                 'icon'  => 'fal fa-user',
             ],
             UsersTabsEnum::SUSPENDED_USERS => [
-                'title' => __('suspended users'),
+                'title' => __('Suspended users'),
                 'icon'  => 'fal fa-user-slash',
             ],
             UsersTabsEnum::USERS => [
-                'title' => __('all users'),
+                'title' => __('All users'),
                 'icon'  => 'fal fa-blender',
                 'type'  => 'icon',
                 'align' => 'right'
@@ -44,7 +44,7 @@ enum UsersTabsEnum: string
                 'icon'  => 'fal fa-road',
             ],
             UsersTabsEnum::USERS_HISTORIES => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

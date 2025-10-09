@@ -69,7 +69,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_stock_movements_type_disassociate
  * @property int $number_org_stock_movements_flow_in
  * @property int $number_org_stock_movements_flow_out
- * @property int $number_org_stock_movements_flow_no_change
+ * @property int $number_org_stock_movements_flow_audit
  * @property int $number_org_stock_audits
  * @property int $number_org_stock_audits_state_in_process
  * @property int $number_org_stock_audits_state_completed
@@ -79,6 +79,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_stock_audit_delta_type_no_change
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_org_stock_movements_type_audit
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static Builder<static>|OrganisationInventoryStats newModelQuery()
  * @method static Builder<static>|OrganisationInventoryStats newQuery()

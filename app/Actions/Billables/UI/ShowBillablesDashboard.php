@@ -42,13 +42,13 @@ class ShowBillablesDashboard extends OrgAction
                 'pageHead'     => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-ballot'],
-                        'title' => __('billables')
+                        'title' => __('Billables')
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('billables')
+                        'title' => __('Billables')
                     ],
-                    'title' => __('billables dashboard'),
+                    'title' => __('Billables dashboard'),
                 ],
                 'tabs' => [
                     'current'    => $this->tab,

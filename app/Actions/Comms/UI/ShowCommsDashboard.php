@@ -56,11 +56,11 @@ class ShowCommsDashboard extends OrgAction
                 'pageHead'    => [
                     'icon'          => [
                         'icon'  => ['fal', 'fa-satellite-dish'],
-                        'title' => __('comms')
+                        'title' => __('Comms')
                     ],
                     'iconRight'     => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('dashboard')
+                        'title' => __('Dashboard')
                     ],
                     'title'         => __('Comms dashboard'),
                     'subNavigation' => $this->getCommsNavigation($parent),

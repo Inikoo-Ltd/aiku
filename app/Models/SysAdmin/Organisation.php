@@ -24,6 +24,8 @@ use App\Models\Analytics\WebUserRequest;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
+use App\Models\Billables\ShippingZone;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
@@ -71,19 +73,17 @@ use App\Models\Inventory\OrgStockFamily;
 use App\Models\Inventory\Warehouse;
 use App\Models\Inventory\WarehouseArea;
 use App\Models\Ordering\Adjustment;
-use App\Models\Production\Artefact;
-use App\Models\Production\ManufactureTask;
-use App\Models\Production\Production;
-use App\Models\Production\RawMaterial;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
-use App\Models\Ordering\ShippingZone;
-use App\Models\Ordering\ShippingZoneSchema;
 use App\Models\Procurement\OrgAgent;
 use App\Models\Procurement\OrgPartner;
 use App\Models\Procurement\OrgSupplier;
 use App\Models\Procurement\OrgSupplierProduct;
 use App\Models\Procurement\PurchaseOrder;
+use App\Models\Production\Artefact;
+use App\Models\Production\ManufactureTask;
+use App\Models\Production\Production;
+use App\Models\Production\RawMaterial;
 use App\Models\SupplyChain\Agent;
 use App\Models\Traits\HasAddress;
 use App\Models\Traits\HasAddresses;
@@ -137,6 +137,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $deleted_at
  * @property string|null $source_id
  * @property string|null $colour
+ * @property array<array-key, mixed>|null $forbidden_dispatch_countries
  * @property-read \App\Models\SysAdmin\OrganisationAccountingStats|null $accountingStats
  * @property-read Address|null $address
  * @property-read LaravelCollection<int, Address> $addresses
@@ -271,6 +272,7 @@ class Organisation extends Model implements HasMedia, Auditable
         'settings' => 'array',
         'source'   => 'array',
         'location' => 'array',
+        'forbidden_dispatch_countries' => 'array',
         'type'     => OrganisationTypeEnum::class
     ];
 
@@ -278,7 +280,8 @@ class Organisation extends Model implements HasMedia, Auditable
         'data'     => '{}',
         'settings' => '{}',
         'source'   => '{}',
-        'location' => '{}'
+        'location' => '{}',
+        'forbidden_dispatch_countries' => '{}'
     ];
 
     protected $guarded = [];

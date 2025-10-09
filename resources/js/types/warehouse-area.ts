@@ -9,6 +9,7 @@ export interface WarehouseArea {
     warehouse_slug: string,
     code: string,
     name: string,
+    picking_position?: number,
     unit_quantity: string,
     value: string,
     created_at: string,

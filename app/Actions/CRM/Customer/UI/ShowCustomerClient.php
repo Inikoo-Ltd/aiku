@@ -103,6 +103,7 @@ class ShowCustomerClient extends OrgAction
             }
         }
 
+
         return Inertia::render(
             'Org/Shop/CRM/CustomerClient',
             [
@@ -121,7 +122,7 @@ class ShowCustomerClient extends OrgAction
                     'model'         => __($customerClient->customer->name),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder'],
-                        'title' => __('customer client')
+                        'title' => __('Customer client')
                     ],
                     'meta'          => array_filter([
                         $shopMeta,
@@ -132,15 +133,15 @@ class ShowCustomerClient extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'create',
-                            'label' => 'Add order',
+                            'label' => __('Add order'),
                             'key'   => 'add_order',
                             'route'       => [
                                 'method'     => 'post',
-                                'name'       => 'grp.models.customer_client.order',
+                                'name'       => 'grp.models.customer_client.order.store',
                                 'parameters' => [
-                                    'customerClient' => $customerClient->id,
+                                    $customerClient->id
                                 ]
-                            ]
+                            ],
                         ],
                     ],
                     'subNavigation' => $subNavigation,

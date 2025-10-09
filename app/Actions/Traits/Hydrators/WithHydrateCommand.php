@@ -85,7 +85,7 @@ trait WithHydrateCommand
 
     public function prepareQuery(string $tableName, Command $command): Builder
     {
-        $query = DB::table($tableName)->select('id')->orderBy('id');
+        $query = DB::table($tableName)->select('id')->orderBy('id', 'desc');
 
         if ($command->hasOption('shop') && $command->option('shop')) {
             $shop = Shop::where('slug', $command->option('shop'))->first();

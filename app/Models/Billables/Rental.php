@@ -67,7 +67,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Rental withoutTrashed()
  * @mixin \Eloquent
  */

@@ -11,13 +11,17 @@ namespace App\Actions\Accounting\TopUpPaymentApiPoint\WebHooks;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Accounting\TopUp\StoreTopUp;
+use App\Actions\Accounting\TopUpPaymentApiPoint\UpdateTopUpPaymentApiPoint;
 use App\Actions\Accounting\WithCheckoutCom;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\RetinaWebhookAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
+use App\Enums\Accounting\Payment\PaymentClassEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\TopUp\TopUpStatusEnum;
+use App\Enums\Accounting\TopUpPaymentApiPoint\TopUpPaymentApiPointStateEnum;
 use App\Http\Resources\Accounting\TopUpResource;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\PaymentAccountShop;
@@ -32,14 +36,25 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
 
     public function handle(TopUpPaymentApiPoint $topUpPaymentApiPoint, array $modelData): CreditTransaction
     {
+        if ($topUpPaymentApiPoint->state == TopUpPaymentApiPointStateEnum::SUCCESS) {
+            return CreditTransaction::where('id', $topUpPaymentApiPoint->data['credit_transaction_id'])->first();
+        }
+
+
         $paymentAccountShopId = Arr::get($topUpPaymentApiPoint->data, 'payment_account_shop_id');
         $paymentAccountShop   = PaymentAccountShop::find($paymentAccountShopId)->first();
+
 
         $checkoutComPayment = $this->getCheckOutPayment(
             $paymentAccountShop,
             $modelData['cko-payment-id']
         );
 
+        return $this->processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop);
+    }
+
+    public function processSuccess($checkoutComPayment, $topUpPaymentApiPoint, $paymentAccountShop)
+    {
         $amount = Arr::get($checkoutComPayment, 'amount', 0) / 100;
 
         $paymentData = [
@@ -51,7 +66,7 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
             'payment_account_shop_id' => $paymentAccountShop->id,
             'api_point_type'          => class_basename($topUpPaymentApiPoint),
             'api_point_id'            => $topUpPaymentApiPoint->id,
-
+            'class'                   => PaymentClassEnum::TOPUP
         ];
 
 
@@ -78,11 +93,30 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
         ];
 
 
-        return StoreCreditTransaction::run(
+        $creditTransaction = StoreCreditTransaction::run(
             $topUpPaymentApiPoint->customer,
             $creditTransactionData
         );
+
+        UpdateTopUpPaymentApiPoint::run(
+            $topUpPaymentApiPoint,
+            [
+                'state'        => TopUpPaymentApiPointStateEnum::SUCCESS,
+                'processed_at' => now(),
+                'data'         => [
+                    'payment_id'            => $payment->id,
+                    'top_up_id'             => $topUp->id,
+                    'credit_transaction_id' => $creditTransaction->id,
+                ]
+
+            ]
+        );
+
+        CustomerHydrateTopUps::dispatch($topUpPaymentApiPoint->customer);
+
+        return $creditTransaction;
     }
+
 
     public function rules(): array
     {
@@ -99,16 +133,16 @@ class TopUpPaymentSuccess extends RetinaWebhookAction
 
         $creditTransaction = $this->handle($topUpPaymentApiPoint, $this->validatedData);
 
-
         return Redirect::route('retina.top_up.dashboard')->with(
             'notification',
             [
                 'status'  => 'success',
                 'title'   => __('Success!'),
-                'message' => __('Top up payment has been successfully processed.'),
+                'message' => __('Top up balance :amount has been successfully processed.', [
+                    'amount' => $creditTransaction->amount
+                ]),
                 'top_up'  => TopUpResource::make($creditTransaction->topUp)
             ]
         );
     }
-
 }

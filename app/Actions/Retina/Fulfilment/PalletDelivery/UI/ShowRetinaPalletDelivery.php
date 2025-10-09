@@ -125,7 +125,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                                     'style' => 'secondary',
                                     'icon'  => 'fal fa-plus',
                                     'key'   => 'storage',
-                                    'label' => __('storage'),
+                                    'label' => __('Storage'),
                                     'route' => [
                                         'name'       => 'retina.models.pallet-delivery.pallet.store',
                                         'parameters' => [
@@ -137,7 +137,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                                     'type'  => 'button',
                                     'style' => 'secondary',
                                     'icon'  => 'fal fa-plus',
-                                    'label' => __('service'),
+                                    'label' => __('Service'),
                                     'route' => [
                                         'name'       => 'retina.models.pallet-delivery.transaction.store',
                                         'parameters' => [
@@ -166,7 +166,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                     'type'     => 'button',
                     'icon'     => 'fad fa-save',
                     'tooltip'  => $palletsInDelivery == 0 ? __('Add items before submit') : (!($palletDelivery->estimated_delivery_date) ? __('Select estimated date before submit') : __('Submit Delivery')),
-                    'label'    => __('submit'),
+                    'label'    => __('Submit'),
                     'disabled' => ($palletsInDelivery != 0 || $transactionsInDelivery != 0) && $palletDelivery->estimated_delivery_date ? false : true,
                     'key'      => 'submit',
                     'route'    => [
@@ -203,8 +203,8 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 [
                     'type'        => 'button',
                     'style'       => 'delete',
-                    'tooltip'     => __('delete'),
-                    'label'       => __('delete'),
+                    'tooltip'     => __('Delete'),
+                    'label'       => __('Delete'),
                     'key'         => 'delete_delivery',
                     'ask_why'     => false,
                     'title'       => __('Are you sure you want to delete this delivery'),
@@ -224,7 +224,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
         return Inertia::render(
             'Storage/RetinaPalletDelivery',
             [
-                'title'       => __('goods in').' '.$palletDelivery->reference,
+                'title'       => __('Goods in').' '.$palletDelivery->reference,
                 'breadcrumbs' => $this->getBreadcrumbs($palletDelivery),
                 'navigation'  => [
                     'previous' => $this->getPrevious($palletDelivery, $request),

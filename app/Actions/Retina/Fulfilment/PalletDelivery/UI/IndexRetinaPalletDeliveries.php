@@ -164,13 +164,13 @@ class IndexRetinaPalletDeliveries extends RetinaAction
             'Storage/RetinaPalletDeliveries',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('goods in'),
+                'title'       => __('Goods in'),
                 'pageHead'    => [
                     'model'     => __('Storage'),
                     'title'   => __('Goods In'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-truck'],
-                        'title' => __('delivery')
+                        'title' => __('Delivery')
                     ],
                     'actions' => array_filter($actions)
                 ],

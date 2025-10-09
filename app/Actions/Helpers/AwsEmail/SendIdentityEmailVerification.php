@@ -35,7 +35,7 @@ class SendIdentityEmailVerification extends OrgAction
     {
         $senderEmailAddress = Arr::pull($modelData, 'sender_email');
 
-        if ($senderEmailAddress !== $shop->senderEmail?->email_address or !$shop->senderEmail) {
+        if ($senderEmailAddress !== $shop->senderEmail?->email_address || !$shop->senderEmail) {
             $senderEmail = StoreSenderEmail::make()->action([
                 'email_address' => $senderEmailAddress
             ]);
@@ -51,7 +51,7 @@ class SendIdentityEmailVerification extends OrgAction
 
         if (in_array($state, [SenderEmailStateEnum::VERIFIED, SenderEmailStateEnum::PENDING])) {
 
-            if ($state == SenderEmailStateEnum::VERIFIED and $senderEmail->verified_at === null) {
+            if ($state == SenderEmailStateEnum::VERIFIED && $senderEmail->verified_at === null) {
                 data_set($modelData, 'verified_at', now());
             }
 

@@ -23,7 +23,7 @@ enum BasketTabsEnum: string
     {
         return match ($this) {
             BasketTabsEnum::TRANSACTIONS => [
-                'title' => __('items'),
+                'title' => __('Items'),
                 'icon'  => 'fal fa-bars',
             ],
         };

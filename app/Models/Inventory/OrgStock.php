@@ -10,6 +10,7 @@ namespace App\Models\Inventory;
 
 use App\Enums\Inventory\OrgStock\OrgStockQuantityStatusEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnit;
 use App\Models\Procurement\OrgSupplierProduct;
@@ -62,15 +63,21 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property int|null $picking_location_id
+ * @property int|null $picking_dropshipping_location_id
+ * @property int|null $packed_in Number of trade units usually packed together
+ * @property bool $is_single_trade_unit Indicates if the org stock has a single trade unit
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\InventoryDailySnapshot> $inventoryDailySnapshots
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\LocationOrgStock> $locationOrgStocks
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\Location> $locations
  * @property-read \App\Models\Inventory\OrgStockFamily|null $orgStockFamily
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inventory\OrgStockMovement> $orgStockMovements
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OrgSupplierProduct> $orgSupplierProducts
  * @property-read Organisation $organisation
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
  * @property-read \App\Models\Inventory\OrgStockSalesInterval|null $salesIntervals
  * @property-read \App\Models\Inventory\OrgStockStats|null $stats
  * @property-read Stock|null $stock
@@ -82,7 +89,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|OrgStock newQuery()
  * @method static Builder<static>|OrgStock onlyTrashed()
  * @method static Builder<static>|OrgStock query()
- * @method static Builder<static>|OrgStock withTrashed()
+ * @method static Builder<static>|OrgStock withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|OrgStock withoutTrashed()
  * @mixin \Eloquent
  */
@@ -135,7 +142,7 @@ class OrgStock extends Model implements Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code.' '.$this->organisation->code;
+                return $this->code . ' ' . $this->organisation->code;
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug');
@@ -189,23 +196,20 @@ class OrgStock extends Model implements Auditable
 
     public function tradeUnits(): MorphToMany
     {
-        if ($this->stock_id) {
-            return $this->stock->tradeUnits();
-        }
 
-        // Used in private stocks (stock_id=null)
-        return $this->morphToMany(
-            TradeUnit::class,
-            'model',
-            'model_has_trade_units',
-            'model_id',
-            null,
-            null,
-            null,
-            'trade_units',
-        )
-            ->withPivot(['quantity', 'notes'])
-            ->withTimestamps();
+        return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
+        //        return $this->morphToMany(
+        //            TradeUnit::class,
+        //            'model',
+        //            'model_has_trade_units',
+        //            'model_id',
+        //            null,
+        //            null,
+        //            null,
+        //            'trade_units',
+        //        )
+        //            ->withPivot(['quantity', 'notes'])
+        //            ->withTimestamps();
     }
 
     public function timeSeries(): HasMany
@@ -218,4 +222,17 @@ class OrgStock extends Model implements Auditable
         return $this->hasMany(InventoryDailySnapshot::class);
     }
 
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Product::class,
+            'product_has_org_stocks',
+        )->withPivot(['quantity', 'notes'])->withTimestamps();
+    }
+
+    public function locations(): BelongsToMany
+    {
+        return $this->belongsToMany(Location::class, 'location_org_stocks')
+            ->withPivot(['type', 'picking_priority', 'value', 'dropshipping_pipe', 'quantity', 'notes']);
+    }
 }

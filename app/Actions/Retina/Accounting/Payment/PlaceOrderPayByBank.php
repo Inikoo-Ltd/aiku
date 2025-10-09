@@ -9,20 +9,35 @@
 
 namespace App\Actions\Retina\Accounting\Payment;
 
+use App\Actions\Retina\Dropshipping\Orders\WithBasketStateWarning;
+use App\Actions\Retina\Dropshipping\Orders\WithRetinaOrderPlacedRedirection;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\Order\OrderToBePaidByEnum;
+use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
 
 class PlaceOrderPayByBank extends RetinaAction
 {
-    public function handle()
+    use WithBasketStateWarning;
+    use WithRetinaOrderPlacedRedirection;
+    use WithPlaceOrderByPaymentMethod;
+
+    /**
+     * @throws \Throwable
+     */
+    public function handle(Customer $customer): array
     {
-        return dd('hello');
+        return $this->placeOrderByPaymentMethod($customer, OrderToBePaidByEnum::BANK);
     }
 
-    public function asController(ActionRequest $request): void
+    /**
+     * @throws \Throwable
+     */
+    public function asController(ActionRequest $request): array
     {
         $this->initialisation($request);
-        $this->handle();
+
+        return $this->handle($this->customer);
     }
 
 }

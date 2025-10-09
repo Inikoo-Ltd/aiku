@@ -28,8 +28,8 @@ class MasterShopHydrateMasterAssets implements ShouldBeUnique
     public function handle(MasterShop $masterShop): void
     {
         $stats = [
-            'number_master_assets' => $masterShop->masterAssets()->count(),
-            'number_current_master_assets' => $masterShop->masterAssets()->where('status', true)->count(),
+            'number_master_assets' => $masterShop->masterAssets()->where('is_main')->count(),
+            'number_current_master_assets' => $masterShop->masterAssets()->where('is_main')->where('status', true)->count(),
 
         ];
 
@@ -41,7 +41,7 @@ class MasterShopHydrateMasterAssets implements ShouldBeUnique
                 enum: MasterAssetTypeEnum::class,
                 models: MasterAsset::class,
                 where: function ($q) use ($masterShop) {
-                    $q->where('master_shop_id', $masterShop->id)->where('status', true);
+                    $q->where('master_shop_id', $masterShop->id)->where('is_main', true)->where('status', true);
                 }
             )
         );
@@ -54,7 +54,7 @@ class MasterShopHydrateMasterAssets implements ShouldBeUnique
                 enum: MasterAssetTypeEnum::class,
                 models: MasterAsset::class,
                 where: function ($q) use ($masterShop) {
-                    $q->where('master_shop_id', $masterShop->id);
+                    $q->where('master_shop_id', $masterShop->id)->where('is_main', true);
                 }
             )
         );

@@ -12,26 +12,19 @@ namespace App\Actions\Retina\SysAdmin;
 
 use App\Actions\IrisAction;
 use Lorisleiva\Actions\ActionRequest;
-use Inertia\Inertia;
 
 class RegisterRetinaFromStandalone extends IrisAction
 {
     use WithRetinaRegistration;
-
-
-    public function authorize(ActionRequest $request): bool
-    {
-        return true;
-    }
 
     /**
      * @throws \Throwable
      */
     public function asController(ActionRequest $request): void
     {
+
         $this->initialisation($request);
         $this->handle($this->validatedData);
 
-        // return Inertia::location(route('retina.dashboard.show'));  // Redirect in Frontend due GTM need to track it
     }
 }

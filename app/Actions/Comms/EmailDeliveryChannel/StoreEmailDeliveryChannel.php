@@ -25,9 +25,9 @@ class StoreEmailDeliveryChannel
         data_set($modelData, 'number_emails', 0, overwrite: false);
 
         $model->refresh();
-        if ($model instanceof Mailshot and $model->state == MailshotStateEnum::STOPPED) {
+        if ($model instanceof Mailshot && $model->state == MailshotStateEnum::STOPPED) {
             $modelData = $this->tagForStopTheDelivery($modelData);
-        } elseif ($model instanceof EmailBulkRun and $model->state == EmailBulkRunStateEnum::STOPPED) {
+        } elseif ($model instanceof EmailBulkRun && $model->state == EmailBulkRunStateEnum::STOPPED) {
             $modelData = $this->tagForStopTheDelivery($modelData);
         }
 

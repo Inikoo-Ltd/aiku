@@ -32,13 +32,13 @@ class ShowGroupOverviewHub extends GrpAction
             'Overview/OverviewHub',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title'       => __('overview'),
+                'title'       => __('Overview'),
                 'pageHead'    => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-mountains'],
-                        'title' => __('overview')
+                        'title' => __('Overview')
                     ],
-                    'title'     => __('overview'),
+                    'title'     => __('Overview'),
                 ],
                 'dashboard_stats' => [
                     'setting' => [

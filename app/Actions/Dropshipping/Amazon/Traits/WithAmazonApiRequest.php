@@ -14,7 +14,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use GuzzleHttp\Psr7\Request;
-use Illuminate\Support\Str;
 
 trait WithAmazonApiRequest
 {
@@ -402,8 +401,32 @@ trait WithAmazonApiRequest
     public function getProductByAsin($asin)
     {
         try {
+            $config = $this->getAmazonConfig();
             $endpoint = "/catalog/2022-04-01/items/{$asin}";
-            return $this->makeAmazonRequest('get', $endpoint);
+            return $this->makeAmazonRequest('get', $endpoint, [], [
+                'marketplaceIds' => $config['marketplace_id'],
+                'includedData' => 'attributes,productTypes,classifications,dimensions,summaries'
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get Amazon Product Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get specific product by EAN
+     */
+    public function getProductByEan($ean)
+    {
+        try {
+            $config = $this->getAmazonConfig();
+
+            $endpoint = "/catalog/2022-04-01/items";
+            return $this->makeAmazonRequest('get', $endpoint, [], [
+                'marketplaceIds' => $config['marketplace_id'],
+                'identifiersType' => 'EAN',
+                'identifiers' => $ean
+            ]);
         } catch (Exception $e) {
             Log::error('Get Amazon Product Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
@@ -464,7 +487,8 @@ trait WithAmazonApiRequest
 
             return $this->makeAmazonRequest('put', $endpoint, $productData, [
                 'marketplaceIds' => $config['marketplace_id'],
-                'includedData' => 'issues'
+                'includedData' => 'issues',
+                // 'mode' => 'VALIDATION_PREVIEW'
             ]);
         } catch (Exception $e) {
             Log::error('Upsert Amazon Product Error: ' . $e->getMessage());
@@ -626,221 +650,26 @@ trait WithAmazonApiRequest
     /**
      * Create full product listing with all details
      */
-    public function createFullProduct($sku, $productData)
+    public function createFullProduct($productType, $productInfo, $exisingAttributes)
     {
         try {
             $config = $this->getAmazonConfig();
-            $marketplaceId = $config['marketplace_id'];
 
-            $formattedData = [
-                "productType" => "ACCESSORY",
-                "requirements" => "LISTING",
-                "attributes" => [
-                    "condition_type" => [
-                        [
-                            "value" => "new_new",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "item_name" => [
-                        [
-                            "value" => Arr::get($productData, 'title'),
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "brand" => [
-                        [
-                            "value" => 'Generic',
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-/*                    "recommended_browse_nodes" => [
-                        [
-                            "value" => "281407",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],*/
-                    "merchant_suggested_asin" => [
-                        [
-                            "value" => Str::substr('ASIN-'.Arr::get($productData, 'id'), 0, 10)
-                        ]
-                    ],
-                    "product_description" => [
-                        [
-                            "value" => Arr::get($productData, 'description'),
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "item_type_keyword" => [
-                        [
-                            "value" => "accessory",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "bullet_point" => [
-                        [
-                            "value" => "High quality material",
-                            "marketplace_id" => $marketplaceId
-                        ],
-                        [
-                            "value" => "Sleek and durable design",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "generic_keyword" => [
-                        [
-                            "value" => "accessory, durable, daily use",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "care_instructions" => [
-                        [
-                            "value" => "Machine wash cold, tumble dry low",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "item_package_weight" => [
-                        [
-                            "value" => 0.5,
-                            "unit" => "pounds",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "fabric_type" => [
-                        [
-                            "value" => "100% Original",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "target_gender" => [
-                        [
-                            "value" => "unisex",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "department" => [
-                        [
-                            "value" => "unisex-adult",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "size" => [
-                        [
-                            "value" => "Medium",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "import_designation" => [
-                        [
-                            "value" => "imported",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "age_range_description" => [
-                        [
-                            "value" => "Adult",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "batteries_required" => [
-                        [
-                            "value" => false,
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "model_name" => [
-                        [
-                            "value" => 'Accessory Original',
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "list_price" => [
-                        [
-                            "value" => Arr::get($productData, 'price'),
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    'purchasable_offer' => [
-                        [
-                            'marketplace_id' => $marketplaceId,
-                            'currency' => 'USD',
-                            'our_price' => [
-                                [
-                                    'schedule' => [
-                                        [
-                                            'value_with_tax' => Arr::get($productData, 'price')
-                                        ]
-                                    ]
-                                ]
-                            ],
-                            'quantity' => Arr::get($productData, 'quantity')
-                        ]
-                    ],
+            $sku = $productAttributes['sku'] ?? 'SKU_' . $productInfo['asin'] . '_' . time();
 
-                    "supplier_declared_dg_hz_regulation" => [
-                        [
-                            "value" => "not_applicable",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "item_package_dimensions" => [
-                        [
-                            "length" => [
-                                "value" => 10,
-                                "unit" => "inches"
-                            ],
-                            "width" => [
-                                "value" => 6,
-                                "unit" => "inches"
-                            ],
-                            "height" => [
-                                "value" => 2,
-                                "unit" => "inches"
-                            ]
-                        ]
-                    ],
-                    "color" => [
-                        [
-                            "value" => "Black",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    "country_of_origin" => [
-                        [
-                            "value" => "US",
-                            "marketplace_id" => $marketplaceId
-                        ]
-                    ],
-                    'fulfillment_availability' => [
-                        [
-                            "quantity" => Arr::get($productData, 'quantity'),
-                            'fulfillment_channel_code' => 'DEFAULT', // or 'AMAZON' for FBA
-                            'marketplace_id' => $marketplaceId
-                        ]
-                    ],
-                ]
+            // Determine product type based on website display group
+            // $productType = $this->determineProductType($productInfo['website_display_group'] ?? '');
+
+            // Prepare the listing payload
+            $productAttributes = $this->buildProductAttributes($productInfo, $exisingAttributes);
+
+            $payload = [
+                'productType' => $productType,
+                'requirements' => 'LISTING',
+                'attributes' => $productAttributes // $this->buildProductAttributes($productInfo)
             ];
 
-
-            // Add images if present
-            $images = Arr::get($productData, 'images', []);
-
-            //            if (is_array($images)) {
-            //                $formattedData['attributes']['images'] = [];
-            //
-            //                foreach ($images as $index => $imageUrl) {
-            //                    $imageType = $index === 0 ? 'MAIN' : 'PT' . $index;
-            //
-            //                    $formattedData['attributes']['images'][] = [
-            //                        'link' => $imageUrl,
-            //                        'height' => 500,
-            //                        'width' => 500,
-            //                        'variant' => $imageType
-            //                    ];
-            //                }
-            //            }
-
-            return $this->upsertProduct($sku, $formattedData);
+            return $this->upsertProduct($sku, $payload);
         } catch (Exception $e) {
             Log::error('Create Full Amazon Product Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
@@ -857,6 +686,24 @@ trait WithAmazonApiRequest
         try {
             $endpoint = "/sellers/v1/account";
             return $this->makeAmazonRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Get Amazon Account Info Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get account info
+     */
+    public function getProductCategoriesByAsin($asin)
+    {
+        try {
+            $config =  $this->getAmazonConfig();
+            $endpoint = "/catalog/v0/categories";
+            return $this->makeAmazonRequest('get', $endpoint, [], [
+                'ASIN' => $asin,
+                'MarketplaceId' => $config['marketplace_id']
+            ]);
         } catch (Exception $e) {
             Log::error('Get Amazon Account Info Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
@@ -887,5 +734,338 @@ trait WithAmazonApiRequest
             Log::error('Confirm Amazon Shipment Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
+    }
+
+    public function createProductFromSearchData($searchResults, $additionalData = [])
+    {
+        try {
+            // Extract the first item from search results
+            $item = $searchResults['items'][0] ?? null;
+
+            if (!$item) {
+                throw new Exception('No items found in search results');
+            }
+
+            // Extract product information
+            $productInfo = $this->extractProductInfo($item);
+
+            // Merge with additional data if provided
+            $productInfo = array_merge($productInfo, $additionalData);
+
+            $product = $this->getProductByAsin($productInfo['asin']);
+            $attributes = $product['attributes'];
+
+            // Create the product listing
+            return $this->createFullProduct(Arr::get($product, 'productTypes.0.productType'), $productInfo, $attributes);
+
+        } catch (Exception $e) {
+            Log::error('Error creating product from search data: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Extract product information from search results
+     */
+    protected function extractProductInfo($item)
+    {
+        $config =  $this->getAmazonConfig();
+        $summaries = $item['summaries'] ?? [];
+        $firstSummary = $summaries[0] ?? [];
+
+        return [
+            'asin' => $item['asin'] ?? '',
+            'marketplace_id' => $firstSummary['marketplaceId'] ?? $config['marketplace_id'],
+            'title' => $firstSummary['itemName'] ?? '',
+            'brand' => $firstSummary['brand'] ?? '',
+            'manufacturer' => $firstSummary['manufacturer'] ?? $firstSummary['brand'] ?? '',
+            'model_number' => $firstSummary['modelNumber'] ?? '',
+            'part_number' => $firstSummary['partNumber'] ?? '',
+            'package_quantity' => $firstSummary['packageQuantity'] ?? 1,
+            'item_classification' => $firstSummary['itemClassification'] ?? 'BASE_PRODUCT',
+            'trade_in_eligible' => $firstSummary['tradeInEligible'] ?? false,
+            'adult_product' => $firstSummary['adultProduct'] ?? false,
+            'autographed' => $firstSummary['autographed'] ?? false,
+            'memorabilia' => $firstSummary['memorabilia'] ?? false,
+            'website_display_group' => $firstSummary['websiteDisplayGroup'] ?? '',
+            'website_display_group_name' => $firstSummary['websiteDisplayGroupName'] ?? '',
+        ];
+    }
+
+    /**
+     * Build product attributes for the listing
+     */
+    protected function buildProductAttributes($productInfo, $existingAttributes)
+    {
+        $attributes = [
+            // Core product identifiers
+            'condition_type' => [
+                [
+                    'value' => 'new_new'
+                ]
+            ],
+
+            // Product title
+            'item_name' => [
+                [
+                    'value' => $productInfo['title'],
+                    'language_tag' => 'en_US'
+                ]
+            ],
+
+            // Brand
+            'brand' => [
+                [
+                    'value' => $productInfo['brand']
+                ]
+            ],
+
+            // Manufacturer
+            'manufacturer' => [
+                [
+                    'value' => $productInfo['manufacturer']
+                ]
+            ],
+
+            // Model number
+            'model_number' => [
+                [
+                    'value' => $productInfo['model_number']
+                ]
+            ],
+
+            // Part number
+            'part_number' => [
+                [
+                    'value' => $productInfo['part_number']
+                ]
+            ],
+
+            // Package quantity
+            'unit_count' => [
+                [
+                    'value' => $productInfo['package_quantity'] ?? 10,
+                    'type' => [
+                        'value' => 'item',
+                        'language_tag' => 'en_US'
+                    ]
+                ]
+            ],
+
+            /*'contains_liquid_contents' => [
+                ['value' => false] // or 'true' if your product contains liquids
+            ],*/
+
+            'item_width_height' => [
+                ['width' => [
+                    'value' => 6,
+                    'unit' => 'inches'
+                ], 'height' => [
+                    'value' => 6,
+                    'unit' => 'inches'
+                ]]
+            ],
+            'material' => [
+                ['value' => 'Plastic']
+            ],
+            'specific_uses_for_product' => [
+                ['value' => 'Office, Home']
+            ],
+            'product_description' => [
+                ['value' => 'A high-quality ergonomic mouse with smooth tracking and durable design.']
+            ],
+            'number_of_items' => [
+                ['value' => '1']
+            ],
+            'warranty_description' => [
+                ['value' => 'No warranty']
+            ],
+            'model_name' => [
+                ['value' => 'MOUSE-001X']
+            ],
+
+            'country_of_origin' => [
+                ['value' => 'US'] // Change to actual country (US, CN, DE, etc.)
+            ],
+            "supplier_declared_dg_hz_regulation" => [
+                [
+                    "value" => "not_applicable"
+                ]
+            ],
+            /*"item_package_dimensions" => [
+                [
+                    "length" => [
+                        "value" => 10,
+                        "unit" => "inches"
+                    ],
+                    "width" => [
+                        "value" => 6,
+                        "unit" => "inches"
+                    ],
+                    "height" => [
+                        "value" => 2,
+                        "unit" => "inches"
+                    ]
+                ]
+            ],*/
+
+            'color' => [
+                ['value' => $productInfo['color'] ?? 'Multi-Color']
+            ],
+
+            "item_package_weight" => [
+                [
+                    "value" => 0.5,
+                    "unit" => "pounds"
+                ]
+            ],
+
+            'list_price' => [
+                ['value' => 10]
+            ],
+
+            'batteries_required' => [
+                ['value' => false] // or 'true' if batteries are required
+            ],
+
+            'fulfillment_availability' => [
+                [
+                    "quantity" => 100,
+                    'fulfillment_channel_code' => 'DEFAULT', // or 'AMAZON' for FBA
+                ]
+            ],
+
+            'purchasable_offer' => [
+                [
+                    'currency' => 'USD',
+                    'our_price' => [
+                        [
+                            'schedule' => [
+                                [
+                                    'value_with_tax' => Arr::get($productInfo, 'price', 1)
+                                ]
+                            ]
+                        ]
+                    ],
+                    'quantity' => Arr::get($productInfo, 'quantity', 1)
+                ]
+            ],
+
+            /*'is_heat_sensitive' => [
+                ['value' => false] // or 'true' if heat sensitive
+            ],*/
+
+            'item_type_keyword' => [
+                ['value' => $productInfo['category'] ?? 'general']
+            ],
+        ];
+
+        // Add ASIN reference if available
+        if (!empty($productInfo['asin'])) {
+            $attributes['externally_assigned_product_identifier'] = [
+                ['value' => $productInfo['asin']]
+            ];
+
+            $attributes['merchant_suggested_asin'] = [
+                ['value' => $productInfo['asin']]
+            ];
+        }
+
+        // Add additional attributes based on product type
+        return array_merge($attributes, $existingAttributes);
+    }
+
+    /**
+     * Determine product type based on website display group
+     */
+    protected function determineProductType($websiteDisplayGroup)
+    {
+        $mappings = [
+            'kitchen_display_on_website' => 'KITCHEN',
+            'health_and_beauty_display_on_website' => 'HEALTH_PERSONAL_CARE',
+            'beauty_display_on_website' => 'BEAUTY',
+            'grocery_display_on_website' => 'GROCERY',
+            'baby_display_on_website' => 'BABY_PRODUCT',
+            'sports_display_on_website' => 'SPORTING_GOODS',
+            'home_garden_display_on_website' => 'HOME_AND_GARDEN',
+            'electronics_display_on_website' => 'ELECTRONICS',
+        ];
+
+        return $mappings[$websiteDisplayGroup] ?? 'HEALTH_PERSONAL_CARE';
+    }
+
+    /**
+     * Get product type specific attributes
+     */
+    protected function getProductTypeSpecificAttributes($productInfo)
+    {
+        $attributes = [];
+
+        // Add generic product description
+        $attributes['product_description'] = [
+            [
+                'value' => $this->generateProductDescription($productInfo),
+                'language_tag' => 'en_US'
+            ]
+        ];
+
+        // Add bullet points
+        $attributes['bullet_point'] = $this->generateBulletPoints($productInfo);
+
+        return $attributes;
+    }
+
+    /**
+     * Generate product description
+     */
+    protected function generateProductDescription($productInfo)
+    {
+        $description = "High-quality {$productInfo['title']} from {$productInfo['brand']}.";
+
+        if ($productInfo['model_number']) {
+            $description .= " Model: {$productInfo['model_number']}.";
+        }
+
+        if ($productInfo['package_quantity'] > 1) {
+            $description .= " Package contains {$productInfo['package_quantity']} units.";
+        }
+
+        return $description;
+    }
+
+    /**
+     * Generate bullet points
+     */
+    protected function generateBulletPoints($productInfo)
+    {
+        $bulletPoints = [];
+
+        $bulletPoints[] = [
+            'value' => "Brand: {$productInfo['brand']}",
+            'language_tag' => 'en_US'
+        ];
+
+        if ($productInfo['model_number']) {
+            $bulletPoints[] = [
+                'value' => "Model Number: {$productInfo['model_number']}",
+                'language_tag' => 'en_US'
+            ];
+        }
+
+        if ($productInfo['package_quantity'] > 1) {
+            $bulletPoints[] = [
+                'value' => "Package Quantity: {$productInfo['package_quantity']} units",
+                'language_tag' => 'en_US'
+            ];
+        }
+
+        if ($productInfo['manufacturer']) {
+            $bulletPoints[] = [
+                'value' => "Manufactured by: {$productInfo['manufacturer']}",
+                'language_tag' => 'en_US'
+            ];
+        }
+
+        return $bulletPoints;
     }
 }

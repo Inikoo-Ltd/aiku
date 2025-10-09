@@ -25,10 +25,18 @@ class FulfillOrderToWooCommerce extends OrgAction
 
     public function handle(Order $order): void
     {
-        $fulfillOrderId = Arr::get($order->data, 'id');
+        $fulfillOrderId = Arr::get($order->data, 'woo_order.id');
+
+        if (!$fulfillOrderId) {
+            $fulfillOrderId = $order->platform_order_id;
+        }
 
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $order->customerSalesChannel->user;
+
+        if (!$wooCommerceUser) {
+            return;
+        }
 
         /** @var DeliveryNote $deliveryNote */
         $deliveryNote = $order->deliveryNotes->first();

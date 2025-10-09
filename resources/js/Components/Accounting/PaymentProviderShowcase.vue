@@ -10,7 +10,6 @@ import pastpay from '@/../art/payment_service_providers/pastpay.svg'
 import paypal from '@/../art/payment_service_providers/paypal.svg'
 import sofort from '@/../art/payment_service_providers/sofort.svg'
 import worldpay from '@/../art/payment_service_providers/worldpay.svg'
-import xendit from '@/../art/payment_service_providers/xendit.svg'
 import bank from '@/../art/payment_service_providers/bank.svg'
 import accounts from '@/../art/payment_service_providers/accounts.svg'
 import cond from '@/../art/payment_service_providers/cond.svg'
@@ -50,8 +49,6 @@ const selectImage = (code: string) => {
             return sofort
         case 'worldpay':
             return worldpay
-        case 'xendit':
-            return xendit
         default:
             return null
     }

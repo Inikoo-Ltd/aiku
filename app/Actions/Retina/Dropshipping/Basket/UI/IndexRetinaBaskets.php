@@ -12,6 +12,7 @@ use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
+use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\RetinaOrdersResource;
 use App\InertiaTable\InertiaTable;
@@ -54,6 +55,7 @@ class IndexRetinaBaskets extends RetinaAction
                 'orders.id',
                 'orders.reference',
                 'orders.slug',
+                'orders.state',
                 'orders.customer_client_id',
                 'orders.total_amount',
                 'customer_clients.name as client_name',
@@ -109,9 +111,11 @@ class IndexRetinaBaskets extends RetinaAction
                     'navigation' => ProductTabsEnum::navigation()
                 ],
 
-                'currency' => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
+                'is_show_button_create_order'   => true,
 
-                'data'     => RetinaOrdersResource::collection($orders)
+                'currency'                  => CurrencyResource::make($this->customer->shop->currency)->toArray(request()),
+                'customer_sales_channel'    => CustomerSalesChannelsResourceTOFIX::make($this->customerSalesChannel)->toArray(request()),
+                'data'                      => RetinaOrdersResource::collection($orders)
             ]
         )->table($this->tableStructure());
     }
@@ -134,6 +138,7 @@ class IndexRetinaBaskets extends RetinaAction
             $table->column(key: 'client_name', label: __('client'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_item_transactions', label: __('items'), canBeHidden: false, sortable: true);
             $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, align: 'right');
+            $table->column(key: 'actions', label: '', canBeHidden: false, sortable: false);
         };
     }
 

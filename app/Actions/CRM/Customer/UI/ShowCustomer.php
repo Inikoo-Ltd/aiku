@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Actions\Accounting\Payment\UI\IndexPayments;
 use App\Actions\Accounting\CreditTransaction\UI\IndexCreditTransactions;
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
@@ -31,6 +32,7 @@ use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
+use App\Http\Resources\Accounting\PaymentsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
@@ -118,10 +120,10 @@ class ShowCustomer extends OrgAction
                     'title'         => $customer->name,
                     'icon'          => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('customer')
+                        'title' => __('Customer')
                     ],
                     'afterTitle'    => [
-                        'label' => '#'.$customer->reference,
+                        'label' => '#' . $customer->reference,
                     ],
                     'meta'          => array_filter([
                         $shopMeta,
@@ -137,8 +139,29 @@ class ShowCustomer extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ],
+                        $this->shop->type == ShopTypeEnum::B2B ? [
+                            'type'        => 'button',
+                            'style'       => 'create',
+                            'label'       => 'Add order',
+                            'key'         => 'add_order',
+                            'fullLoading' => true,
+                            'route'       => [
+                                'method'     => 'post',
+                                'name'       => 'grp.models.customer.submitted_order.store',
+                                'parameters' => [
+                                    'customer' => $this->parent->id
+                                ]
+                            ]
+                        ] : [],
                     ],
                     'subNavigation' => $subNavigation,
+                ],
+                'notes'              => $this->getOrderNotes($customer),
+                'updateRoute'   => [
+                    'name'       => 'grp.models.customer.update',
+                    'parameters' => [
+                        'customer' => $customer->id
+                    ]
                 ],
                 'attachmentRoutes' => [
                     'attachRoute' => [
@@ -170,10 +193,12 @@ class ShowCustomer extends OrgAction
                     : Inertia::lazy(fn () => GetCustomerShowcase::run($customer)),
 
 
-
                 $tabs::CREDIT_TRANSACTIONS->value  => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
                     fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
                     : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
+                $tabs::PAYMENTS->value => $this->tab == $tabs::PAYMENTS->value ?
+                    fn () => PaymentsResource::collection(IndexPayments::run($customer))
+                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($customer))),
                 $tabs::FAVOURITES->value  => $this->tab == $tabs::FAVOURITES->value ?
                     fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
                     : Inertia::lazy(fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
@@ -193,8 +218,9 @@ class ShowCustomer extends OrgAction
 
             ]
         )->table(IndexOrders::make()->tableStructure($customer))
-            ->table(IndexCustomerFavourites::make()->tableStructure(parent:$customer, prefix:$tabs::FAVOURITES->value))
+            ->table(IndexCustomerFavourites::make()->tableStructure(parent: $customer, prefix: $tabs::FAVOURITES->value))
             ->table(IndexCustomerBackInStockReminders::make()->tableStructure($customer, $tabs::REMINDERS->value))
+            ->table(IndexPayments::make()->tableStructure($customer, prefix: $tabs::PAYMENTS->value))
             ->table(IndexAttachments::make()->tableStructure($tabs::ATTACHMENTS->value))
             ->table(IndexDispatchedEmails::make()->tableStructure($customer, $tabs::DISPATCHED_EMAILS->value))
             ->table(IndexCreditTransactions::make()->tableStructure($customer, $tabs::CREDIT_TRANSACTIONS->value))
@@ -205,6 +231,39 @@ class ShowCustomer extends OrgAction
     public function jsonResponse(Customer $customer): CustomersResource
     {
         return new CustomersResource($customer);
+    }
+
+
+    public function getOrderNotes(Customer $customer): array
+    {
+        return [
+            "note_list" => [
+                [
+                    "label"       => __("Private"),
+                    "note"        => $customer->internal_notes ?? '',
+                    "information" => __("This note is only visible to staff members. You can communicate each other about the order."),
+                    "editable"    => true,
+                    "bgColor"     => "#FF7DBD",
+                    "field"       => "internal_notes"
+                ],
+                [
+                    "label"       => __("Warehouse Public"),
+                    "note"        => $customer->warehouse_public_notes ?? '',
+                    "information" => __("This note will be visible to public, both staff and the customer can see."),
+                    "editable"    => true,
+                    "bgColor"     => "#94DB84",
+                    "field"       => "warehouse_public_notes"
+                ],
+                [
+                    "label"       => __("Warehouse internal"),
+                    "note"        => $customer->warehouse_internal_notes ?? '',
+                    "information" => __("This note is from customer in the platform. Not editable."),
+                    "editable"    => false,
+                    "bgColor"     => "#FCF4A3",
+                    "field"       => "warehouse_internal_notes"
+                ]
+            ]
+        ];
     }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = ''): array

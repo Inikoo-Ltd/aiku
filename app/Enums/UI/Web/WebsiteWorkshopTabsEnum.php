@@ -21,33 +21,28 @@ enum WebsiteWorkshopTabsEnum: string
     case FAMILY             = 'families';
     case PRODUCTS           = 'products';
     case PRODUCT            = 'product';
-    case COLLECTION         = 'collection';
 
     public function blueprint(): array
     {
         return match ($this) {
             WebsiteWorkshopTabsEnum::SUB_DEPARTMENT => [
-                'title' => __('sub-department block'),
+                'title' => __('Sub-department block'),
                 'icon'  => 'fal fa-th',
             ],
             WebsiteWorkshopTabsEnum::FAMILY => [
-                'title' => __('families block'),
+                'title' => __('Families block'),
                 'icon'  => 'fal fa-folder-tree',
             ],
             WebsiteWorkshopTabsEnum::PRODUCTS => [
-                'title' => __('products block'),
+                'title' => __('Products block'),
                 'icon'  => 'fal fa-th-large',
             ],
             WebsiteWorkshopTabsEnum::PRODUCT => [
-                'title' => __('product page'),
-                'icon'  => 'fal fa-cube',
-            ],
-            WebsiteWorkshopTabsEnum::COLLECTION => [
-                'title' => __('collection page'),
+                'title' => __('Product page'),
                 'icon'  => 'fal fa-cube',
             ],
             WebsiteWorkshopTabsEnum::WEBSITE_LAYOUT => [
-                'title' => __('layout'),
+                'title' => __('Layout'),
                 'icon'  => 'fal fa-cheeseburger',
             ],
         };

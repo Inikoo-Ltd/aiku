@@ -44,6 +44,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property float|null $picking_position
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Collection<int, \App\Models\Inventory\Location> $locations
@@ -57,7 +58,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|WarehouseArea newQuery()
  * @method static Builder<static>|WarehouseArea onlyTrashed()
  * @method static Builder<static>|WarehouseArea query()
- * @method static Builder<static>|WarehouseArea withTrashed()
+ * @method static Builder<static>|WarehouseArea withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|WarehouseArea withoutTrashed()
  * @mixin Eloquent
  */

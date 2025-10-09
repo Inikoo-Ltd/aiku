@@ -116,7 +116,7 @@ class GetPalletDeliveryActions
                         'type'    => 'button',
                         'style'   => 'secondary',
                         'icon'    => $this->addIcon,
-                        'label'   => __('add storage'),
+                        'label'   => __('Add storage'),
                         'key'     => 'add-pallet',
                         'tooltip' => __('Add carton, pallet, or oversize goods'),
                         'route'   => [
@@ -135,7 +135,7 @@ class GetPalletDeliveryActions
                     'type'    => 'button',
                     'style'   => 'save',
                     'tooltip' => __('Submit'),
-                    'label'   => __('submit'),
+                    'label'   => __('Submit'),
                     'key'     => 'action',
                     'route'   => [
                         'method'     => 'post',
@@ -178,7 +178,7 @@ class GetPalletDeliveryActions
                 'style'   => 'negative',
                 'icon'    => 'fal fa-times',
                 'tooltip' => __('Cancel the delivery'),
-                'label'   => __('cancel'),
+                'label'   => __('Cancel'),
                 'key'     => 'action',
                 'route'   => [
                     'method'     => 'post',
@@ -389,6 +389,4 @@ class GetPalletDeliveryActions
             ]
         ];
     }
-
-
 }

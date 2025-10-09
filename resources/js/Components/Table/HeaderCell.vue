@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { faYinYang } from '@fal'
-import { capitalize } from "@/Composables/capitalize"
 
 library.add(faYinYang);
 
@@ -48,6 +47,7 @@ const isCellNumber = () => {
 </script>
 
 <template>
+
     <!-- <pre>{{ cell?.icon }}</pre> -->
     <th v-show="!cell?.hidden" class="font-normal"
         :class="[
@@ -64,9 +64,9 @@ const isCellNumber = () => {
                     <!-- Label: object -->
                     <div v-if="typeof cell?.label === 'object'">
                         <FontAwesomeIcon
-                            v-if="cell?.icon || cell?.label.type === 'icon'"
-                            :icon="cell?.icon || cell?.label.data"
-                            v-tooltip="capitalize(cell?.label.tooltip)"
+                            v-if="cell?.icon || cell?.type === 'icon'"
+                            :icon="cell?.icon || cell?.label.data || cell?.label"
+                            v-tooltip="cell?.label.tooltip"
                             aria-hidden="true"
                             size="lg"
                             fixed-width
@@ -81,7 +81,7 @@ const isCellNumber = () => {
                     </div>
                     
                     <!-- Label: simple and icon -->
-                    <div v-else class="capitalize text-xs md:text-sm lg:text-base w-full" v-tooltip="cell?.tooltip"
+                    <div v-else class="text-xs md:text-sm lg:text-base w-full" v-tooltip="cell?.tooltip"
                         :class="[cell?.type == 'number' || cell?.type == 'currency' ? 'text-right pr-3' : '']"
                     >
                         <FontAwesomeIcon

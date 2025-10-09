@@ -32,9 +32,9 @@ class CreateRental extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new rental'),
+                'title'       => __('New rental'),
                 'pageHead'    => [
-                    'title' => __('new rental')
+                    'title' => __('New rental')
                 ],
                 'formData'    => [
                     'fullLayout' => true,

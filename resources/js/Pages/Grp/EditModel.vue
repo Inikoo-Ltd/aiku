@@ -15,7 +15,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faGoogle } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-
+import { router } from "@inertiajs/vue3"
 import {
     faMicrophoneAltSlash,
     faImage,
@@ -50,17 +50,70 @@ import {
     faFileInvoice,
     faTransporter,
     faCode,
-    faExchange
+    faExchange,
+    faBoxes,
+    faAtom,
+    faMoneyBill,
 } from "@fal"
+import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
+import { faExclamationTriangle } from "@fas"
 import { faBan } from "@far"
 import { Head, usePage } from "@inertiajs/vue3"
 import axios from "axios"
+import Message from 'primevue/message';
 
-library.add(faTag, faMicrophoneAltSlash, faImage, faBan, faEnvelope, faPowerOff, faShoePrints, faShoppingBag, faBrowser, faUserLock, faBell, faCopyright, faUserCircle, faMobileAndroidAlt, faKey, faClone, faPaintBrush, faExchange, faMoonStars, faLightbulbOn, faCheck, faPhone, faIdCard, faFingerprint, faLanguage, faAddressBook, faTrashAlt, faSlidersH, faCog, faGoogle, faFlagCheckered, faBracketsCurly, faFileInvoice, faTransporter, faCode, faDoorClosed)
-
+library.add(
+    faOctopusDeploy,
+    faExclamationTriangle,
+    faAtom,
+    faTag,
+    faMicrophoneAltSlash,
+    faImage,
+    faBan,
+    faEnvelope,
+    faPowerOff,
+    faShoePrints,
+    faShoppingBag,
+    faBrowser,
+    faUserLock,
+    faBell,
+    faCopyright,
+    faUserCircle,
+    faMobileAndroidAlt,
+    faKey,
+    faClone,
+    faPaintBrush,
+    faExchange,
+    faMoonStars,
+    faLightbulbOn,
+    faCheck,
+    faPhone,
+    faIdCard,
+    faFingerprint,
+    faLanguage,
+    faAddressBook,
+    faTrashAlt,
+    faSlidersH,
+    faCog,
+    faGoogle,
+    faFlagCheckered,
+    faBracketsCurly,
+    faFileInvoice,
+    faTransporter,
+    faCode,
+    faDoorClosed,
+    faBoxes,
+    faMoneyBill
+)
 
 const props = defineProps<{
-    title: string,
+    title: string
+    warning?: {
+        text: string
+        title: string
+        icon: string
+        type: string
+    }
     pageHead: {
         title: string
         exitEdit: {
@@ -69,21 +122,22 @@ const props = defineProps<{
                 parameters: string[]
             }
         }
-    },
+    }
     formData: {
-        current?: string,
+        current?: string
         blueprint: {
             [key: string]: {
                 // sectionData
-                label: string,
-                title: string,
-                subtitle?: string,
+                label: string
+                title: string
+                subtitle?: string
+                information?: string // Tooltip information
                 icon: string
                 fields: {
                     // FieldData
-                    name: string,
-                    type: string,
-                    label: string,
+                    name: string
+                    type: string
+                    label: string
                     value: string | object
                     icon?: string
                     action?: {
@@ -106,10 +160,14 @@ const props = defineProps<{
     }
 }>()
 
+const paramsSection = route().params['section'] || 0
 // const layout = useLayoutStore()
 const layout: any = inject("layout")
-const currentTab = ref<string | number>(props.formData?.current || parseInt(Object.keys(props.formData?.blueprint)[0]))  // if formData.current not exist, take first navigation
-const _buttonRefs = ref([])  // For click linked to Navigation
+const currentTab = ref<string | number>(
+    props.formData?.current || paramsSection
+)
+ // if formData.current not exist, take first navigation
+const _buttonRefs = ref([]) // For click linked to Navigation
 const isMobile = ref(false)
 const tabActive: any = ref({})
 const fieldGroupAnimateSection = ref()
@@ -124,20 +182,37 @@ const handleIntersection = (element: Element, index: number) => (entries) => {
     tabActive.value[`${index}`] = entry.isIntersecting
 }
 
+const switchTab = (key: string) => {
+    currentTab.value = key
+    console.log(key)
+
+    // Update URL with query parameter
+    router.visit('', {
+        data: {
+            // ...route().params, // Keep existing route parameters
+            // section: props.formData.blueprint[key].label.toLowerCase()      // Add section query parameter
+            section: key
+        },
+        preserveState: true,
+        replace: true,
+        only: [] // Don't reload any data, just update URL
+    })
+}
+
 onMounted(() => {
     updateViewportWidth()
     window.addEventListener("resize", updateViewportWidth)
 
     // Animate the selected section
-    route().v().query?.section ? (
-        currentTab.value = getLodash(route().v().query, "section"),
+    route().v().query?.section
+        ? ((currentTab.value = getLodash(route().v().query, "section")),
             setTimeout(() => {
                 fieldGroupAnimateSection.value = ["bg-yellow-500/20"]
                 setTimeout(() => {
                     fieldGroupAnimateSection.value = []
                 }, 600)
-            }, 100)
-    ) : ""
+            }, 100))
+        : ""
 
     // To indicate active state that on viewport
     _buttonRefs.value.forEach((element: any, index: number) => {
@@ -167,49 +242,93 @@ onBeforeUnmount(() => {
 // const messageError = splitError?.[2]
 
 function connectToPlatform(routeName, parameters) {
-    axios.post(route(routeName, parameters))
-        .then((response) => {
-            window.location.href = response.data
-        })
+    axios.post(route(routeName, parameters)).then((response) => {
+        window.location.href = response.data
+    })
 }
 
+const showWarningMessage = ref(true)
+
+const severityMap: Record<string, string> = {
+  warning: "warn",
+  success: "success",
+  info: "info",
+  error: "error"
+}
+
+const getSeverity = (type?: string) => {
+  return type ? severityMap[type.toLowerCase()] || "info" : "info"
+}
 </script>
 
 
 <template>
+
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead" />
 
+    <div v-if="warning && showWarningMessage">
+        <Message v-if="warning && showWarningMessage" :severity="getSeverity(warning.type)" :closable="true"
+            @close="showWarningMessage = false">
+            <div class="flex items-start gap-3">
+                <!-- Icon -->
+                <FontAwesomeIcon v-if="warning.icon" :icon="warning.icon" class="w-4 h-4 flex-shrink-0 mt-0.5" :class="[
+                    getSeverity(warning.type) === 'warn' ? 'text-yellow-800' :
+                        getSeverity(warning.type) === 'success' ? 'text-green-800' :
+                            getSeverity(warning.type) === 'error' ? 'text-red-800' :
+                                'text-blue-500'
+                ]" />
+
+                <!-- Content -->
+                <div class="flex flex-col">
+                    <div class="text-sm font-semibold">
+                        {{ warning?.title }}
+                    </div>
+                    <div v-if="warning?.text" :class="[
+                        getSeverity(warning.type) === 'warn' ? 'text-yellow-500' :
+                            getSeverity(warning.type) === 'success' ? 'text-green-500' :
+                                getSeverity(warning.type) === 'error' ? 'text-red-500' :
+                                    'text-blue-500'
+                    ]" class="text-xs ">
+                        {{ warning?.text }}
+                    </div>
+                </div>
+            </div>
+        </Message>
+
+    </div>
     <!-- If overflow-hidden, affect to Multiselect on Address -->
     <div class="rounded-lg shadow">
-        <div v-if="!isMobile" class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x">
-
+        <div v-if="!isMobile"
+            class="divide-y divide-gray-200 lg:grid grid-flow-col lg:grid-cols-12 lg:divide-y-0 lg:divide-x">
             <!-- Tab: Navigation -->
             <aside v-if="!formData.fullLayout" class="bg-gray-50/50 py-0 lg:col-span-3 lg:h-full">
                 <div class="sticky top-16">
                     <template v-for="(sectionData, key) in formData.blueprint">
                         <!-- If Section: all fields is not hidden -->
-                        <div v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))" @click="currentTab = key"
-                             :class="[
-                                key == currentTab
-                                    ? `navigationSecondActive`
-                                    : `navigationSecond`,
-                                'cursor-pointer group px-3 py-2 flex items-center text-sm font-medium',
-                            ]"
-                             :style="[key == currentTab ? {
-                                'border-left': `4px solid ${layout.app?.theme[2]}`,
-                                'background-color': `color-mix(in srgb, ${layout?.app?.theme[2]} 20%, white)`,
-                                'color': `color-mix(in srgb, ${layout?.app?.theme[3]} 50%, black)`,
-                            } : {}]"
-                        >
-                            <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" class="flex-shrink-0 -ml-1 mr-2 h-4 w-4"
-                                             :class="[
-                                    tabActive[key]
-                                        ? 'text-gray-400 group-hover:text-gray-500'
-                                        : 'text-gray-400',
-                                ]"
-                                             :icon="sectionData.icon" />
+                        <div v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))"
+                            @click="switchTab(key)" :class="[
+								key == currentTab ? `navigationSecondActive` : `navigationSecond`,
+								'cursor-pointer group px-3 py-2 flex items-center text-sm font-medium',
+							]" :style="[
+								key == currentTab
+									? {
+											'border-left': `4px solid ${layout.app?.theme[2]}`,
+											'background-color': `color-mix(in srgb, ${layout?.app?.theme[2]} 20%, white)`,
+											color: `color-mix(in srgb, ${layout?.app?.theme[3]} 50%, black)`,
+									  }
+									: { 'border-left': `4px solid transparent` },
+							]">
+                            <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true"
+                                class="flex-shrink-0 -ml-1 mr-2 h-4 w-4" :class="[
+									tabActive[key]
+										? 'text-gray-400 group-hover:text-gray-500'
+										: 'text-gray-400',
+								]" :icon="sectionData.icon" />
                             <span class="truncate">{{ sectionData.label }}</span>
+                            <FontAwesomeIcon v-if="sectionData.information" v-tooltip="sectionData.information"
+                                icon="fal fa-info-circle" class="ml-1 text-gray-400 hover:text-gray-700" fixed-width
+                                aria-hidden="true" />
                             <!-- {{ tabActive }} -- {{ key == currentTab }} -->
                         </div>
                     </template>
@@ -217,23 +336,33 @@ function connectToPlatform(routeName, parameters) {
             </aside>
 
             <!-- Section: Fields Form -->
-            <div :class="['px-4 sm:px-6 md:px-4', formData.fullLayout ? 'col-span-12' : 'col-span-9']">
+            <div :class="[
+					'px-4 sm:px-6 md:px-4',
+					formData.fullLayout ? 'col-span-12' : 'col-span-9',
+				]">
                 <!-- Section: Error in models -->
                 <Transition name="spin-to-down">
-                    <div v-if="usePage().props?.errors?.error_in_models" class="mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
-                        <FontAwesomeIcon v-if="usePage().props?.errors?.error_in_models?.match(/^(\d{3}):\s(.+)$/)?.[1] === '403'" icon="far fa-ban" class="text-lg" fixed-width aria-hidden="true" />
+                    <div v-if="usePage().props?.errors?.error_in_models"
+                        class="mt-3 flex gap-x-1 items-center bg-red-500 w-full p-3 text-white rounded">
+                        <FontAwesomeIcon v-if="
+								usePage().props?.errors?.error_in_models?.match(
+									/^(\d{3}):\s(.+)$/
+								)?.[1] === '403'
+							" icon="far fa-ban" class="text-lg" fixed-width aria-hidden="true" />
                         <div class="">{{ usePage().props.errors.error_in_models }}</div>
                     </div>
                 </Transition>
 
-                <template v-for="(sectionData, sectionIdx ) in formData.blueprint" :key="sectionIdx">
+                <template v-for="(sectionData, sectionIdx) in formData.blueprint" :key="sectionIdx">
                     <!-- If Section: all fields is not hidden -->
                     <template v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))">
                         <div v-show="sectionIdx == currentTab" class="pt-4">
                             <div class="sr-only absolute -top-16" :id="`field${sectionIdx}`" />
                             <!-- Title -->
-                            <div v-if="sectionData.title || sectionData.subtitle" class="mb-4 flex items-center gap-x-2" ref="_buttonRefs">
-                                <h3 v-if="sectionData.title" class="text-lg leading-6 font-medium text-gray-700 capitalize">
+                            <div v-if="sectionData.title || sectionData.subtitle" class="mb-4 flex items-center gap-x-2"
+                                ref="_buttonRefs">
+                                <h3 v-if="sectionData.title"
+                                    class="text-lg leading-6 font-medium text-gray-700 capitalize">
                                     {{ sectionData.title }}
                                 </h3>
                                 <p v-if="!sectionData.subtitle" class="max-w-2xl text-sm text-gray-500">
@@ -242,12 +371,18 @@ function connectToPlatform(routeName, parameters) {
                             </div>
 
                             <!-- Looping Field -->
-                            <div class="my-2 space-y-5 transition-all duration-1000 ease-in-out" :class="fieldGroupAnimateSection">
+                            <div class="my-2 space-y-5 transition-all duration-1000 ease-in-out"
+                                :class="fieldGroupAnimateSection">
                                 <template v-for="(fieldData, fieldName, index) in sectionData.fields" :key="index">
-                                    <!-- Field: is not hidden = true -->
-                                    <div v-if="!fieldData?.hidden" class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0">
-                                        <Action v-if="fieldData.type==='action'" :action="fieldData.action" :dataToSubmit="fieldData.action?.data" />
-                                        <FieldForm v-else :key="fieldName+index" ref="_fieldForm" :field="fieldName" :fieldData="fieldData" :args="formData.args" :refForms="_fieldForm" />
+                                    <!-- Field: is not hidden and skip price when TBC -->
+
+                                    <div v-if="!fieldData?.hidden && !( ['price','territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
+                                        class="py-2 mt-1 flex text-sm text-gray-700 sm:mt-0">
+
+                                        <Action v-if="fieldData.type === 'action'" :action="fieldData.action"
+                                            :dataToSubmit="fieldData.action?.data" />
+                                        <FieldForm v-else :key="fieldName + index" ref="_fieldForm" :field="fieldName"
+                                            :fieldData="fieldData" :args="formData.args" :refForms="_fieldForm" />
                                     </div>
                                 </template>
                             </div>
@@ -256,12 +391,18 @@ function connectToPlatform(routeName, parameters) {
                 </template>
 
                 <!-- For button Authorize -->
-                <div class="py-2 px-3 flex justify-end max-w-2xl" v-if="formData.blueprint?.[currentTab]?.button" :id="formData.title">
-                    <component :is="'button'"
-                               @click="connectToPlatform(formData.blueprint[currentTab].button.route.name, formData.blueprint[currentTab].button.route.parameters)"
-                               class="px-3 py-1.5 rounded"
-                               :class="[formData.blueprint[currentTab].button.disable ? 'bg-orange-200 cursor-default text-white' : 'text-gray-100 bg-green-500 hover:bg-green-600']"
-                    >
+                <div class="py-2 px-3 flex justify-end max-w-2xl" v-if="formData.blueprint?.[currentTab]?.button"
+                    :id="formData.title">
+                    <component :is="'button'" @click="
+							connectToPlatform(
+								formData.blueprint[currentTab].button.route.name,
+								formData.blueprint[currentTab].button.route.parameters
+							)
+						" class="px-3 py-1.5 rounded" :class="[
+							formData.blueprint[currentTab].button.disable
+								? 'bg-orange-200 cursor-default text-white'
+								: 'text-gray-100 bg-green-500 hover:bg-green-600',
+						]">
                         {{ formData.blueprint[currentTab].button.title }}
                     </component>
                 </div>
@@ -273,32 +414,27 @@ function connectToPlatform(routeName, parameters) {
             <template v-for="(sectionData, key) in formData.blueprint">
                 <!-- If Section: all fields is not hidden -->
                 <li v-if="!(Object.values(sectionData.fields).every((field: any) => field.hidden))"
-                    class="group font-medium"
-                    :aria-current="key === currentTab ? 'page' : undefined"
-                >
+                    class="group font-medium" :aria-current="key === currentTab ? 'page' : undefined">
                     <div class="bg-gray-200 py-3 pl-5 flex items-center">
                         <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"
-                                         class="flex-shrink-0 mr-3 h-5 w-5"
-                                         :class="[
-                                key === currentTab ? 'text-gray-400' : 'text-gray-500',
-                            ]" />
+                            class="flex-shrink-0 mr-3 h-5 w-5"
+                            :class="[key === currentTab ? 'text-gray-400' : 'text-gray-500']" />
                         <span class="capitalize truncate">{{ sectionData.label }}</span>
                     </div>
                     <div class="px-5">
                         <template v-for="(fieldData, fieldName, index) in formData.blueprint[key].fields">
-                            <!-- Field: is not hidden = true -->
-                            <div v-if="!fieldData?.hidden" class="py-4">
-                                <Action v-if="fieldData.type === 'action'" :action="fieldData.action" :dataToSubmit="fieldData.action?.data" />
-                                <FieldForm v-else :key="index" :field="fieldName" :fieldData="fieldData" :args="formData.args" :id="fieldData.name" :refForms="_fieldForm" />
+                            <!-- Field: is not hidden and skip price when TBC -->
+                            <div v-if="!fieldData?.hidden && !(['price', 'territories'].includes(fieldName) && sectionData.fields?.price?.value?.type === 'TBC')"
+                                class="py-4">
+                                <Action v-if="fieldData.type === 'action'" :action="fieldData.action"
+                                    :dataToSubmit="fieldData.action?.data" />
+                                <FieldForm v-else :key="index" :field="fieldName" :fieldData="fieldData"
+                                    :args="formData.args" :id="fieldData.name" :refForms="_fieldForm" />
                             </div>
                         </template>
                     </div>
                 </li>
             </template>
         </ul>
-
     </div>
 </template>
-
-
-

@@ -15,7 +15,7 @@ import {
   faAtom,
   faFolderTree,
   faChartLine,
-  faShoppingCart, faStickyNote, faMoneyBillWave
+  faShoppingCart, faStickyNote, faMoneyBillWave, faExclamationTriangle
 } from "@fal";
 import { faCheckCircle } from "@fas";
 
@@ -31,7 +31,7 @@ import CatalogueDashboard from "@/Components/Dropshipping/CatalogueDashboard.vue
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading";
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
-  faMoneyBillWave, faFolderOpen, faAtom
+  faMoneyBillWave, faFolderOpen, faAtom, faExclamationTriangle
 );
 
 const props = defineProps<{

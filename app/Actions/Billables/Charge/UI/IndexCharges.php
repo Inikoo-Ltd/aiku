@@ -70,14 +70,6 @@ class IndexCharges extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Charge::class);
-        // foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
-        //     $queryBuilder->whereElementGroup(
-        //         key: $key,
-        //         allowedElements: array_keys($elementGroup['elements']),
-        //         engine: $elementGroup['engine'],
-        //         prefix: $prefix
-        //     );
-        // }
 
         $queryBuilder->leftJoin('organisations', 'charges.organisation_id', '=', 'organisations.id')
         ->leftJoin('shops', 'charges.shop_id', '=', 'shops.id')
@@ -161,7 +153,7 @@ class IndexCharges extends OrgAction
 
             if ($parent instanceof Organisation) {
                 $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
-            };
+            }
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'customers_invoiced_all', label: __('customers'), canBeHidden: false, sortable: true, searchable: true)
@@ -186,17 +178,17 @@ class IndexCharges extends OrgAction
                 ),
                 'title'       => __('Charges'),
                 'pageHead'    => [
-                    'title'   => __('charges'),
+                    'title'   => __('Charges'),
                     'icon'    => [
-                        'icon'  => ['fal', 'fa-folder-tree'],
-                        'title' => __('charges')
+                        'icon'  => ['fal', 'fa-charging-station'],
+                        'title' => __('Charges')
                     ],
                     'actions' => [
                         $this->canEdit && $request->route()->getName() == 'grp.org.shops.show.billables.charges.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new charge'),
-                            'label'   => __('charge'),
+                            'tooltip' => __('New charge'),
+                            'label'   => __('Charge'),
                             'route'   => [
                                 'name'       => 'grp.org.shops.show.billables.charges.create',
                                 'parameters' => $request->route()->originalParameters()
@@ -239,7 +231,7 @@ class IndexCharges extends OrgAction
             ),
             'grp.overview.billables.charges.index' =>
             array_merge(
-                ShowGroupOverviewHub::make()->getBreadcrumbs($routeParameters),
+                ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
                         'name'       => $routeName,
@@ -254,20 +246,4 @@ class IndexCharges extends OrgAction
         };
     }
 
-    // protected function getElementGroups($parent): array
-    // {
-    //     return
-    //         [
-    //             'state' => [
-    //                 'label'    => __('State'),
-    //                 'elements' => array_merge_recursive(
-    //                     ChargeStateEnum::labels(),
-    //                     ChargeStateEnum::count($parent)
-    //                 ),
-    //                 'engine'   => function ($query, $elements) {
-    //                     $query->whereIn('product_categories.state', $elements);
-    //                 }
-    //             ]
-    //         ];
-    // }
 }

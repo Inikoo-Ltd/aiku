@@ -27,7 +27,7 @@ class UpdateModelHasContent extends OrgAction
     {
         $imageData = [];
         if (Arr::exists($modelData, 'image')) {
-            $imageData = ['image' => Arr::pull($modelData, 'image')]; //TODO: image handling
+            $imageData = ['image' => Arr::pull($modelData, 'image')];
         }
 
         $modelHasContent = $this->update($modelHasContent, $modelData);
@@ -49,9 +49,8 @@ class UpdateModelHasContent extends OrgAction
         ];
     }
 
-    public function asController(ModelHasContent $modelHasContent, ActionRequest $request)
+    public function asController(ModelHasContent $modelHasContent, ActionRequest $request): ModelHasContent
     {
-        // dd($request->all());
         $this->initialisationFromShop($modelHasContent->model->shop, $request);
 
         return $this->handle($modelHasContent, $this->validatedData);

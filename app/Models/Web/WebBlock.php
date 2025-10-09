@@ -16,13 +16,12 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $web_block_type_id
@@ -34,6 +33,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property string|null $migration_checksum
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\ExternalLink> $externalLinks
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Web\WebBlockHistory> $histories
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
  * @property-read \Illuminate\Database\Eloquent\Collection<int, ProductCategory> $productCategories
@@ -101,6 +101,11 @@ class WebBlock extends Model implements HasMedia
             ->orderByPivot('position')
             ->withPivot('id', 'position', 'show', 'show_logged_in', 'show_logged_out')
             ->withTimestamps();
+    }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(WebBlockHistory::class);
     }
 
 }

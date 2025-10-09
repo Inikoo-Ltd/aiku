@@ -12,10 +12,10 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateHistoricAssets;
 use App\Models\Billables\Charge;
 use App\Models\Billables\Rental;
 use App\Models\Billables\Service;
+use App\Models\Billables\ShippingZone;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Subscription;
-use App\Models\Ordering\ShippingZone;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 

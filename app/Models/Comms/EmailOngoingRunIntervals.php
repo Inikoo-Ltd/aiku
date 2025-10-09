@@ -11,8 +11,6 @@ namespace App\Models\Comms;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int|null $email_ongoing_run_id
  * @property int $dispatched_emails_all

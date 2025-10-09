@@ -17,18 +17,18 @@ enum CustomersTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case DASHBOARD = 'dashboard';
     case CUSTOMERS = 'customers';
+    case DASHBOARD = 'dashboard';
 
     public function blueprint(): array
     {
         return match ($this) {
             CustomersTabsEnum::DASHBOARD => [
-                'title' => __('dashboard'),
+                'title' => __('Dashboard'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],
             CustomersTabsEnum::CUSTOMERS => [
-                'title' => __('customers'),
+                'title' => __('Customers'),
                 'icon'  => 'fal fa-transporter',
             ],
         };

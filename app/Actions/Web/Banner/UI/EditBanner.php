@@ -35,14 +35,15 @@ class EditBanner extends OrgAction
     public function asController(Organisation $organisation, Shop $shop, Website $website, Banner $banner, ActionRequest $request): Banner
     {
         $this->initialisationFromShop($banner->shop, $request);
+
         return $this->handle($banner);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, Website $website, Banner $banner, ActionRequest $request): Banner
     {
-
         $this->initialisationFromFulfilment($fulfilment, $request);
+
         return $this->handle($banner);
     }
 
@@ -56,7 +57,7 @@ class EditBanner extends OrgAction
             'label'  => __('Banner properties'),
             'icon'   => 'fal fa-sliders-h',
             'fields' => [
-                'name'                 => [
+                'name' => [
                     'type'     => 'input',
                     'label'    => __('name'),
                     'value'    => $banner->name,
@@ -81,12 +82,12 @@ class EditBanner extends OrgAction
                             'icon'  => ['fal', 'fa-power-off'],
                             'label' => __('Shutdown banner'),
                             'route' => [
-                                'method' => 'patch',
+                                'method'     => 'patch',
                                 'name'       => 'grp.models.shop.website.banner.shutdown',
                                 'parameters' => [
-                                    'shop' => $banner->shop_id,
+                                    'shop'    => $banner->shop_id,
                                     'website' => $banner->website_id,
-                                    'banner' => $banner->id,
+                                    'banner'  => $banner->id,
                                 ]
                             ],
                         ],
@@ -104,14 +105,14 @@ class EditBanner extends OrgAction
                     'action' => [
                         'type'  => 'button',
                         'style' => 'delete',
-                        'label' => __('delete banner'),
+                        'label' => __('Delete banner'),
                         'route' => [
-                            'method' => 'delete',
+                            'method'     => 'delete',
                             'name'       => 'grp.models.shop.website.banner.delete',
                             'parameters' => [
-                                'shop' => $banner->shop_id,
+                                'shop'    => $banner->shop_id,
                                 'website' => $banner->website_id,
-                                'banner' => $banner->id,
+                                'banner'  => $banner->id,
                             ]
                         ],
                     ],
@@ -120,7 +121,7 @@ class EditBanner extends OrgAction
         ];
 
         $currentSection = 'properties';
-        if ($request->has('section') and Arr::has($sections, $request->get('section'))) {
+        if ($request->has('section') && Arr::has($sections, $request->get('section'))) {
             $currentSection = $request->get('section');
         }
 
@@ -135,7 +136,7 @@ class EditBanner extends OrgAction
                 'pageHead'    => [
                     'title'     => $banner->name,
                     'icon'      => [
-                        'tooltip' => __('banner'),
+                        'tooltip' => __('Banner'),
                         'icon'    => 'fal fa-sign'
                     ],
                     'iconRight' => $banner->state->stateIcon()[$banner->state->value],
@@ -158,9 +159,9 @@ class EditBanner extends OrgAction
                         'updateRoute' => [
                             'name'       => 'grp.models.shop.website.banner.update',
                             'parameters' => [
-                                'shop' => $banner->shop_id,
+                                'shop'    => $banner->shop_id,
                                 'website' => $banner->website_id,
-                                'banner' => $banner->id,
+                                'banner'  => $banner->id,
                             ]
                         ],
                     ]
@@ -176,27 +177,9 @@ class EditBanner extends OrgAction
         return ShowBanner::make()->getBreadcrumbs(
             $routeName,
             $routeParameters,
-            suffix: '('.__('editing').')'
+            suffix: '('.__('Editing').')'
         );
     }
 
-    private function getNavigation(?Banner $banner, ActionRequest $request): ?array
-    {
-        if (!$banner) {
-            return null;
-        }
 
-        $routeName = $request->route()->getName();
-
-        return match ($routeName) {
-            'customer.banners.banners.edit' => [
-                'label' => $banner->name,
-                'route' => [
-                    'name'       => $routeName,
-                    'parameters' => $request->route()->originalParameters()
-                ]
-            ],
-            default => null
-        };
-    }
 }

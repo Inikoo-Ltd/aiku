@@ -31,6 +31,9 @@ class StorePollOption extends OrgAction
         data_set($modelData, 'shop_id', $poll->shop_id);
 
         $pollOption = $poll->pollOptions()->create($modelData);
+        $pollOption->stats()->create([
+            'poll_id'        => $poll->id,
+        ]);
 
         //todo add Poll,Store,Org,Group hydrators here
 
@@ -93,5 +96,4 @@ class StorePollOption extends OrgAction
 
         return $this->handle($poll, $this->validatedData);
     }
-
 }

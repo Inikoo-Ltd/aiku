@@ -11,6 +11,8 @@ import { WebUser } from "@/types/web-user";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { RouteParams } from "@/types/route-params";
+import { trans } from 'laravel-vue-i18n'
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue";
 
 defineProps<{
     data: object
@@ -105,9 +107,25 @@ function webUserEditRoute(webUser: WebUser) {
             {{ useFormatTime(webUser.created_at) }}
         </template>
         <template #cell(action)="{ item: webUser }">
-            <Link :href="webUserEditRoute(webUser) as string">
-                <Button :style="'edit'" size="xs" v-tooltip="'Edit'" />
-            </Link>
+            <div class='flex items-center'>
+                <Link :href="webUserEditRoute(webUser) as string">
+                    <Button :style="'edit'" size="xs" v-tooltip="'Edit'" />
+                </Link>
+                <ModalConfirmationDelete
+                        :routeDelete="webUser.delete_route"
+                        :title="trans('Are you sure you want to delete this web user?')"
+                        isFullLoading
+                    >
+                        <template #default="{ isOpenModal, changeModel }">
+                            <Button
+                                icon="fal fa-trash-alt"
+                                type="negative"
+                                @click="changeModel"
+                                size="xs"
+                            />
+                        </template>
+                    </ModalConfirmationDelete>
+            </div>
         </template>
     </Table>
 

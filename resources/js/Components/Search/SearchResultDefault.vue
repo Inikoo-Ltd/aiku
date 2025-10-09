@@ -12,7 +12,6 @@ import Icon from "@/Components/Icon.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useTruncate } from "@/Composables/useTruncate"
-import { capitalize } from 'lodash-es'
 import { Icon as IconTS } from "@/types/Utils/Icon"
 
 const props = defineProps<{
@@ -65,7 +64,7 @@ const isLoading = ref(false)
 
 <template>
     <component :is="data?.route?.name ? Link : 'div'" as="a"
-        :href="data?.route?.name ? route(data?.route.name, data?.route.parameters) : ''"
+        :href="data?.route?.name ? route(data?.route?.name, data?.route?.parameters) : ''"
         class="flex gap-x-2 items-center border-b border-gray-300" @start="() => (isLoading = true)" @finish="() => emits('finishVisit', false)">
         <div v-if="isLoading"
             class="fixed inset-0 bottom-0 bg-black/50 flex flex-col justify-center items-center text-white cursor-default">
@@ -78,7 +77,7 @@ const isLoading = ref(false)
 
                 <div class="flex py-1 flex-row items-center gap-y-1.5">
 
-                    <h2 xclass="data?.noCapitalise ? '' : 'capitalize'" class="leading-none font-semibold text-base mr-2">
+                    <h2 class="leading-none font-semibold text-base mr-2">
                         <span v-if="data?.model" class="leading-none text-gray-400 mr-2 block sm:inline">
                             {{ data?.model }}
                         </span>
@@ -111,7 +110,7 @@ const isLoading = ref(false)
                     <template v-for="meta, index in data?.meta">
                         <div v-tooltip="meta.tooltip" class="flex items-center gap-x-1 text-gray-500 text-xs">
                             <!-- <Icon v-if='meta?.icon' :data="meta.icon" size="sm" /> -->
-                            <FontAwesomeIcon v-if="meta?.icon" v-tooltip="meta?.icon?.title ? meta?.icon?.title : capitalize(meta?.icon?.tooltip ?? '')" aria-hidden="true" :icon="meta?.icon?.icon" size="sm" :class="meta?.icon?.class" fixed-width />
+                            <FontAwesomeIcon v-if="meta?.icon" v-tooltip="meta?.icon?.title ? meta?.icon?.title : meta?.icon?.tooltip" aria-hidden="true" :icon="meta?.icon?.icon" size="sm" :class="meta?.icon?.class" fixed-width />
 
                             <template v-if="meta.type === 'date'">
                                 {{ useFormatTime(meta.label) }}

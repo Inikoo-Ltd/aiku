@@ -40,7 +40,7 @@ class EditWarehouseArea extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('warehouse areas'),
+                'title'       => __('Warehouse areas'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
@@ -51,7 +51,7 @@ class EditWarehouseArea extends OrgAction
                 'pageHead'    => [
                     'title'   => $warehouseArea->name,
                     'icon'    => [
-                        'title' => __('warehouses areas'),
+                        'title' => __('Warehouses areas'),
                         'icon'  => 'fal fa-map-signs'
                     ],
                     'actions' => [
@@ -79,6 +79,13 @@ class EditWarehouseArea extends OrgAction
                                     'type'  => 'input',
                                     'label' => __('name'),
                                     'value' => $warehouseArea->name
+                                ],
+                                'picking_position' => [
+                                    'type'    => 'input',
+                                    'label'   => __('picking position'),
+                                    'value'   => $warehouseArea->picking_position,
+                                    'required' => false,
+                                    'numeric' => true
                                 ],
                             ]
                         ]

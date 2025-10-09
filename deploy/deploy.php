@@ -35,6 +35,11 @@ task('deploy:sync-octane-anchor', function () {
 desc('Stops inertia SSR server');
 task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod');
 
+
+desc('Refresh vue after deployment');
+task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
+
+
 set('keep_releases', 15);
 
 set('shared_dirs', ['storage', 'private']);
@@ -46,26 +51,6 @@ set('shared_files', [
     '.env',
     '.env.testing',
     '.user.ini',
-    'aurora_accounting_migration.sh',
-    'aurora_catalogue_migration.sh',
-    'aurora_comms_migration.sh',
-    'aurora_crm_migration.sh',
-    'aurora_ds_migration.sh',
-    'aurora_fulfilment_migration.sh',
-    'aurora_hr_migration.sh',
-    'aurora_inventory_migration.sh',
-    'aurora_orders_migration.sh',
-    'aurora_procurement_migration.sh',
-    'aurora_sales_migration.sh',
-    'aurora_stock_migration.sh',
-    'aurora_warehouse_migration.sh',
-    'aurora_comms_migration.sh',
-    'aurora_discounts_migration.sh',
-    'aurora_website_migration.sh',
-    'aurora_create_group.sh',
-    'aurora_create_organisations.sh',
-    'wowsbar_create_organisations.sh',
-    'aurora_start_migration.sh',
     'reset_db.sh',
     'seed_currency_exchanges_staging.sh',
     'seed_currency_exchanges.sh',
@@ -73,6 +58,7 @@ set('shared_files', [
 ]);
 desc('Deploys your project');
 task('deploy', [
+    'deploy:unlock',
     'deploy:prepare',
     'deploy:vendors',
     'deploy:set-release',
@@ -88,4 +74,5 @@ task('deploy', [
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
     'artisan:inertia:stop-ssr',
+    'artisan:refresh_vue',
 ]);

@@ -29,31 +29,31 @@ enum ArtefactTabsEnum: string
     {
         return match ($this) {
             // ArtefactTabsEnum::DASHBOARD => [
-            //     'title' => __('stats'),
+            //     'title' => __('Stats'),
             //     'icon'  => 'fal fa-chart-line',
             // ],
             ArtefactTabsEnum::MANUFACTURE_TASKS => [
-                'title' => __('manufacture tasks'),
+                'title' => __('Manufacture tasks'),
                 'icon'  => 'fal fa-hamsa',
             ],
             ArtefactTabsEnum::RAW_MATERIALS => [
-                'title' => __('raw materials'),
+                'title' => __('Raw materials'),
                 'icon'  => 'fal fa-hamsa',
             ],
             // ArtefactTabsEnum::DATA => [
             //     'align' => 'right',
             //     'type'  => 'icon',
-            //     'title' => __('data'),
+            //     'title' => __('Data'),
             //     'icon'  => 'fal fa-database',
             // ],
             ArtefactTabsEnum::HISTORY => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
             ],
             ArtefactTabsEnum::SHOWCASE => [
-                'title' => __('warehouse'),
+                'title' => __('Warehouse'),
                 'icon'  => 'fas fa-info-circle',
             ],
         };

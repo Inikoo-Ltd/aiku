@@ -12,6 +12,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faTrashAlt } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { useFormatTime } from "@/Composables/useFormatTime";
+import TablePollOptions from "@/Components/Tables/Grp/Org/CRM/TablePollOptions.vue";
+import type { Component } from "vue";
+import { computed, ref } from "vue";
+import { useTabChange } from "@/Composables/tab-change";
+import Tabs from "@/Components/Navigation/Tabs.vue";
 
 library.add(faTrashAlt);
 
@@ -19,25 +24,48 @@ library.add(faTrashAlt);
 const props = defineProps<{
     title: string
     pageHead: TSPageHeading
+    tabs: {
+        current: string
+        navigation: {}
+    }
     data: {
         id: number
         label: string
         type: string
+        type_value: string
         in_registration: boolean
         in_registration_required: boolean
         created_at: string
         options?: { id: number, label: string }[]
         poll_replies?: { answer?: string, idx?: number }[]
     }
+    showcase: {}
+    poll_options: {}
 
 
 }>();
-
 
 const stats = [
     { id: 1, name: trans("Created at"), value: useFormatTime(props.data?.created_at) },
     { id: 2, name: trans("Type"), value: props.data.type }
 ];
+
+
+let currentTab = ref(props.tabs.current);
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
+
+const component = computed(() => {
+    const components: Record<string, Component> = {
+        poll_options: TablePollOptions
+    };
+
+    if (currentTab.value === 'poll_options' && !props.poll_options) {
+        return null;
+    }
+
+    return components[currentTab.value];
+});
+
 </script>
 
 
@@ -67,6 +95,10 @@ const stats = [
         </template>
     </PageHeading>
 
+    <div class="max-w-2xl mx-auto px-4 pt-4 italic text-sm text-gray-400">
+        {{ trans("Preview how it looks in registration form") }}
+    </div>
+
     <div class="w-full max-w-xl mx-auto my-8" :class="data.in_registration ? 'opacity-60' : ''">
 
         <div class="block text-sm font-medium text-gray-700">
@@ -76,38 +108,47 @@ const stats = [
 
         <div class="mt-2">
             <Select
-            v-if="data.type === 'option'"
-            xv-model="form.poll_replies[idx].answer"
-            :modelValue="'ewewqewqeq'"
-            xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-            :options="data.options"
-            optionLabel="label"
-            optionValue="id"
-            :placeholder="`Please Choose One`"
-            class="w-full" />
+                v-if="data.type_value === 'option'"
+                xv-model="form.poll_replies[idx].answer"
+                :modelValue="'ewewqewqeq'"
+                xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
+                :options="data.options"
+                optionLabel="label"
+                optionValue="id"
+                :placeholder="`Please Choose One`"
+                class="w-full" />
             <Textarea
-            v-else
-            :modelValue="'hehehehe'"
-            xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
-            rows="5"
-            cols="30"
-            placeholder="Your answer…"
-            class="w-full border rounded-md p-2" />
+                v-else
+                :modelValue="'hehehehe'"
+                xupdate:model-value="(e) => form.clearErrors(`poll_replies.${idx}`)"
+                rows="5"
+                cols="30"
+                placeholder="Your answer…"
+                class="w-full border rounded-md p-2" />
         </div>
     </div>
 
     <hr class="my-5 border border-gray-200" />
 
-    <div class="xmx-auto grid max-w-7xl lg:grid-cols-2">
+    <div class="xmx-auto grid max-w-7xl lg:grid-cols-2 mb-10">
         <div class="px-6 xpb-24 xpt-16 xsm:pb-32 xsm:pt-20 lg:px-8 xlg:pt-32">
             <div class="xmx-auto max-w-2xl lg:mr-0 lg:max-w-lg">
                 <dl class="mt-16 grid max-w-xl grid-cols-1 gap-8 sm:mt-20 sm:grid-cols-2 xl:mt-16">
-                    <div v-for="stat in stats" :key="stat.id" class="flex flex-col gap-y-3 border-l border-gray-900/10 pl-6">
+                    <div v-for="stat in stats" :key="stat.id" class="flex flex-col  border-l border-gray-900/10 pl-6">
                         <dt class="text-sm/6 text-gray-600">{{ stat.name }}</dt>
-                        <dd class="order-first text-2xl font-semibold tracking-tight">{{ stat.value }}</dd>
+                        <dd class="text-2xl font-semibold tracking-tight">{{ stat.value }}</dd>
                     </div>
                 </dl>
             </div>
         </div>
     </div>
+    <template v-if="data.type !== 'open_question'">
+        <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate" />
+        <component
+            :is="component"
+            :data="props[currentTab as keyof typeof props]"
+            :tab="currentTab"
+            :handleTabUpdate
+            />
+    </template>
 </template>

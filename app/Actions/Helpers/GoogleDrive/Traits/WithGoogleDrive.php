@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\GoogleDrive\Traits;
 
+use App\Actions\Traits\WithActionUpdate;
 use Exception;
 use Google_Client;
 use Google_Service_Drive;
@@ -18,6 +19,7 @@ use Illuminate\Support\Arr;
 trait WithGoogleDrive
 {
     use WithTokenPath;
+    use WithActionUpdate;
 
     /**
      * @throws \Exception
@@ -27,9 +29,9 @@ trait WithGoogleDrive
         $client = new Google_Client();
         $google = Arr::get($organisation->settings, 'google');
 
-        $tokenPath = $this->getTokenPath();
+        $tokenPath = $this->getTokenPath($organisation);
         $authCode  = request()->query('code');
-        $client->setRedirectUri('http://localhost:5173');
+        $client->setRedirectUri(route('grp.org.settings.google_drive.callback', $organisation->slug));
         $client->setApplicationName('Aiku google drive manager');
         $client->setAuthConfig([
             'client_id'     => Arr::get($google, 'id'),
@@ -83,10 +85,10 @@ trait WithGoogleDrive
     {
         $client = new Google_Client();
 
-        $tokenPath       = $this->getTokenPath();
+        $tokenPath       = $this->getTokenPath($organisation);
         $authCode        = request()->query('code');
 
-        $client->setRedirectUri('http://localhost:5173');
+        $client->setRedirectUri(route('grp.org.settings.google_drive.callback', $organisation->slug));
         $client->setApplicationName('Aiku google drive manager');
         $client->setAuthConfig([
             'client_id'     => Arr::get($organisation->settings, 'google.id'),
@@ -117,6 +119,15 @@ trait WithGoogleDrive
             mkdir(dirname($tokenPath), 0700, true);
         }
         file_put_contents($tokenPath, json_encode($client->getAccessToken()));
+
+        $this->update($organisation, [
+            'settings' => [
+                'google' => [
+                    ...$organisation->settings['google'] ?? [],
+                    'token' => $client->getAccessToken()
+                ]
+            ]
+        ]);
 
         return redirect()->route('grp.sysadmin.settings.edit');
     }

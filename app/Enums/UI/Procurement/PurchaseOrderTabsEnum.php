@@ -28,26 +28,26 @@ enum PurchaseOrderTabsEnum: string
         return match ($this) {
 
             PurchaseOrderTabsEnum::TRANSACTIONS  => [
-                'title' => __('transactions'),
+                'title' => __('Transactions'),
                 'icon'  => 'fal fa-bars',
             ],
             PurchaseOrderTabsEnum::PRODUCTS  => [
-                'title' => __('products'),
+                'title' => __('Products'),
                 'icon'  => 'fal fa-box-usd',
             ],
             // PurchaseOrderTabsEnum::SHOWCASE => [
-            //     'title' => __('purchase orders'),
+            //     'title' => __('Purchase orders'),
             //     'icon'  => 'fal fa-info-circle',
             // ],
             PurchaseOrderTabsEnum::HISTORY     => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             PurchaseOrderTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
                 'type'  => 'icon'
             ],

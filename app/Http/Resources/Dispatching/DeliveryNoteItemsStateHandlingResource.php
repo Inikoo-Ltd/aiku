@@ -27,11 +27,25 @@ use Illuminate\Support\Facades\DB;
  * @property mixed $quantity_not_picked
  * @property mixed $quantity_dispatched
  * @property mixed $org_stock_slug
+ * @property mixed $packed_in
+ * @property mixed $warehouse_area_picking_position
+ * @property mixed $warehouse_area_code
  */
 class DeliveryNoteItemsStateHandlingResource extends JsonResource
 {
     public function toArray($request): array
     {
+
+
+
+        $requiredFactionalData =
+            riseDivisor(
+                divideWithRemainder(
+                    findSmallestFactors($this->quantity_required)
+                ),
+                $this->packed_in
+            );
+
         $deliveryNoteItem = DeliveryNoteItem::find($this->id);
         $fullWarning      = [
             'disabled' => false,
@@ -54,6 +68,8 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
                 'locations.code as location_code',
                 'locations.slug as location_slug',
             ])
+
+            ->selectRaw('\''.$this->packed_in.'\' as org_stock_packed_in')
             ->selectRaw(
                 '(
         SELECT concat(sum(quantity),\';\',string_agg(id::char,\',\')) FROM pickings
@@ -66,42 +82,56 @@ class DeliveryNoteItemsStateHandlingResource extends JsonResource
             ->orderBy('picking_priority')->get();
 
 
+        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked - $this->quantity_not_picked);
 
-        $quantityToPick = max(0, $this->quantity_required - $this->quantity_picked);
+
 
 
         $isPicked = $quantityToPick == 0;
         $isPacked = $isPicked && $this->quantity_packed == $this->quantity_picked;
 
 
-
         $pickings = Picking::where('delivery_note_item_id', $this->id)->get();
 
 
+        $warehouseArea = '';
+        if ($this->warehouse_area_picking_position) {
+            $warehouseArea = __('Sort:').': '.$this->warehouse_area_picking_position.' ';
+        }
+
+        if ($this->warehouse_area_code) {
+            $warehouseArea .= __('Area').': '.$this->warehouse_area_code;
+        }
+        if ($warehouseArea == '') {
+            $warehouseArea = __('No Area');
+        }
+
         return [
-            'id'        => $this->id,
-            'is_picked' => $isPicked,
+            'id'                           => $this->id,
+            'is_picked'                    => $isPicked,
+            'state'                        => $this->state,
+            'state_icon'                   => $this->state->stateIcon()[$this->state->value],
+            'quantity_required'            => $this->quantity_required,
+            'quantity_to_pick'             => $quantityToPick,
+            'quantity_to_pick_fractional'  => riseDivisor(divideWithRemainder(findSmallestFactors($quantityToPick)), $this->packed_in),
+            'quantity_picked'              => $this->quantity_picked,
+            'quantity_not_picked'          => $this->quantity_not_picked,
+            'quantity_packed'              => $this->quantity_packed,
+            'quantity_dispatched'          => $this->quantity_dispatched,
+            'org_stock_code'               => $this->org_stock_code,
+            'org_stock_slug'               => $this->org_stock_slug,
+            'org_stock_name'               => $this->org_stock_name,
+            'locations'                    => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
+            'pickings'                     => PickingResource::collection($pickings),
+            'packings'                     => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
+            'warning'                      => $fullWarning,
+            'is_handled'                   => $this->is_handled,
+            'is_packed'                    => $isPacked,
+            'quantity_required_fractional' => $requiredFactionalData,
+            'warehouse_area'                  => $warehouseArea,
 
-            'state'               => $this->state,
-            'state_icon'          => $this->state->stateIcon()[$this->state->value],
-            'quantity_required'   => $this->quantity_required,
-            'quantity_to_pick'    => $quantityToPick,
-            'quantity_picked'     => $this->quantity_picked,
-            'quantity_not_picked' => $this->quantity_not_picked,
-            'quantity_packed'     => $this->quantity_packed,
-            'quantity_dispatched' => $this->quantity_dispatched,
-            'org_stock_code'      => $this->org_stock_code,
-            'org_stock_slug'      => $this->org_stock_slug,
-            'org_stock_name'      => $this->org_stock_name,
-            'locations'           => $pickingLocations->isNotEmpty() ? LocationOrgStocksForPickingActionsResource::collection($pickingLocations) : [],
-            'pickings'            => PickingsResource::collection($pickings),
 
-            'packings'           => $deliveryNoteItem->packings ? PackingsResource::collection($deliveryNoteItem->packings) : [],
-            'warning'            => $fullWarning,
-            'is_handled'         => $this->is_handled,
-            'is_packed'          => $isPacked,
-
-            'upsert_picking_route'      => [
+            'upsert_picking_route' => [
                 'name'       => 'grp.models.delivery_note_item.picking.upsert',
                 'parameters' => [
                     'deliveryNoteItem' => $this->id

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Traits\Authorisations;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use Lorisleiva\Actions\ActionRequest;
 
 trait WithCRMEditAuthorisation
@@ -20,8 +21,7 @@ trait WithCRMEditAuthorisation
 
         $routeName = $request->route()->getName();
 
-        if (str_starts_with($routeName, 'grp.model.')) {
-            //todo fine tune this
+        if (str_starts_with($routeName, 'grp.model.') || str_starts_with($routeName, 'grp.json.')) {
             return $request->user()->authTo(
                 [
                     "crm.{$this->shop->id}.prospects.edit",
@@ -40,6 +40,26 @@ trait WithCRMEditAuthorisation
                     "crm.{$this->shop->id}.edit"
                 ]
             );
+        } elseif (str_starts_with($routeName, 'grp.org.fulfilments.show.crm.')) {
+            return $request->user()->authTo(
+                [
+                    "fulfilment-shop.{$this->shop->fulfilment->id}.edit",
+                ]
+            );
+        } elseif (str_starts_with($routeName, 'grp.models.')) {
+            if ($this->shop->type == ShopTypeEnum::FULFILMENT) {
+                return $request->user()->authTo(
+                    [
+                        "fulfilment-shop.{$this->shop->fulfilment->id}.edit",
+                    ]
+                );
+            } else {
+                return $request->user()->authTo(
+                    [
+                        "crm.{$this->shop->id}.edit"
+                    ]
+                );
+            }
         }
 
 

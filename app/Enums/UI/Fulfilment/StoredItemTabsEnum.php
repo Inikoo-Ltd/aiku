@@ -28,29 +28,29 @@ enum StoredItemTabsEnum: string
     {
         return match ($this) {
             StoredItemTabsEnum::SHOWCASE => [
-                'title' => __('stored item'),
+                'title' => __('Stored item'),
                 'icon'  => 'fas fa-info-circle',
             ],
             StoredItemTabsEnum::PALLETS => [
-                'title' => __('pallets'),
+                'title' => __('Pallets'),
                 'icon'  => 'fal fa-pallet',
             ],
             StoredItemTabsEnum::MOVEMENTS => [
-                'title' => __('movements'),
+                'title' => __('Movements'),
                 'icon'  => 'fal fa-exchange',
             ],
             StoredItemTabsEnum::AUDITS => [
-                'title' => __('audits'),
+                'title' => __('Audits'),
                 'icon'  => 'fal fa-ballot-check',
             ],
             StoredItemTabsEnum::DATA => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('data'),
+                'title' => __('Data'),
                 'icon'  => 'fal fa-database',
             ],
             StoredItemTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',

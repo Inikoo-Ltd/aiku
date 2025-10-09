@@ -67,7 +67,7 @@ class EditQuery extends InertiaAction
         ];
 
         $currentSection = 'properties';
-        if ($request->has('section') and Arr::has($sections, $request->get('section'))) {
+        if ($request->has('section') && Arr::has($sections, $request->get('section'))) {
             $currentSection = $request->get('section');
         }
 
@@ -86,7 +86,7 @@ class EditQuery extends InertiaAction
                 'pageHead' => [
                     'title' => $query->name,
                     'icon'  => [
-                        'title' => __('query'),
+                        'title' => __('Query'),
                         'icon'  => 'fal fa-globe'
                     ],
 

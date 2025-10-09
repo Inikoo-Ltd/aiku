@@ -41,7 +41,7 @@ enum FulfilmentCustomerPalletsTabsEnum: string
             ],
 
             FulfilmentCustomerPalletsTabsEnum::RETURNED => [
-                'title' => __('returned'). " ({$fulfilmentCustomer->number_pallets_status_returned})",
+                'title' => __('Returned'). " ({$fulfilmentCustomer->number_pallets_status_returned})",
                 'icon'  => 'fal fa-arrow-alt-from-left',
             ],
 

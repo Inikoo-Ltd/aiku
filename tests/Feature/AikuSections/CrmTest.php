@@ -13,7 +13,6 @@ use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\Comms\Mailshot\StoreMailshot;
 use App\Actions\CRM\BackInStockReminder\DeleteBackInStockReminder;
 use App\Actions\CRM\BackInStockReminder\StoreBackInStockReminder;
-use App\Actions\CRM\BackInStockReminder\UpdateBackInStockReminder;
 use App\Actions\CRM\Customer\AddDeliveryAddressToCustomer;
 use App\Actions\CRM\Customer\DeleteCustomerDeliveryAddress;
 use App\Actions\CRM\Customer\HydrateCustomers;
@@ -378,25 +377,6 @@ test('add back in stock reminder to customer', function (Customer $customer) {
     return $reminder;
 })->depends('create customer');
 
-test('update back in stock reminder', function (BackInStockReminder $reminder) {
-    $targetDate = Carbon::now()->addDays(2)->startOfMinute();
-
-    $updatedReminder = UpdateBackInStockReminder::make()->action(
-        backInStockReminder: $reminder,
-        modelData: [
-            'last_fetched_at' => $targetDate
-        ],
-        strict: false
-    );
-
-    $updatedReminder->refresh();
-
-    expect($updatedReminder)->toBeInstanceOf(BackInStockReminder::class);
-
-    // ->and($updatedFavourite->last_fetched_at)->toEqual($targetDate); //:(
-
-    return $updatedReminder;
-})->depends('add back in stock reminder to customer');
 
 test('delete back in stock reminder', function (BackInStockReminder $reminder) {
     $deletedReminder = DeleteBackInStockReminder::make()->action(
@@ -406,7 +386,7 @@ test('delete back in stock reminder', function (BackInStockReminder $reminder) {
     expect(BackInStockReminder::find($deletedReminder->id))->toBeNull();
 
     return $deletedReminder;
-})->depends('update back in stock reminder');
+})->depends('add back in stock reminder to customer');
 
 test('create customer note', function (Customer $customer) {
     expect($customer)->toBeInstanceOf(Customer::class)
@@ -1169,7 +1149,7 @@ test('withdraw balance customer', function (Customer $customer) {
 })->depends('add balance customer');
 
 test('Customer basket hydrator', function () {
-    $customer = Customer::first();
+    $customer = Customer::find(1);
     CustomerHydrateBasket::run($customer);
     expect($customer)->toBeInstanceOf(Customer::class)
         ->and($customer->amount_in_basket)->toEqual(0)

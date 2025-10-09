@@ -9,11 +9,13 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\Packing\StorePacking;
+use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,6 +27,9 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
     private DeliveryNote $deliveryNote;
     protected User $user;
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
         data_set($modelData, 'packed_at', now());
@@ -34,10 +39,26 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         foreach ($deliveryNote->deliveryNoteItems->filter(fn ($item) => $item->packings->isEmpty()) as $item) {
             StorePacking::make()->action($item, $this->user, []);
         }
+        $defaultParcel = [
+            [
+                'weight' => $deliveryNote->effective_weight / 1000,
+                'dimensions' => [5, 5, 5]
+            ]
+        ];
 
-        UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first());
+        data_set($modelData, 'parcels', $defaultParcel);
+
+        if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+            UpdateOrderStateToPacked::make()->action($deliveryNote->orders->first(), true);
+        }
 
         $deliveryNote = $this->update($deliveryNote, $modelData);
+
+        if ($deliveryNote->pickingSessions) {
+            foreach ($deliveryNote->pickingSessions as $pickingSession) {
+                AutoFinishPackingPickingSession::run($pickingSession);
+            }
+        }
 
         OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
             ->delay($this->hydratorsDelay);
@@ -46,6 +67,9 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
     }
 
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
         $this->user = $request->user();
@@ -55,6 +79,9 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         return $this->handle($deliveryNote);
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
         $this->user = $user;

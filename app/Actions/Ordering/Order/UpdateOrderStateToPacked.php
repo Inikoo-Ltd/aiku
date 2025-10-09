@@ -24,13 +24,17 @@ class UpdateOrderStateToPacked extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, bool $fromDeliveryNote = false): Order
     {
         $data = [
             'state' => OrderStateEnum::PACKED
         ];
 
-        if (in_array($order->state, [\App\Enums\Ordering\Order\OrderStateEnum::HANDLING, \App\Enums\Ordering\Order\OrderStateEnum::FINALISED])) {
+        if (in_array($order->state, [
+            OrderStateEnum::HANDLING,
+            OrderStateEnum::FINALISED,
+            OrderStateEnum::IN_WAREHOUSE,
+        ]) || $fromDeliveryNote) {
             $order->transactions()->update([
                 'state' => TransactionStateEnum::PACKED,
             ]);
@@ -44,17 +48,17 @@ class UpdateOrderStateToPacked extends OrgAction
             return $order;
         }
 
-        throw ValidationException::withMessages(['status' => 'You can not change the status to submitted']);
+        throw ValidationException::withMessages(['status' => 'Error, order state is '.$order->state->value]);
     }
 
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function action(Order $order): Order
+    public function action(Order $order, bool $fromDeliveryNote): Order
     {
         $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
-        return $this->handle($order);
+        return $this->handle($order, $fromDeliveryNote);
     }
 
     /**

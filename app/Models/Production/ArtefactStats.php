@@ -11,8 +11,6 @@ namespace App\Models\Production;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $artefact_id
  * @property \Illuminate\Support\Carbon|null $created_at

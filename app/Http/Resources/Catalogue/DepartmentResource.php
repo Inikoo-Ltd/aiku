@@ -33,9 +33,9 @@ class DepartmentResource extends JsonResource
         $urlMaster                              = null;
         if ($department->master_product_category_id) {
             $urlMaster = [
-                'name'       => 'grp.masters.master_departments.show',
+                'name'       => 'grp.helpers.redirect_master_product_category',
                 'parameters' => [
-                    $department->masterProductCategory->slug
+                    $department->masterProductCategory->id
                 ]
             ];
         }
@@ -60,7 +60,17 @@ class DepartmentResource extends JsonResource
             'show_in_website'  => $department->show_in_website,
             'url_master'       => $urlMaster,
             'image'           => $department->imageSources(720, 480),
-
+            'description'   => $department->description,
+            'description_title' => $department->description_title,
+            'description_extra' => $department->description_extra,
+            'name_i8n'              => $this->getTranslations('name_i8n'),
+            'description_i8n'       => $this->getTranslations('description_i8n'),
+            'description_title_i8n' => $this->getTranslations('description_title_i8n'),
+            'description_extra_i8n' => $this->getTranslations('description_extra_i8n'),
+            'is_name_reviewed' => $department->is_name_reviewed,
+            'is_description_title_reviewed' => $department->is_description_title_reviewed,
+            'is_description_reviewed' => $department->is_description_reviewed,
+            'is_description_extra_reviewed' => $department->is_description_extra_reviewed
         ];
     }
 }

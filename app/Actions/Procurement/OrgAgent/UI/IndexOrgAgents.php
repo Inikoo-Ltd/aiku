@@ -48,11 +48,20 @@ class IndexOrgAgents extends OrgAction
 
         return $queryBuilder
             ->defaultSort('organisations.code')
-            ->select(['organisations.code','organisations.name', 'org_agents.slug', 'organisations.location', 'number_org_suppliers', 'number_stock_deliveries', 'number_purchase_orders', 'number_org_supplier_products'])
+            ->select([
+                'organisations.code',
+                'organisations.name',
+                'org_agents.slug',
+                'organisations.location as location',
+                'number_org_suppliers',
+                'number_stock_deliveries',
+                'number_purchase_orders',
+                'number_org_supplier_products'
+            ])
             ->leftJoin('agents', 'agents.id', 'org_agents.agent_id')
             ->leftJoin('organisations', 'organisations.id', 'agents.organisation_id')
             ->leftJoin('org_agent_stats', 'org_agent_stats.org_agent_id', 'org_agents.id')
-            ->allowedSorts(['code', 'name', 'number_purchase_orders', 'number_org_suppliers', 'number_stock_deliveries', 'number_org_supplier_products' ])
+            ->allowedSorts(['code', 'name', 'number_purchase_orders', 'number_org_suppliers', 'number_stock_deliveries', 'number_org_supplier_products', 'location'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -64,20 +73,20 @@ class IndexOrgAgents extends OrgAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
             $table
                 ->withGlobalSearch()
                 ->withEmptyState(
                     [
-                        'title' => __('no agents'),
+                        'title' => __('No agents'),
                         'count' => $organisation->procurementStats->number_org_agents,
 
                     ]
                 )
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'location', label: __('location'), canBeHidden: false)
+                ->column(key: 'location', label: __('location'), sortable: true, canBeHidden: false)
                 ->column(key: 'number_org_supplier_products', label: __('supplier products'), shortLabel: 'SP', canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_purchase_orders', label: __('purchase orders'), shortLabel: 'PO', canBeHidden: false, sortable: true, searchable: true)
 
@@ -126,16 +135,16 @@ class IndexOrgAgents extends OrgAction
                 'title'       => __('agents'),
                 'pageHead'    => [
                     'model'   => __('Procurement'),
-                    'title'   => __('agents'),
+                    'title'   => __('Agents'),
                     'icon'    => [
-                        'title' => __('website'),
+                        'title' => __('Website'),
                         'icon'  => 'fal fa-people-arrows'
                     ],
                     'actions' => [
                         $this->canEdit && $request->route()->getName() == 'grp.org.procurement.org_agents.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new agent'),
+                            'tooltip' => __('New agent'),
                             'label'   => __('agent'),
                             'route'   => [
                                 'name'       => 'grp.org.procurement.org_agents.create',

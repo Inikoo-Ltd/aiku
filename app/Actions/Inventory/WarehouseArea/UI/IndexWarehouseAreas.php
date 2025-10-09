@@ -97,6 +97,7 @@ class IndexWarehouseAreas extends OrgAction
                     'warehouse_areas.code',
                     'warehouse_areas.id',
                     'warehouse_areas.name',
+                    'warehouse_areas.picking_position',
                     'number_locations',
                     'warehouses.slug as warehouse_slug',
                     'warehouse_areas.slug',
@@ -118,7 +119,7 @@ class IndexWarehouseAreas extends OrgAction
                     $query->where('warehouse_areas.organisation_id', $parent->id);
                 }
             })
-            ->allowedSorts(['code', 'name', 'number_locations'])
+            ->allowedSorts(['code', 'name', 'number_locations','picking_position', 'stock_value', 'number_empty_locations'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -145,7 +146,7 @@ class IndexWarehouseAreas extends OrgAction
                             'action'      => $this->canEdit && $parent->stats->number_warehouses == 0 ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new warehouse'),
+                                'tooltip' => __('New warehouse'),
                                 'label'   => __('warehouse'),
                                 'route'   => [
                                     'name'       => 'grp.org.warehouses.create',
@@ -161,7 +162,7 @@ class IndexWarehouseAreas extends OrgAction
                             'action'      => $this->canEdit ? [
                                 'type'    => 'button',
                                 'style'   => 'create',
-                                'tooltip' => __('new warehouse area'),
+                                'tooltip' => __('New warehouse area'),
                                 'label'   => __('warehouse area'),
                                 'route'   => [
                                     'name'       => 'grp.org.warehouses.show.infrastructure.warehouse_areas.create',
@@ -176,6 +177,7 @@ class IndexWarehouseAreas extends OrgAction
                     }
                 )
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'picking_position', label: __('Picking Order'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'stock_value', label: __('stock value'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_empty_locations', label: __('empty locations'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_locations', label: __('locations'), canBeHidden: false, sortable: true)
@@ -247,7 +249,7 @@ class IndexWarehouseAreas extends OrgAction
 
                                     'type'  => 'button',
                                     'style' => 'create',
-                                    'label' => __('areas'),
+                                    'label' => __('Areas'),
                                     'route' => [
                                         'name'       => 'grp.org.warehouses.show.infrastructure.warehouse_areas.create',
                                         'parameters' => $request->route()->originalParameters()

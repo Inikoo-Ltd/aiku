@@ -80,9 +80,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $source_alt_id to be used in no product transactions
  * @property int|null $estimated_weight grams
  * @property string|null $platform_transaction_id
+ * @property string|null $quantity_picked quantity picked for delivery
+ * @property string $submitted_quantity_ordered
  * @property-read Asset|null $asset
  * @property-read Customer $customer
- * @property-read DeliveryNoteItem|null $deliveryNoteItem
+ * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE
  * @property-read Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks
  * @property-read \App\Models\SysAdmin\Group $group
@@ -100,7 +102,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static Builder<static>|Transaction newQuery()
  * @method static Builder<static>|Transaction onlyTrashed()
  * @method static Builder<static>|Transaction query()
- * @method static Builder<static>|Transaction withTrashed()
+ * @method static Builder<static>|Transaction withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Transaction withoutTrashed()
  * @mixin Eloquent
  */
@@ -197,7 +199,7 @@ class Transaction extends Model
         return $this->belongsToMany(OfferComponent::class, 'transaction_has_offer_components');
     }
 
-    public function deliveryNoteItem(): HasOne
+    public function deliveryNoteItemTODELETE(): HasOne
     {
         return $this->hasOne(DeliveryNoteItem::class);
     }

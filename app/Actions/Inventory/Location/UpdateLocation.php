@@ -8,6 +8,7 @@
 
 namespace App\Actions\Inventory\Location;
 
+use App\Actions\Inventory\Location\Hydrators\LocationHydrateSortCode;
 use App\Actions\Inventory\Location\Search\LocationRecordSearch;
 use App\Actions\Inventory\Warehouse\Hydrators\WarehouseHydrateLocations;
 use App\Actions\Inventory\WarehouseArea\Hydrators\WarehouseAreaHydrateLocations;
@@ -20,6 +21,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Http\Resources\Inventory\LocationResource;
 use App\Models\Inventory\Location;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateLocation extends OrgAction
@@ -33,6 +35,8 @@ class UpdateLocation extends OrgAction
     public function handle(Location $location, array $modelData): Location
     {
         $location = $this->update($location, $modelData, ['data']);
+        $changes  = $location->getChanges();
+
         if ($location->wasChanged('status')) {
             GroupHydrateLocations::dispatch($location->group)->delay($this->hydratorsDelay);
             OrganisationHydrateLocations::dispatch($location->organisation)->delay($this->hydratorsDelay);
@@ -43,7 +47,18 @@ class UpdateLocation extends OrgAction
             }
         }
 
-        LocationRecordSearch::dispatch($location);
+        if ($location->wasChanged('code')) {
+            $location = LocationHydrateSortCode::run($location);
+        }
+
+        if (Arr::hasAny($changes, [
+            'code',
+            'barcode',
+
+        ])) {
+            LocationRecordSearch::dispatch($location);
+        }
+
 
         return $location;
     }

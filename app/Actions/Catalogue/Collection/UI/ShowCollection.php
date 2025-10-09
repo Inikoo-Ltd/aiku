@@ -81,13 +81,22 @@ class ShowCollection extends OrgAction
         return $this->handle($collection);
     }
 
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, Collection $collection, ActionRequest $request): Collection
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request)->withTab(CollectionTabsEnum::values());
+
+        return $this->handle($collection);
+    }
+
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
     {
         $title      = $collection->code;
         $model      = __('collection');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('collection')
+            'title' => __('Collection')
         ];
         $afterTitle = null;
         $container  = null;
@@ -104,17 +113,17 @@ class ShowCollection extends OrgAction
             if ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $icon = [
                     'icon'  => ['fal', 'fa-folder-tree'],
-                    'title' => __('department')
+                    'title' => __('Department')
                 ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::FAMILY) {
                 $icon = [
                     'icon'  => ['fal', 'fa-folder'],
-                    'title' => __('family')
+                    'title' => __('Family')
                 ];
             } elseif ($this->parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $icon = [
                     'icon'  => ['fal', 'fa-dot-circle'],
-                    'title' => __('sub department')
+                    'title' => __('Sub department')
                 ];
             }
         } else {
@@ -162,17 +171,17 @@ class ShowCollection extends OrgAction
                                 ]
                             ]
                             : [
-                            'type'    => 'button',
-                            'style'   => 'edit',
-                            'tooltip' => __('Create Webpage'),
-                            'label'   => __('Create Webpage'),
-                            'icon'    => ["fas", "fa-plus"],
-                            'route'   => [
-                                'name'       => 'grp.models.webpages.collection.store',
-                                'parameters' => $collection->id,
-                                'method'     => 'post'
-                            ]
-                        ],
+                                'type'    => 'button',
+                                'style'   => 'edit',
+                                'tooltip' => __('Create Webpage'),
+                                'label'   => __('Create Webpage'),
+                                'icon'    => ["fas", "fa-plus"],
+                                'route'   => [
+                                    'name'       => 'grp.models.webpages.collection.store',
+                                    'parameters' => $collection->id,
+                                    'method'     => 'post'
+                                ]
+                            ],
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
@@ -297,8 +306,8 @@ class ShowCollection extends OrgAction
                     : Inertia::lazy(fn () => CollectionsResource::collection(IndexCollectionsInCollection::run($collection, prefix: CollectionTabsEnum::COLLECTIONS->value))),
 
                 CollectionTabsEnum::HISTORY->value => $this->tab == CollectionTabsEnum::HISTORY->value ?
-                                    fn () => HistoryResource::collection(IndexHistory::run($collection))
-                                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($collection))),
+                    fn () => HistoryResource::collection(IndexHistory::run($collection))
+                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($collection))),
 
             ]
         )
@@ -425,7 +434,7 @@ class ShowCollection extends OrgAction
             ),
             'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show' =>
             array_merge(
-                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeParameters),
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
                 $headCrumb(
                     $collection,
                     [
@@ -435,6 +444,24 @@ class ShowCollection extends OrgAction
                         ],
                         'model' => [
                             'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.collection.show',
+                            'parameters' => $routeParameters
+                        ]
+                    ],
+                    $suffix
+                )
+            ),
+            'grp.org.shops.show.catalogue.sub_departments.show.collection.show' =>
+            array_merge(
+                ShowSubDepartment::make()->getBreadcrumbs($parent, $routeName, $routeParameters),
+                $headCrumb(
+                    $collection,
+                    [
+                        'index' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.collection.index',
+                            'parameters' => $routeParameters
+                        ],
+                        'model' => [
+                            'name'       => 'grp.org.shops.show.catalogue.sub_departments.show.collection.show',
                             'parameters' => $routeParameters
                         ]
                     ],

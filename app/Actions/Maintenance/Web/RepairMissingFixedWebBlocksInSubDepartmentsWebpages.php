@@ -45,7 +45,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 
         if (count($productsWebBlock) == 0) {
             $command->error('Webpage '.$webpage->code.' Families Web Block not found');
-            $this->createWebBlock($webpage, 'families-1', $subDepartment);
+            $this->createWebBlock($webpage, 'families-1');
         } elseif (count($productsWebBlock) > 1) {
             $command->error('Webpage '.$webpage->code.' MORE than 1 Families Web Block found');
         }
@@ -54,7 +54,7 @@ class RepairMissingFixedWebBlocksInSubDepartmentsWebpages
 
         if (count($productsWebBlock) == 0) {
             $command->error('Webpage '.$webpage->code.' Products Web Block not found');
-            $this->createWebBlock($webpage, 'products-1', $subDepartment);
+            $this->createWebBlock($webpage, 'products-1');
         } elseif (count($productsWebBlock) > 1) {
             $command->error('Webpage '.$webpage->code.' MORE than 1 Products Web Block found');
         }

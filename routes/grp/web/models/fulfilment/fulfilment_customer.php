@@ -41,7 +41,6 @@ Route::name('fulfilment-customer.')->prefix('fulfilment-customer/{fulfilmentCust
         Route::prefix('stored-item/{palletReturnItem:id}')->group(function () {
             Route::delete('', DeleteStoredItemFromReturn::class)->name('stored-item.delete')->withoutScopedBindings();
         });
-
         Route::post('submit-and-confirm', SubmitAndConfirmPalletReturn::class)->name('submit_and_confirm');
         Route::post('delivery', PickingPalletReturn::class)->name('picking');
         Route::post('confirm', ConfirmPalletReturn::class)->name('confirm');

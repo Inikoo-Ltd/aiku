@@ -15,8 +15,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -26,7 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<array-key, mixed> $data
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string $amount
+ * @property numeric $amount
  * @property \Illuminate\Support\Carbon|null $processed_at
  * @property TopUpPaymentApiPointStateEnum $state
  * @property-read Customer $customer
@@ -47,6 +45,7 @@ class TopUpPaymentApiPoint extends Model
         'data'         => 'array',
         'processed_at' => 'datetime',
         'state'        => TopUpPaymentApiPointStateEnum::class,
+        'amount'       => 'decimal:2',
     ];
 
     protected $attributes = [

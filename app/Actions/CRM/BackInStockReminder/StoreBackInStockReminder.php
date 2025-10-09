@@ -16,12 +16,12 @@ use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\BackInStockReminder;
 use App\Models\CRM\Customer;
-use Lorisleiva\Actions\ActionRequest;
 
 class StoreBackInStockReminder extends OrgAction
 {
     public function handle(Customer $customer, Product $product, array $modelData): BackInStockReminder
     {
+        /** @noinspection DuplicatedCode */
         data_set($modelData, 'group_id', $customer->group_id);
         data_set($modelData, 'organisation_id', $customer->organisation_id);
         data_set($modelData, 'shop_id', $customer->shop_id);
@@ -32,7 +32,7 @@ class StoreBackInStockReminder extends OrgAction
 
 
         /** @var BackInStockReminder $reminder */
-        $reminder = $customer->BackInStockReminder()->create($modelData);
+        $reminder = $customer->backInStockReminder()->create($modelData);
 
         CustomerHydrateBackInStockReminders::dispatch($customer)->delay($this->hydratorsDelay);
         ProductHydrateCustomersWhoReminded::dispatch($product)->delay($this->hydratorsDelay);
@@ -41,15 +41,6 @@ class StoreBackInStockReminder extends OrgAction
         return $reminder;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-
-        return false;
-    }
 
     public function rules(): array
     {

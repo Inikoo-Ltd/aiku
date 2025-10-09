@@ -77,7 +77,7 @@ class IndexStoredItemPallets extends OrgAction
         $query->leftJoin('locations', 'locations.id', 'pallets.location_id');
         $query->leftJoin('fulfilment_customers', 'fulfilment_customers.id', 'pallets.fulfilment_customer_id');
         $query->where('pallet_stored_items.stored_item_id', $storedItem->id);
-        $query->defaultSort('pallets.id')
+        $query->defaultSort('-pallet_stored_items.quantity')
             ->select(
                 'pallets.id',
                 'pallets.slug',
@@ -101,7 +101,7 @@ class IndexStoredItemPallets extends OrgAction
                 'pallet_stored_items.quantity as pivot_quantity'
             );
 
-        return $query->defaultSort('pallets.id')
+        return $query->defaultSort('-pallet_stored_items.quantity')
             ->allowedSorts(['customer_reference', 'pallets.reference'])
             ->allowedFilters([$globalSearch, 'customer_reference'])
             ->withPaginator($prefix, tableName: request()->route()->getName())

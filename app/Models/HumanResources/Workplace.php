@@ -64,7 +64,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Workplace newQuery()
  * @method static Builder<static>|Workplace onlyTrashed()
  * @method static Builder<static>|Workplace query()
- * @method static Builder<static>|Workplace withTrashed()
+ * @method static Builder<static>|Workplace withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Workplace withoutTrashed()
  * @mixin Eloquent
  */

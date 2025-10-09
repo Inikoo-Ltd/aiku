@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {Head, router} from "@inertiajs/vue3";
+import {Head, router,usePage} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
 import {inject, ref, watch, onMounted } from "vue";
@@ -14,16 +14,14 @@ import Modal from "@/Components/Utils/Modal.vue";
 import PureInputWithAddOn from "@/Components/Pure/PureInputWithAddOn.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
 import {notify} from "@kyvg/vue3-notification";
-import { usePage  } from "@inertiajs/vue3"
 
 import {layoutStructure} from "@/Composables/useLayoutStructure";
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue";
 import axios from "axios";
 import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import PurePassword from "@/Components/Pure/PurePassword.vue";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers, faWindow} from "@fal";
+import {faInfoCircle, faGlobe, faExternalLinkAlt, faUnlink, faUsers} from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faInfoCircle)
 
@@ -95,7 +93,6 @@ const onCreateStoreShopify = async () => {
                 name: websiteInput.value
             }
         )
-        // console.log("dazzta", data)
         isModalOpen.value = false;
         websiteInput.value = null;
         router.reload({
@@ -139,7 +136,6 @@ const onSubmitWoocommerce = async () => {
             type: "error"
         });
     }
-    ;
 }
 
 // Section: Manual
@@ -147,7 +143,6 @@ const isModalManual = ref(false)
 const errManual = ref('')
 const manualInput = ref({
     name: null as null | string,
-    // url: null as null | string
 });
 const onSubmitManual = async () => {
     isLoading.value = true;
@@ -158,8 +153,7 @@ const onSubmitManual = async () => {
         isModalManual.value = false;
         manualInput.value.name = null;
 
-        // console.log("response", response.data.slug);
-        // window.location.href = response.data.slug;
+
         notify({
             title: trans("Success!"),
             text: trans("Your Manual store has been created."),
@@ -178,7 +172,6 @@ const onSubmitManual = async () => {
             type: "error"
         });
     }
-    ;
     isLoading.value = false;
 }
 
@@ -216,9 +209,7 @@ interface Modal {
 watch(() => usePage().props?.flash?.modal, (modal: Modal) => {
     console.log('modal ret', modal)
     if (!modal) return
-    
-    // selectedModal.value = modal
-    // isModalOpen.value = true
+
 })
 
 const onSubmitMagento = async () => {
@@ -280,22 +271,21 @@ const isModalEbayDuplicate = ref(false)
 
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead"/>
-    <div class="px-6">
-        <div class="text-xl py-2 w-fit">E-Commerce</div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    <div class="mt-4 px-4 md:px-6">
+        <div class="text-base py-2 w-fit">{{ trans("Select channel you want to create") }}:</div>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-6">
             <!-- Section: Manual -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-12">
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+                    <img src="https://aw.aurora.systems/art/aurora_log_v2_orange.png" alt="" class="h-9 sm:h-12">
                     <div class="flex flex-col">
-                        <div class="font-semibold">{{ trans("Manual") }}</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.manual }} {{ trans("Channels") }}</div>
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">{{ trans("Web") }}/API</div>
+                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.manual }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
-                    <!-- <ButtonWithLink :routeTarget="type_manual?.createRoute" :label="trans('Create')" full/> -->
                     <Button
                         @click="() => isModalManual = true"
                         :label="trans('Create')"
@@ -305,17 +295,15 @@ const isModalEbayDuplicate = ref(false)
             </div>
 
             <!-- Section: Shopify -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <!-- <img src="https://cdn-icons-png.flaticon.com/64/5968/5968919.png" alt="" class="h-12"> -->
-                    <div v-html="ChannelLogo('shopify')" class="h-12"></div>
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+                    <div v-html="ChannelLogo('shopify')" class="h-9 sm:h-12"></div>
                     <div class="flex flex-col">
-                        <div class="font-semibold">Shopify</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Shopify</div>
+                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
                     </div>
                 </div>
-
                 <!-- Button: Connect -->
                 <div class="relative w-full">
                     <Button @click="() => isModalOpen = 'shopify'" label="Connect" type="primary" full/>
@@ -323,16 +311,15 @@ const isModalEbayDuplicate = ref(false)
             </div>
 
             <!-- Section: Tiktok -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <!-- <img src="https://cdn-icons-png.flaticon.com/64/3046/3046126.png" alt="" class="h-12"> -->
-                    <div v-html="ChannelLogo('tiktok')" class="h-12"
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+                    <div v-html="ChannelLogo('tiktok')" class="h-9 sm:h-12"
                          :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
                     <div class="flex flex-col">
-                        <div class="font-semibold">Tiktok</div>
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Tiktok</div>
                         <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
-                             class="text-xs text-gray-500">{{ total_channels?.tiktok }} {{ trans("Channels") }}
+                             class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.tiktok }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
@@ -352,16 +339,14 @@ const isModalEbayDuplicate = ref(false)
             </div>
 
             <!-- Section: Woocommerce -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="truncate xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/15466/15466279.png"
-                         alt="" class="h-12"> -->
-                    <div v-html="ChannelLogo('woocommerce')" class="h-12"></div>
+                    class="truncate md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+                    <div v-html="ChannelLogo('woocommerce')" class="h-9 sm:h-12 min-w-6"></div>
 
                     <div class="flex flex-col">
-                        <div class="font-semibold text-lg">Woocommerce</div>
-                        <div class="text-xs text-gray-500">
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Woocommerce</div>
+                        <div class="text-xs text-gray-500 text-center sm:text-left">
                             {{ total_channels?.woocommerce }} {{ trans("Channels") }}
                         </div>
                     </div>
@@ -369,34 +354,31 @@ const isModalEbayDuplicate = ref(false)
 
                 <div class="w-full flex justify-end">
                     <Button
-                        v-if="layout?.app?.environment === 'production' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalWooCommerce = true"
                     />
-
-                    <Button v-else :label="trans('Staging & Production')" type="tertiary" disabled full/>
-
                 </div>
             </div>
             <!-- Section: Ebay -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                     <img src="https://cdn-icons-png.flaticon.com/512/888/888848.png"
-                         alt="" class="h-12"
+                         alt="" class="h-9 sm:h-12"
                     >
 
                     <div class="flex flex-col">
-                        <div class="font-semibold">Ebay</div>
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Ebay</div>
                         <div
-                             class="text-xs text-gray-500">{{ total_channels?.ebay }} {{ trans("Channels") }}
+                             class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.ebay }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
 
                 <div class="w-full flex justify-end">
+
                     <Button
                         :label="trans('Connect')"
                         xtype="primary"
@@ -405,24 +387,23 @@ const isModalEbayDuplicate = ref(false)
                         :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
                         @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
                     />
+<!--                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
+
                 </div>
             </div>
 
             <!-- Section: Amazon -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
-                    <!-- <img src="https://cdn-icons-png.flaticon.com/512/14079/14079391.png"
-                        alt="" class="h-12 filter"
-                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
-                    > -->
-                    <div v-html="ChannelLogo('amazon_simple')" class="h-12"
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
+
+                    <div v-html="ChannelLogo('amazon_simple')" class="h-9 sm:h-12"
                          :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
 
                     <div class="flex flex-col">
-                        <div class="font-semibold">Amazon</div>
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Amazon</div>
                         <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
-                             class="text-xs text-gray-500">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}
+                             class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.amazon ?? 0 }} {{ trans("Channels") }}
                         </div>
                     </div>
                 </div>
@@ -433,6 +414,7 @@ const isModalEbayDuplicate = ref(false)
                         :label="trans('Connect')"
                         type="primary"
                         full
+                        iconRight="fal fa-external-link-alt"
                         @click="onSubmitAmazon"
                     />
 
@@ -442,16 +424,16 @@ const isModalEbayDuplicate = ref(false)
             </div>
 
             <!-- Section: Magento -->
-            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
+            <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
-                    class="xhover:text-orange-500 mb-4 border-b border-gray-300 pb-4 flex gap-x-4 items-center text-xl">
+                    class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
                      <img src="https://cdn-icons-png.flaticon.com/512/825/825535.png"
                         alt="" class="h-12 filter"
                     >
 
                     <div class="flex flex-col">
-                        <div class="font-semibold">Magento</div>
-                        <div class="text-xs text-gray-500">{{ total_channels?.magento ?? 0 }} {{
+                        <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Magento</div>
+                        <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.magento ?? 0 }} {{
                                 trans("Channels")
                             }}
                         </div>
@@ -460,26 +442,28 @@ const isModalEbayDuplicate = ref(false)
 
                 <div class="w-full flex justify-end">
                     <Button
+                        v-if="layout?.app?.environment === 'local'"
                         :label="trans('Connect')"
                         type="primary"
                         full
                         @click="() => isModalMagento = true"
                     />
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Modal: Shopify -->
-    <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[500px]">
+    <Modal :isOpen="!!isModalOpen" @onClose="isModalOpen = false" width="w-[600px]">
         <div class="h-fit">
-            <div class="mb-4">
+            <div class="mb-6">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("Select your store name") }}
+                    {{ trans("Please enter your Shopify unique domain name") }}
                 </div>
 
-                <div class="text-center text-xs text-gray-500">
-                    {{ trans("This is the url that your store can be accessed") }}
+                <div class="text-center text-xs text-gray-500 w-9/12 mx-auto">
+                    {{ trans("You will be able to find it in your Shopify settings under domains section.") }}
                 </div>
             </div>
 
@@ -495,13 +479,17 @@ const isModalEbayDuplicate = ref(false)
                 @keydown.enter="() => onCreateStoreShopify()"
             />
 
+            <div class="mt-1 text-xs text-gray-500">
+                {{ trans("Not sure which is your Shopify store name?") }} <a href="https://drive.google.com/file/d/1bdq3cQUvc3bussJfIMen5b4P4X-qw0W-/view" target="_blank" class="underline hover:text-gray-700">Click here</a>
+            </div>
+
             <Transition name="slide-to-right">
                 <div v-if="errorShopify" class="text-red-500 italic text-sm mt-2">
                     *{{ errorShopify }}
                 </div>
             </Transition>
 
-            <Button @click="() => onCreateStoreShopify()" full label="Create" :loading="!!isLoading" class="mt-6"/>
+            <Button @click="() => onCreateStoreShopify()" full :label="trans('Connect')" :loading="!!isLoading" class="mt-6" />
         </div>
     </Modal>
 
@@ -510,7 +498,7 @@ const isModalEbayDuplicate = ref(false)
         <div class="">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("Create manual platform") }}
+                    {{ trans("Create platform manual") }}
                 </div>
 
                 <div class="text-center text-xs text-gray-500">
@@ -541,11 +529,11 @@ const isModalEbayDuplicate = ref(false)
         <div class="">
             <div class="mb-4">
                 <div class="text-center font-semibold text-xl">
-                    {{ trans("WooCommerce store detail") }}
+                    {{ trans("WooCommerce store Url") }}
                 </div>
 
                 <div class="text-center text-xs text-gray-500">
-                    {{ trans("Enter your Woocommerce store detail") }}
+                    {{ trans("Enter your Woocommerce store url") }}
                 </div>
             </div>
 
@@ -633,5 +621,5 @@ const isModalEbayDuplicate = ref(false)
         </div>
         </div>
     </Modal>
-    
+
 </template>

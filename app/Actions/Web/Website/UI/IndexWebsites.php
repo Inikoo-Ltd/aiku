@@ -244,7 +244,7 @@ class IndexWebsites extends OrgAction
                     'title'     => __('websites'),
                     'container' => $container,
                     'icon'      => [
-                        'title' => __('website'),
+                        'title' => __('Website'),
                         'icon'  => 'fal fa-globe'
                     ],
 

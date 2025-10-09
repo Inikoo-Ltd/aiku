@@ -43,10 +43,11 @@ class ShowStoredItem extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
+
         if ($this->parent instanceof FulfilmentCustomer || $this->parent instanceof CustomerSalesChannel) {
             $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
 
-            return $request->user()->tokenCan('root') || $request->user()->authTo("human-resources.{$this->organisation->id}.view");
+            return $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.view");
         } elseif ($this->parent instanceof Warehouse) {
             $this->canEdit       = $request->user()->authTo("fulfilment.{$this->warehouse->id}.stored-items.edit");
             return $request->user()->authTo("fulfilment.{$this->warehouse->id}.stored-items.view");
@@ -106,7 +107,7 @@ class ShowStoredItem extends OrgAction
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'fa-narwhal'],
-                            'title' => __('stored item')
+                            'title' => __('Stored item')
                         ],
                     'subNavigation' => $subNavigation,
                     'model'  => __('Customer\'s SKU'),

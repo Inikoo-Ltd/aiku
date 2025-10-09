@@ -20,7 +20,7 @@ trait HasImage
 
     public function images(): MorphToMany
     {
-        return $this->morphToMany(Media::class, 'model', 'model_has_media');
+        return $this->morphToMany(Media::class, 'model', 'model_has_media')->withTimestamps()->withPivot('scope', 'caption', 'sub_scope', 'is_public');
     }
     public function image(): HasOne
     {

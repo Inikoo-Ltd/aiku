@@ -14,6 +14,8 @@ import { getStyles } from "@/Composables/styles"
 
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import "@/../css/Iris/editor.css"
+import { ulid } from "ulid"
+import { keyBy } from "lodash"
 
 defineOptions({ layout: WebPreview })
 
@@ -22,11 +24,11 @@ const props = defineProps<{
   layout: {
     color: string[]
   }
+  luigisbox_tracker_id?: string
 }>()
 
 const layout: any = inject("layout", {});
 const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
-
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
 const isPreviewMode = ref(false)
 const activeBlock = ref<number | null>(null)
@@ -43,6 +45,7 @@ const updateIrisLayout = () => {
   layout.iris = {
     currency: defaultCurrency,
     is_logged_in: isLoggedIn,
+    luigisbox_tracker_id: props.luigisbox_tracker_id
   }
 }
 
@@ -57,7 +60,7 @@ const showWebpage = (item) => {
 }
 
 onMounted(() => {
-  layout.app.theme = props.layout.color,
+  layout.app.theme = props.layout?.color,
   layout.app.webpage_layout = props.layout
   updateIrisLayout()
 })
@@ -86,11 +89,13 @@ const handleMessage = (event: MessageEvent) => {
   // ✅ Accept new webpage from iframe message
   if (key === "setWebpage") {
     data.value = value
+    reloadPage(true)
   }
 }
-
-const reloadPage = () => {
+const key = ref(ulid())
+const reloadPage = (withkey = false) => {
   router.reload({ only: ["webpage"] })
+  if(withkey) key.value = ulid()
 }
 
 provide("reloadPage", reloadPage)
@@ -114,6 +119,7 @@ watch(() => props.webpage, (val) => {
 watch(filterBlock, () => {
   updateIrisLayout()
 }, { immediate: true });
+
 </script>
 
 <template>
@@ -125,7 +131,7 @@ watch(filterBlock, () => {
             <template v-for="(block, idx) in data.layout.web_blocks" :key="block.id">
               <section v-show="showWebpage(block)" :data-block-id="idx" class="w-full min-h-[50px] relative"
                 :class="{ 'border-4 active-block': activeBlock === idx }"
-                :style="activeBlock === idx ? { borderColor: layout?.app?.theme[0] } : {}"
+                :style="activeBlock === idx ? { borderColor: layout?.app?.theme?.[0] } : {}"
                 @click="() => sendMessageToParent('activeBlock', idx)">
                 <!-- Toolbar Controls -->
                 <div v-if="activeBlock === idx" class="trapezoid-button" @click.stop>
@@ -157,6 +163,7 @@ watch(filterBlock, () => {
                   :webpageData="data" 
                   :blockData="block"
                   :index-block="idx"
+                  :key="key"
                   v-model="block.web_block.layout.data.fieldValue" :screenType="screenType"
                   @autoSave="() => updateData(block)" />
               </section>
@@ -173,24 +180,7 @@ watch(filterBlock, () => {
   </div>
 </template>
 
-<style lang="scss" scoped>
-:deep(.hover-dashed) {
-  @apply relative;
-
-  &::after {
-    content: "";
-    @apply absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
-  }
-}
-
-:deep(.hover-text-input) {
-  @apply relative isolate;
-
-  &::after {
-    content: "";
-    @apply -z-10 absolute inset-0 hover:bg-gray-200/30 border border-transparent hover:border-white/80 border-dashed cursor-pointer;
-  }
-}
+<style lang="scss">
 
 .trapezoid-button {
   @apply absolute z-[99] top-[-37px] left-1/2 px-5 py-1 text-white text-xs font-bold transition;
@@ -203,5 +193,9 @@ watch(filterBlock, () => {
   &:hover {
     background-color: v-bind('layout?.app?.theme[0]') !important;
   }
+}
+
+#jsd-widget{
+    display: none !important;
 }
 </style>

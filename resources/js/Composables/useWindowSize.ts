@@ -14,3 +14,46 @@ export const breakpointType = (screen?: number) => {
         return '2xl';
     }
 }
+
+export const twBreakPoint = () => {
+    let screen = 0
+    if (window) {
+        screen = window.innerWidth
+    }
+
+    let type = []
+    
+    if (screen >= 640) {
+        type.push('sm')
+    }
+
+    if (screen >= 768) {
+        type.push('md')
+    }
+
+    if (screen >= 1024) {
+        type.push('lg')
+    }
+
+    if (screen >= 1280) {
+        type.push('xl')
+    }
+
+    if (screen >= 1536) {
+        type.push('2xl')
+    }
+
+    return type
+}
+
+// Method: to pass to Iris components
+export const checkScreenType = () => {
+    const width = window.innerWidth
+    if (width < 640) {
+        return 'mobile'
+    } else if (width >= 640 && width < 1024) {
+        return 'tablet'
+    } else {
+        return 'desktop'
+    }
+}

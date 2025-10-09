@@ -68,6 +68,9 @@ class StoreRefundInvoiceTransaction extends OrgAction
         $orgExchange = GetCurrencyExchange::run($refund->currency, $refund->organisation->currency);
         $grpExchange = GetCurrencyExchange::run($refund->currency, $refund->group->currency);
 
+        data_set($modelData, 'org_exchange', $orgExchange);
+        data_set($modelData, 'grp_exchange', $grpExchange);
+
         data_set($modelData, 'grp_net_amount', $netAmount * $grpExchange);
         data_set($modelData, 'org_net_amount', $netAmount * $orgExchange);
 

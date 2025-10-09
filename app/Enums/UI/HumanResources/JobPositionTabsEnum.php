@@ -26,25 +26,25 @@ enum JobPositionTabsEnum: string
     {
         return match ($this) {
             JobPositionTabsEnum::ROLES => [
-                'title' => __('system roles'),
+                'title' => __('System roles'),
                 'icon'  => 'fal fa-terminal',
             ],
             JobPositionTabsEnum::EMPLOYEES => [
-                'title' => __('employees'),
+                'title' => __('Employees'),
                 'icon'  => 'fal fa-user-hard-hat',
             ],
             JobPositionTabsEnum::GUESTS => [
-                'title' => __('guests'),
+                'title' => __('Guests'),
                 'icon'  => 'fal fa-user-alien',
             ],
             JobPositionTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             JobPositionTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

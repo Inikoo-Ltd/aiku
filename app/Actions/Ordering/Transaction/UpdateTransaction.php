@@ -56,11 +56,17 @@ class UpdateTransaction extends OrgAction
             $orgExchange = GetCurrencyExchange::run($shop->currency, $shop->organisation->currency);
             $grpExchange = GetCurrencyExchange::run($shop->currency, $shop->organisation->group->currency);
 
+
+            $netAmount = Arr::get($modelData, 'net_amount');
+            if (!is_numeric($netAmount)) {
+                $netAmount = 0;
+            }
+
             data_set($modelData, 'org_exchange', $orgExchange);
-            data_set($modelData, 'org_net_amount', $orgExchange * Arr::get($modelData, 'net_amount'));
+            data_set($modelData, 'org_net_amount', $orgExchange * $netAmount);
 
             data_set($modelData, 'grp_exchange', $grpExchange);
-            data_set($modelData, 'grp_net_amount', $grpExchange * Arr::get($modelData, 'net_amount'));
+            data_set($modelData, 'grp_net_amount', $grpExchange * $netAmount);
         }
 
 
@@ -84,6 +90,7 @@ class UpdateTransaction extends OrgAction
 
         $rules = [
             'quantity_ordered'    => $qtyRule,
+            'quantity_picked'    => $qtyRule,
             'quantity_bonus'      => $qtyRule,
             'quantity_dispatched' => $qtyRule,
             'quantity_fail'       => $qtyRule,
@@ -109,7 +116,7 @@ class UpdateTransaction extends OrgAction
             $rules['model_id']          = ['sometimes', 'nullable', 'integer'];
             $rules['asset_id']          = ['sometimes', 'nullable', 'integer'];
             $rules['historic_asset_id'] = ['sometimes', 'nullable', 'integer'];
-            $rules['in_warehouse_at']   = ['sometimes', 'required', 'date'];
+            $rules['in_warehouse_at']   = ['sometimes', 'nullable', 'date'];
             $rules                      = $this->noStrictStoreRules($rules);
         }
 

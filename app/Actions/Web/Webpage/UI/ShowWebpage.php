@@ -220,6 +220,7 @@ class ShowWebpage extends OrgAction
                 'type'  => 'button',
                 'style' => 'edit',
                 'icon'  => ["fal", "fa-folder"],
+                'tooltip' => __('See Family'),
                 'route' => [
                     'name'       => 'grp.org.shops.show.catalogue.families.show',
                     'parameters' => [
@@ -255,13 +256,13 @@ class ShowWebpage extends OrgAction
                 ];
             }
 
-            $actions[] = [
-                'type'    => 'button',
-                'style'   => 'edit',
-                'icon'    => ["fal", "fa-object-group"],
-                'tooltip' => __('blueprint'),
-                'route'   => $workshopRoute
-            ];
+            /*  $actions[] = [
+                 'type'    => 'button',
+                 'style'   => 'edit',
+                 'icon'    => ["fal", "fa-object-group"],
+                 'tooltip' => __('Blueprint'),
+                 'route'   => $workshopRoute
+             ]; */
         }
 
 
@@ -281,7 +282,7 @@ class ShowWebpage extends OrgAction
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('new article'),
+                'label' => __('New article'),
                 'route' => [
                     'name'       => 'org.websites.show.blog.article.create',
                     'parameters' => [
@@ -293,7 +294,7 @@ class ShowWebpage extends OrgAction
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
-                'label' => __('new webpage'),
+                'label' => __('New webpage'),
                 'route' => [
                     'name'       => 'org.websites.show.webpages.show.webpages.create',
                     'parameters' => [
@@ -329,14 +330,14 @@ class ShowWebpage extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('webpage'),
+                'title'       => __('Webpage'),
                 'pageHead'    => [
                     'title'         => $webpage->code,
                     'afterTitle'    => [
                         'label' => '../'.$webpage->url,
                     ],
                     'icon'          => [
-                        'title' => __('webpage'),
+                        'title' => __('Webpage'),
                         'icon'  => 'fal fa-browser'
                     ],
                     'iconRight'     => $webpage->state->stateIcon()[$webpage->state->value],
@@ -349,6 +350,7 @@ class ShowWebpage extends OrgAction
                     'navigation' => WebpageTabsEnum::navigation()
                 ],
                 'root_active' => $subNavigationRoot,
+                'webpage_url'   => $webpage->getUrl(),
 
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
@@ -386,7 +388,11 @@ class ShowWebpage extends OrgAction
 
                 WebpageTabsEnum::REDIRECTS->value => $this->tab == WebpageTabsEnum::REDIRECTS->value ?
                     fn () => RedirectsResource::collection(IndexRedirects::run($webpage))
-                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($webpage)))
+                    : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($webpage))),
+
+                WebpageTabsEnum::LABELED_SNAPSHOTS->value => $this->tab == WebpageTabsEnum::LABELED_SNAPSHOTS->value ?
+                    fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true))
+                    : Inertia::lazy(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true)))
 
 
             ]
@@ -399,7 +405,15 @@ class ShowWebpage extends OrgAction
                 parent: $webpage,
                 prefix: 'snapshots'
             )
-        )->table(
+        )
+        ->table(
+            IndexSnapshots::make()->tableStructure(
+                parent: $webpage,
+                withLabel: true,
+                prefix: WebpageTabsEnum::LABELED_SNAPSHOTS->value
+            )
+        )
+        ->table(
             IndexRedirects::make()->tableStructure(
                 parent: $webpage,
                 prefix: WebpageTabsEnum::REDIRECTS->value
@@ -442,7 +456,7 @@ class ShowWebpage extends OrgAction
         $website = request()->route()->parameter('website');
 
         return match ($routeName) {
-            'grp.org.shops.show.web.webpages.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.webpages.workshop', 'grp.org.shops.show.web.webpages.redirect.create' => array_merge(
+            'grp.org.shops.show.web.webpages.show', 'grp.org.shops.show.web.webpages.edit', 'grp.org.shops.show.web.webpages.workshop', 'grp.org.shops.show.web.webpages.redirect.create', 'grp.org.shops.show.web.webpages.snapshot.show' => array_merge(
                 ShowWebsite::make()->getBreadcrumbs(
                     $website,
                     'grp.org.shops.show.web.websites.show',

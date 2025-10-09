@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -39,6 +40,19 @@ class ShopHydrateProducts implements ShouldBeUnique
                 model: 'products',
                 field: 'state',
                 enum: ProductStateEnum::class,
+                models: Product::class,
+                where: function ($q) use ($shop) {
+                    $q->where('is_main', true)->where('shop_id', $shop->id);
+                }
+            )
+        );
+
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'products',
+                field: 'status',
+                enum: ProductStatusEnum::class,
                 models: Product::class,
                 where: function ($q) use ($shop) {
                     $q->where('is_main', true)->where('shop_id', $shop->id);

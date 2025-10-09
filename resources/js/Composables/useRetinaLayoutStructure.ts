@@ -26,6 +26,7 @@ export const retinaLayoutStructure = {
     currentModule: "",
     currentRoute: "grp.dashboard.show", // Define value to avoid route null at first load
     currentParams: {} as {[key: string]: string},
+    currentQuery: {} as {[key: string]: string},
     currentPlatform: "", // string
 
     leftSidebar: {
@@ -55,8 +56,10 @@ export const retinaLayoutStructure = {
         id: number,
         avatar_thumbnail: Image,
         email: string,
+        customer_id: number,
         username: string,
         notifications: Notification[]
+        customerSalesChannels : any
     },
     
 }

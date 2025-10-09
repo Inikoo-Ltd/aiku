@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3'
 import Table from '@/Components/Table/Table.vue'
-import { FulfilmentCustomer } from "@/types/Customer"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faCheck, faTimes } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { useFormatTime } from "@/Composables/useFormatTime"
-import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import { inject } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Icon from '@/Components/Icon.vue'
@@ -15,7 +13,7 @@ import { trans } from 'laravel-vue-i18n'
 
 library.add(faCheck, faTimes)
 
-const props = defineProps<{
+defineProps<{
     data: {}
     tab?: string
 }>()
@@ -45,7 +43,8 @@ const locale = inject('locale', aikuLocaleStructure)
             <div v-if="item.description?.model || item.description?.title || item.description?.after_title">
             <FontAwesomeIcon :icon="item.description.icon" fixed-width aria-hidden="true" class="pr-2" />
                 <span v-if="item.description?.model">{{ item.description.model }}:</span>
-                <Link v-if="item.description?.title && item.description.route?.name" :href="route(item.description.route?.name, item.description.route?.parameters)" class="primaryLink">
+                <Link v-if="item.description?.title && item.description.route?.name"
+                      :href="route(item.description.route?.name, item.description.route?.parameters)" class="primaryLink">
                     {{ item.description.title }}
                 </Link>
                 <span v-else>&nbsp;{{ item.description.title }}</span>

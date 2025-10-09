@@ -46,11 +46,11 @@ class ShowWarehouseFulfilmentDashboard extends OrgAction
                 'pageHead'    => [
                     'icon'      => [
                         'icon'  => ['fal', 'fa-hand-holding-box'],
-                        'title' => __('fulfilment')
+                        'title' => __('Fulfilment')
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('fulfilment')
+                        'title' => __('Fulfilment')
                     ],
                     'title'     => __('fulfilment central command'),
                 ],

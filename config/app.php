@@ -235,6 +235,15 @@ return [
     'po_editor_api_key' => env('PO_EDITOR_READ_ONLY_API_KEY', ''),
     'aurora_image_path' => env('AURORA_IMAGE_PATH'),
 
+    'aurora' => [
+        'domain' => env('AURORA_DOMAIN', 'aurora.systems'),
+        'api_keys' => [
+                1 => env('AURORA_STOCK_API_KEY_1'),
+                2 => env('AURORA_STOCK_API_KEY_2'),
+                3 => env('AURORA_STOCK_API_KEY_3'),
+                4 => env('AURORA_STOCK_API_KEY_4')
+        ]
+    ],
 
     'domain'                => env('APP_DOMAIN'),
     'cloudflare_api_token'  => env('CLOUDFLARE_API_TOKEN'),
@@ -277,12 +286,15 @@ return [
     'test_email_to_address'               => env('TEST_EMAIL_TO_ADDRESS'),
     'unpaid_invoices_unknown_before'      => env('UNPAID_INVOICES_UNKNOWN_BEFORE'),
 
+    'help_portal_url' => env('JIRA_HELP_PORTAL'),
+
     'sandbox' => [
 
         'shipper_itd_token' => env('ITD_TOKEN'),
         'shipper_apc_token' => env('APC_TOKEN'),
         'shipper_dpd_gb_token' => env('DPD_GB_TOKEN'),
         'shipper_gls_sk_token' => env('GLS_SK_TOKEN'),
+        'shipper_gls_es_token' => env('GLS_ES_TOKEN'),
         'shipper_packeta_access_token' => env('PACKETA_ACCESS_TOKEN'),
 
 

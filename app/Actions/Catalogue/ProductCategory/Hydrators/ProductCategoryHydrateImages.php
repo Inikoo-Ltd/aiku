@@ -27,15 +27,11 @@ class ProductCategoryHydrateImages implements ShouldBeUnique
 
     public function handle(ProductCategory $productCategory): void
     {
-        // Calculate image statistics using the trait method
         $stats = $this->calculateImageStatsUsingDB(
             model: $productCategory,
             modelType: 'ProductCategory',
-            hasPublicImages: true,
-            useTotalImageSize: false
         );
 
-        // Update product category stats
         $productCategory->stats->update($stats);
     }
 }

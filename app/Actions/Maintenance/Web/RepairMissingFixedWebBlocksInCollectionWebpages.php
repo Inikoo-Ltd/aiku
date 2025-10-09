@@ -38,12 +38,12 @@ class RepairMissingFixedWebBlocksInCollectionWebpages
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'families-1');
 
         if (count($countFamilyWebBlock) == 0) {
-            $this->createWebBlock($webpage, 'families-1', $collection);
+            $this->createWebBlock($webpage, 'families-1');
         }
 
         $countFamilyWebBlock = $this->getWebpageBlocksByType($webpage, 'products-1');
         if (count($countFamilyWebBlock) == 0) {
-            $this->createWebBlock($webpage, 'products-1', $collection);
+            $this->createWebBlock($webpage, 'products-1');
         }
 
 

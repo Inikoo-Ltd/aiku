@@ -19,7 +19,7 @@ import { set, get, debounce } from 'lodash-es'
 import { routeType } from "@/types/route"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 
-import { faPresentation, faCube, faText, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, faHeart as falHeart, faExternalLink, faBrowser, faMobile } from "@fal"
+import { faPresentation, faCube, faText, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, faHeart as falHeart, faExternalLink, faBrowser, faMobile, faSignIn as falSignIn, faSignOut } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeading, faHeart, faLowVision, faSignIn } from '@far'
@@ -30,7 +30,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue';
 import Toggle from '@/Components/Pure/Toggle.vue'
 import LoadingText from '@/Components/Utils/LoadingText.vue'
 
-library.add(faBrowser, faPresentation, faCube, faText, faHeart, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, falHeart, faLowVision, faMobile)
+library.add(faBrowser, faPresentation, faCube, faText, faHeart, faPaperclip, faRectangleWide, faDotCircle, faSignInAlt, falHeart, faLowVision, faMobile, falSignIn, faSignOut)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes

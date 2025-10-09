@@ -54,7 +54,9 @@ class SeedJobPositionsScopeGroup
                 ]
             );
         } else {
+            /** @var \App\Models\SysAdmin\JobPositionCategory $jobPositionCategory */
             $jobPositionCategory = $group->jobPositionCategories()->where('code', $jobPositionData['code'])->first();
+
             $jobPosition        = StoreJobPositionScopeGroup::make()->action(
                 $group,
                 [

@@ -15,6 +15,7 @@ use App\Actions\Fulfilment\Fulfilment\UI\EditFulfilment;
 use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Actions\Overview\ShowGroupOverviewHub;
+use App\Enums\Comms\Outbox\OutboxTypeEnum;
 use App\Http\Resources\Mail\OutboxesResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Shop;
@@ -41,26 +42,7 @@ class IndexOutboxes extends OrgAction
     private Group|Shop|Organisation|PostRoom|Website|Fulfilment $parent;
 
 
-    public function authorize(ActionRequest $request): bool
-    {
-
-        if ($this->parent instanceof Fulfilment) {
-            return    $this->canEdit = $request->user()->authTo("fulfilment-shop.{$this->fulfilment->id}.edit");
-        }
-
-        if ($this->parent instanceof Group) {
-            return $request->user()->authTo("group-overview");
-        }
-        return $request->user()->authTo([
-            'shop-admin.'.$this->shop->id,
-            'marketing.'.$this->shop->id.'.view',
-            'web.'.$this->shop->id.'.view',
-            'orders.'.$this->shop->id.'.view',
-            'crm.'.$this->shop->id.'.view',
-        ]);
-    }
-
-    public function handle(Group|Shop|Organisation|PostRoom|OrgPostRoom|Website|Fulfilment $parent, $prefix = null): LengthAwarePaginator
+    public function handle(Group|Shop|Organisation|PostRoom|OrgPostRoom|Website|Fulfilment $parent, $prefix = null, $bucket = 'all'): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -75,8 +57,8 @@ class IndexOutboxes extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Outbox::class)
-                        ->leftJoin('organisations', 'outboxes.organisation_id', '=', 'organisations.id')
-                        ->leftJoin('shops', 'outboxes.shop_id', '=', 'shops.id');
+            ->leftJoin('organisations', 'outboxes.organisation_id', '=', 'organisations.id')
+            ->leftJoin('shops', 'outboxes.shop_id', '=', 'shops.id');
 
         if ($parent instanceof Group) {
             $queryBuilder->where('outboxes.group_id', $parent->id);
@@ -94,6 +76,11 @@ class IndexOutboxes extends OrgAction
             $queryBuilder->where('outboxes.organisation_id', $parent->id);
         }
 
+        if ($bucket != 'all') {
+            $queryBuilder->where('outboxes.type', $bucket);
+        }
+
+        $queryBuilder->where('outboxes.is_applicable', true);
         return $queryBuilder
             ->defaultSort('outboxes.name')
             ->select([
@@ -101,6 +88,7 @@ class IndexOutboxes extends OrgAction
                 'outboxes.slug',
                 'outboxes.type',
                 'outboxes.data',
+                'outboxes.state',
                 'outbox_intervals.dispatched_emails_lw',
                 'outbox_intervals.opened_emails_lw',
                 'outbox_intervals.unsubscribed_lw',
@@ -110,14 +98,14 @@ class IndexOutboxes extends OrgAction
                 'organisations.slug as organisation_slug',
             ])
             ->selectRaw('outbox_intervals.runs_all runs')
-
             ->leftJoin('outbox_stats', 'outbox_stats.outbox_id', 'outboxes.id')
             ->leftJoin('outbox_intervals', 'outbox_intervals.outbox_id', 'outboxes.id')
-            ->allowedSorts(['name', 'runs', 'number_mailshots', 'dispatched_emails_lw', 'opened_emails_lw', 'unsubscribed_lw'])
+            ->allowedSorts(['name', 'state', 'runs', 'number_mailshots', 'dispatched_emails_lw', 'opened_emails_lw', 'unsubscribed_lw'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }
+
     public function tableStructure($parent, $prefix = null): Closure
     {
         return function (InertiaTable $table) use ($parent, $prefix) {
@@ -128,10 +116,11 @@ class IndexOutboxes extends OrgAction
             }
 
             $table->column(key: 'type', label: '', canBeHidden: false, type: 'icon')
+                ->column(key: 'state', label: '', canBeHidden: false, type: 'icon')
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Group) {
                 $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)
-                        ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'shop_name', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
             }
             $table->column(key: 'runs', label: __('Mailshots/Runs'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'dispatched_emails_lw', label: __('Dispatched').' '.__('1w'), canBeHidden: false, sortable: true, searchable: true)
@@ -149,7 +138,6 @@ class IndexOutboxes extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $outboxes, ActionRequest $request): Response
     {
-
         $subNavigation = $this->getCommsNavigation($this->parent);
 
         return Inertia::render(
@@ -159,9 +147,9 @@ class IndexOutboxes extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('outboxes '),
+                'title'       => __('Outboxes '),
                 'pageHead'    => [
-                    'title'         => __('outboxes'),
+                    'title'         => __('Outboxes'),
                     'subNavigation' => $subNavigation,
                 ],
                 'data'        => OutboxesResource::collection($outboxes),
@@ -188,6 +176,70 @@ class IndexOutboxes extends OrgAction
 
         return $this->handle($shop);
     }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopNewsletter(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::NEWSLETTER->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopMarketing(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::MARKETING->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopMarketingNotification(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::MARKETING_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopCustomerNotification(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::CUSTOMER_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopColdEmail(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::COLD_EMAIL->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopUserNotification(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::USER_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopPush(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::PUSH->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inShopTest(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::TEST->value);
+    }
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inWebsite(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request): LengthAwarePaginator
@@ -206,7 +258,70 @@ class IndexOutboxes extends OrgAction
 
         return $this->handle($fulfilment);
     }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentNewsletter(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
 
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::NEWSLETTER->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentMarketing(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::MARKETING->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentMarketingNotification(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::MARKETING_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentCustomerNotification(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::CUSTOMER_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentColdEmail(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::COLD_EMAIL->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentUserNotification(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::USER_NOTIFICATION->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentPush(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::PUSH->value);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inFulfilmentTest(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->parent = $fulfilment;
+        $this->initialisationFromFulfilment($fulfilment, $request);
+
+        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::TEST->value);
+    }
 
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
@@ -239,6 +354,110 @@ class IndexOutboxes extends OrgAction
                     ]
                 )
             ),
+            'grp.org.shops.show.dashboard.comms.newsletter_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.newsletter_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.marketing_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.marketing_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.marketing_notification_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.marketing_notification_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.customer_notification_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.customer_notification_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.cold_email_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.cold_email_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.user_notification_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.user_notification_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.push_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.push_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
+            'grp.org.shops.show.dashboard.comms.test_outboxes.index' =>
+            array_merge(
+                ShowCommsDashboard::make()->getBreadcrumbs(
+                    'grp.org.shops.show.dashboard.comms.dashboard',
+                    $routeParameters
+                ),
+                $headCrumb(
+                    [
+                        'name'       => 'grp.org.shops.show.dashboard.comms.test_outboxes.index',
+                        'parameters' => $routeParameters
+                    ]
+                )
+            ),
             'grp.org.fulfilments.show.comms.dashboard' =>
             array_merge(
                 EditFulfilment::make()->getBreadcrumbs(
@@ -257,7 +476,7 @@ class IndexOutboxes extends OrgAction
                 ShowGroupOverviewHub::make()->getBreadcrumbs(),
                 $headCrumb(
                     [
-                        'name'       => 'grp.overview.comms-marketing.outboxes.index',
+                        'name' => 'grp.overview.comms-marketing.outboxes.index',
                     ]
                 )
             ),

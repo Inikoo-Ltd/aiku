@@ -10,9 +10,10 @@
 
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
+use App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\Shipment\ShipmentLabelTypeEnum;
-use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
+use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Fulfilment\PalletReturn;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
+use Sentry;
 
 class CallApiApcGbShipping extends OrgAction
 {
@@ -61,10 +63,16 @@ class CallApiApcGbShipping extends OrgAction
     {
         $url = '/api/3.0/Orders.json';
 
-        $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
-        $parcels        = $parent->parcels;
 
-        $shipTo = Arr::get($parentResource, 'to_address');
+        if ($parent instanceof PalletReturn) {
+            $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
+        } else {
+            $parentResource = GetShippingDeliveryNoteData::run($parent);
+        }
+
+        $parcels = $parent->parcels;
+
+        $shipTo   = Arr::get($parentResource, 'to_address');
         $address2 = Arr::get($shipTo, 'address_line_2');
 
         if (in_array(
@@ -84,16 +92,13 @@ class CallApiApcGbShipping extends OrgAction
 
         $items = [];
         foreach ($parcels as $parcel) {
-            array_push(
-                $items,
-                [
-                    'Type'   => 'ALL',
-                    'Weight' => $parcel['weight'], // apc weight in kg
-                    'Length' => $parcels[0]['dimensions'][0] ?? 0, // cm
-                    'Width'  => $parcels[0]['dimensions'][1] ?? 0, // cm
-                    'Height' => $parcels[0]['dimensions'][2] ?? 0 // cm
-                ]
-            );
+            $items[] = [
+                'Type'   => 'ALL',
+                'Weight' => $parcel['weight'], // apc weight in kg
+                'Length' => $parcels[0]['dimensions'][0] ?? 0, // cm
+                'Width'  => $parcels[0]['dimensions'][1] ?? 0, // cm
+                'Height' => $parcels[0]['dimensions'][2] ?? 0 // cm
+            ];
         }
 
         $pickupDate = Carbon::createFromFormat('H:i', '17:30');
@@ -106,25 +111,33 @@ class CallApiApcGbShipping extends OrgAction
             $pickupDate = $pickupDate->addDay();
         }
 
+        $contactName = Str::limit(Arr::get($parentResource, 'to_contact_name'), 60);
+        $companyName = Str::limit(Arr::get($parentResource, 'to_company_name'), 30);
+
+        if ($companyName == '') {
+            $companyName = $contactName;
+        }
+
+
         $prepareParams = [
             'CollectionDate'  => $pickupDate->format('d/m/Y'),
             'ReadyAt'         => $readyAt->format('H:i'),
             'ClosedAt'        => $closedAt->format('H:i'),
             'Reference'       => Str::limit($parent->reference, 30),
             'Delivery'        => [
-                'CompanyName'  => Str::limit(Arr::get($parentResource, 'to_company_name'), 30),
+                'CompanyName'  => $companyName,
                 'AddressLine1' => Str::limit(Arr::get($parentResource, 'to_address.address_line_1'), 60),
                 'AddressLine2' => Str::limit($address2, 60),
-                'PostalCode'   => Arr::get($parentResource, 'to_address.postal_code'),
+                'PostalCode'   => $postalCode,
                 'City'         => Str::limit(Arr::get($parentResource, 'to_address.locality'), 31, ''),
                 'County'       => Str::limit(Arr::get($parentResource, 'to_address.administrative_area'), 31, ''),
                 'CountryCode'  => Arr::get($parentResource, 'to_address.country.code'),
                 'Contact'      => [
-                    'PersonName'  => Str::limit(Arr::get($parentResource, 'to_contact_name'), 60),
+                    'PersonName'  => $contactName,
                     'PhoneNumber' => Str::limit(Arr::get($parentResource, 'to_phone'), 15, ''),
                     'Email'       => Arr::get($parentResource, 'to_email'),
                 ],
-                'Instructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($parent->customer_notes), 60)),
+                'Instructions' => Str::limit(preg_replace("/[^A-Za-z0-9 \-]/", '', strip_tags($parent->shipping_notes), 60)),
 
             ],
             'ShipmentDetails' => [
@@ -148,11 +161,13 @@ class CallApiApcGbShipping extends OrgAction
             }
         }
 
-        if (!preg_match('/^(BT51|IV(\d\s|20|25|30|31|32|33|34|35|36|37|63)|AB(41|51|52)|PA79)/', $postalCode)
+        if (
+            !preg_match('/^(BT51|IV(\d\s|20|25|30|31|32|33|34|35|36|37|63)|AB(41|51|52)|PA79)/', $postalCode)
             && preg_match(
                 '/^((JE|GG|IM|KW|HS|ZE|IV)\d+)|AB(30|33|34|35|36|37|38)|AB[4-5]\d|DD[89]|FK(16)|PA(20|36|4\d|6\d|7\d)|PH((15|16|17|18|19)|[2-5]\d)|KA(27|28)/',
                 $postalCode
-            )) {
+            )
+        ) {
             $productCode = 'TDAY';
         }
 
@@ -164,7 +179,7 @@ class CallApiApcGbShipping extends OrgAction
         $prepareParams['ProductCode'] = $productCode;
 
 
-        if (preg_match('/^BT/', $postalCode)) {
+        if (str_starts_with($postalCode, 'BT')) {
             $components = preg_split('/\s/', $postalCode);
             $postalCode = 'RD1';
             if (count($components) == 2) {
@@ -185,7 +200,7 @@ class CallApiApcGbShipping extends OrgAction
         ];
 
 
-        $response    = Http::withHeaders($this->getHeaders($shipper))->post($this->getBaseUrl().$url, $params);
+        $response    = Http::withHeaders($this->getHeaders($shipper))->retry(3, 100)->post($this->getBaseUrl().$url, $params);
         $apiResponse = $response->json();
         $statusCode  = $response->status();
 
@@ -194,15 +209,29 @@ class CallApiApcGbShipping extends OrgAction
         ];
         $errorData = [];
 
+        $dataFlat = array_filter(Arr::flatten($apiResponse));
+
+
+        if (in_array('DutyItems', $dataFlat)) {
+            $errorData['address'][] = 'Address must be in United Kingdom';
+            $errorData['message'][] = 'Address must be in United Kingdom';
+        }
+
         if ($statusCode == 200 && Arr::get($apiResponse, 'Orders.Messages.Code') == 'SUCCESS') {
             $status                      = 'success';
             $orderNumber                 = Arr::get($apiResponse, 'Orders.Order.OrderNumber');
-            $modelData['label']      = $this->getLabel($orderNumber, $shipper);
-            $modelData['label_type'] = ShipmentLabelTypeEnum::PDF;
+            $modelData['label']          = $this->getLabel($orderNumber, $shipper);
+            $modelData['label_type']     = ShipmentLabelTypeEnum::PDF;
             $modelData['number_parcels'] = (int)Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.NumberOfPieces');
 
+            $modelData['trackings']     = [];
+            $modelData['tracking_urls'] = [];
 
-            $modelData['tracking'] = Arr::get($apiResponse, 'Orders.Order.WayBill');
+
+            foreach (Arr::get($apiResponse, 'Orders.Order.ShipmentDetails.Items', []) as $item) {
+                $modelData['trackings'][] = Arr::get($item, 'TrackingNumber');
+            }
+            $modelData['tracking'] = implode(' ', $modelData['trackings']);
         } else {
             $status = 'fail';
 
@@ -214,13 +243,17 @@ class CallApiApcGbShipping extends OrgAction
                 }
                 foreach ($errFields as $error) {
                     if ($error['FieldName'] == 'Delivery PostalCode') {
-                        $errorData['others'][] = 'Invalid postcode,';
+                        $errorData['address'][] = 'Invalid address';
+                        $errorData['message'][] = 'Invalid address';
                     } else {
                         $fieldParts = explode(' ', $error['FieldName']);
 
                         if (count($fieldParts) > 1) {
                             if (Str::contains($fieldParts[0], 'Delivery')) {
                                 $errorData['address'][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'].',';
+                                if (!isset($errorData['message'])) {
+                                    $errorData['message'][] = Str::headline($fieldParts[1]).' '.$error['ErrorMessage'].',';
+                                }
                                 continue;
                             }
                             $errorData[strtolower($fieldParts[0])] .= Str::headline($fieldParts[1]).' '.$error['ErrorMessage'].',';
@@ -228,6 +261,9 @@ class CallApiApcGbShipping extends OrgAction
                         }
 
                         $errorData['others'][] = Str::headline($error['FieldName']).' '.$error['ErrorMessage'].',';
+                        if (!isset($errorData['message'])) {
+                            $errorData['message'][] = Str::headline($error['FieldName']).' '.$error['ErrorMessage'].',';
+                        }
                     }
                 }
 
@@ -244,16 +280,23 @@ class CallApiApcGbShipping extends OrgAction
         ];
     }
 
-
-    /**
-     * @throws \Illuminate\Http\Client\ConnectionException
-     */
     public function getLabel(string $labelID, Shipper $shipper): string
     {
-        $apiResponse = Http::withHeaders($this->getHeaders($shipper))->get($this->getBaseUrl().'/api/3.0/Orders/'.$labelID.'.json')->json();
+        $count = 0;
+        do {
+            try {
+                $apiResponse = Http::withHeaders($this->getHeaders($shipper))
+                    ->timeout(120)
+                    ->get($this->getBaseUrl().'/api/3.0/Orders/'.$labelID.'.json')
+                    ->json();
+                $content     = Arr::get($apiResponse, 'Orders.Order.Label.Content', '');
+            } catch (\Exception $e) {
+                Sentry::captureException($e);
+                $content = '';
+            }
+            $count++;
+        } while (empty($content) && $count < 3);
 
-        return Arr::get($apiResponse, 'Orders.Order.Label.Content', '');
+        return $content;
     }
-
-
 }

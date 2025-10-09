@@ -4,6 +4,7 @@
 	"code": "top-bar-3-fulfilment",
 	"name": "Topbar Awesome",
 	"component": "topbar",
+	"fixed": true,
 	"data": {
 		"fieldValue": {
 			"key": "Topheader",

@@ -10,6 +10,8 @@ namespace App\Actions\Accounting\Invoice;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceTransaction\DeleteInvoiceTransaction;
+use App\Actions\Billables\ShippingZone\Hydrators\ShippingZoneHydrateUsageInInvoices;
+use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrateUsageInInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Comms\Email\SendInvoiceDeletedNotification;
@@ -23,7 +25,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Models\Accounting\Invoice;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 use Throwable;
@@ -37,21 +41,39 @@ class DeleteInvoice extends OrgAction
         try {
             $invoice = DB::transaction(function () use ($invoice, $modelData) {
                 $invoice = $this->update($invoice, $modelData);
-                $invoice->delete();
                 foreach ($invoice->invoiceTransactions as $invoiceTransaction) {
                     DeleteInvoiceTransaction::make()->action($invoiceTransaction);
                 }
 
+                $invoice->delete();
+
                 return $invoice;
             });
-            StoreDeletedInvoiceHistory::run(invoice: $invoice);
-            SendInvoiceDeletedNotification::dispatch($invoice);
-            $this->postDeleteInvoiceHydrators($invoice);
+
+            if (!$invoice->in_process) {
+                StoreDeletedInvoiceHistory::run(invoice: $invoice);
+                SendInvoiceDeletedNotification::dispatch($invoice);
+                $this->postDeleteInvoiceHydrators($invoice);
+            }
+
+
+
+
+
+
+
         } catch (Throwable) {
             //
         }
 
         return $invoice;
+    }
+
+    public function htmlResponse(): RedirectResponse
+    {
+        return Redirect::route('grp.org.accounting.invoices.index', [
+            $this->organisation->slug
+        ]);
     }
 
     public function postDeleteInvoiceHydrators(Invoice $invoice): void
@@ -69,6 +91,13 @@ class DeleteInvoice extends OrgAction
             $invoiceCategory->refresh();
             InvoiceCategoryHydrateInvoices::dispatch($invoiceCategory);
         }
+        if ($invoice->shipping_zone_id) {
+            ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($this->hydratorsDelay);
+        }
+        if ($invoice->shipping_zone_schema_id) {
+            ShippingZoneSchemaHydrateUsageInInvoices::dispatch($invoice->shipping_zone_schema_id)->delay($this->hydratorsDelay);
+        }
+
     }
 
     public function rules(): array

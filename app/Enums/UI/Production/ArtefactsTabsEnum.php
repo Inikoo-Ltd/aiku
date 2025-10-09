@@ -23,11 +23,11 @@ enum ArtefactsTabsEnum: string
     {
         return match ($this) {
             ArtefactsTabsEnum::ARTEFACTS => [
-                'title' => __('artefacts'),
+                'title' => __('Artefacts'),
                 'icon'  => 'fal fa-bars',
             ],
             ArtefactsTabsEnum::ARTEFACTS_HISTORIES => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right'

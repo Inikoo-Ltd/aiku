@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { getStyles } from "@/Composables/styles"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { library } from "@fortawesome/fontawesome-svg-core"

@@ -34,7 +34,6 @@ trait WithDeliveryNoteItemNoStrictRules
         $rules['stock_id']            = ['sometimes', 'nullable', 'integer'];
         $rules['stock_family_id']     = ['sometimes', 'nullable', 'integer'];
         $rules['org_stock_family_id'] = ['sometimes', 'nullable', 'integer'];
-        $rules['weight']              = ['sometimes', 'numeric', 'min:0'];
 
         $rules['date']                = ['sometimes', 'date'];
         $rules['queued_at']           = ['sometimes', 'nullable', 'date'];

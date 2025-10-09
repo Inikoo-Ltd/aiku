@@ -24,9 +24,9 @@ class CreateProduction extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new production'),
+                'title'       => __('New production'),
                 'pageHead'    => [
-                    'title'        => __('new production'),
+                    'title'        => __('New production'),
                     'icon'         => [
                         'title' => __('Create productions'),
                         'icon'  => 'fal fa-industry'
@@ -35,7 +35,7 @@ class CreateProduction extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.productions.index',
                                 'parameters' => $request->route()->originalParameters()

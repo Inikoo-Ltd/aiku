@@ -129,7 +129,7 @@ class IndexTags extends OrgAction
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new Tag'),
+                            'tooltip' => __('New Tag'),
                             'label'   => __('Tag'),
                             'route'   => [
                                 'name'       => 'grp.goods.tags.create',

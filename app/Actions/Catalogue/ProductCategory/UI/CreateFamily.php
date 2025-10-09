@@ -76,6 +76,13 @@ class CreateFamily extends OrgAction
         return $this->handle(parent: $subDepartment, request: $request);
     }
 
+    public function inSubDepartmentInShop(Organisation $organisation, Shop $shop, ProductCategory $subDepartment, ActionRequest $request): Response
+    {
+        $this->parent = $subDepartment;
+        $this->initialisationFromShop($shop, $request);
+        return $this->handle(parent: $subDepartment, request: $request);
+    }
+
     public function inDepartmentInSubFamily(Organisation $organisation, Shop $shop, ProductCategory $department, ProductCategory $subDepartment, ActionRequest $request): Response
     {
         $this->parent = $subDepartment;
@@ -95,12 +102,12 @@ class CreateFamily extends OrgAction
                 ),
                 'title'       => __('New Family'),
                 'pageHead'    => [
-                    'title'        => __('new family'),
+                    'title'        => __('New family'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name' => class_basename($this->parent) == 'ProductCategory'
                                             ? ($this->parent->type == ProductCategoryTypeEnum::DEPARTMENT

@@ -47,7 +47,7 @@ function orderRoute(order: Order) {
         <template #cell(payment_status)="{ item: order }">
             <Tag v-if="order.payment_state === 'completed'" :label="order.payment_status" theme="3" noHoverColor>
                 <template #label>
-                    <div class="capitalize">
+                    <div class="">
                         {{ order.payment_status }}
                     </div>
                 </template>

@@ -23,7 +23,7 @@ enum CustomerPlatformTabsEnum: string
     {
         return match ($this) {
             CustomerPlatformTabsEnum::SHOWCASE => [
-                'title' => __('showcase'),
+                'title' => __('Showcase'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],
         };

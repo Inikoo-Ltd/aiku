@@ -50,7 +50,7 @@ class EditTag extends OrgAction
                 'pageHead'    => [
                     'title'   => $tag->name,
                     'icon'    => [
-                        'title' => __('skus'),
+                        'title' => __('Skus'),
                         'icon'  => 'fal fa-box'
                     ],
                     'actions' => [
@@ -68,7 +68,7 @@ class EditTag extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('edit sku'),
+                            'title'  => __('Edit sku'),
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',

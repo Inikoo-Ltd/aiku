@@ -41,7 +41,7 @@ class EditOrganisation extends GrpAction
     {
 
         return Inertia::render("EditModel", [
-            "title"       => __("organisation"),
+            "title"       => __("Organisation"),
             "breadcrumbs" => $this->getBreadcrumbs(
                 $request->route()->getName(),
                 $request->route()->originalParameters()
@@ -64,8 +64,8 @@ class EditOrganisation extends GrpAction
             "formData" => [
                 "blueprint" => [
                     [
-                        "label"   => __("details"),
-                        "title"   => __("id"),
+                        "label"   => __("Details"),
+                        "title"   => __("Id"),
                         "icon"    => "fal fa-fingerprint",
                         "current" => true,
                         "fields"  => [

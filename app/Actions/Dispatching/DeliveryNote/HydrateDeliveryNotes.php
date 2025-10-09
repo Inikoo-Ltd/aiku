@@ -29,6 +29,7 @@ class HydrateDeliveryNotes
     {
         DeliveryNoteHydrateDeliveryNoteItemsSalesType::run($deliveryNote);
         DeliveryNoteHydrateItems::run($deliveryNote);
+
     }
 
 }

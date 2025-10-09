@@ -17,5 +17,6 @@ export interface Product {
     updated_at: string
     units: number
     price: number
+    asset_id: number
 
 }

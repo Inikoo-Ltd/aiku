@@ -9,9 +9,10 @@ import EmptyState from '@/Components/Utils/EmptyState.vue'
 import { getStyles } from "@/Composables/styles"
 import Dialog from 'primevue/dialog'
 import { routeType } from '@/types/route'
-import FormEditProductCategory from "@/Components/Departement&Family/FormEditProductCategory.vue"
+import FormEditProductCategory from "@/Components/DepartmentAndFamily/FormEditProductCategory.vue"
 import Blueprint from './Blueprint'
 import { sendMessageToParent } from "@/Composables/Workshop"
+import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -36,7 +37,7 @@ const props = defineProps<{
   routeEditfamily?: routeType
   webpageData?: any
   blockData?: Object
-  indexBlock: Number
+  indexBlock: number
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
@@ -50,6 +51,7 @@ const selectedSubDepartment = ref<null | {
 }>(null)
 
 const showDialog = ref(false)
+const visibleDrawer = inject('visibleDrawer', undefined)
 
 function openModal(subDept: any) {
   if (props.routeEditfamily) {
@@ -99,6 +101,7 @@ const responsiveGridClass = computed(() => {
 })
 const layout: any = inject("layout", {})
 const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
+
 </script>
 
 <template>
@@ -120,7 +123,15 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
       </div>
     </div>
 
-    <EmptyState v-else :data="{ title: 'Empty Families' }" />
+    <EmptyState v-else :data="{ title: 'Empty Families' }">
+      <template v-if="visibleDrawer !== undefined" #button-empty-state>
+        <Button
+            label="Select sub-department to preview family list"
+            type="secondary"
+            @click="visibleDrawer = !visibleDrawer"
+        />
+      </template>
+    </EmptyState>
 
     <Dialog :header="`Edit ${selectedSubDepartment?.name}`" v-model:visible="showDialog" :modal="true"
       :style="{ width: '500px' }" :closable="true" @hide="closeModal">

@@ -40,6 +40,13 @@ class WebUsersResource extends JsonResource
             'shop_name'         => $this->shop_name,
             'shop_slug'         => $this->shop_slug,
             'shop_code'         => $this->shop_code,
+            'shop_type'       => $this->shop_type,
+            'delete_route' => [
+                'name' => 'grp.models.web-user.delete',
+                'parameters' => [
+                    'webUser' => $this->id
+                ]
+            ]
         ];
     }
 }

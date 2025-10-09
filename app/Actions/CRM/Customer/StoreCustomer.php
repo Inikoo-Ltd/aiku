@@ -13,10 +13,12 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
+use App\Actions\CRM\TrafficSource\Hydrator\TrafficSourceHydrateCustomers;
 use App\Actions\Fulfilment\FulfilmentCustomer\StoreFulfilmentCustomerFromCustomer;
 use App\Actions\Helpers\Address\ParseCountryID;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateRegistrationIntervals;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
@@ -24,6 +26,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
+use App\Actions\Traits\WithPrepareTaxNumberValidation;
 use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\CRM\Customer\CustomerStateEnum;
@@ -53,6 +56,7 @@ class StoreCustomer extends OrgAction
     use WithModelAddressActions;
     use WithNoStrictRules;
     use WithProcessContactNameComponents;
+    use WithPrepareTaxNumberValidation;
 
     /**
      * @throws \Throwable
@@ -65,8 +69,7 @@ class StoreCustomer extends OrgAction
         Arr::forget($modelData, 'contact_address');
         $deliveryAddressData = Arr::get($modelData, 'delivery_address', []);
         Arr::forget($modelData, 'delivery_address');
-        $taxNumberData = Arr::get($modelData, 'tax_number');
-        Arr::forget($modelData, 'tax_number');
+        $taxNumberData = Arr::pull($modelData, 'tax_number');
 
         data_set($modelData, 'group_id', $shop->group_id);
         data_set($modelData, 'organisation_id', $shop->organisation_id);
@@ -153,20 +156,30 @@ class StoreCustomer extends OrgAction
 
         ShopHydrateCrmStats::dispatch($customer->shop)->delay($this->hydratorsDelay);
         ShopHydrateCustomers::dispatch($customer->shop)->delay($this->hydratorsDelay);
-        ShopHydrateRegistrationIntervals::dispatch($customer->shop)->delay($this->hydratorsDelay);
         ShopHydrateCustomerInvoices::dispatch($customer->shop)->delay($this->hydratorsDelay);
         GroupHydrateCustomers::dispatch($customer->group)->delay($this->hydratorsDelay);
-        GroupHydrateRegistrationIntervals::dispatch($customer->group)->delay($this->hydratorsDelay);
         OrganisationHydrateCustomers::dispatch($customer->organisation)->delay($this->hydratorsDelay);
-        OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation)->delay($this->hydratorsDelay);
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
         ShopHydrateRegistrationIntervals::dispatch($customer->shop, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         OrganisationHydrateRegistrationIntervals::dispatch($customer->organisation, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         GroupHydrateRegistrationIntervals::dispatch($customer->group, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        if ($customer->master_shop_id) {
+            MasterShopHydrateRegistrationIntervals::dispatch($customer->master_shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        }
 
         CustomerRecordSearch::dispatch($customer);
+        if ($customer?->trafficSource) {
+            TrafficSourceHydrateCustomers::dispatch($customer->trafficSource);
+        }
 
+        if ($customer->shop->is_aiku) {
+            SaveCustomerInAurora::dispatch($customer);
+        }
+
+        if($customer->shop->is_aiku){
+            MatchCustomerProspects::run($customer);
+        }
 
         return $customer;
     }
@@ -183,14 +196,12 @@ class StoreCustomer extends OrgAction
     private function getCommsBaseValues(): array
     {
         return [
-            'is_subscribed_to_newsletter'        => false,
-            'is_subscribed_to_marketing'         => false,
-            'is_subscribed_to_abandoned_cart'    => true,
-            'is_subscribed_to_reorder_reminder'  => true,
-            'is_subscribed_to_basket_low_stock'  => true,
-            'is_subscribed_to_basket_reminder_1' => true,
-            'is_subscribed_to_basket_reminder_2' => true,
-            'is_subscribed_to_basket_reminder_3' => true,
+            'is_subscribed_to_newsletter'       => false,
+            'is_subscribed_to_marketing'        => false,
+            'is_subscribed_to_abandoned_cart'   => true,
+            'is_subscribed_to_reorder_reminder' => true,
+            'is_subscribed_to_basket_low_stock' => true,
+            'is_subscribed_to_basket_reminder'  => true,
 
         ];
     }
@@ -220,7 +231,7 @@ class StoreCustomer extends OrgAction
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
@@ -229,28 +240,28 @@ class StoreCustomer extends OrgAction
                 'string:32'
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
-            'contact_website'          => ['sometimes', 'nullable', 'active_url'],
-            'contact_address'          => ['sometimes','required', new ValidAddress()],
+            'contact_website'          => ['sometimes', 'nullable', 'string', 'max:255'],
+            'contact_address'          => ['sometimes', 'required', new ValidAddress()],
             'delivery_address'         => ['sometimes', 'required', new ValidAddress()],
 
 
-            'timezone_id'              => ['nullable', 'exists:timezones,id'],
-            'language_id'              => ['nullable', 'exists:languages,id'],
-            'data'                     => ['sometimes', 'array'],
-            'registered_at'            => ['sometimes', 'nullable', 'date'],
-            'internal_notes'           => ['sometimes', 'nullable', 'string'],
-            'warehouse_internal_notes' => ['sometimes', 'nullable', 'string'],
-            'warehouse_public_notes'   => ['sometimes', 'nullable', 'string'],
-
-            'email_subscriptions'                                    => ['sometimes', 'array'],
-            'email_subscriptions.is_subscribed_to_newsletter'        => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_marketing'         => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_abandoned_cart'    => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_reorder_reminder'  => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_low_stock'  => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_1' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_2' => ['sometimes', 'boolean'],
-            'email_subscriptions.is_subscribed_to_basket_reminder_3' => ['sometimes', 'boolean'],
+            'timezone_id'                                           => ['nullable', 'exists:timezones,id'],
+            'language_id'                                           => ['nullable', 'exists:languages,id'],
+            'data'                                                  => ['sometimes', 'array'],
+            'registered_at'                                         => ['sometimes', 'nullable', 'date'],
+            'internal_notes'                                        => ['sometimes', 'nullable', 'string'],
+            'warehouse_internal_notes'                              => ['sometimes', 'nullable', 'string'],
+            'warehouse_public_notes'                                => ['sometimes', 'nullable', 'string'],
+            'email_subscriptions'                                   => ['sometimes', 'array'],
+            'email_subscriptions.is_subscribed_to_newsletter'       => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_marketing'        => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_abandoned_cart'   => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_reorder_reminder' => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_basket_low_stock' => ['sometimes', 'boolean'],
+            'email_subscriptions.is_subscribed_to_basket_reminder'  => ['sometimes', 'boolean'],
+            'traffic_sources'                                       => ['sometimes', 'nullable'],
+            'tax_number'                                            => ['sometimes', 'nullable', 'array'],
+            'is_re'                                                 => ['sometimes', 'boolean'],
 
 
             'password' =>
@@ -277,7 +288,7 @@ class StoreCustomer extends OrgAction
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ];
@@ -291,7 +302,7 @@ class StoreCustomer extends OrgAction
 
     public function afterValidator(Validator $validator): void
     {
-        if (!$this->get('company_name') && !$this->get('email')) {
+        if ($this->strict && (!$this->get('company_name') && !$this->get('email'))) {
             $validator->errors()->add('company_name', 'At least one of company_name or email must be provided');
         }
 
@@ -300,7 +311,7 @@ class StoreCustomer extends OrgAction
             $lastName  = trim($this->get('last_name'));
 
             if ($firstName || $lastName) {
-                $this->set('contact_name', trim($firstName . ' ' . $lastName));
+                $this->set('contact_name', trim($firstName.' '.$lastName));
             }
         }
     }

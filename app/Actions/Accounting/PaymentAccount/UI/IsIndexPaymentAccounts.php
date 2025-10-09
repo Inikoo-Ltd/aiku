@@ -79,7 +79,17 @@ trait IsIndexPaymentAccounts
 
         return $queryBuilder->leftJoin('payment_account_stats', 'payment_accounts.id', 'payment_account_stats.payment_account_id')
             ->leftJoin('payment_service_providers', 'payment_accounts.payment_service_provider_id', 'payment_service_providers.id')
-            ->allowedSorts(['code', 'name', 'number_payments', 'payment_service_provider_code', 'number_pas_state_active', 'org_amount_successfully_paid'])
+            ->allowedSorts([
+                'code',
+                'name',
+                'number_payments',
+                'payment_service_provider_code',
+                'number_pas_state_active',
+                'org_amount_successfully_paid',
+                'payment_service_provider_slug',
+                'payment_service_provider_name',
+                'number_customers',
+            ])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -91,7 +101,7 @@ trait IsIndexPaymentAccounts
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix.'Page');
+                    ->pageName($prefix . 'Page');
             }
 
             $table
@@ -135,5 +145,4 @@ trait IsIndexPaymentAccounts
             ],
         ];
     }
-
 }

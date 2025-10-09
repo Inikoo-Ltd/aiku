@@ -29,7 +29,7 @@ enum UserTabsEnum: string
         return match ($this) {
 
             UserTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
@@ -39,7 +39,7 @@ enum UserTabsEnum: string
                 'icon'  => 'fal fa-tachometer-alt',
             ],
             UserTabsEnum::API_TOKENS => [
-                'title' => __('api tokens') . ' (' . ($totalApitokens > 0 ? $totalApitokens : 0) . ')',
+                'title' => __('Api tokens') . ' (' . ($totalApitokens > 0 ? $totalApitokens : 0) . ')',
                 'icon'  => 'fal fa-key',
                 'type'  => 'icon',
             ],

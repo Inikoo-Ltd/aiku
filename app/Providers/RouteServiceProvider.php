@@ -29,7 +29,7 @@ class RouteServiceProvider extends ServiceProvider
         Route::middleware('pupil')
             ->domain('pupil.'.config('app.domain'))
             ->name('pupil.')
-            ->group(base_path('routes/pupil/app.php'));
+            ->group(base_path('routes/pupil/pupil_app.php'));
 
         Route::middleware('grp')
             ->domain('app.'.config('app.domain'))

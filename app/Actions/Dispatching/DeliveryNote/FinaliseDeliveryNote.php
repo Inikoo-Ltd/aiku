@@ -13,8 +13,10 @@ use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class FinaliseDeliveryNote extends OrgAction
@@ -26,19 +28,30 @@ class FinaliseDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        if ($deliveryNote->shipments->isEmpty() && !$deliveryNote->collection_address_id) {
+            throw ValidationException::withMessages([
+                  'message' => [
+                            'delivery_note' => __('Shipment should be set before finalizing.'),
+                        ]
+            ]);
+        }
+
         $deliveryNote = DB::transaction(function () use ($deliveryNote) {
             data_set($modelData, 'finalised_at', now());
             data_set($modelData, 'state', DeliveryNoteStateEnum::FINALISED->value);
 
 
             $deliveryNote->refresh();
-            foreach ($deliveryNote->orders as $order) {
-                InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
+            if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
+                foreach ($deliveryNote->orders as $order) {
+                    InvoiceOrderFromDeliveryNoteFinalisation::make()->action($order);
+                }
             }
 
             return $this->update($deliveryNote, $modelData);
 
         });
+
 
         OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
             ->delay($this->hydratorsDelay);

@@ -30,15 +30,6 @@ class IndexWebsitesMenu extends InertiaAction
         return  $modelOperations;
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        $this->canEdit = $request->user()->authTo('websites.edit');
-        return
-            (
-                $request->user()->tokenCan('root') or
-                $request->user()->authTo('websites.view')
-            );
-    }
 
 
     public function jsonResponse(Website $website): AnonymousResourceCollection
@@ -56,7 +47,7 @@ class IndexWebsitesMenu extends InertiaAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('websites menu'),
+                'title'       => __('Websites menu'),
                 'pageHead'    => [
                     'title'  => __('websites menu'),
                 ],

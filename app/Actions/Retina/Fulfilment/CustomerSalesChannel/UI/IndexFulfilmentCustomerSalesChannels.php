@@ -11,7 +11,7 @@ namespace App\Actions\Retina\Fulfilment\CustomerSalesChannel\UI;
 
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
-use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
 use App\InertiaTable\InertiaTable;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -97,7 +97,7 @@ class IndexFulfilmentCustomerSalesChannels extends RetinaAction
                         ]
                     ]
                 ],
-                'data'        => CustomerSalesChannelsResource::collection($platforms),
+                'data'        => CustomerSalesChannelsResourceTOFIX::collection($platforms),
             ]
         )->table($this->tableStructure());
     }

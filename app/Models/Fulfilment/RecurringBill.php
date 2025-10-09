@@ -29,8 +29,6 @@ use Spatie\Sluggable\SlugOptions;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -79,7 +77,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|RecurringBill withoutTrashed()
  * @mixin \Eloquent
  */

@@ -9,8 +9,13 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 
 library.add(faInfoCircle, faFacebook, faLinkedin, faGoogle, faTwitter)
 
-defineProps<{
-    form?: any
+const props = defineProps<{
+    form?: {
+        [key: string]: {
+            type: {}[]
+            poll_options: []
+        }
+    }
     fieldName: string
     options: {
         id: number
@@ -43,8 +48,8 @@ defineProps<{
             </div>
 
             <div class="xborder-t xborder-gray-300 xpt-3 ">
-
                 
+                <!-- Section: normal option -->
                 <div v-if="form[fieldName].type === 'option'" class="border-t border-gray-300 pt-3 grid gap-y-2">
                     <div v-for="(opt, optIdx) in form[fieldName].poll_options" class="flex gap-x-2 items-center">
                         <InputText
@@ -66,6 +71,8 @@ defineProps<{
                         @click="form[fieldName].poll_options.push({ label: `Option ${form[fieldName].poll_options.length + 1}` })"
                     />
                 </div>
+
+<!-- <pre>{{ form[fieldName] }}</pre> -->
             </div>
         </div>
     </div>

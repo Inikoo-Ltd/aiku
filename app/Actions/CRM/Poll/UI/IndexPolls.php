@@ -85,7 +85,7 @@ class IndexPolls extends OrgAction
             ->groupBy('polls.id', 'poll_stats.id');
 
         return $queryBuilder
-            ->allowedSorts(['name', 'type', 'number_customers', 'in_registration'])
+            ->allowedSorts(['name', 'type', 'number_customers', 'in_registration', 'label'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -98,7 +98,7 @@ class IndexPolls extends OrgAction
     ): Closure {
         return function (InertiaTable $table) use ($parent, $modelOperations, $prefix) {
             if ($prefix) {
-                $table->name($prefix)->pageName($prefix.'Page');
+                $table->name($prefix)->pageName($prefix . 'Page');
             }
 
             $table
@@ -138,7 +138,7 @@ class IndexPolls extends OrgAction
         $model      = __('Poll');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
-            'title' => __('polls')
+            'title' => __('Polls')
         ];
         $afterTitle = null;
         $iconRight  = null;
@@ -148,7 +148,7 @@ class IndexPolls extends OrgAction
             $model      = __('poll');
             $icon       = [
                 'icon'  => ['fal', 'fa-cube'],
-                'title' => __('poll')
+                'title' => __('Poll')
             ];
             $iconRight  = [
                 'icon' => 'fal fa-cube',

@@ -8,12 +8,16 @@
 import { Link } from "@inertiajs/vue3";
 import Table from "@/Components/Table/Table.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus } from "@fas";
+import { faPlus, faShieldAlt, faStar, faBoxHeart } from "@fas";
 import TagPallet from "@/Components/TagPallet.vue";
 import Icon from "@/Components/Icon.vue";
 import { inject } from "vue";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { RouteParams } from "@/types/route-params";
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import { trans } from "laravel-vue-i18n"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 library.add(faPlus);
 
@@ -74,6 +78,11 @@ function clientRoute(order) {
         <Link :href="(orderRoute(item) as string)" class="primaryLink">
           {{ item["reference"] }}
         </Link>
+        <span class="whitespace-nowrap text-yellow-500">
+          <FontAwesomeIcon v-if="item.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" :icon="faStar" class="" fixed-width aria-hidden="true" />
+          <FontAwesomeIcon v-if="item.has_extra_packing" v-tooltip="trans('Extra packing')" :icon="faBoxHeart" class="" fixed-width aria-hidden="true" />
+          <FontAwesomeIcon v-if="item.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt" class="" fixed-width aria-hidden="true" />
+        </span>
       </template>
 
       <template #cell(client_name)="{ item }">
@@ -117,6 +126,28 @@ function clientRoute(order) {
         {{ useFormatTime(order.date) }}
       </template>
 
+      <template #cell(actions)="{ item: order }">
+        <ModalConfirmationDelete
+            v-if="order.delete_route"
+            :routeDelete="order.delete_route"
+            :title="trans('Are you sure you want to delete this order?')"
+            isFullLoading
+        >
+            <template #default="{ isOpenModal, changeModel }">
+                <div class="w-fit mx-auto">
+                  <Button
+                      v-tooltip="trans('Delete basket')"
+                      @click="() => changeModel()"
+                      type="negative"
+                      icon="fal fa-trash-alt"
+                      :label="trans('Delete')"
+                      size="s"
+                      :key="1"
+                  />
+                </div>
+            </template>
+        </ModalConfirmationDelete>
+      </template>
 
     </Table>
   </div>

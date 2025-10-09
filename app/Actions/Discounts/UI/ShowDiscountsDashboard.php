@@ -47,7 +47,7 @@ class ShowDiscountsDashboard extends OrgAction
                     ],
                     'iconRight' => [
                         'icon'  => ['fal', 'fa-chart-network'],
-                        'title' => __('offer')
+                        'title' => __('Offer')
                     ],
                     'title' => __('Offers dashboard'),
                 ],

@@ -29,23 +29,23 @@ enum OfferTabsEnum: string
     {
         return match ($this) {
             OfferTabsEnum::VOUCHERS => [
-                'title' => __('vouchers'),
+                'title' => __('Vouchers'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
             OfferTabsEnum::ORDERS => [
-                'title' => __('orders'),
+                'title' => __('Orders'),
                 'icon'  => 'fal fa-shopping-cart',
             ],
             OfferTabsEnum::CUSTOMERS => [
-                'title' => __('customers'),
+                'title' => __('Customers'),
                 'icon'  => 'fal fa-users',
             ],
             OfferTabsEnum::SETTINGS => [
-                'title' => __('settings'),
+                'title' => __('Settings'),
                 'icon'  => 'fal fa-slider-h',
                 'type'  => 'icon-only',
             ],OfferTabsEnum::CHANGELOG => [
-                'title' => __('changelog'),
+                'title' => __('Changelog'),
                 'icon'  => 'fal fa-road',
                 'type'  => 'icon-only',
             ],

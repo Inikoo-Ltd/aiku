@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Fulfilment;
 
+use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -32,8 +33,10 @@ class PalletsInStoredItemResource extends JsonResource
             'reference'                => $this->reference,
             'notes'                    => (string)$this->notes,
             'state'                    => $this->pallet_state,
+            'state_label'              => PalletStateEnum::labels()[$this->pallet_state],
+            'state_icon'               => PalletStateEnum::stateIcon()[$this->pallet_state],
             'location_code'            => $this->location_code,
-            'stored_items_quantity'    => (int)$this->pivot_quantity,
+            'stored_items_quantity'    => $this->pivot_quantity,
         ];
     }
 }

@@ -11,8 +11,6 @@ namespace App\Models\SupplyChain;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AgentTimeSeriesRecord newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AgentTimeSeriesRecord newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|AgentTimeSeriesRecord query()

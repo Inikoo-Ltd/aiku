@@ -8,10 +8,8 @@
 
 namespace App\Actions\Dispatching\Shipment\ApiCalls;
 
+use App\Actions\Dispatching\Shipment\GetShippingDeliveryNoteData;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Http\Resources\Dispatching\ShippingDeliveryNoteResource;
-use App\Http\Resources\Dispatching\ShippingDropshippingDeliveryNoteResource;
 use App\Http\Resources\Dispatching\ShippingPalletReturnResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
@@ -19,6 +17,7 @@ use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -45,6 +44,10 @@ class CallApiItdShipping extends OrgAction
         }
     }
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     * @throws \Illuminate\Http\Client\ConnectionException
+     */
     public function handle(DeliveryNote|PalletReturn $parent, Shipper $shipper): array
     {
         $url     = 'api/v1/shipments';
@@ -55,7 +58,7 @@ class CallApiItdShipping extends OrgAction
         ];
 
 
-        $parcels = $parent->parcels;
+        $parcels  = $parent->parcels;
         $packages = [
             [
                 'packageType'   => 3,
@@ -77,15 +80,8 @@ class CallApiItdShipping extends OrgAction
 
         if ($parent instanceof PalletReturn) {
             $parentResource = ShippingPalletReturnResource::make($parent)->getArray();
-
         } else {
-            if ($parent->shop->type == ShopTypeEnum::DROPSHIPPING) {
-                $parentResource = ShippingDropshippingDeliveryNoteResource::make($parent)->getArray();
-            } else {
-                $parentResource = ShippingDeliveryNoteResource::make($parent)->getArray();
-
-            }
-
+            $parentResource = GetShippingDeliveryNoteData::run($parent);
         }
 
 
@@ -94,7 +90,7 @@ class CallApiItdShipping extends OrgAction
             'doNotUseWebhook' => true,
             'shipments'       => [
                 [
-                    'serviceId' => $serviceId,
+                    'serviceId'              => $serviceId,
                     'orderNumber'            => $parent->reference,
                     // 'warehouseName' =>  Arr::get($parentResource, 'from_company_name'),
                     'customerReference'      => Arr::get($parentResource, 'customer_reference'),
@@ -110,9 +106,9 @@ class CallApiItdShipping extends OrgAction
                     'fromAddressCountyState' => Arr::get($parentResource, 'from_address.administrative_area'),
                     'fromAddressZip'         => Arr::get($parentResource, 'from_address.postal_code'),
                     'fromAddressCountryIso'  => Arr::get($parentResource, 'from_address.country.code'),
-                    'toAddressFirstName'     => Arr::get($parentResource, 'to_first_name'), // this change the Customer FirstName in label
-                    'toAddressLastName'      => Arr::get($parentResource, 'to_last_name'), // this change the Customer LastName in label
-                    'toAddressCompany'       => Arr::get($parentResource, 'to_company_name'), // this change the Depot in label
+                    'toAddressFirstName'     => Arr::get($parentResource, 'to_first_name'), // this changes the Customer FirstName in the label
+                    'toAddressLastName'      => Arr::get($parentResource, 'to_last_name'), // this changes the Customer LastName in the label
+                    'toAddressCompany'       => Arr::get($parentResource, 'to_company_name'), // this changes the Depot in label
                     'toAddressPhone'         => Arr::get($parentResource, 'to_phone'),
                     'toAddressEmail'         => Arr::get($parentResource, 'to_email'),
                     'toAddressStreet1'       => Arr::get($parentResource, 'to_address.address_line_1'),
@@ -127,9 +123,13 @@ class CallApiItdShipping extends OrgAction
         ];
 
 
-
         $apiResponse = Http::withHeaders($headers)->withToken($this->getAccessToken($shipper))->post($this->getBaseUrl() . $url, $params)->json();
 
+
+
+        if (Arr::get($apiResponse, 'data.status') == 'ERROR') {
+            throw ValidationException::withMessages(['message' => Arr::get($apiResponse, 'data.errors.0') . ' from ITD Shipping, please try again later']);
+        }
         $modelData = [
             'api_response' => $apiResponse,
         ];
@@ -161,14 +161,23 @@ class CallApiItdShipping extends OrgAction
             $status = 'fail';
 
 
-            $errors = Arr::get($apiResponse, 'errors.data.0');
+
+            $errors            = Arr::get($apiResponse, 'errors.data.0');
             $consignmentErrors = Arr::get($errors, 'errors.consignment', []);
+
+
+
+
+
             foreach ($consignmentErrors as $key => $errorArr) {
                 $code = Arr::get($errorArr, '0.code');
                 if ($code) {
                     $msg = $this->getNiceKey($key) . ' ' . Str::of($code)->replace('_', ' ');
                     if (Str::contains($key, 'Address')) {
-                        $errorData['address'][] = $msg . ',';
+                        if (isset($errorData['address'])) {
+                            continue;
+                        }
+                        $errorData['address'] = 'Invalid address';
                     } else {
                         $errorData['others'][] = $msg . ',';
                     }
@@ -184,8 +193,56 @@ class CallApiItdShipping extends OrgAction
             }
 
             foreach ($errorData as $key => $value) {
+                if (!is_array($value)) {
+                    continue;
+                }
                 $errorData[$key] = strtolower(rtrim(implode(' ', $value), ','));
             }
+
+            if (empty($errorData)) {
+                $statusCode = Arr::get($apiResponse, 'statusCode');
+
+                if ($statusCode == 400) {
+                    $errorData['address'] = 'Invalid address';
+
+
+                    $missing = false;
+                    $missingMsg = '';
+
+
+                    $city = Arr::get($apiResponse, 'errors.data.0.toAddressCity');
+                    if (!$city) {
+                        $missing = true;
+                        $missingMsg .= 'city, ';
+                    }
+
+                    $postalCode = Arr::get($apiResponse, 'errors.data.0.toAddressZip');
+                    if (!$postalCode) {
+                        $missing = true;
+                        $missingMsg .= 'postal code, ';
+                    }
+
+
+                    $street = Arr::get($apiResponse, 'errors.data.0.toAddressStreet1');
+                    if (!$street) {
+                        $missing = true;
+                        $missingMsg .= 'street, ';
+                    }
+
+
+                    if ($missing) {
+                        $errorData['address'] .= ': Missing '.rtrim($missingMsg, ', ');
+                    }
+
+
+                }
+
+
+            }
+
+
+
+            $errorData['message'] = $errorData['address'] ?? $errorData['others'] ?? '';
         }
 
         return [
@@ -227,6 +284,7 @@ class CallApiItdShipping extends OrgAction
             'toAddressCountryIso'    => 'address country iso',
             'packages'               => 'packages'
         ];
+
         return $map[$key] ?? $key;
     }
 }

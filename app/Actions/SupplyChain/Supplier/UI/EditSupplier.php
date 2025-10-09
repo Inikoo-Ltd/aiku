@@ -52,7 +52,7 @@ class EditSupplier extends GrpAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('edit supplier'),
+                'title'       => __('Edit supplier'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $supplier,
                     $request->route()->getName(),

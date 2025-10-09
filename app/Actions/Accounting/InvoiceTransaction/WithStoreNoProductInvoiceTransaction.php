@@ -28,7 +28,7 @@ trait WithStoreNoProductInvoiceTransaction
         /** @var InvoiceTransaction $invoiceTransaction */
         $invoiceTransaction = $invoice->invoiceTransactions()->create($modelData);
 
-        if ($invoiceTransaction->order_id and $invoiceTransaction->transaction_id) {
+        if ($invoiceTransaction->order_id && $invoiceTransaction->transaction_id) {
             $invoiceTransaction->transaction->update([
                 'invoice_id' => $invoice->id
             ]);
@@ -47,8 +47,8 @@ trait WithStoreNoProductInvoiceTransaction
             'net_amount'      => ['required', 'numeric'],
             'org_exchange'    => ['sometimes', 'numeric'],
             'grp_exchange'    => ['sometimes', 'numeric'],
-            'order_id'        => ['sometimes', 'nullable', 'integer'],//todo  Do proper validation
-            'transaction_id'  => ['sometimes', 'nullable', 'integer'],//todo  Do proper validation
+            'order_id'        => ['sometimes', 'nullable', 'integer'],
+            'transaction_id'  => ['sometimes', 'nullable', 'integer'],
             'submitted_at'    => ['sometimes', 'required', 'date'],
 
         ];

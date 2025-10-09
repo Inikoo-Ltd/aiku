@@ -42,7 +42,7 @@ class DetachModelFromCollection extends OrgAction
     {
         return [
             'family'   => ['sometimes', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::FAMILY)->where('shop_id', $this->shop->id)],
-            'products' => ['sometimes', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
+            'product' => ['sometimes', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
         ];
     }
 
@@ -61,6 +61,7 @@ class DetachModelFromCollection extends OrgAction
 
         $modelData = $this->validatedData;
         $model     = null;
+
         if (Arr::has($modelData, 'family')) {
             $model = ProductCategory::findOrFail(Arr::get($modelData, 'family'));
         } elseif (Arr::has($modelData, 'product')) {

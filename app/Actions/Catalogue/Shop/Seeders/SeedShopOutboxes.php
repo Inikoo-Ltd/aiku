@@ -14,6 +14,7 @@ use App\Actions\Traits\WithOutboxBuilder;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Comms\Outbox\OutboxCodeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Comms\OrgPostRoom;
 use App\Models\Comms\Outbox;
 use App\Models\Comms\PostRoom;
 use Illuminate\Console\Command;
@@ -31,8 +32,9 @@ class SeedShopOutboxes
     public function handle(Shop $shop): void
     {
         foreach (OutboxCodeEnum::cases() as $case) {
-            if (in_array('Shop', $case->scope()) and in_array($shop->type->value, $case->shopTypes())) {
+            if (in_array('Shop', $case->scope()) && in_array($shop->type->value, $case->shopTypes())) {
                 $postRoom    = PostRoom::where('code', $case->postRoomCode()->value)->first();
+                /** @var OrgPostRoom $orgPostRoom */
                 $orgPostRoom = $postRoom->orgPostRooms()->where('organisation_id', $shop->organisation->id)->first();
 
                 /** @var Outbox $outbox */

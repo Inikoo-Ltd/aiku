@@ -24,9 +24,9 @@ provide('layout', useLayoutStore())
 
 const layout = useIrisLayoutStore()
 console.log('layout',layout,useLayoutStore())
-console.log('usepage',usePage().props.iris.logo)
+console.log('usepage',usePage().props.iris?.logo)
 if (usePage().props.language) {
-    loadLanguageAsync(usePage().props.language)
+    loadLanguageAsync(usePage().props?.language)
 }
 console.log('dddd',usePage().props)
 console.log('environment:', useLayoutStore().app.environment)

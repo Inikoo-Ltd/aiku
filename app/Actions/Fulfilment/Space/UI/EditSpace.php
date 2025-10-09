@@ -31,12 +31,12 @@ class EditSpace extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('edit space'),
+                'title'       => __('Edit space'),
                 'pageHead'    => [
-                    'title'   => __('edit space'),
+                    'title'   => __('Edit space'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-parking'],
-                        'title' => __('space')
+                        'title' => __('Space')
                     ],
                     'actions' => [
                         [

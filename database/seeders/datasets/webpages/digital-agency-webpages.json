@@ -3,35 +3,35 @@
     "code": "about_us",
     "url": "about_us",
     "title": "About us",
-    "type": "info",
+    "type": "content",
     "sub_type": "about-us",
     "children": [
       {
         "code": "contact",
         "url": "contact",
         "title": "Contact",
-        "type": "info",
+        "type": "content",
         "sub_type": "contact"
       },
       {
         "code": "terms_and_conditions",
         "url": "terms-and-conditions",
         "title": "Terms and Conditions",
-        "type": "info",
+        "type": "content",
         "sub_type": "terms-and-conditions",
         "children": [
           {
             "code": "privacy",
             "title": "Privacy",
             "url": "privacy",
-            "type": "info",
+            "type": "content",
             "sub_type": "privacy"
           },
           {
             "code": "cookie_policy",
             "title": "Cookie Policy",
             "url": "cookie-policy",
-            "type": "info",
+            "type": "content",
             "sub_type": "cookies-policy"
           }
         ]
@@ -45,5 +45,4 @@
     "type": "catalogue",
     "sub_type": "pricing"
   }
-
 ]

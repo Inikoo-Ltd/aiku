@@ -12,6 +12,7 @@ namespace App\Actions\Catalogue\Collection\Json;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Web\WebpagesResource;
 use App\InertiaTable\InertiaTable;
@@ -28,13 +29,19 @@ class GetWebpagesInCollection extends OrgAction
 {
     use WithCatalogueAuthorisation;
 
-    private Shop $parent;
     private mixed $bucket;
 
-    /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->bucket = 'all';
+        $this->scope  = $shop;
+        $this->initialisationFromShop($shop, $request);
+
+        return $this->handle($shop->website);
+    }
+    public function inShopActive(Shop $shop, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->bucket = 'live';
         $this->scope  = $shop;
         $this->initialisationFromShop($shop, $request);
 
@@ -62,14 +69,14 @@ class GetWebpagesInCollection extends OrgAction
 
         $queryBuilder->where('webpages.website_id', $parent->id);
 
+        if ($bucket == 'live') {
+            $queryBuilder->where('webpages.state', WebpageStateEnum::LIVE);
+        }
+
         if ($this->bucket == 'catalogue') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CATALOGUE);
         } elseif ($this->bucket == 'content') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::CONTENT);
-        } elseif ($this->bucket == 'info') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::INFO);
-        } elseif ($this->bucket == 'operations') {
-            $queryBuilder->where('webpages.type', WebpageTypeEnum::OPERATIONS);
         } elseif ($this->bucket == 'blog') {
             $queryBuilder->where('webpages.type', WebpageTypeEnum::BLOG);
         } elseif ($this->bucket == 'storefront') {
@@ -77,7 +84,7 @@ class GetWebpagesInCollection extends OrgAction
         }
 
         if (isset(request()->query()['json']) && request()->query()['json'] === 'true' || (function_exists('request') && request() && request()->expectsJson())) {
-            $queryBuilder->orderByRaw("CASE 
+            $queryBuilder->orderByRaw("CASE
             WHEN webpages.sub_type = 'storefront' THEN 1
             WHEN webpages.sub_type = 'department' THEN 2
             WHEN webpages.sub_type = 'sub_department' THEN 3

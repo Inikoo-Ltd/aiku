@@ -14,6 +14,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Ordering\SalesChannel\SalesChannelTypeEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Helpers\Address;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
@@ -26,20 +27,6 @@ class FetchAuroraInvoice extends FetchAurora
     {
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Invoice Store Key'});
 
-        if ($shop->type != ShopTypeEnum::FULFILMENT) {
-            //            if (!$this->auroraModelData->{'Invoice Order Key'} && $this->auroraModelData->{'Invoice Total Amount'} == 0) {
-            //                print ">>>No Invoice Order Key and no total \n";
-            //
-            //                // just ignore it
-            //                return;
-            //            }
-
-            //            if (!$this->auroraModelData->{'Invoice Order Key'}) {
-            //                print "No Invoice Order Key\n";
-            //                // just ignore as well
-            //                return;
-            //            }
-        }
         $this->parsedData['parent'] = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Invoice Customer Key'});
 
         $order = null;
@@ -93,6 +80,11 @@ class FetchAuroraInvoice extends FetchAurora
             $salesChannel = $this->parseSalesChannel($this->organisation->id.':'.$this->auroraModelData->{'Invoice Source Key'});
         }
 
+        if ($salesChannel->type == SalesChannelTypeEnum::SHOWROOM && $shop->type == ShopTypeEnum::DROPSHIPPING) {
+            $salesChannel = $shop->group->salesChannels()->where('type', SalesChannelTypeEnum::OTHER)->first();
+        }
+
+
         $metadata = $this->auroraModelData->{'Invoice Metadata'};
         if ($metadata) {
             $metadata = json_decode($metadata, true);
@@ -108,6 +100,13 @@ class FetchAuroraInvoice extends FetchAurora
         $footer = trim($footer);
 
         $isVip = $this->auroraModelData->{'Invoice Customer Level Type'} == 'VIP';
+
+
+        $auroraCustomerData = DB::connection('aurora')->table('Customer Dimension')->where('Customer Key', $this->auroraModelData->{'Invoice Customer Key'})->first();
+        if ($auroraCustomerData && $auroraCustomerData->{'Customer Level Type'} == 'VIP') {
+            $isVip = true;
+        }
+
 
         $AsOrganisation = null;
         if ($this->auroraModelData->{'Invoice Customer Level Type'} == 'Partner') {
@@ -145,10 +144,9 @@ class FetchAuroraInvoice extends FetchAurora
         $originalInvoiceId = null;
         if ($type == 'refund') {
             if ($order) {
+                /** @var Invoice $invoice */
                 $invoice = $order->invoices()->where('invoices.type', InvoiceTypeEnum::INVOICE)->first();
-                if ($invoice) {
-                    $originalInvoiceId = $invoice->id;
-                }
+                $originalInvoiceId = $invoice?->id;
             }
         }
 
@@ -181,7 +179,6 @@ class FetchAuroraInvoice extends FetchAurora
             'fetched_at'               => now(),
             'last_fetched_at'          => now(),
             'footer'                   => $footer,
-            'invoice_category_id'      => $this->parseInvoiceCategory($this->organisation->id.':'.$this->auroraModelData->{'Invoice Category Key'})?->id,
             'is_vip'                   => $isVip,
             'as_organisation_id'       => $AsOrganisation?->id,
             'as_employee_id'           => $asEmployeeID,
@@ -233,23 +230,11 @@ class FetchAuroraInvoice extends FetchAurora
                     'country_id'
                 ]);
                 $this->parsedData['invoice']['delivery_address'] = new Address($deliveryAddress);
-
-
             }
-
-
 
         }
 
 
-
-
-        if ($this->auroraModelData->{'Invoice Category Key'}) {
-            $invoiceCategory = $this->parseInvoiceCategory($this->organisation->id.':'.$this->auroraModelData->{'Invoice Category Key'});
-            if ($invoiceCategory) {
-                $this->parsedData['invoice']['invoice_category_id'] = $invoiceCategory->id;
-            }
-        }
 
         if ($salesChannel) {
             $this->parsedData['invoice']['sales_channel_id'] = $salesChannel->id;

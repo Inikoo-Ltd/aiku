@@ -6,7 +6,6 @@ import { trans } from 'laravel-vue-i18n'
 import { router, useForm } from '@inertiajs/vue3'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Button from '../Elements/Buttons/Button.vue'
 import PureInput from '../Pure/PureInput.vue'
@@ -19,7 +18,9 @@ import PureImageCrop from '@/Components/Pure/PureImageCrop.vue'
 import ModalConfirmationDelete from '../Utils/ModalConfirmationDelete.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { routeType } from '@/types/route'
-library.add(faPlus)
+import { faPlus } from "@fas"
+import { faTrashAlt } from "@fal"
+library.add(faPlus, faTrashAlt)
 
 const props = defineProps<{
     brand: {}
@@ -98,7 +99,6 @@ const fetchProductList = async (url?: string) => {
         
         optionsList.value = xxx?.data?.data
 
-        console.log('fetch xxx', xxx)
 
     } catch  {
         // console.log(error)
@@ -329,18 +329,18 @@ const onEditBrand = () => {
             Tags:
         </div>
 
-        <div class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
+        <div v-if="props.tags?.length" class="flex flex-wrap mb-2 gap-x-2 gap-y-1">
             <Tag v-for="tag in props.tags" :key="tag.id" :label="tag.name" @click.self="() => (isModalUpdateTag = true, selectedUpdateTag = {...tag})" stringToColor style="cursor: pointer">
                 <template #closeButton>
                     <ModalConfirmationDelete
                         :routeDelete="{
-                            name: props.tag_routes.delete_tag.name,
+                            name: props.tag_routes.detach_tag.name,
                             parameters: {
-                                ...props.tag_routes.delete_tag.parameters,
+                                ...props.tag_routes.detach_tag.parameters,
                                 tag: tag.id,
                             }
                         }"
-                        :title="trans('Are you sure you want to delete tag') + ` ${tag.name}?`"
+                        :title="trans('Are you sure you want to detach tag') + ` ${tag.name}?`"
                         isFullLoading
                     >
                         <template #default="{ isOpenModal, changeModel }">
@@ -372,13 +372,22 @@ const onEditBrand = () => {
                         <LoadingIcon></LoadingIcon>
                     </div>
 
-                    <div class="cursor-pointer border-t border-gray-300 p-2 flex justify-center items-center text-center">
+                    <div class="cursor-pointer border-t border-gray-300 p-2 flex flex-col gap-y-2 justify-center items-center text-center">
+                        <Button
+                            @click="() => (_multiselect_tags?.hide())"
+                            :label="formSelectedTags.isDirty ? trans('Save and close') : trans('Close')"
+                            xicon="fas fa-plus"
+                            full
+                            :key="`${formSelectedTags.isDirty}`"
+                            :type="formSelectedTags.isDirty ? 'secondary' : 'tertiary'"
+                        />
+                        
                         <Button
                             @click="() => (isModalTag = true, _multiselect_tags?.hide())"
-                            label="Create new tag"
+                            :label="trans('Create new tag')"
                             icon="fas fa-plus"
                             full
-                            type="secondary"
+                            type="dashed"
                         />
                     </div>
                 </template>

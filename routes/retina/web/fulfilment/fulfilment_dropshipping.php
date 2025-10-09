@@ -8,7 +8,7 @@
 
 use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Ebay\StoreEbayUser;
-use App\Actions\Dropshipping\ShopifyUser\DeleteRetinaShopifyUser;
+use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\ShopifyUser\StoreShopifyUser;
 use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
@@ -48,12 +48,12 @@ Route::prefix('sale-channels')->as('customer_sales_channels.')->group(function (
 
 
     Route::post('shopify-user', StoreShopifyUser::class)->name('shopify_user.store');
-    Route::delete('shopify-user', DeleteRetinaShopifyUser::class)->name('shopify_user.delete');
+    Route::delete('shopify-user', DeleteShopifyUser::class)->name('shopify_user.delete');
 
     Route::prefix('wc-user')->as('wc.')->group(function () {
         Route::post('authorize', AuthorizeRetinaWooCommerceUser::class)->name('authorize');
         Route::post('/', StoreWooCommerceUser::class)->name('store');
-        Route::delete('/', DeleteRetinaShopifyUser::class)->name('delete');
+        Route::delete('/', DeleteShopifyUser::class)->name('delete');
     });
     Route::prefix('ebay-user')->as('ebay.')->group(function () {
         Route::post('authorize', AuthorizeRetinaEbayUser::class)->name('authorize');

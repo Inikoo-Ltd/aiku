@@ -32,15 +32,15 @@ class OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals implements Shoul
     public function handle(Organisation $organisation, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
         $organisation->orderingIntervals()->update(
-            $this->getBasketCountStats('updated_at', $organisation, $intervals, $doPreviousPeriods),
+            $this->getBasketCountStats('updated_by_customer_at', $organisation, $intervals, $doPreviousPeriods),
         );
 
         $organisation->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_at', 'org', $organisation, $intervals, $doPreviousPeriods),
+            $this->getBasketNetAmountStats('updated_by_customer_at', 'org', $organisation, $intervals, $doPreviousPeriods),
         );
 
         $organisation->salesIntervals()->update(
-            $this->getBasketNetAmountStats('updated_at', 'grp', $organisation, $intervals, $doPreviousPeriods),
+            $this->getBasketNetAmountStats('updated_by_customer_at', 'grp', $organisation, $intervals, $doPreviousPeriods),
         );
     }
 

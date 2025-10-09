@@ -21,6 +21,8 @@ use Illuminate\Support\Facades\Cache;
  * @property mixed $category_currency_id
  * @property mixed $name
  * @property mixed $organisation_currency_id
+ * @property mixed $organisation_code
+ * @property mixed $organisation_slug
  */
 class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
 {
@@ -74,7 +76,7 @@ class DashboardInvoiceCategoriesInGroupSalesResource extends JsonResource
         $columns = array_merge(
             [
                 'label' => [
-                    'formatted_value' => $this->name,
+                    'formatted_value' => $this->organisation_code.': '.$this->name,
                     ...$routeTargets['invoiceCategories'],
                 ]
             ],

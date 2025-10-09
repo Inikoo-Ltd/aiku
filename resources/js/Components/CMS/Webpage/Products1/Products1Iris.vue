@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { faFilter } from "@fas";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getStyles } from "@/Composables/styles";
 import { ref, onMounted, watch, computed, toRaw, inject } from "vue";
 import axios from "axios";
@@ -15,18 +14,22 @@ import { debounce } from "lodash-es";
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import PureInput from "@/Components/Pure/PureInput.vue";
-import { useConfirm } from "primevue/useconfirm";
+// import { useConfirm } from "primevue/useconfirm";
 import { faSearch } from "@fal";
-import { faExclamationTriangle, faLayerGroup } from "@far";
-import ConfirmDialog from "primevue/confirmdialog";
+import { faExclamationTriangle } from "@far";
+// import ConfirmDialog from "primevue/confirmdialog";
 import { trans } from "laravel-vue-i18n"
-import FontSize from "tiptap-extension-font-size";
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faFileDownload } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+
+library.add(faFileDownload)
 
 const props = defineProps<{
     fieldValue: {
-        card_product : { properties : object }
+        card_product: { properties: object }
         products_route: {
             iris: {
                 route_products: routeType,
@@ -46,15 +49,24 @@ const props = defineProps<{
         container?: any
         model_type: string
         model_id: number
+        model_slug: string
     }
     webpageData?: any
     blockData?: Object
     screenType: "mobile" | "tablet" | "desktop"
 }>();
-
+console.log(props)
 const categoryId = props.fieldValue.model_id
 const layout = inject("layout", retinaLayoutStructure);
-const products = ref<any[]>(toRaw(props.fieldValue.products.data || []));
+const products = ref<any[]>(
+  props.fieldValue?.products?.meta?.last_page == 1
+    ? [
+        ...(props.fieldValue?.products?.data ?? []),
+        ...(props.fieldValue?.products_out_of_stock?.data ?? [])
+      ]
+    : [...(props.fieldValue?.products?.data ?? [])]
+);
+
 const loadingInitial = ref(false);
 const loadingMore = ref(false);
 const q = ref("");
@@ -67,7 +79,7 @@ const showAside = ref(false);
 const totalProducts = ref(props.fieldValue.products.meta.total);
 const settingPortfolio = ref(false);
 const isFetchingOutOfStock = ref(false);
-const confirm = useConfirm();
+// const confirm = useConfirm();
 const isNewArrivals = ref(false);
 
 
@@ -104,32 +116,45 @@ const getRoutes = () => {
 };
 
 function buildFilters(): Record<string, any> {
-  const filters: Record<string, any> = {}
-  const raw = filter.value.data || {}
+    const filters: Record<string, any> = {};
+    const raw = filter.value.data || {};
 
-  for (const [key, val] of Object.entries(raw)) {
-    if (val === null || val === undefined || val === '') continue
+    for (const [key, val] of Object.entries(raw)) {
+        if (val === null || val === undefined || val === '') continue;
 
-    if (typeof val === 'object' && !Array.isArray(val)) {
-      // Object biasa (misal: price: { min, max })
-      for (const [subKey, subVal] of Object.entries(val)) {
-        if (subVal === null || subVal === undefined || subVal === '') continue
-        filters[subKey] = subVal
-      }
-    } else if (Array.isArray(val)) {
-      // Array (misal: tags: [1,2,3])
-      filters[`filter[${key}]`] = val.join(',')
-    } else {
-      // String/number langsung
-      filters[`filter[${key}]`] = val
+        if (key === 'price_range') {
+            const rawMin = val['between[price_min]'];
+            const rawMax = val['between[price_max]'];
+
+            const hasMin = rawMin !== '' && rawMin != null && !isNaN(rawMin);
+            const hasMax = rawMax !== '' && rawMax != null && !isNaN(rawMax);
+
+            if (hasMin || hasMax) {
+                const min = hasMin ? Number(rawMin) : 0;
+                const max = hasMax ? Number(rawMax) : 0;
+
+                if (!(min === 0 && max === 0)) {
+                    filters[`filter[${key}]`] = `${min},${max}`; // ← no brackets
+                }
+            }
+        } else if (typeof val === 'object' && !Array.isArray(val)) {
+            for (const [subKey, subVal] of Object.entries(val)) {
+                if (subVal === null || subVal === undefined || subVal === '') continue;
+                filters[subKey] = subVal;
+            }
+        } else if (Array.isArray(val)) {
+            filters[`filter[${key}]`] = val.join(',');
+        } else {
+            filters[`filter[${key}]`] = val;
+        }
     }
-  }
 
-  if (isNewArrivals.value) {
-    filters[`filter[new_arrivals]`] = 3
-  }
+    if (isNewArrivals.value) {
+        filters[`filter[new_arrivals]`] = 3;
+    }
 
-  return filters
+    console.log("Filters sent to URL:", filters);
+    return filters;
 }
 
 
@@ -142,6 +167,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
     }
 
     const filters = buildFilters();
+    console.log("Filters used in API call:", filters);
     const routes = getRoutes();
     const useOutOfStock = isFetchingOutOfStock.value;
 
@@ -170,7 +196,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
             products.value = data?.data ?? [];
         }
 
-       if (!ignoreOutOfStockFallback && !useOutOfStock && page.value >= lastPage.value) {
+        if (!ignoreOutOfStockFallback && !useOutOfStock && page.value >= lastPage.value) {
             isFetchingOutOfStock.value = true;
             page.value = 1;
             await fetchProducts(true, true);
@@ -254,8 +280,10 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith("-");
     }
 
-    if (layout?.iris?.is_logged_in)
+    if (layout?.iris?.is_logged_in){
         fetchProductHasPortfolio();
+    }
+       
 
 
     /* debFetchProducts() */
@@ -263,7 +291,7 @@ onMounted(() => {
 
 const updateQueryParams = () => {
     const url = new URL(window.location.href);
-    
+
     // Reset existing filter params
     Array.from(url.searchParams.keys()).forEach(key => {
         if (key.startsWith("filter[")) {
@@ -279,7 +307,7 @@ const updateQueryParams = () => {
     }
 
     // Update filters
- /*    const filters = buildFilters(); */
+    /*    const filters = buildFilters(); */
     /* for (const [key, val] of Object.entries(filters)) {
         url.searchParams.set(`filter[${key}]`, val);
     } */
@@ -410,11 +438,11 @@ const responsiveGridClass = computed(() => {
 
 <template>
     <div id="products-1">
-        <ConfirmDialog>
+        <!-- <ConfirmDialog>
             <template #icon>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
             </template>
-        </ConfirmDialog>
+        </ConfirmDialog> -->
         <div class="flex flex-col lg:flex-row" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)
@@ -428,44 +456,39 @@ const responsiveGridClass = computed(() => {
             </transition>
 
             <!-- Main Content -->
-            <main class="flex-1">
+            <main class="flex-1 mt-4">
+
                 <!-- Search & Sort -->
-                <div class="px-4 pt-4 pb-2 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
+                        
                         <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
                             aria-label="Open Filters" />
 
                         <!-- Sidebar Toggle for Desktop -->
-                        <div v-else class="py-4">
+                        <div v-else class="">
                             <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
                                 aria-label="Open Filters" />
                         </div>
                         <PureInput v-model="q" @keyup.enter="handleSearch" type="text" placeholder="Search products..."
-                            :clear="true" :isLoading="loadingInitial" :prefix="{icon: faSearch, label :''}" />
+                            :clear="true" :isLoading="loadingInitial" :prefix="{ icon: faSearch, label: '' }" />
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
-                        <!-- <button @click="toggleNewArrivals"
-                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
-                            isNewArrivals
-                                ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                                : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                        ]">
-                            New Arrivals
-                        </button> -->
+                    <div class="flex items-center space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
-                        'pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1',
-                        sortKey === option.value
-                            ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                            : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
-                        ]" :disabled="loadingInitial || loadingMore">
+                                'pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1',
+                                sortKey === option.value
+                                    ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
+                                    : `text-gray-600 hover:text-[${layout?.app?.theme?.[0] || '#1F2937'}]`
+                            ]" :disabled="loadingInitial || loadingMore">
                             {{ option.label }} {{ getArrow(option.value) }}
                         </button>
                     </div>
                 </div>
+
                 <div class="px-4 pb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
@@ -482,10 +505,8 @@ const responsiveGridClass = computed(() => {
 
                     <div>
                         <ButtonAddCategoryToPortfolio
-                            xproduct="fieldValue.product"
                             :products
                             :categoryId
-                            xproductHasPortfolio="productExistenceInChannels"
                         />
                     </div>
                 </div>
@@ -518,9 +539,9 @@ const responsiveGridClass = computed(() => {
                 </div>
 
                 <!-- Load More -->
-                <!--  {{ page   }}{{ lastPage }} -->
                 <div v-if="page < lastPage && !loadingInitial" class="flex justify-center my-4  mb-12">
-                    <Button @click="loadMore" type="tertiary" :disabled="loadingMore" :injectStyle="{ padding: '14px 65px', fontSize : '1.2rem'  }">
+                    <Button @click="loadMore" type="tertiary" :disabled="loadingMore"
+                        :injectStyle="{ padding: '14px 65px', fontSize: '1.2rem' }">
                         <template v-if="loadingMore">
                             <LoadingText />
                         </template>
@@ -533,7 +554,7 @@ const responsiveGridClass = computed(() => {
             <Drawer v-model:visible="showFilters" position="left" :modal="true" :dismissable="true"
                 :closeOnEscape="true" :showCloseIcon="false" class="w-80 transition-transform duration-300 ease-in-out">
                 <div class="p-4">
-                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id"/>
+                    <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
                 </div>
             </Drawer>
         </div>

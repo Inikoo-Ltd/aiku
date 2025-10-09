@@ -15,8 +15,8 @@ use App\Enums\UI\Catalogue\ChargeTabsEnum;
 use App\Enums\UI\Catalogue\ShippingZoneSchemaTabsEnum;
 use App\Http\Resources\Catalogue\ShippingZoneSchemaResource;
 use App\Models\Billables\Charge;
+use App\Models\Billables\ShippingZoneSchema;
 use App\Models\Catalogue\Shop;
-use App\Models\Ordering\ShippingZoneSchema;
 use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -56,7 +56,7 @@ class ShowCharge extends OrgAction
                     ],
                     'pageHead'    => [
                         'icon'    => [
-                            'title' => __('charge'),
+                            'title' => __('Charge'),
                             'icon'  => 'fal fa-charging-station'
                         ],
                         'title'   => $charge->name,
@@ -85,6 +85,11 @@ class ShowCharge extends OrgAction
                         'navigation' => ChargeTabsEnum::navigation()
 
                     ],
+
+                    ChargeTabsEnum::SHOWCASE->value => $this->tab == ChargeTabsEnum::SHOWCASE->value ?
+                    fn () => GetChargeShowcase::run($charge)
+                    : Inertia::lazy(fn () => GetChargeShowcase::run($charge)),
+
             ]
         );
     }

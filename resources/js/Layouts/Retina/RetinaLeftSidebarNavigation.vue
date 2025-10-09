@@ -8,7 +8,7 @@
 
 import { inject, onMounted } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey } from "@fal"
+import { faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey, faFolderTree, faBooks } from "@fal"
 import { useLayoutStore } from "@/Stores/retinaLayout.js"
 
 import RetinaNavigationSimple from '@/Layouts/Retina/RetinaNavigationSimple.vue'
@@ -18,7 +18,7 @@ import { generateNavigationName, generateCurrentString } from '@/Composables/use
 import { get } from 'lodash-es'
 import RetinaNavigationGroup from "@/Layouts/Retina/RetinaNavigationGroup.vue"
 import RetinaNavigationHorizontalNew from "./RetinaNavigationHorizontalNew.vue"
-library.add(faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey)
+library.add(faBoxUsd, faParking, faUsersCog, faLightbulb, faUserHardHat, faUser, faUsersCog, faInventory, faConveyorBeltAlt, faChevronDown, faPalletAlt, faUserFriends, faKey, faFolderTree, faBooks)
 
 const layout = inject('layout', {})
 
@@ -38,7 +38,7 @@ const iconList: { [key: string]: string } = {
 </script>
 
 <template>
-    <nav class="isolate relative flex flex-grow flex-col pt-3 pb-4 px-2 h-full overflow-y-auto custom-hide-scrollbar flex-1 gap-y-1.5" aria-label="Sidebar">
+    <nav class="isolate relative flex flex-grow flex-col pt-3 pb-4 px-2 h-full overflow-y-auto custom-hide-scrollbar flex-1 gap-y-4 md:gap-y-1.5" aria-label="Sidebar">
         <!-- LeftSidebar: Org -->
         <!-- <span class="text-white">{{ layout.currentShop }} -- {{ layout.currentWarehouse }}</span> -->
         <template v-if="get(layout, ['navigation', 'org', layout.currentParams?.organisation], false)">
@@ -190,6 +190,8 @@ const iconList: { [key: string]: string } = {
                 />
             </template>
         </template>
+
+        <slot />
 
     </nav>
 </template>

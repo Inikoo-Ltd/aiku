@@ -28,9 +28,9 @@ class CreateArtefact extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new artefact'),
+                'title'       => __('New artefact'),
                 'pageHead'    => [
-                    'title'        => __('new artefact'),
+                    'title'        => __('New artefact'),
                     'icon'         => [
                         'title' => __('Create artefact'),
                         'icon'  => 'fal fa-industry'
@@ -39,7 +39,7 @@ class CreateArtefact extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.productions.show.crafts.artefacts.index',
                                 'parameters' => $request->route()->originalParameters()

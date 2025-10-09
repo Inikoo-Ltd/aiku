@@ -38,59 +38,59 @@ enum OrgStockTabsEnum: string
         return match ($this) {
             OrgStockTabsEnum::HISTORY => [
                 'align' => 'right',
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
             ],
             OrgStockTabsEnum::SALES => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-dollar-sign',
             ],
             OrgStockTabsEnum::STOCK_HISTORY => [
-                'title' => __('stock history'),
+                'title' => __('Stock history'),
                 'icon'  => 'fal fa-scanner',
             ],
             OrgStockTabsEnum::FEEDBACKS => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('issues'),
+                'title' => __('Issues'),
                 'icon'  => 'fal fa-poop',
             ],
             OrgStockTabsEnum::PURCHASE_ORDERS => [
-                'title' => __('purchase orders'),
+                'title' => __('Purchase orders'),
                 'icon'  => 'fal fa-clipboard',
             ],
             OrgStockTabsEnum::SUPPLIERS_PRODUCTS => [
-                'title' => __('supplier product'),
+                'title' => __('Supplier product'),
                 'icon'  => 'fal fa-hand-receiving',
             ],
             OrgStockTabsEnum::PRODUCTS => [
-                'title' => __('products'),
+                'title' => __('Products'),
                 'icon'  => 'fal fa-cube',
             ],
             OrgStockTabsEnum::TRADE_UNITS => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('trade units'),
+                'title' => __('Trade units'),
                 'icon'  => 'fal fa-atom',
             ],
 
             OrgStockTabsEnum::ATTACHMENTS => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('attachments'),
+                'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
 
             ],
             OrgStockTabsEnum::IMAGES => [
                 'align' => 'right',
                 'type'  => 'icon',
-                'title' => __('images'),
+                'title' => __('Images'),
                 'icon'  => 'fal fa-camera-retro',
             ],
 
             OrgStockTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

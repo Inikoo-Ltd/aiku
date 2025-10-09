@@ -41,71 +41,32 @@ export default {
 			],
 		},
 		// {
-		// 	name: "Login",
-        //     key:['login'],
+		// 	name: "Logout",
+        //     key:['logout'],
 		// 	icon: {
-		// 		icon: "fal fa-sign-in-alt",
-		// 		tooltip: "Action",
+		// 		icon: "fal fa-sign-out",
+		// 		tooltip: "Logout",
 		// 	},
 		// 	replaceForm: [
-		// 		{
-		// 			key: ["visible"],
-		// 			label :'Visibility',
-		// 			type: "VisibleLoggedIn",
-		// 		},
-		// 		{
-		// 			key: ["link"],
-		// 			label :'Link',
-		// 			type: "link",
-		// 			props_data : {
-		// 				defaultValue : {
-		// 					type : "external",
-		// 					href: "/app",
-		// 					target : '_self'
-		// 				},
-		// 				// props_radio_type : {
-		// 				// 	disabled : true
-		// 				// },
-		// 				// props_radio_target : {
-		// 				// 	disabled : true
-		// 				// },
-		// 				// props_input: {
-		// 				// 	disabled : true
-		// 				// },
-		// 				// props_selectquery:{
-		// 				// 	disabled : true
-		// 				// }
-		// 			}
-		// 		},
-		// 		{
-		// 			key: ["container",'properties','background'],
-		// 			label :'Background',
-		// 			type: "background",
-		// 		},
-		// 		{
-		// 			key: ["container",'properties','text'],
-		// 			label :'Text',
-		// 			type: "textProperty",
-		// 		},
 		// 		{
 		// 			key: ['text'],
 		// 			label :'Button Text',
 		// 			type: "text",
 		// 		},
+		// 	],
+		// },
+		// {
+		// 	name: "Login",
+        //     key:['login'],
+		// 	icon: {
+		// 		icon: "fal fa-sign-in",
+		// 		tooltip: "Action",
+		// 	},
+		// 	replaceForm: [
 		// 		{
-		// 			key: ["container",'properties','border'],
-		// 			label :'Border',
-		// 			type: "border",
-		// 		},
-		// 		{
-		// 			key: ["container",'properties','margin'],
-		// 			label :'Margin',
-		// 			type: "margin",
-		// 		},
-		// 		{
-		// 			key: ["container",'properties','padding'],
-		// 			label :'Padding',
-		// 			type: "padding",
+		// 			key: ['text'],
+		// 			label :'Button Text',
+		// 			type: "text",
 		// 		},
 		// 	],
 		// },
@@ -113,143 +74,52 @@ export default {
 		// 	name: "Register",
         //     key:["register"],
 		// 	icon: {
-		// 		icon: "fal fa-dot-circle",
+		// 		icon: "fal fa-user-plus",
 		// 		tooltip: "Action",
 		// 	},
 		// 	replaceForm: [
 		// 		{
-		// 			key: ["visible"],
-		// 			label :'Visibility',
-		// 			type: "VisibleLoggedIn",
-		// 		},
-		// 		{
-		// 			key: ["link"],
-		// 			label :'Link',
-		// 			type: "link",
-		// 			props_data : {
-		// 				defaultValue : {
-		// 					href: "/aw-fulfilment.co.uk/register-fulfilment",
-		// 					id: 15594,
-		// 					target: "_self",
-		// 					type: "internal",
-		// 					workshop: "http://app.aiku.test/org/aw/shops/awf/web/awf/webpages/register-fulfilment-awf/workshop"
-		// 				},
-		// 				// props_radio_type : {
-		// 				// 	disabled : true
-		// 				// },
-		// 				// props_radio_target : {
-		// 				// 	disabled : true
-		// 				// },
-		// 				// props_input: {
-		// 				// 	disabled : true
-		// 				// },
-		// 				// props_selectquery:{
-		// 				// 	disabled : true
-		// 				// }
-		// 			}
-		// 		},
-		// 		{
-		// 			key: ["container",'properties','background'],
-		// 			label :'Background',
-		// 			type: "background",
-		// 		},
-		// 		{
-		// 			key: ["container",'properties','text'],
-		// 			label :'Text',
-		// 			type: "textProperty",
-		// 		},
-		// 		{
 		// 			key: ['text'],
-		// 			label :'Button Text',
+		// 			label: 'Button Text',
 		// 			type: "text",
-		// 		},
-		// 		{
-		// 			key: ["container",'properties','border'],
-		// 			label :'Border',
-		// 			type: "border",
-		// 		},
-		// 		{
-		// 			key: ["container",'properties','margin'],
-		// 			label :'Margin',
-		// 			type: "margin",
-		// 		},
-		// 		{
-		// 			key: ["container",'properties','padding'],
-		// 			label :'Padding',
-		// 			type: "padding",
 		// 		},
 		// 	],
 		// },
-		{
-			name: "Cart",
-            key: ["cart"],
-			icon: {
-				icon: "fal fa-shopping-cart",
-				tooltip: "Cart",
-			},
-			replaceForm: [
-				// {
-				// 	key: ["visible"],
-				// 	type: "VisibleLoggedIn",
-				// 	label :'Visibility',
-				// 	props_data: {
-				// 		defaultValue: 'login',
-				// 	},
-				// },
-				// {
-				// 	key: ["link"],
-				// 	type: "link",
-				// 	label :'Link',
-				// 	props_data: {
-				// 		defaultValue: {
-				// 			type : "external",
-				// 			url: "",
-				// 			id: null,
-				// 			workshop_route : ""
-				// 		},
-				// 	},
-				// },
-				// {
-				// 	key: ['container', 'properties'],
-				// 	type: "button",
-				// 	label :'Button',
-				// },
-				// {
-				// 	key: ['text'],
-				// 	type: "editorhtml",
-				// 	label :'Text',
-				// 	props_data: {
-				// 		defaultValue: '{{ cart_count }}',
-				// 	},
-				// },
-				{
-					key: ['text'],
-					label: "Text",
-					// useIn : ["desktop", "tablet", "mobile"],
-					type: "select",
-					props_data: {
-						placeholder: "Select Text",
-						by: "value",
-						required: true,
-						options: [
-							{
-								label: "£999.99",
-								value: "{{ cart_amount }}",
-							},
-							{
-								label: "95 items",
-								value: "{{ cart_count }} items",
-							},
-							{
-								label: "£999.99 (95 items)",
-								value: "{{ cart_amount }} ({{ cart_count }} items)",
-							},
-						],
-						defaultValue: '{{ cart_amount }}',
-					},
-				},
-			],
-		},
+		// {
+		// 	name: "Cart",
+        //     key: ["cart"],
+		// 	icon: {
+		// 		icon: "fal fa-shopping-cart",
+		// 		tooltip: "Cart",
+		// 	},
+		// 	replaceForm: [
+		// 		{
+		// 			key: ['text'],
+		// 			label: "Text",
+		// 			type: "select",
+		// 			props_data: {
+		// 				placeholder: "Select Text",
+		// 				by: "value",
+		// 				required: true,
+		// 				options: [
+		// 					{
+		// 						label: "£999.99",
+		// 						value: "{{ cart_amount }}",
+		// 					},
+		// 					{
+		// 						label: "95 items",
+		// 						value: "{{ cart_count }} items",
+		// 					},
+		// 					{
+		// 						label: "£999.99 (95 items)",
+		// 						value: "{{ cart_amount }} ({{ cart_count }} items)",
+		// 					},
+		// 				],
+		// 				defaultValue: '{{ cart_amount }}',
+		// 			},
+		// 		},
+		// 	],
+		// },
 		{
 			name: "Favourite",
 			accordion_key: 'favourite',

@@ -10,7 +10,7 @@ namespace App\Actions\Accounting\InvoiceCategory;
 
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateInvoices;
 use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateOrderingIntervals;
-use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSales;
+use App\Actions\Accounting\InvoiceCategory\Hydrators\InvoiceCategoryHydrateSalesIntervals;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Accounting\InvoiceCategory;
 
@@ -28,7 +28,7 @@ class HydrateInvoiceCategories
     {
         InvoiceCategoryHydrateInvoices::run($invoiceCategory);
         InvoiceCategoryHydrateOrderingIntervals::run($invoiceCategory);
-        InvoiceCategoryHydrateSales::run($invoiceCategory);
+        InvoiceCategoryHydrateSalesIntervals::run($invoiceCategory);
     }
 
 

@@ -98,7 +98,7 @@ test('create group', function () {
 
     $group = StoreGroup::make()->action($modelData);
     expect($group)->toBeInstanceOf(Group::class)
-        ->and($group->roles()->count())->toBe(7)
+        ->and($group->roles()->count())->toBe(9)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     return $group;
@@ -106,14 +106,14 @@ test('create group', function () {
 
 test('group scoped job positions', function (Group $group) {
     $jobPositions = collect(config("blueprint.job_positions.positions"));
-    expect($group->jobPositions()->count())->toBe(5)
+    expect($group->jobPositions()->count())->toBe(8)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 
     $this->artisan('group:seed-job-positions', [
         'group' => $group->slug,
     ])->assertSuccessful();
 
-    expect($group->jobPositions()->count())->toBe(5)
+    expect($group->jobPositions()->count())->toBe(8)
         ->and($group->jobPositionCategories()->count())->toBe($jobPositions->count());
 })->depends('create group');
 
@@ -166,7 +166,7 @@ test('create organisation type shop', function (Group $group) {
     expect($organisation)->toBeInstanceOf(Organisation::class)
         ->and($organisation->address)->toBeInstanceOf(Address::class)
         ->and($organisation->roles()->count())->toBe(7)
-        ->and($group->roles()->count())->toBe(14)
+        ->and($group->roles()->count())->toBe(16)
         ->and($organisation->accountingStats->number_org_payment_service_providers)->toBe(1)
         ->and($organisation->accountingStats->number_org_payment_service_providers_type_account)->toBe(1);
 
@@ -548,12 +548,12 @@ test('UI index overview org', function (User $user) {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Overview/OverviewHub')
-            ->where('title', 'overview')
+            ->where('title', 'Overview')
             ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'overview')
+                    ->where('title', 'Overview')
                     ->etc()
             )->has('dashboard_stats');
     });
@@ -1031,13 +1031,13 @@ test('UI index organisation', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Organisations/Organisations')
-            ->where('title', 'organisations')
+            ->where('title', 'Organisations')
             ->has('breadcrumbs', 2)
             ->has('data')
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'organisations')
+                    ->where('title', 'Organisations')
                     ->etc()
             );
     });
@@ -1058,7 +1058,7 @@ test('UI edit organisation', function () {
     $response->assertInertia(function (AssertableInertia $page) use ($organisation) {
         $page
             ->component('EditModel')
-            ->where('title', 'organisation')
+            ->where('title', 'Organisation')
             ->has('breadcrumbs', 3)
             ->has('formData')
             ->has(
@@ -1227,12 +1227,12 @@ test('UI index overview group', function () {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Overview/OverviewHub')
-            ->where('title', 'overview')
+            ->where('title', 'Overview')
             ->has('breadcrumbs', 2)
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('title', 'overview')
+                    ->where('title', 'Overview')
                     ->etc()
             )->has('dashboard_stats');
     });
@@ -1306,7 +1306,7 @@ test('UI show goods dashboard group', function () {
         $page
             ->component('Goods/GoodsDashboard')
             ->has('breadcrumbs', 2)
-            ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', 'goods strategy')->etc())
+            ->has('pageHead', fn (AssertableInertia $page) => $page->where('title', 'Goods strategy')->etc())
             ->has('flatTreeMaps');
     });
 });

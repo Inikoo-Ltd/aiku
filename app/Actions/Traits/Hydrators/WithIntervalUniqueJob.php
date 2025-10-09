@@ -23,6 +23,13 @@ trait WithIntervalUniqueJob
     public function getUniqueJobWithInterval(Group|Organisation|Shop|InvoiceCategory|Asset|StockFamily|Stock|OrgStock|OrgStockFamily $model, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         $uniqueId = $model->id;
+        return $this->getUniqueJobWithIntervalFromId($uniqueId, $intervals, $doPreviousPeriods);
+    }
+
+    public function getUniqueJobWithIntervalFromId(string|int $uniqueId, ?array $intervals = null, ?array $doPreviousPeriods = null): string
+    {
+        $uniqueId = (string) $uniqueId;
+
         if ($intervals !== null) {
             $intervalValues = [];
             foreach ($intervals as $interval) {
@@ -39,7 +46,7 @@ trait WithIntervalUniqueJob
             $uniqueId .= '-'.implode('-', $doPreviousPeriods);
         }
 
-
         return $uniqueId;
     }
+
 }

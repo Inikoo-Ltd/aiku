@@ -8,9 +8,12 @@
 
 namespace App\Actions\Catalogue\Product\Hydrators;
 
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Catalogue\Product;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -28,10 +31,15 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
     {
 
         if ($product->state == ProductStateEnum::DISCONTINUED) {
-            $product->update(['available_quantity' => null]);
+            UpdateProduct::run($product, [
+                'available_quantity' => null,
+                'status'             => ProductStatusEnum::DISCONTINUED,
+            ]);
+
+
             return;
         }
-
+        $currentQuantity = $product->available_quantity;
         $availableQuantity = 0;
 
         $numberOrgStocksChecked = 0;
@@ -45,34 +53,83 @@ class ProductHydrateAvailableQuantity implements ShouldBeUnique
 
             $availableQuantityFromThisOrgStock = floor($quantityInStock / $productToOrgStockRatio);
 
-
             if ($numberOrgStocksChecked == 0) {
                 $availableQuantity = $availableQuantityFromThisOrgStock;
             } else {
-                $availableQuantity = min($availableQuantityFromThisOrgStock, $numberOrgStocksChecked);
+                $availableQuantity = min($availableQuantityFromThisOrgStock, $availableQuantity);
             }
 
             $numberOrgStocksChecked++;
+        }
 
+        if ($availableQuantity < 0) {
+            $availableQuantity = 0;
         }
 
 
 
-        $product->update(['available_quantity' => $availableQuantity]);
+        $dataToUpdate = [
+            'available_quantity' => $availableQuantity,
+        ];
+
+        if ($currentQuantity == 0 && $availableQuantity > 0) {
+            $dataToUpdate['back_in_stock_since'] = now();
+        }
+
+        if (in_array($product->status, [ProductStatusEnum::FOR_SALE, ProductStatusEnum::OUT_OF_STOCK])) {
+            if ($availableQuantity == 0) {
+                $status = ProductStatusEnum::OUT_OF_STOCK;
+                $dataToUpdate['out_of_stock_since'] = now();
+            } else {
+                $status = ProductStatusEnum::FOR_SALE;
+            }
+            $dataToUpdate['status'] = $status;
+        }
 
 
+
+        UpdateProduct::run($product, $dataToUpdate);
     }
 
-    public string $commandSignature = 'aaa';
+    public string $commandSignature = 'product:hydrate-available-quantity {id?}';
 
-    public function asCommand()
+    public function asCommand(Command $command): void
     {
-        $product = Product::find(235799);
 
-        foreach (Product::all() as $product) {
+        if ($command->argument('id')) {
+            $product = Product::findOrFail($command->argument('id'));
             $this->handle($product);
+            return;
         }
 
+        $chunkSize = 100; // Process 100 products at a time to save memory
+        $count     = 0;
+
+        // Get total count for progress bar
+        $total = Product::count();
+
+        if ($total === 0) {
+            $command->info("No products found.");
+
+            return;
+        }
+
+        // Create a progress bar
+        $progressBar = $command->getOutput()->createProgressBar($total);
+        $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
+        $progressBar->start();
+
+        Product::chunk($chunkSize, function ($products) use (&$count, $progressBar) {
+            foreach ($products as $product) {
+                $this->handle($product);
+                $count++;
+                $progressBar->advance();
+            }
+        });
+
+        $progressBar->finish();
+        $command->newLine();
+        $command->info("Updated available quantity for $count products.");
     }
 
 }

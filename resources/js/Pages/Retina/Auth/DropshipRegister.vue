@@ -280,7 +280,7 @@ const onCallbackGoogleLogin = (e) => {
 			</div>
 			<form @submit.prevent="submitRegister" class="space-y-12 px-14 py-10">
 				<div class="text-xl font-semibold flex justify-center">
-					{{ trans("Join Our Dropship – Register Now!") }}
+					{{ trans("Join Our Dropshipping Shop – Register Now!") }}
 				</div>
 				<div class="border-b border-gray-900/10 pb-12">
 					<div class="mt-10 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
@@ -445,7 +445,7 @@ const onCallbackGoogleLogin = (e) => {
 							v-for="(pollReply, idx) in form.poll_replies"
 							:key="pollReply.id"
 							class="sm:col-span-6">
-							<label class="block text-sm font-medium text-gray-700 capitalize">
+							<label class="block text-sm font-medium text-gray-700">
 								{{ pollReply.label }}
 							</label>
 

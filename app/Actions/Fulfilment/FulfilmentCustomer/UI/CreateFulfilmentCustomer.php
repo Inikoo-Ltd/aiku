@@ -33,18 +33,18 @@ class CreateFulfilmentCustomer extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new customer'),
+                'title'       => __('New customer'),
                 'pageHead'    => [
-                    'title'        => __('new customer'),
+                    'title'        => __('New customer'),
                     'icon'         => [
                         'icon'  => ['fal', 'fa-user'],
-                        'title' => __('customer')
+                        'title' => __('Customer')
                     ],
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'exitEdit',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => preg_replace('/create$/', 'index', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())

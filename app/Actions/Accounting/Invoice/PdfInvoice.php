@@ -34,8 +34,6 @@ class PdfInvoice extends OrgAction
     public function asController(Organisation $organisation, Invoice $invoice, ActionRequest $request): Response
     {
 
-        //$this->initialisationFromShop($invoice->shop, $request);
-
         return $this->handle($invoice);
     }
 }

@@ -11,8 +11,6 @@ namespace App\Models\Comms;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int|null $org_post_room_id
  * @property int $runs_all

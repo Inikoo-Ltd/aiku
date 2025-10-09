@@ -116,18 +116,18 @@ class IndexFulfilments extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('fulfilment shops'),
+                'title'       => __('Fulfilment shops'),
                 'pageHead'    => [
-                    'title'   => __('fulfilment shops'),
+                    'title'   => __('Fulfilment shops'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-store-alt'],
-                        'title' => __('fulfilment')
+                        'title' => __('Fulfilment')
                     ],
                     'actions' => [
                         $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new fulfilment shop'),
+                            'tooltip' => __('New fulfilment shop'),
                             'label'   => __('Fulfilment Shop'),
                             'route'   => [
                                 'name'       => 'grp.org.fulfilments.create',

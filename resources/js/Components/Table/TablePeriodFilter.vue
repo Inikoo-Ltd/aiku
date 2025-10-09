@@ -155,7 +155,7 @@ onMounted(() => {
         <div v-for="period, idxPeriod in periodList"
             :key="'datePickerPeriod' + idxPeriod"
             @click="() => onClickPeriodType(period)"
-            class="px-3 py-1 cursor-pointer capitalize flex items-center gap-x-2"
+            class="px-3 py-1 cursor-pointer flex items-center gap-x-2"
             :class="[selectedPeriodType === period.type ? '' : 'rounded-lg bg-white hover:bg-gray-50']"
             :style="{
                 backgroundColor: selectedPeriodType === period.type ? layout?.app?.theme[4] + '22' : '' 

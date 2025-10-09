@@ -9,13 +9,16 @@
 
 use App\Actions\Accounting\Invoice\UI\IndexInvoices;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
+use App\Actions\Accounting\Invoice\UI\ShowRefund;
+use App\Actions\Accounting\Payment\UI\ShowPayment;
+use App\Actions\Accounting\Payment\UI\ShowRefundPayment;
 use App\Actions\CRM\Customer\UI\CreateCustomer;
 use App\Actions\CRM\Customer\UI\CreateCustomerClient;
 use App\Actions\CRM\Customer\UI\EditCustomer;
 use App\Actions\CRM\Customer\UI\EditCustomerClient;
+use App\Actions\CRM\Customer\UI\ExportCustomers;
 use App\Actions\CRM\Customer\UI\IndexCustomerClients;
 use App\Actions\CRM\Customer\UI\IndexCustomers;
-use App\Actions\CRM\Customer\UI\IndexFilteredProducts;
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Customer\UI\ShowCustomerClient;
 use App\Actions\CRM\WebUser\CreateWebUser;
@@ -33,11 +36,17 @@ use App\Actions\Ordering\Order\UI\ShowOrder;
 
 Route::get('', IndexCustomers::class)->name('index');
 Route::get('create', CreateCustomer::class)->name('create');
+Route::get('export', [ExportCustomers::class, 'inShop'])->name('export');
 Route::get('{customer}/edit', EditCustomer::class)->name('edit');
 Route::prefix('{customer}')->as('show')->group(function () {
     Route::get('', ShowCustomer::class);
     Route::get('/orders', [IndexOrders::class, 'inCustomer'])->name('.orders.index');
     Route::get('/orders/{order}', [ShowOrder::class, 'inCustomerInShop'])->name('.orders.show');
+    Route::get('/orders/{order}/invoices/{invoice}', [ShowInvoice::class, 'inOrderInCustomerInShop'])->name('.orders.show.invoices.show');
+    Route::get('/orders/{order}/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'inInvoiceinOrderInCustomerInShop'])->name('.orders.show.invoices.show.refunds.show');
+    Route::get('/orders/{order}/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInCustomerInShop'])->name('.orders.show.delivery-note.show');
+    Route::get('/payments/{payment}', [ShowPayment::class, 'inCustomer'])->name('.payments.show');
+    Route::get('/refunds/{payment}', [ShowRefundPayment::class, 'inCustomer'])->name('.refunds.show');
 
     Route::get('/delivery_notes', IndexDeliveryNotesInCustomers::class)->name('.delivery_notes.index');
     Route::get('/delivery_notes/{deliveryNote}', [ShowDeliveryNote::class, 'inCustomerInShop'])->name('.delivery_notes.show');
@@ -61,17 +70,24 @@ Route::prefix('{customer}')->as('show')->group(function () {
                 Route::prefix('{customerClient}/orders')->as('.show.orders')->group(function () {
                     Route::get('', [IndexOrders::class, 'inCustomerClient'])->name('.index');
                     Route::get('{order}', [ShowOrder::class, 'inCustomerClient'])->name('.show');
+                    Route::get('{order}/invoices/{invoice}', [ShowInvoice::class, 'inOrderInCustomerClientInCustomerInShop'])->name('.show.invoices.show');
+                    Route::get('{order}/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'InInvoiceinOrderInCustomerClientInCustomerInShop'])->name('.show.invoices.show.refunds.show');
+                    Route::get('{order}/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInCustomerClientInCustomerInShop'])->name('.show.delivery-note.show');
+
                 });
 
 
                 Route::prefix('{customerClient}/invoices')->as('.show.invoices')->group(function () {
                     Route::get('{invoice}', [ShowInvoice::class, 'inCustomerClient'])->name('.show');
                 });
-
             });
             Route::prefix('/orders')->as('.orders')->group(function () {
                 Route::get('', IndexOrdersInCustomerSalesChannel::class)->name('.index');
                 Route::get('/{order}', [ShowOrder::class, 'inPlatformInCustomer'])->name('.show');
+                Route::get('{order}/invoices/{invoice}', [ShowInvoice::class, 'inOrderInPlatformInCustomerInShop'])->name('.show.invoices.show');
+                Route::get('{order}/invoices/{invoice}/refunds/{refund}', [ShowRefund::class, 'InInvoiceinOrderInPlatformInCustomerInShop'])->name('.show.invoices.show.refunds.show');
+                Route::get('{order}/delivery-note/{deliveryNote}', [ShowDeliveryNote::class, 'inOrderInPlatformInCustomerInShop'])->name('.show.delivery-note.show');
+
             });
         });
     });
@@ -82,9 +98,5 @@ Route::prefix('{customer}')->as('show')->group(function () {
             Route::get('', ShowWebUser::class)->name('.show');
             Route::get('edit', EditWebUser::class)->name('.edit');
         });
-    });
-
-    Route::prefix('portfolios')->as('.portfolios')->group(function () {
-        Route::get('products', IndexFilteredProducts::class)->name('.filtered-products');
     });
 });

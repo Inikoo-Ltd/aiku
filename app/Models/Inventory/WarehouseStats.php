@@ -44,7 +44,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_org_stock_movements_type_disassociate
  * @property int $number_org_stock_movements_flow_in
  * @property int $number_org_stock_movements_flow_out
- * @property int $number_org_stock_movements_flow_no_change
+ * @property int $number_org_stock_movements_flow_audit
  * @property int $number_org_stock_audits
  * @property int $number_org_stock_audits_state_in_process
  * @property int $number_org_stock_audits_state_completed
@@ -153,6 +153,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_pallets_state_request_return_submitted
  * @property int $number_pallets_state_request_return_confirmed
  * @property int $number_customers_status_pre_registration
+ * @property int $number_org_stock_movements_type_audit
  * @property-read \App\Models\Inventory\Warehouse $warehouse
  * @method static Builder<static>|WarehouseStats newModelQuery()
  * @method static Builder<static>|WarehouseStats newQuery()

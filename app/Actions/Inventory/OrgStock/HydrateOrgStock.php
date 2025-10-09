@@ -10,10 +10,12 @@ namespace App\Actions\Inventory\OrgStock;
 
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateMovements;
+use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydratePackedIn;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateQuantityInLocations;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateSalesIntervals;
 use App\Actions\Inventory\OrgStock\Hydrators\OrgStockHydrateValueInLocations;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Actions\Traits\ModelHydrateSingleTradeUnits;
 use App\Models\Inventory\OrgStock;
 
 class HydrateOrgStock
@@ -35,6 +37,8 @@ class HydrateOrgStock
         OrgStockHydrateValueInLocations::run($orgStock);
         OrgStockHydrateMovements::run($orgStock);
         OrgStockHydrateSalesIntervals::run($orgStock);
+        OrgStockHydratePackedIn::run($orgStock);
+        ModelHydrateSingleTradeUnits::run($orgStock);
     }
 
 

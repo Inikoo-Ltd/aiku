@@ -18,7 +18,6 @@ use App\Actions\Accounting\Invoice\UI\IndexRefunds;
 use App\Actions\Accounting\Invoice\UI\ShowDeletedInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowInvoice;
 use App\Actions\Accounting\Invoice\UI\ShowRefund;
-use App\Actions\Accounting\InvoiceCategory\UI\CreateInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UI\EditInvoiceCategory;
 use App\Actions\Accounting\InvoiceCategory\UI\IndexInvoiceCategories;
 use App\Actions\Accounting\InvoiceCategory\UI\ShowInvoiceCategory;
@@ -37,10 +36,14 @@ use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccounts;
 use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
+use App\Actions\Accounting\UI\IndexInvoicesPerShop;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowAccountingDashboard::class)->name('dashboard');
+
+Route::get('/per-store', IndexInvoicesPerShop::class)->name('invoices-shop');
+
 
 Route::get('/providers/{orgPaymentServiceProvider}/accounts/{paymentAccount}/payments/create', [IndexPayments::class, 'inPaymentAccountInPaymentServiceProvider'])->name('org_payment_service_providers.show.payment-accounts.show.payments.create');
 Route::get('/providers/{orgPaymentServiceProvider}/payments/create', [IndexPayments::class, 'inPaymentServiceProvider'])->name('org_payment_service_providers.show.payments.create');
@@ -105,9 +108,9 @@ Route::get('/invoices-deleted', IndexDeletedInvoices::class)->name('deleted_invo
 Route::get('/invoices-deleted/{invoiceSlug}', ShowDeletedInvoice::class)->name('deleted_invoices.show');
 
 Route::get('/invoice-categories', IndexInvoiceCategories::class)->name('invoice-categories.index');
-Route::get('/invoice-categories/create', CreateInvoiceCategory::class)->name('invoice-categories.create');
 Route::get('/invoice-categories/{invoiceCategory}', ShowInvoiceCategory::class)->name('invoice-categories.show');
 Route::get('/invoice-categories/{invoiceCategory}/invoices', [IndexInvoices::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index');
+Route::get('/invoice-categories/{invoiceCategory}/invoices/omega', [OmegaManyInvoice::class, 'inInvoiceCategory'])->name('invoice-categories.show.invoices.index.omega');
 
 Route::get('/invoice-categories/{invoiceCategory}/refunds', [IndexRefunds::class, 'inInvoiceCategory'])->name('invoice-categories.show.refunds.index');
 

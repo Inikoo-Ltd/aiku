@@ -12,7 +12,6 @@ use App\Actions\Traits\WithEnumStats;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
-use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Masters\MasterProductCategory;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -40,9 +39,10 @@ class MasterDepartmentHydrateDepartments implements ShouldBeUnique
 
         $stats = [
             'number_departments' => DB::table('product_categories')->where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('master_product_category_id', $masterDepartment->id)->count(),
-            'number_current_departments' => DB::table('product_categories')->where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('master_product_category_id', $masterDepartment->id)->whereIn('state', [
-                ShopStateEnum::OPEN,
-                ShopStateEnum::CLOSING_DOWN,
+            'number_current_departments' => DB::table('product_categories')->where('type', ProductCategoryTypeEnum::DEPARTMENT)
+                ->where('master_product_category_id', $masterDepartment->id)->whereIn('state', [
+                ProductCategoryStateEnum::ACTIVE,
+                ProductCategoryStateEnum::DISCONTINUING,
             ])->count()
         ];
 

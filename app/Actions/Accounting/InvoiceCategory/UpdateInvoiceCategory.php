@@ -14,7 +14,10 @@ use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryTypeEnum;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceCategories;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceCategories;
 use App\Models\Accounting\InvoiceCategory;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -25,7 +28,23 @@ class UpdateInvoiceCategory extends OrgAction
 
     public function handle(InvoiceCategory $invoiceCategory, array $modelData): InvoiceCategory
     {
-        return $this->update($invoiceCategory, $modelData);
+        $invoiceCategory = $this->update($invoiceCategory, $modelData);
+
+        $changes = Arr::except($invoiceCategory->getChanges(), ['updated_at', 'last_fetched_at']);
+
+
+        if (Arr::has($changes, 'state')) {
+            if ($invoiceCategory->organisation) {
+                OrganisationHydrateInvoiceCategories::dispatch($invoiceCategory->organisation)->delay($this->hydratorsDelay);
+            }
+
+            if ($invoiceCategory->group) {
+                GroupHydrateInvoiceCategories::dispatch($invoiceCategory->group)->delay($this->hydratorsDelay);
+            }
+        }
+
+
+        return $invoiceCategory;
     }
 
     public function authorize(ActionRequest $request): bool

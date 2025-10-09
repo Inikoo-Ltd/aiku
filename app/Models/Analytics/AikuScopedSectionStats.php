@@ -11,8 +11,6 @@ namespace App\Models\Analytics;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- *
- *
  * @property int $id
  * @property int $aiku_scoped_section_id
  * @property \Illuminate\Support\Carbon|null $created_at

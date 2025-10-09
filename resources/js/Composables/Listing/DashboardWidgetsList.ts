@@ -1,4 +1,4 @@
-import { User } from './../../../../vendor/laravel/breeze/stubs/inertia-react-ts/resources/js/types/index.d';
+
 /**
  * Author: Vika Aqordi
  * Created on: 09-01-2025-14h-05m

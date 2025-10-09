@@ -31,9 +31,9 @@ class CreateRawMaterial extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('new raw material'),
+                'title'       => __('New raw material'),
                 'pageHead'    => [
-                    'title'        => __('new raw material'),
+                    'title'        => __('New raw material'),
                     'icon'         => [
                         'title' => __('Create raw material'),
                         'icon'  => 'fal fa-industry'
@@ -42,7 +42,7 @@ class CreateRawMaterial extends OrgAction
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
-                            'label' => __('cancel'),
+                            'label' => __('Cancel'),
                             'route' => [
                                 'name'       => 'grp.org.productions.show.crafts.raw_materials.index',
                                 'parameters' => $request->route()->originalParameters()

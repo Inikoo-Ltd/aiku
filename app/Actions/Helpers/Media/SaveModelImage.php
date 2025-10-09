@@ -18,6 +18,7 @@ use App\Models\CRM\WebUser;
 use App\Models\Helpers\Brand;
 use App\Models\Helpers\Tag;
 use App\Models\HumanResources\Employee;
+use App\Models\Masters\MasterProductCategory;
 use App\Models\SupplyChain\Agent;
 use App\Models\SupplyChain\Supplier;
 use App\Models\SysAdmin\Group;
@@ -35,11 +36,11 @@ class SaveModelImage
     use AsAction;
 
     public function handle(
-        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand $model,
+        User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand $model,
         array $imageData,
         string $scope = 'image',
         string $foreignKeyMedia = 'image_id'
-    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand {
+    ): User|WebUser|Agent|Supplier|Employee|Guest|Customer|Group|Organisation|Shop|WebBlockType|MasterProductCategory|ProductCategory|Webpage|Collection|ModelHasContent|Tag|Brand {
         $oldImage = $model->image;
 
         $checksum = md5_file($imageData['path']);

@@ -71,7 +71,7 @@ class ShowPostRoom extends OrgAction
                             ],
                             'leftIcon' => [
                                 'icon'    => 'fal fa-money-check-alt',
-                                'tooltip' => __('outboxes')
+                                'tooltip' => __('Outboxes')
                             ]
                         ],
                         [
@@ -83,7 +83,7 @@ class ShowPostRoom extends OrgAction
                             ],
                             'leftIcon' => [
                                 'icon'    => 'fal fa-credit-card',
-                                'tooltip' => __('mailshots')
+                                'tooltip' => __('Mailshots')
                             ]
                         ],
                         [

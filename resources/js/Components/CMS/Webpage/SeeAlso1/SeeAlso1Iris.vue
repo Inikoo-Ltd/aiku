@@ -16,7 +16,7 @@ import { Navigation, Pagination } from 'swiper/modules'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
+import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
 
@@ -34,7 +34,7 @@ const emits = defineEmits<{
 
 
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
+const bKeys = Blueprint(props.webpageData)?.blueprint?.map(b => b?.key?.join("-")) || []
 
 const slidesPerView = computed(() => {
   const perRow = props.fieldValue?.settings?.per_row ?? {}
@@ -48,25 +48,43 @@ const slidesPerView = computed(() => {
 // Refs untuk custom navigation
 const prevEl = ref(null)
 const nextEl = ref(null)
+
+const compSwiperOptions = computed(() => {
+    if (props.fieldValue?.settings?.products_data?.type == 'custom') {
+        return props.fieldValue?.settings?.products_data?.products
+    } else if (props.fieldValue?.settings?.products_data?.type == 'current-family') {
+        return props.fieldValue?.settings?.products_data?.current_family?.option || []
+    } else if (props.fieldValue?.settings?.products_data?.type == 'other-family') {
+        return props.fieldValue?.settings?.products_data?.other_family?.option || []
+    } else {
+        return props.fieldValue?.settings?.products_data?.top_sellers || []
+    }
+})
+
+console.log('see also',props)
 </script>
 
 <template>
- <div id="see-also-carousel" class="w-full pb-6" :style="{
+ <div id="see-also-1-iris" class="w-full pb-6" :style="{
     ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
     ...getStyles(fieldValue.container?.properties, screenType),
     width: 'auto'
-  }">
+  }" :dropdown-type="props.fieldValue?.settings?.products_data?.type">
     <!-- Title -->
-    <div class="px-4 py-6 pb-2">
+    <div class="px-3 py-6 pb-2">
       <div class="text-3xl font-semibold text-gray-800">
         <div v-html="fieldValue.title"></div>
       </div>
     </div>
 
+    <div v-if="['luigi-trends', 'luigi-recently_ordered', 'luigi-last_seen', 'luigi-item_detail_alternatives'].includes(fieldValue.settings.products_data.type)">
+      <!-- Render nothing due to deprecated -->
+        <!-- <RecommendersLuigi1Iris :slidesPerView recommendation_type="trends" /> -->
+    </div>
 
     <!-- Carousel with custom navigation -->
-    <div class="relative px-4 py-6" @click="() => {
-      sendMessageToParent('activeBlock', indexBlock)
+    <div v-else-if="compSwiperOptions?.length" class="relative px-4 py-6" @click="() => {
+      `sendMessageToParent('activeBlock', indexBlock)`
       sendMessageToParent('activeChildBlock', bKeys[0])
     }">
       <!-- Tombol Navigasi Custom -->
@@ -78,14 +96,14 @@ const nextEl = ref(null)
       </button>
 
       <!-- Swiper -->
-      
       <Swiper :modules="[Navigation]" :slides-per-view="slidesPerView" :space-between="20"
         :navigation="{ prevEl, nextEl }" pagination>
-        <SwiperSlide v-for="(product, index) in  fieldValue?.settings.products_data.type== 'custom' ? fieldValue?.settings?.products_data?.products : fieldValue?.settings?.products_data?.top_sellers" :key="index"
+        <SwiperSlide v-for="(product, index) in  compSwiperOptions" :key="product.slug"
           class="h-full">
           <div class="h-full">
             <div v-if="product" class="h-full flex flex-col">
-              <ProductRender :product="product" :productHasPortfolio="[]" />
+              <ProductRenderEcom v-if="layout.retina.type === 'b2b'" :product="product" :basketButton="false" />
+              <ProductRender v-else :product="product" :productHasPortfolio="[]" />
             </div>
             <div v-else>
             </div>

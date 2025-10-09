@@ -124,7 +124,7 @@ class IndexAgents extends GrpAction
                         'action'      => $this->canEdit ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new agent'),
+                            'tooltip' => __('New agent'),
                             'label'   => __('agent'),
                             'route'   => [
                                 'name'       => 'grp.supply-chain.agents.create',
@@ -173,7 +173,7 @@ class IndexAgents extends GrpAction
                     'icon'    =>
                         [
                             'icon'  => ['fal', 'fa-people-arrows'],
-                            'title' => __('agents')
+                            'title' => __('Agents')
                         ],
                     'title'  => __("agents"),
 
@@ -181,7 +181,7 @@ class IndexAgents extends GrpAction
                         $this->canEdit && $request->route()->getName() == 'grp.supply-chain.agents.index' ? [
                             'type'    => 'button',
                             'style'   => 'create',
-                            'tooltip' => __('new agent'),
+                            'tooltip' => __('New agent'),
                             'label'   => __('agent'),
                             'route'   => [
                                 'name'       => 'grp.supply-chain.agents.create',

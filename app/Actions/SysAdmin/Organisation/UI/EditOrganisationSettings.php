@@ -9,6 +9,7 @@
 namespace App\Actions\SysAdmin\Organisation\UI;
 
 use App\Actions\Helpers\Country\UI\GetAddressData;
+use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\GoogleDrive\Traits\WithTokenPath;
 use App\Actions\OrgAction;
 use App\Actions\UI\Dashboards\ShowGroupDashboard;
@@ -129,12 +130,12 @@ class EditOrganisationSettings extends OrgAction
                             "label"  => __("google drive"),
                             "icon"   => "fab fa-google",
                             "button" => [
-                                "title"   => !file_exists($this->getTokenPath()) ? "Authorize" : "Authorized",
+                                "title"   => !file_exists($this->getTokenPath($organisation)) ? "Authorize" : "Authorized",
                                 "route"   => [
                                     'name'       => 'grp.models.org.google_drive.authorize',
                                     'parameters' => [$organisation->id]
                                 ],
-                                "disable" => file_exists($this->getTokenPath())
+                                "disable" => file_exists($this->getTokenPath($organisation))
                             ],
 
                             "fields" => [
@@ -150,12 +151,12 @@ class EditOrganisationSettings extends OrgAction
                                     "value" => Arr::get($organisation->settings, 'google.secret'),
                                     "use_generate_password" => false
                                 ],
-                                "google_drive_folder_key" => [
+                                /*"google_drive_folder_key" => [
                                     "type"  => "password",
-                                    "label" => __("google drive folder key"),
+                                    "label" => __("google drive main folder key"),
                                     "value" => Arr::get($organisation->settings, 'google.drive.folder'),
                                     "use_generate_password" => false
-                                ],
+                                ],*/
                                 "google_redirect_uri" => [
                                     "type"       => "input",
                                     "label"      => __("google redirect URI"),
@@ -164,9 +165,25 @@ class EditOrganisationSettings extends OrgAction
                                     "copyButton" => true,
                                 ]
                             ],
-
                         ],
-
+                        [
+                            'label'  => __('Shipping'),
+                            'icon'   => 'fa-light fa-truck',
+                            'fields' => [
+                                'forbidden_dispatch_countries' => [
+                                    'type'          => 'multiselect-tags',
+                                    'label'         => __('Forbidden Countries'),
+                                    'placeholder'   => __('Select countries'),
+                                    'required'      => true,
+                                    'value'         => $organisation->forbidden_dispatch_countries ?? [],
+                                    'options'       => GetCountriesOptions::run(),
+                                    'searchable'    => true,
+                                    'mode'          => 'tags',
+                                    'labelProp'     => 'label',
+                                    'valueProp' => 'id'
+                                ]
+                            ],
+                        ],
                     ],
                     "args"      => [
                         "updateRoute" => [

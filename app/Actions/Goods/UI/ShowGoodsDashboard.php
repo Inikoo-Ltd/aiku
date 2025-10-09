@@ -42,12 +42,12 @@ class ShowGoodsDashboard extends OrgAction
                         'icon'  => ['fal', 'fa-cloud-rainbow'],
                         'title' => $title
                     ],
-                    'title' => __('goods strategy'),
+                    'title' => __('Goods strategy'),
                 ],
                 'flatTreeMaps' => [
                     [
                         [
-                            'name'  => __('SKUs families'),
+                            'name'  => __('Master SKUs families'),
                             'icon'  => ['fal', 'fa-boxes-alt'],
                             'route' => [
                                 'name'       => 'grp.goods.stock-families.index',
@@ -59,7 +59,7 @@ class ShowGoodsDashboard extends OrgAction
 
                         ],
                         [
-                            'name'  => 'SKUs',
+                            'name'  => __('Master SKUs'),
                             'icon'  => ['fal', 'fa-box'],
                             'route' => [
                                 'name'       => 'grp.goods.stocks.index',

@@ -70,7 +70,7 @@ class ShowOrgAgent extends OrgAction
                     'icon'          =>
                         [
                             'icon'  => ['fal', 'people-arrows'],
-                            'title' => __('agent')
+                            'title' => __('Agent')
                         ],
                     'subNavigation' => $this->getOrgAgentNavigation($orgAgent),
                     'title'         => $orgAgent->agent->organisation->name,

@@ -25,17 +25,17 @@ enum MasterShopTabsEnum: string
     {
         return match ($this) {
             MasterShopTabsEnum::SALES => [
-                'title' => __('sales'),
+                'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
             ],
             MasterShopTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
             ],
             MasterShopTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
         };

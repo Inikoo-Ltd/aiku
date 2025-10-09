@@ -127,7 +127,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|PurchaseOrder newQuery()
  * @method static Builder<static>|PurchaseOrder onlyTrashed()
  * @method static Builder<static>|PurchaseOrder query()
- * @method static Builder<static>|PurchaseOrder withTrashed()
+ * @method static Builder<static>|PurchaseOrder withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|PurchaseOrder withoutTrashed()
  * @mixin Eloquent
  */

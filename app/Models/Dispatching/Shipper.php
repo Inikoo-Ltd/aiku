@@ -8,7 +8,6 @@
 
 namespace App\Models\Dispatching;
 
-use App\Actions\Dispatching\Shipment\Itd\Traits\WithItdAuthorization;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasUniversalSearch;
@@ -50,6 +49,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
+ * @property string|null $trade_as to be shown in retina UI
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Organisation $organisation
  * @property-read Collection<int, \App\Models\Dispatching\Shipment> $shipments
@@ -59,7 +59,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Shipper newQuery()
  * @method static Builder<static>|Shipper onlyTrashed()
  * @method static Builder<static>|Shipper query()
- * @method static Builder<static>|Shipper withTrashed()
+ * @method static Builder<static>|Shipper withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Shipper withoutTrashed()
  * @mixin Eloquent
  */
@@ -70,7 +70,6 @@ class Shipper extends Model implements Auditable
     use HasUniversalSearch;
     use HasHistory;
     use HasFactory;
-    use WithItdAuthorization;
 
     protected $casts = [
         'data'            => 'array',
@@ -104,6 +103,7 @@ class Shipper extends Model implements Auditable
         'api_shipper',
         'status',
         'name',
+        'trade_as',
         'contact_name',
         'company_name',
         'email',

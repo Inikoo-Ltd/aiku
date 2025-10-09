@@ -77,6 +77,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, PalletReturn> $palletReturns
  * @property-read Collection<int, Pallet> $pallets
  * @property-read Collection<int, PickingRoute> $pickingRoutes
+ * @property-read Collection<int, \App\Models\Inventory\PickingSession> $pickingSessions
  * @property-read Collection<int, Role> $roles
  * @property-read \App\Models\Inventory\WarehouseStats|null $stats
  * @property-read Collection<int, \App\Models\Inventory\WarehouseTimeSeries> $timeSeries
@@ -88,7 +89,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static Builder<static>|Warehouse newQuery()
  * @method static Builder<static>|Warehouse onlyTrashed()
  * @method static Builder<static>|Warehouse query()
- * @method static Builder<static>|Warehouse withTrashed()
+ * @method static Builder<static>|Warehouse withTrashed(bool $withTrashed = true)
  * @method static Builder<static>|Warehouse withoutTrashed()
  * @mixin Eloquent
  */
@@ -218,6 +219,11 @@ class Warehouse extends Model implements Auditable
     public function timeSeries(): HasMany
     {
         return $this->hasMany(WarehouseTimeSeries::class);
+    }
+
+    public function pickingSessions(): HasMany
+    {
+        return $this->hasMany(PickingSession::class);
     }
 
 }

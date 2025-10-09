@@ -25,7 +25,7 @@ class SyncronisePortfolioToMagento extends RetinaAction
      */
     public function handle(MagentoUser $magentoUser, Portfolio $portfolio)
     {
-        RequestApiUploadProductMagento::dispatch($magentoUser, $portfolio);
+        RequestApiUploadProductMagento::run($magentoUser, $portfolio);
     }
 
     public function asController(MagentoUser $magentoUser, Portfolio $portfolio, ActionRequest $request)

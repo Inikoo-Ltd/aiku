@@ -5,7 +5,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { Links, Meta, Table } from '@/types/Table'
-import { inject, onMounted, onUnmounted, ref } from "vue"
+import { inject, onMounted, onUnmounted, ref, difine } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import axios from "axios"
@@ -38,6 +38,7 @@ const props = defineProps<{
 }>()
 const emits = defineEmits<{
     (e: 'optionsList', value: any[]): void
+    (e: 'selectedObject', value: any[]): void
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -101,6 +102,7 @@ const onFetchNext = () => {
 }
 
 onMounted(() => {
+    fetchProductList(getUrlFetch({'filter[global]': ''}))
     const dropdown = document.querySelector('.multiselect-dropdown')
     // console.log('bb', dropdown, dropdown?.scrollTop)
     if (dropdown) {
@@ -135,13 +137,25 @@ const onOpen = () => {
     
 }
 
+defineExpose({
+  multiselectRef: _multiselectRef,
+  fetchProductList,
+  onSearchQuery,
+})
 
 </script>
 
 <template>
     <!-- <pre>{{ options }}</pre> -->
     <!-- <div class="relative w-full text-gray-600 rounded-sm"> -->
-    <Multiselect ref="_multiselectRef" v-model="model" :options="optionsList.length ? optionsList : (initOptions || [])"
+        <!-- {{ model }} -->
+        <!-- <pre>{{ optionsList.length ? optionsList : (initOptions || []) }}</pre> -->
+    <Multiselect ref="_multiselectRef"
+        v-model="model"
+        @update:modelValue="(e) => {
+            emits('selectedObject', optionsList.find(opt => (opt[valueProp ?? 'id'] === e)))
+        }"
+        :options="optionsList.length ? optionsList : (initOptions || [])"
         :classes="{
                 placeholder: 'pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 select-none text-sm text-left w-full pl-4 font-light text-gray-400 opacity-1',
                 ...classes,
@@ -152,12 +166,14 @@ const onOpen = () => {
         clearOnSearch autofocus :caret="isComponentLoading ? false : true"
         :loading="isLoading || isComponentLoading === 'fetchProduct'"
         :placeholder="placeholder || trans('Select option')" :resolve-on-load="true" :min-chars="1"
-        @open="() => onOpen()" @search-change="(ee) => onSearchQuery(ee)">
+        @open="() => onOpen()" @search-change="(ee) => onSearchQuery(ee)"
+    >
 
         <template #singlelabel="{ value }">
             <!-- {{ $attrs }} -->
             <slot name="singlelabel" :value>
                 <div class="w-full text-left pl-4">{{ value[labelProp || 'name'] }} <span
+                        v-if="value.code"
                         class="text-sm text-gray-400">({{ value.code }})</span></div>
             </slot>
         </template>
@@ -219,13 +235,13 @@ const onOpen = () => {
 /* For Multiselect */
 :deep(.multiselect-option.is-selected),
 :deep(.multiselect-option.is-selected.is-pointed) {
-    background-color: v-bind('layout?.app?.theme[4]') !important;
-    color: v-bind('layout?.app?.theme[5]') !important;
+    background-color: var(--theme-color-4) !important;
+    color: var(--theme-color-5) !important;
 }
 
 :deep(.multiselect-option.is-pointed) {
-	background-color: v-bind('layout?.app?.theme[4] + "15"') !important;
-    color: v-bind('`color-mix(in srgb, ${layout?.app?.theme[4]} 50%, black)`') !important;
+	background-color: color-mix(in srgb, var(--theme-color-4) 10%, transparent) !important;
+    color: color-mix(in srgb, var(--theme-color-4) 50%, black) !important;
 }
 
 :deep(.multiselect-option.is-disabled) {
@@ -253,4 +269,6 @@ const onOpen = () => {
 :deep(.multiselect-tag-remove-icon) {
     @apply text-lime-800
 }
+
+
 </style>

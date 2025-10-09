@@ -8,6 +8,7 @@
 
 namespace App\Models\Catalogue;
 
+use App\Enums\Catalogue\Collection\CollectionProductsStatusEnum;
 use App\Enums\Catalogue\Collection\CollectionStateEnum;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
@@ -28,8 +29,6 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 /**
- *
- *
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
@@ -54,6 +53,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $master_collection_id
  * @property string|null $description_title
  * @property string|null $description_extra
+ * @property CollectionProductsStatusEnum $products_status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
@@ -78,7 +78,7 @@ use Spatie\Sluggable\SlugOptions;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection onlyTrashed()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection withTrashed()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection withoutTrashed()
  * @mixin \Eloquent
  */
@@ -94,9 +94,10 @@ class Collection extends Model implements Auditable, HasMedia
     protected $guarded = [];
 
     protected $casts = [
-        'data'       => 'array',
-        'web_images' => 'array',
-        'state'      => CollectionStateEnum::class,
+        'data'           => 'array',
+        'web_images'     => 'array',
+        'state'          => CollectionStateEnum::class,
+        'products_status' => CollectionProductsStatusEnum::class,
     ];
 
     protected $attributes = [

@@ -25,7 +25,7 @@ enum DispatchedEmailTabsEnum: string
     {
         return match ($this) {
             DispatchedEmailTabsEnum::SHOWCASE => [
-                'title' => __('overview'),
+                'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
             DispatchedEmailTabsEnum::EMAIL_TRACKING_EVENTS => [

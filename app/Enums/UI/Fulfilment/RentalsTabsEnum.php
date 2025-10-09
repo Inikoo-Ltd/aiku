@@ -23,12 +23,12 @@ enum RentalsTabsEnum: string
     {
         return match ($this) {
             RentalsTabsEnum::RENTALS => [
-                'title' => __('rentals'),
+                'title' => __('Rentals'),
                 'icon'  => 'fal fa-bars',
             ],
 
             RentalsTabsEnum::HISTORY => [
-                'title' => __('history'),
+                'title' => __('History'),
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
