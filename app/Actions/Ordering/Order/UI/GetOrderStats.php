@@ -25,9 +25,19 @@ class GetOrderStats
             $total = DB::table('orders')->where('customer_id', $parent->id)->sum('net_amount');
         }
 
+        $lifetimeValue = 0;
+        $avgPurchaseValue = 0;  // TODO
+        $avgPurchaseFrequency = 0;   // TODO
+        $avgCustomerLifespan = 0;  // TODO
+        
+        if ($parent instanceof Shop) {
+            $lifetimeValue = $avgPurchaseValue * $avgPurchaseFrequency * $avgCustomerLifespan;
+        }
+
         return [
-            'number_orders' => $parent instanceof Shop ? $parent->orderingStats->number_orders : $parent->stats->number_orders,
-            'total'         => $total
+            'number_orders'     => $parent instanceof Shop ? $parent->orderingStats->number_orders : $parent->stats->number_orders,
+            'total'             => $total,
+            'lifetime_value'    => $lifetimeValue,
         ];
     }
 }
