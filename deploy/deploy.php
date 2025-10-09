@@ -51,10 +51,6 @@ set('shared_files', [
     '.env',
     '.env.testing',
     '.user.ini',
-    'reset_db.sh',
-    'seed_currency_exchanges_staging.sh',
-    'seed_currency_exchanges.sh',
-    'database/seeders/datasets/currency-exchange/currency_exchanges.dump'
 ]);
 desc('Deploys your project');
 task('deploy', [
