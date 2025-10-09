@@ -1,30 +1,22 @@
 <script setup lang="ts">
-import { aikuLocaleStructure } from "@/Composables/useLocaleStructure";
-import { trans } from "laravel-vue-i18n";
-import { inject, computed, watch, ref } from "vue";
-import Button from "@/Components/Elements/Buttons/Button.vue";
-import PureMultiselect from "@/Components/Pure/PureMultiselect.vue";
-import PureInput from "@/Components/Pure/PureInput.vue";
-import { notify } from "@kyvg/vue3-notification";
-import axios from "axios";
-import { routeType } from "@/types/route";
-import { Link, router } from "@inertiajs/vue3";
-import InputNumber from "primevue/inputnumber";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faSave } from "@far";
-import { faPlus, faMinus, faArrowRight } from "@fal";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import BluePrintTableRefund from "@/Components/Segmented/InvoiceRefund/BlueprintTableRefund";
-import PureTable from "@/Components/Pure/PureTable/PureTable.vue";
-import Dialog from "primevue/dialog";
-import ColumnGroup from "primevue/columngroup";
-import Row from "primevue/row";
-import Column from "primevue/column";
-import { useLocaleStore } from "@/Stores/locale";
-import ActionCell from "./ActionCell.vue";
-import { InputText } from "primevue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { trans } from "laravel-vue-i18n"
+import { inject, computed, watch, ref } from "vue"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import PureMultiselect from "@/Components/Pure/PureMultiselect.vue"
+import PureInput from "@/Components/Pure/PureInput.vue"
+import { notify } from "@kyvg/vue3-notification"
+import axios from "axios"
+import { routeType } from "@/types/route"
+import { Link, router } from "@inertiajs/vue3"
+import InputNumber from "primevue/inputnumber"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCheck, faSave } from "@far"
+import { faPlus, faMinus, faArrowRight } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import Dialog from "primevue/dialog"
 
-library.add(faCheck, faSave, faPlus, faMinus, faArrowRight);
+library.add(faCheck, faSave, faPlus, faMinus, faArrowRight)
 
 
 const props = defineProps<{
@@ -61,9 +53,7 @@ const emits = defineEmits<{
     (e: "onPayInOnClick"): void
 }>();
 
-const _formCell = ref({});
 const locale = inject("locale", aikuLocaleStructure);
-const _PureTable = ref(null);
 const errorInvoicePayment = ref({
     payment_method: null,
     payment_amount: null,
@@ -132,244 +122,34 @@ const onSubmitPayment = () => {
                     title: trans("Something went wrong"),
                     text: error.message,
                     type: "error"
-                });
+                })
             }
         }
-    );
-};
+    )
+}
 
 watch(paymentData, () => {
     if (errorPaymentMethod.value) {
         errorPaymentMethod.value = null;
     }
-});
-
-
-// Section: Payment Refund
-const isOpenModalRefund = ref(false);
+})
 
 
 const paymentRefund = ref({
     payment_method: "credit_balance",
     payment_account: null as number | null,
     payment_amount: 0 as number | null
-});
-/* const isLoadingPaymentRefund = ref(false) */
+})
 const errorPaymentMethodRefund = ref<null | unknown>(null);
-const sendSubmitPaymentRefund = (url: string, data: any) => {
-    try {
-        router.post(
-            url, data,
-            {
-                onStart: () => isLoadingPayment.value = true,
-                onFinish: () => {
-                    isLoadingPayment.value = false;
-                    isOpenModalRefund.value = false;
-                },
-                onSuccess: () => {
-                    paymentRefund.value.payment_account = null,
-                        paymentRefund.value.payment_amount = 0,
-                        notify({
-                            title: trans("Success"),
-                            text: "Successfully add payment invoice",
-                            type: "success"
-                        });
-                },
-                onError: (error) => {
-                    errorPaymentMethodRefund.value = error;
-                    notify({
-                        title: trans("Something went wrong"),
-                        text: error.message,
-                        type: "error"
-                    });
-                },
-                preserveScroll: true
-            }
-        );
-
-    } catch (error: unknown) {
-        errorPaymentMethodRefund.value = error;
-    }
-};
 
 
-const onSubmitPaymentRefund = () => {
-    let url;
-    if (paymentRefund.value.payment_method === "credit_balance") {
-        url = route("grp.models.refund.refund_to_credit", {
-            refund: props.invoice_pay.invoice_id
-        });
-        sendSubmitPaymentRefund(url, {
-            amount: paymentRefund.value.payment_amount
-        });
-    }
-};
-
-const onSubmitRefundToPaymentsMethod = (form, data: any) => {
-    console.log('ffform', data);
-    let url, finalData;
-    if (paymentRefund.value.payment_method === "invoice_payment_method") {
-        url = route("grp.models.refund.refund_to_payment_account", {
-            refund: props.invoice_pay.invoice_id,
-            paymentAccount: data.payment_account_slug
-        });
-        finalData = {
-            amount: form.refund_amount,
-            original_payment_id: data.id,
-            reference: data.reference
-        };
-        console.log('fffozzzzrm', finalData);
-
-        router.post(
-            url, finalData,
-            {
-                onStart: () => data.processing = true,
-                onFinish: () => data.processing = false,
-                onSuccess: () => {
-                    if (_PureTable.value) _PureTable.value.fetchData();
-                    if (props.invoice_pay.total_need_to_refund_in_payment_method == 0) {
-                        isOpenModalRefund.value = false;
-                    }
-                    notify({
-                        title: trans("Success"),
-                        text: "Successfully add payment invoice",
-                        type: "success"
-                    });
-                },
-                onError: (error) => {
-                    console.log(error);
-                    notify({
-                        title: trans("Something went wrong"),
-                        text: error.message,
-                        type: "error"
-                    });
-                }
-            }
-        );
-    }
-};
 
 watch(paymentRefund, () => {
     if (errorPaymentMethodRefund.value) {
         errorPaymentMethodRefund.value = null;
     }
-});
+})
 
-// const generateRefundRoute = (refundSlug: string) => {
-
-//     if (route().current() === 'grp.org.fulfilments.show.crm.customers.show.invoices.show') {
-//         return route("grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show", {
-//             fulfilment: route().params?.fulfilment,
-//             fulfilmentCustomer: route().params?.fulfilmentCustomer,
-//             organisation: route().params?.organisation,
-//             shop: route().params?.shop,
-//             refund: refundSlug,
-//             invoice: props.invoice_pay.invoice_slug
-//         })
-//     }
-
-
-//     if (route().params?.fulfilment) {
-//         return route("grp.org.fulfilments.show.operations.invoices.show.refunds.show", {
-//             organisation: route().params?.organisation,
-//             fulfilment: route().params?.fulfilment,
-//             invoice: props.invoice_pay.invoice_slug,
-//             refund: refundSlug
-//         });
-//     } else {
-//         return route("grp.org.accounting.invoices.show.refunds.show", {
-//             organisation: route().params?.organisation,
-//             invoice: props.invoice_pay.invoice_slug,
-//             refund: refundSlug
-//         });
-//     }
-
-// };
-
-
-// const generateInvoiceRoute = () => {
-//     if (route().current() === 'grp.org.fulfilments.show.crm.customers.show.invoices.show.refunds.show') {
-//         return route("grp.org.fulfilments.show.crm.customers.show.invoices.show", {
-//             fulfilment: route().params?.fulfilment,
-//             fulfilmentCustomer: route().params?.fulfilmentCustomer,
-//             organisation: route().params?.organisation,
-//             shop: route().params?.shop,
-//             invoice: props.invoice_pay.invoice_slug
-//         })
-//     }
-
-
-//     if (route().params?.fulfilment) {
-//         return route("grp.org.fulfilments.show.operations.invoices.show", {
-//             organisation: route().params?.organisation,
-//             fulfilment: route().params?.fulfilment,
-//             invoice: props.invoice_pay.invoice_slug
-//         });
-//     } else {
-//         switch (route().current()) {
-//             case 'grp.org.shops.show.dashboard.invoices.refunds.show':
-//                 return route("grp.org.shops.show.dashboard.invoices.show", {
-//                     organisation: route().params?.organisation,
-//                     shop: route().params?.shop,
-//                     invoice: props.invoice_pay.invoice_slug
-//                 });
-//             default:
-//                 return route("grp.org.accounting.invoices.show", {
-//                     organisation: route().params?.organisation,
-//                     invoice: props.invoice_pay.invoice_slug
-//                 });
-//         }
-//     }
-// };
-
-// const generateShowOrderRoute = () => {
-//     return route("grp.org.shops.show.ordering.orders.show", {
-//         organisation: route().params?.organisation,
-//         shop: props.invoice_pay.shop_slug,
-//         order: props.invoice_pay.order_slug
-//     });
-// };
-
-const totalAmount = computed(() => {
-    return _PureTable.value ? _PureTable.value?.data.reduce((sum, item) => sum + Number(item.amount || 0), 0) : 0;
-});
-
-const totalRefunded = computed(() => {
-    return _PureTable.value ? _PureTable.value?.data.reduce((sum, item) => sum + Number(item.refunded || 0), 0) : 0;
-});
-
-
-const maxRefund = (data) => {
-    if (!data) return 0;
-    const maxPossible = data.amount - data.refunded;
-    return Math.min(maxPossible, -props.invoice_pay.total_need_to_refund_in_payment_method);
-};
-
-const onClickRefundPayments = () => {
-    isOpenModalRefund.value = true;
-    if (props.invoice_pay.total_need_to_refund_in_payment_method < 0)
-        paymentRefund.value.payment_method = "invoice_payment_method";
-    else if (props.invoice_pay.total_need_to_refund_in_payment_method <= 0)
-        paymentRefund.value.payment_method = "credit_balance";
-};
-
-const listPaymentRefund = computed(() => [
-    {
-        label: trans("Refund money to customer's credit balance"),
-        value: "credit_balance",
-        disable: false
-    },
-    {
-        label: trans("Refund money to payment method of the invoice"),
-        value: "invoice_payment_method",
-        disable: Number(props.invoice_pay.total_need_to_refund_in_payment_method) >= 0
-    }
-]);
-
-const setRefundAllOutsideFulfilmentShop = (value, index) => {
-    if (_formCell.value[index])
-        _formCell.value[index].form.refund_amount = -value;
-};
 
 const getRefundRoute = (refund: { slug: string }) => {
     return route('grp.org.accounting.refunds.show', {
