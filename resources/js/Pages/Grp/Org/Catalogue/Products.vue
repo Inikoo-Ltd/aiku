@@ -40,7 +40,7 @@ const props = defineProps<{
     attachments?: Record<string, any>
 }>()
 
-console.log(props)
+
 
 // Current tab state
 const currentTab = ref(props.tabs.current)
