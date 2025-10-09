@@ -20,9 +20,7 @@ use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
 use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Http\Resources\Lead\ProspectResource;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Prospect;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -64,20 +62,19 @@ class UpdateProspect extends OrgAction
         $changes  = Arr::except($prospect->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
-        if (count($changes) > 0) {
+        if (Arr::hasAny($changes, ['name', 'contact_name', 'email', 'company_name', 'state'])) {
             ProspectRecordSearch::dispatch($prospect);
+        }
 
-            if (count(array_intersect(array_keys($changes), [
-                'state',
-                'contacted_state',
-                'fail_status',
-                'success_status',
-            ]))) {
-                OrganisationHydrateProspects::dispatch($prospect->organisation)->delay($this->hydratorsDelay);
-                ShopHydrateProspects::dispatch($prospect->shop)->delay($this->hydratorsDelay);
 
-            }
-
+        if (Arr::hasAny($changes, [
+            'state',
+            'contacted_state',
+            'fail_status',
+            'success_status',
+        ])) {
+            OrganisationHydrateProspects::dispatch($prospect->organisation)->delay($this->hydratorsDelay);
+            ShopHydrateProspects::dispatch($prospect->shop)->delay($this->hydratorsDelay);
         }
 
 
@@ -96,13 +93,13 @@ class UpdateProspect extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'contacted_state'   => ['sometimes', Rule::enum(ProspectContactedStateEnum::class)],
-            'fail_status'       => ['sometimes', 'nullable', Rule::enum(ProspectFailStatusEnum::class)],
-            'success_status'    => ['sometimes', 'nullable', Rule::enum(ProspectSuccessStatusEnum::class)],
-            'dont_contact_me'   => ['sometimes', 'boolean'],
+            'contacted_state'        => ['sometimes', Rule::enum(ProspectContactedStateEnum::class)],
+            'fail_status'            => ['sometimes', 'nullable', Rule::enum(ProspectFailStatusEnum::class)],
+            'success_status'         => ['sometimes', 'nullable', Rule::enum(ProspectSuccessStatusEnum::class)],
+            'dont_contact_me'        => ['sometimes', 'boolean'],
             'can_contact_by_email'   => ['sometimes', 'boolean'],
             'can_contact_by_phone'   => ['sometimes', 'boolean'],
-            'can_contact_by_address'   => ['sometimes', 'boolean'],
+            'can_contact_by_address' => ['sometimes', 'boolean'],
 
             'last_contacted_at' => 'sometimes|nullable|date',
             'contact_name'      => ['sometimes', 'nullable', 'string', 'max:255'],
