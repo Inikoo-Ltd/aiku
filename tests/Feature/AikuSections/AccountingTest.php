@@ -1208,7 +1208,7 @@ test('UI show invoice in Organisation', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('model', 'invoice')
+                    ->where('model', 'Invoice')
                     ->where('title', $invoice->reference)
                     ->etc()
             )
@@ -1266,7 +1266,7 @@ test('UI show invoice in Shop', function () {
             ->has(
                 'pageHead',
                 fn (AssertableInertia $page) => $page
-                    ->where('model', 'invoice')
+                    ->where('model', 'Invoice')
                     ->where('title', $invoice->reference)
                     ->etc()
             )
