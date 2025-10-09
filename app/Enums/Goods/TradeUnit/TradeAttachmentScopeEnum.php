@@ -30,7 +30,7 @@ enum TradeAttachmentScopeEnum: string
     public static function labels(): array
     {
         return [
-            'ifra'                          => 'UFRA',
+            'ifra'                          => 'IFRA',
             'sds'                           => 'SDS',
             'allergen_declarations'         => __('Allergen Declarations'),
             'doc'                           => __('Declaration of Conformity'),
