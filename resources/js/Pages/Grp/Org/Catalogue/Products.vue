@@ -153,7 +153,6 @@ const onSaveEditBulkProduct = async () => {
 </script>
 
 <template>
-asdasd
     <Head :title="capitalize(title)" />
 
     <PageHeading :data="pageHead">

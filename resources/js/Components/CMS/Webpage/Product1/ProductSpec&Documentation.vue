@@ -40,7 +40,6 @@ const getIcon = (type: string) => {
 const groupedAttachments = computed(() => {
     const allFiles = [
         ...(props.product.attachments || []),
-        ...(props.product.family_attachments || [])
     ]
 
     // Group by label (scope)
@@ -112,7 +111,7 @@ const groupedAttachments = computed(() => {
         <div v-for="(items, label) in groupedAttachments" :key="label"
             class="grid grid-cols-2 border-b border-gray-300 bg-gray-50">
             <!-- Label column -->
-            <div class="p-2 font-medium text-sm border-r border-gray-200 flex items-center">
+            <div class="p-2 font-medium text-sm border-gray-200 flex items-center">
                 {{ label }}
             </div>
 
