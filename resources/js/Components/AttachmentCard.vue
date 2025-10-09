@@ -50,7 +50,7 @@ const getIcon = (type?: string) => {
 <template>
   <div class="flex flex-col gap-6 p-4">
     <!-- Public Attachments -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-white  shadow-sm border border-gray-200 overflow-hidden">
       <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
         <FontAwesomeIcon :icon="faGlobe" class="text-blue-500 text-base" />
         <h3 class="text-sm font-semibold text-gray-700 uppercase">Public Attachments</h3>
@@ -94,7 +94,7 @@ const getIcon = (type?: string) => {
     </div>
 
     <!-- Private Attachments -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+    <div class="bg-white  shadow-sm border border-gray-200 overflow-hidden">
       <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
         <FontAwesomeIcon :icon="faLock" class="text-red-500 text-base" />
         <h3 class="text-sm font-semibold text-gray-700 uppercase">Private Attachments</h3>
