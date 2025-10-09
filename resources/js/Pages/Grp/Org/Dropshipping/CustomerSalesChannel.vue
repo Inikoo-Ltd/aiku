@@ -236,26 +236,25 @@ const isModalAddress = ref(false)
             >
                 <template #default="{ isOpenModal, changeModel }">
                     <Button  @click.stop="changeModel" label="Reset channel" type="negative" icon="fal fa-undo-alt">
-        
+
                     </Button>
                 </template>
             </ModalConfirmationDelete>
 
             <ModalConfirmationDelete
-                v-if="!customer_sales_channel.can_connect_to_platform"
-                xrouteDelete="{
-                    name: props.brand_routes.delete_brand.name,
+                v-if="!customer_sales_channel.can_connect_to_platform && customer_sales_channel.status !== 'closed'"
+                :routeDelete="{
+                    name: 'grp.models.customer_sales_channel.delete',
                     parameters: {
-                        ...props.brand_routes.delete_brand.parameters,
-                        brand: option.id,
-                    }
+                        customerSalesChannel: customer_sales_channel.id,
+                    },
                 }"
                 xtitle="trans('Are you sure you want to delete brand') + ` ${option.name}?`"
                 isFullLoading
             >
                 <template #default="{ isOpenModal, changeModel }">
                     <Button  @click.stop="changeModel" label="Delete" type="delete">
-        
+
                     </Button>
                 </template>
             </ModalConfirmationDelete>
