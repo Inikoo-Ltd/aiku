@@ -373,6 +373,10 @@ class ShowProduct extends OrgAction
                     fn () => GetProductImagesShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductImagesShowcase::run($product)),
 
+                ProductTabsEnum::ATTACHMENTS->value => $this->tab == ProductTabsEnum::ATTACHMENTS->value ?
+                    fn () => GetProductAttachment::run($product)
+                    : Inertia::lazy(fn () => GetProductAttachment::run($product)),
+
                 ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($product))
                     : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($product))),
