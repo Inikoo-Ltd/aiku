@@ -14,6 +14,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ReviewContent from "@/Components/ReviewContent.vue"
+import AttachmentCard from "@/Components/AttachmentCard.vue"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -26,6 +27,7 @@ const props = defineProps<{
 		attachImageRoute: routeType
 		deleteImageRoute: routeType
 		imagesUploadedRoutes: routeType
+		attachment_box?: {}
 		translation_box: {
 			title: string
 			languages: Record<string, string>
@@ -237,7 +239,14 @@ const validImages = computed(() =>
 				</div>
 			</dl>
 
+
+			<div>
+			<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
 		</div>
+
+		</div>
+
+		
 	</div>
 </template>
 

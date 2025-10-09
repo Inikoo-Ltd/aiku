@@ -144,6 +144,7 @@ const getIcon = (type: string) => {
 </script>
 
 <template>
+    <!-- <pre>{{ props.data.attachments }}</pre> -->
     <div v-if="!editable" class="px-10 pt-4">
         <Message severity="warn" closable>
             <template #icon>
@@ -259,7 +260,7 @@ const getIcon = (type: string) => {
                         <div class="flex items-center gap-2">
                             <FontAwesomeIcon v-if="categoryBox.information" v-tooltip="categoryBox.information"
                                 icon="fal fa-info-circle" class="text-gray-400 hover:text-gray-600" fixed-width />
-                            <FontAwesomeIcon v-if="categoryBox.attachments && editable" :icon="faUnlink"
+                            <FontAwesomeIcon v-if="categoryBox.attachment && editable" :icon="faUnlink"
                                 @click.stop="() => onDeletefilesInBox(categoryBox)"
                                 class="text-red-600 cursor-pointer text-xs" />
                         </div>

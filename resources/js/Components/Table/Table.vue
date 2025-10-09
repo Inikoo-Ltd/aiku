@@ -671,7 +671,7 @@ const selectRow: {[key: string]: boolean} = reactive({...props.selectedRow})
 
 // To preserve the object selectRow
 if (props.isCheckBox) {
-    for(const row in props.resource.data){
+    for(const row in props?.resource?.data){
         if(props.resource.data[row][props.checkboxKey]) {
             selectRow[props.resource.data[row][props.checkboxKey]] = selectRow[props.resource.data[row][props.checkboxKey]] ? true : false
         }
@@ -706,7 +706,7 @@ watch(selectRow, () => {
 }, {deep: true})
 
 defineExpose({
-    data : props.resource.data,
+    data : props?.resource?.data,
     queryBuilderData : queryBuilderData,
     selectRow : selectRow,
     compResourceData : compResourceData.value

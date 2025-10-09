@@ -26,6 +26,8 @@ enum ProductTabsEnum: string
     case ORDERS = 'orders';
     case FAVOURITES = 'favourites';
     case REMINDERS = 'reminders';
+    case ATTACHMENTS = 'attachments';
+
 
 
     public function blueprint(): array
@@ -85,6 +87,12 @@ enum ProductTabsEnum: string
                 'icon'  => 'fal fa-heart',
                 'align' => 'right',
                 'type'  => 'icon',
+            ],
+            ProductTabsEnum::ATTACHMENTS => [
+                'type'  => 'icon',
+                'align' => 'right',
+                'title' => __('Attachments'),
+                'icon'  => 'fal fa-paperclip',
             ],
         };
     }

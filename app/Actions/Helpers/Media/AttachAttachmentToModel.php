@@ -9,11 +9,14 @@
 
 namespace App\Actions\Helpers\Media;
 
+use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\OrgAction;
+use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
 use App\Models\Fulfilment\PalletDelivery;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Goods\TradeUnit;
+use App\Models\Goods\TradeUnitFamily;
 use App\Models\HumanResources\Employee;
 use App\Models\Ordering\Order;
 use App\Models\Procurement\PurchaseOrder;
@@ -25,7 +28,7 @@ use Lorisleiva\Actions\ActionRequest;
 class AttachAttachmentToModel extends OrgAction
 {
 
-    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn $model, array $modelData): void
+    public function handle(Employee|TradeUnit|Supplier|Customer|PurchaseOrder|StockDelivery|Order|PalletDelivery|PalletReturn|Product|TradeUnitFamily $model, array $modelData): void
     {
         foreach (Arr::get($modelData, 'attachments') as $attachment) {
             $file           = $attachment;
@@ -39,6 +42,12 @@ class AttachAttachmentToModel extends OrgAction
 
             SaveModelAttachment::make()->action($model, $attachmentData);
         }
+
+        if ($model instanceof TradeUnit) {
+            foreach ($model->products as $product) {
+                CloneProductAttachmentsFromTradeUnits::run($product);
+            }
+        }
     }
 
     public function rules(): array
@@ -51,6 +60,20 @@ class AttachAttachmentToModel extends OrgAction
                 'string'
             ],
         ];
+    }
+
+    public function inTradeUnitFamily(TradeUnitFamily $tradeUnitFamily, ActionRequest $request): void
+    {
+        $this->initialisationFromGroup($tradeUnitFamily->group, $request);
+
+        $this->handle($tradeUnitFamily, $this->validatedData);
+    }
+
+    public function inProduct(Product $product, ActionRequest $request): void
+    {
+        $this->initialisation($product->organisation, $request);
+
+        $this->handle($product, $this->validatedData);
     }
 
     public function inEmployee(Employee $employee, ActionRequest $request): void
