@@ -52,7 +52,9 @@ const props = defineProps<{
         fetch_payment_accounts_route: routeType
         payments: routeType
     }
-    is_in_refund?: boolean
+    list_refunds: {
+        data: {}[]
+    }
 }>();
 
 const emits = defineEmits<{
@@ -369,7 +371,41 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
         _formCell.value[index].form.refund_amount = -value;
 };
 
+const getRefundRoute = (refund: { slug: string }) => {
+    return route('grp.org.accounting.refunds.show', {
+        organisation: route().params?.organisation,
+        refund: refund.slug
+    })
+}
 
+const compTotalPayment = computed(() => {
+    const total = props.list_refunds?.data?.reduce((sum, refund) => sum + Number(refund.total_amount || 0), 0) || 0;
+    const result = total + Number(props.invoice_pay.total_invoice);
+    return result;
+})
+
+const compPayment = computed(() => {
+    const total = props.list_refunds?.data?.reduce((sum, refund) => sum + Number(refund.payment_amount || 0), 0) || 0;
+    const result = total + Number(props.invoice_pay.total_paid_in);
+    return result;
+})
+
+const compTotalToPay = computed(() => {
+    const total = props.list_refunds?.data?.reduce((sum, refund) => sum + Number(refund.total_amount - refund.payment_amount), 0) || 0;
+    const result = total + Number(props.invoice_pay.total_need_to_pay);
+    return result;
+})
+
+const compTooltipTotalToPay = computed(() => {
+    if (Number(compTotalToPay.value) < 0 ) {
+        return trans("We need to refund to customer :amount", { amount: locale.currencyFormat(props.invoice_pay.currency_code, Math.abs(Number(compTotalToPay.value)).toFixed(2)) })
+    }
+    if (Number(compTotalToPay.value) > 0) {
+        return trans("Customer need to pay :amount", { amount: locale.currencyFormat(props.invoice_pay.currency_code, Number(compTotalToPay.value).toFixed(2)) }) 
+    }
+    
+    return null
+})
 </script>
 
 <template>
@@ -388,22 +424,18 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
             </div> -->
 
             <!-- Field: Excess payment -->
-            <div v-if="Number(invoice_pay.total_excess_payment) > 0" class="border-b border-gray-300">
+            <div v-if="!props.list_refunds?.data?.length && Number(invoice_pay.total_excess_payment) > 0" class="border-b border-gray-300">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium" v-tooltip="trans('Auto add to customer balance')">{{ trans("Excess Payment") }}</dt>
                     <dd class="mt-1 text-sm/6 sm:mt-0 text-right text-gray-700">
-                        {{
-                            locale.currencyFormat(invoice_pay.currency_code,
-                                Number(invoice_pay.total_excess_payment))
-                        }}
+                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_excess_payment).toFixed(2)) }}
                     </dd>
                 </div>
             </div>
 
 
             <!-- Field: Payed in & Payed out -->
-            <div class="border-b border-gray-300">
-                <!-- Pay in -->
+            <!-- <div class="border-b border-gray-300">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium underline cursor-pointer"
                         :style="{ padding : 0 }"
@@ -415,12 +447,75 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                         {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in)) }}
                     </dd>
                 </div>
-                
+            </div> -->
 
+            <!-- List Refunds -->
+            <div>
+                <!-- <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+                    <dt class="text-sm/6 font-medium" >
+                        {{ trans("Refunds") }}:
+                    </dt>
+                </div> -->
+
+                <div class="px-2 text-xs py-1 tabular-nums">
+                    <table class="w-full xborder border-gray-300 rounded">
+                        <tr class="font-bold ">
+                            <td class="px-2 py-1">{{ trans("Reference") }}</td>
+                            <td class="px-2 text-right">{{ trans("Total") }}</td>
+                            <td class="px-2 text-right">{{ trans("Payments") }}</td>
+                            <td class="px-2 text-right">{{ trans("Total to Pay") }}</td>
+                        </tr>
+                        <tr class="xfont-bold border-t border-gray-300">
+                            <td class="px-1 pt-1">{{ invoice_pay.invoice_reference }}</td>
+                            <td class="text-right px-2 pt-1">{{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice).toFixed(2)) }}</td>
+                            <td class="text-right px-2 pt-1">{{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in).toFixed(2)) }}</td>
+                            <td class="text-right px-2 pt-1">{{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay).toFixed(2)) }}</td>
+                        </tr>
+                        <tr v-for="refund in props.list_refunds?.data" :key="refund.id">
+                            <td class="">
+                                <Link :href="getRefundRoute(refund)" class="secondaryLink py-0.5">
+                                    {{ refund.reference }}
+                                </Link>
+                                <FontAwesomeIcon v-tooltip="trans('Refund')" icon="fal fa-arrow-circle-left" class="text-gray-500" fixed-width aria-hidden="true" />
+                            </td>
+                            <td class="px-2 text-right">
+                                {{ locale.currencyFormat(refund.currency_code, refund.total_amount) }}
+                            </td>
+                            <td class="px-2 text-right">
+                                {{ locale.currencyFormat(refund.currency_code, refund.payment_amount) }}
+                            </td>
+                            <td class="px-2 text-right">
+                                {{ locale.currencyFormat(refund.currency_code, refund.total_amount-refund.payment_amount) }}
+                            </td>
+                        </tr>
+
+                        <tr class="border-t border-gray-300">
+                            <td></td>
+                            <td class="text-right align-top px-2 py-1">{{ locale.currencyFormat(invoice_pay.currency_code, Number(compTotalPayment).toFixed(2)) }}</td>
+                            <td class="text-right align-top px-2 py-1">{{ locale.currencyFormat(invoice_pay.currency_code, Number(compPayment).toFixed(2)) }}</td>
+                            <td class="text-right flex items-end flex-col">
+                                <div
+                                    v-tooltip="compTooltipTotalToPay"
+                                    class="px-2 py-1 w-fit rounded-sm"
+                                    :class="Number(compTotalToPay) < 0 ? 'bg-indigo-100 border border-dashed border-indigo-500' : ''"
+                                >
+                                    {{ locale.currencyFormat(invoice_pay.currency_code, Number(compTotalToPay).toFixed(2)) }}
+                                </div>
+
+                                <button v-if="Number(compTotalToPay) > 0"
+                                    @click="() => (isOpenModalInvoice = true, fetchPaymentMethod())" size="xxs"
+                                    class="secondaryLink text-indigo-500"
+                                >
+                                    {{ trans("Pay Invoice") }}
+                                </button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
 
             <!-- Total to pay -->
-            <div v-if="Number(invoice_pay.total_need_to_pay) != 0 " class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+            <!-- <div v-if="Number(invoice_pay.total_need_to_pay) != 0 " class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
                     {{ Number(invoice_pay.total_need_to_pay) < 0 ? "Total to refund" : "Total to pay" }}
                 </dt>
@@ -441,10 +536,10 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                         {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay)) }}
                     </span>
                 </dd>
-            </div>
+            </div> -->
 
             <!-- Field: Paid -->
-            <div v-else class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+            <!-- <div v-else class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
                     {{ trans("Paid") }}
                     <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
@@ -455,11 +550,11 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                         aria-hidden="true"
                     />
                 </dt>
-            </div>
+            </div> -->
         </dl>
 
         <!-- Modal: Pay Invoice -->
-        <Dialog v-model:visible="isOpenModalInvoice" :style="{ width: '100%', maxWidth: '800px'}" modal dismissableMask>
+        <Dialog v-model:visible="isOpenModalInvoice" :style="{ width: '100%', maxWidth: '600px'}" modal dismissableMask>
             <template #header>
                 <div class="mx-auto max-w-2xl text-center">
                     <h2 class="text-lg font-bold tracking-tight sm:text-2xl">{{ trans("Invoice Payment") }}</h2>
@@ -508,12 +603,11 @@ const setRefundAllOutsideFulfilmentShop = (value, index) => {
                         </div>
 
                         <div class="space-x-1">
-                            <span class="text-xxs text-gray-500">{{ trans("Need to pay") }}: {{
-                                    locale.currencyFormat(invoice_pay.currency_code,
-                                        Number(invoice_pay.total_need_to_pay))
-                                }}</span>
-                            <Button @click="() => paymentData.payment_amount = invoice_pay.total_need_to_pay"
-                                    :disabled="paymentData.payment_amount === invoice_pay.total_need_to_pay"
+                            <span class="text-xxs text-gray-500">
+                                {{ trans("Need to pay") }}: {{ locale.currencyFormat(invoice_pay.currency_code, compTotalToPay) }}
+                            </span>
+                            <Button @click="() => paymentData.payment_amount = compTotalToPay"
+                                    :disabled="paymentData.payment_amount === compTotalToPay"
                                     type="tertiary"
                                     label="Pay all" size="xxs"/>
                         </div>

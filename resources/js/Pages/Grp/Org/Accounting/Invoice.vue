@@ -473,6 +473,7 @@ const generateShowOrderRoute = () => {
                     <InvoicePay
                         :invoice
                         :invoice_pay
+                        :list_refunds
                         @onPayInOnClick="onPayInOnClick"
                         :routes="{
                             submit_route: invoice_pay.routes.submit_payment,
