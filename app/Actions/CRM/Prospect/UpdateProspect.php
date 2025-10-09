@@ -18,6 +18,7 @@ use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithProspectPrepareForValidation;
 use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
+use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Http\Resources\Lead\ProspectResource;
 use App\Models\CRM\Prospect;
@@ -54,7 +55,7 @@ class UpdateProspect extends OrgAction
             data_set($modelData, 'location', $prospect->address->getLocation());
         }
 
-        if (Arr::has($modelData, 'contact_name')) {
+        if (Arr::get($modelData, 'contact_name') ) {
             data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
         }
 
@@ -93,6 +94,7 @@ class UpdateProspect extends OrgAction
     public function rules(): array
     {
         $rules = [
+            'state'                  => ['sometimes', Rule::enum(ProspectStateEnum::class)],
             'contacted_state'        => ['sometimes', Rule::enum(ProspectContactedStateEnum::class)],
             'fail_status'            => ['sometimes', 'nullable', Rule::enum(ProspectFailStatusEnum::class)],
             'success_status'         => ['sometimes', 'nullable', Rule::enum(ProspectSuccessStatusEnum::class)],
@@ -147,7 +149,10 @@ class UpdateProspect extends OrgAction
         ];
 
         if (!$this->strict) {
+            $rules['phone']           = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['contact_website'] = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['last_fetched_at'] = ['sometimes', 'date'];
+            $rules['customer_id']     = ['sometimes', 'nullable', 'integer'];
         }
 
 
