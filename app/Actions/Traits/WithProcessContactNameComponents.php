@@ -30,6 +30,8 @@ trait WithProcessContactNameComponents
             $contactName = $sanitized;
         }
 
+
+
         if ($contactName === '') {
             return [
                 'first_name'  => '',
@@ -51,6 +53,42 @@ trait WithProcessContactNameComponents
                 Sentry::captureException($e);
                 $firstName = $contactName;
             }
+
+
+            $encodedValues=json_encode(
+                [
+                    'first_name'  => $firstName ?? '',
+                    'middle_name' => $parsedName->getMiddleName(),
+                    'last_name'   => $parsedName->getLastName(),
+                    'initials'    => $parsedName->getInitials(),
+                    'suffix'      => $parsedName->getSuffix(),
+                ]
+            );
+
+            if(!$encodedValues){
+                $encodedValues=json_encode(
+                    [
+                        'first_name'  => $contactName,
+                        'middle_name' => '',
+                        'last_name'   => '',
+                        'initials'    => '',
+                        'suffix'      =>'',
+                    ]
+                );
+                if($encodedValues){
+                    return json_decode($encodedValues, true);
+                }else{
+                    return [
+                        'first_name'  => '',
+                        'middle_name' => '',
+                        'last_name'   => '',
+                        'initials'    => '',
+                        'suffix'      => '',
+                    ];
+                }
+            }
+
+
 
             return [
                 'first_name'  => $firstName ?? '',
