@@ -56,9 +56,9 @@ const getIcon = (type?: string) => {
         <h3 class="text-sm font-semibold text-gray-700 uppercase">Public Attachments</h3>
       </div>
 
-      <ul v-if="props.public?.length" class="divide-y divide-gray-100">
+      <ul v-if="props.public.filter(i => i.attachment).length" class="divide-y divide-gray-100">
         <li
-          v-for="(item, index) in props.public"
+          v-for="(item, index) in props.public.filter(i => i.attachment)"
           :key="'public-' + index"
           class="flex items-center justify-between px-4 py-3 text-sm hover:bg-blue-50 transition"
         >
@@ -100,9 +100,9 @@ const getIcon = (type?: string) => {
         <h3 class="text-sm font-semibold text-gray-700 uppercase">Private Attachments</h3>
       </div>
 
-      <ul v-if="props.private?.length" class="divide-y divide-gray-100">
+      <ul v-if="props.private.filter(i => i.attachment).length" class="divide-y divide-gray-100">
         <li
-          v-for="(item, index) in props.private"
+          v-for="(item, index) in props.private.filter(i => i.attachment)"
           :key="'private-' + index"
           class="flex items-center justify-between px-4 py-3 text-sm hover:bg-red-50 transition"
         >
