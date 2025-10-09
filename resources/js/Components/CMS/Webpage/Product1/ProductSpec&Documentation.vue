@@ -37,7 +37,7 @@ console.log(props)
 
         <div v-if="product?.specifications?.dimensions" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{trans("Dimensions")}}</div>
-            <div class="p-2 text-sm">{{product?.specifications?.dimensions  }}</div>
+            <div class="p-2 text-sm">{{product?.specifications?.dimensions }}</div>
         </div>
 
 
@@ -51,7 +51,7 @@ console.log(props)
             <div class="p-2 text-sm">{{ product.specifications.barcode }}</div>
         </div>
 
-          <div v-if="product?.specifications?.cpnp" class="grid grid-cols-2 border-b border-gray-300">
+        <div v-if="product?.specifications?.cpnp" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{trans('cpnp')}}</div>
             <div class="p-2 text-sm">{{ product?.specifications?.cpnp }}</div>
         </div>
@@ -69,22 +69,11 @@ console.log(props)
         </div>
 
 
+        <pre>{{ product.attachments }}</pre>
         <!-- Downloadable Items -->
-        <!--  <div class="grid grid-cols-2 border-b border-gray-300 bg-gray-200">
-                <div class="p-2 font-medium text-sm">MSDS</div>
-                <div class="p-2 text-sm text-blue-600 underline cursor-pointer">download</div>
-            </div>
-            <div class="grid grid-cols-2 border-b border-gray-300 bg-gray-200">
-                <div class="p-2 font-medium text-sm">MSDS</div>
-                <div class="p-2 text-sm text-blue-600 underline cursor-pointer">download</div>
-            </div>
-            <div class="grid grid-cols-2 border-b border-gray-300 bg-gray-200">
-                <div class="p-2 font-medium text-sm">Materials/Ingredients</div>
-                <div class="p-2 text-sm text-blue-600 underline cursor-pointer">download</div>
-            </div>
-            <div class="grid grid-cols-2 bg-gray-200">
-                <div class="p-2 font-medium text-sm">Barcode</div>
-                <div class="p-2 text-sm text-blue-600 underline cursor-pointer">download</div>
-            </div> -->
+        <div class="grid grid-cols-2 border-b border-gray-300 bg-gray-200">
+            <div class="p-2 font-medium text-sm">MSDS</div>
+            <div class="p-2 text-sm text-blue-600 underline cursor-pointer">download</div>
+        </div>
     </div>
 </template>

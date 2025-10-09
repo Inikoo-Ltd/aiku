@@ -17,6 +17,7 @@ import PureInput from '@/Components/Pure/PureInput.vue'
 import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
 import { ulid } from 'ulid'
+import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
 
 
 const props = defineProps<{
@@ -36,6 +37,7 @@ const props = defineProps<{
         submit_route: routeType
     }
     is_orphan_products?: boolean
+    attachments?: Record<string, any>
 }>()
 
 console.log(props)
@@ -54,7 +56,8 @@ const form = useForm({
 const component = computed(() => {
     const mapping: Record<string, any> = {
         index: TableProducts,
-        sales: TableProducts
+        sales: TableProducts,
+        attachments: AttachmentManagement
     }
     return mapping[currentTab.value]
 })

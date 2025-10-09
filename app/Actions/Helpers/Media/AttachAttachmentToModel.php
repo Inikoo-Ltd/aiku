@@ -9,6 +9,7 @@
 
 namespace App\Actions\Helpers\Media;
 
+use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
@@ -40,6 +41,12 @@ class AttachAttachmentToModel extends OrgAction
             ];
 
             SaveModelAttachment::make()->action($model, $attachmentData);
+        }
+
+        if ($model instanceof TradeUnit) {
+            foreach ($model->products as $product) {
+                CloneProductAttachmentsFromTradeUnits::run($product);
+            }
         }
     }
 
