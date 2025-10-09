@@ -8,6 +8,7 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
+use App\Actions\Goods\Ingredient\UI\IndexIngredients;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Models\Goods\TradeUnit;
@@ -309,9 +310,17 @@ class EditTradeUnit extends OrgAction
                             'icon'   => 'fa-light fa-book-open-open',
                             'fields' => [
                                 'ingredients' => [
-                                    'type'  => 'input',
+                                    'type'  => 'select_infinite',
                                     'label' => __('Ingredients'),
-                                    'value' => $tradeUnit->ingredients
+                                    'value' => $tradeUnit->ingredients,
+                                    'mode' => 'tags',
+                                    'fetchRoute' => [
+                                        'name'       => 'grp.goods.ingredients.index',
+                                        'parameters' => []
+                                    ],
+                                    'valueProp'  => 'slug',
+                                    'labelProp'  => 'name',
+                                    
                                 ],
                                 'country_of_origin' => [
                                     'type'  => 'select',

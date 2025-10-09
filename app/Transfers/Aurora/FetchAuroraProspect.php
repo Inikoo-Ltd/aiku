@@ -25,9 +25,10 @@ class FetchAuroraProspect extends FetchAurora
 
         $shop=$this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Prospect Store Key'});
 
-        if($shop->is_aiku){
-            return;
-        }
+
+//        if($shop->is_aiku){
+//            return;
+//        }
 
 
         $customerId = null;

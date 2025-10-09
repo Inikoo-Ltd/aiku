@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
+import { computed } from 'vue'
 import { faUnlink, faInfoCircle, faFile, faStarChristmas, faFileCheck, faFilePdf, faFileWord } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const props = defineProps<{
@@ -35,6 +36,22 @@ const getIcon = (type: string) => {
             return faFileCheck
     }
 }
+
+const groupedAttachments = computed(() => {
+    const allFiles = [
+        ...(props.product.attachments || []),
+    ]
+
+    // Group by label (scope)
+    const grouped = {}
+    allFiles.forEach(file => {
+        if (!grouped[file.label]) grouped[file.label] = []
+        grouped[file.label].push(file)
+    })
+
+    return grouped
+})
+
 
 
 </script>
@@ -91,15 +108,27 @@ const getIcon = (type: string) => {
 
 
         <!-- Downloadable Items -->
-        <div v-for="item in product.attachments" :key="item.label"
+        <div v-for="(items, label) in groupedAttachments" :key="label"
             class="grid grid-cols-2 border-b border-gray-300 bg-gray-50">
-            <div class="p-2 font-medium text-sm">{{ item.label }}</div>
-            <div class="p-2 text-xs text-blue-600 underline cursor-pointer">
-                <a :href="route(item.download_route.name, item.download_route.parameters)" target="_blank">
-                    <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" class="mr-1" />
-                    {{ item.caption }} {{ `.${extractFileType(item.mime_type)}` }}
-                </a>
+            <!-- Label column -->
+            <div class="p-2 font-medium text-sm border-gray-200 flex items-center">
+                {{ label }}
+            </div>
+
+            <!-- Files column (up to 2 files per scope) -->
+            <div>
+                <div v-for="item in items" :key="item.caption"
+                    class="p-2 text-xs text-blue-600 underline cursor-pointer flex items-center">
+                    <div>
+                        <a :href="route(item.download_route.name, item.download_route.parameters)" target="_blank"
+                            class="flex items-center">
+                            <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" class="mr-1" />
+                            {{ item.caption }}{{ `.${extractFileType(item.mime_type)}` }}
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
+
     </div>
 </template>

@@ -26,9 +26,12 @@ class FetchAuroraProspects extends FetchAuroraAction
     public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?Prospect
     {
         if ($prospectData = $organisationSource->fetchProspect($organisationSourceId)) {
+
+           //print_r($prospectData['prospect']);
+
             if ($prospect = Prospect::withTrashed()->where('source_id', $prospectData['prospect']['source_id'])
                 ->first()) {
-                try {
+              //  try {
                     $prospect = UpdateProspect::make()->action(
                         $prospect,
                         $prospectData['prospect'],
@@ -37,13 +40,14 @@ class FetchAuroraProspects extends FetchAuroraAction
                         audit: false
                     );
                     $this->recordChange($organisationSource, $prospect->wasChanged());
-                } catch (Exception $e) {
-                    $this->recordError($organisationSource, $e, $prospectData['prospect'], 'Prospect', 'update');
-
-                    return null;
-                }
+//                } catch (Exception $e) {
+//                    $this->recordError($organisationSource, $e, $prospectData['prospect'], 'Prospect', 'update');
+//
+//                    return null;
+//                }
             } else {
-                try {
+
+               // try {
                     $prospect = StoreProspect::make()->action(
                         $prospectData['shop'],
                         $prospectData['prospect'],
@@ -62,11 +66,11 @@ class FetchAuroraProspects extends FetchAuroraAction
                     DB::connection('aurora')->table('Prospect Dimension')
                         ->where('Prospect Key', $sourceData[1])
                         ->update(['aiku_id' => $prospect->id]);
-                } catch (Exception|Throwable $e) {
-                    $this->recordError($organisationSource, $e, $prospectData['prospect'], 'Prospect', 'store');
-
-                    return null;
-                }
+//                } catch (Exception|Throwable $e) {
+//                    $this->recordError($organisationSource, $e, $prospectData['prospect'], 'Prospect', 'store');
+//
+//                    return null;
+//                }
             }
 
 
@@ -88,7 +92,8 @@ class FetchAuroraProspects extends FetchAuroraAction
         }
 
         if ($this->shop) {
-            $query->where('Prospect Store Key', $this->shop->source_id);
+            $sourceData = explode(':', $this->shop->source_id);
+            $query->where('Prospect Store Key', $sourceData[1]);
 
         }
 
@@ -104,7 +109,10 @@ class FetchAuroraProspects extends FetchAuroraAction
             $query->whereNull('aiku_id');
         }
         if ($this->shop) {
-            $query->where('Prospect Store Key', $this->shop->source_id);
+
+            $sourceData = explode(':', $this->shop->source_id);
+            $query->where('Prospect Store Key', $sourceData[1]);
+
         }
 
         return $query->count();

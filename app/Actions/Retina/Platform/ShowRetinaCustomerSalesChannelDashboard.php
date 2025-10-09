@@ -106,7 +106,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'exist_in_platform'       => $existInPlatform,
             'platform_status'         => $platformStatus,
 
-            'error_captcha' => Arr::get($customerSalesChannel->user->data, 'error_data'),
+            'error_captcha' => Arr::get($customerSalesChannel->user?->data ?? [], 'error_data'),
 
             'step'                    => $step
         ]);
