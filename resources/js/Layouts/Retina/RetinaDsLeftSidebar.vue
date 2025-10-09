@@ -61,7 +61,7 @@ const handleToggleLeftBar = () => {
             }"
         >
             <!-- Switch Language -->
-            <div v-if="Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="md:hidden bg-gray-100/50 text-white px-4 mb-3 flex justify-between items-center text-xs">
+            <div v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="md:hidden bg-gray-100/50 text-white px-4 mb-3 flex justify-between items-center text-xs">
                 <div>{{ trans("Language") }}:</div>
                 <SwitchLanguage>
                     <template #default="{ isLoadingChangeLanguage }">

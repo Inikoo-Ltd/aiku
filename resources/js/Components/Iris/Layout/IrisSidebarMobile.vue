@@ -245,7 +245,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
         </div>
 
         <!-- Switch Language -->
-        <div v-if="Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="border-t border-[#e5e5e5] px-4 mb-1 flex justify-between items-center text-xs">
+        <div v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="border-t border-[#e5e5e5] px-4 mb-1 flex justify-between items-center text-xs">
             <div>{{ trans("Language") }}:</div>
             <SwitchLanguage>
                 <template #default="{ isLoadingChangeLanguage }">
