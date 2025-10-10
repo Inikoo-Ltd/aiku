@@ -36,7 +36,7 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
 
     private CustomerSalesChannel $customerSalesChannel;
 
-    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null): LengthAwarePaginator
+    public function handle(CustomerSalesChannel $customerSalesChannel, $prefix = null, bool $disabled = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -58,6 +58,11 @@ class IndexPortfoliosInCustomerSalesChannels extends OrgAction
         $query->leftJoin('customers', 'customers.id', 'portfolios.customer_id');
         $query->leftJoin('platforms', 'platforms.id', 'portfolios.platform_id');
 
+        if ($disabled) {
+            $query->where('portfolios.status', false);
+        } else {
+            $query->where('portfolios.status', true);
+        }
 
         return $query
             ->select([

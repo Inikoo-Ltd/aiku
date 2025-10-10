@@ -25,23 +25,67 @@ class GetProspectsDashboard
         $stats = [];
 
 
-        $stats['prospects'] = [
-            'label' => __('Prospects'),
-            'count' => $parent->crmStats->number_prospects
+        // $stats['prospects'] = [
+        //     'label' => __('Prospects'),
+        //     'count' => $parent->crmStats->number_prospects
+        // ];
+        // foreach (ProspectStateEnum::cases() as $case) {
+        //     $stats['prospects']['cases'][$case->value] = [
+        //         'value' => $case->value,
+        //         'icon'  => ProspectStateEnum::stateIcon()[$case->value],
+        //         'count' => ProspectStateEnum::count($parent)[$case->value],
+        //         'label' => ProspectStateEnum::labels()[$case->value],
+        //         'route' => [
+        //             'name' => 'grp.org.shops.show.crm.prospects.index',
+        //             'parameters' => [
+        //                 'organisation' => $parent->organisation->slug,
+        //                 'shop'         => $parent->slug,
+        //                 'prospects_elements[state]' => $case->value,
+        //                 'tab'          => ProspectsTabsEnum::PROSPECTS->value
+        //             ]
+        //         ]
+        //     ];
+        // }
+
+        $stats['opted_in_prospects'] = [
+            'label' => __('Opted In Prospects'),
+            'count' => $parent->crmStats->number_opt_in_prospects
         ];
         foreach (ProspectStateEnum::cases() as $case) {
-            $stats['prospects']['cases'][$case->value] = [
+            $stats['opted_in_prospects']['cases'][$case->value] = [
                 'value' => $case->value,
                 'icon'  => ProspectStateEnum::stateIcon()[$case->value],
-                'count' => ProspectStateEnum::count($parent)[$case->value],
+                'count' => ProspectStateEnum::count($parent, 'opt_in')[$case->value],
                 'label' => ProspectStateEnum::labels()[$case->value],
                 'route' => [
                     'name' => 'grp.org.shops.show.crm.prospects.index',
                     'parameters' => [
                         'organisation' => $parent->organisation->slug,
                         'shop'         => $parent->slug,
-                        'prospects_elements[state]' => $case->value,
-                        'tab'          => ProspectsTabsEnum::PROSPECTS->value
+                        'opt_in_elements[state]' => $case->value,
+                        'tab'          => ProspectsTabsEnum::OPT_IN->value
+                    ]
+                ]
+            ];
+        }
+
+        $stats['opted_out_prospects'] = [
+            'label' => __('Opted Out Prospects'),
+            'count' => $parent->crmStats->number_opt_out_prospects
+        ];
+        foreach (ProspectStateEnum::cases() as $case) {
+            $stats['opted_out_prospects']['cases'][$case->value] = [
+                'value' => $case->value,
+                'icon'  => ProspectStateEnum::stateIcon()[$case->value],
+                'count' => ProspectStateEnum::count($parent, 'opt_out')[$case->value],
+                'label' => ProspectStateEnum::labels()[$case->value],
+                'route' => [
+                    'name' => 'grp.org.shops.show.crm.prospects.index',
+                    'parameters' => [
+                        'organisation' => $parent->organisation->slug,
+                        'shop'         => $parent->slug,
+                        'opt_out_elements[state]' => $case->value,
+                        'tab'          => ProspectsTabsEnum::OPT_OUT->value
                     ]
                 ]
             ];

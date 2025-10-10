@@ -38,6 +38,8 @@ const props = defineProps<{
       history : {}
       lists : {}
       prospects : {}
+      opt_in : {}
+      opt_out : {}
       contacted : {}
       failed : {}
       success : {}
@@ -61,6 +63,8 @@ const component = computed(() => {
       const components: {[key: string]: Component} = {
         dashboard: ProspectsDashboard,
         prospects: TableProspects,
+        opt_in: TableProspects,
+        opt_out: TableProspects,
         contacted: TableProspects,
         failed: TableProspects,
         success: TableProspects,
