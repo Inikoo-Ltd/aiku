@@ -6,7 +6,7 @@ import { Image as ImageProxy } from "@/types/Image"
 const fallbackPath = '/fallback/fallback.svg'
 
 const props = withDefaults(defineProps<{
-    src?: ImageProxy
+    src?: ImageProxy | null
     imageCover?: boolean
     alt?: string
     class?: string

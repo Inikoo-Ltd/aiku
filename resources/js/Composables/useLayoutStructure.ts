@@ -22,8 +22,10 @@ export const layoutStructure = {
     currentModule: "",
     currentRoute: "grp.dashboard.show", // Define value to avoid route null at first load
     currentParams: {} as {[key: string]: string},
-    digital_agency: {} as {data: OrganisationsData[]},
+    currentQuery: {} as {[key: string]: string},
+    digital_agency: null as {data: OrganisationsData[]} | null,
     group: null as Group | null,
+    help_portal_url: null as string | null,
     leftSidebar: {
         show: true,
     },
@@ -49,11 +51,11 @@ export const layoutStructure = {
     stackedComponents: [] as StackedComponent[],
     user: {} as {
         id: number,
-        avatar_thumbnail: Image,
         email: string,
         username: string,
-        notifications: Notification[]
     },
+    notifications: [] as Notification[],
+    avatar_thumbnail: null as Image | null,
 
     isShopPage: false as boolean,
     isFulfilmentPage: false as boolean,
