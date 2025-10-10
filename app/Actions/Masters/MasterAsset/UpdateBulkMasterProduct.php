@@ -7,27 +7,26 @@
  * copyright 2025
 */
 
-namespace App\Actions\Catalogue\Product;
+namespace App\Actions\Masters\MasterAsset;
 
-use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
+use App\Actions\GrpAction;
+use App\Actions\Traits\Authorisations\WithMastersEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\Product;
-use App\Models\Catalogue\Shop;
+use App\Models\Masters\MasterAsset;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateBulkProduct extends OrgAction
+class UpdateBulkMasterProduct extends GrpAction
 {
     use WithActionUpdate;
-    use WithCatalogueEditAuthorisation;
+    use WithMastersEditAuthorisation;
 
     public function handle(array $modelData): void
     {
         $rawProductDatas = Arr::get($modelData, 'products', []);
         foreach ($rawProductDatas as $productData) {
-            $product = Product::find(Arr::get($productData, 'id'));
-            UpdateProduct::make()->action($product, [
+            $product = MasterAsset::find(Arr::get($productData, 'id'));
+            UpdateMasterAsset::make()->action($product, [
                 'rrp'  => Arr::get($productData, 'rrp', $product->rrp),
                 'price'=> Arr::get($productData, 'price', $product->price),
                 'unit' => Arr::get($productData, 'unit', $product->unit),
@@ -47,9 +46,9 @@ class UpdateBulkProduct extends OrgAction
         ];
     }
 
-    public function asController(Shop $shop, ActionRequest $request): void
+    public function asController(ActionRequest $request): void
     {
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisation(group(), $request);
 
         $this->handle($this->validatedData);
     }

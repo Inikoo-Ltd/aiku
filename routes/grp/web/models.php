@@ -226,6 +226,7 @@ use App\Actions\HumanResources\Workplace\UpdateWorkplace;
 use App\Actions\Masters\MasterAsset\DeleteImageFromMasterProduct;
 use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
+use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
 use App\Actions\Masters\MasterAsset\UploadImagesToMasterProduct;
@@ -424,6 +425,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
 });
+Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
 
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {
     Route::post('sub-department', StoreSubDepartment::class)->name('sub_department.store');
@@ -548,7 +550,7 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::post('/product/', StoreProduct::class)->name('store');
     Route::patch('/{product:id}/offline', SetProductOffline::class)->name('offline');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
-    Route::patch('bulk-update', UpdateBulkProduct::class)->name('bulk_update');
+    Route::patch('/{shop:id}/bulk-update', UpdateBulkProduct::class)->name('bulk_update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
