@@ -54,6 +54,11 @@ import {
     faBoxes,
     faAtom,
     faMoneyBill,
+    faTags,
+    faUserTag,
+    faBookOpen,
+    faNotesMedical,
+    faBiohazard
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from "@fas"
@@ -63,6 +68,11 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faTags,
+    faBiohazard,
+    faUserTag,
+    faBookOpen,
+    faNotesMedical,
     faOctopusDeploy,
     faExclamationTriangle,
     faAtom,

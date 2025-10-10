@@ -974,7 +974,6 @@ const isLoading = ref<string | boolean>(false)
 
                                                 <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
                                                     <FontAwesomeIcon v-if="disabledCheckbox(item)"
-                                                        xclick="async () => (setLodash(item, ['is_checked'], !item.is_checked), emits('onChecked', item))"
                                                         icon="fal fa-minus-square"
                                                         class='text-gray-400 p-2 cursor-not-allowed text-lg mx-auto block'
                                                         fixed-width aria-hidden='true' />
