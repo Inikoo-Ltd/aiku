@@ -5,21 +5,20 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class () extends Migration {
-
     public function up(): void
     {
         Schema::table('customer_stats', function (Blueprint $table) {
             $table->decimal('historic_clv_amount', 16)->nullable();
-            $table->decimal('historic_clv_amount_org_currency',16)->nullable();
-            $table->decimal('historic_clv_amount_grp_currency',16)->nullable();
+            $table->decimal('historic_clv_amount_org_currency', 16)->nullable();
+            $table->decimal('historic_clv_amount_grp_currency', 16)->nullable();
 
             $table->decimal('predicted_clv_amount', 16)->nullable();
-            $table->decimal('predicted_clv_amount_org_currency',16)->nullable();
-            $table->decimal('predicted_clv_amount_grp_currency',16)->nullable();
+            $table->decimal('predicted_clv_amount_org_currency', 16)->nullable();
+            $table->decimal('predicted_clv_amount_grp_currency', 16)->nullable();
 
             $table->decimal('total_clv_amount', 16)->nullable();
-            $table->decimal('total_clv_amount_org_currency',16)->nullable();
-            $table->decimal('total_clv_amount_grp_currency',16)->nullable();
+            $table->decimal('total_clv_amount_org_currency', 16)->nullable();
+            $table->decimal('total_clv_amount_grp_currency', 16)->nullable();
 
             $table->float('churn_interval')->nullable()->comment('in days');
             $table->float('churn_risk_prediction')->nullable();

@@ -11,7 +11,6 @@ namespace App\Actions\Web\Webpage;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
-use App\Actions\Web\Webpage\UpdateWebpageContent;
 use App\Models\Dropshipping\ModelHasWebBlocks;
 use App\Models\Web\WebBlock;
 use App\Models\Web\WebBlockType;
@@ -35,7 +34,7 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
         } else {
             $frontendIds = $this->collectFrontendIds($webBlocks);
             $webBlocksChanged |= $this->removeObsoleteBlocks($webpage, $frontendIds);
-            
+
             foreach ($webBlocks as $index => $webBlockData) {
                 $webBlocksChanged |= $this->processWebBlock($webpage, $webBlockData, $index);
             }
@@ -46,7 +45,7 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
             UpdateWebpageContent::run($webpage);
         }
         $webpage->refresh();
-        
+
         return $webpage->unpublishedSnapshot->layout;
     }
 
@@ -67,11 +66,11 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
         if (empty($frontendIds)) {
             return false;
         }
-        
+
         $deletedCount = $webpage->modelHasWebBlocks()
             ->whereNotIn('id', $frontendIds)
             ->delete();
-            
+
         return $deletedCount > 0;
     }
 
@@ -79,7 +78,7 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
     {
         $modelHasWebBlockId = Arr::get($webBlockData, 'id');
         $webBlockId = Arr::get($webBlockData, 'web_block.id');
-        
+
         $existingWebBlock = WebBlock::where('id', $webBlockId)->first();
         $existingModelHasWebBlock = ModelHasWebBlocks::where('id', $modelHasWebBlockId)->first();
 
@@ -87,7 +86,7 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
         if (!$existingWebBlock && !$existingModelHasWebBlock) {
             return $this->createNewWebBlock($webpage, $webBlockData, $index);
         }
-        
+
         // Update existing block layout if needed
         return $this->updateWebBlockLayout($existingWebBlock, $webBlockData);
     }
@@ -95,17 +94,17 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
     private function createNewWebBlock(Webpage $webpage, array $webBlockData, int $index): bool
     {
         $webBlockType = WebBlockType::where('code', $webBlockData['type'])->first();
-        
+
         if (!$webBlockType) {
             return false;
         }
-        
+
         StoreModelHasWebBlock::make()->action($webpage, [
             'web_block_type_id' => $webBlockType->id,
             'layout' => Arr::get($webBlockData, 'web_block.layout', []),
             'position' => $index
         ]);
-        
+
         return true;
     }
 
@@ -114,14 +113,14 @@ class WebpageWorkshopCheckWebBlock extends OrgAction
         if (!$existingWebBlock) {
             return false;
         }
-        
+
         $newLayout = Arr::get($webBlockData, 'web_block.layout', []);
-        
+
         if ($existingWebBlock->layout !== $newLayout) {
             $existingWebBlock->update(['layout' => $newLayout]);
             return true;
         }
-        
+
         return false;
     }
 

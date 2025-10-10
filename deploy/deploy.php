@@ -51,10 +51,6 @@ set('shared_files', [
     '.env',
     '.env.testing',
     '.user.ini',
-    'reset_db.sh',
-    'seed_currency_exchanges_staging.sh',
-    'seed_currency_exchanges.sh',
-    'database/seeders/datasets/currency-exchange/currency_exchanges.dump'
 ]);
 desc('Deploys your project');
 task('deploy', [
@@ -73,6 +69,6 @@ task('deploy', [
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
-    'artisan:inertia:stop-ssr',
+ //   'artisan:inertia:stop-ssr',
     'artisan:refresh_vue',
 ]);

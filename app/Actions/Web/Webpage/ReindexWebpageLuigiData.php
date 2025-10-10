@@ -12,12 +12,21 @@ namespace App\Actions\Web\Webpage;
 
 use App\Actions\Web\WithLuigis;
 use App\Models\Web\Webpage;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ReindexWebpageLuigiData
+class ReindexWebpageLuigiData implements ShouldBeUnique
 {
     use AsAction;
     use WithLuigis;
+
+    public string $jobQueue = 'low-priority';
+
+    public function getJobUniqueId(Webpage $webpage): string
+    {
+        return $webpage->id;
+    }
+
 
     public string $commandSignature = 'luigis:reindex_webpage {webpage?}';
 

@@ -10,7 +10,6 @@
 namespace App\Http\Resources\Catalogue;
 
 use App\Actions\Helpers\Images\GetPictureSources;
-use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -53,7 +52,7 @@ class LastOrderedProductsResource extends JsonResource
             $thumbnailImageSources = GetPictureSources::run($imageThumbnail);
         }
 
-        
+
         return [
             'id'                        => $this->id,
             'slug'                      => $this->slug,

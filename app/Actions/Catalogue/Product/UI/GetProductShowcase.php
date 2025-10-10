@@ -118,7 +118,7 @@ class GetProductShowcase
                 ],
             ],
             'images' => $this->getImagesData($product),
-            'attachment_box'=>  $this->getAttachmentData($product),
+            'attachment_box' =>  $this->getAttachmentData($product),
 
         ];
     }

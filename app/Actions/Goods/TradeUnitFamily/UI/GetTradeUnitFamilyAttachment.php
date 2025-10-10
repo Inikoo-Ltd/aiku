@@ -3,7 +3,6 @@
 namespace App\Actions\Goods\TradeUnitFamily\UI;
 
 use App\Actions\Traits\HasBucketAttachment;
-use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Actions\Helpers\Media\UI\IndexAttachments;

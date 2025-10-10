@@ -10,9 +10,7 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Actions\IrisAction;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
-use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;

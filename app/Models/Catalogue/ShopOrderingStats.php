@@ -111,6 +111,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $unpaid_invoices_amount_org_currency
  * @property string $unpaid_invoices_amount_grp_currency
  * @property int $number_deleted_invoices
+ * @property string|null $average_historic_clv_amount
+ * @property string|null $average_historic_clv_amount_org_currency
+ * @property string|null $average_historic_clv_amount_grp_currency
+ * @property string|null $average_predicted_clv_amount
+ * @property string|null $average_predicted_clv_amount_org_currency
+ * @property string|null $average_predicted_clv_amount_grp_currency
+ * @property string|null $average_total_clv_amount
+ * @property string|null $average_total_clv_amount_org_currency
+ * @property string|null $average_total_clv_amount_grp_currency
+ * @property float|null $average_churn_interval in days
+ * @property float|null $average_churn_risk_prediction
+ * @property float|null $average_time_between_orders
+ * @property string|null $average_order_value
+ * @property string|null $expected_date_of_next_order
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderingStats newQuery()

@@ -154,7 +154,7 @@ class GetTradeUnitShowcase
                     ],
                 ],
             ],
-            'attachment_box'=>  $this->getAttachmentData($tradeUnit),
+            'attachment_box' =>  $this->getAttachmentData($tradeUnit),
             'images' => $this->getImagesData($tradeUnit),
         ];
     }

@@ -8,13 +8,8 @@
 
 namespace App\Actions\Maintenance\Goods;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
-use App\Actions\Dropshipping\CustomerSalesChannel\StoreCustomerSalesChannel;
-use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\Goods\TradeUnitFamily\StoreTradeUnitFamily;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\Portfolio;
 use App\Models\Goods\Stock;
 use App\Models\Goods\TradeUnitFamily;
 use Illuminate\Console\Command;
@@ -30,9 +25,9 @@ class SyncTradeUnitFamiliesAndStockFamilies
         $tradeUnits = $stock->tradeUnits;
         $stockFamily = $stock->stockFamily;
         $existingTradeUnitFamily = TradeUnitFamily::where('code', $stockFamily->code)->first();
-        
+
         foreach ($tradeUnits as $tradeUnit) {
-            if($existingTradeUnitFamily && !$tradeUnit->tradeUnitFamily){
+            if ($existingTradeUnitFamily && !$tradeUnit->tradeUnitFamily) {
                 $this->update($tradeUnit, [
                     'trade_unit_family_id' => $existingTradeUnitFamily->id
                 ]);

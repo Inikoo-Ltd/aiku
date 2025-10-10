@@ -34,7 +34,7 @@ class GetWebBlockProduct
             ->select(['model_has_attachments.caption','model_has_attachments.scope', 'model_has_attachments.media_id', 'media.ulid as media_ulid', 'media.mime_type as mime_type'])
             ->whereIn('model_has_attachments.scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
             ->get();
-            
+
         if ($webpage->shop->type == ShopTypeEnum::B2B) {
             $resourceWebBlockProduct = WebBlockProductResourceEcom::make($webpage->model)->toArray(request());
         } else {

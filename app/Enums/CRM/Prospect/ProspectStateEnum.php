@@ -29,7 +29,6 @@ enum ProspectStateEnum: string
             'contacted'    => __('Contacted'),
             'fail'         => __('Fail'),
             'success'      => __('Success'),
-            'bounced'      => __('Bounced'),
         ];
     }
 
