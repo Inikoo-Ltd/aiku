@@ -11,6 +11,7 @@ namespace App\Actions\CRM\Customer\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
@@ -98,6 +99,7 @@ class EditCustomer extends OrgAction
                                     ]
                                 ],
                                 'delivery_address'         => [
+                                    'hidden'=>$customer->shop->type==ShopTypeEnum::DROPSHIPPING,
                                     'type'    => 'delivery_address',
                                     'label'   => __('Delivery Address'),
                                     'noSaveButton'  => true,
