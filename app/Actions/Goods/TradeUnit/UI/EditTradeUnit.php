@@ -8,7 +8,6 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\Goods\Ingredient\UI\IndexIngredients;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Models\Goods\TradeUnit;
@@ -261,7 +260,7 @@ class EditTradeUnit extends OrgAction
                         ],
                         [
                             'label'  => __('Tags & Brands'),
-                            'icon'   => 'fa-light fa-tag',
+                            'icon'   => 'fa-light fa-tags',
                             'fields' => [
                                 'tags' => [
                                     'type'  => 'tags-trade-unit',
@@ -307,7 +306,7 @@ class EditTradeUnit extends OrgAction
                         ],
                         [
                             'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-book-open-open',
+                            'icon'   => 'fa-light fa-book-open',
                             'fields' => [
                                 'ingredients' => [
                                     'type'  => 'select_infinite',
@@ -320,14 +319,14 @@ class EditTradeUnit extends OrgAction
                                     ],
                                     'valueProp'  => 'slug',
                                     'labelProp'  => 'name',
-                                    
+
                                 ],
-                                'country_of_origin' => [
+                                'origin_country_id' => [
                                     'type'  => 'select',
                                     'label' => __('Country of Origin'),
-                                    'value' => $tradeUnit->country_of_origin,
+                                    'value' => $tradeUnit->origin_country_id,
                                     'options' => GetCountriesOptions::run(),
-                                    'valueProp' => 'label',
+                                    'valueProp' => 'id',
                                 ],
                                 'tariff_code' => [
                                     'type'  => 'input',

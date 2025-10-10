@@ -43,7 +43,7 @@ class AttachAttachmentToModel extends OrgAction
         }
 
         if ($model instanceof TradeUnit || $model instanceof TradeUnitFamily) {
-            if($model instanceof TradeUnitFamily){
+            if ($model instanceof TradeUnitFamily) {
                 foreach ($model->tradeUnits as $tradeUnit) {
                     foreach ($tradeUnit->products as $product) {
                         CloneProductAttachmentsFromTradeUnits::run($product);
@@ -53,7 +53,7 @@ class AttachAttachmentToModel extends OrgAction
                 foreach ($model->products as $product) {
                     CloneProductAttachmentsFromTradeUnits::run($product);
                 }
-            } 
+            }
         }
     }
 

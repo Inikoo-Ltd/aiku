@@ -8,6 +8,7 @@
 
 namespace App\Transfers\Aurora;
 
+use App\Models\Helpers\Country;
 use Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -52,12 +53,13 @@ class FetchAuroraTradeUnit extends FetchAurora
 
 
         $this->parsedData['trade_unit'] = [
-            'name'            => $name,
-            'code'            => $reference,
-            'source_id'       => $this->organisation->id.':'.$this->auroraModelData->{'Part SKU'},
-            'source_slug'     => $sourceSlug,
-            'fetched_at'      => now(),
-            'last_fetched_at' => now(),
+            'name'              => $name,
+            'code'              => $reference,
+            'source_id'         => $this->organisation->id.':'.$this->auroraModelData->{'Part SKU'},
+            'source_slug'       => $sourceSlug,
+            'fetched_at'        => now(),
+            'last_fetched_at'   => now(),
+            'origin_country_id' => $this->parseCountryOrigin($this->auroraModelData->{'Part Origin Country Code'}),
         ];
 
         if ($grossWeight) {
@@ -104,8 +106,6 @@ class FetchAuroraTradeUnit extends FetchAurora
             $barcodes[$barcode->id] = $barcodeData;
         }
         $this->parsedData['barcodes'] = $barcodes;
-
-
     }
 
 
@@ -116,6 +116,42 @@ class FetchAuroraTradeUnit extends FetchAurora
             ->where('Part SKU', $id)->first();
     }
 
+
+    public function parseCountryOrigin(?string $countryOrigin): ?int
+    {
+
+
+        if (!$countryOrigin || is_numeric($countryOrigin)) {
+            return null;
+        }
+
+        $countryOrigin = Str::upper($countryOrigin);
+
+        if ($countryOrigin == 'UK' || $countryOrigin == 'GB'  ) {
+            $countryOrigin = 'GBR';
+        }
+
+        if ($countryOrigin == 'CHI' || $countryOrigin == 'CNY'  ) {
+            $countryOrigin = 'CHN';
+        }
+
+        if ($countryOrigin == 'IDR' || $countryOrigin == 'IDO'  ) {
+            $countryOrigin = 'IDN';
+        }
+
+        $country=null;
+        if (strlen($countryOrigin) == 3) {
+            $country = Country::where('iso3', $countryOrigin)->first();
+        }
+
+//        if (!$country) {
+//            print "\nXXXXX-->".$countryOrigin.'<--\n';
+//        }
+
+        return $country?->id;
+
+
+    }
 
     public function parseDimension($rawDimensions): ?array
     {

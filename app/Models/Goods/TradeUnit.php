@@ -117,6 +117,7 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $art4_image_id
  * @property int|null $art5_image_id
  * @property int|null $trade_unit_family_id
+ * @property int|null $origin_country_id
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image

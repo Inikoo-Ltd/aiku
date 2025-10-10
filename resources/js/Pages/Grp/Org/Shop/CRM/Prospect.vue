@@ -47,8 +47,6 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
       dispatched_emails: any
       history: any
   }>()
-
-  console.log(props);
   
   const currentTab = ref(props.tabs.current)
   const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)

@@ -341,13 +341,22 @@ onUnmounted(() => {
 })
 
 const locale = inject("locale", aikuLocaleStructure)
+const _table = ref<InstanceType<typeof Table> | null>(null)
+
+
+onMounted(() => {
+    if (_table.value) {
+        _table.value.selectRow['113836'] = true
+        console.log(_table.value.selectRow)
+    }
+})
 
 
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts"
-        @onSelectRow="(item) => emits('selectedRow', item)" key="product-table">
+        @onSelectRow="(item) => emits('selectedRow', item)" key="product-table" ref="_table">
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
             {{ refund["organisation_code"] }}

@@ -10,7 +10,6 @@ namespace App\Actions\Goods\TradeUnit\UI;
 
 use App\Actions\GrpAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
-use App\Enums\Goods\TradeUnit\TradeUnitStatusEnum;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;

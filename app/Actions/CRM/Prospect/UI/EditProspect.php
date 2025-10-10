@@ -61,7 +61,7 @@ class EditProspect extends OrgAction
 
                 'formData' => [
                     'blueprint' => [
-                    'properties'=>    [
+                    'properties' =>    [
                             'title'  => __('Contact information'),
                             'label'  => __('Contact'),
                             'fields' => [
