@@ -410,7 +410,7 @@ const getStatusText = (status: string, valid: boolean) => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div >
-                <CustomerHistory v-if="layout.app.environment === 'local'" :data="data?.stats" />
+                <CustomerHistory v-if="layout.app.environment === 'local'" :data="data?.stats" :currencyCode="data.currency" />
             </div>
             <div class="justify-self-end ">
                 <div
