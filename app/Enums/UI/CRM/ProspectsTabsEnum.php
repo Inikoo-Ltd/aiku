@@ -18,6 +18,8 @@ enum ProspectsTabsEnum: string
 
     case DASHBOARD = 'dashboard';
     case PROSPECTS = 'prospects';
+    case OPT_IN = 'opt_in';
+    case OPT_OUT = 'opt_out';
     case CONTACTED = 'contacted';
     case FAILED    = 'failed';
     case SUCCESS   = 'success';
@@ -35,6 +37,16 @@ enum ProspectsTabsEnum: string
 
             ProspectsTabsEnum::PROSPECTS => [
                 'title' => __('Prospects'),
+                'icon'  => 'fal fa-transporter',
+            ],
+
+            ProspectsTabsEnum::OPT_IN => [
+                'title' => __('Opted in prospects'),
+                'icon'  => 'fal fa-transporter',
+            ],
+
+            ProspectsTabsEnum::OPT_OUT => [
+                'title' => __('Opted out prospects'),
                 'icon'  => 'fal fa-transporter',
             ],
 

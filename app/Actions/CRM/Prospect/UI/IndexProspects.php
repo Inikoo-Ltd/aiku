@@ -125,10 +125,15 @@ class IndexProspects extends OrgAction
                     'label'    => __('State'),
                     'elements' => array_merge_recursive(
                         ProspectStateEnum::labels(),
-                        ProspectStateEnum::count($parent)
+                        ProspectStateEnum::count($parent, $scope)
                     ),
-                    'engine'   => function ($query, $elements) {
+                    'engine'   => function ($query, $elements) use ($scope) {
                         $query->whereIn('prospects.state', $elements);
+                        if ($scope == 'opt_in') {
+                            $query->where('prospects.is_opt_in', true);
+                        } elseif ($scope == 'opt_out') {
+                            $query->where('prospects.is_opt_in', false);
+                        }
                     }
                 ]
             ];
@@ -182,6 +187,10 @@ class IndexProspects extends OrgAction
             $queryBuilder->where('prospects.state', ProspectStateEnum::FAIL);
         } elseif ($scope == 'success') {
             $queryBuilder->where('prospects.state', ProspectStateEnum::SUCCESS);
+        } elseif ($scope == 'opt_in') {
+            $queryBuilder->where('prospects.is_opt_in', true);
+        } elseif ($scope == 'opt_out') {
+            $queryBuilder->where('prospects.is_opt_in', false);
         }
 
         return $queryBuilder
@@ -302,6 +311,15 @@ class IndexProspects extends OrgAction
             ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
                 fn () => ProspectsResource::collection($prospects)
                 : Inertia::lazy(fn () => ProspectsResource::collection($prospects)),
+
+            ProspectsTabsEnum::OPT_IN->value => $this->tab == ProspectsTabsEnum::OPT_IN->value ?
+                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_IN->value, scope: 'opt_in'))
+                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_IN->value, scope: 'opt_in'))),
+
+            ProspectsTabsEnum::OPT_OUT->value => $this->tab == ProspectsTabsEnum::OPT_OUT->value ?
+                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_OUT->value, scope: 'opt_out'))
+                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_OUT->value, scope: 'opt_out'))),
+
             ProspectsTabsEnum::CONTACTED->value => $this->tab == ProspectsTabsEnum::CONTACTED->value ?
                 fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
                 : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))),
@@ -409,6 +427,8 @@ class IndexProspects extends OrgAction
             ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))
+            ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_IN->value, scope: 'opt_in'))
+            ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_OUT->value, scope: 'opt_out'))
             ->table(IndexHistory::make()->tableStructure(prefix: ProspectsTabsEnum::HISTORY->value));
     }
 

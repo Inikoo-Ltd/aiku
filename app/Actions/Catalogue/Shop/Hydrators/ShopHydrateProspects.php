@@ -33,7 +33,12 @@ class ShopHydrateProspects implements ShouldBeUnique
     {
         $stats = [
             'number_prospects'                 => $shop->prospects()->where('shop_id', $shop->id)->count(),
+            'number_opt_in_prospects'                 => $shop->prospects()->where('shop_id', $shop->id)->where('is_opt_in', true)->count(),
+            'number_opt_out_prospects'                 => $shop->prospects()->where('shop_id', $shop->id)->where('is_opt_in', false)->count(),
             'number_prospects_dont_contact_me' => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->count(),
+            'number_opt_in_prospects_dont_contact_me' => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->where('is_opt_in', true)->count(),
+            'number_opt_out_prospects_dont_contact_me' => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->where('is_opt_in', false)->count(),
+            
         ];
 
         $stats = array_merge(
@@ -48,7 +53,34 @@ class ShopHydrateProspects implements ShouldBeUnique
                 }
             )
         );
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'opt_in_prospects',
+                field: 'state',
+                enum: ProspectStateEnum::class,
+                models: Prospect::class,
+                where: function ($q) use ($shop) {
+                    $q->where('shop_id', $shop->id)
+                        ->where('is_opt_in', true);
+                }
+            )
+        );
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'opt_out_prospects',
+                field: 'state',
+                enum: ProspectStateEnum::class,
+                models: Prospect::class,
+                where: function ($q) use ($shop) {
+                    $q->where('shop_id', $shop->id)
+                        ->where('is_opt_in', false);
+                }
+            )
+        );
 
+        
         $stats = array_merge(
             $stats,
             $this->getEnumStats(
@@ -61,6 +93,33 @@ class ShopHydrateProspects implements ShouldBeUnique
                 }
             )
         );
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'opt_in_prospects',
+                field: 'contacted_state',
+                enum: ProspectContactedStateEnum::class,
+                models: Prospect::class,
+                where: function ($q) use ($shop) {
+                    $q->where('shop_id', $shop->id)
+                        ->where('is_opt_in', true);
+                }
+            )
+        );
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'opt_out_prospects',
+                field: 'contacted_state',
+                enum: ProspectContactedStateEnum::class,
+                models: Prospect::class,
+                where: function ($q) use ($shop) {
+                    $q->where('shop_id', $shop->id)
+                        ->where('is_opt_in', false);
+                }
+            )
+        );
+
 
         $stats = array_merge(
             $stats,
@@ -74,6 +133,33 @@ class ShopHydrateProspects implements ShouldBeUnique
                 }
             )
         );
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'opt_in_prospects',
+                field: 'fail_status',
+                enum: ProspectFailStatusEnum::class,
+                models: Prospect::class,
+                where: function ($q) use ($shop) {
+                    $q->where('shop_id', $shop->id)
+                        ->where('is_opt_in', true);
+                }
+            )
+        );
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'opt_out_prospects',
+                field: 'fail_status',
+                enum: ProspectFailStatusEnum::class,
+                models: Prospect::class,
+                where: function ($q) use ($shop) {
+                    $q->where('shop_id', $shop->id)
+                        ->where('is_opt_in', false);
+                }
+            )
+        );
+
 
         $stats = array_merge(
             $stats,
@@ -84,6 +170,32 @@ class ShopHydrateProspects implements ShouldBeUnique
                 models: Prospect::class,
                 where: function ($q) use ($shop) {
                     $q->where('shop_id', $shop->id);
+                }
+            )
+        );
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'opt_in_prospects',
+                field: 'success_status',
+                enum: ProspectSuccessStatusEnum::class,
+                models: Prospect::class,
+                where: function ($q) use ($shop) {
+                    $q->where('shop_id', $shop->id)
+                        ->where('is_opt_in', true);
+                }
+            )
+        );
+        $stats = array_merge(
+            $stats,
+            $this->getEnumStats(
+                model: 'opt_out_prospects',
+                field: 'success_status',
+                enum: ProspectSuccessStatusEnum::class,
+                models: Prospect::class,
+                where: function ($q) use ($shop) {
+                    $q->where('shop_id', $shop->id)
+                        ->where('is_opt_in', false);
                 }
             )
         );
