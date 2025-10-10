@@ -44,13 +44,16 @@ class UpdateRetinaCustomer extends RetinaAction
     public function rules(): array
     {
         return [
-            'contact_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
-            'company_name'    => ['sometimes', 'nullable', 'string', 'max:255'],
-            'email'           => ['sometimes', 'nullable', 'email'],
-            'phone'           => ['sometimes', 'nullable', new Phone()],
-            'contact_address' => ['sometimes', 'required', new ValidAddress()],
-            'tax_number'      => ['sometimes', 'nullable', 'array'],
-            'is_re'           => ['sometimes', 'boolean'],
+            'contact_name'        => ['sometimes', 'nullable', 'string', 'max:255'],
+            'company_name'        => ['sometimes', 'nullable', 'string', 'max:255'],
+            'email'               => ['sometimes', 'nullable', 'email'],
+            'phone'               => ['sometimes', 'nullable', new Phone()],
+            'contact_address'     => ['sometimes', 'required', new ValidAddress()],
+            'tax_number'          => ['sometimes', 'nullable', 'array'],
+            'is_re'               => ['sometimes', 'boolean'],
+            'delivery_address'    => ['sometimes', 'nullable', new ValidAddress()],
+            'delivery_address_id' => ['sometimes', 'integer'],
+
 
         ];
     }
