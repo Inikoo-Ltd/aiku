@@ -79,6 +79,19 @@ class UpdateProspect extends OrgAction
         }
 
 
+        if (Arr::hasAny($changes, [
+                'email',
+                'company_name',
+                'contact_name',
+                'state',
+                'success_status',
+                'fail_status'
+            ])
+            && $prospect->shop->is_aiku) {
+            SaveProspectInAurora::run($prospect);
+        }
+
+
         return $prospect;
     }
 
