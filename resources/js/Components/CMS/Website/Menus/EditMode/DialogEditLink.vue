@@ -116,7 +116,7 @@ function getRoute(): RouteConfig {
 //
 // 🔹 Handlers
 //
-function selectQueryOnChange(e: { href: string; workshop?: string; id?: string }) {
+function selectQueryOnChange(e: { href: string; workshop?: string; id?: string, code?:any  }) {
   link.value = {
 	type : 'internal',
 	code : e.code ?? null,
