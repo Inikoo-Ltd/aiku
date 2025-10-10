@@ -61,7 +61,7 @@ const submitForm = () => {
         }
         : { delivery_address: data[props.fieldName].address }
     ))
-    .post(route(props.updateRoute.name, props.updateRoute.parameters),
+    .patch(route(props.updateRoute.name, props.updateRoute.parameters),
         {
             preserveScroll: true,
             onError: (e) => {
