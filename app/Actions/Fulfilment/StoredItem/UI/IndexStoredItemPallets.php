@@ -12,7 +12,6 @@ use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
-use App\Enums\Fulfilment\Pallet\PalletStateEnum;
 use App\Enums\Fulfilment\Pallet\PalletStatusEnum;
 use App\Http\Resources\Fulfilment\PalletsResource;
 use App\Models\Fulfilment\Fulfilment;
@@ -51,16 +50,16 @@ class IndexStoredItemPallets extends OrgAction
                         $storedItem->number_pallets
                     ],
                     'all' => [
-                        'All', 
+                        'All',
                         $storedItem->palletStoredItems->count()
                     ],
                 ],
 
                 'engine' => function ($query, $elements) {
-                   if (in_array('all', $elements)) {
+                    if (in_array('all', $elements)) {
                         return;
                     }
-                    
+
                     if (in_array('active', $elements)) {
                         $query->whereIn('pallets.status', [PalletStatusEnum::STORING, PalletStatusEnum::RETURNING]);
                     }

@@ -38,7 +38,7 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
         foreach ($publicAttachments as $publicAttachment) {
             $checksum = $publicAttachment->checksum;
             $processedChecksums[$checksum] = true;
-            
+
             $attachments[$publicAttachment->id] = [
                 'scope'           => $publicAttachment->pivot->scope,
                 'caption'         => $publicAttachment->pivot->caption,
@@ -49,13 +49,13 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
 
             ];
         }
-        
+
         $tradeUnitFamily = $tradeUnit->tradeUnitFamily;
         if ($tradeUnitFamily) {
             $familyAttachments = $tradeUnitFamily->attachments()->wherePivotIn('scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
             ->get();
             foreach ($familyAttachments as $familyAttachment) {
-                if(array_key_exists($familyAttachment->checksum, $processedChecksums)){
+                if (array_key_exists($familyAttachment->checksum, $processedChecksums)) {
                     continue;
                 }
                 $attachments[$familyAttachment->id] = [

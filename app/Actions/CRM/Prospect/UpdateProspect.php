@@ -37,7 +37,7 @@ class UpdateProspect extends OrgAction
 
     private Prospect $prospect;
 
-    public function handle(Prospect $prospect, array $modelData,bool $updateAurora = true): Prospect
+    public function handle(Prospect $prospect, array $modelData, bool $updateAurora = true): Prospect
     {
         $addressData = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');

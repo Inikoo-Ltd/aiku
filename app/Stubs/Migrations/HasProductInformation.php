@@ -27,6 +27,7 @@ trait HasProductInformation
         return [
             'cpnp_number',
             'country_of_origin',
+            'origin_country_id',
             'tariff_code',
             'duty_rate',
             'hts_us',

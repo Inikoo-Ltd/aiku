@@ -182,6 +182,15 @@ export const initialiseApp = () => {
             layout.user = usePage().props.auth.user
         }
 
+        if (usePage().props.notifications) {
+            layout.notifications = usePage().props.notifications
+        }
+
+        if (usePage().props.avatar_thumbnail) {
+            layout.avatar_thumbnail = usePage().props.avatar_thumbnail
+        }
+        
+
         layout.app.name = "Aiku"
     })
 }
