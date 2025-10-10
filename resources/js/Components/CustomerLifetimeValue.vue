@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, defineProps, inject } from 'vue'
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { Tooltip } from 'floating-vue'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faQuestionCircle } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { trans } from "laravel-vue-i18n"
+
+library.add(faQuestionCircle)
 
 interface CustomerLifetimeValueData {
     id: number
@@ -179,7 +186,7 @@ const orders = ref<Order[]>([
     { date: '2016-10-15', value: 120, churnProb: 0.4 },
     { date: '2016-11-20', value: 85, churnProb: 0.3 },
     { date: '2017-01-10', value: 95, churnProb: 0.5 },
-    { date: '2017-02-28', value: 60, churnProb: 0.2 },
+    { date: '2017-02-28', value: 6000, churnProb: 0.2 },
     // { date: '2017-04-15', value: 150, churnProb: 0.6 },
     // { date: '2017-06-05', value: 75, churnProb: 0.3 },
     // { date: '2017-08-22', value: 110, churnProb: 0.4 },
@@ -322,25 +329,48 @@ const predictedStartPosition = computed(() => {
         <!-- Header -->
         <div class="flex items-center justify-between mb-6">
             <div class="flex items-center gap-2">
-                <h2 class="text-xl font-semibold text-gray-700">PREDICTIVE ANALYTICS</h2>
+                <h2 class="text-xl font-semibold text-gray-700">{{ trans('PREDICTIVE ANALYTICS') }}</h2>
             </div>
             <slot name="close"></slot>
         </div>
 
-        <h3 class="text-sm text-gray-600 mb-6">Customer Lifetime Value (CLV)</h3>
+        <h3 class="text-sm text-gray-600 mb-6">{{ trans('Customer Lifetime Value (CLV)') }}</h3>
 
         <!-- CLV Values -->
         <div class="flex items-start justify-center gap-12 mb-6">
             <div class="text-center">
-                <div class="text-sm text-gray-500 mb-1">Historic CLV</div>
-                <div class="text-2xl font-semibold text-gray-800">{{ locale.currencyFormat(currencyCode?.code, historicCLV.toFixed(2)) }}</div>
-                <div class="text-xs text-gray-400">{{ props.data.number_orders_state_dispatched }} orders</div>
+                <div class="text-sm text-gray-500 mb-1 flex items-center justify-center gap-1">
+                    <span>{{ trans('Historic CLV') }}</span>
+                    <Tooltip placement="top">
+                        <FontAwesomeIcon :icon="faQuestionCircle" class="text-gray-400 text-xs cursor-help" />
+                        <template #popper>
+                            <div class="text-xs">
+                                {{ trans('Historical CLV = Average Purchase Value × Total Order') }}
+                            </div>
+                        </template>
+                    </Tooltip>
+                </div>
+                <div class="text-2xl font-semibold text-gray-800">{{ locale.currencyFormat(currencyCode?.code,
+                    historicCLV.toFixed(2)) }}</div>
+                <div class="text-xs text-gray-400">{{ props.data.number_orders_state_dispatched }} {{ trans('orders') }}</div>
             </div>
+
             <div class="text-3xl text-gray-300 self-center">+</div>
             <div class="text-center">
-                <div class="text-sm text-gray-500 mb-1">Predicted CLV</div>
-                <div class="text-2xl font-semibold text-gray-800">{{ locale.currencyFormat(currencyCode?.code, predictedCLV.toFixed(2)) }}</div>
-                <div class="text-xs text-gray-400">Predicted</div>
+                <div class="text-sm text-gray-500 mb-1 flex items-center justify-center gap-1">
+                    <span>{{ trans('Predicted CLV') }}</span>
+                    <Tooltip placement="top">
+                        <FontAwesomeIcon :icon="faQuestionCircle" class="text-gray-400 text-xs cursor-help" />
+                        <template #popper>
+                            <div class="text-xs">
+                                {{ trans('Predicted CLV = Customer Value (per month) × Expected Remaining Lifespan (Months)') }}
+                            </div>
+                        </template>
+                    </Tooltip>
+                </div>
+                <div class="text-2xl font-semibold text-gray-800">{{ locale.currencyFormat(currencyCode?.code,
+                    predictedCLV.toFixed(2)) }}</div>
+                <div class="text-xs text-gray-400">{{ trans('Predicted') }}</div>
             </div>
         </div>
 
@@ -380,58 +410,60 @@ const predictedStartPosition = computed(() => {
                 <div class="font-semibold mb-1">{{ hoveredOrder.date }}</div>
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span>Avg Purchase Value: ${{ hoveredOrder.avgPurchaseValue.toFixed(2) }} ({{
+                    <span>{{ trans('Avg Purchase Value') }}: ${{ hoveredOrder.avgPurchaseValue.toFixed(2) }} ({{
                         hoveredOrder.valuePercent.toFixed(1) }}%)</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                    <span>Avg Frequency: {{ hoveredOrder.avgPurchaseFrequency.toFixed(2) }}/mo ({{
+                    <span>{{ trans('Avg Frequency') }}: {{ hoveredOrder.avgPurchaseFrequency.toFixed(2) }}/mo ({{
                         hoveredOrder.frequencyPercent.toFixed(1) }}%)</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span>Avg Lifespan: {{ hoveredOrder.avgCustomerLifespan.toFixed(1) }} mo ({{
+                    <span>{{ trans('Avg Lifespan') }}: {{ hoveredOrder.avgCustomerLifespan.toFixed(1) }} mo ({{
                         hoveredOrder.lifespanPercent.toFixed(1) }}%)</span>
                 </div>
-                <div v-if="hoveredOrder.predicted" class="text-blue-300 mt-1 text-center">Predicted</div>
+                <div v-if="hoveredOrder.predicted" class="text-blue-300 mt-1 text-center">{{ trans('Predicted') }}</div>
             </div>
 
             <!-- Timeline labels -->
             <div class="flex justify-between mt-2 text-xs text-gray-500">
                 <span>Sep 17, 2016</span>
-                <span :style="{ position: 'relative', left: (todayPosition - 50) + '%' }">Today</span>
-                <span>+1 Year</span>
+                <span :style="{ position: 'relative', left: (todayPosition - 50) + '%' }">{{ trans('Today') }}</span>
+                <span>+1 {{ trans('Year') }}</span>
             </div>
         </div>
 
         <!-- Churn probability legend -->
         <div class="flex items-center justify-center gap-3 mb-6">
-            <span class="text-xs text-gray-500">Churn Probability:</span>
+            <span class="text-xs text-gray-500">{{ trans('Churn Probability') }}:</span>
             <div class="flex items-center gap-1">
-                <span class="text-xs text-gray-500">Low</span>
+                <span class="text-xs text-gray-500">{{ trans('Low') }}</span>
                 <div class="w-32 h-3 rounded"
                     style="background: linear-gradient(to right,  #A3FFC3, #EBE571,#FF8B42)" />
-                <span class="text-xs text-gray-500">High</span>
+                <span class="text-xs text-gray-500">{{ trans('High') }}</span>
             </div>
         </div>
 
         <!-- Statistics -->
         <div class="space-y-2 text-sm">
             <div class="flex justify-between">
-                <span class="text-gray-600">Total CLV</span>
-                <span class="font-medium text-gray-800">{{ locale.currencyFormat(currencyCode?.code, totalCLV.toFixed(2)) }}</span>
+                <span class="text-gray-600">{{ trans('Total CLV') }}</span>
+                <span class="font-medium text-gray-800">{{ locale.currencyFormat(currencyCode?.code,
+                    totalCLV.toFixed(2)) }}</span>
             </div>
             <div class="flex justify-between">
-                <span class="text-gray-600">Churn Risk Prediction</span>
+                <span class="text-gray-600">{{ trans('Churn Risk Prediction') }}</span>
                 <span class="font-medium text-gray-800">{{ churnRiskPrediction }}%</span>
             </div>
             <div class="flex justify-between">
-                <span class="text-gray-600">Average Time Between Orders</span>
-                <span class="font-medium text-gray-800">{{ avgTimeBetweenOrders }} days</span>
+                <span class="text-gray-600">{{ trans('Average Time Between Orders') }}</span>
+                <span class="font-medium text-gray-800">{{ avgTimeBetweenOrders }} {{ trans('days') }}</span>
             </div>
             <div class="flex justify-between">
-                <span class="text-gray-600">Average Order Value</span>
-                <span class="font-medium text-gray-800">{{  locale.currencyFormat(currencyCode?.code, avgOrderValue.toFixed(2)) }}</span>
+                <span class="text-gray-600">{{ trans('Average Order Value') }}</span>
+                <span class="font-medium text-gray-800">{{ locale.currencyFormat(currencyCode?.code,
+                    avgOrderValue.toFixed(2)) }}</span>
             </div>
         </div>
     </div>
