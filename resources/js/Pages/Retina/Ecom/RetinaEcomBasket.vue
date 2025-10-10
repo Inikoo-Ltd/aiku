@@ -25,7 +25,7 @@ import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
-import { AddressManagement } from '@/types/PureComponent/Address'
+import { Address, AddressManagement } from '@/types/PureComponent/Address'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
@@ -99,6 +99,7 @@ const props = defineProps<{
     }
     total_products: number
     is_in_basket: boolean
+    contact_address: Address | null
     address_management: AddressManagement
     is_unable_dispatch: boolean
     charges: {
@@ -108,7 +109,6 @@ const props = defineProps<{
     }
 }>()
 
-console.log(props.transactions)
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
@@ -556,6 +556,7 @@ const onChangeInsurance = async (val: boolean) => {
         :balance
         :address_management
         :is_unable_dispatch
+        :contact_address
     />
     
     <template v-if="order">
