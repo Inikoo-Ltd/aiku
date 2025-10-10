@@ -150,6 +150,13 @@ const onSaveEditBulkProduct = async () => {
         loadingSave.value = false
     }
 }
+
+const onCancelEditBulkProduct = () => {
+    isOpenModalEditProducts.value = false
+    rowErrors.value = {}
+    selectedProductsId.value = {}
+    router.reload({ preserveScroll: true })
+}
 </script>
 
 <template>
@@ -209,7 +216,7 @@ const onSaveEditBulkProduct = async () => {
                 </div>
 
                 <div class="flex justify-end gap-2 mt-4">
-                    <Button type="tertiary" label="Cancel" @click="isOpenModalEditProducts = false" />
+                    <Button type="tertiary" label="Cancel" @click="onCancelEditBulkProduct" />
                     <Button type="save" @click="onSaveEditBulkProduct" :loading="loadingSave"/>
                 </div>
             </form>

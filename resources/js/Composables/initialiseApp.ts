@@ -23,7 +23,7 @@ export const initialiseApp = () => {
     const echoPersonal = useEchoGrpPersonal()
     const echoGeneral = useEchoGrpGeneral()
 
-    console.log('klklk', usePage())
+
     useLiveUsers().subscribe()  // Websockets: active users
     echoGeneral.subscribe(usePage().props.layout?.group?.id)  // Websockets: notification
 

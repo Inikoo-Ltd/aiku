@@ -260,7 +260,7 @@ class EditTradeUnit extends OrgAction
                         ],
                         [
                             'label'  => __('Tags & Brands'),
-                            'icon'   => 'fa-light fa-tag',
+                            'icon'   => 'fa-light fa-tags',
                             'fields' => [
                                 'tags' => [
                                     'type'  => 'tags-trade-unit',
@@ -306,7 +306,7 @@ class EditTradeUnit extends OrgAction
                         ],
                         [
                             'label'  => __('Properties'),
-                            'icon'   => 'fa-light fa-book-open-open',
+                            'icon'   => 'fa-light fa-book-open',
                             'fields' => [
                                 'ingredients' => [
                                     'type'  => 'select_infinite',
@@ -326,7 +326,7 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('Country of Origin'),
                                     'value' => $tradeUnit->origin_country_id,
                                     'options' => GetCountriesOptions::run(),
-                                    'valueProp' => 'label',
+                                    'valueProp' => 'id',
                                 ],
                                 'tariff_code' => [
                                     'type'  => 'input',
