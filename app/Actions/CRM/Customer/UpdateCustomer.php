@@ -76,8 +76,21 @@ class UpdateCustomer extends OrgAction
         if (Arr::has($modelData, 'delivery_address')) {
             $deliveryAddressData = Arr::get($modelData, 'delivery_address');
             Arr::forget($modelData, 'delivery_address');
-            UpdateAddress::run($customer->deliveryAddress, $deliveryAddressData);
+
+            if ($customer->address_id != $customer->delivery_address_id) {
+                UpdateAddress::run($customer->deliveryAddress, $deliveryAddressData);
+            } else {
+                $customer = $this->addAddressToModelFromArray(
+                    model: $customer,
+                    addressData: $deliveryAddressData,
+                    scope: 'delivery',
+                    updateLocation: false,
+                    updateAddressField: 'delivery_address_id'
+                );
+            }
         }
+
+
         if (Arr::has($modelData, 'tax_number')) {
             $taxNumberData = Arr::get($modelData, 'tax_number');
             Arr::forget($modelData, 'tax_number');
@@ -204,6 +217,7 @@ class UpdateCustomer extends OrgAction
             'contact_website'          => ['sometimes', 'nullable', 'active_url'],
             'contact_address'          => ['sometimes', 'required', new ValidAddress()],
             'delivery_address'         => ['sometimes', 'nullable', new ValidAddress()],
+            'delivery_address_id'      => ['sometimes', 'integer'],
             'timezone_id'              => ['sometimes', 'nullable', 'exists:timezones,id'],
             'language_id'              => ['sometimes', 'nullable', 'exists:languages,id'],
             'balance'                  => ['sometimes', 'nullable'],
