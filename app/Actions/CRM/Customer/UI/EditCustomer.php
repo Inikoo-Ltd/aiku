@@ -97,6 +97,19 @@ class EditCustomer extends OrgAction
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
                                 ],
+                                'delivery_address'         => [
+                                    'type'    => 'delivery_address',
+                                    'label'   => __('Delivery Address'),
+                                    'value'   => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray(),
+                                    'options' => [
+                                        'labels'                  => [
+                                            'sames_as' => __('Same as contact address')
+                                        ],
+                                        'contact_address_id'      => $customer->address_id,
+                                        'same_as_contact_address' => $customer->delivery_address_id == $customer->address_id,
+                                        'countriesAddressData'    => GetAddressData::run()
+                                    ]
+                                ],
                                 'tax_number'               => [
                                     'type'    => 'tax_number',
                                     'label'   => __('Tax number'),
