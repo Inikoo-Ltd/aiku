@@ -64,16 +64,33 @@ enum ProspectStateEnum: string
         ];
     }
 
-    public static function count(Organisation|Shop $parent): array
+    public static function count(Organisation|Shop $parent, ?string $opt = null): array
     {
         $stats = $parent->crmStats;
 
-        return [
-            'no-contacted' => $stats->number_prospects_state_no_contacted,
-            'contacted'    => $stats->number_prospects_state_contacted,
-            'fail'         => $stats->number_prospects_state_fail,
-            'success'      => $stats->number_prospects_state_success,
-        ];
+        if($opt == 'opt_in'){
+            return [
+                'no-contacted' => $stats->number_opt_in_prospects_state_no_contacted,
+                'contacted'    => $stats->number_opt_in_prospects_state_contacted,
+                'fail'         => $stats->number_opt_in_prospects_state_fail,
+                'success'      => $stats->number_opt_in_prospects_state_success,
+            ];
+        } elseif ($opt == 'opt_out'){
+            return [
+                'no-contacted' => $stats->number_opt_out_prospects_state_no_contacted,
+                'contacted'    => $stats->number_opt_out_prospects_state_contacted,
+                'fail'         => $stats->number_opt_out_prospects_state_fail,
+                'success'      => $stats->number_opt_out_prospects_state_success,
+            ];
+        } else {
+            return [
+                'no-contacted' => $stats->number_prospects_state_no_contacted,
+                'contacted'    => $stats->number_prospects_state_contacted,
+                'fail'         => $stats->number_prospects_state_fail,
+                'success'      => $stats->number_prospects_state_success,
+            ];
+        }
+
     }
 
 }

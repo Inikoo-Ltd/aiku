@@ -10,7 +10,7 @@ import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import { faCheckCircle as faCheckCircleSolid } from "@fas"
 import { faThumbtack, faPencil, faHouse, faTrashAlt, faTruck, faTruckCouch, faCheckCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { cloneDeep } from "lodash-es"
+import { cloneDeep, isEqual } from "lodash-es"
 import { Checkbox } from "primevue"
 import InformationIcon from "./InformationIcon.vue"
 
@@ -22,6 +22,7 @@ const props = defineProps<{
     address: Address
     keyPayloadEdit?: string
     title?: string
+    copyAddress?: Address | null
 }>()
 
 
@@ -86,14 +87,20 @@ const onSubmitEditAddress = (address: Address) => {
 
 <template>
     <div class="px-2 py-1 ">
-        <div class="font-semibold text-xl mb-3 text-center gap-2">
+        <div class="font-semibold text-xl mb-5 text-center gap-2">
             {{ title ?? trans("Edit delivery address") }}
+        </div>
+
+        <div v-if="copyAddress" @click="selectedAddress = {...copyAddress}" class="ml-2 border-b border-dashed border-gray-300 flex w-full pb-1.5 mb-2">
+            <slot name="copy_address" :address="selectedAddress" :isEqual="isEqual(selectedAddress, copyAddress)">
+                Copy from address
+            </slot>
         </div>
 
         <div class="px-2 xoverflow-y-auto qmin-h-56 relative transition-all">
             <PureAddress v-model="selectedAddress" :options="addresses.options" xfieldLabel />
 
-            <div class="mt-3 flex items-center">
+            <div class="mt-4 flex items-center">
                 <Checkbox v-model="isChangeTheParent" inputId="is_change_the_parent" name="is_change_the_parent" binary />
                 <label for="is_change_the_parent" class="ml-1.5 text-sm cursor-pointer select-none">{{ trans('Update the parent address') }}</label>
                 <InformationIcon :information="trans('If not checked, the changes will only apply to this order.')" class="ml-1 text-sm" />
@@ -103,7 +110,6 @@ const onSubmitEditAddress = (address: Address) => {
                 <Button @click="() => onSubmitEditAddress(selectedAddress)" :label="trans('Save')" :loading="isSubmitAddressLoading" full />
             </div>
         </div>
-
     </div>
 
     <!-- <div class="border-t border-gray-300 pt-3">

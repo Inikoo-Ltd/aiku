@@ -22,7 +22,7 @@ class UpdateCustomerComms extends OrgAction
     use WithCRMEditAuthorisation;
 
 
-    public function handle(CustomerComms $customerComms, array $modelData, bool $updateAiku = true): CustomerComms
+    public function handle(CustomerComms $customerComms, array $modelData, bool $updateAurora = true): CustomerComms
     {
         $this->update($customerComms, $modelData);
 
@@ -37,7 +37,7 @@ class UpdateCustomerComms extends OrgAction
                 'is_subscribed_to_basket_reminder',
             ])
             && $customerComms->customer->shop->is_aiku
-            && $updateAiku) {
+            && $updateAurora) {
             SaveCustomerInAurora::dispatch($customerComms->customer);
         }
 

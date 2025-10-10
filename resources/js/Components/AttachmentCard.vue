@@ -48,7 +48,7 @@ const getIcon = (type?: string) => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-6 p-4">
+  <div class="flex flex-col gap-6 py-3">
     <!-- Public Attachments -->
     <div class="bg-white  shadow-sm border border-gray-200 overflow-hidden">
       <div class="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
