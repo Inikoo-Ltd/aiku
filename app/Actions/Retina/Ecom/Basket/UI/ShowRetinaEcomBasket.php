@@ -17,6 +17,7 @@ use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
+use App\Http\Resources\Helpers\AddressResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Http\Resources\Sales\OrderResource;
@@ -149,6 +150,7 @@ class ShowRetinaEcomBasket extends RetinaAction
                     'insurance'       => $insurance ? ChargeResource::make($insurance)->toArray(request()) : null,
                 ],
 
+                'contact_address'    => $order ? AddressResource::make($order->customer->address)->getArray() : null,
                 'address_management' => $order ? GetOrderDeliveryAddressManagement::run(order: $order, isRetina: true) : [],
                 'balance'            => $this->customer->balance,
                 'is_in_basket'       => true,

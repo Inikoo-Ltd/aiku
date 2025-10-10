@@ -5,7 +5,7 @@ import { faClipboard, faDollarSign, faPencil } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
 import { inject, ref } from "vue"
-import { AddressManagement } from "@/types/PureComponent/Address"
+import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 
@@ -21,6 +21,7 @@ const props = defineProps<{
     balance?: string
     address_management?: AddressManagement
     is_unable_dispatch?: boolean
+    contact_address?: Address | null
 }>()
 
 const locale = inject('locale', {})
@@ -99,7 +100,19 @@ const isModalShippingAddress = ref(false)
                 :updateRoute="address_management.address_update_route"
                 @submitted="() => (isModalShippingAddress = false)"
                 closeButton
-            />
+                :copyAddress="contact_address"
+            >
+                <template #copy_address="{ address, isEqual }">
+                    <div v-if="isEqual" class="text-gray-500 text-sm">
+                        {{ trans("Already same as contact address") }}
+                        <FontAwesomeIcon v-if="isEqual" v-tooltip="trans('Same as contact address')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    </div>
+
+                    <div v-else class="underline text-sm text-gray-500 hover:text-blue-700 cursor-pointer">
+                        {{ trans("Copy from contact address") }}
+                    </div>
+                </template>
+            </AddressEditModal>
         </Modal>
     </div>
 </template>
