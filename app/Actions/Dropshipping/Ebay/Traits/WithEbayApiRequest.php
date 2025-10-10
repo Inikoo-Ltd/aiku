@@ -399,7 +399,7 @@ trait WithEbayApiRequest
             "pricingSummary" => [
                 "price" => [
                     "value" => Arr::get($offerData, 'price', 0),
-                    "currency" => Arr::get($offerData, 'currency', 'USD')
+                    "currency" => Arr::get($offerData, 'currency', 'GBP')
                 ]
             ],
             "listingPolicies" => [
@@ -476,21 +476,38 @@ trait WithEbayApiRequest
         }
     }
 
+
+
     /**
      * Update offer by offer ID
      */
-    public function updateOffer($offerId, array $productData)
+    public function updateOffer($offerId, array $offerData)
     {
         try {
-            $endpoint = "/sell/inventory/v1/offer/$offerId";
-            return $this->makeEbayRequest('put', $endpoint, array_merge($productData, [
+            $data = [
+                "sku" => Arr::get($offerData, 'sku'),
+                "marketplaceId" => "EBAY_GB",
+                "format" => "FIXED_PRICE",
+                "listingDescription" => Arr::get($offerData, 'description'),
+                "availableQuantity" => Arr::get($offerData, 'quantity', 1),
+                "pricingSummary" => [
+                    "price" => [
+                        "value" => Arr::get($offerData, 'price', 0),
+                        "currency" => Arr::get($offerData, 'currency', 'GBP')
+                    ]
+                ],
                 "listingPolicies" => [
                     "fulfillmentPolicyId" => Arr::get($this->settings, 'defaults.main_fulfilment_policy_id'),
                     "paymentPolicyId" => Arr::get($this->settings, 'defaults.main_payment_policy_id'),
                     "returnPolicyId" => Arr::get($this->settings, 'defaults.main_return_policy_id'),
                 ],
-                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key')
-            ]));
+                "categoryId" => Arr::get($offerData, 'category_id'),
+                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
+
+            ];
+
+            $endpoint = "/sell/inventory/v1/offer/$offerId";
+            return $this->makeEbayRequest('put', $endpoint, $data);
         } catch (Exception $e) {
             Log::error('Get eBay Offer Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
@@ -507,6 +524,20 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('delete', $endpoint);
         } catch (Exception $e) {
             Log::error('Delete eBay Product Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Delete offer from eBay
+     */
+    public function withdrawOffer($offerId)
+    {
+        try {
+            $endpoint = "/sell/inventory/v1/offer/$offerId/withdraw";
+            return $this->makeEbayRequest('post', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Delete eBay Offer Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
@@ -722,7 +753,7 @@ trait WithEbayApiRequest
                     "optionType" => "DOMESTIC",
                     "shippingServices" => [
                         [
-                            "buyerResponsibleForShipping" => "true",
+                            "buyerResponsibleForShipping" => "false",
                             "freeShipping" => "true",
                             "shippingCarrierCode" => "RoyalMail",
                             "shippingServiceCode" => "UK_RoyalMailNextDay"
