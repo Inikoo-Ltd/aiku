@@ -12,6 +12,7 @@ import {
     faUser,
     faBrowser,
     faPlus, faMinus,
+    faUpload,
 } from "@fal"
 import { faExclamationTriangle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -34,6 +35,8 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue"
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from 'primevue/breadcrumb'
+import { create } from "lodash"
+import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 
 library.add(
     faFolder,
@@ -72,7 +75,7 @@ const props = defineProps<{
 }>()
 
 const currentTab = ref(props.tabs.current)
-
+const isModalUploadOpen = ref(false)
 
 const handleTabUpdate = (tabSlug: string) => {
     useTabChange(tabSlug, currentTab)
@@ -115,6 +118,16 @@ const showDialog = ref(false);
             </Link>
             </div>
         </template>
+
+        <template #other>
+			<Button
+				@click="() => (isModalUploadOpen = true)"
+				:style="create"
+				:icon="faUpload"
+				v-tooltip="'upload excel'" 
+                label="Upload Excel"
+            />
+		</template>
     </PageHeading>
 
     <Message v-if="is_orphan" severity="warn" class="m-4 mb-2">
@@ -152,6 +165,17 @@ const showDialog = ref(false);
         :shopsData="shopsData"
         :masterProductCategory="masterProductCategory"
     />
+
+
+    <UploadExcel
+		v-model="isModalUploadOpen"
+		scope="Pallet delivery"
+		:title="{
+			label: 'Upload your new pallet deliveries',
+			information: `The list of column file:`,
+		}"
+		progressDescription="Adding Pallet Deliveries"
+		:additionalDataToSend="undefined" />
 
 </template>
 
