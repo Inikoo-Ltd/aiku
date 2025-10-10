@@ -251,7 +251,7 @@ class UpdateTradeUnit extends GrpAction
         return $rules;
     }
 
-    public function jsonResponse(TradeUnit $tradeUnit)
+    public function jsonResponse(TradeUnit $tradeUnit): TradeUnitResource|\Illuminate\Http\Resources\Json\JsonResource
     {
         return TradeUnitResource::make($tradeUnit);
     }
