@@ -39,6 +39,8 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
+        $oldIsOutOfStock = $product->available_quantity > 0;
+
         $oldHistoricProduct = $product->current_historic_asset_id;
 
         if (Arr::has($modelData, 'family_id')) {
@@ -181,22 +183,24 @@ class UpdateProduct extends OrgAction
             ProductRecordSearch::dispatch($product);
         }
 
+        $isOutOfStock = $product->available_quantity > 0;
+
         if ($product->webpage
-            && Arr::hasAny(
-                $changed,
-                [
-                    'code',
-                    'name',
-                    'description',
-                    'state',
-                    'status',
-                    'price',
-                    'available_quantity'
-                ]
-            )
+            && (Arr::hasAny(
+                    $changed,
+                    [
+                        'code',
+                        'name',
+                        'description',
+                        'state',
+                        'status',
+                        'price',
+                    ]
+                )
+                || $isOutOfStock != $oldIsOutOfStock)
         ) {
-            BreakProductInWebpagesCache::dispatch($product)->delay(2);
-            ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 10);
+            BreakProductInWebpagesCache::dispatch($product)->delay(15);
+            ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
         }
 
 

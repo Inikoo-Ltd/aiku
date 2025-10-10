@@ -31,7 +31,7 @@ class DeleteRetinaBasket extends RetinaAction
         $order->delete();
 
         CustomerSalesChannelsHydrateOrders::dispatch($customerSalesChannel);
-        CustomerHydrateBasket::dispatch($customerSalesChannel->customer);
+        CustomerHydrateBasket::run($customerSalesChannel->customer);
         CustomerHydrateOrders::dispatch($customerSalesChannel->customer);
 
         return Redirect::route(

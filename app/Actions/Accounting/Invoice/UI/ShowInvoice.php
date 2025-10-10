@@ -276,7 +276,7 @@ class ShowInvoice extends OrgAction
                 ],
                 'pageHead'    => [
                     'subNavigation'   => $subNavigation,
-                    'model'           => __('invoice'),
+                    'model'           => __('Invoice'),
                     'title'           => $invoice->reference,
                     'icon'            => [
                         'icon'  => ['fal', 'fa-file-invoice-dollar'],

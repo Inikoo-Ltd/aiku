@@ -12,8 +12,8 @@ trait HasBucketAttachment
 {
     public function getAttachmentData(MasterAsset|Product|TradeUnit|TradeUnitFamily $model): array
     {
-        $attachments = $model->attachments()->get()->keyBy(fn($att) => $att->pivot->scope);
-        // dd($model->id);
+        $attachments = $model->attachments()->get()->keyBy(fn ($att) => $att->pivot->scope);
+
         $attachmentConfigs = [
             'public' => [
                 ['label' => __('IFRA'), 'scope' => 'ifra', 'enum' => TradeAttachmentScopeEnum::IFRA],
@@ -31,8 +31,8 @@ trait HasBucketAttachment
             ],
         ];
 
-        $mapAttachments = function($configs) use ($attachments) {
-            return array_map(function($config) use ($attachments) {
+        $mapAttachments = function ($configs) use ($attachments) {
+            return array_map(function ($config) use ($attachments) {
                 $attachment = $attachments->get($config['enum']->value ?? $config['enum']);
                 return [
                     'label'            => $config['label'],
@@ -48,7 +48,7 @@ trait HasBucketAttachment
                 ];
             }, $configs);
         };
-        
+
         $public = $mapAttachments($attachmentConfigs['public']);
         $private = $mapAttachments($attachmentConfigs['private']);
 

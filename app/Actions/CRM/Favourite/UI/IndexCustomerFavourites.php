@@ -42,7 +42,7 @@ class IndexCustomerFavourites extends OrgAction
         $query->where('favourites.customer_id', $parent->id);
         $query->leftJoin('products', 'favourites.product_id', '=', 'products.id');
         $select = [];
-        if($basket) {
+        if ($basket) {
             $query->leftJoin('transactions', function ($join) use ($basket) {
                 $join->on('products.id', '=', 'transactions.model_id')
                     ->where('transactions.model_type', '=', 'Product')
@@ -57,7 +57,7 @@ class IndexCustomerFavourites extends OrgAction
             $join->on('products.id', '=', 'webpages.model_id')
                 ->where('webpages.model_type', '=', 'Product');
         });
-        
+
         $query->whereNull('favourites.unfavourited_at');
         $select = array_merge($select, [
                 'products.id',

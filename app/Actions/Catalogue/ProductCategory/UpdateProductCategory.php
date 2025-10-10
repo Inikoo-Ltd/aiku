@@ -153,7 +153,7 @@ class UpdateProductCategory extends OrgAction
         ])) {
             $this->productCategoryHydrators($productCategory);
             if ($productCategory->webpage_id) {
-                ReindexWebpageLuigiData::dispatch($productCategory->webpage)->delay($this->hydratorsDelay);
+                ReindexWebpageLuigiData::dispatch($productCategory->webpage)->delay(60 * 15);
             }
         }
         $productCategory->refresh();

@@ -12,6 +12,7 @@ namespace App\Actions\CRM\Prospect\UI;
 use App\Actions\Comms\DispatchedEmail\UI\IndexDispatchedEmails;
 use App\Actions\Helpers\History\UI\IndexHistory;
 use App\Actions\OrgAction;
+use App\Actions\Traits\Actions\WithActionButtons;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Actions\Traits\WithProspectsSubNavigation;
 use App\Enums\UI\CRM\ProspectTabsEnum;
@@ -29,6 +30,8 @@ class ShowProspect extends OrgAction
 {
     use WithProspectsSubNavigation;
     use WithCRMAuthorisation;
+    use WithActionButtons;
+
 
 
     public function handle(Prospect $prospect): Prospect
@@ -64,6 +67,9 @@ class ShowProspect extends OrgAction
                             'title' => __('Prospect')
                         ],
                     'subNavigation' => $subNavigation,
+                    'actions' => [
+                        $this->canEdit ? $this->getEditActionIcon($request) : null,
+                    ],
                 ],
                 'tabs' => [
                     'current'    => $this->tab,
@@ -84,14 +90,14 @@ class ShowProspect extends OrgAction
 
             ]
         )->table(
-                IndexDispatchedEmails::make()->tableStructure(
-                    parent: $prospect,
-                    prefix: ProspectTabsEnum::DISPATCHED_EMAILS->value
-                )
+            IndexDispatchedEmails::make()->tableStructure(
+                parent: $prospect,
+                prefix: ProspectTabsEnum::DISPATCHED_EMAILS->value
+            )
         )->table(
-                IndexHistory::make()->tableStructure(
-                    prefix: ProspectTabsEnum::HISTORY->value
-                )
+            IndexHistory::make()->tableStructure(
+                prefix: ProspectTabsEnum::HISTORY->value
+            )
         );
     }
 

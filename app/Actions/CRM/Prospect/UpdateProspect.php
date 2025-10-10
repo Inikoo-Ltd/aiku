@@ -55,7 +55,7 @@ class UpdateProspect extends OrgAction
             data_set($modelData, 'location', $prospect->address->getLocation());
         }
 
-        if (Arr::get($modelData, 'contact_name') ) {
+        if (Arr::get($modelData, 'contact_name')) {
             data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
         }
 

@@ -16,7 +16,7 @@ class GetTradeUnitFamilyShowcase
     {
         return [
            'tradeUnitFamily' => TradeUnitFamilyResource::make($tradeUnitFamily)->resolve(),
-           'attachment_box'=>  $this->getAttachmentData($tradeUnitFamily),
+           'attachment_box' =>  $this->getAttachmentData($tradeUnitFamily),
         ];
     }
 

@@ -177,7 +177,7 @@ class StoreCustomer extends OrgAction
             SaveCustomerInAurora::dispatch($customer);
         }
 
-        if($customer->shop->is_aiku){
+        if ($customer->shop->is_aiku) {
             MatchCustomerProspects::run($customer);
         }
 

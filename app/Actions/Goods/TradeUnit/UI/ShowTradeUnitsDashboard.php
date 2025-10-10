@@ -67,7 +67,7 @@ class ShowTradeUnitsDashboard extends OrgAction
                             'name'  => __('Orphan Trade Units'),
                             'icon'  => ['fal', 'fa-atom'],
                             'route' => [
-                                'name'       => 'grp.trade_units.families.index',
+                                'name'       => 'grp.trade_units.units.orphan',
                                 'parameters' => []
                             ],
                             'index' => [

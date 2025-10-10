@@ -16,10 +16,8 @@ use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
-use App\Models\Comms\DispatchedEmail;
 use App\Models\CRM\Customer;
 use App\Models\CRM\Prospect;
-use App\Models\SysAdmin\Group;
 use Illuminate\Console\Command;
 
 class MatchCustomerProspects extends OrgAction

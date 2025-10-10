@@ -98,6 +98,7 @@ class IndexRefunds extends OrgAction
                 'invoices.in_process',
                 'invoices.total_amount',
                 'invoices.net_amount',
+                'invoices.payment_amount',
                 'invoices.pay_status',
                 'invoices.date',
                 'invoices.type',
@@ -182,8 +183,9 @@ class IndexRefunds extends OrgAction
             $table->column(key: 'date', label: __('date'), canBeHidden: false, sortable: true, searchable: true, align: 'right');
 
 
-            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
-                ->defaultSort('-date');
+            $table->column(key: 'total_amount', label: __('total'), canBeHidden: false, sortable: true, searchable: true, type: 'number');
+            $table->column(key: 'payment_amount', label: __('Refunded amount'), canBeHidden: false, sortable: false, searchable: true, type: 'currency');
+            $table->column(key: 'total_to_pay', label: __('Total to refund'), canBeHidden: false, sortable: false, searchable: true, type: 'currency');
         };
     }
 

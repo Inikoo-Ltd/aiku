@@ -10,6 +10,7 @@ namespace App\Actions\Ordering\Order;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
@@ -41,6 +42,9 @@ class CancelOrder extends OrgAction
 
     public function handle(Order $order): Order
     {
+
+        $oldState = $order->state;
+
         $modelData = [
             'state' => OrderStateEnum::CANCELLED,
         ];
@@ -98,6 +102,9 @@ class CancelOrder extends OrgAction
             CancelDeliveryNote::make()->action($deliveryNote, false);
         }
 
+        if ($oldState == OrderStateEnum::CREATING) {
+            CustomerHydrateBasket::run($order->customer);
+        }
 
         $this->orderHydrators($order);
 

@@ -30,7 +30,9 @@ class GetProductForWooCommerce
             'id' => $product['id'],
             'name' => $product['name'],
             'slug' => $product['slug'],
-            'images' => Arr::get($product, 'images.0')
+            'code' => $product['sku'],
+            'price' => $product['price'],
+            'images' => Arr::get($product, 'images')
         ];
     }
 

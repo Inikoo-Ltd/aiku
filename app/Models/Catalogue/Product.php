@@ -168,6 +168,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $art4Image
  * @property-read Media|null $art5Image
  * @property-read \App\Models\Catalogue\Asset|null $asset
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $attachments
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
