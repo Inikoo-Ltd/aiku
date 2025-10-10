@@ -123,19 +123,19 @@ const onSaveEditBulkProduct = async () => {
 
     try {
         // Payload sekali request
-        const payload: Record<string, any> = {}
+         const payload = []
         compSelectedProductsId.value.forEach((productId) => {
-            payload[productId] = {
+            payload.push({
                 price: form.price,
                 rrp: form.rrp,
                 unit: form.unit,
                 id: productId
-            }
+            }) 
         })
 
         await router.patch(
             route("grp.models.product.bulk_update", { shop : props.shop_id }),
-            payload,
+            {products : payload},
             {
                 preserveScroll: true,
                 onError: (errors) => {
