@@ -75,7 +75,7 @@ const onSaveEditBulkProduct = async () => {
 
 
         await router.patch(
-            route("grp.models.product.bulk_update"),
+            route("grp.models.master_asset.bulk_update"),
             payload,
             {
                 preserveScroll: true,

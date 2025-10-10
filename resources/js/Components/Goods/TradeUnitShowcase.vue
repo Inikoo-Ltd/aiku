@@ -90,7 +90,7 @@ const validImages = computed(() =>
 		})
 )
 
-
+console.log(props.data)
 
 </script>
 
@@ -115,7 +115,7 @@ const validImages = computed(() =>
 			</div>
 		</div>
 		<!-- tradeUnit Summary -->
-		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr" :type="'trade_unit'" :video="videoSetup.url" />
+		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr"  :properties="data.properties" :type="'trade_unit'" :video="videoSetup.url" />
 
 		<div>
 			<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />

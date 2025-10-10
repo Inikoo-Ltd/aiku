@@ -29,7 +29,6 @@ class GetProductShowcase
 
     public function handle(Product $product): array
     {
-
         $webpageUrl = null;
         if ($product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
             $webpageUrl = $product->webpage->canonical_url;
