@@ -114,8 +114,22 @@ class StoreEbayProduct extends RetinaAction
             $offerExist = $ebayUser->getOffers([
                 'sku' => Arr::get($inventoryItem, 'sku')
             ]);
+
             if (Arr::get($offerExist, 'offers.0')) {
                 $offer = Arr::get($offerExist, 'offers.0');
+
+                $ebayUser->updateOffer(
+                    Arr::get($offer, 'offerId'),
+                    [
+                        'sku' => Arr::get($inventoryItem, 'sku'),
+                        'description' => Arr::get($inventoryItem, 'product.description'),
+                        'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
+                        'price' => $portfolio->customer_price,
+                        'currency' => $portfolio->shop->currency->code,
+                        'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
+                    ]
+                );
+
             } else {
                 $offer = $ebayUser->storeOffer([
                     'sku' => Arr::get($inventoryItem, 'sku'),
