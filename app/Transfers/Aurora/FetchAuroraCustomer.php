@@ -26,10 +26,6 @@ class FetchAuroraCustomer extends FetchAurora
             return;
         }
 
-        if ($shop->type == ShopTypeEnum::DROPSHIPPING) {
-            return;
-        }
-
         if ($shop->is_aiku) {
             return;
         }
@@ -229,8 +225,12 @@ class FetchAuroraCustomer extends FetchAurora
 
 
         if ($billingAddress != $deliveryAddress) {
+
             $this->parsedData['customer']['delivery_address'] = $deliveryAddress;
+        } else {
+            $this->parsedData['customer']['delivery_address_id_same_as_address_id'] = true;
         }
+
     }
 
 
