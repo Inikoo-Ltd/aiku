@@ -120,13 +120,23 @@ class NaturalLanguage
         return DimensionsFormatter::make()->dimensions($dimensionsData) ?? '';
     }
 
-    public function country($country): array
+    public function country($country3letterCode): array
     {
-        $country = Country::where('iso3', $country)->first();
-        return $country ? [
-            'name' => $country->name,
-            'code' => $country->code,
-        ] : [];
+
+        if (!$country3letterCode) {
+            return [];
+        }
+
+        if (strlen($country3letterCode) == 3) {
+            $country3letterCode = Country::where('iso3', $country3letterCode)->first();
+
+            return $country3letterCode ? [
+                'name' => $country3letterCode->name,
+                'code' => $country3letterCode->code,
+            ] : [];
+        } else {
+            return [];
+        }
     }
 
 

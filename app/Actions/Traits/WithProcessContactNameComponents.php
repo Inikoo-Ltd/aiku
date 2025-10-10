@@ -55,7 +55,7 @@ trait WithProcessContactNameComponents
             }
 
 
-            $encodedValues=json_encode(
+            $encodedValues = json_encode(
                 [
                     'first_name'  => $firstName ?? '',
                     'middle_name' => $parsedName->getMiddleName(),
@@ -65,19 +65,19 @@ trait WithProcessContactNameComponents
                 ]
             );
 
-            if(!$encodedValues){
-                $encodedValues=json_encode(
+            if (!$encodedValues) {
+                $encodedValues = json_encode(
                     [
                         'first_name'  => $contactName,
                         'middle_name' => '',
                         'last_name'   => '',
                         'initials'    => '',
-                        'suffix'      =>'',
+                        'suffix'      => '',
                     ]
                 );
-                if($encodedValues){
+                if ($encodedValues) {
                     return json_decode($encodedValues, true);
-                }else{
+                } else {
                     return [
                         'first_name'  => '',
                         'middle_name' => '',

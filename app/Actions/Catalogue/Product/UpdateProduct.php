@@ -24,6 +24,8 @@ use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use App\Stubs\Migrations\HasDangerousGoodsFields;
+use App\Stubs\Migrations\HasProductInformation;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
@@ -34,6 +36,8 @@ class UpdateProduct extends OrgAction
     use WithProductHydrators;
     use WithNoStrictRules;
     use WithProductOrgStocks;
+    use HasDangerousGoodsFields;
+    use HasProductInformation;
 
     private Product $product;
 
@@ -185,23 +189,44 @@ class UpdateProduct extends OrgAction
 
         $isOutOfStock = $product->available_quantity > 0;
 
+
+        $fieldsUsedInLuigi = [
+            'code',
+            'name',
+            'description',
+            'state',
+            'status',
+            'price',
+        ];
+
         if ($product->webpage
             && (Arr::hasAny(
-                    $changed,
-                    [
-                        'code',
-                        'name',
-                        'description',
-                        'state',
-                        'status',
-                        'price',
-                    ]
-                )
+                $changed,
+                $fieldsUsedInLuigi
+            )
+                || $isOutOfStock != $oldIsOutOfStock)
+        ) {
+            ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
+        }
+
+
+        $fieldsUsedInWebpages = array_merge(
+            $fieldsUsedInLuigi,
+            $this->getDangerousGoodsFieldNames(),
+            $this->getProductInformationFieldNames()
+        );
+
+        if ($product->webpage
+            && (Arr::hasAny(
+                $changed,
+                $fieldsUsedInWebpages
+            )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
-            ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
         }
+
+
 
 
         if (Arr::has($changed, 'available_quantity')) {
@@ -272,7 +297,6 @@ class UpdateProduct extends OrgAction
                 Rule::exists('barcodes', 'number')
                     ->whereNull('deleted_at')
             ],
-
             'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
             'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
             'units'                     => ['sometimes', 'numeric'],
@@ -283,7 +307,6 @@ class UpdateProduct extends OrgAction
                 'integer',
                 Rule::exists('customers', 'id')->where('shop__id', $this->shop->id)
             ],
-
             'org_stocks'                => ['sometimes', 'present', 'array'],
             'well_formatted_org_stocks' => ['sometimes', 'present', 'array'],
             'name_i8n'                  => ['sometimes', 'array'],
@@ -293,6 +316,39 @@ class UpdateProduct extends OrgAction
             'gross_weight'              => ['sometimes', 'numeric'],
             'marketing_weight'          => ['sometimes', 'numeric'],
             'marketing_dimensions'      => ['sometimes'],
+
+            'cpnp_number'                  => ['sometimes', 'nullable', 'string'],
+            'country_of_origin'            => ['sometimes', 'nullable', 'string'],
+            'origin_country_id'            => ['sometimes', 'nullable', 'exists:countries,id'],
+            'tariff_code'                  => ['sometimes', 'nullable', 'string'],
+            'duty_rate'                    => ['sometimes', 'nullable', 'string'],
+            'hts_us'                       => ['sometimes', 'nullable', 'string'],
+
+
+            // Dangerous goods string fields
+            'un_number'                    => ['sometimes', 'nullable', 'string'],
+            'un_class'                     => ['sometimes', 'nullable', 'string'],
+            'packing_group'                => ['sometimes', 'nullable', 'string'],
+            'proper_shipping_name'         => ['sometimes', 'nullable', 'string'],
+            'hazard_identification_number' => ['sometimes', 'nullable', 'string'],
+            'gpsr_manufacturer'            => ['sometimes', 'nullable', 'string'],
+            'gpsr_eu_responsible'          => ['sometimes', 'nullable', 'string'],
+            'gpsr_warnings'                => ['sometimes', 'nullable', 'string'],
+            'gpsr_manual'                  => ['sometimes', 'nullable', 'string'],
+            'gpsr_class_category_danger'   => ['sometimes', 'nullable', 'string'],
+            'gpsr_class_languages'         => ['sometimes', 'nullable', 'string'],
+
+            // Dangerous goods boolean fields
+            'pictogram_toxic'              => ['sometimes', 'boolean'],
+            'pictogram_corrosive'          => ['sometimes', 'boolean'],
+            'pictogram_explosive'          => ['sometimes', 'boolean'],
+            'pictogram_flammable'          => ['sometimes', 'boolean'],
+            'pictogram_gas'                => ['sometimes', 'boolean'],
+            'pictogram_environment'        => ['sometimes', 'boolean'],
+            'pictogram_health'             => ['sometimes', 'boolean'],
+            'pictogram_oxidising'          => ['sometimes', 'boolean'],
+            'pictogram_danger'             => ['sometimes', 'boolean'],
+
         ];
 
 

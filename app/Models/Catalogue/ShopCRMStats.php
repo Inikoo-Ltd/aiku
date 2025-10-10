@@ -84,6 +84,50 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_customers_status_pre_registration
  * @property int $number_traffic_sources
+ * @property int $number_opt_in_prospects
+ * @property int $number_opt_in_prospects_state_no_contacted
+ * @property int $number_opt_in_prospects_state_contacted
+ * @property int $number_opt_in_prospects_state_fail
+ * @property int $number_opt_in_prospects_state_success
+ * @property int $number_opt_in_prospects_gender_male
+ * @property int $number_opt_in_prospects_gender_female
+ * @property int $number_opt_in_prospects_gender_other
+ * @property int $number_opt_in_prospects_contacted_state_no_applicable
+ * @property int $number_opt_in_prospects_contacted_state_soft_bounced
+ * @property int $number_opt_in_prospects_contacted_state_never_open
+ * @property int $number_opt_in_prospects_contacted_state_open
+ * @property int $number_opt_in_prospects_contacted_state_clicked
+ * @property int $number_opt_in_prospects_fail_status_no_applicable
+ * @property int $number_opt_in_prospects_fail_status_not_interested
+ * @property int $number_opt_in_prospects_fail_status_unsubscribed
+ * @property int $number_opt_in_prospects_fail_status_hard_bounced
+ * @property int $number_opt_in_prospects_fail_status_invalid
+ * @property int $number_opt_in_prospects_success_status_no_applicable
+ * @property int $number_opt_in_prospects_success_status_registered
+ * @property int $number_opt_in_prospects_success_status_invoiced
+ * @property int $number_opt_in_prospects_dont_contact_me
+ * @property int $number_opt_out_prospects
+ * @property int $number_opt_out_prospects_state_no_contacted
+ * @property int $number_opt_out_prospects_state_contacted
+ * @property int $number_opt_out_prospects_state_fail
+ * @property int $number_opt_out_prospects_state_success
+ * @property int $number_opt_out_prospects_gender_male
+ * @property int $number_opt_out_prospects_gender_female
+ * @property int $number_opt_out_prospects_gender_other
+ * @property int $number_opt_out_prospects_contacted_state_no_applicable
+ * @property int $number_opt_out_prospects_contacted_state_soft_bounced
+ * @property int $number_opt_out_prospects_contacted_state_never_open
+ * @property int $number_opt_out_prospects_contacted_state_open
+ * @property int $number_opt_out_prospects_contacted_state_clicked
+ * @property int $number_opt_out_prospects_fail_status_no_applicable
+ * @property int $number_opt_out_prospects_fail_status_not_interested
+ * @property int $number_opt_out_prospects_fail_status_unsubscribed
+ * @property int $number_opt_out_prospects_fail_status_hard_bounced
+ * @property int $number_opt_out_prospects_fail_status_invalid
+ * @property int $number_opt_out_prospects_success_status_no_applicable
+ * @property int $number_opt_out_prospects_success_status_registered
+ * @property int $number_opt_out_prospects_success_status_invoiced
+ * @property int $number_opt_out_prospects_dont_contact_me
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static Builder<static>|ShopCRMStats newModelQuery()
  * @method static Builder<static>|ShopCRMStats newQuery()
