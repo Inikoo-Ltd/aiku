@@ -26,6 +26,7 @@ const props = defineProps<{
   storeProductRoute: routeType
   shopsData? :any
   masterProductCategory?:number
+  editable_table?: boolean
 }>();
 
 // dialog state
@@ -45,7 +46,7 @@ const showDialog = ref(false);
   </PageHeading>
 
   <!-- Products Table -->
-  <TableMasterProducts :data="data" />
+  <TableMasterProducts :data="data" :editable_table/>
 
   <!-- Dialog Create Product -->
   <FormCreateMasterProduct 
