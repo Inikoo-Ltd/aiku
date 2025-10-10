@@ -121,7 +121,7 @@ const showDialog = ref(false);
 
         <template #other>
 			<Button
-                v-if="layout === 'local'"
+                v-if="layout?.app?.environment === 'local'"
 				@click="() => (isModalUploadOpen = true)"
 				:style="create"
 				:icon="faUpload"
@@ -172,7 +172,7 @@ const showDialog = ref(false);
 		v-model="isModalUploadOpen"
 		scope="Pallet delivery"
 		:title="{
-			label: 'Upload your new pallet deliveries',
+			label: 'Upload your excel file',
 			information: `The list of column file:`,
 		}"
 		progressDescription="Adding Pallet Deliveries"
