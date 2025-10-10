@@ -152,7 +152,7 @@ const locale = inject("locale", {})
                     </div>
                 </div>
 
-                <KeepAlive>
+                <!-- <KeepAlive> -->
                     <component
                         :is="component"
                         :data="paymentMethods[currentTab.index]"
@@ -160,7 +160,7 @@ const locale = inject("locale", {})
                         :currency_code
                         :order="order"
                     />
-                </KeepAlive>
+                <!-- </KeepAlive> -->
             </div>
         </div>
 
