@@ -92,7 +92,8 @@ class UnsubscribeAurora extends IrisAction
                     'fail_status'            => ProspectFailStatusEnum::UNSUBSCRIBED,
                     'success_status'         => ProspectSuccessStatusEnum::NA,
                     'contacted_state'        => ProspectContactedStateEnum::OPEN,
-                ]
+                ],
+                false,
             );
         }
 

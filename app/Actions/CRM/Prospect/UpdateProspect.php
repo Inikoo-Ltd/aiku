@@ -37,7 +37,7 @@ class UpdateProspect extends OrgAction
 
     private Prospect $prospect;
 
-    public function handle(Prospect $prospect, array $modelData): Prospect
+    public function handle(Prospect $prospect, array $modelData,bool $updateAurora = true): Prospect
     {
         $addressData = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');
@@ -87,7 +87,7 @@ class UpdateProspect extends OrgAction
                 'success_status',
                 'fail_status'
             ])
-            && $prospect->shop->is_aiku) {
+            && $prospect->shop->is_aiku && $updateAurora) {
             SaveProspectInAurora::run($prospect);
         }
 
