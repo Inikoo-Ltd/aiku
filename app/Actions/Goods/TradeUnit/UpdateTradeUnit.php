@@ -32,8 +32,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-use function PHPUnit\Framework\isString;
-
 class UpdateTradeUnit extends GrpAction
 {
     use WithActionUpdate;
@@ -262,7 +260,7 @@ class UpdateTradeUnit extends GrpAction
     public function prepareForValidation(): void
     {
         if ($this->has('origin_country_id')) {
-            if(isString($this->get('origin_country_id'))){
+            if(is_string($this->get('origin_country_id'))){
                 $countryId = (int)$this->get('origin_country_id');
                 $this->set('origin_country_id', value: $countryId);
             } else {
