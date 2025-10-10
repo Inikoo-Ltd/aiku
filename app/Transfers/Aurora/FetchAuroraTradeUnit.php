@@ -127,18 +127,26 @@ class FetchAuroraTradeUnit extends FetchAurora
 
         $countryOrigin = Str::upper($countryOrigin);
 
-        if ($countryOrigin == 'CHI') {
+        if ($countryOrigin == 'UK' || $countryOrigin == 'GB'  ) {
+            $countryOrigin = 'GBR';
+        }
+
+        if ($countryOrigin == 'CHI' || $countryOrigin == 'CNY'  ) {
             $countryOrigin = 'CHN';
         }
 
+        if ($countryOrigin == 'IDR' || $countryOrigin == 'IDO'  ) {
+            $countryOrigin = 'IDN';
+        }
 
+        $country=null;
         if (strlen($countryOrigin) == 3) {
             $country = Country::where('iso3', $countryOrigin)->first();
         }
 
-        if (!$country) {
-            print "\nXXXXX-->".$countryOrigin.'<--\n';
-        }
+//        if (!$country) {
+//            print "\nXXXXX-->".$countryOrigin.'<--\n';
+//        }
 
         return $country?->id;
 

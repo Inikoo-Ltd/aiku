@@ -24,6 +24,7 @@ use Exception;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
 
 class FetchAuroraTradeUnits extends FetchAuroraAction
@@ -316,17 +317,28 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             return null;
         }
 
-        if ($countryOrigin == 'CHI') {
+        $countryOrigin = Str::upper($countryOrigin);
+
+        if ($countryOrigin == 'UK' || $countryOrigin == 'GB'  ) {
+            $countryOrigin = 'GBR';
+        }
+
+        if ($countryOrigin == 'CHI' || $countryOrigin == 'CNY'  ) {
             $countryOrigin = 'CHN';
         }
 
+        if ($countryOrigin == 'IDR' || $countryOrigin == 'IDO'  ) {
+            $countryOrigin = 'IDN';
+        }
+
+        $country=null;
         if (strlen($countryOrigin) == 3) {
             $country = Country::where('iso3', $countryOrigin)->first();
         }
 
-        if (!$country) {
-            print "\nXXXXX-->".$countryOrigin.'<--\n';
-        }
+//        if (!$country) {
+//            print "\nXXXXX-->".$countryOrigin.'<--\n';
+//        }
 
         return $country?->id;
 
