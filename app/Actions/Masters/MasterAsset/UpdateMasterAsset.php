@@ -119,6 +119,7 @@ class UpdateMasterAsset extends OrgAction
             'description_title' => ['sometimes', 'nullable', 'max:255'],
             'description_extra' => ['sometimes', 'nullable', 'max:65500'],
             'rrp'              => ['sometimes', 'required', 'numeric'],
+            'unit'             => ['sometimes', 'string'],
             'data'             => ['sometimes', 'array'],
             'status'           => ['sometimes', 'required', 'boolean'],
             'master_family_id' => [

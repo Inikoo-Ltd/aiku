@@ -49,7 +49,7 @@ class StoreEbayProduct extends RetinaAction
                 'imageUrls' => $images
             ];
 
-            $descriptions = $portfolio->customer_description;
+            $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
 
             if (!$descriptions) {
                 $descriptions = $portfolio->item->name;
