@@ -222,7 +222,7 @@ const avgOrderValue = computed(() => parseFloat(props.data.average_order_value |
 // Calculate average time between orders from props (convert to days)
 const avgTimeBetweenOrders = computed(() => {
     const avgMonths = parseFloat(props.data.average_time_between_orders || '0')
-    return Math.round(avgMonths * 30.44) // Convert months to days
+    return avgMonths // Convert months to days
 })
 
 // Churn risk prediction from props (already in percentage format)
@@ -419,7 +419,7 @@ const predictedStartPosition = computed(() => {
         <div class="space-y-2 text-sm">
             <div class="flex justify-between">
                 <span class="text-gray-600">Total CLV</span>
-                <span class="font-medium text-gray-800">{{ totalCLV.toFixed(2) }}</span>
+                <span class="font-medium text-gray-800">{{ locale.currencyFormat(currencyCode?.code, totalCLV.toFixed(2)) }}</span>
             </div>
             <div class="flex justify-between">
                 <span class="text-gray-600">Churn Risk Prediction</span>
@@ -431,7 +431,7 @@ const predictedStartPosition = computed(() => {
             </div>
             <div class="flex justify-between">
                 <span class="text-gray-600">Average Order Value</span>
-                <span class="font-medium text-gray-800">{{ avgOrderValue.toFixed(2) }}</span>
+                <span class="font-medium text-gray-800">{{  locale.currencyFormat(currencyCode?.code, avgOrderValue.toFixed(2)) }}</span>
             </div>
         </div>
     </div>

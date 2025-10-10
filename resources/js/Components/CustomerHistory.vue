@@ -41,7 +41,7 @@ const historicPercentage = computed(() => {
     <div class="border rounded-lg p-4">
         <div class="flex flex-col gap-2">
             <div class="box-border">
-                <h3 class="text-lg font-bold">{{ locale.currencyFormat(currencyCode?.code, data?.total_clv_amount) }}
+                <h3 class="text-lg font-bold">{{ locale.currencyFormat(currencyCode?.code, data?.total_clv_amount || 0) }}
                 </h3>
                 <span class="text-sm">{{ trans('Customer Lifetime Value (CLV)') }}</span>
             </div>
@@ -68,17 +68,17 @@ const historicPercentage = computed(() => {
             </div>
 
             <div class="space-y-2">
-                <div class="flex justify-between text-xs">
+                <div v-if="data?.expected_date_of_next_order" class="flex justify-between text-xs">
                     <span class="font-semibold">{{ trans('Expected date of next order') }}</span>
                     <span>{{ useFormatTime(data?.expected_date_of_next_order, { formatTime: 'MMM dd, yyyy' }) }}</span>
                 </div>
-                <div class="flex justify-between text-xs">
+                <div v-if="data?.average_time_between_orders" class="flex justify-between text-xs">
                     <span class="font-semibold">{{ trans('Avg time between orders') }}</span>
-                    <span>{{ data?.average_time_between_orders }} days</span>
+                    <span>{{ data?.average_time_between_orders }} {{ trans('days') }}</span>
                 </div>
-                <div class="flex justify-between text-xs">
+                <div v-if="data?.average_order_value" class="flex justify-between text-xs">
                     <span class="font-semibold">{{ trans('Avarage order value') }}</span>
-                    <span>{{ data?.average_order_value }}</span>
+                    <span>{{ locale.currencyFormat(currencyCode?.code, data.average_order_value || 0) }}</span>
                 </div>
             </div>
         </div>
