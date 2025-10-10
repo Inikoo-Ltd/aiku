@@ -6,7 +6,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -38,10 +38,12 @@ const props = defineProps<{
     }
     is_orphan_products?: boolean
     attachments?: Record<string, any>
+    shop_id?: number
 }>()
 
 
-
+const layout = inject<string>('layout')
+console.log('layout', layout)
 // Current tab state
 const currentTab = ref(props.tabs.current)
 const isOpenModalEditProducts = ref(false)
@@ -127,11 +129,12 @@ const onSaveEditBulkProduct = async () => {
                 price: form.price,
                 rrp: form.rrp,
                 unit: form.unit,
+                id: productId
             }
         })
 
         await router.patch(
-            route("grp.models.product.bulk_update", { shop :    (route().params as RouteParams).shop, }),
+            route("grp.models.product.bulk_update", { shop : props.shop_id }),
             payload,
             {
                 preserveScroll: true,

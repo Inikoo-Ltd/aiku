@@ -70,6 +70,7 @@ const onSaveEditBulkProduct = async () => {
                 price: form.price,
                 rrp: form.rrp,
                 unit: form.unit,
+                id: productId
             }
         })
 
