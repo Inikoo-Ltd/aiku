@@ -67,6 +67,10 @@ class CustomerHydrateClv implements ShouldBeUnique
             $lastOrderDate = $orders->max('created_at');
             $daysBetweenFirstAndLast = $firstOrderDate->diffInDays($lastOrderDate);
 
+            $ordersPerMonth = $daysBetweenFirstAndLast > 0
+                ? ($totalOrders / $daysBetweenFirstAndLast) * 30
+                : $totalOrders;
+
             if ($daysBetweenFirstAndLast > 0) {
                 $ordersPerDay = $totalOrders / $daysBetweenFirstAndLast;
                 $averagePurchaseFrequency = $ordersPerDay * 365; // annualized
@@ -75,8 +79,11 @@ class CustomerHydrateClv implements ShouldBeUnique
             }
 
             // 3. Calculate Average Customer Lifespan (in years)
-            $customerAge = $customer->created_at->diffInDays(now());
+            $customerAge = (int) $customer->created_at->diffInDays(now());
             $averageCustomerLifespan = $customerAge / 365;
+            $monthlyCustomerLifespan = (int) $customer->created_at->diffInMonths(now());
+
+            $expectedRemainingLifespan = $monthlyCustomerLifespan / $averageCustomerLifespan;
 
             // Use predicted lifespan based on churn if available
             if ($customer->stats->churn_interval) {
@@ -85,9 +92,11 @@ class CustomerHydrateClv implements ShouldBeUnique
                 $predictedLifespan = $averageCustomerLifespan;
             }
 
+            $customerValue = $monthlyCustomerLifespan * $averagePurchaseValue * $ordersPerMonth;
+
             // 4. Calculate CLV values
-            $historicClv = $averagePurchaseValue * $averagePurchaseFrequency * $averageCustomerLifespan;
-            $predictedClv = $averagePurchaseValue * $averagePurchaseFrequency * $predictedLifespan;
+            $historicClv = $averagePurchaseValue * $totalOrders;
+            $predictedClv = $expectedRemainingLifespan * $customerValue;
             $totalClv = $historicClv + $predictedClv;
 
             // Store values with appropriate suffix

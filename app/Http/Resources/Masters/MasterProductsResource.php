@@ -49,7 +49,11 @@ class MasterProductsResource extends JsonResource
             'master_family_code'     => $this->master_family_code,
             'master_family_name'     => $this->master_family_name,
             'show_in_website'        => $this->show_in_website,
-            'used_in'                => $this->used_in
+            'used_in'                => $this->used_in,
+            'unit'                   => $this->unit,
+            'price'                  => $this->price,
+            'rrp'                    => $this->rrp,
+            'currency_code'          => $this->currency_code,
         ];
     }
 }

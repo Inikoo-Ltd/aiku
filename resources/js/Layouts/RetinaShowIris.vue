@@ -67,7 +67,9 @@ const setFirstVisitToFalse = () => {
     firstVisit.value = false
 };
 
-
+// Section: To open/close the mobile menu
+const isOpenMenuMobile = ref(false)
+provide('isOpenMenuMobile', isOpenMenuMobile)
 </script>
 
 <template>
