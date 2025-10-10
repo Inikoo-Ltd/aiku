@@ -100,15 +100,19 @@ class EditCustomer extends OrgAction
                                 'delivery_address'         => [
                                     'type'    => 'delivery_address',
                                     'label'   => __('Delivery Address'),
-                                    'value'   => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray(),
+                                    'noSaveButton'  => true,
                                     'options' => [
-                                        'labels'                  => [
-                                            'sames_as' => __('Same as contact address')
+                                        'same_as_contact'=>[
+                                            'label'         => __('Same as contact address'),
+                                            'key_payload'   => 'delivery_address_id',
+                                            'payload'       => $customer->address_id
                                         ],
-                                        'contact_address_id'      => $customer->address_id,
-                                        'same_as_contact_address' => $customer->delivery_address_id == $customer->address_id,
                                         'countriesAddressData'    => GetAddressData::run()
-                                    ]
+                                    ],
+                                    'value'   => [
+                                        'is_same_as_contact'    => $customer->delivery_address_id == $customer->address_id,
+                                        'address'               => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
+                                    ],
                                 ],
                                 'tax_number'               => [
                                     'type'    => 'tax_number',

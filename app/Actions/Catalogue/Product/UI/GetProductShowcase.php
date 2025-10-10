@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Actions\Traits\HasBucketImages;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
@@ -28,6 +29,12 @@ class GetProductShowcase
 
     public function handle(Product $product): array
     {
+
+        $webpageUrl = null;
+        if ($product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
+            $webpageUrl = $product->webpage->canonical_url;
+        }
+
         $tradeUnits = $product->tradeUnits;
 
 
@@ -119,6 +126,7 @@ class GetProductShowcase
             ],
             'images' => $this->getImagesData($product),
             'attachment_box' =>  $this->getAttachmentData($product),
+            'webpage_url' => $webpageUrl
 
         ];
     }

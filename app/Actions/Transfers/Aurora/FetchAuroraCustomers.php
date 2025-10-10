@@ -43,6 +43,11 @@ class FetchAuroraCustomers extends FetchAuroraAction
             if ($customer = Customer::withTrashed()->where('source_id', $customerData['customer']['source_id'])
                 ->first()) {
                 try {
+
+                    if (Arr::pull($customerData, 'customer.delivery_address_id_same_as_address_id')) {
+                        $customerData['customer']['delivery_address_id'] = $customer->address->id;
+                    }
+
                     $customer = UpdateCustomer::make()->action(
                         customer: $customer,
                         modelData: $customerData['customer'],
