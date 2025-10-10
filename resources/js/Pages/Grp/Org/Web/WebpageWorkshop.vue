@@ -569,7 +569,7 @@ watch(filterBlock, (newValue) => sendToIframe({ key: 'isPreviewLoggedIn', value:
 
 const compUsersEditThisPage = computed(() => {
 
-  return useLiveUsers().liveUsersArray.filter(user => (user.current_page?.route_name === layout.currentRoute && user.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
+  return useLiveUsers().liveUsersArray.filter(user => (user?.current_page?.route_name === layout.currentRoute && user?.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
 })
 
 const openWebsite = () => {
