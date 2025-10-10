@@ -127,7 +127,7 @@ const validImages = computed(() =>
 </script>
 
 <template>
-	<div
+	<div v-if="data.webpage_url"
 		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
 		<div class="flex items-center gap-2 text-blue-700 text-sm">
 			<FontAwesomeIcon :icon="faExternalLink" class="text-blue-500" />
