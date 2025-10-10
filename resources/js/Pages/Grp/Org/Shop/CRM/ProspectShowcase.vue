@@ -485,7 +485,7 @@ const contactPreferencesData = computed(() => {
         <div class="justify-self-end ">
 
             <!-- Contact Preferences Section -->
-            <ContactPreferences v-if="contactPreferencesData" :contactPreferences="contactPreferencesData" />
+            <ContactPreferences v-if="contactPreferencesData && data?.prospect?.customer !== null" :contactPreferences="contactPreferencesData" />
 
             <!-- Email Subscriptions Section -->
             <!-- <EmailSubscribetion v-if="data?.prospect?.customer?.data?.email_subscriptions"

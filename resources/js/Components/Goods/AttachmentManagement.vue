@@ -166,7 +166,7 @@ const getIcon = (type: string) => {
             </div>
 
             <TransitionGroup name="fade-move" tag="ul"
-                class="grid grid-cols-2 sm:grid-cols-5 gap-4 overflow-y-auto max-h-[600px]">
+                class="grid grid-cols-2 sm:grid-cols-4 gap-4 overflow-y-auto max-h-[600px]">
                 <li v-for="categoryBox in props.data.attachment_category_box.private" :key="categoryBox.scope"
                     class="relative flex flex-col overflow-hidden rounded-xl border bg-gray-50 transition duration-300 ease-in-out"
                     :class="{
@@ -193,7 +193,7 @@ const getIcon = (type: string) => {
                     <div
                         class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden relative">
                         <template v-if="categoryBox.attachment">
-                            <div
+                            <a :href="route(categoryBox.download_route.name, categoryBox.download_route.parameters)" target="_blank"
                                 class="flex flex-col items-center justify-center h-full text-green-700 bg-green-50  shadow-inner transition hover:bg-green-100 hover:scale-[1.02] cursor-pointer p-3">
                                 <FontAwesomeIcon :icon="getIcon(categoryBox.attachment.type)"
                                     class="mb-2 text-3xl text-green-500 animate-pulse" />
@@ -204,7 +204,7 @@ const getIcon = (type: string) => {
                                     v-if="categoryBox.download_route" target="_blank">
                                 {{ trans("Click to view") }}
                                 </a>
-                            </div>
+                            </a>
                         </template>
 
                         <template v-else>
@@ -243,7 +243,7 @@ const getIcon = (type: string) => {
 
 
             <TransitionGroup name="fade-move" tag="ul"
-                class="grid grid-cols-2 sm:grid-cols-5 gap-4 overflow-y-auto max-h-[600px]">
+                class="grid grid-cols-2 sm:grid-cols-4 gap-4 overflow-y-auto max-h-[600px]">
                 <li v-for="categoryBox in props.data.attachment_category_box?.public" :key="categoryBox.scope"
                     class="relative flex flex-col overflow-hidden rounded-xl border bg-gray-50 transition duration-300 ease-in-out"
                     :class="{
@@ -270,7 +270,7 @@ const getIcon = (type: string) => {
                     <div
                         class="flex flex-col h-36 w-full transition bg-gray-50 hover:bg-gray-100 rounded-md overflow-hidden relative">
                         <template v-if="categoryBox.attachment">
-                            <div
+                            <a :href="route(categoryBox.download_route.name, categoryBox.download_route.parameters)" target="_blank"
                                 class="flex flex-col items-center justify-center h-full text-green-700 bg-green-50  shadow-inner transition hover:bg-green-100 hover:scale-[1.02] cursor-pointer p-3">
                                 <FontAwesomeIcon :icon="getIcon(categoryBox.attachment.type)"
                                     class="mb-2 text-3xl text-green-500 animate-pulse" />
@@ -281,7 +281,7 @@ const getIcon = (type: string) => {
                                     v-if="categoryBox.download_route" target="_blank" method="get">
                                 {{ trans("Click to view") }}
                                 </a>
-                            </div>
+                            </a>
                         </template>
 
                         <template v-else>
