@@ -26,7 +26,7 @@ class UpdateBulkProduct extends OrgAction
     {
         $rawProductDatas = Arr::get($modelData, 'products', []);
         foreach ($rawProductDatas as $productData) {
-            $product = Product::find(Arr::get($productData, 'id'));
+            $product = Product::find((int) Arr::get($productData, 'id'));
             UpdateProduct::make()->action($product, [
                 'rrp'  => Arr::get($productData, 'rrp', $product->rrp),
                 'price'=> Arr::get($productData, 'price', $product->price),
@@ -40,7 +40,7 @@ class UpdateBulkProduct extends OrgAction
     {
         return [
             'products' => ['required', 'array'],
-            'products.*.id' => ['required', 'exists:products,id'],
+            'products.*.id' => ['required'],
             'products.*.rrp' => ['sometimes', 'numeric'],
             'products.*.price' => ['sometimes', 'numeric'],
             'products.*.unit' => ['sometimes', 'string'],
