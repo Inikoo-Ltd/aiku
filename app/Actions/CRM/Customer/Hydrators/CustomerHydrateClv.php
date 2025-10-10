@@ -79,9 +79,9 @@ class CustomerHydrateClv implements ShouldBeUnique
             }
 
             // 3. Calculate Average Customer Lifespan (in years)
-            $customerAge = $customer->created_at->diffInDays(now());
+            $customerAge = (int) $customer->created_at->diffInDays(now());
             $averageCustomerLifespan = $customerAge / 365;
-            $monthlyCustomerLifespan = (int) ($customerAge / 30);
+            $monthlyCustomerLifespan = (int) $customer->created_at->diffInMonths(now());
 
             $expectedRemainingLifespan = $monthlyCustomerLifespan / $averageCustomerLifespan;
 

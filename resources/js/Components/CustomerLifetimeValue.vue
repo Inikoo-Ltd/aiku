@@ -1,22 +1,151 @@
 <script setup lang="ts">
-import { ref, computed, defineProps } from 'vue'
+import { ref, computed, defineProps, inject } from 'vue'
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 interface CustomerLifetimeValueData {
-    average_order_value: string
-    average_time_between_orders: string
+    id: number
+    customer_id: number
+    sales_all: string
+    sales_org_currency_all: string
+    sales_grp_currency_all: string
+    last_order_created_at: string | null
+    last_order_submitted_at: string | null
+    last_order_dispatched_at: string | null
+    number_orders: number
+    number_orders_state_creating: number
+    number_orders_state_submitted: number
+    number_orders_state_in_warehouse: number
+    number_orders_state_handling: number
+    number_orders_state_handling_blocked: number
+    number_orders_state_packed: number
+    number_orders_state_finalised: number
+    number_orders_state_dispatched: number
+    number_orders_state_cancelled: number
+    number_orders_status_creating: number
+    number_orders_status_processing: number
+    number_orders_status_settled: number
+    number_orders_handing_type_collection: number
+    number_orders_handing_type_shipping: number
+    number_item_transactions_out_of_stock_in_basket: number
+    out_of_stock_in_basket_grp_net_amount: string | null
+    out_of_stock_in_basket_org_net_amount: string | null
+    out_of_stock_in_basket_net_amount: string
+    number_item_transactions: number
+    number_current_item_transactions: number
+    number_item_transactions_state_creating: number
+    number_item_transactions_state_submitted: number
+    number_item_transactions_state_in_warehouse: number
+    number_item_transactions_state_handling: number
+    number_item_transactions_state_packed: number
+    number_item_transactions_state_finalised: number
+    number_item_transactions_state_dispatched: number
+    number_item_transactions_state_cancelled: number
+    number_item_transactions_status_creating: number
+    number_item_transactions_status_processing: number
+    number_item_transactions_status_settled: number
+    number_invoices: number
+    number_invoices_type_invoice: number
+    number_invoices_type_refund: number
+    last_invoiced_at: string
+    number_invoice_transactions: number
+    number_positive_invoice_transactions: number
+    number_negative_invoice_transactions: number
+    number_zero_invoice_transactions: number
+    number_current_invoice_transactions: number
+    number_positive_current_invoice_transactions: number
+    number_negative_current_invoice_transactions: number
+    number_zero_current_invoice_transactions: number
+    number_invoiced_customers: number
+    last_delivery_note_created_at: string
+    last_delivery_note_dispatched_at: string
+    last_delivery_note_type_order_created_at: string
+    last_delivery_note_type_order_dispatched_at: string
+    last_delivery_note_type_replacement_created_at: string | null
+    last_delivery_note_type_replacement_dispatched_at: string | null
+    number_delivery_notes: number
+    number_delivery_notes_type_order: number
+    number_delivery_notes_type_replacement: number
+    number_delivery_notes_state_unassigned: number
+    number_delivery_notes_state_queued: number
+    number_delivery_notes_state_handling: number
+    number_delivery_notes_state_handling_blocked: number
+    number_delivery_notes_state_packed: number
+    number_delivery_notes_state_finalised: number
+    number_delivery_notes_state_dispatched: number
+    number_delivery_notes_state_cancelled: number
+    number_delivery_notes_cancelled_at_state_unassigned: number
+    number_delivery_notes_cancelled_at_state_queued: number
+    number_delivery_notes_cancelled_at_state_handling: number
+    number_delivery_notes_cancelled_at_state_handling_blocked: number
+    number_delivery_notes_cancelled_at_state_packed: number
+    number_delivery_notes_cancelled_at_state_finalised: number
+    number_delivery_notes_cancelled_at_state_dispatched: number
+    number_delivery_notes_state_with_out_of_stock: number
+    number_delivery_note_items: number
+    number_uphold_delivery_note_items: number
+    number_delivery_note_items_state_unassigned: number
+    number_delivery_note_items_state_queued: number
+    number_delivery_note_items_state_handling: number
+    number_delivery_note_items_state_handling_blocked: number
+    number_delivery_note_items_state_packed: number
+    number_delivery_note_items_state_finalised: number
+    number_delivery_note_items_state_dispatched: number
+    number_delivery_note_items_state_cancelled: number
+    number_web_users: number
+    number_current_web_users: number
+    number_web_users_type_web: number
+    number_web_users_type_api: number
+    number_web_users_auth_type_default: number
+    number_web_users_auth_type_aurora: number
+    number_customer_clients: number
+    number_current_customer_clients: number
+    number_portfolios: number
+    number_current_portfolios: number
+    number_credit_transactions: number
+    number_top_ups: number
+    number_top_ups_status_in_process: number
+    number_top_ups_status_success: number
+    number_top_ups_status_fail: number
+    number_favourites: number
+    number_unfavourited: number
+    number_reminders: number
+    number_reminders_cancelled: number
+    created_at: string
+    updated_at: string
+    number_unpaid_invoices: number
+    unpaid_invoices_amount: string
+    unpaid_invoices_amount_org_currency: string
+    unpaid_invoices_amount_grp_currency: string
+    number_deleted_invoices: number
+    number_platforms: number
+    number_customer_sales_channels: number
+    number_customer_sales_channels_platform_type_shopify: number
+    number_customer_sales_channels_platform_type_tiktok: number
+    number_customer_sales_channels_platform_type_woocommerce: number
+    number_customer_sales_channels_platform_type_ebay: number
+    number_customer_sales_channels_platform_type_manual: number
+    number_customer_sales_channels_platform_type_amazon: number
+    number_customer_sales_channels_platform_type_magento: number
+    number_customer_sales_channels_platform_type_wix: number
+    historic_clv_amount: string
+    historic_clv_amount_org_currency: string
+    historic_clv_amount_grp_currency: string
+    predicted_clv_amount: string
+    predicted_clv_amount_org_currency: string
+    predicted_clv_amount_grp_currency: string
+    total_clv_amount: string
+    total_clv_amount_org_currency: string
+    total_clv_amount_grp_currency: string
     churn_interval: string
     churn_risk_prediction: string
-    created_at: string
-    customer_id: number
+    average_time_between_orders: string
+    average_order_value: string
     expected_date_of_next_order: string
-    historic_clv_amount: string
-    historic_clv_amount_grp_currency: string
-    historic_clv_amount_org_currency: string
-    id: number
 }
 
 const props = defineProps<{
     data: CustomerLifetimeValueData
+    currencyCode: {}
 }>()
 
 
@@ -41,6 +170,8 @@ interface OrderBlock {
     frequencyPercent: number
     lifespanPercent: number
 }
+
+const locale = inject('locale', aikuLocaleStructure)
 
 // Sample data untuk orders
 const orders = ref<Order[]>([
@@ -80,16 +211,11 @@ const todayPosition = computed(() =>
 )
 
 // Calculate statistics using props data
-const historicOrders = computed(() => orders.value.filter(o => !o.predicted))
-const predictedOrders = computed(() => orders.value.filter(o => o.predicted))
-
 const historicCLV = computed(() => parseFloat(props.data.historic_clv_amount || '0'))
 
-const predictedCLV = computed(() =>
-    predictedOrders.value.reduce((sum, o) => sum + o.value, 0)
-)
+const predictedCLV = computed(() => parseFloat(props.data.predicted_clv_amount || '0'))
 
-const totalCLV = computed(() => historicCLV.value + predictedCLV.value)
+const totalCLV = computed(() => parseFloat(props.data.total_clv_amount || '0'))
 
 const avgOrderValue = computed(() => parseFloat(props.data.average_order_value || '0'))
 
@@ -99,10 +225,10 @@ const avgTimeBetweenOrders = computed(() => {
     return Math.round(avgMonths * 30.44) // Convert months to days
 })
 
-// Churn risk prediction from props (convert to percentage)
+// Churn risk prediction from props (already in percentage format)
 const churnRiskPrediction = computed(() => {
     const risk = parseFloat(props.data.churn_risk_prediction || '0')
-    return (risk * 100).toFixed(0) // Convert to percentage
+    return risk.toFixed(0)
 })
 
 // Get gradient color based on churn probability
@@ -207,20 +333,20 @@ const predictedStartPosition = computed(() => {
         <div class="flex items-start justify-center gap-12 mb-6">
             <div class="text-center">
                 <div class="text-sm text-gray-500 mb-1">Historic CLV</div>
-                <div class="text-2xl font-semibold text-gray-800">${{ historicCLV.toFixed(0) }}</div>
-                <div class="text-xs text-gray-400">{{ historicOrders.length }} orders</div>
+                <div class="text-2xl font-semibold text-gray-800">{{ locale.currencyFormat(currencyCode?.code, historicCLV.toFixed(2)) }}</div>
+                <div class="text-xs text-gray-400">{{ props.data.number_orders_state_dispatched }} orders</div>
             </div>
             <div class="text-3xl text-gray-300 self-center">+</div>
             <div class="text-center">
                 <div class="text-sm text-gray-500 mb-1">Predicted CLV</div>
-                <div class="text-2xl font-semibold text-gray-800">${{ predictedCLV.toFixed(0) }}</div>
-                <div class="text-xs text-gray-400">{{ predictedOrders.length }} orders</div>
+                <div class="text-2xl font-semibold text-gray-800">{{ locale.currencyFormat(currencyCode?.code, predictedCLV.toFixed(2)) }}</div>
+                <div class="text-xs text-gray-400">Predicted</div>
             </div>
         </div>
 
         <!-- Timeline -->
         <div class="relative mb-6">
-            <div class="h-12 bg-gray-100 rounded relative overflow-hidden" id="wrapper">
+            <div class="h-8 bg-gray-100 rounded relative overflow-hidden" id="wrapper">
                 <!-- Background gray for predicted area -->
                 <div class="absolute top-0 h-full bg-gray-200" :style="{
                     left: predictedStartPosition + '%',
@@ -293,7 +419,7 @@ const predictedStartPosition = computed(() => {
         <div class="space-y-2 text-sm">
             <div class="flex justify-between">
                 <span class="text-gray-600">Total CLV</span>
-                <span class="font-medium text-gray-800">${{ totalCLV.toFixed(0) }}</span>
+                <span class="font-medium text-gray-800">{{ totalCLV.toFixed(2) }}</span>
             </div>
             <div class="flex justify-between">
                 <span class="text-gray-600">Churn Risk Prediction</span>
@@ -305,7 +431,7 @@ const predictedStartPosition = computed(() => {
             </div>
             <div class="flex justify-between">
                 <span class="text-gray-600">Average Order Value</span>
-                <span class="font-medium text-gray-800">${{ avgOrderValue.toFixed(2) }}</span>
+                <span class="font-medium text-gray-800">{{ avgOrderValue.toFixed(2) }}</span>
             </div>
         </div>
     </div>
