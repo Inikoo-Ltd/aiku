@@ -197,7 +197,7 @@ class ShowCustomer extends OrgAction
                     fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
                     : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
                 $tabs::PAYMENTS->value => $this->tab == $tabs::PAYMENTS->value ?
-                    fn () => PaymentsResource::collection(IndexPayments::run($customer))
+                    fn () => PaymentsResource::collection(IndexPayments::run($customer, $tabs::PAYMENTS->value))
                     : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($customer))),
                 $tabs::FAVOURITES->value  => $this->tab == $tabs::FAVOURITES->value ?
                     fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
