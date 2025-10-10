@@ -199,17 +199,6 @@ const compTooltipTotalToPay = computed(() => {
     <dd class="relative w-full flex flex-col border rounded-md border-gray-300 overflow-hidden">
         <dl v-if="props.list_refunds?.data?.length" class="">
 
-            <!-- Field: Total -->
-            <!-- <div v-if="invoice_pay.order_reference"
-                class="border-b border-gray-300 px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                <dt v-tooltip="invoice?.reference ? trans('Total of invoice :invoice', { invoice: invoice?.reference }) : ''" class="text-sm/6 font-medium ">
-                    {{ trans("Total") }}
-                </dt>
-                <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                    {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
-                </dd>
-            </div> -->
-
             <!-- Field: Excess payment -->
             <div v-if="!props.list_refunds?.data?.length && Number(invoice_pay.total_excess_payment) > 0" class="border-b border-gray-300">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
@@ -220,30 +209,8 @@ const compTooltipTotalToPay = computed(() => {
                 </div>
             </div>
 
-
-            <!-- Field: Payed in & Payed out -->
-            <!-- <div class="border-b border-gray-300">
-                <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium underline cursor-pointer"
-                        :style="{ padding : 0 }"
-                        @click="()=>emits('onPayInOnClick')"
-                    >
-                        {{ trans("Payed in") }}
-                    </dt>
-                    <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in)) }}
-                    </dd>
-                </div>
-            </div> -->
-
             <!-- List Refunds -->
             <div>
-                <!-- <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                    <dt class="text-sm/6 font-medium" >
-                        {{ trans("Refunds") }}:
-                    </dt>
-                </div> -->
-
                 <div class="px-2 text-xs py-1 tabular-nums">
                     <table class="w-full xborder border-gray-300 rounded">
                         <tr class="font-bold ">
@@ -301,44 +268,6 @@ const compTooltipTotalToPay = computed(() => {
                     </table>
                 </div>
             </div>
-
-            <!-- Total to pay -->
-            <!-- <div v-if="Number(invoice_pay.total_need_to_pay) != 0 " class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                <dt class="text-sm/6 font-medium">
-                    {{ Number(invoice_pay.total_need_to_pay) < 0 ? "Total to refund" : "Total to pay" }}
-                </dt>
-                <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                    <button v-if="Number(invoice_pay.total_need_to_pay) > 0"
-                            @click="() => (isOpenModalInvoice = true, fetchPaymentMethod())" size="xxs"
-                            class="secondaryLink text-indigo-500">
-                        {{ trans("Pay Invoice") }}
-                    </button>
-
-                    <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
-                        v-tooltip="trans('No need to pay anything')" icon="far fa-check"
-                        class="text-green-500"
-                        fixed-width
-                        aria-hidden="true"
-                    />
-                    <span :class="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">
-                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay)) }}
-                    </span>
-                </dd>
-            </div> -->
-
-            <!-- Field: Paid -->
-            <!-- <div v-else class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
-                <dt class="text-sm/6 font-medium">
-                    {{ trans("Paid") }}
-                    <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
-                        v-tooltip="trans('No need to pay anything')"
-                        icon="far fa-check"
-                        class="text-green-500"
-                        fixed-width
-                        aria-hidden="true"
-                    />
-                </dt>
-            </div> -->
         </dl>
 
         <!-- If have no refunds -->
@@ -379,7 +308,7 @@ const compTooltipTotalToPay = computed(() => {
                 </div>
             </div>
 
-            <!-- Need to refund -->
+            <!-- Need to Pay -->
             <div v-if="Number(invoice_pay.total_need_to_pay) > 0 " class="px-4 pt-2 pb-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
                     {{ trans("Need to pay") }}
@@ -482,9 +411,9 @@ const compTooltipTotalToPay = computed(() => {
                     </div>
 
                     <div v-if="paymentData.payment_method" class="col-span-2">
-                        <label for="last-name" class="block text-sm font-medium leading-6">{{
-                                trans("Reference")
-                            }}</label>
+                        <label for="last-name" class="block text-sm font-medium leading-6">
+                            {{ trans("Reference") }}
+                        </label>
                         <div class="mt-1">
                             <PureInput v-model="paymentData.payment_reference" placeholder="#000000"/>
                         </div>
