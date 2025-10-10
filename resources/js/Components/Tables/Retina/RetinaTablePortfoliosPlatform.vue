@@ -759,9 +759,13 @@ const onDisableCheckbox = (item) => {
                                                          fixed-width aria-hidden="true"/>
                                     </Transition>
                                     <slot name="product" :item="item">
-                                        <Image v-if="item.images?.src" :src="item.images?.src"
+<!--                                        <Image v-if="item.images?.src" :src="item.images?.src"
                                                class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
-                                               :alt="item.name"/>
+                                               :alt="item.name"/>-->
+                                        <div
+                                            class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
+                                            <img :src="item.images?.[0]?.src" class="shadow"/>
+                                        </div>
                                         <div class="flex flex-col justify-between">
                                             <div class="w-fit" xclick="() => selectProduct(item)">
                                                 <div v-tooltip="trans('Name')"
