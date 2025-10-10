@@ -17,7 +17,7 @@ import {
 import { faExclamationTriangle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, defineAsyncComponent, inject, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
@@ -73,7 +73,7 @@ const props = defineProps<{
     images?:object
     mini_breadcrumbs?: any[]
 }>()
-
+const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
 const isModalUploadOpen = ref(false)
 
@@ -121,6 +121,7 @@ const showDialog = ref(false);
 
         <template #other>
 			<Button
+                v-if="layout === 'local'"
 				@click="() => (isModalUploadOpen = true)"
 				:style="create"
 				:icon="faUpload"
@@ -137,7 +138,7 @@ const showDialog = ref(false);
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <div v-if="mini_breadcrumbs.length != 0" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+     <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
      <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
@@ -148,7 +149,7 @@ const showDialog = ref(false);
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
                         <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
-                        <span class="truncate max-w-[150px] md:max-w-full">{{ item.label || '-' }}</span>
+                        <span class="">{{ item.label || '-' }}</span>
                     </component>
                 </div>
             </template>

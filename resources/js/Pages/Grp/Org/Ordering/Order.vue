@@ -80,6 +80,7 @@ import Icon from "@/Components/Icon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { ToggleSwitch } from "primevue"
+import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 
 library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus)
 
@@ -101,7 +102,7 @@ const props = defineProps<{
     tabs: TSTabs
 
     products?: TableTS
-
+    shop_type: 'b2b' | 'dropshipping'
     data?: {
         data: {
             state: string
@@ -222,6 +223,7 @@ const props = defineProps<{
     attachmentRoutes?: {}
     address_update_route?: routeType
     addresses?: {}
+    contact_address?: Address | null
     upload_excel: UploadSection
     proforma_invoice: {
         check_list: {
@@ -786,8 +788,12 @@ const isShowProforma = computed(() => {
     <!-- Section: Timeline -->
     <div v-if="props.data?.data?.state != 'in_process' && currentTab != 'products'"
         class="mt-4 sm:mt-0 border-b border-gray-200 pb-2">
-        <Timeline v-if="timelines" :options="timelines" :state="props.data?.data?.state" :slidesPerView="6"
-            formatTime="EEE, do MMM yy, HH:mm" />
+        <Timeline v-if="timelines"
+            :options="timelines"
+            :state="props.data?.data?.state"
+            :slidesPerView="6"
+            formatTime="EEE, do MMM yy, HH:mm"
+        />
     </div>
 
     <div v-if="currentTab != 'products'"
@@ -891,7 +897,7 @@ const isShowProforma = computed(() => {
                         <span class="text-sm text-gray-500">Collection</span>
                     </div>
 
-                    <div class="pl-2">
+                    <div class="pl-1.5">
                         <div v-if="isCollection" class="w-full">
                             <span class="block mb-1">{{ trans("Collection by:") }}</span>
                             <div class="flex space-x-4">
@@ -923,7 +929,7 @@ const isShowProforma = computed(() => {
                             </dt>
                             <dd
                                 class=" text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
-                                <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
+                                <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
                                     @click="() => isModalAddress = true"
                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
@@ -935,13 +941,15 @@ const isShowProforma = computed(() => {
                         <!-- Field: Billing Address -->
                         <dl v-if="box_stats?.customer?.addresses?.delivery?.formatted_address === box_stats?.customer?.addresses?.billing?.formatted_address && !isCollection"
                             class="mt-2 flex items w-full flex-none gap-x-2">
-                            <dt v-tooltip="trans('Shipping address and Billing address')" class="flex-none">
+                            <dt v-tooltip="trans('Shipping address and Billing address')" class="flex-none flex flex-col gap-y-2">
                                 <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
+                                aria-hidden="true" />
                             </dt>
                             <dd
-                                class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                                <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
+                                class="text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                                <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
                                     @click="() => isModalAddress = true"
                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
@@ -1163,11 +1171,37 @@ const isShowProforma = computed(() => {
         :typeModel="'order'"
     />
 
-    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-5xl">
-        <DeliveryAddressManagementModal :address_modal_title="delivery_address_management.address_modal_title"
+    <!-- Section: address edit -->
+    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-xl">
+        <AddressEditModal
+            v-if="props.shop_type === 'b2b'"
             :addresses="delivery_address_management.addresses"
-            :updateRoute="delivery_address_management.address_update_route" keyPayloadEdit="address"
-            @onDone="() => (isModalAddress = false)" />
+            :address="box_stats?.customer.addresses.delivery"
+            :updateRoute="delivery_address_management.address_update_route"
+            @submitted="() => (isModalAddress = false)"
+            closeButton
+            :copyAddress="contact_address"
+        >
+            <template #copy_address="{ address, isEqual }">
+                <div v-if="isEqual" class="text-gray-500 text-sm">
+                    {{ trans("Same as the contact address") }}
+                    <FontAwesomeIcon v-if="isEqual" v-tooltip="trans('Same as contact address')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                </div>
+
+                <div v-else class="underline text-sm text-gray-500 hover:text-blue-700 cursor-pointer">
+                    {{ trans("Copy from contact address") }}
+                </div>
+            </template>
+        </AddressEditModal>
+
+        <DeliveryAddressManagementModal
+            v-else
+            :address_modal_title="delivery_address_management.address_modal_title"
+            :addresses="delivery_address_management.addresses"
+            :updateRoute="delivery_address_management.address_update_route"
+            keyPayloadEdit="address"
+            @onDone="() => (isModalAddress = false)"
+        />
     </Modal>
 
 

@@ -11,6 +11,7 @@ namespace App\Actions\CRM\Customer\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
@@ -98,17 +99,22 @@ class EditCustomer extends OrgAction
                                     ]
                                 ],
                                 'delivery_address'         => [
+                                    'hidden'=>$customer->shop->type==ShopTypeEnum::DROPSHIPPING,
                                     'type'    => 'delivery_address',
                                     'label'   => __('Delivery Address'),
-                                    'value'   => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray(),
+                                    'noSaveButton'  => true,
                                     'options' => [
-                                        'labels'                  => [
-                                            'sames_as' => __('Same as contact address')
+                                        'same_as_contact'=>[
+                                            'label'         => __('Same as contact address'),
+                                            'key_payload'   => 'delivery_address_id',
+                                            'payload'       => $customer->address_id
                                         ],
-                                        'contact_address_id'      => $customer->address_id,
-                                        'same_as_contact_address' => $customer->delivery_address_id == $customer->address_id,
                                         'countriesAddressData'    => GetAddressData::run()
-                                    ]
+                                    ],
+                                    'value'   => [
+                                        'is_same_as_contact'    => $customer->delivery_address_id == $customer->address_id,
+                                        'address'               => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
+                                    ],
                                 ],
                                 'tax_number'               => [
                                     'type'    => 'tax_number',
