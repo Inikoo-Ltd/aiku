@@ -25,6 +25,10 @@ defineProps<{
     editable_table?: boolean
 }>()
 
+const emits = defineEmits<{
+    (e: "selectedRow", value: {}): void
+}>()
+
 function masterFamilyRoute(masterProduct: MasterProduct) {
     if (route().current() == "grp.masters.master_products.index") {
         return route(
@@ -199,7 +203,8 @@ function onCancel(item) {
 </script>
 
 <template>
-    <Table :resource="data" :name="tab" class="mt-5">
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="editable_table"
+        @onSelectRow="(item) => emits('selectedRow', item)" key="product-table">
 
         <template #cell(master_shop_code)="{ item: masterProduct }">
             <Link v-tooltip="masterProduct.master_shop_name" :href="masterShopRoute(masterProduct) as string"
