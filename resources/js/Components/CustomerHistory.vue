@@ -2,11 +2,11 @@
 import { inject, computed, ref, defineProps } from "vue";
 import { trans } from "laravel-vue-i18n"
 import ProgressBar from 'primevue/progressbar';
-import Tooltip from 'primevue/tooltip';
+import { Tooltip } from 'floating-vue'
 import Dialog from 'primevue/dialog';
 import CustomerLifetimeValue from "./CustomerLifetimeValue.vue";
 import { faTimes, faEye } from "@fas";
-import { icon, library } from "@fortawesome/fontawesome-svg-core"
+import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { useFormatTime } from "@/Composables/useFormatTime";
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -47,24 +47,28 @@ const historicPercentage = computed(() => {
             </div>
 
             <!-- Progress Bar Comparison using PrimeVue -->
-            <div class="mb-2 cursor-pointer hover:ring-1 p-[2px] rounded-lg transition-all"
-                @click="isShowDetail = true">
-                <!-- Single Progress Bar: Historic (filled) vs Predicted (empty) -->
-                <ProgressBar v-tooltip.top="{
-                        value: `
-                            <div class='flex flex-col gap-2'>
-                                <div class='flex items-center gap-2'>
-                                    <div class='w-3 h-3 rounded-sm' style='background-color: ${progressBarColor}'></div>
-                                    <span>${trans('Historic')}: ${locale.currencyFormat(currencyCode?.code, historicCLV)}</span>
-                                </div>
-                                <div class='flex items-center gap-2'>
-                                    <div class='w-3 h-3 bg-gray-200 rounded-sm'></div>
-                                    <span>${trans('Predicted')}: ${locale.currencyFormat(currencyCode?.code, predictedCLV)}</span>
-                                </div>
+            <div class="mb-2 hover:ring-1 p-[2px] cursor-pointer rounded-md" @click="isShowDetail = true">
+                <!-- Single Progress Bar with Tooltip -->
+                <Tooltip placement="top">
+                    <ProgressBar 
+                        :value="historicPercentage" 
+                        :showValue="false" 
+                        class="comparison-progressbar"
+                    ></ProgressBar>
+                    
+                    <template #popper>
+                        <div class="flex flex-col gap-2 text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 rounded-sm" :style="{ backgroundColor: progressBarColor }"></div>
+                                <span>{{ trans('Historic') }}: {{ locale.currencyFormat(currencyCode?.code, historicCLV) }}</span>
                             </div>
-                        `,
-                        escape: false
-                    }" :value="historicPercentage" :showValue="false" class="comparison-progressbar"></ProgressBar>
+                            <div class="flex items-center gap-2">
+                                <div class="w-3 h-3 bg-gray-200 rounded-sm"></div>
+                                <span>{{ trans('Predicted') }}: {{ locale.currencyFormat(currencyCode?.code, predictedCLV) }}</span>
+                            </div>
+                        </div>
+                    </template>
+                </Tooltip>
             </div>
 
             <div class="space-y-2">
