@@ -245,7 +245,6 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
             <div v-if="Number(invoice_pay.total_need_to_pay) != 0"
                 class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                 <dt class="text-sm/6 font-medium">
-                    <!-- {{ Number(invoice_pay.total_need_to_pay) < 0 ? "Total to refund" : "Total to pay" }} -->
                     {{ trans("Total to refund") }}
                 </dt>
                 <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
@@ -260,7 +259,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                         v-tooltip="trans('No need to pay anything')" icon="far fa-check" class="text-green-500"
                         fixed-width aria-hidden="true" />
                     <span class="ml-2 whitespace-nowrap" xclass="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">
-                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay)) }}
+                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay).toFixed(2)) }}
                     </span>
                 </dd>
             </div>
@@ -324,7 +323,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                                             {{ trans("Refunded") }}: {{ useLocaleStore().currencyFormat(data.currency_code, data.refunded) }}
                                         </div>
                                         <div @click="() => set(_formCell, [index, 'form', 'refund_amount'], data.amount-data.refunded)" v-tooltip="trans('Click to fill the input')" class="cursor-pointer text-gray-500 hover:text-gray-700 w-fit text-xs">
-                                            {{ trans("Available to refund") }}: {{ useLocaleStore().currencyFormat(data.currency_code, data.amount-data.refunded) }}
+                                            {{ trans("Available to refund") }}: {{ useLocaleStore().currencyFormat(data.currency_code, (data.amount-data.refunded).toFixed(2)) }}
                                         </div>
                                     </div>
                                 </template>

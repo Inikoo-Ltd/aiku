@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {Head, Link} from "@inertiajs/vue3";
-import {computed, defineAsyncComponent, ref} from "vue";
+import {computed, ref} from "vue";
 import type {Component} from "vue";
 import {useTabChange} from "@/Composables/tab-change";
 import TablePayments from "@/Components/Tables/Grp/Org/Accounting/TablePayments.vue";
@@ -481,8 +481,8 @@ const generateShowOrderRoute = () => {
                             payments : invoice_pay.routes.payments
                         }"
                     />
-
                 </div>
+
                 <div v-if="box_stats?.delivery_notes?.length"
                      class="mt-4 border rounded-lg p-4 pt-3 bg-white shadow-sm">
                     <!-- Section Title -->
@@ -498,14 +498,13 @@ const generateShowOrderRoute = () => {
                          class="mb-3 pb-3 border-b border-dashed last:border-0 last:mb-0 last:pb-0">
 
                         <div class="flex items-center gap-2 text-sm text-gray-700 mb-1">
-                            <span class="font-medium">Ref:</span>
-                            <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">{{
-                                    note?.reference
-                                }}
+                            <span class="font-medium">{{ trans("Reference") }}:</span>
+                            <Link :href="generateRouteDeliveryNote(note?.slug)" class="secondaryLink">
+                                #{{ note?.reference }}
                             </Link>
                             <span class="ml-auto text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                                    <Icon :data="note?.state"/>
-                                </span>
+                                <Icon :data="note?.state"/>
+                            </span>
                         </div>
 
                         <!-- Shipments -->
