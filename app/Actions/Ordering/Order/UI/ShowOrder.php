@@ -28,6 +28,7 @@ use App\Enums\UI\Ordering\OrderTabsEnum;
 use App\Http\Resources\Accounting\InvoicesResource;
 use App\Http\Resources\Accounting\PaymentsResource;
 use App\Http\Resources\Dispatching\DeliveryNotesResource;
+use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Ordering\NonProductItemsResource;
@@ -273,6 +274,7 @@ class ShowOrder extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrderTabsEnum::navigation()
                 ],
+                'shop_type'     => $order->shop->type,
                 'routes'      => [
                     'modify'   => [
                                 'name' => 'grp.models.order.modification.save',
@@ -313,7 +315,7 @@ class ShowOrder extends OrgAction
                 'timelines'                   => $finalTimeline,
                 'readonly'                    => $readonly,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
-
+                'contact_address'             => AddressResource::make($order->customer->address)->getArray(),
                 'box_stats'     => $this->getOrderBoxStats($order),
                 'currency'      => CurrencyResource::make($order->currency)->toArray(request()),
                 'data'          => OrderResource::make($order),

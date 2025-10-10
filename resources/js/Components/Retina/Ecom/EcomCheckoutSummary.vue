@@ -104,7 +104,7 @@ const isModalShippingAddress = ref(false)
             >
                 <template #copy_address="{ address, isEqual }">
                     <div v-if="isEqual" class="text-gray-500 text-sm">
-                        {{ trans("Already same as contact address") }}
+                        {{ trans("Same as the contact address") }}
                         <FontAwesomeIcon v-if="isEqual" v-tooltip="trans('Same as contact address')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                     </div>
 
