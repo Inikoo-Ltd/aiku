@@ -8,7 +8,6 @@
 
 namespace App\Actions\Goods\TradeUnit\UI;
 
-use App\Actions\Goods\Ingredient\UI\IndexIngredients;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithGoodsAuthorisation;
 use App\Models\Goods\TradeUnit;
@@ -320,12 +319,12 @@ class EditTradeUnit extends OrgAction
                                     ],
                                     'valueProp'  => 'slug',
                                     'labelProp'  => 'name',
-                                    
+
                                 ],
-                                'country_of_origin' => [
+                                'origin_country_id' => [
                                     'type'  => 'select',
                                     'label' => __('Country of Origin'),
-                                    'value' => $tradeUnit->country_of_origin,
+                                    'value' => $tradeUnit->origin_country_id,
                                     'options' => GetCountriesOptions::run(),
                                     'valueProp' => 'label',
                                 ],

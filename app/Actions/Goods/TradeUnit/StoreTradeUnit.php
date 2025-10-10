@@ -13,9 +13,11 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateTradeUnits;
 use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Models\Goods\TradeUnit;
+use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Group;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 
 class StoreTradeUnit extends OrgAction
@@ -25,6 +27,14 @@ class StoreTradeUnit extends OrgAction
 
     public function handle(Group $group, array $modelData): TradeUnit
     {
+
+        if (Arr::get($modelData, 'origin_country_id')) {
+            $country = Country::find(Arr::get($modelData, 'origin_country_id'));
+            if ($country) {
+                data_set($modelData, 'country_of_origin', $country->iso3);
+            }
+        }
+
         data_set($modelData, 'bucket_images', $this->strict);
         /** @var TradeUnit $tradeUnit */
         $tradeUnit = $group->tradeUnits()->create($modelData);
@@ -60,11 +70,11 @@ class StoreTradeUnit extends OrgAction
             'type'                  => ['sometimes', 'required', 'string'],
             'data'                  => ['sometimes', 'required', 'array'],
             'cpnp_number'           => ['sometimes', 'nullable', 'string'],
-            'country_of_origin'     => ['sometimes', 'nullable', 'string'],
             'tariff_code'           => ['sometimes', 'nullable', 'string'],
             'duty_rate'             => ['sometimes', 'nullable', 'string'],
             'hts_us'                => ['sometimes', 'nullable', 'string'],
             'marketing_ingredients' => ['sometimes', 'nullable', 'string'],
+            'origin_country_id'     => ['sometimes', 'nullable', 'exists:countries,id'],
 
         ];
 

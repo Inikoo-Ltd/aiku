@@ -99,12 +99,12 @@ class EditCustomer extends OrgAction
                                     ]
                                 ],
                                 'delivery_address'         => [
-                                    'hidden'=>$customer->shop->type==ShopTypeEnum::DROPSHIPPING,
+                                    'hidden' => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
                                     'type'    => 'delivery_address',
                                     'label'   => __('Delivery Address'),
                                     'noSaveButton'  => true,
                                     'options' => [
-                                        'same_as_contact'=>[
+                                        'same_as_contact' => [
                                             'label'         => __('Same as contact address'),
                                             'key_payload'   => 'delivery_address_id',
                                             'payload'       => $customer->address_id

@@ -38,7 +38,7 @@ class ShopHydrateProspects implements ShouldBeUnique
             'number_prospects_dont_contact_me' => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->count(),
             'number_opt_in_prospects_dont_contact_me' => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->where('is_opt_in', true)->count(),
             'number_opt_out_prospects_dont_contact_me' => $shop->prospects()->where('shop_id', $shop->id)->where('dont_contact_me', true)->where('is_opt_in', false)->count(),
-            
+
         ];
 
         $stats = array_merge(
@@ -80,7 +80,7 @@ class ShopHydrateProspects implements ShouldBeUnique
             )
         );
 
-        
+
         $stats = array_merge(
             $stats,
             $this->getEnumStats(

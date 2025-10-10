@@ -68,14 +68,14 @@ enum ProspectStateEnum: string
     {
         $stats = $parent->crmStats;
 
-        if($opt == 'opt_in'){
+        if ($opt == 'opt_in') {
             return [
                 'no-contacted' => $stats->number_opt_in_prospects_state_no_contacted,
                 'contacted'    => $stats->number_opt_in_prospects_state_contacted,
                 'fail'         => $stats->number_opt_in_prospects_state_fail,
                 'success'      => $stats->number_opt_in_prospects_state_success,
             ];
-        } elseif ($opt == 'opt_out'){
+        } elseif ($opt == 'opt_out') {
             return [
                 'no-contacted' => $stats->number_opt_out_prospects_state_no_contacted,
                 'contacted'    => $stats->number_opt_out_prospects_state_contacted,
