@@ -25,7 +25,7 @@ class UpdateBulkMasterProduct extends GrpAction
     {
         $rawProductDatas = Arr::get($modelData, 'products', []);
         foreach ($rawProductDatas as $productData) {
-            $product = MasterAsset::find(Arr::get($productData, 'id'));
+            $product = MasterAsset::find((int) Arr::get($productData, 'id'));
             UpdateMasterAsset::make()->action($product, [
                 'rrp'  => Arr::get($productData, 'rrp', $product->rrp),
                 'price'=> Arr::get($productData, 'price', $product->price),
@@ -39,7 +39,7 @@ class UpdateBulkMasterProduct extends GrpAction
     {
         return [
             'products' => ['required', 'array'],
-            'products.*.id' => ['required', 'exists:products,id'],
+            'products.*.id' => ['required'],
             'products.*.rrp' => ['sometimes', 'numeric'],
             'products.*.price' => ['sometimes', 'numeric'],
             'products.*.unit' => ['sometimes', 'string'],
