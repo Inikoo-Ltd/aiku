@@ -166,7 +166,7 @@ const onClickCopy = (textToCopy: string) => {
 <template>
     <div class="relative w-full max-w-xl isolate mx-auto my-8 xoverflow-hidden">
         <div class="mb-2 pl-2">
-            {{ trans("Need to pay") }}: <span class="font-bold">{{ locale.currencyFormat(currencyCode, props.needToPay) }}</span>
+            {{ trans("Need to pay") }}: <span class="font-bold">{{ locale.currencyFormat(currencyCode, Number(props.needToPay).toFixed(2)) }}</span>
             <Transition name="spin-to-right">
                 <FontAwesomeIcon v-if="isRecentlyCopied" icon="fal fa-check" class="ml-1 text-green-500" fixed-width
                     aria-hidden="true" />
