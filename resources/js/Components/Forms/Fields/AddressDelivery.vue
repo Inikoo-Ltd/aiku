@@ -12,6 +12,7 @@ import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { trans } from 'laravel-vue-i18n'
 import { routeType } from '@/types/route'
 import { notify } from '@kyvg/vue3-notification'
+import Toggle from '@/Components/Pure/Toggle.vue'
 
 const props = defineProps<{
     form: any
@@ -85,7 +86,7 @@ const submitForm = () => {
                         <InformationIcon :information="trans('If checked, the delivery address will be the same as the contact address')"/>
                     </label>
                 </div>
-                <ToggleSwitch 
+                <Toggle 
                     v-model="props.form[props.fieldName].is_same_as_contact"
                     inputId="same_as_contact_address"
                     binary
