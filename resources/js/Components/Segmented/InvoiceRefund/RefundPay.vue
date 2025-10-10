@@ -208,6 +208,19 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
     // )
     console.log('Manual clicked', paymentMethod)
 }
+
+const compToolTip = computed(() => {
+    if (Number(props.invoice_pay.total_need_to_pay).toFixed(2) > 0) {
+        return trans('Over refunded. Customer need to pay :amount', { amount: locale.currencyFormat(props.invoice_pay.currency_code, Number(props.invoice_pay.total_need_to_pay).toFixed(2)) })
+    }
+
+    if (Number(props.invoice_pay.total_need_to_pay).toFixed(2) < 0) {
+        return trans('Need to refund :amount to customer', { amount: locale.currencyFormat(props.invoice_pay.currency_code, Math.abs(Number(props.invoice_pay.total_need_to_pay)).toFixed(2)) })
+
+    }
+
+    return ''
+})
 </script>
 
 <template>
@@ -227,15 +240,29 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
             </div>
 
 
+            <!-- Field: Expected to refund -->
+            <div class="xborder-b border-gray-300">
+                <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
+                    <dt class="text-sm/6 font-medium" :style="{ padding: 0 }"
+                        @click="() => handleTabUpdate('payments')">
+                        {{ trans("Expected to refund") }}
+                    </dt>
+                    <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
+                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_invoice)) }}
+                    </dd>
+                </div>
+            </div>
+
+
             <!-- Field: Payed in -->
             <div class="border-b border-gray-300">
                 <div class="px-4 py-1 flex justify-between sm:gap-4 sm:px-3">
                     <dt class="text-sm/6 font-medium underline cursor-pointer" :style="{ padding: 0 }"
                         @click="() => handleTabUpdate('payments')">
-                        {{ trans("Payed in") }}
+                        {{ trans("Payments") }}
                     </dt>
-                    <dd class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
-                        {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_paid_in)) }}
+                    <dd v-tooltip="trans('Amount refunded to customer')" class="mt-1 text-sm/6 text-gray-700 sm:mt-0 text-right">
+                        {{ locale.currencyFormat(invoice_pay.currency_code, Math.abs(Number(invoice_pay.total_paid_in))) }}
                     </dd>
                 </div>
             </div>
@@ -258,7 +285,7 @@ const onClickAutomatic = (paymentMethod, loadingKey: string) => {
                     <FontAwesomeIcon v-if="Number(invoice_pay.total_need_to_pay) == 0"
                         v-tooltip="trans('No need to pay anything')" icon="far fa-check" class="text-green-500"
                         fixed-width aria-hidden="true" />
-                    <span class="ml-2 whitespace-nowrap" xclass="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">
+                    <span v-tooltip="compToolTip" class="ml-2 whitespace-nowrap" xclass="[Number(invoice_pay.total_need_to_pay) < 0 ? 'text-red-500' : '', 'ml-2']">
                         {{ locale.currencyFormat(invoice_pay.currency_code, Number(invoice_pay.total_need_to_pay).toFixed(2)) }}
                     </span>
                 </dd>
