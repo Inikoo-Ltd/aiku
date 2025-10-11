@@ -28,10 +28,8 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         return (string)$webpage->id;
     }
 
-    public function handle(Webpage $webpage): void
+    public function handle(Webpage $webpage): string
     {
-
-
         $canonicalUrl = match ($webpage->type) {
             WebpageTypeEnum::CATALOGUE => $this->getWebpageTypeCatalogue($webpage),
             WebpageTypeEnum::STOREFRONT => '',
@@ -39,11 +37,16 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
             default => $webpage->url
         };
 
+
+
         $canonicalUrl = 'https://'.$webpage->website->domain.'/'.$canonicalUrl;
+
+        $canonicalUrl = $this->trimTrailingSlash($canonicalUrl);
 
         $webpage->update([
             'canonical_url' => $canonicalUrl,
         ]);
+        return $canonicalUrl;
     }
 
 
@@ -72,7 +75,6 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $url  = '';
 
 
-
         foreach ($collection->subDepartments as $subDepartment) {
             if ($subDepartment->webpage && $subDepartment->webpage->state != WebpageStateEnum::CLOSED) {
                 $url = $this->getProductCategoryCanonicalUrl($subDepartment->webpage);
@@ -86,8 +88,6 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
             foreach ($collection->departments as $department) {
                 if ($department->webpage && $department->webpage->state != WebpageStateEnum::CLOSED) {
                     $url = $this->getProductCategoryCanonicalUrl($department->webpage);
-
-                    $done = true;
                     break;
                 }
             }
@@ -111,7 +111,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         } elseif ($product->department && $product->department->webpage && $product->department->webpage->state != WebpageStateEnum::CLOSED) {
             $url = $this->getProductCategoryCanonicalUrl($product->department->webpage);
         }
-        $url .= $webpage->url;
+        $url .= '/'.$webpage->url;
 
         return $this->trimTrailingSlash($url);
     }
@@ -182,10 +182,18 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         return rtrim($url, '/');
     }
 
-    public string $commandSignature = 'webpage:update_canonical';
+    public string $commandSignature = 'webpage:update_canonical {webpage?}';
 
-    public function asCommand(Command $command): void
+    public function asCommand(Command $command): int
     {
+        if ($command->argument('webpage')) {
+            $webpage = Webpage::where('slug', $command->argument('webpage'))->firstOrFail();
+            $canonicalUrl = $this->handle($webpage);
+            $command->info("Canonical URL for $webpage->slug is $canonicalUrl");
+
+            return 0;
+        }
+
         $startTime = microtime(true);
         $processed = 0;
 
@@ -211,6 +219,8 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $duration = microtime(true) - $startTime;
         $human    = gmdate('H:i:s', (int)$duration);
         $command->info("Processed $processed webpages in $human.");
+
+        return 0;
     }
 
 }
