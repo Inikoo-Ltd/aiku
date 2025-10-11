@@ -49,6 +49,7 @@ use App\Models\Helpers\Address;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Location;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Str;
 
 beforeAll(function () {
     loadDB();

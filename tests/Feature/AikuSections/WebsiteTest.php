@@ -72,6 +72,9 @@ beforeEach(function () {
     actingAs($this->user);
 
     ReindexWebpageLuigiData::shouldRun();
+    ReindexWebpageLuigiData::mock()
+        ->shouldReceive('getJobUniqueId')
+        ->andReturn(1);
 });
 
 test('create b2b website', function () {

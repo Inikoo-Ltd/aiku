@@ -93,6 +93,9 @@ beforeAll(function () {
 });
 beforeEach(function () {
     ReindexWebpageLuigiData::shouldRun();
+    ReindexWebpageLuigiData::mock()
+        ->shouldReceive('getJobUniqueId')
+        ->andReturn(1);
     $this->organisation = createOrganisation();
     $this->warehouse    = createWarehouse();
     $this->fulfilment   = createFulfilment($this->organisation);

@@ -80,6 +80,9 @@ beforeAll(function () {
 
 beforeEach(function () {
     ReindexWebpageLuigiData::shouldRun();
+    ReindexWebpageLuigiData::mock()
+        ->shouldReceive('getJobUniqueId')
+        ->andReturn(1);
     $this->organisation = createOrganisation();
     $this->guest        = createAdminGuest($this->organisation->group);
     $this->warehouse    = createWarehouse();
