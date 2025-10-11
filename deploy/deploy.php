@@ -14,7 +14,21 @@ set('bin/php', function () {
 
 desc('Check for changes in frontend');
 task('deploy:check-fe-changes', function () {
-    $changedFiles = run('git diff --name-only {{previous_release}} HEAD');
+
+
+    try {
+        $prevHash = trim(run('cat {{previous_release}}/REVISION'));
+    } catch (\Throwable $e) {
+        $prevHash = null;
+    }
+
+    if (!empty($prevHash)) {
+        $changedFiles = run("git diff --name-only $prevHash HEAD");
+    } else {
+        writeln('Previous release hash not found (likely first deploy). Assuming front-end changed.');
+        $changedFiles = 'resources'; // force detection
+    }
+
     $triggerFiles = ['resources'];
     $frontEndChanged = false;
     foreach ($triggerFiles as $triggerFile) {
@@ -52,7 +66,7 @@ task('deploy:set-release', function () {
 
 desc('Sync octane anchor');
 task('deploy:sync-octane-anchor', function () {
-    run("rsync -avhH --delete {{release_path}}/ {{deploy_path}}/anchor/octane");
+    run("rsync -ahHq --delete {{release_path}}/ {{deploy_path}}/anchor/octane");
 });
 
 desc('Stops inertia SSR server');
