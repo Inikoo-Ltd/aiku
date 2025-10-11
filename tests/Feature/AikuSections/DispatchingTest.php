@@ -78,7 +78,10 @@ beforeEach(function () {
         $this->orde = SubmitOrder::make()->action($this->order);
     }
 
-    $this->employee = StoreEmployee::make()->action($this->organisation, Employee::factory()->definition());
+    $employeeData = Employee::factory()->definition();
+    $employeeData['worker_number'] .= Str::random(6);
+
+    $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
 });
 
 test('create shipper', function () {
