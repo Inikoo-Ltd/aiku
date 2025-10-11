@@ -12,13 +12,36 @@ set('bin/php', function () {
     return '/usr/bin/php8.3';
 });
 
+desc('Check for changes in frontend');
+task('deploy:check-fe-changes', function () {
+    $changedFiles = run('git diff --name-only {{previous_release}} HEAD');
+    $triggerFiles = ['resources'];
+    $frontEndChanged = false;
+    foreach ($triggerFiles as $triggerFile) {
+        if (str_contains($changedFiles, $triggerFile)) {
+            $frontEndChanged = true;
+            break;
+        }
+    }
+
+    set('front_end_changed', $frontEndChanged);
+
+    writeln(sprintf('Front-end changes detected: %s', $frontEndChanged ? 'yes' : 'no'));
+});
+
+
 desc('🚡 Migrating database');
 task('deploy:migrate', function () {
     artisan('migrate --force', ['skipIfNoEnv', 'showOutput'])();
 });
 desc('🏗️ Build vue app');
 task('deploy:build', function () {
-    run("cd {{release_path}} && {{bin/npm}} run build");
+    $frontEndChanged = get('front_end_changed');
+    if ($frontEndChanged) {
+        run("cd {{release_path}} && {{bin/npm}} run build");
+    } else {
+        writeln('Skipping front-end build: no changes detected');
+    }
 });
 
 desc('Set release');
@@ -37,8 +60,18 @@ task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod'
 
 
 desc('Refresh vue after deployment');
-task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
+task('artisan:refresh_vue', artisan('refresh_vue'))->select('env=prod');
 
+
+desc('Refresh vue after deployment');
+task('deploy:refresh-vue', function () {
+    $frontEndChanged = get('front_end_changed');
+    if ($frontEndChanged) {
+        invoke('artisan:refresh_vue');
+    } else {
+        writeln('Skipping refresh vue: no changes detected');
+    }
+});
 
 set('keep_releases', 15);
 
@@ -57,6 +90,7 @@ task('deploy', [
     'deploy:unlock',
     'deploy:prepare',
     'deploy:vendors',
+    'deploy:check-fe-changes',
     'deploy:set-release',
     'artisan:storage:link',
     'artisan:config:cache',
@@ -70,5 +104,5 @@ task('deploy', [
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
  //   'artisan:inertia:stop-ssr',
-    'artisan:refresh_vue',
+    'deploy:refresh-vue',
 ]);
