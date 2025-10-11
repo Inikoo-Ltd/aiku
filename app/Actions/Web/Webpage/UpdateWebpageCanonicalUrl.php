@@ -15,8 +15,10 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateWebpageCanonicalUrl implements ShouldBeUnique
@@ -38,14 +40,15 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         };
 
 
-
         $canonicalUrl = 'https://'.$webpage->website->domain.'/'.$canonicalUrl;
 
         $canonicalUrl = $this->trimTrailingSlash($canonicalUrl);
+        $canonicalUrl = replaceUrlSubdomain($canonicalUrl, 'www');
 
         $webpage->update([
             'canonical_url' => $canonicalUrl,
         ]);
+
         return $canonicalUrl;
     }
 
@@ -182,32 +185,44 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         return rtrim($url, '/');
     }
 
-    public string $commandSignature = 'webpage:update_canonical {webpage?}';
+    public string $commandSignature = 'webpage:update_canonical {type?} {slug?}';
 
     public function asCommand(Command $command): int
     {
-        if ($command->argument('webpage')) {
-            $webpage = Webpage::where('slug', $command->argument('webpage'))->firstOrFail();
-            $canonicalUrl = $this->handle($webpage);
-            $command->info("Canonical URL for $webpage->slug is $canonicalUrl");
 
-            return 0;
+
+
+        $query=DB::table('webpages')->select('id');
+        if($command->argument('type')){
+            if(in_array($command->argument('type'),['page','webpage','p'])){
+                $query->where('slug',$command->argument('slug'));
+            }elseif(in_array($command->argument('type'),['website','w'])){
+                $website=Website::where('slug',$command->argument('slug'))->first();
+                $query->where('website_id',$website->id);
+            }
+
+
         }
+
+
 
         $startTime = microtime(true);
         $processed = 0;
 
         // Determine total for the progress bar
-        $total       = Webpage::count();
+        $total       =$query->count();
         $progressBar = $command->getOutput()->createProgressBar($total);
         $progressBar->setRedrawFrequency(100);
         $progressBar->start();
 
-        Webpage::query()
-            ->orderBy('id')
-            ->chunkById(500, function ($webpages) use (&$processed, $progressBar) {
-                foreach ($webpages as $webpage) {
-                    $this->handle($webpage);
+        $query->orderBy('id')
+            ->chunkById(200, function ($webpages) use (&$processed, $progressBar) {
+                foreach ($webpages as $webpageID) {
+                    $webpage=Webpage::find($webpageID->id);
+                    if($webpage){
+                        $this->handle($webpage);
+                    }
+
                     $processed++;
                     $progressBar->advance();
                 }
