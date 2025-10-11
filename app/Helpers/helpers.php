@@ -419,3 +419,113 @@ if (!function_exists('convertUnits')) {
         };
     }
 }
+
+
+if (!function_exists('replaceUrlDomain')) {
+    /**
+     * Replace the domain (and optionally scheme) of a URL with another using preg_replace.
+     *
+     * Examples:
+     * - replaceUrlDomain('https://awgifts.bg/aroma/eoeo-02', 'https://xxxx.yy') => 'https://xxxx.yy/aroma/eoeo-02'
+     * - replaceUrlDomain('https://awgifts.bg/aroma/eoeo-02', 'xxxx.yy')        => 'https://xxxx.yy/aroma/eoeo-02' (preserves original scheme)
+     * - replaceUrlDomain('http://old.test/p', 'new.example')                   => 'http://new.example/p'
+     *
+     * Notes:
+     * - If $newDomain includes a scheme (e.g. https://), it fully replaces the original scheme+host.
+     * - If $newDomain has no scheme, the original URL's scheme is preserved.
+     */
+    function replaceUrlDomain(string $url, string $newDomain): string
+    {
+        $url = trim($url);
+        $newDomain = rtrim(trim($newDomain), '/');
+
+        // If new domain includes a scheme, replace the full scheme+host segment
+        if (preg_match('#^[a-z][a-z0-9+.-]*://#i', $newDomain)) {
+            return preg_replace('#^[a-z][a-z0-9+.-]*://[^/]+#i', $newDomain, $url) ?? $url;
+        }
+
+        // Otherwise, preserve the original scheme and only replace the host
+        return preg_replace('#^(https?://)([^/]+)#i', '$1'.$newDomain, $url) ?? $url;
+    }
+}
+
+
+if (!function_exists('replaceUrlSubdomain')) {
+    /**
+     * Replace the subdomain portion of a URL.
+     *
+     * Behavior:
+     * - If the host already has a subdomain (e.g. shop.example.com), it replaces only the leftmost label
+     *   (shop -> newSub).
+     * - If the host has no subdomain (e.g. example.com) and $newSubdomain is non-empty, it prepends it
+     *   (newSub.example.com).
+     * - If $newSubdomain is empty ("" or null) and the host has a subdomain, it removes the subdomain
+     *   (shop.example.com -> example.com). If there is no subdomain, it leaves the host unchanged.
+     * - Preserves scheme, user/pass, port, path, query and fragment.
+     * - Works whether the URL has a scheme or not (e.g. example.com/path).
+     */
+    function replaceUrlSubdomain(string $url, ?string $newSubdomain): string
+    {
+        $original = trim($url);
+        if ($original === '') {
+            return $original;
+        }
+
+        $working = $original;
+        $hadScheme = (bool)preg_match('#^[a-z][a-z0-9+.-]*://#i', $working);
+        if (!$hadScheme) {
+            // Add a dummy scheme so parse_url can extract host properly
+            $working = 'http://'.$working;
+        }
+
+        $parts = parse_url($working);
+        if (!$parts || empty($parts['host'])) {
+            return $original; // can't find host; return as-is
+        }
+
+        $host = $parts['host'];
+        $labels = explode('.', $host);
+
+        // Replace/remove/add subdomain
+        if (count($labels) >= 3) {
+            // There is at least one subdomain
+            if ($newSubdomain === null || $newSubdomain === '') {
+                // remove the leftmost label
+                array_shift($labels);
+            } else {
+                $labels[0] = $newSubdomain;
+            }
+        } else {
+            // No subdomain present (e.g. example.com)
+            if ($newSubdomain !== null && $newSubdomain !== '') {
+                array_unshift($labels, $newSubdomain);
+            }
+        }
+
+        $parts['host'] = implode('.', $labels);
+
+        // Rebuild URL
+        $scheme   = $parts['scheme'] ?? '';
+        $user     = $parts['user'] ?? '';
+        $pass     = $parts['pass'] ?? '';
+        $auth     = $user !== '' ? $user.($pass !== '' ? ':'.$pass : '').'@' : '';
+        $port     = isset($parts['port']) ? ':'.$parts['port'] : '';
+        $path     = $parts['path'] ?? '';
+        $query    = isset($parts['query']) ? '?'.$parts['query'] : '';
+        $fragment = isset($parts['fragment']) ? '#'.$parts['fragment'] : '';
+
+        $rebuilt = ($hadScheme ? $scheme.'://' : '').$auth.$parts['host'].$port.$path.$query.$fragment;
+
+        // If original did not have a scheme, ensure we don't introduce one
+        if (!$hadScheme) {
+            // Strip the dummy scheme if present
+            if (str_starts_with($rebuilt, 'http://')) {
+                $rebuilt = substr($rebuilt, 7);
+            } elseif (str_starts_with($rebuilt, 'https://')) {
+                $rebuilt = substr($rebuilt, 8);
+            }
+        }
+
+        return $rebuilt;
+    }
+}
