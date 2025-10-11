@@ -35,11 +35,11 @@ class RetinaAction
 
 
     protected Website $website;
-    protected Customer $customer;
-    protected WebUser $webUser;
+    protected ?Customer $customer;
+    protected ?WebUser $webUser;
     protected ShopifyUser|TiktokUser|WebUser|WooCommerceUser|null $platformUser;
-    protected Platform $platform;
-    protected ShopifyUser $shopifyUser;
+    protected ?Platform $platform;
+    protected ?ShopifyUser $shopifyUser;
     protected bool $asPupil = false;
     protected ?Fulfilment $fulfilment;
     protected ?FulfilmentCustomer $fulfilmentCustomer;

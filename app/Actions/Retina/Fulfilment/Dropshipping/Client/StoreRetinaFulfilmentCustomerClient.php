@@ -25,7 +25,6 @@ class StoreRetinaFulfilmentCustomerClient extends RetinaAction
     use WithModelAddressActions;
     use WithNoStrictRules;
 
-    protected Customer $customer;
     /**
      * @var \App\Models\Dropshipping\CustomerSalesChannel
      */

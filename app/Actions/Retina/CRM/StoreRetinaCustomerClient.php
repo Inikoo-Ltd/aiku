@@ -14,7 +14,6 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Http\RedirectResponse;
@@ -25,9 +24,6 @@ class StoreRetinaCustomerClient extends RetinaAction
 {
     use WithModelAddressActions;
     use WithNoStrictRules;
-
-    protected Customer $customer;
-
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerClient
     {
