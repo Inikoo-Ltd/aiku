@@ -32,30 +32,6 @@ const checkScreenType = () => {
   else screenType.value = 'desktop'
 }
 
-
-/* function injectMetaTagFromString(rawHtml: string) {
-  if (!rawHtml?.trim().startsWith('<')) return
-
-  const wrapper = document.createElement('div')
-  wrapper.innerHTML = rawHtml.trim()
-  const element = wrapper.firstElementChild
-
-  if (element && element instanceof HTMLElement) {
-    // Prevent duplicates if meta with same name exists
-    if (element.tagName.toLowerCase() === 'meta') {
-      const nameAttr = element.getAttribute('name')
-      if (nameAttr) {
-        const existing = document.head.querySelector(`meta[name="${nameAttr}"]`)
-        if (existing) document.head.removeChild(existing)
-      }
-    }
-
-    document.head.appendChild(element)
-  }
-} */
-
-
-
 onMounted(() => {
   currentUrl.value = window.location.href
 
@@ -76,10 +52,6 @@ onMounted(() => {
   script.textContent = structuredData
   document.head.appendChild(script)
 
-  // ✅ Inject custom meta tag if valid
-  // if (props.script_website) {
-  //   injectMetaTagFromString(props.script_website)
-  // }
 
   checkScreenType()
   window.addEventListener('resize', checkScreenType)

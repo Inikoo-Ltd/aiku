@@ -13,7 +13,6 @@ use App\Actions\Iris\Catalogue\DownloadIrisProduct;
 use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Web\Webpage\Iris\IndexIrisBlogWebpages;
 use App\Actions\Web\Webpage\Iris\ShowIrisBlogDashboard;
-use App\Actions\Web\Webpage\Iris\ShowIrisBlogWebpage;
 use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
@@ -65,7 +64,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');
         Route::get('/blog', ShowIrisBlogDashboard::class)->name('iris_blog');
         Route::get('/blog/articles', IndexIrisBlogWebpages::class)->name('iris_blog.articles.index');
-        Route::get('/blog/articles/{webpage}', ShowIrisBlogWebpage::class)->name('iris_blog.articles.show');
+        Route::get('/blog/articles/{webpage}', ShowIrisWebpage::class)->name('iris_blog.articles.show');
 
         Route::get('/{path?}', ShowIrisWebpage::class)->name('iris_webpage');
         Route::get('/{parentPath1}/{path}', [ShowIrisWebpage::class, 'deep1'])->name('iris_webpage.deep1');
