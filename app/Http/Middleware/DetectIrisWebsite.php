@@ -47,7 +47,7 @@ class DetectIrisWebsite
     public function getWebsiteData(string $domain): array
     {
         /** @var Website $website */
-        $website = Website::where('domain', $domain)->first();
+        $website = Website::where('domain', $domain)->where('status',true)->first();
         $shop    = $website->shop;
 
         return [
