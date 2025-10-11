@@ -35,7 +35,13 @@ beforeAll(function () {
     loadDB();
 });
 beforeEach(function () {
+
     ReindexWebpageLuigiData::shouldRun();
+
+    ReindexWebpageLuigiData::mock()
+        ->shouldReceive('getJobUniqueId')
+        ->andReturn(1);
+
     $web = Website::first();
     if (!$web) {
         list(
