@@ -242,7 +242,7 @@ class ShowIrisWebpage
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'label' => $parentWebpage->breadcrumb_label,
+                            'label' => $parentWebpage->breadcrumb_label ?? $webpage->title ?? $webpage->code,
                             'url'   => $runningUrl.$parentWebpage->url
                         ]
 
@@ -256,7 +256,7 @@ class ShowIrisWebpage
             $breadcrumbs[] = [
                 'type'   => 'simple',
                 'simple' => [
-                    'label' => $webpage->breadcrumb_label ?? $webpage->title,
+                    'label' => $webpage->breadcrumb_label ?? $webpage->title ?? $webpage->code,
                     'url'   => $runningUrl.$webpage->url
                 ]
 
