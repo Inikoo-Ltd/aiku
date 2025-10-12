@@ -72,7 +72,6 @@ class ShowIrisWebpage
 
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
-
         if (config('iris.cache.webpage_path.ttl') == 0) {
             $webpageID = $this->getWebpageID($request->get('website'), $path);
         } else {
@@ -104,17 +103,16 @@ class ShowIrisWebpage
             $normalizedCanon = $this->getEnvironmentUrl(rtrim($canonicalUrl, '/'));
 
 
-
             if ($normalizedCanon !== $currentUrl) {
-                //  return $this->getEnvironmentUrl($canonicalUrl);
-
                 // Log the current and normalized canonical URLs for debugging/inspection
                 Log::critical('Iris canonical URL check', [
-                    'currentUrl' => $currentUrl,
-                    'normalizedCanon' => $normalizedCanon,
-                    'canonicalUrlRaw' => $canonicalUrl,
+                    'currentUrl'       => $currentUrl,
+                    'normalizedCanon'  => $normalizedCanon,
+                    'canonicalUrlRaw'  => $canonicalUrl,
                     'environmentalUrl' => $this->getEnvironmentUrl($canonicalUrl),
                 ]);
+
+                return $this->getEnvironmentUrl($canonicalUrl);
             }
         }
 
@@ -149,7 +147,7 @@ class ShowIrisWebpage
             };
 
 
-            return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain),'');
+            return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain), '');
         } elseif ($environment == 'staging') {
             return replaceUrlSubdomain($url, 'canary');
         }
