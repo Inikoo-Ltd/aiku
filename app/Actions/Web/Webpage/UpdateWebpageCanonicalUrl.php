@@ -43,10 +43,10 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         };
 
 
-        $canonicalUrl = 'https://'.$webpage->website->domain.'/'.$canonicalUrl;
+        $canonicalUrl = 'https://www.'.$webpage->website->domain.'/'.$canonicalUrl;
 
         $canonicalUrl = $this->trimTrailingSlash($canonicalUrl);
-        $canonicalUrl = replaceUrlSubdomain($canonicalUrl, $webpage->website->is_migrating?'v2':'www');
+        $canonicalUrl = replaceUrlSubdomain($canonicalUrl, $webpage->website->is_migrating ? 'v2' : 'www');
 
         $oldCanonicalUrl = $webpage->canonical_url;
         $webpage->update([
@@ -234,10 +234,12 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 
     public function asCommand(Command $command): int
     {
+        $debug = false;
         $query = DB::table('webpages')->select('id');
         if ($command->argument('type')) {
             if (in_array($command->argument('type'), ['page', 'webpage', 'p'])) {
                 $query->where('slug', $command->argument('slug'));
+                $debug = true;
             } elseif (in_array($command->argument('type'), ['website', 'w'])) {
                 $website = Website::where('slug', $command->argument('slug'))->first();
                 $query->where('website_id', $website->id);
@@ -254,11 +256,14 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $progressBar->start();
 
         $query->orderBy('id')
-            ->chunkById(200, function ($webpages) use (&$processed, $progressBar) {
+            ->chunkById(200, function ($webpages) use (&$processed, $progressBar, $command, $debug) {
                 foreach ($webpages as $webpageID) {
                     $webpage = Webpage::find($webpageID->id);
                     if ($webpage) {
-                        $this->handle($webpage,false);
+                        $this->handle($webpage, false);
+                        if ($debug) {
+                            $command->info($webpage->id.' '.$webpage->url.' '.$webpage->canonical_url);
+                        }
                     }
 
                     $processed++;
