@@ -258,7 +258,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $query->orderBy('id')
             ->chunkById(200, function ($webpages) use (&$processed, $progressBar, $command, $debug) {
                 foreach ($webpages as $webpageID) {
-                    $webpage = Webpage::find($webpageID->id);
+                    $webpage = Webpage::find($webpageID->id)->withTrashed();
                     if ($webpage) {
                         $this->handle($webpage, false);
                         if ($debug) {
