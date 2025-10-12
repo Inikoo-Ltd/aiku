@@ -33,7 +33,7 @@ task('deploy:check-fe-changes', function () {
         $changedFiles = 'resources'; // force detection
     }
 
-    $triggerFiles    = ['resources'];
+    $triggerFiles = ['resources'];
     $frontEndChanged = false;
     foreach ($triggerFiles as $triggerFile) {
         if (str_contains($changedFiles, $triggerFile)) {
@@ -55,21 +55,16 @@ task('deploy:migrate', function () {
 desc('🏗️ Build vue app');
 task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
-    if ($frontEndChanged || true) {
+    if ($frontEndChanged) {
         run("cd {{release_path}} && {{bin/npm}} run build");
-
-
-
-
-
     } else {
-        // No FE changes: reuse built assets from previous release
+        // No FE changes: reuse built assets from the previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
-        try {
-            run('if [ -d {{previous_release}} ]; then for d in iris grp retina pupil aiku-public; do if [ -d "{{previous_release}}/public/$d" ]; then mkdir -p "{{release_path}}/public/$d" && rsync -ahHq --delete "{{previous_release}}/public/$d/" "{{release_path}}/public/$d/"; fi; done; else echo "No previous release found, skipping asset copy"; fi');
-        } catch (\Throwable $e) {
-            writeln('Failed to copy built assets from previous release: '.($e->getMessage() ?? 'unknown error'));
-        }
+        run(
+            'cd {{release_path}}/public && rsync -a {{previous_release}}/public/retina . && rsync -a {{previous_release}}/public/iris . && rsync -a {{previous_release}}/public/grp . && rsync -a {{previous_release}}/public/pupil . && rsync -a {{previous_release}}/public/aiku-public .'
+        );
+
+
     }
 });
 
