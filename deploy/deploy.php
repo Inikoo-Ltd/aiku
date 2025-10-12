@@ -58,7 +58,13 @@ task('deploy:build', function () {
     if ($frontEndChanged) {
         run("cd {{release_path}} && {{bin/npm}} run build");
     } else {
-        writeln('Skipping front-end build: no changes detected');
+        // No FE changes: reuse built assets from previous release
+        writeln('No front-end changes detected. Reusing built assets from previous release if available.');
+        try {
+            run('if [ -d {{previous_release}} ]; then for d in iris grp retina pupil aiku-public; do if [ -d "{{previous_release}}/public/$d" ]; then mkdir -p "{{release_path}}/public/$d" && rsync -ahHq --delete "{{previous_release}}/public/$d/" "{{release_path}}/public/$d/"; fi; done; else echo "No previous release found, skipping asset copy"; fi');
+        } catch (\Throwable $e) {
+            writeln('Failed to copy built assets from previous release: '.($e->getMessage() ?? 'unknown error'));
+        }
     }
 });
 
@@ -78,7 +84,7 @@ task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod'
 
 
 desc('Refresh vue after deployment');
-task('artisan:refresh_vue', artisan('refresh_vue'))->select('env=prod');
+task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
 
 
 desc('Refresh vue after deployment');
