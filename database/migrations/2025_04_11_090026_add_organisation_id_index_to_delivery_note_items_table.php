@@ -14,6 +14,7 @@ return new class () extends Migration {
     public function up(): void
     {
         Schema::table('delivery_note_items', function (Blueprint $table) {
+            $table->dropIndex(['organisation_id']);
             $table->index('organisation_id');
         });
     }
