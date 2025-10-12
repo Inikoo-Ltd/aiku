@@ -15,6 +15,7 @@ use App\Models\Web\Website;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -103,8 +104,17 @@ class ShowIrisWebpage
             $normalizedCanon = $this->getEnvironmentUrl(rtrim($canonicalUrl, '/'));
 
 
+
             if ($normalizedCanon !== $currentUrl) {
-              //  return $this->getEnvironmentUrl($canonicalUrl);
+                //  return $this->getEnvironmentUrl($canonicalUrl);
+
+                // Log the current and normalized canonical URLs for debugging/inspection
+                Log::info('Iris canonical URL check', [
+                    'currentUrl' => $currentUrl,
+                    'normalizedCanon' => $normalizedCanon,
+                    'canonicalUrlRaw' => $canonicalUrl,
+                    'environmentalUrl' => $this->getEnvironmentUrl($canonicalUrl),
+                ]);
             }
         }
 
