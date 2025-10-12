@@ -9,8 +9,10 @@
 namespace App\Actions\Web\Webpage\Iris;
 
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -23,6 +25,13 @@ class ShowIrisWebpage
     use AsAction;
     use WithIrisGetWebpageWebBlocks;
 
+
+    public function getCanonicalUrl($webpageID): ?string
+    {
+        $webpageData = DB::table('webpages')->select('canonical_url')->where('id', $webpageID)->first();
+
+        return $webpageData?->canonical_url;
+    }
 
     public function getWebpageData($webpageID, array $parentPaths): array
     {
@@ -60,8 +69,9 @@ class ShowIrisWebpage
     }
 
 
-    public function handle(?string $path, array $parentPaths, ActionRequest $request): array
+    public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
+
         if (config('iris.cache.webpage_path.ttl') == 0) {
             $webpageID = $this->getWebpageID($request->get('website'), $path);
         } else {
@@ -76,6 +86,27 @@ class ShowIrisWebpage
             abort(404, 'Not found');
         }
 
+
+        if (config('iris.cache.webpage.ttl') == 0) {
+            $canonicalUrl = $this->getCanonicalUrl($webpageID);
+        } else {
+            $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_canonicals_'.$webpageID;
+
+            $canonicalUrl = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID) {
+                return $this->getCanonicalUrl($webpageID);
+            });
+        }
+
+
+        if (!empty($canonicalUrl)) {
+            $currentUrl      = rtrim($request->fullUrl(), '/');
+            $normalizedCanon = $this->getEnvironmentUrl(rtrim($canonicalUrl, '/'));
+
+
+            if ($normalizedCanon !== $currentUrl) {
+                return $this->getEnvironmentUrl($canonicalUrl);
+            }
+        }
 
         if (config('iris.cache.webpage.ttl') == 0) {
             $webpageData = $this->getWebpageData($webpageID, $parentPaths);
@@ -95,34 +126,59 @@ class ShowIrisWebpage
     }
 
 
-    public function asController(ActionRequest $request, string $path = null): array
+    public function getEnvironmentUrl($url)
+    {
+        $environment = app()->environment();
+
+
+        if ($environment == 'local') {
+            $localDomain = match (request()->website->shop->type) {
+                ShopTypeEnum::FULFILMENT => 'fulfilment.test',
+                ShopTypeEnum::DROPSHIPPING => 'ds.test',
+                default => 'ecom.test'
+            };
+
+
+            return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain),'');
+        } elseif ($environment == 'staging') {
+            return replaceUrlSubdomain($url, 'canary');
+        }
+
+        return $url;
+    }
+
+    public function asController(ActionRequest $request, string $path = null): string|array
     {
         return $this->handle($path, [], $request);
     }
 
-    public function deep1(ActionRequest $request, string $parentPath1, string $path): array
+    public function deep1(ActionRequest $request, string $parentPath1, string $path): string|array
     {
         return $this->handle($path, [$parentPath1], $request);
     }
 
-    public function deep2(ActionRequest $request, string $parentPath1, string $parentPath2, string $path = null): array
+    public function deep2(ActionRequest $request, string $parentPath1, string $parentPath2, string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2], $request);
     }
 
-    public function deep3(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $path = null): array
+    public function deep3(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2, $parentPath3], $request);
     }
 
-    public function deep4(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $parentPath4, string $path = null): array
+    public function deep4(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $parentPath4, string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2, $parentPath3, $parentPath4], $request);
     }
 
 
-    public function htmlResponse($webpageData): Response
+    public function htmlResponse($webpageData): Response|RedirectResponse
     {
+        if (is_string($webpageData)) {
+            return redirect()->to($webpageData, 301);
+        }
+
         return Inertia::render(
             'IrisWebpage',
             $webpageData

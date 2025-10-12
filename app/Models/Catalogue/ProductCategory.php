@@ -241,6 +241,11 @@ class ProductCategory extends Model implements Auditable, HasMedia
         return $this->children()->where('type', ProductCategoryTypeEnum::FAMILY)->get();
     }
 
+    public function getSubDepartments(): LaravelCollection
+    {
+        return $this->children()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->get();
+    }
+
 
     public function getProducts(): LaravelCollection
     {

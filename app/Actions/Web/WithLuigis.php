@@ -12,11 +12,13 @@ namespace App\Actions\Web;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Brand;
+use App\Models\Helpers\Tag;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Exception;
@@ -52,18 +54,18 @@ trait WithLuigis
     /**
      * @throws \Exception
      */
-    private function request(Website|Webpage $parent, string $endPoint, array $body, string $method = 'post', $compressed = false)
+    private function request(Website|Webpage $parent, string $endPoint, array $body, string $method = 'post', $compressed = false): void
     {
         $content_type = 'application/json; charset=utf-8';
 
         $offsetSeconds = 0;
-        $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds) . ' GMT';
+        $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
 
         $accessToken = $this->getAccessToken($parent);
 
         [$publicKey, $privateKey] = $accessToken;
 
-        $signature  = $this->digest(
+        $signature = $this->digest(
             $privateKey,
             $content_type,
             strtoupper($method),
@@ -75,12 +77,12 @@ trait WithLuigis
             'Accept-Encoding' => 'gzip',
             'Content-Type'    => $content_type,
             'Date'            => $date,
-            'Authorization'  => "Hello {$publicKey}:{$signature}",
+            'Authorization'   => "Hello $publicKey:$signature",
         ];
 
         if ($compressed) {
             $header['Content-Encoding'] = 'gzip';
-            $body = gzencode(json_encode($body), 9);
+            $body                       = gzencode(json_encode($body), 9);
         } else {
             $body = json_encode($body);
         }
@@ -88,15 +90,13 @@ trait WithLuigis
         $response = Http::withHeaders($header)
             ->retry(3, 100)
             ->withBody($body, $content_type)
-            ->{strtolower($method)}('https://live.luigisbox.com/' . $endPoint);
+            ->{strtolower($method)}(
+                'https://live.luigisbox.com/'.$endPoint
+            );
 
 
         if ($response->failed()) {
-            throw new Exception('Failed to send request to Luigi\'s Box API: ' . $response->body());
-        }
-
-        if ($response->successful()) {
-            return $response->json();
+            throw new Exception('Failed to send request to Luigi\'s Box API: '.$response->body());
         }
     }
 
@@ -108,6 +108,7 @@ trait WithLuigis
         $accessToken = $this->getAccessToken($parent);
         if (count($accessToken) < 2) {
             Log::error('Luigi\'s Box access token is not configured properly');
+
             return;
         }
         if ($parent instanceof Website) {
@@ -126,14 +127,15 @@ trait WithLuigis
                         }
                     }
 
-                    $body = [
+                    $body       = [
                         'objects' => $objects
                     ];
                     $compressed = count($objects) >= 1000;
                     try {
                         $this->request($website, '/v1/content', $body, 'post', $compressed);
                     } catch (Exception $e) {
-                        print "Failed to reindex website {$website->domain}: " . $e->getMessage() . "\n";
+                        print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
+
                         return;
                     }
                 });
@@ -149,9 +151,9 @@ trait WithLuigis
                 'objects' => $objects
             ];
             try {
-                $this->request($parent, '/v1/content', $body, 'post');
+                $this->request($parent, '/v1/content', $body);
             } catch (Exception $e) {
-                Log::error("Failed to reindex webpage {$webpage->title}: " . $e->getMessage());
+                Log::error("Failed to reindex webpage $webpage->title: ".$e->getMessage());
             }
         }
     }
@@ -164,7 +166,7 @@ trait WithLuigis
         $segments = [];
 
         if ($model instanceof Product) {
-            $family = $model->family;
+            $family     = $model->family;
             $department = $family?->department;
 
             $segments = collect([
@@ -193,21 +195,23 @@ trait WithLuigis
             $segments = [$webpage->url];
         }
 
-        return '/' . collect($segments)->implode('/');
+        return '/'.collect($segments)->implode('/');
     }
 
 
     public function reindexTags(Webpage|Website $parent, LaravelCollection $tags): void
     {
+
         $objects = [];
         foreach ($tags as $tag) {
-            $url = '/search?lb.t[]=tag:' . $tag->name . '&q=' . $tag->name;
+            $url       = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
             $objects[] = [
                 "identity" => $url,
-                "type" => "tag",
-                "fields" => array_filter([
-                    "title" => $tag->name,
-                    "web_url" => $url,
+                "type"     => "tag",
+                "fields"   => array_filter([
+                    "slug"       => $this->getIdentityTag($tag),
+                    "title"      => $tag->name,
+                    "web_url"    => $url,
                     "image_link" => Arr::get($tag->imageSources(200, 200), 'original'),
                 ]),
             ];
@@ -217,21 +221,26 @@ trait WithLuigis
             $body = [
                 'objects' => $objects
             ];
-            $this->request($parent, '/v1/content', $body, 'post');
+            $this->request($parent, '/v1/content', $body);
         }
     }
 
+    /**
+     * @throws \Exception
+     */
     public function reindexBrands(Webpage|Website $parent, LaravelCollection $brands): void
     {
+
         $objects = [];
         foreach ($brands as $brand) {
-            $url = '/search?lb.f[]=brand:' . $brand->name . '&q=' . $brand->name;
+            $url       = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
             $objects[] = [
                 "identity" => $url,
-                "type" => "brand",
-                "fields" => array_filter([
-                    "title" => $brand->name,
-                    "web_url" => $url,
+                "type"     => "brand",
+                "fields"   => array_filter([
+                    "slug"       => $this->getIdentityBrand($brand),
+                    "title"      => $brand->name,
+                    "web_url"    => $url,
                     "image_link" => Arr::get($brand->imageSources(200, 200), 'original'),
                 ]),
             ];
@@ -241,7 +250,7 @@ trait WithLuigis
             $body = [
                 'objects' => $objects
             ];
-            $this->request($parent, '/v1/content', $body, 'post');
+            $this->request($parent, '/v1/content', $body);
         }
     }
 
@@ -261,44 +270,50 @@ trait WithLuigis
                 }
                 if ($batch) {
                     $compressed = count($batch) >= 1000;
-                    $body = [
+                    $body       = [
                         'objects' => $batch
                     ];
                     $this->request($website, '/v1/content/delete', $body, 'delete', $compressed);
-                    print "Deleted count " . count($batch) . " from website: {$website->name}\n";
+                    print "Deleted count ".count($batch)." from website: $website->name\n";
                 }
             });
     }
 
+    /**
+     * @throws \Exception
+     */
     public function deleteContentFromWebpage(Webpage $webpage): void
     {
         $website = $webpage->website;
         if ($webpage->model instanceof Product) {
             $objects = [
                 [
-                    "type" => "item",
+                    "type"     => "item",
                     "identity" => $this->getWebpageUrl($webpage),
+                    //todo: "identity" => $this->getIdentity($webpage)
                 ],
             ];
 
             $body = [
                 'objects' => $objects
             ];
-
-            $this->request($website, '/v1/content/delete', $body, 'delete');
         } else {
             $body = [
                 'objects' => [
                     [
-                        "type" => 'category',
+                        "type"     => 'category',
                         "identity" => $webpage->url,
+                        //todo: "identity" => $this->getIdentity($webpage)
                     ]
                 ]
             ];
-            $this->request($website, '/v1/content/delete', $body, 'delete');
         }
+        $this->request($website, '/v1/content/delete', $body, 'delete');
     }
 
+    /**
+     * @throws \Exception
+     */
     public function deleteContentManual(Webpage $webpage, array $object): void
     {
         $this->request(
@@ -313,114 +328,150 @@ trait WithLuigis
         );
     }
 
-    public function getObjectFromWebpage(Webpage $webpage): array
+    public function getIdentity(Webpage $webpage): string
     {
-        $model = $webpage->model;
+        return "webpage-$webpage->slug";
+    }
 
-        if ($model instanceof Product) {
-            $family = $model->family;
-            $department = $family?->department;
-            $subDepartment = $model->subDepartment;
-            $identity = "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:{$webpage->website->id}:$webpage->id";
-            $brand = $model->getBrand();
-            $brandObject = null;
-            if ($brand) {
-                $url = '/search?lb.f[]=brand:' . $brand->name . '&q=' . $brand->name;
-                $brandObject = [
+    public function getIdentityTag(Tag $tag): string
+    {
+        return "tag-$tag->slug";
+    }
+
+    public function getIdentityBrand(Brand $brand): ?string
+    {
+        return "brand-$brand->slug";
+    }
+
+    public function getProductObjectFromWebpage(Product $product): array
+    {
+        $webpage = $product->webpage;
+
+        $familyData = [];
+        if ($product->family?->webpage && $product->family->webpage->state != WebpageStateEnum::LIVE) {
+            $family     = $product->family;
+            $familyData = [
+                "type"     => "category",
+                "identity" => $this->getWebpageUrl($family->webpage),
+                "fields"   => array_filter([
+                    "slug"        => $this->getIdentity($family->webpage),
+                    "title"       => $family->webpage->title,
+                    "web_url"     => $family->webpage->getCanonicalUrl(),
+                    "description" => $family->webpage->description,
+                    "image_link"  => Arr::get($family->imageSources(200, 200), 'original'),
+                ])
+            ];
+        }
+
+
+        $departmentData = [];
+        if ($product->department?->webpage && $product->department->webpage->state != WebpageStateEnum::LIVE) {
+            $department     = $product->department;
+            $departmentData = [
+                "type"     => "department",
+                "identity" => $this->getWebpageUrl($department->webpage),
+                "fields"   => array_filter([
+                    "slug"        => $this->getIdentity($department->webpage),
+                    "title"       => $department->webpage->title,
+                    "web_url"     => $department->webpage->getCanonicalUrl(),
+                    "description" => $department->webpage->description,
+                    "image_link"  => Arr::get($department->imageSources(200, 200), 'original'),
+                ]),
+            ];
+        }
+
+
+        $subDepartmentData = [];
+        if ($product->subDepartment->webpage && $product->subDepartment->webpage->state != WebpageStateEnum::LIVE) {
+            $subDepartment     = $product->subDepartment;
+            $subDepartmentData = [
+                "type"     => "sub_department",
+                "identity" => $this->getWebpageUrl($subDepartment->webpage),
+                "fields"   => array_filter([
+                    "slug"        => $this->getIdentity($subDepartment->webpage),
+                    "title"       => $subDepartment->webpage->title,
+                    "web_url"     => $subDepartment->webpage->getCanonicalUrl(),
+                    "description" => $subDepartment?->webpage->description,
+                    "image_link"  => Arr::get($subDepartment->imageSources(200, 200), 'original'),
+                ]),
+            ];
+        }
+
+        $brand       = $product->getBrand();
+        $brandObject = [];
+        if ($brand) {
+            $url         = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
+            $brandObject = [
+                "identity" => $url,
+                "type"     => "brand",
+                "fields"   => array_filter([
+                    "slug"       => $this->getIdentityBrand($brand),
+                    "title"      => $brand->name,
+                    "web_url"    => $url,
+                    "image_link" => Arr::get($brand->imageSources(200, 200), 'original'),
+                ]),
+            ];
+        }
+
+        $tags       = $product->tradeUnitTagsViaTradeUnits();
+        $tagsObject = [];
+        if ($tags->isNotEmpty()) {
+            foreach ($tags as $tag) {
+                $url          = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
+                $tagsObject[] = [
                     "identity" => $url,
-                    "type" => "brand",
-                    "fields" => array_filter([
-                        "title" => $brand->name,
-                        "web_url" => $url,
-                        "image_link" => Arr::get($brand->imageSources(200, 200), 'original'),
+                    "type"     => "tag",
+                    "fields"   => array_filter([
+                        "slug"       => $this->getIdentityTag($tag),
+                        "title"      => $tag->name,
+                        "web_url"    => $url,
+                        "image_link" => Arr::get($tag->imageSources(200, 200), 'original'),
                     ]),
                 ];
             }
+        }
+        $identity = "$webpage->group_id:$webpage->organisation_id:$webpage->shop_id:{$webpage->website->id}:$webpage->id";
 
-            $tags = $model->tradeUnitTagsViaTradeUnits();
-            $tagsObject = null;
-            if ($tags->isNotEmpty()) {
-                $tagsObject = [];
-                foreach ($tags as $tag) {
-                    $url = '/search?lb.t[]=tag:' . $tag->name . '&q=' . $tag->name;
-                    $tagsObject[] = [
-                        "identity" => $url,
-                        "type" => "tag",
-                        "fields" => array_filter([
-                            "title" => $tag->name,
-                            "web_url" => $url,
-                            "image_link" => Arr::get($tag->imageSources(200, 200), 'original'),
-                        ]),
-                    ];
-                }
-            }
+        return [
+            "identity" => $identity,
+            "type"     => "item",
+            "fields"   => array_filter([
+                "slug"            => $this->getIdentity($webpage),
+                "title"           => $webpage->title,
+                "web_url"         => $webpage->getCanonicalUrl(),
+                "availability"    => intval($product->state == ProductStateEnum::ACTIVE),
+                "stock_qty"       => $product->available_quantity ?? 0,
+                "price"           => (float)$product->price ?? 0,
+                "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,
+                "image_link"      => Arr::get($product->imageSources(200, 200), 'original'),
+                "product_code"    => $product->code,
+                "product_id"      => $product->id,
+                "introduced_at"   => $product->created_at ? $product->created_at->format('c') : null,
+                "description"     => $product->description,
+            ]),
+            ...(count($familyData) || count($departmentData) || count($subDepartmentData) || count($brandObject) || count($tagsObject) ? [
+                "nested" => array_values(array_filter([
+                    ...$tagsObject,
+                    $brandObject,
+                    $familyData,
+                    $subDepartmentData,
+                    $departmentData
+                ])),
+            ] : []),
 
-            $object =  [
-                "identity"  => $identity,
-                "type"      => "item",
-                "fields"    => array_filter([
-                    "title"             => $webpage->title,
-                    "web_url"           => $this->getWebpageUrl($webpage),
-                    "availability"      => intval($model->state == ProductStateEnum::ACTIVE),
-                    "stock_qty"         => $model->available_quantity ?? 0,
-                    "price"             => (float) $model->price ?? 0,
-                    "formatted_price"   => $model->currency->symbol . $model->price . '/' . $model->unit,
-                    "image_link"        => Arr::get($model->imageSources(200, 200), 'original'),
-                    "product_code"      => $model->code,
-                    "product_id"        => $model->id,
-                    "introduced_at"     => $model?->created_at ? $model->created_at->format('c') : null,
-                    "description"       => $model->description,
-                ]),
-                ...($family || $department || $subDepartment || $brandObject || $tagsObject ? [
-                    "nested" => array_values(array_filter([
-                        ...($tagsObject ? $tagsObject : []),
-                        ($brandObject ? $brandObject : []),
-                        (
-                            $family && $family?->webpage ?
-                            [
-                                "type"          => "category",
-                                "identity"      => $this->getWebpageUrl($family?->webpage),
-                                "fields"        => array_filter([
-                                    "title"         => $family?->webpage?->title,
-                                    "web_url"       => $this->getWebpageUrl($family?->webpage),
-                                    "description"   => $family?->webpage?->description,
-                                    "image_link"    => Arr::get($family?->imageSources(200, 200), 'original'),
-                                ])
-                            ] : []
-                        ),
-                        ($subDepartment && $subDepartment?->webpage ?
-                            [
-                                "type"          => "sub_department",
-                                "identity"      => $this->getWebpageUrl($subDepartment?->webpage),
-                                "fields"        => array_filter([
-                                    "title"         => $subDepartment?->webpage?->title,
-                                    "web_url"       => $this->getWebpageUrl($subDepartment?->webpage),
-                                    "description"   => $subDepartment?->webpage?->description,
-                                    "image_link"    => Arr::get($subDepartment?->imageSources(200, 200), 'original'),
-                                ]),
-                            ] : []),
-                        ($department && $department?->webpage ?
-                            [
-                                "type"          => "department",
-                                "identity"      => $this->getWebpageUrl($department?->webpage),
-                                "fields"        => array_filter([
-                                    "title"         => $department?->webpage?->title,
-                                    "web_url"       => $this->getWebpageUrl($department?->webpage),
-                                    "description"   => $department?->webpage?->description,
-                                    "image_link"    => Arr::get($department?->imageSources(200, 200), 'original'),
-                                ]),
-                            ]
-                            : []),
+        ];
+    }
 
-                    ])),
-                ] : []),
+    public function getObjectFromWebpage(Webpage $webpage): array
+    {
+        /** @var Product|Collection|ProductCategory $model */
+        $model = $webpage->model;
 
-            ];
-
-            return $object;
+        if ($model instanceof Product) {
+            return $this->getProductObjectFromWebpage($model);
         } else {
             $modelWebpage = $model?->webpage;
-            $type = null;
+            $type         = null;
             if (!$modelWebpage) {
                 if ($webpage->type == WebpageTypeEnum::BLOG) {
                     $type = 'news';
@@ -428,14 +479,16 @@ trait WithLuigis
                     return [];
                 }
             }
+
             return [
                 "identity" => $this->getWebpageUrl($modelWebpage),
-                "type" => $type ?? $this->getType($model),
-                "fields" => array_filter([
-                    "title" => $modelWebpage->title,
-                    "web_url" => $this->getWebpageUrl($modelWebpage),
+                "type"     => $type ?? $this->getType($model),
+                "fields"   => array_filter([
+                    "slug"        => $this->getIdentity($modelWebpage),
+                    "title"       => $modelWebpage->title,
+                    "web_url"     => $modelWebpage->getCanonicalUrl(),
                     "description" => $modelWebpage->description,
-                    "image_link" => Arr::get($model->imageSources(200, 200), 'original'),
+                    "image_link"  => Arr::get($model->imageSources(200, 200), 'original'),
                 ]),
             ];
         }
@@ -454,13 +507,10 @@ trait WithLuigis
             return 'collection';
         }
 
-        switch ($model->type) {
-            case ProductCategoryTypeEnum::DEPARTMENT:
-                return 'department';
-            case ProductCategoryTypeEnum::SUB_DEPARTMENT:
-                return 'sub_department';
-            default:
-                return 'category';
-        }
+        return match ($model->type) {
+            ProductCategoryTypeEnum::DEPARTMENT => 'department',
+            ProductCategoryTypeEnum::SUB_DEPARTMENT => 'sub_department',
+            default => 'category',
+        };
     }
 }

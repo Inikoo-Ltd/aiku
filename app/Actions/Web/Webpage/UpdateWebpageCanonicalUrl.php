@@ -18,6 +18,7 @@ use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -25,12 +26,14 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'urgent';
+
     public function getJobUniqueId(Webpage $webpage): string
     {
         return (string)$webpage->id;
     }
 
-    public function handle(Webpage $webpage): string
+    public function handle(Webpage $webpage, $updateChildren = true): string
     {
         $canonicalUrl = match ($webpage->type) {
             WebpageTypeEnum::CATALOGUE => $this->getWebpageTypeCatalogue($webpage),
@@ -45,13 +48,55 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $canonicalUrl = $this->trimTrailingSlash($canonicalUrl);
         $canonicalUrl = replaceUrlSubdomain($canonicalUrl, 'www');
 
+        $oldCanonicalUrl = $webpage->canonical_url;
         $webpage->update([
             'canonical_url' => $canonicalUrl,
         ]);
 
+        if ($oldCanonicalUrl != $canonicalUrl) {
+            $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_canonicals_'.$webpage->id;
+            Cache::forget($key);
+        }
+
+        if ($updateChildren) {
+            $this->updateChildrenCanonicalUrls($webpage);
+        }
+
         return $canonicalUrl;
     }
 
+    protected function updateChildrenCanonicalUrls(Webpage $webpage): void
+    {
+        $model = $webpage->model;
+        if ($model instanceof ProductCategory) {
+            foreach ($model->getProducts() as $product) {
+                $webpage = $product->webpage;
+                if ($webpage) {
+                    UpdateWebpageCanonicalUrl::dispatch($webpage, false)->delay(2);
+                }
+            }
+            foreach ($model->getFamilies() as $family) {
+                $webpage = $family->webpage;
+                if ($webpage) {
+                    UpdateWebpageCanonicalUrl::dispatch($webpage, false)->delay(2);
+                }
+            }
+
+            foreach ($model->getSubDepartments() as $subDepartment) {
+                $webpage = $subDepartment->webpage;
+                if ($webpage) {
+                    UpdateWebpageCanonicalUrl::dispatch($webpage, false)->delay(2);
+                }
+            }
+
+            foreach ($model->collections as $collection) {
+                $webpage = $collection->webpage;
+                if ($webpage) {
+                    UpdateWebpageCanonicalUrl::dispatch($webpage, false)->delay(2);
+                }
+            }
+        }
+    }
 
     protected function getWebpageTypeCatalogue(Webpage $webpage): string
     {
@@ -189,28 +234,21 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 
     public function asCommand(Command $command): int
     {
-
-
-
-        $query=DB::table('webpages')->select('id');
-        if($command->argument('type')){
-            if(in_array($command->argument('type'),['page','webpage','p'])){
-                $query->where('slug',$command->argument('slug'));
-            }elseif(in_array($command->argument('type'),['website','w'])){
-                $website=Website::where('slug',$command->argument('slug'))->first();
-                $query->where('website_id',$website->id);
+        $query = DB::table('webpages')->select('id');
+        if ($command->argument('type')) {
+            if (in_array($command->argument('type'), ['page', 'webpage', 'p'])) {
+                $query->where('slug', $command->argument('slug'));
+            } elseif (in_array($command->argument('type'), ['website', 'w'])) {
+                $website = Website::where('slug', $command->argument('slug'))->first();
+                $query->where('website_id', $website->id);
             }
-
-
         }
-
-
 
         $startTime = microtime(true);
         $processed = 0;
 
         // Determine total for the progress bar
-        $total       =$query->count();
+        $total       = $query->count();
         $progressBar = $command->getOutput()->createProgressBar($total);
         $progressBar->setRedrawFrequency(100);
         $progressBar->start();
@@ -218,9 +256,9 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $query->orderBy('id')
             ->chunkById(200, function ($webpages) use (&$processed, $progressBar) {
                 foreach ($webpages as $webpageID) {
-                    $webpage=Webpage::find($webpageID->id);
-                    if($webpage){
-                        $this->handle($webpage);
+                    $webpage = Webpage::find($webpageID->id);
+                    if ($webpage) {
+                        $this->handle($webpage,false);
                     }
 
                     $processed++;

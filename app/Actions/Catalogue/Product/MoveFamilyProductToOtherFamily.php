@@ -38,7 +38,7 @@ class MoveFamilyProductToOtherFamily extends OrgAction
         ];
     }
 
-    public function asController(Product $product, ActionRequest $request)
+    public function asController(Product $product, ActionRequest $request): void
     {
         $this->initialisationFromShop($product->shop, $request);
 

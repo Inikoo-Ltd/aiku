@@ -13,6 +13,7 @@ namespace App\Actions\Web\Website;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Web\Webpage\WebpageStateEnum;
+use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Sitemap\Sitemap;
@@ -26,7 +27,7 @@ class SaveWebsiteSitemap extends OrgAction
     {
         $baseDir   = 'sitemaps';
         $disk      = Storage::disk('local');
-        $limit     = 50000; // limit from Google is 50,000 URLs per sitemap
+        $limit     = 50000; // the limit from Google is 50,000 URLs per sitemap
         $chunkSize = 100;
 
         if (!$disk->exists($baseDir)) {
@@ -37,13 +38,14 @@ class SaveWebsiteSitemap extends OrgAction
         $count   = 0;
 
         $website->webpages()->with('liveSnapshot')->where('state', WebpageStateEnum::LIVE)->chunk($chunkSize, function ($webpages) use (&$sitemap, &$count, $limit) {
+            /** @var Webpage $webpage */
             foreach ($webpages as $webpage) {
 
                 if ($webpage?->liveSnapshot?->published_at) {
-                    $sitemap->add(Url::create($webpage->getUrl(true))
+                    $sitemap->add(Url::create($webpage->getCanonicalUrl())
                         ->setLastModificationDate($webpage->liveSnapshot->published_at));
                 } else {
-                    $sitemap->add(Url::create($webpage->getUrl(true)));
+                    $sitemap->add(Url::create($webpage->getCanonicalUrl()));
                 }
 
                 $count++;
