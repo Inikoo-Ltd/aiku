@@ -9,7 +9,7 @@ import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { router, usePage } from "@inertiajs/vue3"
 import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
-import { useLocaleStore } from "../Stores/locale"
+import { useLocaleStore } from "@/Stores/locale"
 
 
 export const initialiseIrisApp = () => {
@@ -19,7 +19,7 @@ export const initialiseIrisApp = () => {
     console.log('Init Iris: ', usePage().props)
 
     router.on('navigate', (event) => {
-        // To see Vue filename in console (component.vue)
+        // To see Vue filename in the console (component.vue)
         if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
             window.component = {
                 vue: usePage().component
@@ -39,7 +39,7 @@ export const initialiseIrisApp = () => {
     }
 
     watchEffect(() => {
-        // Set currency to used by global
+        // Set currency to use by global
         if (usePage().props.iris?.currency) {       
             locale.currencyInertia = usePage().props.iris?.currency
         }
@@ -60,7 +60,7 @@ export const initialiseIrisApp = () => {
         }
 
         if (usePage().props.iris?.variables) {
-            // Will deprecated, use variables via props.iris instead
+            // Will deprecate, use variables via props.iris instead
             layout.iris_variables = usePage().props.iris?.variables
         }
 
