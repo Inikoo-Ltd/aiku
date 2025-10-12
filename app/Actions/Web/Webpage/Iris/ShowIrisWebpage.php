@@ -104,7 +104,7 @@ class ShowIrisWebpage
 
 
             if ($normalizedCanon !== $currentUrl) {
-                return $this->getEnvironmentUrl($canonicalUrl);
+              //  return $this->getEnvironmentUrl($canonicalUrl);
             }
         }
 
