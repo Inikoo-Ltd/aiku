@@ -23,7 +23,7 @@ class ProcessUpdateWebpageUrl
     use AsAction;
 
 
-    public function handle(Webpage $webpage, string $oldUrl): string
+    public function handle(Webpage $webpage, string $oldUrl): void
     {
         $model = $webpage->model;
         if ($model instanceof Product) {
