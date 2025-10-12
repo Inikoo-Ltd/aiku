@@ -250,7 +250,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         // Determine total for the progress bar
         $total       = $query->count();
         $progressBar = $command->getOutput()->createProgressBar($total);
-        $progressBar->setRedrawFrequency(100);
+        $progressBar->setRedrawFrequency(1);
         $progressBar->start();
 
         $query->orderBy('id')

@@ -159,6 +159,9 @@ class StoreWebpage extends OrgAction
                 }
             }
 
+
+            UpdateWebpageCanonicalUrl::run($webpage);
+
             return $webpage;
         });
 
