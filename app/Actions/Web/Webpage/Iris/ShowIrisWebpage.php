@@ -109,7 +109,7 @@ class ShowIrisWebpage
                 //  return $this->getEnvironmentUrl($canonicalUrl);
 
                 // Log the current and normalized canonical URLs for debugging/inspection
-                Log::info('Iris canonical URL check', [
+                Log::critical('Iris canonical URL check', [
                     'currentUrl' => $currentUrl,
                     'normalizedCanon' => $normalizedCanon,
                     'canonicalUrlRaw' => $canonicalUrl,
