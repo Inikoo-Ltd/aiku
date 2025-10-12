@@ -8,7 +8,7 @@
 
 namespace Deployer;
 
-set('update_code_strategy','clone');
+set('update_code_strategy', 'clone');
 
 set('bin/php', function () {
     return '/usr/bin/php8.3';
@@ -16,8 +16,6 @@ set('bin/php', function () {
 
 desc('Check for changes in frontend');
 task('deploy:check-fe-changes', function () {
-
-
     try {
         $prevHash = trim(run('cat {{previous_release}}/REVISION'));
     } catch (\Throwable $e) {
@@ -25,13 +23,17 @@ task('deploy:check-fe-changes', function () {
     }
 
     if (!empty($prevHash)) {
-        $changedFiles = run("git diff --name-only $prevHash HEAD");
+        try {
+            $changedFiles = run("git diff --name-only $prevHash HEAD");
+        } catch (\Throwable $e) {
+            writeln('Previous release hash not .git folder. Assuming front-end changed.');
+            $changedFiles = 'resources'; // force detection
+        }
     } else {
-        writeln('Previous release hash not found (likely first deploy). Assuming front-end changed.');
         $changedFiles = 'resources'; // force detection
     }
 
-    $triggerFiles = ['resources'];
+    $triggerFiles    = ['resources'];
     $frontEndChanged = false;
     foreach ($triggerFiles as $triggerFile) {
         if (str_contains($changedFiles, $triggerFile)) {
@@ -119,6 +121,6 @@ task('deploy', [
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
- //   'artisan:inertia:stop-ssr',
+    //   'artisan:inertia:stop-ssr',
     'deploy:refresh-vue',
 ]);
