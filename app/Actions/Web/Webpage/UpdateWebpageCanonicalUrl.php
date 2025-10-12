@@ -169,6 +169,9 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $url = '';
         /** @var ProductCategory $productCategory */
         $productCategory = $webpage->model;
+        if(!$productCategory) {
+            return $url;
+        }
 
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -258,7 +261,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $query->orderBy('id')
             ->chunkById(200, function ($webpages) use (&$processed, $progressBar, $command, $debug) {
                 foreach ($webpages as $webpageID) {
-                    $webpage = Webpage::find($webpageID->id)->withTrashed();
+                    $webpage = Webpage::withTrashed()->where('id',$webpageID->id)->first();
                     if ($webpage) {
                         $this->handle($webpage, false);
                         if ($debug) {
