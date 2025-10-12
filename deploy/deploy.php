@@ -55,8 +55,13 @@ task('deploy:migrate', function () {
 desc('🏗️ Build vue app');
 task('deploy:build', function () {
     $frontEndChanged = get('front_end_changed');
-    if ($frontEndChanged) {
+    if ($frontEndChanged || true) {
         run("cd {{release_path}} && {{bin/npm}} run build");
+
+
+
+
+
     } else {
         // No FE changes: reuse built assets from previous release
         writeln('No front-end changes detected. Reusing built assets from previous release if available.');
