@@ -24,7 +24,7 @@ task('deploy:check-fe-changes', function () {
 
     if (!empty($prevHash)) {
         try {
-            $changedFiles = run("git diff --name-only $prevHash HEAD");
+            $changedFiles = run("cd {{release_path}} && git diff --name-only $prevHash HEAD");
         } catch (\Throwable $e) {
             writeln('Previous release hash not .git folder. Assuming front-end changed.');
             $changedFiles = 'resources'; // force detection
