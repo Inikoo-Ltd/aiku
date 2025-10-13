@@ -29,7 +29,7 @@ const props = withDefaults(
 </script>
 
 <template>
-  <Link
+  <!-- <Link
     v-if="layout?.app?.environment === 'production'"
     :href="props.href"
     :method="props.method"
@@ -42,9 +42,8 @@ const props = withDefaults(
     <slot>
         {{ props.label }}
     </slot>
-  </Link>
+  </Link> -->
   <a
-    v-else
     :href="props.href"
     :class="props.class"
     :headers="props.header"

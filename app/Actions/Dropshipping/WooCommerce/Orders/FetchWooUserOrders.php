@@ -58,8 +58,10 @@ class FetchWooUserOrders extends OrgAction
             if ($wooCommerceUser->customerSalesChannel?->shop) {
                 $country = Country::where('code', Arr::get($wooOrder, 'shipping.country'))->first();
 
-                if (in_array($country->id, $wooCommerceUser->customerSalesChannel->shop->forbidden_dispatch_countries)) {
-                    return;
+                if ($country) {
+                    if (in_array($country->id, $wooCommerceUser->customerSalesChannel->shop->forbidden_dispatch_countries)) {
+                        return;
+                    }
                 }
             }
 

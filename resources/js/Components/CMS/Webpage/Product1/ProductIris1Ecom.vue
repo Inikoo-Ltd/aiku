@@ -112,7 +112,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onSuccess: () => {
                 set(props.fieldValue.product, 'is_favourite', false)
-                layout.reload_handle(useIrisLayoutStore)
+                
             },
             onError: errors => {
                 notify({

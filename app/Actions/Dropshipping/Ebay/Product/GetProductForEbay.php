@@ -40,7 +40,7 @@ class GetProductForEbay
             $products = [$product];
         } else {
             $rawProducts = $ebayUser->getProducts();
-            $products = Arr::get($rawProducts, 'inventoryItems');
+            $products = Arr::get($rawProducts, 'inventoryItems', []);
         }
 
         return array_map([$this, 'transformToStandardFormat'], $products);
