@@ -28,7 +28,7 @@ class WebpageResource extends JsonResource
     {
         /** @var Webpage $webpage */
         $webpage = Webpage::find($this->id);
-
+        $website = $webpage->website;
         $webPageLayout = $webpage->unpublishedSnapshot?->layout ?: ['web_blocks' => []];
         $webPageLayout['web_blocks'] = $this->getWebBlocks($webpage, Arr::get($webPageLayout, 'web_blocks'));
         $modelId = null;
@@ -69,6 +69,14 @@ class WebpageResource extends JsonResource
             'created_at'                 => $webpage->created_at,
             'updated_at'                 => $webpage->updated_at,
             'state'                      => $webpage->state,
+
+            'luigi_data' => [
+                'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
+                'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
+                'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
+                'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
+            ],
+
             'add_web_block_route'        => [
                 'name'       => 'grp.models.webpage.web_block.store',
                 'parameters' => $webpage->id

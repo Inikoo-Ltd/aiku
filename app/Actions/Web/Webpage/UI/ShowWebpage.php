@@ -319,13 +319,6 @@ class ShowWebpage extends OrgAction
                 'webpage_url'           => $webpage->getUrl(),
                 'webpage_canonical_url' => $webpage->canonical_url,
 
-                'luigi_data' => [
-                    'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
-                    'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
-                    'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
-                    'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
-                ],
-
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
                     : Inertia::lazy(fn () => WebpageResource::make($webpage)->getArray()),
