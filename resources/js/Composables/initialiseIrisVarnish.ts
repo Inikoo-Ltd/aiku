@@ -63,8 +63,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 
 export const initialiseIrisVarnishCustomerData = async (layoutStore) => {
     const layout = layoutStore()
-    let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
-    console.log('storageIris', storageIris)
+    // let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
+    // console.log('storageIris', storageIris)
 
     const selectedRoute = route().has('iris.json.ecom_customer_data') ? 'iris.json.ecom_customer_data' : 'retina.json.ecom_customer_data'
 

@@ -97,7 +97,7 @@ const onUpdateQuantity = (product: ProductResource) => {
 
     // Section: Submit
     const stockInBasket = product.quantity_ordered ? product.quantity_ordered + get(product, ['quantity_ordered_new'], product.quantity_ordered) : product.quantity_ordered
-    console.log('stock in', stockInBasket)
+    // console.log('stock in', stockInBasket)
     router.post(
         route('iris.models.transaction.update', {
             transaction: product.transaction_id
