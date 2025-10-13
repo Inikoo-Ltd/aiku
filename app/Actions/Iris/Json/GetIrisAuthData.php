@@ -20,7 +20,7 @@ class GetIrisAuthData extends RetinaAction
 {
     public function handle(): array
     {
-        if (!$this->webUser) {
+        if (!isset($this->webUser) || !$this->webUser) {
             return [
                 'is_logged_in' => false,
             ];
