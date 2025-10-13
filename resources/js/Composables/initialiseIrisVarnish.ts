@@ -36,6 +36,10 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 
     const varnish = await getVarnishData()
 
+    if (!varnish) {
+        return
+    }
+
     if (varnish?.variables) {
         layout.iris_variables = varnish?.variables
     }
@@ -51,7 +55,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
     }
     
     layout.iris.is_logged_in = varnish?.is_logged_in
-    layout.customer = varnish?.customer
+    layout.iris.customer = varnish?.customer
 
 
 }
