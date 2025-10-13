@@ -79,7 +79,7 @@ class StoreWooCommerceProduct extends RetinaAction
 
             return $result;
         } catch (\Exception $e) {
-            Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
+            // Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [$e->getMessage()]
