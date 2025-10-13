@@ -14,6 +14,11 @@ const props = defineProps(['form', 'fieldName', 'options'])
 const temporaryAvatar = ref(props.form[props.fieldName])
 
 const avatarUploaded = (file) => {
+    // Validate that file exists and is a valid Blob/File
+    if (!file || !(file instanceof Blob)) {
+        return
+    }
+    
     props.form[props.fieldName] = file
     const reader = new FileReader()
     reader.readAsDataURL(file)
