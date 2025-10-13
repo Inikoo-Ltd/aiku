@@ -93,15 +93,14 @@ const props = defineProps<{
 			product_languages: string | null
 			warnings: string | null
 		}
-		images: {}
+		images: any
 	}
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
 const imagesSetup = ref(
-	props.data.images
-		.filter(item => item.type === "image")
-		.map(item => ({
+	props?.data?.images?.filter((item: any) => item.type === "image")
+		.map((item : any) => ({
 			label: item.label,
 			column: item.column_in_db,
 			images: item.images,
