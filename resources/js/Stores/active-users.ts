@@ -99,7 +99,7 @@ export const useLiveUsers = defineStore('useLiveUsers', {
                     // console.log('qwer', this.liveUsers)
                 })
 
-                .listenForWhisper(`sendTo${usePage().props.auth.user?.id}`, (otherUser: LiveUser) => {
+                .listenForWhisper(`sendTo${usePage().props?.auth?.user?.id}`, (otherUser: LiveUser) => {
                     // console.log('receive the emit')
                     // On the first load and on navigating page
                     this.liveUsers[otherUser?.id] = otherUser
