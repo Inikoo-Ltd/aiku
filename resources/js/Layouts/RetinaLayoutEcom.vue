@@ -113,7 +113,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 						>
 							{{ trans("Reference") }}:
 							<span class="font-semibold tabular-nums">
-								#{{ layout?.customer?.reference }}
+								#{{ layout?.iris?.customer?.reference }}
 							</span>
 						</div>
 					</div>

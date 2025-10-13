@@ -19,6 +19,7 @@ import {
 } from "@far";
 import { faLambda } from "@fad";
 import { trans } from "laravel-vue-i18n"
+import LinkIris from "@/Components/Iris/LinkIris.vue";
 
 // Tambahkan semua ikon ke library
 library.add(
@@ -92,14 +93,14 @@ const mergedItems = computed(() => {
 
     <div >
       <div class="grid gap-4" :class="gridColsClass">
-        <a
+        <LinkIris
           v-for="item in mergedItems"
           :key="item?.code"
           :href="`${item?.url}`"
           class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
           :aria-label="`Go to ${item?.name}`"
         >
-
+        <template #default>
           <div class="flex items-center justify-center min-w-5 min-h-5 w-5 h-5 shrink-0">
             <FontAwesomeIcon
               v-if="item?.icon"
@@ -114,7 +115,8 @@ const mergedItems = computed(() => {
             />
           </div>
           <span class="flex-1 text-center">{{ item?.name }}</span>
-        </a>
+          </template>
+        </LinkIris>
       </div>
     </div>
 

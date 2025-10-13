@@ -12,6 +12,7 @@ import { watchEffect } from "vue"
 import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js"
 import { useEchoRetinaWebsite } from "@/Stores/echo-retina-website.js"
 import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
+import { initialiseIrisVarnishCustomerData } from '@/Composables/initialiseIrisVarnish'
 
 
 export const initialiseRetinaApp = () => {
@@ -98,15 +99,14 @@ export const initialiseRetinaApp = () => {
 
 
         // Set data of Locale (Language)
-        if (usePage().props.layout?.customer) {
-            layout.customer = usePage().props.layout.customer
-        }
+        // if (usePage().props.layout?.customer) {
+        //     layout.customer = usePage().props.layout.customer
+        // }
 
         if (usePage().props.app) {
             layout.app = usePage().props.app
         }
 
-        layout.app.name = "retina"
 
         // Set App Environment
         if (usePage().props?.environment) {
@@ -119,12 +119,17 @@ export const initialiseRetinaApp = () => {
         }
 
 
-        if (usePage().props.auth?.user) {
-            layout.user = usePage().props.auth.user
-             if(usePage().props.auth?.customerSalesChannels) {
-                layout.user.customerSalesChannels = usePage().props.auth?.customerSalesChannels
-             }
-        }
+        // if (usePage().props.auth?.user) {
+        //     layout.user = usePage().props.auth.user
+        //      if(usePage().props.auth?.customerSalesChannels) {
+        //         layout.user.customerSalesChannels = usePage().props.auth?.customerSalesChannels
+        //      }
+        // }
+
+        // Set User data
+        // if (usePage().props?.auth?.user) {
+        //     layout.user = usePage().props?.auth
+        // }
 
 
         if (usePage().props.retina) {
@@ -132,15 +137,21 @@ export const initialiseRetinaApp = () => {
         }
 
         if (usePage().props.iris) {
-            layout.iris = usePage().props.iris
-            layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
+            layout.iris = {
+                ...layout.iris,
+                ...usePage().props.iris
+            }            // layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
         }
 
         if (usePage().props.auth?.user?.avatar_thumbnail) {
             layout.avatar_thumbnail = usePage().props.auth.user.avatar_thumbnail
         }
 
+        layout.reload_handle = initialiseIrisVarnishCustomerData
+
     })
+    
+    layout.app.name = "retina"
 
     return layout
 }
