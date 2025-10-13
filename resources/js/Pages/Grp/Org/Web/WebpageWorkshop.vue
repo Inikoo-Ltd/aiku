@@ -523,7 +523,7 @@ const afterUndoRedo = async (value) => {
 const clearHistory = () => {
   history.value = [];
   future.value = [];
-  localStorage.removeItem(data.value.code);
+  localStorage.removeItem(data?.value?.code);
 };
 
 // When component is unmounted
