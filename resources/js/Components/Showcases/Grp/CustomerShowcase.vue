@@ -19,7 +19,8 @@ import {
     faPencil,
     faArrowAltFromTop,
     faArrowAltFromBottom,
-    faReceipt
+    faReceipt,
+    faCopy
 } from "@fal"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {trans} from "laravel-vue-i18n"
@@ -43,8 +44,9 @@ import { Tooltip } from 'floating-vue'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import EmailSubscribetion from "@/Components/EmailSubscribetion.vue"
 import CustomerHistory from "@/Components/CustomerHistory.vue"
+import { notify } from "@kyvg/vue3-notification"
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy)
 
 interface Customer {
     slug: string
@@ -199,6 +201,24 @@ const getStatusText = (status: string, valid: boolean) => {
     }
     return trans('Pending')
 }
+
+// Function: Copy to clipboard
+const copyToClipboard = async (text: string, label: string) => {
+    try {
+        await navigator.clipboard.writeText(text)
+        notify({
+            title: trans("Copied!"),
+            text: trans(`${label} copied to clipboard`),
+            type: "success"
+        })
+    } catch (error) {
+        notify({
+            title: trans("Failed"),
+            text: trans("Failed to copy to clipboard"),
+            type: "error"
+        })
+    }
+}
 </script>
 
 <template>
@@ -268,9 +288,14 @@ const getStatusText = (status: string, valid: boolean) => {
                                     aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.contact_name }}</dd>
+                            <button @click="copyToClipboard(data?.customer?.contact_name, 'Contact name')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </div>
 
-                        <!-- Field: Contact name -->
+                        <!-- Field: Company name -->
                         <div v-if="data?.customer?.company_name"
                             class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Company name')" class="flex-none">
@@ -279,6 +304,11 @@ const getStatusText = (status: string, valid: boolean) => {
                                     aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.company_name }}</dd>
+                            <button @click="copyToClipboard(data?.customer?.company_name, 'Company name')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </div>
 
                         <!-- Field: Created at -->
@@ -291,6 +321,11 @@ const getStatusText = (status: string, valid: boolean) => {
                             <dd class="text-gray-500">
                                 <time datetime="2023-01-31">{{ useFormatTime(data?.customer?.created_at) }}</time>
                             </dd>
+                            <button @click="copyToClipboard(useFormatTime(data?.customer?.created_at), 'Created at')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </div>
 
                         <!-- Field: Email -->
@@ -303,6 +338,11 @@ const getStatusText = (status: string, valid: boolean) => {
                             <dd class="text-gray-500">
                                 <a :href="`mailto:${data.customer.email}`">{{ data?.customer?.email }}</a>
                             </dd>
+                            <button @click="copyToClipboard(data?.customer?.email, 'Email')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </div>
 
                         <!-- Field: Phone -->
@@ -315,11 +355,17 @@ const getStatusText = (status: string, valid: boolean) => {
                             <dd class="text-gray-500">
                                 <a :href="`tel:${data.customer.email}`">{{ data?.customer?.phone }}</a>
                             </dd>
+                            <button @click="copyToClipboard(data?.customer?.phone, 'Phone')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </div>
 
                         <!-- Field: Address -->
-                        <div v-if="data?.customer?.address" class="relative flex items w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="'Address'" class="flex-none">
+                        <div v-if="data?.customer?.address"
+                            class="relative flex items-start w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="'Address'" class="flex-none pt-2">
                                 <FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
@@ -352,7 +398,14 @@ const getStatusText = (status: string, valid: boolean) => {
                 <dd class="w-full text-gray-500">
                     <div class="space-y-2">
                         <!-- Tax Number Display -->
-                        <div class="text-gray-900 font-medium">{{ data.customer.tax_number.number }}</div>
+                        <div class="flex items-center gap-x-2">
+                            <div class="text-gray-900 font-medium">{{ data.customer.tax_number.number }}</div>
+                            <button @click="copyToClipboard(data.customer.tax_number.number, 'Tax Number')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
 
                         <!-- Validation Status Display -->
                         <div class="p-3 bg-gray-50 rounded-lg border">
@@ -409,8 +462,9 @@ const getStatusText = (status: string, valid: boolean) => {
 
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div >
-                <CustomerHistory v-if="layout.app.environment === 'local'" :data="data?.stats" :currencyCode="data.currency" />
+            <div>
+                <CustomerHistory v-if="layout.app.environment === 'local'" :data="data?.stats"
+                    :currencyCode="data.currency" />
             </div>
             <div class="justify-self-end ">
                 <div
