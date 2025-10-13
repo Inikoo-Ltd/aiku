@@ -35,15 +35,18 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 
     public function handle(Webpage $webpage, $updateChildren = true): string
     {
-        $canonicalUrl = match ($webpage->type) {
+        $canonicalPath = match ($webpage->type) {
             WebpageTypeEnum::CATALOGUE => $this->getWebpageTypeCatalogue($webpage),
             WebpageTypeEnum::STOREFRONT => '',
             WebpageTypeEnum::BLOG => 'blog/'.$webpage->url,
             default => $webpage->url
         };
 
+        $canonicalPath = preg_replace('#/+#', '/', $canonicalPath);
+        $canonicalPath = ltrim($canonicalPath, '/');
 
-        $canonicalUrl = 'https://www.'.$webpage->website->domain.'/'.$canonicalUrl;
+        $canonicalUrl = 'https://www.'.$webpage->website->domain.'/'.$canonicalPath;
+
 
         $canonicalUrl = $this->trimTrailingSlash($canonicalUrl);
         $canonicalUrl = replaceUrlSubdomain($canonicalUrl, $webpage->website->is_migrating ? 'v2' : 'www');
@@ -169,7 +172,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $url = '';
         /** @var ProductCategory $productCategory */
         $productCategory = $webpage->model;
-        if(!$productCategory) {
+        if (!$productCategory) {
             return $url;
         }
 
@@ -261,7 +264,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $query->orderBy('id')
             ->chunkById(200, function ($webpages) use (&$processed, $progressBar, $command, $debug) {
                 foreach ($webpages as $webpageID) {
-                    $webpage = Webpage::withTrashed()->where('id',$webpageID->id)->first();
+                    $webpage = Webpage::withTrashed()->where('id', $webpageID->id)->first();
                     if ($webpage) {
                         $this->handle($webpage, false);
                         if ($debug) {
