@@ -9,7 +9,7 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
-use App\Models\Web\Website;
+use App\Models\Web\Webpage;
 use Lorisleiva\Actions\ActionRequest;
 
 class ReindexWebpageLuigiAsync extends OrgAction
@@ -17,9 +17,9 @@ class ReindexWebpageLuigiAsync extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(Website $website): void
+    public function handle(Webpage $webpage): void
     {
-        ReindexWebpageLuigi::dispatch($website);
+        ReindexWebpageLuigi::dispatch($webpage);
 
         /*UpdateWebpage::run($website, [
             'last_reindex_at' => now()
@@ -29,9 +29,9 @@ class ReindexWebpageLuigiAsync extends OrgAction
     /**
      * @throws \Exception
      */
-    public function asController(Website $website, ActionRequest $request): void
+    public function asController(Webpage $webpage, ActionRequest $request): void
     {
-        $this->initialisation($website->organisation, $request);
-        $this->handle($website);
+        $this->initialisation($webpage->organisation, $request);
+        $this->handle($webpage);
     }
 }
