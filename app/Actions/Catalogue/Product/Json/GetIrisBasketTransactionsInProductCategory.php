@@ -29,7 +29,14 @@ class GetIrisBasketTransactionsInProductCategory extends IrisAction
                     ->where('transactions.order_id', '=', $basket->id)
                     ->whereNull('transactions.deleted_at');
             });
+            $query->selectRaw('products.id,array_agg(transactions.quantity_ordered) as quantity_ordered')->groupBy('products.id');
+
+        }else{
+            $query->selectRaw('products.id')->groupBy('products.id');
+
         }
+
+
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
             $query->where('products.department_id', $productCategory->id);
         } elseif ($productCategory->type == ProductCategoryTypeEnum::FAMILY) {
@@ -37,11 +44,14 @@ class GetIrisBasketTransactionsInProductCategory extends IrisAction
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $query->where('products.sub_department_id', $productCategory->id);
         }
-        $query->selectRaw('products.id,array_agg(transactions.quantity_ordered) as quantity_ordered')->groupBy('products.id');
 
         $productsData = [];
         foreach ($query->get() as $data) {
-            $quantityOrdered = json_decode(str_replace(['{', '}'], ['', ''], $data->quantity_ordered), true);
+            if ($basket) {
+                $quantityOrdered = json_decode(str_replace(['{', '}'], ['', ''], $data->quantity_ordered), true);
+            }else{
+                $quantityOrdered = null;
+            }
             $productsData[$data->id] = [
                 'quantity_ordered' => $quantityOrdered,
                 'quantity_ordered_new' => 0

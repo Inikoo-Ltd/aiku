@@ -12,6 +12,7 @@ import { watchEffect } from "vue"
 import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js"
 import { useEchoRetinaWebsite } from "@/Stores/echo-retina-website.js"
 import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
+import { initialiseIrisVarnishCustomerData } from '@/Composables/initialiseIrisVarnish'
 
 
 export const initialiseRetinaApp = () => {
@@ -145,6 +146,8 @@ export const initialiseRetinaApp = () => {
         if (usePage().props.auth?.user?.avatar_thumbnail) {
             layout.avatar_thumbnail = usePage().props.auth.user.avatar_thumbnail
         }
+
+        layout.reload_handle = initialiseIrisVarnishCustomerData
 
     })
     

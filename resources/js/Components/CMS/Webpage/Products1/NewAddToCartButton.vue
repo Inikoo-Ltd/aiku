@@ -12,6 +12,8 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import axios from 'axios'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
+import { useIrisLayoutStore } from "@/Stores/irisLayout"
+import { useLayoutStore } from "@/Stores/retinaLayout"
 
 library.add(faPlus, faMinus, faCartPlus)
 
@@ -86,6 +88,7 @@ const onAddToBasket = async (product: ProductResource, basket : any) => {
             throw new Error('Failed to add to basket')
         }
 
+        layout.reload_handle(layout.app.name == 'retina' ? useLayoutStore : useIrisLayoutStore)
         router.reload({
             only: ['iris','data'],
         })
@@ -139,6 +142,7 @@ const onUpdateQuantity = (product: ProductResource, basket : any) => {
             },
             onSuccess: () => {
                 setStatus('success')
+                layout.reload_handle(layout.app.name == 'retina' ? useLayoutStore : useIrisLayoutStore)
                 basket.quantity_ordered = product.quantity_ordered_new
             },
             onError: errors => {

@@ -22,6 +22,7 @@ import ButtonAddToBasket from "@/Components/Iris/Products/ButtonAddToBasket.vue"
 import { faEnvelope } from "@far"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
+import { useIrisLayoutStore } from "@/Stores/irisLayout"
 
 library.add(faCube, faLink)
 
@@ -81,6 +82,7 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onSuccess: () => {
                 set(props.fieldValue.product, 'is_favourite', true)
+                layout.reload_handle(useIrisLayoutStore)
             },
             onError: errors => {
                 notify({
@@ -110,6 +112,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onSuccess: () => {
                 set(props.fieldValue.product, 'is_favourite', false)
+                layout.reload_handle(useIrisLayoutStore)
             },
             onError: errors => {
                 notify({
