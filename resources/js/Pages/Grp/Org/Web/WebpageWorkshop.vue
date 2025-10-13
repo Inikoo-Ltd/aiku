@@ -124,7 +124,7 @@ const addNewBlock = async ({ block, type }) => {
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
-        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length, type: "current" };
+        addBlockParentIndex.value = { parentIndex: data?.value?.layout?.web_blocks?.length, type: "current" };
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
@@ -523,7 +523,7 @@ const afterUndoRedo = async (value) => {
 const clearHistory = () => {
   history.value = [];
   future.value = [];
-  localStorage.removeItem(data.value.code);
+  localStorage.removeItem(data?.value?.code);
 };
 
 // When component is unmounted

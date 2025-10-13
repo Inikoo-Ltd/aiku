@@ -40,7 +40,7 @@ const props = defineProps<{
   indexBlock: number
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
-
+console.log('sss',props.modelValue)
 const selectedSubDepartment = ref<null | {
   id: number
   name: string
@@ -116,7 +116,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 			">
       <h2 class="text-2xl font-bold mb-6">Browse By Product Lines:</h2>
       <div :class="['grid gap-8', responsiveGridClass]">
-        <div v-for="(item, index) in props.modelValue.families" :key="index" @click="openModal(item)"
+        <div v-for="(item, index) in [...props.modelValue.families,...props.modelValue.collections]" :key="index" @click="openModal(item)"
           class="cursor-pointer">
           <Family1Render :data="item" />
         </div>
