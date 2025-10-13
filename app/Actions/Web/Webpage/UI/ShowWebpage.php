@@ -277,6 +277,7 @@ class ShowWebpage extends OrgAction
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
         $subNavigation = $this->getWebpageNavigation($webpage->website);
+        $website = $webpage->website;
 
 
         $actions = $this->getModelActions($webpage);
@@ -285,7 +286,6 @@ class ShowWebpage extends OrgAction
         $actions = array_merge($actions, $this->createRedirectAction($webpage));
         $actions = array_merge($actions, $this->workshopActions($request));
         $actions = array_merge($actions, $this->getTypeSpecificActions($webpage));
-
 
         $subNavigationRoot = '';
 
@@ -318,6 +318,13 @@ class ShowWebpage extends OrgAction
                 'root_active'           => $subNavigationRoot,
                 'webpage_url'           => $webpage->getUrl(),
                 'webpage_canonical_url' => $webpage->canonical_url,
+
+                'luigi_data' => [
+                    'last_reindexed'        => Arr::get($website->settings, "luigisbox.last_reindex_at"),
+                    'luigisbox_tracker_id'  => Arr::get($website->settings, "luigisbox.tracker_id"),
+                    'luigisbox_private_key' => Arr::get($website->settings, "luigisbox.private_key"),
+                    'luigisbox_lbx_code'    => Arr::get($website->settings, "luigisbox.lbx_code"),
+                ],
 
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
