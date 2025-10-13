@@ -21,6 +21,7 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import ButtonAddToBasket from "@/Components/Iris/Products/ButtonAddToBasket.vue"
 import { faEnvelope } from "@far"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
+import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 
 library.add(faCube, faLink)
 
@@ -365,7 +366,8 @@ const validImages = computed(() => {
                 <!-- Section: Button add to cart -->
                 <div class="relative flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
-                        <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
+                        <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
+                        <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
 
                         <div v-else>
                             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
