@@ -10,7 +10,7 @@ import { ProductResource } from '@/types/Iris/Products'
 import axios from 'axios'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faTrashAlt, faShoppingCart, faTimes, faCartArrowDown } from "@fal"
+import { faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRight } from "@fal"
 import { faPlus } from "@far"
 import { faSave } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -18,7 +18,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
-library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faSave, faPlus)
+library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRight, faSave, faPlus)
 
 const props = defineProps<{
     product: ProductResource
@@ -227,12 +227,10 @@ const compIsAddToBasket = computed(() => {
             <span>
                 <template v-if="product.quantity_ordered_new !== null && product.quantity_ordered_new !== undefined">
                     <span v-if="product.quantity_ordered_new > product.quantity_ordered">
-                        + {{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered_new - product.quantity_ordered))) }}
-                        = {{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered_new))) }}
+                        <FontAwesomeIcon icon="fal fa-long-arrow-right" class="mx-1 align-middle" fixed-width aria-hidden="true" /> <span v-tooltip="trans('Increased :amount', { amount: locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered_new - product.quantity_ordered)))})">{{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered_new))) }}</span>
                     </span>
                     <span v-else-if="product.quantity_ordered_new < product.quantity_ordered">
-                        - {{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered - product.quantity_ordered_new))) }}
-                        = {{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered_new))) }}
+                        <FontAwesomeIcon icon="fal fa-long-arrow-right" class="mx-1 align-middle" fixed-width aria-hidden="true" /> <span v-tooltip="trans('Decreased :amount', { amount: locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered - product.quantity_ordered_new)))})">{{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered_new))) }}</span>
                     </span>
                 </template>
             </span>
