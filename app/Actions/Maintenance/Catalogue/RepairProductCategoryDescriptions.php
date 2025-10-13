@@ -11,7 +11,6 @@ namespace App\Actions\Maintenance\Catalogue;
 
 use App\Actions\Helpers\Translations\Translate;
 use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Helpers\Language;
 use Illuminate\Console\Command;
