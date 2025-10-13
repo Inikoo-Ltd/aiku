@@ -86,7 +86,7 @@ class GetIrisAuthData extends RetinaAction
                 'username'         => $this->webUser->username,
                 'email'            => $this->webUser->email,
                 'favourites_count' => $this->customer->stats->number_favourites,
-                //'items_count'      => $itemsCount,  // TODO remove this
+                // 'items_count'      => $cartCount,  // TODO remove this
                 'cart_count'       => $cartCount,  // Count of unique items
                 'cart_amount'      => $cartAmount,
             ],
