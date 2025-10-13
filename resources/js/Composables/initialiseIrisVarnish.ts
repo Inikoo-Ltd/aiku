@@ -20,12 +20,18 @@ export const initialiseIrisVarnish = () => {
     const layout = useIrisLayoutStore()
 
     const getVarnishData = async () => {
-        set(layout, ['iris_varnish', 'isFetching'], true)
-        const response = await axios.get(route('iris.json.auth_data'))
-        set(layout, ['iris_varnish', 'isFetching'], false)
+        try {
+            set(layout, ['iris_varnish', 'isFetching'], true)
+            const response = await axios.get(route('iris.json.auth_data'))
+            set(layout, ['iris_varnish', 'isFetching'], false)
 
-        console.log('getIrisVarnish iris.json.auth_data', response.data)
-        return response.data
+            console.log('getIrisVarnish iris.json.auth_data', response.data)
+            return response.data
+        } catch (error) {
+            // console.error('Error fetching iris.json.auth_data:', error)
+        } finally {
+            set(layout, ['iris_varnish', 'isFetching'], false)
+        }
     }
 
     onBeforeMount(async () => {
@@ -33,13 +39,14 @@ export const initialiseIrisVarnish = () => {
         if (aaa?.variables) {
             layout.iris_variables = aaa?.variables
         }
-        layout.iris.is_logged_in = aaa.is_logged_in
+
+        layout.iris.is_logged_in = aaa?.is_logged_in
     })
 
-    console.log('Init Iris: ', usePage().props)
+    // console.log('Init Iris: ', usePage().props)
 
-    router.on('navigate', (event) => {
+    // router.on('navigate', (event) => {
         
-    })
+    // })
 
 }

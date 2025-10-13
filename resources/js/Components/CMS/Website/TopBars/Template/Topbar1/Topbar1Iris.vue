@@ -93,7 +93,7 @@ const layout = inject("layout", {})
 
             <!-- Section: My account -->
             <ButtonWithLink type="transparent" class="bg-transparent"
-                v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping' && !layout.iris_varnish.isFetching"
+                v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping' && !layout.iris_varnish?.isFetching"
                 v-tooltip="trans('My account')" url="/app/dashboard" :noHover="true">
                 <template #label>
                     <span class="text-white"> {{ trans('My account') }}</span>
@@ -102,7 +102,7 @@ const layout = inject("layout", {})
 
             <!-- Section: Profile -->
             <ButtonWithLink
-                v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && !layout.iris_varnish.isFetching"
+                v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
                 v-tooltip="trans('Profile')" :url="layout.retina?.type == 'b2b' ? '/app/dashboard' : '/app/profile'"
                 icon="fal fa-user" type="transparent" :noHover="true">
                 <template #icon>
@@ -116,7 +116,7 @@ const layout = inject("layout", {})
 
             <!-- Section: Favourite -->
             <ButtonWithLink
-                v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping' && !layout.iris_varnish.isFetching"
+                v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping' && !layout.iris_varnish?.isFetching"
                 v-tooltip="trans('Favourites')" url="/app/favourites" icon="fal fa-heart" type="transparent"
                 :noHover="true">
                 <template #icon>
@@ -135,7 +135,7 @@ const layout = inject("layout", {})
 
             <!-- Section: Basket (cart) -->
             <ButtonWithLink
-                v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b' && !layout.iris_varnish.isFetching"
+                v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b' && !layout.iris_varnish?.isFetching"
                 url="/app/basket" :noHover="true" type="transparent">
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: 'white' }" fixed-width
@@ -150,7 +150,7 @@ const layout = inject("layout", {})
 
             <!-- Section: Register -->
             <ButtonWithLink
-                v-if="checkVisible(model?.register?.visible || null, isLoggedIn) && !layout.iris_varnish.isFetching"
+                v-if="checkVisible(model?.register?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
                 url="/app/register" icon="fal fa-user-plus" type="transparent" :noHover="true">
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-user-plus" :style="{ color: 'white' }" fixed-width
@@ -167,7 +167,7 @@ const layout = inject("layout", {})
 
             <!-- Section: Login -->
             <ButtonWithLink
-                v-if="checkVisible(model?.login?.visible || null, isLoggedIn) && !layout.iris_varnish.isFetching"
+                v-if="checkVisible(model?.login?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
                 :url="urlLoginWithRedirect()" icon="fal fa-sign-in" type="transparent" :noHover="true">
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-sign-in" :style="{ color: 'white' }" fixed-width aria-hidden="true" />
@@ -196,12 +196,11 @@ const layout = inject("layout", {})
                 </template>
             </ButtonWithLink>
 
-
-            <div  v-if="layout.iris_varnish.isFetching" class="flex flex-col md:flex-row md:justify-between gap-x-4 sticky top-0 z-50">
-                <Skeleton  width="6rem" height="1.5rem"
-                    class="rounded-xl opacity-70 bg-white/10 animate-pulse mx-4" />
-                <Skeleton  width="6rem" height="1.5rem"
-                    class="rounded-xl opacity-70 bg-white/10 animate-pulse mx-4" />
+            <div  v-if="layout.iris_varnish?.isFetching" class="flex flex-col md:flex-row md:justify-between gap-x-4">
+                <Skeleton  width="8rem" height="2rem"
+                    class="rounded-xl opacity-70 bg-white/10 animate-pulse" />
+                <Skeleton  width="8rem" height="2rem"
+                    class="rounded-xl opacity-70 bg-white/10 animate-pulse" />
             </div>
         </div>
     </div>
