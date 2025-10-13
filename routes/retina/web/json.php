@@ -13,6 +13,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Iris\Json\GetIrisAuthData;
+use App\Actions\Iris\Json\GetIrisEcomCustomerData;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentServices;
@@ -38,3 +39,4 @@ Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', 
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
 Route::get('auth-data', GetIrisAuthData::class)->name('auth_data');
+Route::get('ecom-customer-data', GetIrisEcomCustomerData::class)->name('ecom_customer_data');
