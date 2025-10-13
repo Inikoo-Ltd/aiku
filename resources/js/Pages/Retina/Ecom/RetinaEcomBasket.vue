@@ -290,7 +290,7 @@ const onAddProducts = async (product: Product) => {
                     }
                 }
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
-                layout.initialiseIrisVarnishCustomerData(useLayoutStore)
+                initialiseIrisVarnishCustomerData(useLayoutStore)
             },
             onFinish: () => {
                 isLoadingSubmit.value = false
