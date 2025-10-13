@@ -24,7 +24,7 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
-initialiseIrisVarnish()
+initialiseIrisVarnish(useIrisLayoutStore)
 const layout = useIrisLayoutStore()
 const isOpenMenuMobile = ref(false)
 provide('layout', layout)
