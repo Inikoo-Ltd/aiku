@@ -39,10 +39,10 @@ const mainColor = computed(() => {
 <template>
     <nav class="flex items-center space-x-4 border-b border-gray-200 px-4 w-full">
         <template v-for="(subSection, idxSubSec) in subSections" :key="idxSubSec">
-            <component :is="subSection.route?.name ? Link : 'div'"
-                :href="subSection.route?.name ? route(subSection.route.name, subSection.route.parameters) : '#'" :class="[
+            <component :is="subSection?.route?.name ? Link : 'div'"
+                :href="subSection?.route?.name ? route(subSection?.route?.name, subSection?.route?.parameters) : '#'" :class="[
                     'relative flex items-center gap-2 px-4 py-2 font-medium text-sm transition duration-150 ease-in-out border-b-2 rounded-t-md',
-                    isSubSectionActive(subSection.root)
+                    isSubSectionActive(subSection?.root)
                         ? `text-[${mainColor}] border-[${mainColor}] bg-[${mainColor}1A]`
                         : `text-gray-600 border-transparent hover:text-[${mainColor}] hover:border-[${mainColor}] hover:bg-[${mainColor}0D]`
                 ]" :title="capitalize(subSection.tooltip ?? subSection.label ?? '')"
@@ -51,7 +51,7 @@ const mainColor = computed(() => {
                 <FontAwesomeIcon v-else-if="subSection.icon" :icon="subSection.icon" fixed-width class="h-4 w-4" />
                 <FontAwesomeIcon v-else icon="fas fa-dot-circle" fixed-width class="h-4 w-4" />
                 <span class="whitespace-nowrap">
-                    {{ capitalize(subSection.label || '') }}
+                    {{ capitalize(subSection?.label || '') }}
                 </span>
             </component>
         </template>

@@ -124,7 +124,7 @@ const addNewBlock = async ({ block, type }) => {
       onFinish: () => {
         addBlockCancelToken.value = null;
         isAddBlockLoading.value = null;
-        addBlockParentIndex.value = { parentIndex: data.value.layout.web_blocks.length, type: "current" };
+        addBlockParentIndex.value = { parentIndex: data?.value?.layout?.web_blocks?.length, type: "current" };
       },
       onCancelToken: token => addBlockCancelToken.value = token.cancel,
       onSuccess: e => {
@@ -200,10 +200,10 @@ const debounceSaveWorkshop = (block) => {
       const response = await axios.patch(
         url,
         {
-          layout: block.web_block.layout,
-          show_logged_in: block.visibility.in,
-          show_logged_out: block.visibility.out,
-          show: block.show,
+          layout: block?.web_block?.layout,
+          show_logged_in: block?.visibility?.in,
+          show_logged_out: block?.visibility?.out,
+          show: block?.show,
         },
         {
           cancelToken: source.token,
@@ -523,7 +523,7 @@ const afterUndoRedo = async (value) => {
 const clearHistory = () => {
   history.value = [];
   future.value = [];
-  localStorage.removeItem(data.value.code);
+  localStorage.removeItem(data?.value?.code);
 };
 
 // When component is unmounted

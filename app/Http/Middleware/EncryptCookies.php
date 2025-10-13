@@ -20,6 +20,7 @@ class EncryptCookies extends Middleware
     protected $except = [
         'language',
         'aiku_tsd',
-        'aiku_lts'
+        'aiku_lts',
+        'iris_vua'
     ];
 }

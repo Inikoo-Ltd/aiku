@@ -276,6 +276,7 @@ onMounted(() => {
     }
 
     if (layout?.iris?.is_logged_in){
+        fetchProducts();
         fetchHasInBasket();
     }
 })

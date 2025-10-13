@@ -135,7 +135,7 @@ trait WithWooCommerceApiRequest
                     'response' => $response->body(),
                 ]);
 
-                Sentry::captureMessage($response->body());
+                // Sentry::captureMessage($response->body());
 
                 return [$response->body()];
             }
@@ -146,7 +146,7 @@ trait WithWooCommerceApiRequest
                 'error' => $e->getMessage()
             ]);
 
-            Sentry::captureMessage($e->getMessage());
+            // Sentry::captureMessage($e->getMessage());
 
             return [];
         }
