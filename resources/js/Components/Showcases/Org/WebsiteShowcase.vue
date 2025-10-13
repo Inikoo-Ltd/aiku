@@ -19,7 +19,7 @@ import { notify } from "@kyvg/vue3-notification"
 import { useFormatTime, useRangeFromNow } from "@/Composables/useFormatTime"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
-library.add(faGlobe, faLink, faSearch)
+library.add(faGlobe, faLink, faSearch, faFragile)
 
 const props = defineProps<{
     data: {

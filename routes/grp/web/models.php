@@ -312,6 +312,7 @@ use App\Actions\Web\Redirect\UpdateRedirect;
 use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Actions\Web\Webpage\PublishWebpage;
+use App\Actions\Web\Webpage\ReindexWebpageLuigiAsync;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\SetWebpageAsOffline;
 use App\Actions\Web\Webpage\SetWebpageAsOnline;
@@ -1011,6 +1012,8 @@ Route::post('webpage/{webpage:id}/break-cache', BreakWebpageCache::class)->name(
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
 Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigiAsync::class)->name('website_luigi.reindex')->withoutScopedBindings();
+
+Route::post('webpage/{webpage:id}/reindex-luigi', ReindexWebpageLuigiAsync::class)->name('webpage_luigi.reindex')->withoutScopedBindings();
 
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
