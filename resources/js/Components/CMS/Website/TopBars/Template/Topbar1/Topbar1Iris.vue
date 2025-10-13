@@ -11,6 +11,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { trans } from "laravel-vue-i18n"
 import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
+import { set } from "lodash-es"
 
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -180,7 +181,9 @@ const layout = inject("layout", {})
 
             <!-- Section: Logout -->
             <ButtonWithLink v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)" url="/app/logout"
-                method="post" :data="{}" icon="fal fa-sign-out" type="transparent" :noHover="true">
+                method="post" :data="{}" icon="fal fa-sign-out" type="transparent" :noHover="true"
+                @success="() => (set(layout, ['iris', 'is_logged_in'], false))"
+            >
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-sign-out" :style="{ color: 'white' }" fixed-width
                         aria-hidden="true" />
