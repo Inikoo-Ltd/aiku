@@ -49,7 +49,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferComponent> $offerComponents
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferAllowance> $offerAllowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\Offer> $offers
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
@@ -122,9 +122,9 @@ class OfferCampaign extends Model implements Auditable
         return $this->hasMany(Offer::class);
     }
 
-    public function offerComponents(): HasMany
+    public function offerAllowances(): HasMany
     {
-        return $this->hasMany(OfferComponent::class);
+        return $this->hasMany(OfferAllowance::class);
     }
 
     public function stats(): HasOne
@@ -134,11 +134,11 @@ class OfferCampaign extends Model implements Auditable
 
     public function transactions(): BelongsToMany
     {
-        return $this->belongsToMany(Transaction::class, 'transaction_has_offer_components');
+        return $this->belongsToMany(Transaction::class, 'transaction_has_offer_allowances');
     }
 
     public function invoiceTransactions(): BelongsToMany
     {
-        return $this->belongsToMany(InvoiceTransaction::class, 'invoice_transaction_has_offer_components');
+        return $this->belongsToMany(InvoiceTransaction::class, 'invoice_transaction_has_offer_allowances');
     }
 }

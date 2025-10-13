@@ -216,7 +216,7 @@ class AppServiceProvider extends ServiceProvider
                 // Discounts
                 'Offer'                         => 'App\Models\Discounts\Offer',
                 'OfferCampaign'                 => 'App\Models\Discounts\OfferCampaign',
-                'OfferComponent'                => 'App\Models\Discounts\OfferComponent',
+                'OfferAllowance'                => 'App\Models\Discounts\OfferAllowance',
 
                 // Notifications
                 'FcmToken'                      => 'App\Models\Notifications\FcmToken',

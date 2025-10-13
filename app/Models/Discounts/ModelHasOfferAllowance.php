@@ -18,14 +18,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 /**
  * @property-read Model|\Eloquent $model
  * @property-read \App\Models\Discounts\Offer|null $offer
+ * @property-read \App\Models\Discounts\OfferAllowance|null $offerAllowance
  * @property-read \App\Models\Discounts\OfferCampaign|null $offerCampaign
- * @property-read \App\Models\Discounts\OfferComponent|null $offerComponent
- * @method static Builder<static>|ModelHasOfferComponent newModelQuery()
- * @method static Builder<static>|ModelHasOfferComponent newQuery()
- * @method static Builder<static>|ModelHasOfferComponent query()
+ * @method static Builder<static>|ModelHasOfferAllowance newModelQuery()
+ * @method static Builder<static>|ModelHasOfferAllowance newQuery()
+ * @method static Builder<static>|ModelHasOfferAllowance query()
  * @mixin Eloquent
  */
-class ModelHasOfferComponent extends Model
+class ModelHasOfferAllowance extends Model
 {
     protected $guarded = [];
 
@@ -34,9 +34,9 @@ class ModelHasOfferComponent extends Model
         return $this->morphTo();
     }
 
-    public function offerComponent(): BelongsTo
+    public function offerAllowance(): BelongsTo
     {
-        return $this->belongsTo(OfferComponent::class);
+        return $this->belongsTo(OfferAllowance::class);
     }
 
     public function offerCampaign(): BelongsTo

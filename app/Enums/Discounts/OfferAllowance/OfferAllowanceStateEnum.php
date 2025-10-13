@@ -6,11 +6,11 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Enums\Discounts\OfferComponent;
+namespace App\Enums\Discounts\OfferAllowance;
 
 use App\Enums\EnumHelperTrait;
 
-enum OfferComponentStateEnum: string
+enum OfferAllowanceStateEnum: string
 {
     use EnumHelperTrait;
 

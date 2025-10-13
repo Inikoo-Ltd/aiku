@@ -6,19 +6,19 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Discounts\OfferComponent;
+namespace App\Actions\Discounts\OfferAllowance;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreOffer;
-use App\Enums\Discounts\OfferComponent\OfferComponentStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Discounts\Offer;
-use App\Models\Discounts\OfferComponent;
+use App\Models\Discounts\OfferAllowance;
 use App\Rules\IUnique;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
-class StoreOfferComponent extends OrgAction
+class StoreOfferAllowance extends OrgAction
 {
     use WithNoStrictRules;
     use WithStoreOffer;
@@ -27,18 +27,18 @@ class StoreOfferComponent extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Offer $offer, $trigger, array $modelData): OfferComponent
+    public function handle(Offer $offer, $trigger, array $modelData): OfferAllowance
     {
         $modelData = $this->prepareOfferData($offer, $trigger, $modelData);
         data_set($modelData, 'offer_campaign_id', $offer->offer_campaign_id);
 
 
         return DB::transaction(function () use ($offer, $modelData) {
-            /** @var $offerComponent OfferComponent */
-            $offerComponent = $offer->offerComponents()->create($modelData);
-            $offerComponent->stats()->create();
+            /** @var $offerAllowance OfferAllowance */
+            $offerAllowance = $offer->offerAllowances()->create($modelData);
+            $offerAllowance->stats()->create();
 
-            return $offerComponent;
+            return $offerAllowance;
         });
     }
 
@@ -48,7 +48,7 @@ class StoreOfferComponent extends OrgAction
             'code'          => [
                 'required',
                 new IUnique(
-                    table: 'offer_components',
+                    table: 'offer_allowances',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
                     ]
@@ -64,7 +64,7 @@ class StoreOfferComponent extends OrgAction
 
         ];
         if (!$this->strict) {
-            $rules['state']            = ['required', Rule::enum(OfferComponentStateEnum::class)];
+            $rules['state']            = ['required', Rule::enum(OfferAllowanceStateEnum::class)];
             $rules['start_at']         = ['sometimes', 'nullable', 'date'];
             $rules['is_discretionary'] = ['sometimes', 'boolean'];
             $rules['is_locked']        = ['sometimes', 'boolean'];
@@ -79,10 +79,10 @@ class StoreOfferComponent extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Offer $offer, $trigger, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): OfferComponent
+    public function action(Offer $offer, $trigger, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): OfferAllowance
     {
         if (!$audit) {
-            OfferComponent::disableAuditing();
+            OfferAllowance::disableAuditing();
         }
         $this->asAction       = true;
         $this->strict         = $strict;

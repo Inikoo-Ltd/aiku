@@ -8,7 +8,7 @@
 
 namespace App\Models\Discounts;
 
-use App\Enums\Discounts\OfferComponent\OfferComponentStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\HasHistory;
@@ -32,7 +32,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int $shop_id
  * @property int $offer_campaign_id
  * @property int $offer_id
- * @property OfferComponentStateEnum $state
+ * @property OfferAllowanceStateEnum $state
  * @property bool $status
  * @property string $slug
  * @property string $code
@@ -59,18 +59,18 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
- * @property-read \App\Models\Discounts\OfferComponentStats|null $stats
+ * @property-read \App\Models\Discounts\OfferAllowanceStats|null $stats
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Transaction> $transactions
- * @method static \Database\Factories\Discounts\OfferComponentFactory factory($count = null, $state = [])
- * @method static Builder<static>|OfferComponent newModelQuery()
- * @method static Builder<static>|OfferComponent newQuery()
- * @method static Builder<static>|OfferComponent onlyTrashed()
- * @method static Builder<static>|OfferComponent query()
- * @method static Builder<static>|OfferComponent withTrashed(bool $withTrashed = true)
- * @method static Builder<static>|OfferComponent withoutTrashed()
+ * @method static \Database\Factories\Discounts\OfferAllowanceFactory factory($count = null, $state = [])
+ * @method static Builder<static>|OfferAllowance newModelQuery()
+ * @method static Builder<static>|OfferAllowance newQuery()
+ * @method static Builder<static>|OfferAllowance onlyTrashed()
+ * @method static Builder<static>|OfferAllowance query()
+ * @method static Builder<static>|OfferAllowance withTrashed(bool $withTrashed = true)
+ * @method static Builder<static>|OfferAllowance withoutTrashed()
  * @mixin Eloquent
  */
-class OfferComponent extends Model implements Auditable
+class OfferAllowance extends Model implements Auditable
 {
     use SoftDeletes;
     use HasSlug;
@@ -81,7 +81,7 @@ class OfferComponent extends Model implements Auditable
     protected $casts = [
         'data'            => 'array',
         'source_data'     => 'array',
-        'state'           => OfferComponentStateEnum::class,
+        'state'           => OfferAllowanceStateEnum::class,
         'begin_at'        => 'datetime',
         'end_at'          => 'datetime',
         'fetched_at'      => 'datetime',
@@ -109,11 +109,9 @@ class OfferComponent extends Model implements Auditable
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
-
             ->generateSlugsFrom(function () {
                 return $this->code.'-'.$this->offer->slug;
             })
-
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128);
@@ -136,17 +134,17 @@ class OfferComponent extends Model implements Auditable
 
     public function stats(): HasOne
     {
-        return $this->hasOne(OfferComponentStats::class);
+        return $this->hasOne(OfferAllowanceStats::class);
     }
 
     public function transactions(): BelongsToMany
     {
-        return $this->belongsToMany(Transaction::class, 'transaction_has_offer_components');
+        return $this->belongsToMany(Transaction::class, 'transaction_has_offer_allowances');
     }
 
     public function invoiceTransactions(): BelongsToMany
     {
-        return $this->belongsToMany(InvoiceTransaction::class, 'invoice_transaction_has_offer_components');
+        return $this->belongsToMany(InvoiceTransaction::class, 'invoice_transaction_has_offer_allowances');
     }
 
 }

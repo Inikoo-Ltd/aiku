@@ -25,7 +25,7 @@ return new class () extends Migration {
             $table = $this->usageBaseStats($table);
             $table = $this->offerCampaignsStats($table);
             $table = $this->offersStats($table);
-            $table = $this->offerComponentsStats($table);
+            $table = $this->offerAllowancesStats($table);
 
             $table->timestampsTz();
         });

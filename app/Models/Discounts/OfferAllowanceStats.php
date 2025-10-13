@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
- * @property int $offer_component_id
+ * @property int $offer_allowance_id
  * @property string|null $first_used_at
  * @property string|null $last_used_at
  * @property int $number_customers
@@ -25,20 +25,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $grp_amount
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \App\Models\Discounts\OfferComponent $offerComponent
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferComponentStats newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferComponentStats newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferComponentStats query()
+ * @property-read \App\Models\Discounts\OfferAllowance $offerAllowance
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferAllowanceStats newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferAllowanceStats newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|OfferAllowanceStats query()
  * @mixin \Eloquent
  */
-class OfferComponentStats extends Model
+class OfferAllowanceStats extends Model
 {
-    protected $table = 'offer_component_stats';
+    protected $table = 'offer_allowances_stats';
 
     protected $guarded = [];
 
-    public function offerComponent(): BelongsTo
+    public function offerAllowance(): BelongsTo
     {
-        return $this->belongsTo(OfferComponent::class);
+        return $this->belongsTo(OfferAllowance::class);
     }
 }

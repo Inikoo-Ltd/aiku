@@ -8,9 +8,9 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\Discounts\TransactionHasOfferComponent\StoreTransactionHasOfferComponent;
-use App\Actions\Discounts\TransactionHasOfferComponent\UpdateTransactionHasOfferComponent;
-use App\Models\Discounts\TransactionHasOfferComponent;
+use App\Actions\Discounts\TransactionHasOfferAllowance\StoreTransactionHasOfferAllowance;
+use App\Actions\Discounts\TransactionHasOfferAllowance\UpdateTransactionHasOfferAllowance;
+use App\Models\Discounts\TransactionHasOfferAllowance;
 use App\Models\Ordering\Order;
 use App\Transfers\Aurora\WithAuroraParsers;
 use App\Transfers\SourceOrganisationService;
@@ -24,7 +24,7 @@ class FetchAuroraNoProductTransactionHasOfferComponents
 
     private SourceOrganisationService $organisationSource;
 
-    public function handle(SourceOrganisationService $organisationSource, int $source_id, Order $order): ?TransactionHasOfferComponent
+    public function handle(SourceOrganisationService $organisationSource, int $source_id, Order $order): ?TransactionHasOfferAllowance
     {
         $this->organisationSource = $organisationSource;
 
@@ -33,10 +33,10 @@ class FetchAuroraNoProductTransactionHasOfferComponents
             return null;
         }
 
-        $transactionHasOfferComponent = TransactionHasOfferComponent::where('source_alt_id', $noProductTransactionHasOfferComponentData['transaction_has_offer_component']['source_alt_id'])->first();
+        $transactionHasOfferComponent = TransactionHasOfferAllowance::where('source_alt_id', $noProductTransactionHasOfferComponentData['transaction_has_offer_component']['source_alt_id'])->first();
 
         if ($transactionHasOfferComponent) {
-            $transactionHasOfferComponent = UpdateTransactionHasOfferComponent::make()->action(
+            $transactionHasOfferComponent = UpdateTransactionHasOfferAllowance::make()->action(
                 transactionHasOfferComponent: $transactionHasOfferComponent,
                 modelData: $noProductTransactionHasOfferComponentData,
                 hydratorsDelay: 5,
@@ -45,9 +45,9 @@ class FetchAuroraNoProductTransactionHasOfferComponents
         }
 
         if (!$transactionHasOfferComponent) {
-            $transactionHasOfferComponent = StoreTransactionHasOfferComponent::make()->action(
+            $transactionHasOfferComponent = StoreTransactionHasOfferAllowance::make()->action(
                 transaction: $noProductTransactionHasOfferComponentData['transaction'],
-                offerComponent: $noProductTransactionHasOfferComponentData['offer_component'],
+                offerAllowance: $noProductTransactionHasOfferComponentData['offer_allowance'],
                 modelData: $noProductTransactionHasOfferComponentData['transaction_has_offer_component'],
                 hydratorsDelay: 5,
                 strict: false

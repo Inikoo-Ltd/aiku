@@ -9,7 +9,7 @@
 namespace App\Transfers\Aurora;
 
 use App\Actions\Utils\Abbreviate;
-use App\Enums\Discounts\OfferComponent\OfferComponentStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use Illuminate\Support\Facades\DB;
 
 class FetchAuroraOfferComponent extends FetchAurora
@@ -31,10 +31,10 @@ class FetchAuroraOfferComponent extends FetchAurora
 
 
         $state = match ($this->auroraModelData->{'Deal Component Status'}) {
-            'Waiting' => OfferComponentStateEnum::IN_PROCESS,
-            'Finish' => OfferComponentStateEnum::FINISHED,
-            'Suspended' => OfferComponentStateEnum::SUSPENDED,
-            default => OfferComponentStateEnum::ACTIVE
+            'Waiting' => OfferAllowanceStateEnum::IN_PROCESS,
+            'Finish' => OfferAllowanceStateEnum::FINISHED,
+            'Suspended' => OfferAllowanceStateEnum::SUSPENDED,
+            default => OfferAllowanceStateEnum::ACTIVE
         };
 
 
@@ -90,7 +90,7 @@ class FetchAuroraOfferComponent extends FetchAurora
                 dd($this->auroraModelData);
         }
 
-        if ($state == OfferComponentStateEnum::ACTIVE and $trigger_type == null and $trigger == null) {
+        if ($state == OfferAllowanceStateEnum::ACTIVE and $trigger_type == null and $trigger == null) {
             print "No trigger found for Offer component w trigger ".$this->auroraModelData->{'Deal Component Trigger'}." -> ".$this->auroraModelData->{'Deal Component Trigger Key'}." \n";
             return;
         }
@@ -119,7 +119,7 @@ class FetchAuroraOfferComponent extends FetchAurora
 
         $this->parsedData['trigger']        = $trigger;
         $this->parsedData['offer']          = $offer;
-        $this->parsedData['offerComponent'] = [
+        $this->parsedData['offerAllowance'] = [
             'code'            => $code,
             'state'           => $state,
             'type'            => $type,
@@ -131,21 +131,21 @@ class FetchAuroraOfferComponent extends FetchAurora
             'is_locked'       => $isLocked,
         ];
         if ($sourceData) {
-            $this->parsedData['offerComponent']['source_data'] = $sourceData;
+            $this->parsedData['offerAllowance']['source_data'] = $sourceData;
         }
 
         if ($endAt = $this->parseDatetime($this->auroraModelData->{'Deal Component Expiration Date'})) {
-            $this->parsedData['offerComponent']['end_at'] = $endAt;
+            $this->parsedData['offerAllowance']['end_at'] = $endAt;
         }
 
         if ($trigger_type) {
-            $this->parsedData['offerComponent']['trigger_type'] = $trigger_type;
+            $this->parsedData['offerAllowance']['trigger_type'] = $trigger_type;
         }
 
         $createdBy = $this->auroraModelData->{'Deal Component Begin Date'};
 
         if ($createdBy) {
-            $this->parsedData['offerComponent']['created_by'] = $createdBy;
+            $this->parsedData['offerAllowance']['created_by'] = $createdBy;
         }
     }
 

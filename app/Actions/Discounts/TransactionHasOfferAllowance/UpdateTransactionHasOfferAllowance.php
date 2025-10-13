@@ -6,22 +6,22 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Discounts\TransactionHasOfferComponent;
+namespace App\Actions\Discounts\TransactionHasOfferAllowance;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Discounts\TransactionHasOfferComponent;
+use App\Models\Discounts\TransactionHasOfferAllowance;
 use App\Models\Inventory\Location;
 
-class UpdateTransactionHasOfferComponent extends OrgAction
+class UpdateTransactionHasOfferAllowance extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
 
     private Location $location;
 
-    public function handle(TransactionHasOfferComponent $transactionHasOfferComponent, array $modelData): TransactionHasOfferComponent
+    public function handle(TransactionHasOfferAllowance $transactionHasOfferComponent, array $modelData): TransactionHasOfferAllowance
     {
         return $this->update($transactionHasOfferComponent, $modelData, ['data']);
     }
@@ -45,7 +45,7 @@ class UpdateTransactionHasOfferComponent extends OrgAction
         return $rules;
     }
 
-    public function action(TransactionHasOfferComponent $transactionHasOfferComponent, array $modelData, int $hydratorsDelay = 0, bool $strict = true): TransactionHasOfferComponent
+    public function action(TransactionHasOfferAllowance $transactionHasOfferComponent, array $modelData, int $hydratorsDelay = 0, bool $strict = true): TransactionHasOfferAllowance
     {
         $this->strict = $strict;
 

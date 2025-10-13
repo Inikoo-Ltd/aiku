@@ -37,7 +37,7 @@ use App\Models\CRM\TrafficSource;
 use App\Models\CRM\WebUser;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
-use App\Models\Discounts\OfferComponent;
+use App\Models\Discounts\OfferAllowance;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
@@ -173,8 +173,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\ShopMailshotsIntervals|null $mailshotsIntervals
  * @property-read MasterShop|null $masterShop
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read LaravelCollection<int, OfferAllowance> $offerAllowances
  * @property-read LaravelCollection<int, OfferCampaign> $offerCampaigns
- * @property-read LaravelCollection<int, OfferComponent> $offerComponents
  * @property-read LaravelCollection<int, Offer> $offers
  * @property-read \App\Models\Catalogue\ShopOrderHandlingStats|null $orderHandlingStats
  * @property-read \App\Models\Catalogue\ShopOrderingIntervals|null $orderingIntervals
@@ -462,9 +462,9 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(Offer::class);
     }
 
-    public function offerComponents(): HasMany
+    public function offerAllowances(): HasMany
     {
-        return $this->hasMany(OfferComponent::class);
+        return $this->hasMany(OfferAllowance::class);
     }
 
     public function taxNumber(): MorphOne

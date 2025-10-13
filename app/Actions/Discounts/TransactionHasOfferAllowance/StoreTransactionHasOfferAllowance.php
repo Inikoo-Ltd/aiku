@@ -6,27 +6,27 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Discounts\TransactionHasOfferComponent;
+namespace App\Actions\Discounts\TransactionHasOfferAllowance;
 
 use App\Actions\Discounts\Offer\Hydrators\OfferHydrateOrders;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOrders;
-use App\Actions\Discounts\OfferComponent\Hydrators\OfferComponentHydrateOrders;
+use App\Actions\Discounts\OfferAllowance\Hydrators\OfferAllowanceHydrateOrders;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateOffers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
-use App\Models\Discounts\OfferComponent;
-use App\Models\Discounts\TransactionHasOfferComponent;
+use App\Models\Discounts\OfferAllowance;
+use App\Models\Discounts\TransactionHasOfferAllowance;
 use App\Models\Ordering\Transaction;
 
-class StoreTransactionHasOfferComponent extends OrgAction
+class StoreTransactionHasOfferAllowance extends OrgAction
 {
     use WithNoStrictRules;
 
-    public function handle(Transaction $transaction, OfferComponent $offerComponent, array $modelData): TransactionHasOfferComponent
+    public function handle(Transaction $transaction, OfferAllowance $offerAllowance, array $modelData): TransactionHasOfferAllowance
     {
-        data_set($modelData, 'offer_campaign_id', $offerComponent->offer_campaign_id);
-        data_set($modelData, 'offer_id', $offerComponent->offer_id);
-        data_set($modelData, 'offer_component_id', $offerComponent->id);
+        data_set($modelData, 'offer_campaign_id', $offerAllowance->offer_campaign_id);
+        data_set($modelData, 'offer_id', $offerAllowance->offer_id);
+        data_set($modelData, 'offer_allowance_id', $offerAllowance->id);
 
         data_set($modelData, 'model_type', $transaction->model_type);
         data_set($modelData, 'model_id', $transaction->model_id);
@@ -35,16 +35,16 @@ class StoreTransactionHasOfferComponent extends OrgAction
         data_set($modelData, 'transaction_id', $transaction->id);
 
 
-        /** @var TransactionHasOfferComponent $transactionHasOfferComponent */
-        $transactionHasOfferComponent = TransactionHasOfferComponent::create($modelData);
 
-        OfferComponentHydrateOrders::dispatch($transactionHasOfferComponent->offerComponent);
-        OfferHydrateOrders::dispatch($transactionHasOfferComponent->offer);
-        OfferCampaignHydrateOrders::dispatch($transactionHasOfferComponent->offerCampaign);
+        $transactionHasOfferAllowance = TransactionHasOfferAllowance::create($modelData);
+
+        OfferAllowanceHydrateOrders::dispatch($transactionHasOfferAllowance->offerAllowance);
+        OfferHydrateOrders::dispatch($transactionHasOfferAllowance->offer);
+        OfferCampaignHydrateOrders::dispatch($transactionHasOfferAllowance->offerCampaign);
         OrderHydrateOffers::dispatch($transaction->order);
 
 
-        return $transactionHasOfferComponent;
+        return $transactionHasOfferAllowance;
     }
 
     public function rules(): array
@@ -65,13 +65,13 @@ class StoreTransactionHasOfferComponent extends OrgAction
         return $rules;
     }
 
-    public function action(Transaction $transaction, OfferComponent $offerComponent, array $modelData, int $hydratorsDelay = 0, bool $strict = true): TransactionHasOfferComponent
+    public function action(Transaction $transaction, OfferAllowance $offerAllowance, array $modelData, int $hydratorsDelay = 0, bool $strict = true): TransactionHasOfferAllowance
     {
         $this->asAction       = true;
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
-        $this->initialisationFromShop($offerComponent->shop, $modelData);
+        $this->initialisationFromShop($offerAllowance->shop, $modelData);
 
-        return $this->handle($transaction, $offerComponent, $modelData);
+        return $this->handle($transaction, $offerAllowance, $modelData);
     }
 }

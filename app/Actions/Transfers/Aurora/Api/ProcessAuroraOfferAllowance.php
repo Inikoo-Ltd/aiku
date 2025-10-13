@@ -14,7 +14,7 @@ use App\Actions\Transfers\Aurora\FetchAuroraOfferComponents;
 /**
  * @property string $fetcher
  */
-class ProcessAuroraOfferComponent extends OrgAction
+class ProcessAuroraOfferAllowance extends OrgAction
 {
     use WithProcessAurora;
 

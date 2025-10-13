@@ -41,7 +41,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_item_transactions_status_settled
  * @property int $number_offer_campaigns
  * @property int $number_offers
- * @property int $number_offer_components
+ * @property int $number_offer_allowances
  * @property int $number_transactions_with_offers
  * @property string $discounts_amount from % offs
  * @property string $giveaways_value_amount Value of goods given for free

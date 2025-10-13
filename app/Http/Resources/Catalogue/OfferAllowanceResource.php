@@ -20,7 +20,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property string $name
  *
  */
-class OfferComponentResource extends JsonResource
+class OfferAllowanceResource extends JsonResource
 {
     public function toArray($request): array
     {

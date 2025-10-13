@@ -30,7 +30,7 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraLocation;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraMailshot;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOffer;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOfferCampaign;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraOfferComponent;
+use App\Actions\Transfers\Aurora\Api\ProcessAuroraOfferAllowance;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOrder;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOrgStockMovement;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPayment;
@@ -98,7 +98,7 @@ class ProcessFetchStack
             'Location' => ProcessAuroraLocation::make()->action($organisation, $modelData),
             'Mailshot' => ProcessAuroraMailshot::make()->action($organisation, $modelData),
             'OfferCampaign' => ProcessAuroraOfferCampaign::make()->action($organisation, $modelData),
-            'OfferComponent' => ProcessAuroraOfferComponent::make()->action($organisation, $modelData),
+            'OfferAllowance' => ProcessAuroraOfferAllowance::make()->action($organisation, $modelData),
             'Offer' => ProcessAuroraOffer::make()->action($organisation, $modelData),
             'OrgStockMovement' => ProcessAuroraOrgStockMovement::make()->action($organisation, $modelData),
             'Payment' => ProcessAuroraPayment::make()->action($organisation, $modelData),

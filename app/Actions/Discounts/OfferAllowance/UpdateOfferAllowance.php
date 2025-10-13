@@ -6,26 +6,26 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Discounts\OfferComponent;
+namespace App\Actions\Discounts\OfferAllowance;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Discounts\OfferComponent;
+use App\Models\Discounts\OfferAllowance;
 use App\Rules\IUnique;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateOfferComponent extends OrgAction
+class UpdateOfferAllowance extends OrgAction
 {
     use WithActionUpdate;
     use WithNoStrictRules;
 
 
-    private OfferComponent $offerComponent;
+    private OfferAllowance $offerAllowance;
 
-    public function handle(OfferComponent $offerComponent, array $modelData): OfferComponent
+    public function handle(OfferAllowance $offerAllowance, array $modelData): OfferAllowance
     {
-        return $this->update($offerComponent, $modelData);
+        return $this->update($offerAllowance, $modelData);
     }
 
     public function authorize(ActionRequest $request): bool
@@ -39,11 +39,11 @@ class UpdateOfferComponent extends OrgAction
 
     public function rules(): array
     {
-        $rules =  [
-            'code'       => [
+        $rules = [
+            'code' => [
                 'sometimes',
                 new IUnique(
-                    table: 'offer_components',
+                    table: 'offer_allowances',
                     extraConditions: [
                         [
                             'column' => 'shop_id',
@@ -52,12 +52,12 @@ class UpdateOfferComponent extends OrgAction
                         [
                             'column'   => 'id',
                             'operator' => '!=',
-                            'value'    => $this->offerComponent->id
+                            'value'    => $this->offerAllowance->id
                         ]
                     ]
                 ),
-                'start_at'      => ['sometimes', 'date'],
-                'end_at'        => ['sometimes', 'nullable', 'date'],
+                'start_at' => ['sometimes', 'date'],
+                'end_at'   => ['sometimes', 'nullable', 'date'],
                 'max:64',
                 'alpha_dash'
             ],
@@ -65,27 +65,27 @@ class UpdateOfferComponent extends OrgAction
         ];
 
         if (!$this->strict) {
-            $rules = $this->noStrictUpdateRules($rules);
-            $rules['trigger_scope']        = ['sometimes', 'string'];
-            $rules['target_type']        = ['sometimes', 'string'];
-            $rules['start_at']        = ['sometimes', 'nullable', 'date'];
+            $rules                  = $this->noStrictUpdateRules($rules);
+            $rules['trigger_scope'] = ['sometimes', 'string'];
+            $rules['target_type']   = ['sometimes', 'string'];
+            $rules['start_at']      = ['sometimes', 'nullable', 'date'];
         }
 
         return $rules;
     }
 
-    public function action(OfferComponent $offerComponent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): OfferComponent
+    public function action(OfferAllowance $offerAllowance, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): OfferAllowance
     {
         if (!$audit) {
-            OfferComponent::disableAuditing();
+            OfferAllowance::disableAuditing();
         }
         $this->asAction       = true;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->strict         = $strict;
-        $this->offerComponent          = $offerComponent;
-        $this->initialisationFromShop($offerComponent->shop, $modelData);
+        $this->offerAllowance = $offerAllowance;
+        $this->initialisationFromShop($offerAllowance->shop, $modelData);
 
-        return $this->handle($offerComponent, $this->validatedData);
+        return $this->handle($offerAllowance, $this->validatedData);
     }
 
 

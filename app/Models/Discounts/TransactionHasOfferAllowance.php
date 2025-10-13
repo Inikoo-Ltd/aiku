@@ -2,26 +2,27 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Wed, 27 Nov 2024 10:36:52 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Created: Wed, 20 Nov 2024 16:01:17 Central Indonesia Time, Sanur, Bali, Indonesia
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
 namespace App\Models\Discounts;
 
-use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
  * @property int $order_id
+ * @property int|null $transaction_id
  * @property string|null $model_type
  * @property int|null $model_id
  * @property int $offer_campaign_id
  * @property int $offer_id
- * @property int $offer_component_id
+ * @property int $offer_allowance_id
  * @property string $discounted_amount
- * @property string|null $discounted_percentage
+ * @property string $discounted_percentage
  * @property string $free_items_value
  * @property string $number_of_free_items
  * @property string|null $info
@@ -33,19 +34,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
+ * @property string|null $source_alt_id
  * @property-read \App\Models\Discounts\Offer $offer
+ * @property-read \App\Models\Discounts\OfferAllowance $offerAllowance
  * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
- * @property-read \App\Models\Discounts\OfferComponent $offerComponent
- * @property-read Order $order
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHasNoTransactionOfferComponent newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHasNoTransactionOfferComponent newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderHasNoTransactionOfferComponent query()
+ * @property-read Transaction|null $transaction
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionHasOfferAllowance newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionHasOfferAllowance newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|TransactionHasOfferAllowance query()
  * @mixin \Eloquent
  */
-class OrderHasNoTransactionOfferComponent extends Model
+class TransactionHasOfferAllowance extends Model
 {
+    protected $table = 'transaction_has_offer_allowances';
+
     protected $casts = [
         'data'            => 'array',
+        'is_pinned'       => 'boolean',
         'fetched_at'      => 'datetime',
         'last_fetched_at' => 'datetime',
     ];
@@ -56,9 +61,9 @@ class OrderHasNoTransactionOfferComponent extends Model
 
     protected $guarded = [];
 
-    public function order(): BelongsTo
+    public function transaction(): BelongsTo
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(Transaction::class);
     }
 
     public function offerCampaign(): BelongsTo
@@ -71,9 +76,9 @@ class OrderHasNoTransactionOfferComponent extends Model
         return $this->belongsTo(Offer::class);
     }
 
-    public function offerComponent(): BelongsTo
+    public function offerAllowance(): BelongsTo
     {
-        return $this->belongsTo(OfferComponent::class);
+        return $this->belongsTo(OfferAllowance::class);
     }
 
 }

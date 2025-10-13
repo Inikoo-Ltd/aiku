@@ -8,9 +8,9 @@
 
 namespace App\Actions\Transfers\Aurora;
 
-use App\Actions\Discounts\OfferComponent\StoreOfferComponent;
-use App\Actions\Discounts\OfferComponent\UpdateOfferComponent;
-use App\Models\Discounts\OfferComponent;
+use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
+use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
+use App\Models\Discounts\OfferAllowance;
 use App\Transfers\SourceOrganisationService;
 use Exception;
 use Illuminate\Database\Query\Builder;
@@ -22,67 +22,67 @@ class FetchAuroraOfferComponents extends FetchAuroraAction
 {
     public string $commandSignature = 'fetch:offer_components {organisations?*} {--s|source_id=} {--d|db_suffix=} {--S|shop= : Shop slug} {--N|only_new : Fetch only new} ';
 
-    public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OfferComponent
+    public function handle(SourceOrganisationService $organisationSource, int $organisationSourceId): ?OfferAllowance
     {
-        $offerComponentData = $organisationSource->fetchOfferComponent($organisationSourceId);
-        if (!$offerComponentData) {
+        $offerAllowanceData = $organisationSource->fetchOfferComponent($organisationSourceId);
+        if (!$offerAllowanceData) {
             return null;
         }
-        $offerComponent = OfferComponent::withTrashed()->where('source_id', $offerComponentData['offerComponent']['source_id'])->first();
-        if ($offerComponent) {
+        $offerAllowance = OfferAllowance::withTrashed()->where('source_id', $offerAllowanceData['offerAllowance']['source_id'])->first();
+        if ($offerAllowance) {
             try {
-                $offerComponent = UpdateOfferComponent::make()->action(
-                    offerComponent: $offerComponent,
-                    modelData: $offerComponentData['offerComponent'],
+                $offerAllowance = UpdateOfferAllowance::make()->action(
+                    offerAllowance: $offerAllowance,
+                    modelData: $offerAllowanceData['offerAllowance'],
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
-                $this->recordChange($organisationSource, $offerComponent->wasChanged());
+                $this->recordChange($organisationSource, $offerAllowance->wasChanged());
 
                 $this->recordNew($organisationSource);
 
-                $sourceData = explode(':', $offerComponent->source_id);
+                $sourceData = explode(':', $offerAllowance->source_id);
                 DB::connection('aurora')->table('Deal Component Dimension')
                     ->where('Deal Component Key', $sourceData[1])
-                    ->update(['aiku_id' => $offerComponent->id]);
+                    ->update(['aiku_id' => $offerAllowance->id]);
             } catch (Exception $e) {
-                $this->recordError($organisationSource, $e, $offerComponentData['offerComponent'], 'OfferComponent', 'update');
+                $this->recordError($organisationSource, $e, $offerAllowanceData['offerAllowance'], 'OfferAllowance', 'update');
 
                 return null;
             }
         } else {
             try {
-                $offerComponent = StoreOfferComponent::make()->action(
-                    offer: $offerComponentData['offer'],
-                    trigger: $offerComponentData['trigger'],
-                    modelData: $offerComponentData['offerComponent'],
+                $offerAllowance = StoreOfferAllowance::make()->action(
+                    offer: $offerAllowanceData['offer'],
+                    trigger: $offerAllowanceData['trigger'],
+                    modelData: $offerAllowanceData['offerAllowance'],
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,
                     audit: false
                 );
 
                 $this->recordNew($organisationSource);
-                OfferComponent::enableAuditing();
+                OfferAllowance::enableAuditing();
                 $this->saveMigrationHistory(
-                    $offerComponent,
-                    Arr::except($offerComponentData['offerComponent'], ['fetched_at', 'last_fetched_at', 'source_id'])
+                    $offerAllowance,
+                    Arr::except($offerAllowanceData['offerAllowance'], ['fetched_at', 'last_fetched_at', 'source_id'])
                 );
 
                 $this->recordNew($organisationSource);
 
-                $sourceData = explode(':', $offerComponent->source_id);
+                $sourceData = explode(':', $offerAllowance->source_id);
                 DB::connection('aurora')->table('Deal Component Dimension')
                     ->where('Deal Component Key', $sourceData[1])
-                    ->update(['aiku_id' => $offerComponent->id]);
+                    ->update(['aiku_id' => $offerAllowance->id]);
             } catch (Exception|Throwable $e) {
-                $this->recordError($organisationSource, $e, $offerComponentData['offerComponent'], 'Offer', 'store');
+                $this->recordError($organisationSource, $e, $offerAllowanceData['offerAllowance'], 'Offer', 'store');
 
                 return null;
             }
         }
 
-        return $offerComponent;
+        return $offerAllowance;
     }
 
     public function getModelsQuery(): Builder
@@ -112,7 +112,7 @@ class FetchAuroraOfferComponents extends FetchAuroraAction
 
         if ($this->shop) {
             $sourceData = explode(':', $this->shop->source_id);
-            $query->where('eal Component Store Key', $sourceData[1]);
+            $query->where('Deal Component Store Key', $sourceData[1]);
         }
 
         return $query;
