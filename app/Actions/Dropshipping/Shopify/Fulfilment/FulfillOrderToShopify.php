@@ -61,7 +61,8 @@ class FulfillOrderToShopify extends OrgAction
         $numbers = [];
         $urls = [];
         foreach ($shipments as $shipment) {
-            $numbers = array_merge($numbers, $shipment->trackings);
+            $trackingNumbers = array_map(fn ($num) => (string) $num, $shipment->trackings);
+            $numbers = array_merge($numbers, $trackingNumbers);
             $urls = array_merge($urls, $shipment->tracking_urls);
         }
 
@@ -91,7 +92,6 @@ class FulfillOrderToShopify extends OrgAction
             ],
             'message' => $message,
         ];
-
 
 
         try {
