@@ -200,10 +200,10 @@ const debounceSaveWorkshop = (block) => {
       const response = await axios.patch(
         url,
         {
-          layout: block.web_block.layout,
-          show_logged_in: block.visibility.in,
-          show_logged_out: block.visibility.out,
-          show: block.show,
+          layout: block?.web_block?.layout,
+          show_logged_in: block?.visibility?.in,
+          show_logged_out: block?.visibility?.out,
+          show: block?.show,
         },
         {
           cancelToken: source.token,
