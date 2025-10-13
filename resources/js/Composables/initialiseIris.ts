@@ -38,6 +38,10 @@ export const initialiseIrisApp = () => {
         loadLanguageAsync(usePage().props.localeData?.language?.code)
     }
 
+
+    console.log('USEPAGE() ', usePage().props)
+    console.log('--usepage().iris', usePage().props?.iris)
+
     watchEffect(() => {
         // Set currency to use by global
         if (usePage().props.iris?.currency) {       
@@ -59,22 +63,22 @@ export const initialiseIrisApp = () => {
             layout.user = usePage().props?.auth
         }
 
-        if (usePage().props.iris?.variables) {
-            // Will deprecate, use variables via props.iris instead
-            layout.iris_variables = usePage().props.iris?.variables
-        }
+        // if (irisData?.variables) {✅
+        //     // Will deprecate, use variables via props.iris instead
+        //     layout.iris_variables = irisData?.variables
+        // }
 
         if (usePage().props.iris) {
-            layout.iris = usePage().props.iris
+            layout.iris = {
+                ...layout.iris,
+                ...usePage().props.iris
+            }
         }
         
         if (usePage().props.retina) {
             layout.retina = usePage().props.retina
         }
 
-        if (usePage().props?.user_auth) {
-            layout.user_auth = usePage().props?.user_auth
-        }
 
         // Set data of Locale (Language)
         // if (usePage().props.localeData) {
