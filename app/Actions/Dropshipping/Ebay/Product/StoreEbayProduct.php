@@ -20,7 +20,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class StoreEbayProduct extends RetinaAction
 {
@@ -167,7 +166,6 @@ class StoreEbayProduct extends RetinaAction
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
 
-            Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
             throw $e;
         }
     }
