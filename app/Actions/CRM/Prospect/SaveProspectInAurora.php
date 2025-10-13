@@ -35,9 +35,17 @@ class SaveProspectInAurora implements ShouldBeUnique
      */
     public function handle(Prospect $prospect): void
     {
+
+
         if (!$prospect->shop->is_aiku) {
             return;
         }
+
+        $auroraApiToken=$this->getApiToken($prospect->organisation);
+        if (!$auroraApiToken || !app()->environment('production')) {
+            return;
+        }
+
 
         $apiUrl       = $this->getApiUrl($prospect->organisation);
         $shopSourceId = explode(':', $prospect->shop->source_id);
@@ -113,7 +121,7 @@ class SaveProspectInAurora implements ShouldBeUnique
 
 
         $response = Http::withHeaders([
-            'secret' => $this->getApiToken($prospect->organisation),
+            'secret' => $auroraApiToken,
         ])->withQueryParameters($data)->get($apiUrl);
 
 
@@ -175,7 +183,7 @@ class SaveProspectInAurora implements ShouldBeUnique
                         } catch (\Exception $e) {
                             $command->error("Error processing prospect: $prospect->slug - {$e->getMessage()}");
                         }
-                        // $bar->advance();
+                        $bar->advance();
                     }
                 });
 

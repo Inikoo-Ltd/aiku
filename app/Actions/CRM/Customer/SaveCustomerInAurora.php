@@ -32,7 +32,14 @@ class SaveCustomerInAurora implements ShouldBeUnique
      */
     public function handle(Customer $customer): void
     {
+
+
         if (!$customer->shop->is_aiku) {
+            return;
+        }
+
+        $auroraApiToken=$this->getApiToken($customer->organisation);
+        if (!$auroraApiToken || !app()->environment('production')) {
             return;
         }
 
@@ -88,7 +95,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
 
 
         $response = Http::withHeaders([
-            'secret' => $this->getApiToken($customer->organisation),
+            'secret' => $auroraApiToken,
         ])->withQueryParameters($data)->get($apiUrl);
 
 
