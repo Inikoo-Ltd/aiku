@@ -12,14 +12,15 @@ import { computed } from "vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faCube, faLink, faImage } from "@fal"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 library.add(faCube, faLink, faImage)
 
 const props = defineProps<{
   fieldValue: {
-    collections : Array<any>
-    container : {
-      properties : Object
+    collections: Array<any>
+    container: {
+      properties: Object
     }
   }
   webpageData?: any
@@ -49,14 +50,18 @@ const gridColsClass = computed(() => {
 
     <div>
       <div :class="['grid gap-4', gridColsClass]">
-        <a v-for="item in fieldValue.collections" :key="item.code" :href="`/${item.url}`"
+        <LinkIris v-for="item in fieldValue.collections" :key="item.code" :href="`/${item.url}`"
           class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full">
-          <div class="flex items-center justify-center w-5 h-5 shrink-0 text-xl ">
-            <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="text-xl w-5 h-5" />
-            <Image v-else :src="item.image" class="w-full h-full object-contain" />
-          </div>
-          <span class="flex-1 text-center">{{ item.name }}</span>
-        </a>
+          <template #default>
+            <div class="flex items-center justify-center w-5 h-5 shrink-0 text-xl ">
+              <FontAwesomeIcon v-if="item.icon" :icon="item.icon" class="text-xl w-5 h-5" />
+              <Image v-else :src="item.image" class="w-full h-full object-contain" />
+            </div>
+            <span class="flex-1 text-center">{{ item.name }}</span>
+
+          </template>
+
+        </LinkIris>
       </div>
     </div>
   </div>

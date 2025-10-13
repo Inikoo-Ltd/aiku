@@ -15,6 +15,7 @@ import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vu
 import { getStyles } from "@/Composables/styles";
 import { faEnvelope } from '@fal'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
+import LinkIris from '@/Components/Iris/LinkIris.vue'
 
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -244,11 +245,14 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
             <!-- Title -->
 
-            <Link v-if="product.url" :href="product.url"
+            <LinkIris v-if="product.url" :href="product.url"
                 class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-            {{ product.name }}
+                <template #default>
+                    {{ product.name }}
+                </template>
+            
 
-            </Link>
+            </LinkIris>
             <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 {{ product.name }}
             </div>

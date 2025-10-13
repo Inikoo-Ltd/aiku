@@ -12,6 +12,7 @@ import { FieldValue } from "@/types/webpageTypes"
 import { inject } from 'vue'
 import { faCube, faLink, faImage } from "@fal"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 library.add(faCube, faLink, faImage)
 
@@ -38,11 +39,13 @@ const layout: any = inject("layout", {})
 					<div v-html="fieldValue.text" class="mb-6"></div>
 
 					<div class="flex justify-center">
-						<a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
+						<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
 							typeof="button">
+							<template #default>
 							<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
 								:label="fieldValue?.button?.text" />
-						</a>
+							</template>
+						</LinkIris>
 
 					</div>
 				</div>
