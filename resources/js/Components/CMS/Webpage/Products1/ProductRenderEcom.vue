@@ -21,6 +21,7 @@ import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { routeType } from '@/types/route'
 import { parameterize } from '@sentry/vue'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
+import { useIrisLayoutStore } from "@/Stores/irisLayout"
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -93,6 +94,7 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onSuccess: () => {
                 product.is_favourite = true
+                layout.reload_handle(useIrisLayoutStore)
             },
             onError: errors => {
                 console.error(errors)
@@ -129,6 +131,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                 //     text: trans("Added to portfolio"),
                 //     type: "success"
                 // })
+                layout.reload_handle(useIrisLayoutStore)
                 product.is_favourite = false
             },
             onError: errors => {

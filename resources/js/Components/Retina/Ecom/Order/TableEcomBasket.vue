@@ -13,6 +13,8 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { debounce, get, set } from 'lodash-es'
 import { inject, ref } from 'vue'
+import { useLayoutStore } from "@/Stores/retinaLayout"
+import { initialiseIrisVarnishCustomerData } from '@/Composables/initialiseIrisVarnish'
 
 const props = defineProps<{
     data: any[] | TableTS
@@ -65,6 +67,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
             },
             onSuccess: () => {
                 set(listState.value, [idTransaction, 'quantity'], 'success')
+                initialiseIrisVarnishCustomerData(useLayoutStore)
             },
             onFinish: () => {
                 isLoading.value = false,
@@ -156,6 +159,7 @@ const debounceUpdateQuantity = debounce(
                     :method="item.deleteRoute.method"
                     @start="() => isLoading = 'unselect' + item.id"
                     @finish="() => isLoading = false"
+                    @success="()=>initialiseIrisVarnishCustomerData(useLayoutStore)"
                     v-tooltip="trans('Unselect this product')"
                     :preserveScroll="true"
                 >

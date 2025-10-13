@@ -10,6 +10,7 @@ import { router, usePage } from "@inertiajs/vue3"
 import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
+import { initialiseIrisVarnishCustomerData } from '@/Composables/initialiseIrisVarnish'
 
 
 export const initialiseIrisApp = () => {
@@ -78,6 +79,8 @@ export const initialiseIrisApp = () => {
         if (usePage().props.retina) {
             layout.retina = usePage().props.retina
         }
+
+        layout.reload_handle = initialiseIrisVarnishCustomerData
 
 
         // Set data of Locale (Language)

@@ -10,39 +10,58 @@ namespace App\Actions\Iris\Json;
 
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Catalogue\Collection;
+use Lorisleiva\Actions\ActionRequest;
 
 class GetIrisEcomCustomerData extends RetinaAction
 {
     public function handle(): array
     {
-        if (!$this->webUser) {
+        if (!isset($this->webUser) || !$this->webUser) {
             return [
                 'is_logged_in' => false,
             ];
         }
 
+        return $this->getIrisUserData();
+    }
+
+    protected function getIrisUserData(): array
+    {
+        $webUser = $this->webUser;
+        $customer = $this->customer ?? null;
+        $shop = $this->shop ?? null;
 
         $cartCount  = 0;
         $cartAmount = 0;
 
-        if ($this->shop->type == ShopTypeEnum::B2B) {
-            $orderInBasket = $this->customer->orderInBasket;
-            $cartCount     = $orderInBasket ? $orderInBasket->number_item_transactions : 0;
-            $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
+        if ($shop && $shop->type === ShopTypeEnum::B2B && $customer?->orderInBasket) {
+            $orderInBasket = $customer->orderInBasket;
+            $cartCount     = $orderInBasket->number_item_transactions ?? 0;
+            $cartAmount    = $orderInBasket->total_amount ?? 0;
         }
 
         return [
-
             'is_logged_in' => true,
-            'variables'    => [
-                'favourites_count' => $this->customer->stats->number_favourites,
-                'cart_count'       => $cartCount,  // Count of unique items
+            'variables' => [
+                'reference'        => $customer?->reference ?? '',
+                'name'             => $webUser->contact_name ?? '',
+                'username'         => $webUser->username ?? '',
+                'email'            => $webUser->email ?? '',
+                'favourites_count' => $customer?->stats?->number_favourites ?? 0,
+                'cart_count'       => $cartCount,
                 'cart_amount'      => $cartAmount,
             ],
         ];
-
     }
 
+    public function asController(Collection $collection, ActionRequest $request): \Illuminate\Http\Response|array
+    {
+        $this->initialisation($request);
+        $this->webUser ??= auth()->user();
+        $this->shop ??= $collection->shop ?? null;
+        $this->customer ??= $this->webUser?->customer ?? null;
 
-
+        return $this->handle();
+    }
 }
