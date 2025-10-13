@@ -25,13 +25,13 @@ const timesheetRoute = (timesheet: Timesheet) => {
                 "grp.org.hr.employees.show.timesheets.show",
                 [route().params["organisation"],
                 route().params["employee"],
-                timesheet.id])
+                timesheet?.id])
         default:
             return route(
                 "grp.org.hr.timesheets.show",
                 [
                     route().params["organisation"],
-                    timesheet.id
+                    timesheet?.id
                 ])
     }
 }
