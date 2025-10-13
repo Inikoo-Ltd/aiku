@@ -7,7 +7,7 @@
  */
 
 use App\Actions\CRM\WebUser\Retina\GoogleLoginRetina;
-use App\Actions\CRM\WebUser\Retina\LogoutRetina;
+use App\Actions\CRM\WebUser\Retina\RetinaLogout;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\AuthenticateRetinaShopifyUser;
 use App\Actions\CRM\WebUser\Retina\UI\ShowStandAloneRegistration;
@@ -55,7 +55,7 @@ Route::middleware('guest:retina')->group(function () {
 });
 
 Route::middleware('retina-auth:retina')->group(function () {
-    Route::post('logout', LogoutRetina::class)->name('logout');
+    Route::post('logout', RetinaLogout::class)->name('logout');
     Route::get('prepare-account', ShowRetinaPrepareAccount::class)->name('prepare-account.show');
 
     Route::get('finish-pre-register', ShowFinishPreRetinaRegister::class)->name('finish_pre_register');

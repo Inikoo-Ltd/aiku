@@ -218,23 +218,23 @@ const todayPosition = computed(() =>
 )
 
 // Calculate statistics using props data
-const historicCLV = computed(() => parseFloat(props.data.historic_clv_amount || '0'))
+const historicCLV = computed(() => parseFloat(props?.data?.historic_clv_amount || '0'))
 
-const predictedCLV = computed(() => parseFloat(props.data.predicted_clv_amount || '0'))
+const predictedCLV = computed(() => parseFloat(props?.data?.predicted_clv_amount || '0'))
 
-const totalCLV = computed(() => parseFloat(props.data.total_clv_amount || '0'))
+const totalCLV = computed(() => parseFloat(props?.data?.total_clv_amount || '0'))
 
-const avgOrderValue = computed(() => parseFloat(props.data.average_order_value || '0'))
+const avgOrderValue = computed(() => parseFloat(props?.data?.average_order_value || '0'))
 
 // Calculate average time between orders from props (convert to days)
 const avgTimeBetweenOrders = computed(() => {
-    const avgMonths = parseFloat(props.data.average_time_between_orders || '0')
+    const avgMonths = parseFloat(props?.data?.average_time_between_orders || '0')
     return avgMonths // Convert months to days
 })
 
 // Churn risk prediction from props (already in percentage format)
 const churnRiskPrediction = computed(() => {
-    const risk = parseFloat(props.data.churn_risk_prediction || '0')
+    const risk = parseFloat(props?.data?.churn_risk_prediction || '0')
     return risk.toFixed(0)
 })
 
@@ -352,7 +352,7 @@ const predictedStartPosition = computed(() => {
                 </div>
                 <div class="text-2xl font-semibold text-gray-800">{{ locale.currencyFormat(currencyCode?.code,
                     historicCLV.toFixed(2)) }}</div>
-                <div class="text-xs text-gray-400">{{ props.data.number_orders_state_dispatched }} {{ trans('orders') }}</div>
+                <div class="text-xs text-gray-400">{{ props?.data?.number_orders_state_dispatched }} {{ trans('orders') }}</div>
             </div>
 
             <div class="text-3xl text-gray-300 self-center">+</div>

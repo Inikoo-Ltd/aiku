@@ -55,17 +55,17 @@ const debouncedSendUpdate = debounce(() => autoSave(), 1000, {
 })
 
 const addNavigation = () => {
-    props.data.data.fieldValue.navigation.push({
+    props?.data?.data?.fieldValue?.navigation?.push({
         label: "New Navigation",
         id: ulid(),
         type: "single",
     })
-    console.log(props.data.data.fieldValue.navigation);
+    console.log(props?.data?.data?.fieldValue?.navigation);
     debouncedSendUpdate()
 }
 
 const deleteNavigation = (index: Number) => {
-    props.data.data.fieldValue.navigation.splice(index, 1)
+    props?.data?.data?.fieldValue?.navigation?.splice(index, 1)
     debouncedSendUpdate()
 }
 
