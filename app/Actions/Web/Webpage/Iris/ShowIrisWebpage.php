@@ -34,7 +34,7 @@ class ShowIrisWebpage
         return $webpageData?->canonical_url;
     }
 
-    public function getWebpageData($webpageID, array $parentPaths): array
+    public function getWebpageData($webpageID, array $parentPaths, bool $loggedIn): array
     {
         $webpage = Webpage::find($webpageID);
         if (!$webpage) {
@@ -50,7 +50,7 @@ class ShowIrisWebpage
         $webBlocks  = $this->getIrisWebBlocks(
             webpage: $webpage,
             webBlocks: Arr::get($webPageLayout, 'web_blocks', []),
-            isLoggedIn: auth()->check()
+            isLoggedIn: $loggedIn
         );
         $webpageImg = [];
         if ($webpage->seoImage) {
@@ -72,6 +72,12 @@ class ShowIrisWebpage
 
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
+        if (config('iris.cache.varnish')) {
+            $loggedIn = $request->header('X-Varnish-Logged-In', false);
+        } else {
+            $loggedIn = auth()->check();
+        }
+
         if (config('iris.cache.webpage_path.ttl') == 0) {
             $webpageID = $this->getWebpageID($request->get('website'), $path);
         } else {
@@ -117,12 +123,12 @@ class ShowIrisWebpage
         }
 
         if (config('iris.cache.webpage.ttl') == 0) {
-            $webpageData = $this->getWebpageData($webpageID, $parentPaths);
+            $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
         } else {
-            $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.(auth()->check() ? 'in' : 'out').'_'.$webpageID;
+            $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
 
-            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths) {
-                return $this->getWebpageData($webpageID, $parentPaths);
+            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths, $loggedIn) {
+                return $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
             });
         }
 

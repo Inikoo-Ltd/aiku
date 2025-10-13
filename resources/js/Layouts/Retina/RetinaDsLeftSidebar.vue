@@ -14,6 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { useCopyText } from "@/Composables/useCopyText"
+import { set } from "lodash-es"
 library.add(faChevronLeft, faCopy)
 
 const layout = useLayoutStore()
@@ -36,17 +37,17 @@ const handleToggleLeftBar = () => {
         id="leftSidebar"
     >
         <!-- Reference -->
-        <div class="hidden md:block absolute bottom-full left-3" :class="layout.leftSidebar.show ? '' : 'px-2' " v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.customer?.reference}`">
+        <div class="hidden md:block absolute bottom-full left-3" :class="layout.leftSidebar.show ? '' : 'px-2' " v-tooltip="layout.leftSidebar.show ? '' : `Reference: #${layout?.iris?.customer?.reference}`">
             <div v-if="layout.leftSidebar.show" class="text-xxs text-gray-500 -mb-1 italic">
                 {{ trans("Customer reference:") }}
             </div>
             <div class=" text-xl text-[#1d252e] font-semibold flex items-center gap-2">
                 <Transition name="slide-to-left">
-                    <span v-if="layout.leftSidebar.show">#{{layout?.customer?.reference ?? '-'}}</span>
+                    <span v-if="layout.leftSidebar.show">#{{layout?.iris?.customer?.reference ?? '-'}}</span>
                 </Transition>
                 <FontAwesomeIcon 
-                    v-if="layout.leftSidebar.show && layout?.customer?.reference" 
-                    @click="useCopyText(layout?.customer?.reference)" 
+                    v-if="layout.leftSidebar.show && layout?.iris?.customer?.reference" 
+                    @click="useCopyText(layout?.iris?.customer?.reference)" 
                     icon="far fa-copy"
                     class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
                     v-tooltip="trans('Copy reference to clipboard')"
@@ -78,10 +79,10 @@ const handleToggleLeftBar = () => {
                     {{ trans("Customer reference:") }}
                 </div>
                 <div class=" text-xl font-semibold flex items-center gap-2">
-                    <span>#{{layout?.customer?.reference ?? '-'}}</span>
+                    <span>#{{layout?.iris?.customer?.reference ?? '-'}}</span>
                     <FontAwesomeIcon 
-                        v-if="layout?.customer?.reference" 
-                        @click="useCopyText(layout?.customer?.reference)" 
+                        v-if="layout?.iris?.customer?.reference" 
+                        @click="useCopyText(layout?.iris?.customer?.reference)" 
                         icon="far fa-copy"
                         class="text-sm cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
                         v-tooltip="trans('Copy reference to clipboard')"
@@ -116,6 +117,7 @@ const handleToggleLeftBar = () => {
                             type="negative"
                             :noHover="true"
                             full
+                            @success="() => (set(layout, ['iris', 'is_logged_in'], false))"
                         >
                             <template #label="{ isLoadingVisit }">
                                 <span class="w-full text-left">

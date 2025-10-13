@@ -66,7 +66,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": "trends",
                     "recommender_client_identifier": "trends",
                     "size": 12,
-                    "user_id": layout.iris?.user_auth?.customer_id?.toString(),
+                    "user_id": layout.iris?.auth?.user?.customer_id?.toString(),
                     "category": undefined,
                     "brand": undefined,
                     "product_id": undefined,

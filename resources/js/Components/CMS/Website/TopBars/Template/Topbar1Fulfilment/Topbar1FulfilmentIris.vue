@@ -10,6 +10,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 import { TopbarFulfilmentTypes } from "@/types/TopbarFulfilment"
+import { set } from "lodash-es"
 
 library.add(faSignIn, faHeart, faShoppingCart, faSignOut, faUser, faUserPlus)
 
@@ -138,7 +139,9 @@ const layout = inject("layout", {})
 				url="/app/logout"
 				method="post"
 				:data="{}"
-				icon="fal fa-sign-out">
+				icon="fal fa-sign-out"
+				@success="() => (set(layout, ['iris', 'is_logged_in'], false))"
+			>
 				<template #label>
 					<span
 						v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />

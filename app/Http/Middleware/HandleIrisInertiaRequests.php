@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 
@@ -33,35 +34,36 @@ class HandleIrisInertiaRequests extends Middleware
 
         $website = $request->get('website');
 
-        $firstLoadOnlyProps['environment'] = app()->environment();
-        $firstLoadOnlyProps['ziggy']       = function () use ($request) {
-            return array_merge((new Ziggy('iris'))->toArray(), [
-                'location' => $request->url()
-            ]);
-        };
+
+        $firstLoadOnlyProps = [];
 
 
-        $websiteTheme = Arr::get($website->published_layout, 'theme');
+        if (!$request->inertia() || Session::get('reloadLayout')) {
+            $websiteTheme = Arr::get($website->published_layout, 'theme');
 
-        $customerSalesChannels = [];
-        if ($webUser && $request->get('shop_type') == ShopTypeEnum::DROPSHIPPING->value) {
-            $channels = DB::table('customer_sales_channels')
-                ->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
-                ->select('customer_sales_channels.id', 'customer_sales_channels.name as customer_sales_channel_name', 'platform_id', 'platforms.slug', 'platforms.code', 'platforms.name')
-                ->where('customer_id', $webUser->customer_id)
-                ->where('status', CustomerSalesChannelStatusEnum::OPEN->value)
-                ->whereNull('deleted_at')
-                ->get();
+            $firstLoadOnlyProps = [
+                'currency'    => $request->get('currency_data'),
+                'environment' => app()->environment(),
+                'ziggy'       => function () use ($request) {
+                    return array_merge((new Ziggy('iris'))->toArray(), [
+                        'location' => $request->url()
+                    ]);
+                },
+                'iris'        => $this->getIrisData($website),
+                "retina" => [
+                    "type" => $request->get('shop_type'),
+                ],
+                "layout" => [
+                    "app_theme" => Arr::get($websiteTheme, 'color'),
+                ],
+            ];
 
-            foreach ($channels as $channel) {
-                $customerSalesChannels[$channel->id] = [
-                    'customer_sales_channel_id'   => $channel->id,
-                    'customer_sales_channel_name' => $channel->customer_sales_channel_name,
-                    'platform_id'                 => $channel->platform_id,
-                    'platform_slug'               => $channel->slug,
-                    'platform_code'               => $channel->code,
-                    'platform_name'               => $channel->name,
-                ];
+
+            if (Session::get('reloadLayout') == 'remove') {
+                Session::forget('reloadLayout');
+            }
+            if (Session::get('reloadLayout')) {
+                Session::put('reloadLayout', 'remove');
             }
         }
 
@@ -69,28 +71,20 @@ class HandleIrisInertiaRequests extends Middleware
         return array_merge(
             $firstLoadOnlyProps,
             [
-                'auth'     => [
-                    'user'                  => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
-                    'webUser_count'         => $webUser?->customer?->webUsers?->count() ?? 1,
-                    'customerSalesChannels' => $customerSalesChannels
-                ],
-                'currency' => $request->get('currency_data'),
-                'flash'    => [
+                'flash'  => [
                     'notification' => fn () => $request->session()->get('notification'),
                     'modal'        => fn () => $request->session()->get('modal')
                 ],
-                'ziggy'    => [
+                'ziggy'  => [
                     'location' => $request->url(),
                 ],
-                "retina"   => [
-                    "type" => $request->get('shop_type'),
-                ],
-                "layout"   => [
-                    "app_theme" => Arr::get($websiteTheme, 'color'),
-                ],
-                'iris'     => $this->getIrisData($website, $webUser),
-
-
+                
+                
+                // 'auth'     => [  // Moved to varnish
+                //     'user'                  => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
+                //     'webUser_count'         => $webUser?->customer?->webUsers?->count() ?? 1,
+                //     'customerSalesChannels' => $customerSalesChannels
+                // ],
             ],
             parent::share($request),
         );

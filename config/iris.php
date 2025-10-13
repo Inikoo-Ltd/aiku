@@ -9,6 +9,7 @@
 
 return [
     'cache' => [
+        'varnish' => env('IRIS_VARNISH_ENABLED', false),
         'website' => [
             'ttl' => env('IRIS_WEBSITE_CACHE_TTL', 3600), // 1 hour in seconds
             'prefix' => env('IRIS_WEBSITE_CACHE_PREFIX', 'iris_website_cache'),

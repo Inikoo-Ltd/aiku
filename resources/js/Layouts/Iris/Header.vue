@@ -27,7 +27,7 @@ const props = defineProps<{
 
 const layout = inject("layout", {});
 const isLoggedIn = computed(() => {
-  return layout.iris?.user_auth ? true : false;
+  return layout.iris?.is_logged_in;
 })
 provide("isPreviewLoggedIn", isLoggedIn);
 
