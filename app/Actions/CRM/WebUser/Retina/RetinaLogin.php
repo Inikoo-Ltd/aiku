@@ -17,6 +17,7 @@ use App\Models\CRM\WebUser;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
@@ -125,6 +126,7 @@ class RetinaLogin
 
         $request->session()->regenerate();
         Session::put('reloadLayout', '1');
+        Cookie::queue('iris_vue', true, config('session.lifetime') * 60);
 
 
         $language = $webUser->language;
