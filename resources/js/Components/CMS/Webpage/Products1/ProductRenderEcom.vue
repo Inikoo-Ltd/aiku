@@ -20,6 +20,7 @@ import NewAddToCartButton from './NewAddToCartButton.vue' // Import button baru
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { routeType } from '@/types/route'
 import { parameterize } from '@sentry/vue'
+import LinkIris from '@/Components/Iris/LinkIris.vue'
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -260,9 +261,11 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
             <div class="px-3">
                 <!-- Title -->
-                <Link v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1">
-                {{ product.name }}
-                </Link>
+                <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1">
+                    <template #default>
+                        {{ product.name }}
+                    </template>
+                </LinkIris>
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
                     {{ product.name }}
                 </div>

@@ -98,15 +98,14 @@ export const initialiseRetinaApp = () => {
 
 
         // Set data of Locale (Language)
-        if (usePage().props.layout?.customer) {
-            layout.customer = usePage().props.layout.customer
-        }
+        // if (usePage().props.layout?.customer) {
+        //     layout.customer = usePage().props.layout.customer
+        // }
 
         if (usePage().props.app) {
             layout.app = usePage().props.app
         }
 
-        layout.app.name = "retina"
 
         // Set App Environment
         if (usePage().props?.environment) {
@@ -119,12 +118,17 @@ export const initialiseRetinaApp = () => {
         }
 
 
-        if (usePage().props.auth?.user) {
-            layout.user = usePage().props.auth.user
-             if(usePage().props.auth?.customerSalesChannels) {
-                layout.user.customerSalesChannels = usePage().props.auth?.customerSalesChannels
-             }
-        }
+        // if (usePage().props.auth?.user) {
+        //     layout.user = usePage().props.auth.user
+        //      if(usePage().props.auth?.customerSalesChannels) {
+        //         layout.user.customerSalesChannels = usePage().props.auth?.customerSalesChannels
+        //      }
+        // }
+
+        // Set User data
+        // if (usePage().props?.auth?.user) {
+        //     layout.user = usePage().props?.auth
+        // }
 
 
         if (usePage().props.retina) {
@@ -132,8 +136,10 @@ export const initialiseRetinaApp = () => {
         }
 
         if (usePage().props.iris) {
-            layout.iris = usePage().props.iris
-            layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
+            layout.iris = {
+                ...layout.iris,
+                ...usePage().props.iris
+            }            // layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
         }
 
         if (usePage().props.auth?.user?.avatar_thumbnail) {
@@ -141,6 +147,8 @@ export const initialiseRetinaApp = () => {
         }
 
     })
+    
+    layout.app.name = "retina"
 
     return layout
 }

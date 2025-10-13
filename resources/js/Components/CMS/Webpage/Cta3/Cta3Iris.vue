@@ -3,6 +3,7 @@ import Image from "@/Components/Image.vue"
 import { getStyles } from "@/Composables/styles"
 import { inject } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import LinkIris from "@/Components/Iris/LinkIris.vue";
 
 
 const props = defineProps<{
@@ -38,13 +39,15 @@ const layout: any = inject("layout", {})
 					<div v-html="fieldValue.text" />
 				</div>
 
-				<a typeof="button" :href="fieldValue?.button?.link?.href"
+				<LinkIris typeof="button" :href="fieldValue?.button?.link?.href"
 					:target="fieldValue?.button?.link?.target">
-					<Button :injectStyle="{
-						...getStyles(fieldValue?.button?.container?.properties, screenType),
-						width: 'fit-content !important'
-					}" :label="fieldValue?.button?.text" />
-				</a>
+					<template #default>
+						<Button :injectStyle="{
+							...getStyles(fieldValue?.button?.container?.properties, screenType),
+							width: 'fit-content !important'
+						}" :label="fieldValue?.button?.text" />
+					</template>
+				</LinkIris>
 			</div>
 		</div>
 	</div>

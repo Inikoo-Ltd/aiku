@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject } from "vue"
+import { inject, ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
 import { faLaptopCode } from "@fas"
@@ -8,11 +8,14 @@ import { getStyles } from "@/Composables/styles"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Skeleton } from "primevue"
-
+import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { set } from "lodash-es"
+import { notify } from "@kyvg/vue3-notification"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
@@ -64,15 +67,40 @@ const model = defineModel<ModelTopbar1>()
 const isLoggedIn = inject("isPreviewLoggedIn", false)
 const layout = inject("layout", {})
 
-
-const onLogout = () => {
-    set(layout, ['iris', 'is_logged_in'], false)
-
-    let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
-    localStorage.setItem('iris', JSON.stringify({
-        ...storageIris,
-        is_logged_in: false
-    }))
+// Section: Logout
+const isLoadingLogout = ref(false)
+const onClickLogout = () => {
+    router.post(
+        '/app/logout',
+        {
+            
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingLogout.value = true
+            },
+            onSuccess: () => {
+                set(layout, ['iris', 'is_logged_in'], false)
+                let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
+                localStorage.setItem('iris', JSON.stringify({
+                    ...storageIris,
+                    is_logged_in: false
+                }))
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to logout"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingLogout.value = false
+            },
+        }
+    )
 }
 </script>
 
@@ -145,13 +173,21 @@ const onLogout = () => {
             <ButtonWithLink
                 v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b' && !layout.iris_varnish?.isFetching"
                 url="/app/basket" :noHover="true" type="transparent">
-                <template #icon>
-                    <FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: 'white' }" fixed-width
-                        aria-hidden="true" />
+                <template #loading>
+                    <span v-show="false" class=""></span>
                 </template>
-                <template #label>
-                    <span class="text-white" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                <template #label="{ isLoadingVisit }">
+                    <!-- <span class="text-white" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
                         v-html="textReplaceVariables(`{{ items_count }} ${trans('items')} ({{ cart_amount }})`, layout.iris_variables)">
+                    </span> -->
+                    <span v-tooltip="trans('Number of products line')" class="text-white -mr-1.5" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                        v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
+                    </span>
+                    <LoadingIcon v-if="isLoadingVisit" :style="{ color: 'white' }" />
+                    <FontAwesomeIcon v-else icon="fal fa-shopping-cart" :style="{ color: 'white' }" fixed-width
+                        aria-hidden="true" />
+                    <span class="text-white" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                        v-html="textReplaceVariables(`{{ cart_amount }}`, layout.iris_variables)">
                     </span>
                 </template>
             </ButtonWithLink>
@@ -188,21 +224,23 @@ const onLogout = () => {
             </ButtonWithLink>
 
             <!-- Section: Logout -->
-            <ButtonWithLink
+            <Button
                 v-if="checkVisible(model?.logout?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
-                url="/app/logout" method="post" :data="{}" icon="fal fa-sign-out" type="transparent" :noHover="true"
-                @success="() => (onLogout())"
+                @click="() => onClickLogout()"
+                icon="fal fa-sign-out"
+                type="transparent"
+                :noHover="true"
+                :loading="isLoadingLogout"
             >
                 <template #icon>
-                    <FontAwesomeIcon icon="fal fa-sign-out" :style="{ color: 'white' }" fixed-width
-                        aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-sign-out" :style="{ color: 'white' }" fixed-width aria-hidden="true" />
                 </template>
                 <template #label>
                     <span class="text-white">
                         {{ trans("Logout") }}
                     </span>
                 </template>
-            </ButtonWithLink>
+            </Button>
 
             <div  v-if="layout.iris_varnish?.isFetching" class="flex flex-col md:flex-row md:justify-between gap-x-4">
                 <Skeleton  width="8rem" height="2rem"

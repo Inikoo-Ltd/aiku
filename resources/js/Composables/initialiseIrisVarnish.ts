@@ -5,56 +5,57 @@
  * Copyright: 2025
 */
 
-import { useIrisLayoutStore } from "@/Stores/irisLayout"
-import { router, usePage } from "@inertiajs/vue3"
-import { loadLanguageAsync } from "laravel-vue-i18n"
-import { watchEffect } from "vue"
-import { useLocaleStore } from "@/Stores/locale"
 import axios from "axios"
-import { onBeforeMount } from "vue"
-import { set } from "lodash"
+import { set } from "lodash-es"
 
 
-
-export const initialiseIrisVarnish = async () => {
-    const layout = useIrisLayoutStore()
+export const initialiseIrisVarnish = async (layoutStore) => {
+    const layout = layoutStore()
     let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
     console.log('storageIris', storageIris)
 
     layout.iris.is_logged_in = storageIris?.is_logged_in ?? false
 
+    const selectedRoute = route().has('iris.json.auth_data') ? 'iris.json.auth_data' : 'retina.json.auth_data'
+
+    // Fetch: auth_data (GetIrisAuthData)
     const getVarnishData = async () => {
         try {
             set(layout, ['iris_varnish', 'isFetching'], true)
-            const response = await axios.get(route('iris.json.auth_data'))
+            const response = await axios.get(route(selectedRoute))
             set(layout, ['iris_varnish', 'isFetching'], false)
 
-            console.log('getIrisVarnish iris.json.auth_data', response.data)
+            console.log('getIrisVarnish', selectedRoute, response.data)
             return response.data
         } catch (error) {
-            // console.error('Error fetching iris.json.auth_data:', error)
+            console.error('Error fetching auth_data:', error)
         } finally {
             set(layout, ['iris_varnish', 'isFetching'], false)
         }
     }
 
-    // onBeforeMount(async () => {
-        const aaa = await getVarnishData()
-        if (aaa?.variables) {
-            layout.iris_variables = aaa?.variables
-        }
+    const varnish = await getVarnishData()
 
-        localStorage.setItem('iris', JSON.stringify({
-            ...storageIris,
-            is_logged_in: aaa?.is_logged_in
-        }))
-        layout.iris.is_logged_in = aaa?.is_logged_in
-    // })
+    if (!varnish) {
+        return
+    }
 
-    // console.log('Init Iris: ', usePage().props)
+    if (varnish?.variables) {
+        layout.iris_variables = varnish?.variables
+    }
 
-    // router.on('navigate', (event) => {
-        
-    // })
+    localStorage.setItem('iris', JSON.stringify({
+        ...storageIris,
+        is_logged_in: varnish?.is_logged_in
+    }))
+
+    layout.user = varnish.auth.user
+    if(varnish.auth?.customerSalesChannels) {
+        layout.user.customerSalesChannels = varnish.auth?.customerSalesChannels
+    }
+    
+    layout.iris.is_logged_in = varnish?.is_logged_in
+    layout.iris.customer = varnish?.customer
+
 
 }
