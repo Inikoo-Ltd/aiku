@@ -544,7 +544,6 @@ trait WithWooCommerceApiRequest
 
             return $this->makeWooCommerceRequest('GET', 'system_status');
         } catch (\Exception $e) {
-            \Sentry::captureMessage($e->getMessage());
 
             return [$e->getMessage()];
         }
