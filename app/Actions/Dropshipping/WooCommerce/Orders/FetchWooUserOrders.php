@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
+use App\Models\Helpers\Country;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -50,6 +51,18 @@ class FetchWooUserOrders extends OrgAction
         }
 
         foreach ($wooOrders as $wooOrder) {
+            if (!Arr::get($wooOrder, 'date_paid')) {
+                return;
+            }
+
+            if ($wooCommerceUser->customerSalesChannel?->shop) {
+                $country = Country::where('code', Arr::get($wooOrder, 'shipping.country'))->first();
+
+                if (in_array($country->id, $wooCommerceUser->customerSalesChannel->shop->forbidden_dispatch_countries)) {
+                    return;
+                }
+            }
+
             if (DB::table('orders')
                 ->where('customer_id', $wooCommerceUser->customer_id)
                 ->where('platform_order_id', Arr::get($wooOrder, 'order_key'))

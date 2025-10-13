@@ -69,7 +69,7 @@ const setNotificationToRead = async (notifId: string) => {
 let timer: ReturnType<typeof setTimeout> | null = null
 onMounted(async () => {
     timer = setTimeout(async () => {
-        layout.notifications.map(notif => setNotificationToRead(notif.id))
+        layout?.notifications?.map(notif => setNotificationToRead(notif.id))
         timer = null
     }, 2500)
 })
