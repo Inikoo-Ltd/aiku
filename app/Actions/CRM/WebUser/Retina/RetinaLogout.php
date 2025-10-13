@@ -28,7 +28,7 @@ class RetinaLogout
         $request->session()->regenerateToken();
         Session::put('reloadLayout', '1');
 
-        Cookie::queue(Cookie::forget('iris_vue'));
+        Cookie::queue(Cookie::forget('iris_vua'));
 
         return Redirect::back();
 

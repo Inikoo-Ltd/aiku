@@ -126,7 +126,7 @@ class RetinaLogin
 
         $request->session()->regenerate();
         Session::put('reloadLayout', '1');
-        Cookie::queue('iris_vue', true, config('session.lifetime') * 60);
+        Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
 
 
         $language = $webUser->language;
