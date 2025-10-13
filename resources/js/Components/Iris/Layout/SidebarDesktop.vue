@@ -167,7 +167,7 @@ const handleViewAllSubDepartment = (url: string) => {
 
             <div class="overflow-y-auto">
                 <!-- Product Categories Subdepartments -->
-                <div v-if="activeIndex !== null && sortedSubDepartments.length">
+                <div v-if="activeIndex !== null && sortedSubDepartments?.length">
                     <div v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex"
                         class="p-2 px-4 flex items-center justify-between cursor-pointer"
                         :class="[
@@ -198,7 +198,7 @@ const handleViewAllSubDepartment = (url: string) => {
                 </div>
 
                 <!-- Custom Menus Subdepartments -->
-                <div v-if="activeCustomIndex !== null && customSubDepartments.length">
+                <div v-if="activeCustomIndex !== null && customSubDepartments?.length">
                     <div v-for="(sub, sIndex) in customSubDepartments" :key="sIndex"
                         class="p-2 px-4 flex items-center justify-between cursor-pointer"
                         :class="[
