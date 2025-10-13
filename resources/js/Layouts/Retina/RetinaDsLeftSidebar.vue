@@ -14,6 +14,7 @@ import { trans } from "laravel-vue-i18n"
 import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { useCopyText } from "@/Composables/useCopyText"
+import { set } from "lodash-es"
 library.add(faChevronLeft, faCopy)
 
 const layout = useLayoutStore()
@@ -116,6 +117,7 @@ const handleToggleLeftBar = () => {
                             type="negative"
                             :noHover="true"
                             full
+                            @success="() => (set(layout, ['iris', 'is_logged_in'], false))"
                         >
                             <template #label="{ isLoadingVisit }">
                                 <span class="w-full text-left">
