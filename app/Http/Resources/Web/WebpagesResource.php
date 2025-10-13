@@ -66,6 +66,7 @@ class WebpagesResource extends JsonResource
                 'webpage'      => $this->slug,
             ]),
             "href"              => $href,
+            'canonical_url'     => $this->canonical_url,
             "type"              => $this->type,
             "typeIcon"          => $this->type->stateIcon()[$this->type->value] ?? ["fal", "fa-browser"],
 

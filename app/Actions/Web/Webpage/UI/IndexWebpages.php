@@ -284,6 +284,7 @@ class IndexWebpages extends OrgAction
                 'webpages.level',
                 'webpages.sub_type',
                 'webpages.url',
+                'webpages.canonical_url',
                 'organisations.slug as organisation_slug',
                 'shops.slug as shop_slug',
                 'shops.name as shop_name',
