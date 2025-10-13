@@ -17,6 +17,7 @@ import { PageHeading as PageHeadingTS } from "@/types/PageHeading"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import CheckoutPaymentCashOnDelivery from "@/Components/Retina/Ecom/CheckoutPaymentCashOnDelivery.vue"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 library.add(faCreditCardFront, faUniversity, faExclamationTriangle)
 
@@ -71,7 +72,7 @@ onUnmounted(() => {
     layout.root_active = ""
 })
 
-const locale = inject("locale", {})
+const locale = inject("locale", aikuLocaleStructure)
 
 </script>
 
@@ -113,7 +114,7 @@ const locale = inject("locale", {})
             <div v-if="to_pay_data.by_balance > 0" class="mx-auto text-center text-lg border border-gray-300 py-4 rounded">
 
                 <div>
-                    <span class="font-bold bg-yellow-300 px-1 py-0.5">{{ locale.currencyFormat(currency_code, to_pay_data.by_balance) }}  {{ trans("of") }} {{ locale.currencyFormat(currency_code, to_pay_data.total) }}</span>
+                    <span class="font-bold bg-yellow-300 px-1 py-0.5">{{ locale?.currencyFormat(currency_code, to_pay_data.by_balance) }}  {{ trans("of") }} {{ locale?.currencyFormat(currency_code, to_pay_data.total) }}</span>
                     {{ trans("will be paid with balance") }}
                 </div>
 
