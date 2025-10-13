@@ -8,14 +8,11 @@
 
 namespace App\Http\Middleware;
 
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -78,8 +75,8 @@ class HandleIrisInertiaRequests extends Middleware
                 'ziggy'  => [
                     'location' => $request->url(),
                 ],
-                
-                
+
+
                 // 'auth'     => [  // Moved to varnish
                 //     'user'                  => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
                 //     'webUser_count'         => $webUser?->customer?->webUsers?->count() ?? 1,

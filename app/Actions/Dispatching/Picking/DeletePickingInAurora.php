@@ -33,7 +33,7 @@ class DeletePickingInAurora implements ShouldBeUnique
     public function handle(int $pickingID, Organisation $organisation, string $name, OrgStock $orgStock): void
     {
         $apiUrl = $this->getApiUrl($organisation);
-        $auroraApiToken=$this->getApiToken($organisation);
+        $auroraApiToken = $this->getApiToken($organisation);
         if (!$auroraApiToken || !app()->environment('production')) {
             return;
         }

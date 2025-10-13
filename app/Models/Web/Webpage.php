@@ -284,7 +284,7 @@ class Webpage extends Model implements Auditable, HasMedia
     public function getCanonicalUrl(): ?string
     {
 
-        $url=$this->canonical_url;
+        $url = $this->canonical_url;
         $environment = app()->environment();
 
 
@@ -296,7 +296,7 @@ class Webpage extends Model implements Auditable, HasMedia
             };
 
 
-            return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain),'');
+            return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain), '');
         } elseif ($environment == 'staging') {
             return replaceUrlSubdomain($url, 'canary');
         }

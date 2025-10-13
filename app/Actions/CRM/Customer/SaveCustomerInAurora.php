@@ -38,7 +38,7 @@ class SaveCustomerInAurora implements ShouldBeUnique
             return;
         }
 
-        $auroraApiToken=$this->getApiToken($customer->organisation);
+        $auroraApiToken = $this->getApiToken($customer->organisation);
         if (!$auroraApiToken || !app()->environment('production')) {
             return;
         }

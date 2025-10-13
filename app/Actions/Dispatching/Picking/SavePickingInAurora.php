@@ -37,7 +37,7 @@ class SavePickingInAurora implements ShouldBeUnique
         }
 
         $apiUrl = $this->getApiUrl($picking->organisation);
-        $auroraApiToken=$this->getApiToken($picking->organisation);
+        $auroraApiToken = $this->getApiToken($picking->organisation);
         if (!$auroraApiToken || !app()->environment('production')) {
             return;
         }

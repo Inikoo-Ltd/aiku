@@ -41,7 +41,7 @@ class SaveProspectInAurora implements ShouldBeUnique
             return;
         }
 
-        $auroraApiToken=$this->getApiToken($prospect->organisation);
+        $auroraApiToken = $this->getApiToken($prospect->organisation);
         if (!$auroraApiToken || !app()->environment('production')) {
             return;
         }

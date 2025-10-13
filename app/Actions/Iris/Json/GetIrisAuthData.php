@@ -33,7 +33,7 @@ class GetIrisAuthData extends RetinaAction
     public function getIrisUserData(): array
     {
 
-        $webUser= $this->webUser;
+        $webUser = $this->webUser;
 
         $cartCount  = 0;
         $cartAmount = 0;

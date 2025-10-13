@@ -31,7 +31,7 @@ class GetIrisBasketTransactionsInProductCategory extends IrisAction
             });
             $query->selectRaw('products.id,array_agg(transactions.quantity_ordered) as quantity_ordered')->groupBy('products.id');
 
-        }else{
+        } else {
             $query->selectRaw('products.id')->groupBy('products.id');
 
         }
@@ -49,7 +49,7 @@ class GetIrisBasketTransactionsInProductCategory extends IrisAction
         foreach ($query->get() as $data) {
             if ($basket) {
                 $quantityOrdered = json_decode(str_replace(['{', '}'], ['', ''], $data->quantity_ordered), true);
-            }else{
+            } else {
                 $quantityOrdered = null;
             }
             $productsData[$data->id] = [

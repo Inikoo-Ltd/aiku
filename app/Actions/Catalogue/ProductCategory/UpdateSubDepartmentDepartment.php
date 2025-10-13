@@ -58,7 +58,7 @@ class UpdateSubDepartmentDepartment extends OrgAction
 
         if (Arr::has($changes, 'department_id')) {
 
-            if($subDepartment->webpage){
+            if ($subDepartment->webpage) {
                 UpdateWebpageCanonicalUrl::dispatch($subDepartment->webpage)->delay(2);
             }
 

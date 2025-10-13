@@ -260,7 +260,7 @@ class UpdateTradeUnit extends GrpAction
     public function prepareForValidation(): void
     {
         if ($this->has('origin_country_id')) {
-            if(is_string($this->get('origin_country_id'))){
+            if (is_string($this->get('origin_country_id'))) {
                 $countryId = (int)$this->get('origin_country_id');
                 $this->set('origin_country_id', value: $countryId);
             } else {

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sun, 12 Oct 2025 15:16:46 Central Indonesia Time, Kuala Lumpur, Malaysia

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sun, 12 Oct 2025 14:57:48 Central Indonesia Time, Kuala Lumpur, Malaysia
@@ -9,7 +10,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
 return new class () extends Migration {
-
     public function up(): void
     {
         // Postgres supports IF NOT EXISTS on CREATE INDEX

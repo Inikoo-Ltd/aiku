@@ -29,7 +29,7 @@ class UpdateBulkProduct extends OrgAction
             $product = Product::find((int) Arr::get($productData, 'id'));
             UpdateProduct::make()->action($product, [
                 'rrp'  => Arr::get($productData, 'rrp', $product->rrp),
-                'price'=> Arr::get($productData, 'price', $product->price),
+                'price' => Arr::get($productData, 'price', $product->price),
                 'unit' => Arr::get($productData, 'unit', $product->unit),
             ]);
         }

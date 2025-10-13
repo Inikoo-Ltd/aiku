@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sun, 12 Oct 2025 20:27:59 Central Indonesia Time, Sanur, Bali, Indonesia
