@@ -277,6 +277,7 @@ class ShowWebpage extends OrgAction
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
         $subNavigation = $this->getWebpageNavigation($webpage->website);
+        $website = $webpage->website;
 
 
         $actions = $this->getModelActions($webpage);
@@ -285,7 +286,6 @@ class ShowWebpage extends OrgAction
         $actions = array_merge($actions, $this->createRedirectAction($webpage));
         $actions = array_merge($actions, $this->workshopActions($request));
         $actions = array_merge($actions, $this->getTypeSpecificActions($webpage));
-
 
         $subNavigationRoot = '';
 
