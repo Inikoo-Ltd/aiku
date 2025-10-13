@@ -109,7 +109,6 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 						<div
 							v-if="layout.iris?.is_logged_in"
-							ahref="route('retina.top_up.dashboard')"
 							class="xbg-slate-300 xborder border-slate-500 px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
 						>
 							{{ trans("Reference") }}:
