@@ -99,7 +99,7 @@ const onUpdateQuantity = (product: ProductResource) => {
             transaction: product.transaction_id
         }),
         {
-            quantity: stockInBasket
+            quantity_ordered: stockInBasket
         },
         {
             preserveScroll: true,
@@ -115,6 +115,7 @@ const onUpdateQuantity = (product: ProductResource) => {
                 set(props, ['product', 'quantity_ordered'], stockInBasket)
             },
             onError: errors => {
+                console.log('eee',errors)
                 setStatus('error')
                 notify({
                     title: trans("Something went wrong"),
