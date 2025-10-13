@@ -144,11 +144,11 @@
         </td>
         <td style="text-align: right">
             <div>
-                {{ __($context . ' Date') }}: <b>{{ $invoice->created_at->format('j F Y') }}</b>
+                {{ __($context . ' Date') }}: <b>{{ $invoice->date?->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
             </div>
-            @if($invoice->tax_liability_at)
+            @if($invoice->tax_liability_at && data_get($invoice->organisation->settings, 'invoicing.show_tax_liability_date'))
                 <div style="text-align: right">
-                    {{ __('Tax liability dates') }}: <b>{{ $invoice->tax_liability_at->format('j F Y') }}</b>
+                    {{ __('Tax liability date') }}: <b>{{ $invoice->tax_liability_at->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
                 </div>
             @endif
 
@@ -395,7 +395,7 @@
                     {{ $payment->paymentAccount['name'] }}
                 </td>
                 <td style="text-align:right">
-                    {{ $payment->updated_at->format('F j, Y H:i a') }}
+                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('F j, Y H:i a') }}
                 </td>
                 <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
                 <td style="text-align:left">{{ $payment->reference }}</td>

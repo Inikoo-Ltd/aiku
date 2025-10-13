@@ -144,7 +144,7 @@
         </td>
         <td style="text-align: right">
             <div>
-                {{ __('Date') }}: <b>{{ $order->created_at->format('j F Y') }}</b>
+                {{ __('Date') }}: <b>{{ $order->date->copy()->setTimezone($shop->timezone->name)->format('j F Y') }}</b>
             </div>
         </td>
     </tr>
@@ -386,7 +386,7 @@
                     {{ $payment->paymentAccount['name'] }}
                 </td>
                 <td style="text-align:right">
-                    {{ $payment->updated_at->format('F j, Y H:i a') }}
+                    {{ $payment->updated_at?->copy()->setTimezone($shop->timezone->name)->format('F j, Y H:i a') }}
                 </td>
                 <td style="text-align:left">{{ $payment->state->labels()[$payment->state->value] }}</td>
                 <td style="text-align:left">{{ $payment->reference }}</td>
