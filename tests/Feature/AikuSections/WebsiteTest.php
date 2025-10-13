@@ -257,10 +257,9 @@ test('create fulfilment website', function () {
         ->and($website->webStats->number_webpages)->toBe(7);
 
     /** @var Webpage $homeWebpage */
-    $homeWebpage = $website->webpages()->first();
+    $homeWebpage = $website->webpages()->where('type', WebpageTypeEnum::STOREFRONT)->first();
 
-    expect($homeWebpage->type)->toBe(WebpageTypeEnum::STOREFRONT)
-        ->and($homeWebpage->state)->toBe(WebpageStateEnum::READY)
+    expect($homeWebpage->state)->toBe(WebpageStateEnum::READY)
         ->and($homeWebpage->ready_at)->toBeInstanceOf(Carbon::class)
         ->and($homeWebpage->level)->toBe(1)
         ->and($homeWebpage->stats->number_child_webpages)->toBe(2)
@@ -281,9 +280,8 @@ test('launch fulfilment website from command', function (Website $website) {
     expect($website->state)->toBe(WebsiteStateEnum::LIVE);
 
     /** @var Webpage $homeWebpage */
-    $homeWebpage = $website->webpages()->first();
-    expect($homeWebpage->type)->toBe(WebpageTypeEnum::STOREFRONT)
-        ->and($homeWebpage->ready_at)->toBeInstanceOf(Carbon::class)
+    $homeWebpage = $website->webpages()->where('type', WebpageTypeEnum::STOREFRONT)->first();
+    expect($homeWebpage->ready_at)->toBeInstanceOf(Carbon::class)
         ->and($homeWebpage->live_at)->toBeInstanceOf(Carbon::class)
         ->and($homeWebpage->stats->number_snapshots)->toBe(2)
         ->and($homeWebpage->stats->number_deployments)->toBe(1);

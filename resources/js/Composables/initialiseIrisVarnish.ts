@@ -16,8 +16,12 @@ import { set } from "lodash"
 
 
 
-export const initialiseIrisVarnish = () => {
+export const initialiseIrisVarnish = async () => {
     const layout = useIrisLayoutStore()
+    let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
+    console.log('storageIris', storageIris)
+
+    layout.iris.is_logged_in = storageIris?.is_logged_in ?? false
 
     const getVarnishData = async () => {
         try {
@@ -34,14 +38,18 @@ export const initialiseIrisVarnish = () => {
         }
     }
 
-    onBeforeMount(async () => {
+    // onBeforeMount(async () => {
         const aaa = await getVarnishData()
         if (aaa?.variables) {
             layout.iris_variables = aaa?.variables
         }
 
+        localStorage.setItem('iris', JSON.stringify({
+            ...storageIris,
+            is_logged_in: aaa?.is_logged_in
+        }))
         layout.iris.is_logged_in = aaa?.is_logged_in
-    })
+    // })
 
     // console.log('Init Iris: ', usePage().props)
 

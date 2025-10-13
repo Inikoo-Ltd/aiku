@@ -65,7 +65,15 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 const layout = inject("layout", {})
 
 
+const onLogout = () => {
+    set(layout, ['iris', 'is_logged_in'], false)
 
+    let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
+    localStorage.setItem('iris', JSON.stringify({
+        ...storageIris,
+        is_logged_in: false
+    }))
+}
 </script>
 
 <template>
@@ -183,7 +191,7 @@ const layout = inject("layout", {})
             <ButtonWithLink
                 v-if="checkVisible(model?.logout?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
                 url="/app/logout" method="post" :data="{}" icon="fal fa-sign-out" type="transparent" :noHover="true"
-                @success="() => (set(layout, ['iris', 'is_logged_in'], false))"
+                @success="() => (onLogout())"
             >
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-sign-out" :style="{ color: 'white' }" fixed-width
