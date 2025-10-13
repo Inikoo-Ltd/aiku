@@ -8,11 +8,13 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\OrgAction;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\Cache;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class BreakWebpageCache
+class BreakWebpageCache extends OrgAction
 {
     use asObject;
 
@@ -22,5 +24,12 @@ class BreakWebpageCache
         Cache::forget($key);
         $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
         Cache::forget($key);
+    }
+
+    public function asController(Webpage $webpage, ActionRequest $request): void
+    {
+        $this->initialisation($webpage->organisation, $request);
+
+        $this->handle($webpage);
     }
 }
