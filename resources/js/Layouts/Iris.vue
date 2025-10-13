@@ -20,9 +20,11 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
 import { irisStyleVariables } from '@/Composables/Workshop'
+import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
+initialiseIrisVarnish()
 const layout = useIrisLayoutStore()
 const isOpenMenuMobile = ref(false)
 provide('layout', layout)

@@ -78,6 +78,13 @@ class HandleIrisInertiaRequests extends Middleware
                 'ziggy'  => [
                     'location' => $request->url(),
                 ],
+                
+                
+                // 'auth'     => [  // Moved to varnish
+                //     'user'                  => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
+                //     'webUser_count'         => $webUser?->customer?->webUsers?->count() ?? 1,
+                //     'customerSalesChannels' => $customerSalesChannels
+                // ],
             ],
             parent::share($request),
         );
