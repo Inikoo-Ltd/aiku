@@ -57,7 +57,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 'manage_stock' => !is_null($product->available_quantity),
                 'stock_status' => Arr::get($product, 'stock_status', 'instock'),
                 'attributes' => Arr::get($product, 'attributes', []),
-                'sku' => $portfolio->sku,
+                'sku' => $portfolio->sku . rand(00, 99), // avoiding duplicated sku
                 'weight' => (string)$product->gross_weight,
                 'status' => $this->mapProductStateToWooCommerce($product->status->value)
             ];
