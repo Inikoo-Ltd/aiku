@@ -37,7 +37,10 @@ class SavePickingInAurora implements ShouldBeUnique
         }
 
         $apiUrl = $this->getApiUrl($picking->organisation);
-
+        $auroraApiToken=$this->getApiToken($picking->organisation);
+        if (!$auroraApiToken || !app()->environment('production')) {
+            return;
+        }
 
         $note = sprintf(
             '%s picked on <a href="%s" target="_parent">%s</a>',
@@ -55,7 +58,7 @@ class SavePickingInAurora implements ShouldBeUnique
 
 
         Http::withHeaders([
-            'secret' => $this->getApiToken($picking->organisation),
+            'secret' => $auroraApiToken,
         ])->withQueryParameters(
             [
                 'picker_name' => $picking->picker->contact_name,

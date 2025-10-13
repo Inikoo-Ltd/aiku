@@ -31,14 +31,20 @@ class UnsubscribeAurora extends IrisAction
      */
     public function handle(array $modelData): array
     {
-        $apiUrl = $this->getApiUrl($this->organisation);
-
+        $apiUrl         = $this->getApiUrl($this->organisation);
+        $auroraApiToken = $this->getApiToken($this->organisation);
+        if (!$auroraApiToken || !app()->environment('production')) {
+            return [
+                'api_response_status' => 200,
+                'api_response_data'   => []
+            ];
+        }
 
         $websiteSource = explode(':', $this->website->source_id);
 
 
         $response = Http::withHeaders([
-            'secret' => $this->getApiToken($this->organisation),
+            'secret' => $auroraApiToken,
         ])->withQueryParameters(
             [
 
@@ -58,7 +64,7 @@ class UnsubscribeAurora extends IrisAction
             $source_id = $this->organisation.':'.Arr::get($data, 'unsubscribe_subject_key');
             $customer  = Customer::where('source_id', $source_id)->first();
             if (!$customer) {
-                $customer  = Customer::where('post_source_id', $source_id)->first();
+                $customer = Customer::where('post_source_id', $source_id)->first();
             }
 
             if ($customer) {
@@ -79,7 +85,7 @@ class UnsubscribeAurora extends IrisAction
             $source_id = $this->organisation.':'.Arr::get($data, 'unsubscribe_subject_key');
             $prospect  = Prospect::where('source_id', $source_id)->first();
             if (!$prospect) {
-                $prospect  = Prospect::where('post_source_id', $source_id)->first();
+                $prospect = Prospect::where('post_source_id', $source_id)->first();
             }
 
             UpdateProspect::make()->run(
