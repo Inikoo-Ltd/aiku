@@ -8,7 +8,6 @@
 
 namespace App\Actions\Maintenance\Accounting;
 
-use App\Actions\Accounting\Invoice\UpdateInvoice;
 use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;

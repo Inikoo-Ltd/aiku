@@ -121,7 +121,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
     {
         /** @var Collection $collection */
         $collection = $webpage->model;
-        if(!$collection){
+        if (!$collection) {
             return $webpage->url;
         }
 
