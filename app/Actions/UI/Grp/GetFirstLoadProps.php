@@ -54,7 +54,6 @@ class GetFirstLoadProps
                 'help_portal_url'        => config('app.help_portal_url'),
                 'avatar_thumbnail'       => $image,
                 'notifications'          => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
-                'traffic_source_cookies' => CaptureTrafficSource::run(),
 
             ];
     }
