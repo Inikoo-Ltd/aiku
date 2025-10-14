@@ -39,30 +39,24 @@ const emit = defineEmits<{
 }>()
 
 const computedHref = computed(() => {
-  const env = layout?.app?.environment || "local"
-  const domainType = layout?.retina?.type || "b2b"
+  /* const env = layout?.app?.environment || "local"
+  const domainType = layout?.retina?.type || "b2b" */
   let url = String(props.canonical_url || props.href)
 
-  // 🔹 If link type is external, just return it as-is
   if (props.type !== "internal") return url
 
-  // 🔹 For internal links, ensure we return only the pathname (e.g. "/dashboard")
   try {
-    // If URL is absolute (starts with https:// or http://)
     if (/^https?:\/\//.test(url)) {
       const parsed = new URL(url)
       return parsed.pathname + parsed.search + parsed.hash
     }
 
-    // If URL already relative (starts with "/")
     if (url.startsWith("/")) {
       return url
     }
 
-    // Ensure relative paths always start with a slash
     return "/" + url.replace(/^\/+/, "")
   } catch {
-    // Fallback in case of malformed URL
     return url
   }
 })
