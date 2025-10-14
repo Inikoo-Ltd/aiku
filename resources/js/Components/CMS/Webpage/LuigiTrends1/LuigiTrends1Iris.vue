@@ -12,6 +12,7 @@ import 'swiper/css'
 import 'swiper/css/navigation'
 import 'swiper/css/pagination'
 import { Autoplay, Navigation, Pagination } from 'swiper/modules'
+import Cookies from 'js-cookie';
 
 // Font Awesome
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -19,6 +20,7 @@ import { faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons
 import { library } from '@fortawesome/fontawesome-svg-core'
 import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
+import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
 // import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
@@ -66,7 +68,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": "trends",
                     "recommender_client_identifier": "trends",
                     "size": 12,
-                    "user_id": layout.iris?.auth?.user?.customer_id?.toString(),
+                    "user_id": layout.iris?.auth?.user?.customer_id?.toString() ?? Cookies.get('_lb') ?? null,
                     "category": undefined,
                     "brand": undefined,
                     "product_id": undefined,
@@ -83,6 +85,9 @@ const fetchRecommenders = async () => {
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
+
+        RecommendationCollector(response.data[0])
+
         console.log('LTrends1:', response.data)
         listProducts.value = response.data[0].hits
     } catch (error: any) {
