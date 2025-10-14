@@ -290,7 +290,7 @@ const onAddProducts = async (product: Product) => {
                     }
                 }
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
-                initialiseIrisVarnishCustomerData(useLayoutStore)
+                layout.reload_handle()
             },
             onFinish: () => {
                 isLoadingSubmit.value = false
@@ -368,7 +368,7 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                         ]
                     }
                 })
-                initialiseIrisVarnishCustomerData(useLayoutStore)
+                layout.reload_handle()
 
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'
             },

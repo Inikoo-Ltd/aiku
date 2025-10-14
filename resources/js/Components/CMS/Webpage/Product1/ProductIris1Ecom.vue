@@ -82,7 +82,7 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onSuccess: () => {
                 set(props.fieldValue.product, 'is_favourite', true)
-                layout.reload_handle(useIrisLayoutStore)
+                layout.reload_handle()
             },
             onError: errors => {
                 notify({

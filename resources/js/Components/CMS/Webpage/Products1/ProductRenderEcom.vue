@@ -94,7 +94,7 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onSuccess: () => {
                 product.is_favourite = true
-                layout.reload_handle(useIrisLayoutStore)
+                layout.reload_handle()
             },
             onError: errors => {
                 console.error(errors)
@@ -131,7 +131,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                 //     text: trans("Added to portfolio"),
                 //     type: "success"
                 // })
-                layout.reload_handle(useIrisLayoutStore)
+                layout.reload_handle()
                 product.is_favourite = false
             },
             onError: errors => {

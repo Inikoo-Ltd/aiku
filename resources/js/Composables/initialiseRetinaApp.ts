@@ -147,7 +147,7 @@ export const initialiseRetinaApp = () => {
             layout.avatar_thumbnail = usePage().props.auth.user.avatar_thumbnail
         }
 
-        layout.reload_handle = initialiseIrisVarnishCustomerData
+        layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
 
     })
     
