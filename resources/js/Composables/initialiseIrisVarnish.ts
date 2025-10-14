@@ -49,7 +49,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
         is_logged_in: varnish?.is_logged_in
     }))
 
-    layout.user = varnish.auth.user
+    layout.user = varnish.auth?.user
     if(varnish.auth?.customerSalesChannels) {
         layout.user.customerSalesChannels = varnish.auth?.customerSalesChannels
     }

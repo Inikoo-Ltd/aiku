@@ -12,9 +12,9 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductC
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
-use App\Actions\Iris\Json\GetIrisFirstHitData;
-use App\Actions\Iris\Json\GetIrisEcomCustomerData;
-use App\Actions\Iris\LogWebUserRequest;
+use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
+use App\Actions\Iris\Json\GetRetinaFirstHitData;
+use App\Actions\Iris\RetinaLogWebUserRequest;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentServices;
@@ -39,6 +39,6 @@ Route::get('product-category/{productCategory:id}/channels', GetRetinaCustomerPr
 Route::get('customer-sales-channel/{customerSalesChannel:id}/shopify-products', GetShopifyProducts::class)->name('dropshipping.customer_sales_channel.shopify_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetWooProducts::class)->name('dropshipping.customer_sales_channel.woo_products');
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
-Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
-Route::get('ecom-customer-data', GetIrisEcomCustomerData::class)->name('ecom_customer_data');
-Route::get('log-web-user-request', LogWebUserRequest::class)->name('log_web_user_request');
+Route::get('first-hit', GetRetinaFirstHitData::class)->name('first_hit');
+Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
+Route::get('log-web-user-request', RetinaLogWebUserRequest::class)->name('log_web_user_request');

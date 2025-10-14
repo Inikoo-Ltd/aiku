@@ -73,5 +73,10 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
 
 
 });
+
+Route::prefix("json")
+    ->name("json.")
+    ->group(__DIR__."/retina_relax_auth.php");
+    
 require __DIR__."/retina_auth.php";
 require __DIR__."/retina_webhooks.php";
