@@ -63,7 +63,13 @@ class ShowIrisWebpage
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
-            'webpage'     => $webpage,
+            'webpage_data'     => [
+                'structured_data' => $webpage->structured_data,
+                'title'           => $webpage->title,
+                'description'     => $webpage->description,
+                'canonical_url'   => $webpage->canonical_url,
+
+            ],
             'webpage_img' => $webpageImg,
             'web_blocks'  => $webBlocks,
         ];
