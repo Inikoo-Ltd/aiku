@@ -52,6 +52,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property array<array-key, mixed> $source_data
+ * @property string|null $class For analytics
+ * @property string|null $type
+ * @property int|null $target_id
+ * @property array<array-key, mixed>|null $target_data For complex target policies
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
@@ -81,6 +85,7 @@ class OfferAllowance extends Model implements Auditable
     protected $casts = [
         'data'            => 'array',
         'source_data'     => 'array',
+        'target_data'     => 'array',
         'state'           => OfferAllowanceStateEnum::class,
         'begin_at'        => 'datetime',
         'end_at'          => 'datetime',
@@ -90,6 +95,7 @@ class OfferAllowance extends Model implements Auditable
 
     protected $attributes = [
         'data'        => '{}',
+        'target_data' => '{}',
         'source_data' => '{}',
     ];
 

@@ -41,7 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $type
  * @property string|null $trigger_type
  * @property int|null $trigger_id
- * @property array<array-key, mixed> $allowances
+ * @property array<array-key, mixed> $trigger_data
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
  * @property bool $is_discretionary
@@ -86,7 +86,7 @@ class Offer extends Model implements Auditable
     protected $casts = [
         'data'            => 'array',
         'settings'        => 'array',
-        'allowances'      => 'array',
+        'trigger_data'    => 'array',
         'source_data'     => 'array',
         'begin_at'        => 'datetime',
         'end_at'          => 'datetime',
@@ -97,10 +97,10 @@ class Offer extends Model implements Auditable
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'settings'    => '{}',
-        'allowances'  => '{}',
-        'source_data' => '{}',
+        'data'         => '{}',
+        'settings'     => '{}',
+        'trigger_data' => '{}',
+        'source_data'  => '{}',
     ];
 
     protected $guarded = [];

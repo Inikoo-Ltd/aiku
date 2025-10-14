@@ -74,7 +74,7 @@ class StoreOffer extends OrgAction
             'name'         => ['required', 'max:250', 'string'],
             'data'         => ['sometimes', 'required'],
             'settings'     => ['sometimes', 'required'],
-            'allowances'   => ['sometimes', 'required'],
+            'trigger_data' => ['sometimes', 'required'],
             'start_at'     => ['sometimes', 'date'],
             'end_at'       => ['sometimes', 'nullable', 'date'],
             'type'         => ['required', 'string'],
