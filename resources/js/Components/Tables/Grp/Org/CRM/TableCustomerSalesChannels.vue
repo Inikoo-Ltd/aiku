@@ -260,7 +260,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                     </template>
                 </ModalConfirmationDelete>
 
-                <Button v-if="!item.platform_status" type="negative" :label="trans('Delete')" :icon="faTrashAlt"
+                <Button type="negative" :label="trans('Delete')" :icon="faTrashAlt"
                         @click="(event) => confirmDelete(event, item)"/>
             </div>
         </template>
