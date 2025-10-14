@@ -16,7 +16,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 
     layout.iris.is_logged_in = storageIris?.is_logged_in ?? false
 
-    const selectedRoute = route().has('iris.json.auth_data') ? 'iris.json.auth_data' : 'retina.json.auth_data'
+    const selectedRoute = route().has('iris.json.first_hit') ? 'iris.json.first_hit' : 'retina.json.first_hit'
 
     // Fetch: auth_data (GetIrisAuthData)
     const getVarnishData = async () => {

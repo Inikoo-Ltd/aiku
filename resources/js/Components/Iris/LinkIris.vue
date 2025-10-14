@@ -73,7 +73,7 @@ const computedHref = computed(() => {
 </script>
 
 <template>
-  <Link v-if="type == 'internal'" :href="computedHref" :method="props.method" :headers="props.header" :as="props.as"
+  <Link v-if="type == 'internal'" :href="computedHref" :method="props.method" :headers="{is_logged_in : layout?.iris?.is_logged_in, ...props.header}" :as="props.as"
     :class="props.class" :style="props.style" :target="props.target">
   <slot>{{ props.label }}</slot>
   </Link>
