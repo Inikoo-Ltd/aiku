@@ -17,6 +17,10 @@ use App\Actions\Web\Webpage\Iris\ShowIrisSitemap;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/health-ping', function () {
+    return response('OK', 200);
+});
+
 Route::get('wi/{image}', function () {
     return redirect('/image_not_found.png');
 })->where('image', '.*')->name('wi.not_found');
