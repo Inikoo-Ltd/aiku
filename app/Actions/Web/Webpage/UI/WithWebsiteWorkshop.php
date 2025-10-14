@@ -43,6 +43,7 @@ trait WithWebsiteWorkshop
                 'style' => 'primary',
                 'icon'  => ["fas", "fa-rocket"],
                 'label' => __('Publish'),
+                'key'   => 'publish',
                 'route' => [
                     'method'     => 'post',
                     'name'       => $publishRoute,
