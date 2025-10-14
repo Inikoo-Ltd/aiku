@@ -17,6 +17,7 @@ trait WithWebsiteWorkshop
     {
         return [
             [
+                'key'   => 'exit_workshop',
                 'type'  => 'button',
                 'style' => 'exit',
                 'label' => __('Exit workshop'),
@@ -39,11 +40,11 @@ trait WithWebsiteWorkshop
                     ]
             ],
             [
+                'key'   => 'publish',
                 'type'  => 'button',
                 'style' => 'primary',
                 'icon'  => ["fas", "fa-rocket"],
                 'label' => __('Publish'),
-                'key'   => 'publish',
                 'route' => [
                     'method'     => 'post',
                     'name'       => $publishRoute,
