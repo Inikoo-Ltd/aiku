@@ -125,17 +125,19 @@ class GetRetinaEcomNavigation
             ]
         ];
 
-        $groupNavigation['back-in-stocks'] = [
-            'label'   => __('Back In Stocks'),
-            'icon'    => ['fal', 'fa-heart'],
-            'root'    => 'retina.ecom.back_in_stock.',
-            'route'   => [
-                'name' => 'retina.ecom.back_in_stock.index'
-            ],
-            'topMenu' => [
-
-            ]
-        ];
+        if (app()->environment('local')) {
+            $groupNavigation['back-in-stocks'] = [
+                'label'   => __('Back In Stocks'),
+                'icon'    => ['fas', 'fa-envelope-circle-check'],
+                'root'    => 'retina.ecom.back_in_stock.',
+                'route'   => [
+                    'name' => 'retina.ecom.back_in_stock.index'
+                ],
+                'topMenu' => [
+    
+                ]
+            ];
+        }
 
         $groupNavigation['invoices'] = [
             'label' => __('Invoices'),

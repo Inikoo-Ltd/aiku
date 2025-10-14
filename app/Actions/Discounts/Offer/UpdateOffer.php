@@ -34,7 +34,7 @@ class UpdateOffer extends OrgAction
 
         OfferRecordSearch::dispatch($offer)->delay($this->hydratorsDelay);
 
-        if ($offer->wasChanged(['state','status'])) {
+        if ($offer->wasChanged(['state', 'status'])) {
             GroupHydrateOffers::dispatch($offer->group)->delay($this->hydratorsDelay);
             OrganisationHydrateOffers::dispatch($offer->organisation)->delay($this->hydratorsDelay);
             ShopHydrateOffers::dispatch($offer->shop)->delay($this->hydratorsDelay);
@@ -42,7 +42,6 @@ class UpdateOffer extends OrgAction
         }
 
         return $offer;
-
     }
 
     public function authorize(ActionRequest $request): bool
@@ -57,7 +56,7 @@ class UpdateOffer extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'       => [
+            'code'         => [
                 'sometimes',
                 new IUnique(
                     table: 'offers',
@@ -77,17 +76,17 @@ class UpdateOffer extends OrgAction
                 'max:64',
                 'alpha_dash'
             ],
-            'name'       => ['sometimes', 'max:250', 'string'],
-            'data'       => ['sometimes', 'required'],
-            'settings'   => ['sometimes', 'required'],
-            'allowances' => ['sometimes', 'required'],
-            'start_at'   => ['sometimes', 'date'],
-            'end_at'     => ['sometimes', 'nullable', 'date'],
+            'name'         => ['sometimes', 'max:250', 'string'],
+            'data'         => ['sometimes', 'required'],
+            'settings'     => ['sometimes', 'required'],
+            'trigger_data' => ['sometimes', 'required'],
+            'start_at'     => ['sometimes', 'date'],
+            'end_at'       => ['sometimes', 'nullable', 'date'],
         ];
 
         if (!$this->strict) {
-            $rules = $this->noStrictUpdateRules($rules);
-            $rules['start_at']        = ['sometimes', 'nullable', 'date'];
+            $rules             = $this->noStrictUpdateRules($rules);
+            $rules['start_at'] = ['sometimes', 'nullable', 'date'];
         }
 
         return $rules;
