@@ -45,7 +45,7 @@ const layout: any = inject("layout", {})
 				<section v-html="fieldValue.headline" />
 
 				<div class="mt-10 flex items-center justify-center gap-x-6">
-					<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
+					<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target" :type="fieldValue?.button?.link?.type"
 						typeof="button">
 						<template #default>
 							<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"

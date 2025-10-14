@@ -52,7 +52,7 @@ const layout: any = inject("layout", {})
 
 					<div class="flex justify-center">
 						<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
-							typeof="button">
+							typeof="button" :type="fieldValue?.button?.link?.type">
 							<template #default>
 								<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
 									:label="fieldValue?.button?.text" />

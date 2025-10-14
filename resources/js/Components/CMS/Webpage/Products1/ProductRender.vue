@@ -245,7 +245,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
             <!-- Title -->
 
-            <LinkIris v-if="product.url" :href="product.url"
+            <LinkIris v-if="product.url" :href="product.url" type="internal"
                 class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 <template #default>
                     {{ product.name }}

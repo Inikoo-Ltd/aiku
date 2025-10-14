@@ -53,12 +53,12 @@ const layout: any = inject("layout", {})
     }">
       <h2 class="text-2xl font-bold mb-6">{{ trans("Browse By Product Lines:") }}</h2>
       <div :class="['grid gap-8', responsiveGridClass]">
-        <LinkIris v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`${item.url}`">
+        <LinkIris v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`${item.url}`" type="internal">
           <template #default>
             <Family1Render :data="item" />
           </template>
         </LinkIris>
-        <LinkIris v-for="(item, index) in props?.fieldValue?.collections || []" :key="index" :href="`${item.url}`">
+        <LinkIris v-for="(item, index) in props?.fieldValue?.collections || []" :key="index" :href="`${item.url}`"  type="internal">
           <template #default>
             <Family1Render :data="item" />
           </template>

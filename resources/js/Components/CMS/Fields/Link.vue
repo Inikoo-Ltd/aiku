@@ -129,7 +129,7 @@ function getRoute() {
 				v-bind="props_input"
 				@update:modelValue="(e) => {
 					set(localModel, 'href', e)
-					emit('update:modelValue', localModel) // 🔥 Emit setiap perubahan
+					emit('update:modelValue', localModel) 
 				}"
 			/>
 
@@ -148,7 +148,7 @@ function getRoute() {
 					set(localModel, 'href', e?.href)
 					set(localModel, 'id', e?.id)
 					set(localModel, 'workshop', e?.workshop)
-					emit('update:modelValue', localModel) // 🔥 Emit setiap perubahan
+					emit('update:modelValue', localModel)
 				}"
 				:urlRoute="getRoute()" 
 				v-bind="props_selectquery"
