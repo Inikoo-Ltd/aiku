@@ -24,6 +24,7 @@ import { faCircle } from "@fas"
 import { Link } from "@inertiajs/vue3"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
+import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
 // import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
@@ -82,6 +83,7 @@ const fetchRecommenders = async () => {
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
+        RecommendationCollector(response.data[0])
         console.log('LLS1:', response.data)
         listProducts.value = response.data[0].hits
     } catch (error: any) {

@@ -99,6 +99,7 @@ const mergedItems = computed(() => {
           :href="`${item?.url}`"
           class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
           :aria-label="`Go to ${item?.name}`"
+          type="internal"
         >
         <template #default>
           <div class="flex items-center justify-center min-w-5 min-h-5 w-5 h-5 shrink-0">

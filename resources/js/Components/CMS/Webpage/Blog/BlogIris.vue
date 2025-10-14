@@ -19,7 +19,6 @@ import {
 import Image from "@/Components/Image.vue"
 import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
-import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin)
 

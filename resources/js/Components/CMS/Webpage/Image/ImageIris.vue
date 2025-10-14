@@ -117,6 +117,7 @@ const resolvedGap = computed(() => {
                 :target="image.link_data?.target"
                 rel="noopener noreferrer"
                 class="block w-full h-full"
+                :type="image.link_data?.type"
             >
             <template #default>
                 <Image

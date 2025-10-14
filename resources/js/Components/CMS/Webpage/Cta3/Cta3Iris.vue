@@ -40,7 +40,7 @@ const layout: any = inject("layout", {})
 				</div>
 
 				<LinkIris typeof="button" :href="fieldValue?.button?.link?.href"
-					:target="fieldValue?.button?.link?.target">
+					:target="fieldValue?.button?.link?.target" :type="fieldValue?.button?.link?.type">
 					<template #default>
 						<Button :injectStyle="{
 							...getStyles(fieldValue?.button?.container?.properties, screenType),
