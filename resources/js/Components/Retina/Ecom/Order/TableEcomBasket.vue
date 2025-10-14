@@ -24,7 +24,7 @@ const props = defineProps<{
     readonly?: boolean
 }>()
     
-
+const layout = inject("layout", {})
 const locale = inject('locale', retinaLayoutStructure)
 
 function productRoute(product) {
@@ -67,7 +67,7 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
             },
             onSuccess: () => {
                 set(listState.value, [idTransaction, 'quantity'], 'success')
-                initialiseIrisVarnishCustomerData(useLayoutStore)
+                layout.reload_handle()
             },
             onFinish: () => {
                 isLoading.value = false,
@@ -159,7 +159,7 @@ const debounceUpdateQuantity = debounce(
                     :method="item.deleteRoute.method"
                     @start="() => isLoading = 'unselect' + item.id"
                     @finish="() => isLoading = false"
-                    @success="()=>initialiseIrisVarnishCustomerData(useLayoutStore)"
+                    @success="()=>layout.reload_handle()"
                     v-tooltip="trans('Unselect this product')"
                     :preserveScroll="true"
                 >

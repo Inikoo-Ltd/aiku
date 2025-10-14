@@ -9,6 +9,7 @@
 namespace App\Actions\UI\Grp;
 
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Actions\Iris\CaptureTrafficSource;
 use App\Actions\UI\Grp\Layout\GetLayout;
 use App\Http\Resources\Helpers\LanguageResource;
 use App\Http\Resources\SysAdmin\NotificationsResource;
@@ -48,12 +49,11 @@ class GetFirstLoadProps
                         'languageAssetsOptions' => GetLanguagesOptions::make()->translated(),
                     ],
 
-                'layout'           => GetLayout::run($user),
-                'environment'      => app()->environment(),
-                'help_portal_url'  => config('app.help_portal_url'),
-                'avatar_thumbnail' => $image,
-                'notifications'    => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
-
+                'layout'                 => GetLayout::run($user),
+                'environment'            => app()->environment(),
+                'help_portal_url'        => config('app.help_portal_url'),
+                'avatar_thumbnail'       => $image,
+                'notifications'          => $user ? NotificationsResource::collection($user->notifications()->orderBy('created_at', 'desc')->limit(10)->get())->collection : null,
 
             ];
     }

@@ -61,5 +61,5 @@ export const retinaLayoutStructure = {
         notifications: Notification[]
         customerSalesChannels : any
     },
-    
+    reload_handle: null as null | (() => void)
 }

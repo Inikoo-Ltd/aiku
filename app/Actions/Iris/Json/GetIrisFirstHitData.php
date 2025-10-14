@@ -8,6 +8,8 @@
 
 namespace App\Actions\Iris\Json;
 
+use App\Actions\Iris\CaptureTrafficSource;
+use App\Actions\Iris\LogWebUserRequest;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -18,6 +20,10 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetIrisFirstHitData extends RetinaAction
 {
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function handle(): array
     {
         if (!isset($this->webUser) || !$this->webUser) {
@@ -26,10 +32,16 @@ class GetIrisFirstHitData extends RetinaAction
             ];
         }
 
+        LogWebUserRequest::run();
+
         return $this->getIrisUserData();
     }
 
 
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function getIrisUserData(): array
     {
 
@@ -89,10 +101,16 @@ class GetIrisFirstHitData extends RetinaAction
                 'back_in_stock_count'   => $this->customer->backInStockReminder->count(),
                 'cart_count'            => $cartCount,
                 'cart_amount'           => $cartAmount,
+                'traffic_source_cookies' => CaptureTrafficSource::run(),
+
             ],
         ];
     }
 
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function asController(Collection $collection, ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);

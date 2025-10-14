@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
 use App\Actions\Iris\Json\GetIrisEcomCustomerData;
+use App\Actions\Iris\LogWebUserRequest;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentServices;
@@ -40,3 +41,4 @@ Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetW
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
 Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
 Route::get('ecom-customer-data', GetIrisEcomCustomerData::class)->name('ecom_customer_data');
+Route::get('log-web-user-request', LogWebUserRequest::class)->name('log_web_user_request');

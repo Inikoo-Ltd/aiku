@@ -88,7 +88,7 @@ const onAddToBasket = async (product: ProductResource, basket : any) => {
             throw new Error('Failed to add to basket')
         }
 
-        layout.reload_handle(layout.app.name == 'retina' ? useLayoutStore : useIrisLayoutStore)
+        layout.reload_handle()
         router.reload({
             only: ['iris','data'],
         })
@@ -142,7 +142,7 @@ const onUpdateQuantity = (product: ProductResource, basket : any) => {
             },
             onSuccess: () => {
                 setStatus('success')
-                layout.reload_handle(layout.app.name == 'retina' ? useLayoutStore : useIrisLayoutStore)
+                layout.reload_handle()
                 basket.quantity_ordered = product.quantity_ordered_new
             },
             onError: errors => {

@@ -80,7 +80,7 @@ export const initialiseIrisApp = () => {
             layout.retina = usePage().props.retina
         }
 
-        layout.reload_handle = initialiseIrisVarnishCustomerData
+        layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
 
 
         // Set data of Locale (Language)
