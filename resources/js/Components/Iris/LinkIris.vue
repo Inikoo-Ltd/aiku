@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
-import { inject } from "vue"
-
+import { inject, computed } from "vue"
 
 type RouteType = string | Record<string, any>
+
 const layout = inject("layout", {})
+
 const props = withDefaults(
   defineProps<{
     href: RouteType
@@ -15,6 +16,8 @@ const props = withDefaults(
     style?: Record<string, any>
     label?: string
     target?: string
+    type?: string // "internal" | "external"
+    canonical_url?: string
   }>(),
   {
     header: "",
@@ -24,14 +27,47 @@ const props = withDefaults(
     style: () => ({}),
     label: "",
     target: "_self",
+    type: "internal",
   }
 )
+
+const computedHref = computed(() => {
+  const env = layout?.app?.environment || "local"
+  const domainType = layout?.retina?.type || "b2b"
+  let url = String(props.canonical_url || props.href)
+
+  // Skip rewrite if link type is external
+  if (props.type !== "internal") return url
+
+  const domainMap: Record<string, string> = {
+    local:
+      domainType === "b2b"
+        ? "ecom.test"
+        : domainType === "dropshipping"
+        ? "ds.test"
+        : "fulfilment.test",
+    staging: "canary",
+    production: "www",
+  }
+
+  if (env === "staging" || env === "production") {
+    const prefix = domainMap[env]
+    url = url
+      .replace(/^https?:\/\/(www\.|canary\.)?/, `https://${prefix}.`)
+      .replace(/ds\.test|ecom\.test|fulfilment\.test/, "example.com")
+  } else if (env === "local") {
+    if (!url.includes(".test")) {
+      url = url.replace(/example\.com/, domainMap.local)
+    }
+  }
+
+  return url
+})
 </script>
 
 <template>
-  <!-- <Link
-    v-if="layout?.app?.environment === 'production'"
-    :href="props.href"
+  <Link
+    :href="computedHref"
     :method="props.method"
     :headers="props.header"
     :as="props.as"
@@ -39,20 +75,6 @@ const props = withDefaults(
     :style="props.style"
     :target="props.target"
   >
-    <slot>
-        {{ props.label }}
-    </slot>
-  </Link> -->
-  <a
-    :href="props.href"
-    :class="props.class"
-    :headers="props.header"
-    :style="props.style"
-    :target="props.target"
-    rel="noopener noreferrer"
-  >
-   <slot>
-        {{ props.label }}
-    </slot>
-  </a>
+    <slot>{{ props.label }}</slot>
+  </Link>
 </template>

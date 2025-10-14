@@ -12,6 +12,7 @@ import { Link, router } from "@inertiajs/vue3";
 import MasterNavigation from "../Navigation/MasterNavigation.vue"
 import FormCreateMasterFamily from "../Master/FormCreateMasterFamily.vue"
 import ReviewContent from "../ReviewContent.vue"
+import { faExternalLink } from "@far"
 
 library.add(faUnlink, faThLarge, faBars, faSeedling, faCheck)
 
@@ -101,6 +102,16 @@ const openFamilyModal = () => {
 </script>
 
 <template>
+    <div v-if="data.webpage_url"
+		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
+		<div class="flex items-center gap-2 text-blue-700 text-sm">
+			<FontAwesomeIcon :icon="faExternalLink" class="text-blue-500" />
+			<a :href="data.webpage_url" target="_blank" rel="noopener noreferrer"
+				class="font-medium break-all hover:underline hover:text-blue-800 transition-colors duration-200">
+				{{ data.webpage_url }}
+			</a>
+		</div>
+	</div>
     <div class="px-4 pb-8 m-5">
         <!-- Master Message -->
         <div class="space-y-4">
