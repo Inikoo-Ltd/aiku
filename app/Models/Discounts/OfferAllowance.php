@@ -40,7 +40,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string|null $trigger_scope
  * @property string|null $trigger_type
  * @property string|null $trigger_id
- * @property string|null $target_type
+ * @property OfferAllowanceTargetType|null $target_type
  * @property bool $is_discretionary
  * @property bool $is_locked
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -52,8 +52,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
  * @property array<array-key, mixed> $source_data
- * @property string|null $class For analytics
- * @property string|null $type
+ * @property OfferAllowanceClass|null $class For analytics
+ * @property OfferAllowanceType|null $type
  * @property int|null $target_id
  * @property array<array-key, mixed>|null $target_data For complex target policies
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits

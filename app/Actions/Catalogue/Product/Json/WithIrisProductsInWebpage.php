@@ -9,7 +9,6 @@
 namespace App\Actions\Catalogue\Product\Json;
 
 use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
-use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

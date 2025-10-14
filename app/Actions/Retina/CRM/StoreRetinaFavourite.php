@@ -12,7 +12,6 @@ use App\Actions\CRM\Favourite\StoreFavourite;
 use App\Actions\RetinaAction;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\CRM\Favourite;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaFavourite extends RetinaAction

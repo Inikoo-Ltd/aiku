@@ -35,16 +35,19 @@ Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('product/{product:id}/transaction-data', GetIrisBasketTransactionsInProduct::class)->name('product.transaction_data')->withoutScopedBindings();
 
     Route::get('collection/{collection:id}/transaction-data', GetIrisBasketTransactionsInCollection::class)->name('collection.transaction_data');
-    Route::get('collection/{collection:id}/portfolio-data', GetIrisPortfoliosInCollection::class)->name('collection.portfolio_data');
-    Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
-    Route::get('ecom-customer-data', GetIrisEcomCustomerData::class)->name('ecom_customer_data');
-    Route::get('log-web-user-request', LogWebUserRequest::class)->name('log_web_user_request');
+
 
 
 });
 
 
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
+
+    Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
+    Route::get('ecom-customer-data', GetIrisEcomCustomerData::class)->name('ecom_customer_data');
+    Route::get('log-web-user-request', LogWebUserRequest::class)->name('log_web_user_request');
+
+    Route::get('collection/{collection:id}/portfolio-data', GetIrisPortfoliosInCollection::class)->name('collection.portfolio_data');
     Route::get('tags', GetIrisTags::class)->name('tags.index');
     Route::get('brands', GetIrisBrands::class)->name('brands.index');
     Route::get('product-category/{productCategory:id}/last-ordered-products', GetIrisLastOrderedProducts::class)->name('product_category.last-ordered-products.index');

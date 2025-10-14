@@ -439,7 +439,7 @@ if (!function_exists('replaceUrlDomain')) {
         if ($url === null || trim($url) === '') {
             return $url ?? '';
         }
-        
+
         $url = trim($url);
         $newDomain = rtrim(trim($newDomain), '/');
 
