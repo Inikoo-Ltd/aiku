@@ -21,7 +21,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\MagentoUser;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -134,9 +133,8 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $title = __('My Products');
 
-        $platform       = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
-        $manualChannels = $this->customer->customerSalesChannels()
-            ->where('platform_id', $platform->id)
+        $channels = $this->customer->customerSalesChannels()
+            ->whereNot('id', $this->customerSalesChannel->id)
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->get();
 
@@ -364,7 +362,7 @@ class IndexRetinaPortfolios extends RetinaAction
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
                 'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
-                'manual_channels'          => CustomerSalesChannelsResourceTOFIX::collection($manualChannels)//  Do now use the resource. Use an array of necessary data
+                'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels)//  Do now use the resource. Use an array of necessary data
             ]
         )->table($this->tableStructure(prefix: 'products'));
     }
