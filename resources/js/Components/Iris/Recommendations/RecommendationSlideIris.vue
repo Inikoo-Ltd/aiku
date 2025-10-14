@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import Button from '@/Components/Elements/Buttons/Button.vue'
+import { SelectItemCollector } from '@/Composables/Unique/LuigiDataCollector'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductHit } from '@/types/Luigi/LuigiTypes'
@@ -19,12 +21,14 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-    <div class="flex w-full px-4 py-3 rounded border hover:border-black/40">
+    <div class="flex flex-col justify-between w-full px-4 py-3 rounded border hover:border-black/40">
         <div class="w-full">
             <!-- Image -->
             <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
                 :href="product.attributes.web_url?.[0]"
-                class="block rounded aspect-[5/4] w-full overflow-hidden">
+                class="block rounded aspect-[5/4] w-full overflow-hidden"
+                @success="() => SelectItemCollector(product)"
+            >
                 <img :src="product.attributes.image_link" :alt="product.attributes.title"
                     class="w-full h-full object-contain text-center text-xxs text-gray-400/70 italic font-normal">
             </component>
@@ -32,7 +36,9 @@ const locale = inject('locale', aikuLocaleStructure)
             <!-- Title -->
             <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
                 :href="product.attributes.web_url?.[0]"
-                class="font-bold text-sm leading-tight hover:!underline !cursor-pointer">
+                class="font-bold text-sm leading-tight hover:!underline !cursor-pointer"
+                @success="() => SelectItemCollector(product)"
+            >
                 {{ product.attributes.title }}
             </component>
 
@@ -62,8 +68,8 @@ const locale = inject('locale', aikuLocaleStructure)
             </div>
         </div>
         
-        <!-- Add to Basket Button -->
-        <div v-if="layout.retina.type === 'b2b' && product.attributes.product_id?.[0]">
+        <!-- Button: Add to Basket -->
+        <div v-if="false && layout.retina.type === 'b2b' && product.attributes.product_id?.[0]">
             <Button @click="() => false"
                 xdisabled="isProductLoading(product.attributes.product_id[0])"
                 disabled
