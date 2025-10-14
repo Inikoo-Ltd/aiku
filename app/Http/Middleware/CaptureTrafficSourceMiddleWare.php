@@ -23,11 +23,11 @@ class CaptureTrafficSourceMiddleWare
     public function handle(Request $request, Closure $next)
     {
 
-        if(!CaptureTrafficSource::make()->canCaptureTrafficSource()){
+        if (!CaptureTrafficSource::make()->canCaptureTrafficSource()) {
             return $next($request);
         }
 
-        $cookies=CaptureTrafficSource::make()->getCookies();
+        $cookies = CaptureTrafficSource::make()->getCookies();
 
         foreach ($cookies as $key => $value) {
             Cookie::queue($key, $value['value'], $value['duration']);
