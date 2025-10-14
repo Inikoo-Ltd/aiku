@@ -18,7 +18,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 
     const selectedRoute = route().has('iris.json.auth_data') ? 'iris.json.auth_data' : 'retina.json.auth_data'
 
-    // Fetch: auth_data (GetIrisAuthData)
+    // Fetch: auth_data (GetIrisFirstHitData)
     const getVarnishData = async () => {
         try {
             set(layout, ['iris_varnish', 'isFetching'], true)
@@ -68,7 +68,7 @@ export const initialiseIrisVarnishCustomerData = async (layoutStore) => {
 
     const selectedRoute = route().has('iris.json.ecom_customer_data') ? 'iris.json.ecom_customer_data' : 'retina.json.ecom_customer_data'
 
-    // Fetch: auth_data (GetIrisAuthData)
+    // Fetch: auth_data (GetIrisFirstHitData)
     const getVarnishData = async () => {
         try {
             /* set(layout, ['iris_varnish', 'isFetching'], true) */

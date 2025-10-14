@@ -22,7 +22,7 @@ use App\Http\Middleware\SameSiteSession;
 use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
-use App\Http\Middleware\CaptureTrafficSource;
+use App\Http\Middleware\CaptureTrafficSourceMiddleWare;
 use App\Http\Middleware\CheckWebsiteState;
 use App\Http\Middleware\DetectWebsite;
 use App\Http\Middleware\HandleAikuPublicInertiaRequests;
@@ -181,9 +181,9 @@ class Kernel extends HttpKernel
             HandleInertiaCrossToRetina::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            LogWebUserRequestMiddleware::class,
+            //LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
-            CaptureTrafficSource::class,
+            //CaptureTrafficSourceMiddleWare::class,
         ],
         'retina'      => [
             DisableSSR::class,
@@ -199,9 +199,9 @@ class Kernel extends HttpKernel
             SetWebUserLocale::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            LogWebUserRequestMiddleware::class,
+            //LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
-            CaptureTrafficSource::class,
+            //CaptureTrafficSourceMiddleWare::class,
         ],
         'pupil'       => [
             DisableSSR::class,
