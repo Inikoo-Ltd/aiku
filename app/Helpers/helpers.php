@@ -434,8 +434,12 @@ if (!function_exists('replaceUrlDomain')) {
      * - If $newDomain includes a scheme (e.g. https://), it fully replaces the original scheme+host.
      * - If $newDomain has no scheme, the original URL's scheme is preserved.
      */
-    function replaceUrlDomain(string $url, string $newDomain): string
+    function replaceUrlDomain(?string $url, string $newDomain): string
     {
+        if ($url === null || trim($url) === '') {
+            return $url ?? '';
+        }
+        
         $url = trim($url);
         $newDomain = rtrim(trim($newDomain), '/');
 
