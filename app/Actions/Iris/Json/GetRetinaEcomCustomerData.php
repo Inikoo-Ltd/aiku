@@ -14,16 +14,10 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Collection;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetIrisEcomCustomerData extends IrisAction
+class GetRetinaEcomCustomerData extends RetinaAction
 {
     public function handle(): array
     {
-        if (!isset($this->webUser) || !$this->webUser) {
-            return [
-                'is_logged_in' => false,
-            ];
-        }
-
         return $this->getIrisUserData();
     }
 
@@ -50,18 +44,17 @@ class GetIrisEcomCustomerData extends IrisAction
                 'username'         => $webUser->username ?? '',
                 'email'            => $webUser->email ?? '',
                 'favourites_count' => $customer?->stats?->number_favourites ?? 0,
+                'back_in_stock_count'   => $customer->backInStockReminder->count(),
                 'cart_count'       => $cartCount,
                 'cart_amount'      => $cartAmount,
             ],
         ];
     }
 
-    public function asController(Collection $collection, ActionRequest $request): \Illuminate\Http\Response|array
+    public function asController(ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);
-        $this->webUser ??= auth()->user();
-        $this->shop ??= $collection->shop ?? null;
-        $this->customer ??= $this->webUser?->customer ?? null;
+
 
         return $this->handle();
     }

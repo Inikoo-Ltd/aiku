@@ -86,9 +86,10 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 			<div class="w-full grid grid-cols-3 items-center gap-6">
 				<!-- Logo -->
 				<div>
-					<component v-if="fieldValue?.logo?.image?.source" :is="fieldValue?.logo?.image?.source ? 'a' : 'div'"
-						:href="props.fieldValue?.logo?.link?.href" :target="fieldValue?.logo?.link?.target || '_self'"
-						rel="noopener noreferrer" class="block w-full h-full">
+					<component v-if="fieldValue?.logo?.image?.source"
+						:is="fieldValue?.logo?.image?.source ? LinkIris : 'div'" :href="props.fieldValue?.logo?.link?.href"
+						:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer"
+						class="block w-full h-full" :canonical_url="props.fieldValue?.logo?.link?.canonical_url" :type="props.fieldValue?.logo?.link?.type">
 						<Image :style="getStyles(fieldValue.logo.properties)"
 							:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
 							:src="fieldValue?.logo?.image?.source" :imgAttributes="fieldValue?.logo.image?.attributes">
@@ -99,18 +100,21 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 				<!-- Search Bar -->
 				<div class="relative justify-self-center w-full max-w-80 flex items-center h-full">
 					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id" id="luigi_header_1" />
-                </div>
+				</div>
 
 				<!-- Gold Member Button -->
 				<div class="justify-self-end w-fit">
-					<LinkIris :href="fieldValue?.button_1?.link?.href" :target="fieldValue?.button_1?.link?.target" :canonical_url="fieldValue?.button_1?.link?.canonical_url" :type="fieldValue?.button_1?.link?.type">
-						<div v-if="checkVisible(fieldValue.button_1.visible, isLoggedIn)"
-							class="space-x-1.5 cursor-pointer whitespace-nowrap"
-							:style="getStyles(fieldValue.button_1.container.properties)">
-							<span v-html="fieldValue.button_1.text" />
-						</div>
+					<LinkIris :href="fieldValue?.button_1?.link?.href" :target="fieldValue?.button_1?.link?.target"
+						:canonical_url="fieldValue?.button_1?.link?.canonical_url"
+						:type="fieldValue?.button_1?.link?.type">
+						<template #default>
+							<div v-if="checkVisible(fieldValue.button_1.visible, isLoggedIn)"
+								class="space-x-1.5 cursor-pointer whitespace-nowrap"
+								:style="getStyles(fieldValue.button_1.container.properties)">
+								<span v-html="fieldValue.button_1.text" />
+							</div>
+						</template>
 					</LinkIris>
-
 				</div>
 			</div>
 		</div>

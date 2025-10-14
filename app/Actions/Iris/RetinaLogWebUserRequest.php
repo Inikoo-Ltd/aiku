@@ -9,11 +9,13 @@
 namespace App\Actions\Iris;
 
 use App\Actions\Retina\SysAdmin\ProcessRetinaWebUserRequest;
+use App\Actions\RetinaAction;
 use App\Models\CRM\WebUser;
 use Illuminate\Routing\Route;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class LogWebUserRequest
+class RetinaLogWebUserRequest extends RetinaAction
 {
     use AsAction;
 
@@ -81,6 +83,14 @@ class LogWebUserRequest
         return true;
     }
 
+    
+    public function asController(ActionRequest $request): void
+    {
+        $this->initialisation($request);
+
+
+        $this->handle();
+    }
 
 
 

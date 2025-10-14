@@ -44,7 +44,7 @@ class RetinaAction
     protected ?Fulfilment $fulfilment;
     protected ?FulfilmentCustomer $fulfilmentCustomer;
     protected Organisation $organisation;
-    protected Shop $shop;
+    protected ?Shop $shop;
     protected bool $asAction = false;
 
 
@@ -68,12 +68,21 @@ class RetinaAction
     public function initialisation(ActionRequest $request): static
     {
         $this->webUser = $request->user();
-        $this->customer = $this->webUser->customer;
-        $this->fulfilmentCustomer = $this->customer->fulfilmentCustomer;
-        $this->shop = $this->customer->shop;
-        $this->fulfilment = $this->shop->fulfilment;
-        $this->organisation = $this->shop->organisation;
+
+        if($this->webUser) {
+            $this->customer = $this->webUser?->customer;
+            $this->fulfilmentCustomer = $this->customer?->fulfilmentCustomer;
+            $this->shop = $this->customer?->shop;
+            $this->fulfilment = $this->shop?->fulfilment;
+        } else {
+            $this->customer = null;
+            $this->fulfilmentCustomer = null;
+            $this->shop = null;
+            $this->fulfilment = null;
+        }
+
         $this->website = $request->get('website');
+        $this->organisation = $this->website->organisation;
         $this->fillFromRequest($request);
 
         $this->validatedData = $this->validateAttributes();
@@ -164,6 +173,9 @@ class RetinaAction
             }
         }
 
+        if(!$this->shop) {
+            return false;
+        }
 
         if ($this->shop->type === ShopTypeEnum::FULFILMENT && $this->webUser->customer->status === CustomerStatusEnum::APPROVED
             && $this->fulfilmentCustomer->rentalAgreement) {

@@ -9,8 +9,7 @@
 namespace App\Actions\Iris\Json;
 
 use App\Actions\Iris\CaptureTrafficSource;
-use App\Actions\Iris\LogWebUserRequest;
-use App\Actions\IrisAction;
+use App\Actions\Iris\RetinaLogWebUserRequest;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -19,7 +18,7 @@ use App\Models\Catalogue\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetIrisFirstHitData extends IrisAction
+class GetRetinaFirstHitData extends RetinaAction
 {
     /**
      * @throws \Psr\Container\ContainerExceptionInterface
@@ -27,13 +26,8 @@ class GetIrisFirstHitData extends IrisAction
      */
     public function handle(): array
     {
-        if (!isset($this->webUser) || !$this->webUser) {
-            return [
-                'is_logged_in' => false,
-            ];
-        }
 
-        LogWebUserRequest::run();
+        RetinaLogWebUserRequest::run();
 
         return $this->getIrisUserData();
     }
@@ -115,7 +109,7 @@ class GetIrisFirstHitData extends IrisAction
     public function asController(Collection $collection, ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);
-        $this->webUser ??= auth()->user();
+
 
         return $this->handle();
     }
