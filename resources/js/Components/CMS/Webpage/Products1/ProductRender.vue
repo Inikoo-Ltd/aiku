@@ -250,9 +250,8 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 <template #default>
                     {{ product.name }}
                 </template>
-            
-
             </LinkIris>
+            
             <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 {{ product.name }}
             </div>

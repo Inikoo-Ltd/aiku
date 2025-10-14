@@ -44,37 +44,41 @@ const computedHref = computed(() => {
       domainType === "b2b"
         ? "ecom.test"
         : domainType === "dropshipping"
-        ? "ds.test"
-        : "fulfilment.test",
+          ? "ds.test"
+          : "fulfilment.test",
     staging: "canary",
     production: "www",
   }
 
-  if (env === "staging" || env === "production") {
-    const prefix = domainMap[env]
-    url = url
-      .replace(/^https?:\/\/(www\.|canary\.)?/, `https://${prefix}.`)
-      .replace(/ds\.test|ecom\.test|fulfilment\.test/, "example.com")
-  } else if (env === "local") {
-    if (!url.includes(".test")) {
-      url = url.replace(/example\.com/, domainMap.local)
+  // ✅ Handle relative route (like "/dashboard")
+  if (!/^https?:\/\//.test(url)) {
+    if (env === "local") {
+      return `https://${domainMap.local}${url}`
     }
+    return url
   }
 
-  return url
+  // ✅ Handle full URLs
+  try {
+    const parsed = new URL(url)
+    if (env === "local") {
+      parsed.hostname = domainMap.local
+      parsed.protocol = "https:"
+    }
+    return parsed.toString()
+  } catch {
+    return url
+  }
 })
 </script>
 
 <template>
-  <Link
-    :href="computedHref"
-    :method="props.method"
-    :headers="props.header"
-    :as="props.as"
-    :class="props.class"
-    :style="props.style"
-    :target="props.target"
-  >
-    <slot>{{ props.label }}</slot>
+  <Link v-if="type == 'internal'" :href="computedHref" :method="props.method" :headers="props.header" :as="props.as"
+    :class="props.class" :style="props.style" :target="props.target">
+  <slot>{{ props.label }}</slot>
   </Link>
+  <a v-else :href="props.href" :class="props.class" :style="props.style" :target="props.target"
+    rel="noopener noreferrer">
+    <slot>{{ props.label }}</slot>
+  </a>
 </template>
