@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
 use App\Models\Helpers\Media;
@@ -40,17 +39,43 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $webpage_id
  * @property mixed $website_id
  * @property mixed $shop_id
- * @property mixed $canonical_url
  */
-class IrisProductsInWebpageResource extends JsonResource
+class IrisProductsInWebpageResourceToDelete extends JsonResource
 {
     use HasSelfCall;
 
     public function toArray($request): array
     {
+        $url = '';
+        if ($this->parent_url) {
+            $url = $this->parent_url.'/';
+        }
+        $url = '/'.$url.$this->url;
 
+        $favourite = false;
+        if ($request->user()) {
+            $customer = $request->user()->customer;
+            if ($customer) {
+                $favourite = $customer?->favourites()?->where('product_id', $this->id)->first();
+            }
+        }
 
+        $back_in_stock_id = null;
+        $back_in_stock    = false;
 
+        if ($request->user()) {
+            $customer = $request->user()->customer;
+            if ($customer) {
+                $set_data_back_in_stock = $customer?->BackInStockReminder()
+                    ?->where('product_id', $this->id)
+                    ->first();
+
+                if ($set_data_back_in_stock) {
+                    $back_in_stock    = true;
+                    $back_in_stock_id = $set_data_back_in_stock->id;
+                }
+            }
+        }
 
         $media = null;
         if ($this->image_id) {
@@ -58,11 +83,6 @@ class IrisProductsInWebpageResource extends JsonResource
         }
 
         $oldLuigiIdentity=$this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->website_id . ':' . $this->webpage_id;
-
-        $url=$this->canonical_url;
-        if(!app()->environment('production')){
-            $url=ShowIrisWebpage::make()->getEnvironmentUrl($url);
-        }
 
         return [
             'id'                   => $this->id,
@@ -83,6 +103,12 @@ class IrisProductsInWebpageResource extends JsonResource
             'url'                  => $url,
             'top_seller'           => $this->top_seller,
             'web_images'           => $this->web_images,
+            'transaction_id'       => $this->transaction_id ?? null,
+            'quantity_ordered'     => (int)$this->quantity_ordered ?? 0,
+            'quantity_ordered_new' => (int)$this->quantity_ordered ?? 0,  // To editable in Frontend
+            'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
+            'is_back_in_stock'     => $back_in_stock,
+            'back_in_stock_id'     => $back_in_stock_id
         ];
     }
 

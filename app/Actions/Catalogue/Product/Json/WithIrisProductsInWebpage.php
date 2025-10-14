@@ -154,7 +154,11 @@ trait WithIrisProductsInWebpage
             'products.unit',
             'products.top_seller',
             'products.web_images',
-            'webpages.url'
+            'webpages.url',
+            'webpages.canonical_url',
+            'webpages.website_id',
+            'webpages.id as webpage_id',
+
         ];
 
         $customer = request()->user()?->customer;
