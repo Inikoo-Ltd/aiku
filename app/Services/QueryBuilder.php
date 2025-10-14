@@ -115,15 +115,17 @@ class QueryBuilder extends \Spatie\QueryBuilder\QueryBuilder
                 if (count($parts) === 2) {
                     [$start, $end] = $parts;
 
-                    $start = trim($start) . ' 00:00:00';
-                    $end   = trim($end) . ' 23:59:59';
+                    $start = trim($start);
+                    $end = trim($end);
 
-                    $start = Carbon::createFromFormat('Ymd H:i:s', $start, $timezone)
+                    $start = Carbon::createFromFormat('Ymd', $start, $timezone)
                         ->setTimezone('UTC')
+                        ->startOfDay()
                         ->toDateTimeString();
 
-                    $end = Carbon::createFromFormat('Ymd H:i:s', $end, $timezone)
+                    $end = Carbon::createFromFormat('Ymd', $end, $timezone)
                         ->setTimezone('UTC')
+                        ->endOfDay()
                         ->toDateTimeString();
 
                     if ($this->getModel() instanceof FulfilmentCustomer) {
