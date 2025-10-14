@@ -57,7 +57,6 @@ class ShowCustomer extends OrgAction
 
     public function inOrganisation(Organisation $organisation, Customer $customer, ActionRequest $request): Customer
     {
-
         $this->parent = $organisation;
         $this->initialisation($organisation, $request)
             ->withTab($customer->shop->type == ShopTypeEnum::DROPSHIPPING ? CustomerDropshippingTabsEnum::values() : CustomerTabsEnum::values());
@@ -77,8 +76,8 @@ class ShowCustomer extends OrgAction
 
     public function htmlResponse(Customer $customer, ActionRequest $request): Response
     {
-        $tabs = $customer->shop->type == ShopTypeEnum::DROPSHIPPING ? CustomerDropshippingTabsEnum::class : CustomerTabsEnum::class;
-        $navigation = $tabs::navigation();
+        $tabs         = $customer->shop->type == ShopTypeEnum::DROPSHIPPING ? CustomerDropshippingTabsEnum::class : CustomerTabsEnum::class;
+        $navigation   = $tabs::navigation();
         $webUsersMeta = $this->getWebUserMeta($customer, $request);
 
         $shopMeta      = [];
@@ -123,7 +122,7 @@ class ShowCustomer extends OrgAction
                         'title' => __('Customer')
                     ],
                     'afterTitle'    => [
-                        'label' => '#' . $customer->reference,
+                        'label' => '#'.$customer->reference,
                     ],
                     'meta'          => array_filter([
                         $shopMeta,
@@ -131,6 +130,7 @@ class ShowCustomer extends OrgAction
                     ]),
                     'actions'       => [
                         [
+                            'key'     => 'edit_customer',
                             'type'    => 'button',
                             'style'   => 'edit',
                             'tooltip' => __('Edit Customer'),
@@ -140,10 +140,10 @@ class ShowCustomer extends OrgAction
                             ]
                         ],
                         $this->shop->type == ShopTypeEnum::B2B ? [
+                            'key'         => 'add_order',
                             'type'        => 'button',
                             'style'       => 'create',
                             'label'       => 'Add order',
-                            'key'         => 'add_order',
                             'fullLoading' => true,
                             'route'       => [
                                 'method'     => 'post',
@@ -156,8 +156,8 @@ class ShowCustomer extends OrgAction
                     ],
                     'subNavigation' => $subNavigation,
                 ],
-                'notes'              => $this->getOrderNotes($customer),
-                'updateRoute'   => [
+                'notes'            => $this->getOrderNotes($customer),
+                'updateRoute'      => [
                     'name'       => 'grp.models.customer.update',
                     'parameters' => [
                         'customer' => $customer->id
@@ -188,32 +188,32 @@ class ShowCustomer extends OrgAction
                     'credit_transactions' => $customer->stats->number_credit_transactions
                 ],
 
-                $tabs::SHOWCASE->value    => $this->tab == $tabs::SHOWCASE->value ?
-                    fn () => GetCustomerShowcase::run($customer)
-                    : Inertia::lazy(fn () => GetCustomerShowcase::run($customer)),
+                $tabs::SHOWCASE->value => $this->tab == $tabs::SHOWCASE->value ?
+                    fn() => GetCustomerShowcase::run($customer)
+                    : Inertia::lazy(fn() => GetCustomerShowcase::run($customer)),
 
 
-                $tabs::CREDIT_TRANSACTIONS->value  => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
-                    fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
-                    : Inertia::lazy(fn () => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
-                $tabs::PAYMENTS->value => $this->tab == $tabs::PAYMENTS->value ?
-                    fn () => PaymentsResource::collection(IndexPayments::run($customer, $tabs::PAYMENTS->value))
-                    : Inertia::lazy(fn () => PaymentsResource::collection(IndexPayments::run($customer))),
-                $tabs::FAVOURITES->value  => $this->tab == $tabs::FAVOURITES->value ?
-                    fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
-                    : Inertia::lazy(fn () => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
-                $tabs::REMINDERS->value   => $this->tab == $tabs::REMINDERS->value ?
-                    fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))
-                    : Inertia::lazy(fn () => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))),
-                $tabs::ATTACHMENTS->value => $this->tab == $tabs::ATTACHMENTS->value ?
-                    fn () => AttachmentsResource::collection(IndexAttachments::run($customer))
-                    : Inertia::lazy(fn () => AttachmentsResource::collection(IndexAttachments::run($customer))),
-                $tabs::DISPATCHED_EMAILS->value => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
-                    fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
-                    : Inertia::lazy(fn () => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
-                $tabs::HISTORY->value => $this->tab == $tabs::HISTORY->value ?
-                    fn () => HistoryResource::collection(IndexHistory::run($customer))
-                    : Inertia::lazy(fn () => HistoryResource::collection(IndexHistory::run($customer))),
+                $tabs::CREDIT_TRANSACTIONS->value => $this->tab == $tabs::CREDIT_TRANSACTIONS->value ?
+                    fn() => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))
+                    : Inertia::lazy(fn() => CreditTransactionsResource::collection(IndexCreditTransactions::run($customer))),
+                $tabs::PAYMENTS->value            => $this->tab == $tabs::PAYMENTS->value ?
+                    fn() => PaymentsResource::collection(IndexPayments::run($customer, $tabs::PAYMENTS->value))
+                    : Inertia::lazy(fn() => PaymentsResource::collection(IndexPayments::run($customer))),
+                $tabs::FAVOURITES->value          => $this->tab == $tabs::FAVOURITES->value ?
+                    fn() => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))
+                    : Inertia::lazy(fn() => CustomerFavouritesResource::collection(IndexCustomerFavourites::run($customer))),
+                $tabs::REMINDERS->value           => $this->tab == $tabs::REMINDERS->value ?
+                    fn() => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))
+                    : Inertia::lazy(fn() => CustomerBackInStockRemindersResource::collection(IndexCustomerBackInStockReminders::run($customer))),
+                $tabs::ATTACHMENTS->value         => $this->tab == $tabs::ATTACHMENTS->value ?
+                    fn() => AttachmentsResource::collection(IndexAttachments::run($customer))
+                    : Inertia::lazy(fn() => AttachmentsResource::collection(IndexAttachments::run($customer))),
+                $tabs::DISPATCHED_EMAILS->value   => $this->tab == $tabs::DISPATCHED_EMAILS->value ?
+                    fn() => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))
+                    : Inertia::lazy(fn() => DispatchedEmailsResource::collection(IndexDispatchedEmails::run($customer))),
+                $tabs::HISTORY->value             => $this->tab == $tabs::HISTORY->value ?
+                    fn() => HistoryResource::collection(IndexHistory::run($customer))
+                    : Inertia::lazy(fn() => HistoryResource::collection(IndexHistory::run($customer))),
 
 
             ]
