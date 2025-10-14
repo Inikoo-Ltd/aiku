@@ -10,6 +10,7 @@
 
 namespace App\Actions\Retina\UI\Dashboard;
 
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\CRM\CustomerSalesChannelsResourceTOFIX;
@@ -33,7 +34,7 @@ class GetRetinaDropshippingHomeData
             $platformTypeName = $platformType->value;
 
             $platform = $customerChannels->filter(function ($channel) use ($platformTypeName) {
-                return $channel->platform->type->value === $platformTypeName;
+                return $channel->platform->type->value === $platformTypeName && $channel->status === CustomerSalesChannelStatusEnum::OPEN;
             });
 
             $metas[] = [
