@@ -127,7 +127,7 @@ class GetRetinaEcomNavigation
 
         $groupNavigation['back-in-stocks'] = [
             'label'   => __('Back In Stocks'),
-            'icon'    => ['fal', 'fa-heart'],
+            'icon'    => ['fas', 'fa-envelope-circle-check'],
             'root'    => 'retina.ecom.back_in_stock.',
             'route'   => [
                 'name' => 'retina.ecom.back_in_stock.index'

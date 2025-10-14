@@ -83,7 +83,7 @@ class IndexRetinaEcomBackInStocks extends RetinaAction
         $basketTransactions = $this->getBasketTransactions($this->customer);
 
         return Inertia::render(
-            'Ecom/Favourites',
+            'Ecom/RetinaBackInStocks',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
                 'title'       => __('Back In Stocks'),

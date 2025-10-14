@@ -2,6 +2,7 @@
 import { inject, ref } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from "@fal"
+import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { faLaptopCode } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
@@ -17,7 +18,7 @@ import { notify } from "@kyvg/vue3-notification"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
-library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
+library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck)
 
 defineProps<{
     screenType: "desktop" | "mobile" | "tablet"
@@ -150,6 +151,24 @@ const onClickLogout = () => {
                 </template>
             </ButtonWithLink>
 
+            <!-- Section: Back in stock -->
+            <ButtonWithLink
+                v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping' && !layout.iris_varnish?.isFetching"
+                v-tooltip="trans('Reminder back in stock')"
+                url="/app/back-in-stocks"
+                type="transparent"
+                :noHover="true"
+            >
+                <template #icon>
+                    <FontAwesomeIcon icon="fas fa-envelope-circle-check" :style="{ color: 'white' }" class="align-middle" fixed-width aria-hidden="true" />
+                </template>
+                <template #label>
+                    <span class="text-white">
+                        {{ layout.iris_variables?.back_in_stock_count }}
+                    </span>
+                </template>
+            </ButtonWithLink>
+
             <!-- Section: Favourite -->
             <ButtonWithLink
                 v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping' && !layout.iris_varnish?.isFetching"
@@ -172,7 +191,11 @@ const onClickLogout = () => {
             <!-- Section: Basket (cart) -->
             <ButtonWithLink
                 v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b' && !layout.iris_varnish?.isFetching"
-                url="/app/basket" :noHover="true" type="transparent">
+                v-tooltip="trans('Cart count and amount')"
+                url="/app/basket"
+                :noHover="true"
+                type="transparent"
+            >
                 <template #loading>
                     <span v-show="false" class=""></span>
                 </template>
