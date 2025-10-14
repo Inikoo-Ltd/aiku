@@ -106,6 +106,13 @@ class StoreEbayProduct extends RetinaAction
             }
 
             $categories = $ebayUser->getCategorySuggestions($product->family->name);
+            $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
+
+            if (! $categoryId) {
+                $categories = $ebayUser->searchAvailableProducts($product->family->name);
+                $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
+            }
+
             if ($handleError($categories)) {
                 throw ValidationException::withMessages(['message' => $handleError($categories)]);
             }
@@ -125,7 +132,7 @@ class StoreEbayProduct extends RetinaAction
                         'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
                         'price' => $portfolio->customer_price,
                         'currency' => $portfolio->shop->currency->code,
-                        'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
+                        'category_id' => $categoryId
                     ]
                 );
 
@@ -136,7 +143,7 @@ class StoreEbayProduct extends RetinaAction
                     'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
                     'price' => $portfolio->customer_price,
                     'currency' => $portfolio->shop->currency->code,
-                    'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
+                    'category_id' => $categoryId
                 ]);
             }
 

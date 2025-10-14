@@ -39,7 +39,7 @@ const layout: any = inject("layout", {})
 					<div v-html="fieldValue.text" />
 				</div>
 
-				<LinkIris typeof="button" :href="fieldValue?.button?.link?.href"
+				<LinkIris typeof="button" :href="fieldValue?.button?.link?.href" :canonical_url="fieldValue?.button?.link?.canonical_url"
 					:target="fieldValue?.button?.link?.target" :type="fieldValue?.button?.link?.type">
 					<template #default>
 						<Button :injectStyle="{

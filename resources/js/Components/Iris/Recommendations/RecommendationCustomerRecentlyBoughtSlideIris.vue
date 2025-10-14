@@ -22,7 +22,7 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-    <div class="flex w-full px-4 py-3 rounded border hover:border-black/40">
+    <div class="flex w-full px-4 py-3 rounded border border-transparent hover:border-black/40">
         <div class="w-full">
             <!-- Image -->
             <component :is="product.web_url?.[0] ? Link : 'div'"
@@ -45,7 +45,8 @@ const locale = inject('locale', aikuLocaleStructure)
             <!-- Title -->
             <component :is="product.web_url?.[0] ? Link : 'div'"
                 :href="product.web_url?.[0]"
-                class="text-center xmt-2 font-bold text-sm leading-tight hover:!underline !cursor-pointer text-balance">
+                class="text-center xmt-2 font-bold text-sm leading-tight hover:!underline !cursor-pointer text-balance"
+            >
                 {{ product.name }}
             </component>
 

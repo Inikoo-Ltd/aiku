@@ -933,6 +933,23 @@ trait WithEbayApiRequest
 
     /**
      * Get user's eBay category suggestions
+     */
+    public function searchAvailableProducts($keyword)
+    {
+        try {
+            $endpoint = "/buy/browse/v1/item_summary/search";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                'q' => $keyword,
+                'limit' => 10
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get Category Suggestions Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay category suggestions
      *
      */
     public function getUser($data = [], $queryParams = [])

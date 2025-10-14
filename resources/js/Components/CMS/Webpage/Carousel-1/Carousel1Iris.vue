@@ -62,7 +62,7 @@ const getHref = (item: any) => !!item?.link?.href
         }" :modules="[Pagination, Autoplay]">
         <SwiperSlide v-for="(card, index) in fieldValue.carousel_data.cards" :key="index" class="flex flex-col"
           :style="{ height: '100%', overflow: 'auto', ...getStyles(fieldValue?.carousel_data?.card_container?.properties, screenType) }">
-          <component :is="getHref(card) ? LinkIris : 'div'" :href="card?.link?.href" :target="card?.link?.target" :type="card?.link?.type"
+          <component :is="getHref(card) ? LinkIris : 'div'" :href="card?.link?.href" :target="card?.link?.target" :canonical_url="card?.link?.canonical_url" :type="card?.link?.type"
             class="flex-1 flex flex-col">
             <template #default>
               <div class="flex justify-center overflow-visible"

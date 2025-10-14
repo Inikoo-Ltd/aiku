@@ -140,7 +140,7 @@ function getRoute() {
 				:value="localModel"
 				:closeOnSelect="true" 
 				:searchable="true"
-				label="path"
+				label="path" 
 				:canClear="true"
 				:clearOnSearch="true"
 				:onChange="(e) => { 

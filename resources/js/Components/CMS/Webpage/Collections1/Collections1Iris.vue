@@ -50,7 +50,7 @@ const gridColsClass = computed(() => {
 
     <div>
       <div :class="['grid gap-4', gridColsClass]">
-        <LinkIris v-for="item in fieldValue.collections" :key="item.code" :href="`/${item.url}`" :type="'internal'"
+        <LinkIris v-for="item in fieldValue.collections" :key="item.code" :href="`/${item.url}`"  :type="'internal'"
           class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full">
           <template #default>
             <div class="flex items-center justify-center w-5 h-5 shrink-0 text-xl ">

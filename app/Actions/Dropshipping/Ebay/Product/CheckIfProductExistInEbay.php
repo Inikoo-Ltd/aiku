@@ -57,6 +57,12 @@ class CheckIfProductExistInEbay extends RetinaAction
                 return [];
             }
 
+            /*            if(Arr::get($result, 'status') === 'PUBLISHED') {
+                            return $result;
+                        }
+
+                        return [];*/
+
             return $result;
         } catch (\Exception $e) {
             Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
