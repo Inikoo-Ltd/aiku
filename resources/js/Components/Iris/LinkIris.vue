@@ -43,40 +43,30 @@ const computedHref = computed(() => {
   const domainType = layout?.retina?.type || "b2b"
   let url = String(props.canonical_url || props.href)
 
-  // Skip rewrite if link type is external
+  // 🔹 If link type is external, just return it as-is
   if (props.type !== "internal") return url
 
-  const domainMap: Record<string, string> = {
-    local:
-      domainType === "b2b"
-        ? "ecom.test"
-        : domainType === "dropshipping"
-          ? "ds.test"
-          : "fulfilment.test",
-    staging: "canary",
-    production: "www",
-  }
-
-  // ✅ Handle relative route (like "/dashboard")
-  if (!/^https?:\/\//.test(url)) {
-    if (env === "local") {
-      return `https://${domainMap.local}${url}`
-    }
-    return url
-  }
-
-  // ✅ Handle full URLs
+  // 🔹 For internal links, ensure we return only the pathname (e.g. "/dashboard")
   try {
-    const parsed = new URL(url)
-    if (env === "local") {
-      parsed.hostname = domainMap.local
-      parsed.protocol = "https:"
+    // If URL is absolute (starts with https:// or http://)
+    if (/^https?:\/\//.test(url)) {
+      const parsed = new URL(url)
+      return parsed.pathname + parsed.search + parsed.hash
     }
-    return parsed.toString()
+
+    // If URL already relative (starts with "/")
+    if (url.startsWith("/")) {
+      return url
+    }
+
+    // Ensure relative paths always start with a slash
+    return "/" + url.replace(/^\/+/, "")
   } catch {
+    // Fallback in case of malformed URL
     return url
   }
 })
+
 </script>
 
 <template>
