@@ -140,12 +140,13 @@ function getRoute() {
 				:value="localModel"
 				:closeOnSelect="true" 
 				:searchable="true"
-				label="href" 
+				label="path" 
 				:canClear="true"
 				:clearOnSearch="true"
 				:onChange="(e) => { 
 					set(localModel, 'url', e?.url)
 					set(localModel, 'href', e?.href)
+					set(localModel, 'canonical_url', e?.canonical_url)
 					set(localModel, 'id', e?.id)
 					set(localModel, 'workshop', e?.workshop)
 					emit('update:modelValue', localModel)

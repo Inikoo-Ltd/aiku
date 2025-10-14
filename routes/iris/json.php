@@ -23,7 +23,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductCategor
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetCustomerProductSalesChannelIds;
 use App\Actions\Helpers\Brand\Json\GetIrisBrands;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
-use App\Actions\Iris\Json\GetIrisAuthData;
+use App\Actions\Iris\Json\GetIrisFirstHitData;
 use App\Actions\Iris\Json\GetIrisEcomCustomerData;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
 use Illuminate\Support\Facades\Route;
@@ -35,7 +35,7 @@ Route::middleware(["retina-auth:retina"])->group(function () {
 
     Route::get('collection/{collection:id}/transaction-data', GetIrisBasketTransactionsInCollection::class)->name('collection.transaction_data');
     Route::get('collection/{collection:id}/portfolio-data', GetIrisPortfoliosInCollection::class)->name('collection.portfolio_data');
-    Route::get('auth-data', GetIrisAuthData::class)->name('auth_data');
+    Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetIrisEcomCustomerData::class)->name('ecom_customer_data');
 
 
