@@ -16,7 +16,7 @@ use App\Models\Catalogue\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetIrisAuthData extends RetinaAction
+class GetIrisFirstHitData extends RetinaAction
 {
     public function handle(): array
     {
