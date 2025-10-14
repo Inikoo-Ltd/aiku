@@ -42,6 +42,14 @@ class LogWebUserRequest
             return false;
         }
 
+        /* @var WebUser|null $webUser */
+        $webUser = request()->user();
+
+        // If there is an authenticated user from another guard that's not a WebUser, skip logging
+        if ($webUser !== null && !($webUser instanceof WebUser)) {
+            return false;
+        }
+
         $routeName = request()->route()->getName();
 
         if (!str_starts_with($routeName, 'retina.') && !str_starts_with($routeName, 'iris.')) {
@@ -64,13 +72,7 @@ class LogWebUserRequest
         }
 
 
-        /* @var WebUser|null $webUser */
-        $webUser = request()->user();
 
-        // If there is an authenticated user from another guard that's not a WebUser, skip logging
-        if ($webUser !== null && !($webUser instanceof WebUser)) {
-            return false;
-        }
 
         if (app()->runningUnitTests()) {
             return false;

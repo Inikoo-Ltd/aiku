@@ -8,12 +8,13 @@
 
 namespace App\Actions\Iris\Json;
 
+use App\Actions\IrisAction;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Collection;
 use Lorisleiva\Actions\ActionRequest;
 
-class GetIrisEcomCustomerData extends RetinaAction
+class GetIrisEcomCustomerData extends IrisAction
 {
     public function handle(): array
     {
