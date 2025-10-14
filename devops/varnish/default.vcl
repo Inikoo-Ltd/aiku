@@ -60,10 +60,7 @@ sub set_login_flag_from_cookie {
 
 sub vcl_recv {
 
-    # Do not cache unsubscribe.php
-    if (req.url ~ "^/unsubscribe\.php(\?.*)?$") {
-        return (pass);
-    }
+
 
 
     # Allow BAN/PURGE from trusted IPs
@@ -80,6 +77,13 @@ sub vcl_recv {
     if (req.method != "GET" && req.method != "HEAD") {
         return (pass);
     }
+
+
+
+      # Do not cache unsubscribe.php
+        if (req.url ~ "^/unsubscribe\.php(\?.*)?$") {
+            return (pass);
+        }
 
  # Aiku no cachable iris paths
     if (req.url ~ "^/(app|json|disclosure|unsubscribe|locale|models|catalogue|invoice|attachment)(/|$)") {
@@ -174,6 +178,12 @@ sub vcl_backend_response {
         set beresp.uncacheable = true;
     }
 
+    # Do not cache redirects (301, 302, 303, 307, 308)
+    if (beresp.status == 301 || beresp.status == 302 || beresp.status == 303 || beresp.status == 307 || beresp.status == 308) {
+        set beresp.ttl = 0s;
+        set beresp.uncacheable = true;
+        return (deliver);
+    }
 
     # Enable gzip on text-like content
     if (beresp.http.Content-Type ~ "(text|javascript|json|xml|svg|font|css)") {
