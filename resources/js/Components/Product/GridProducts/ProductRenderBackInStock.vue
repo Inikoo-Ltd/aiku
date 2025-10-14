@@ -35,25 +35,19 @@ const props = withDefaults(defineProps<{
 
 }>(), {
     attachToFavouriteRoute: () => ({
-        name: 'iris.models.favourites.store',
+        name: 'retina.models.favourites.store',
     }),
     dettachToFavouriteRoute: () => ({
-        name: 'iris.models.favourites.delete',
+        name: 'retina.models.favourites.delete',
     }),
     attachBackInStockRoute: () => ({
-        name: 'iris.models.remind_back_in_stock.store',
+        name: 'retina.models.remind_back_in_stock.store',
     }),
     detachBackInStockRoute: () => ({
-        name: 'iris.models.remind_back_in_stock.delete',
+        name: 'retina.models.remind_back_in_stock.delete',
     }),
 })
 
-const emits = defineEmits<{
-    (e: 'afterOnAddFavourite', value: ProductResource): void
-    (e: 'afterOnUnselectFavourite', value: ProductResource): void
-    (e: 'afterOnAddBackInStock', value: ProductResource): void
-    (e: 'afterOnUnselectBackInStock', value: ProductResource): void
-}>()
 
 
 const isLoadingRemindBackInStock = ref(false)
@@ -73,7 +67,7 @@ const onAddFavourite = (product: ProductResource) => {
         },
         {
             preserveScroll: true,
-            only: ['iris'],
+            only: ['errors'],
             preserveState: true,
             onStart: () => {
                 isLoadingFavourite.value = true
@@ -92,7 +86,6 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-                emits('afterOnAddFavourite', product)
             },
         }
     )
@@ -107,16 +100,11 @@ const onUnselectFavourite = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ['errors'],
             onStart: () => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
                 layout.reload_handle(useIrisLayoutStore)
                 product.is_favourite = false
             },
@@ -129,7 +117,6 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-                emits('afterOnUnselectFavourite', product)
             },
         }
     )
@@ -183,11 +170,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 isLoadingRemindBackInStock.value = true
             },
             onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
                 product.is_back_in_stock = false
             },
             onError: errors => {
@@ -199,7 +181,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
-                emits('afterOnUnselectBackInStock', product)
             },
         }
     )
@@ -274,8 +255,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
                             <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
                                 class="text-pink-500" />
                             <div v-else class="relative" v-tooltip="trans('Add To Favourite')">
-                                <!-- <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
-                                    fixed-width /> -->
                                 <FontAwesomeIcon :icon="faHeart" class="inline text-pink-300" fixed-width />
                             </div>
 
