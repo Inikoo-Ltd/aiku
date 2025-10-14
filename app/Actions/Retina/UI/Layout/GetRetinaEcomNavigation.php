@@ -134,7 +134,7 @@ class GetRetinaEcomNavigation
                     'name' => 'retina.ecom.back_in_stock.index'
                 ],
                 'topMenu' => [
-    
+
                 ]
             ];
         }

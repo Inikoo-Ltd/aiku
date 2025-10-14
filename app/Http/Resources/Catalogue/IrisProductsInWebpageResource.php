@@ -57,11 +57,11 @@ class IrisProductsInWebpageResource extends JsonResource
             $media = Media::find($this->image_id);
         }
 
-        $oldLuigiIdentity=$this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->website_id . ':' . $this->webpage_id;
+        $oldLuigiIdentity = $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->website_id . ':' . $this->webpage_id;
 
-        $url=$this->canonical_url;
-        if(!app()->environment('production')){
-            $url=ShowIrisWebpage::make()->getEnvironmentUrl($url);
+        $url = $this->canonical_url;
+        if (!app()->environment('production')) {
+            $url = ShowIrisWebpage::make()->getEnvironmentUrl($url);
         }
 
         return [

@@ -82,7 +82,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             $media = Media::find($this->image_id);
         }
 
-        $oldLuigiIdentity=$this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->website_id . ':' . $this->webpage_id;
+        $oldLuigiIdentity = $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->website_id . ':' . $this->webpage_id;
 
         return [
             'id'                   => $this->id,
