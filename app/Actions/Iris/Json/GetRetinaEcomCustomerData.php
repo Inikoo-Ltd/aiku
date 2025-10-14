@@ -44,6 +44,7 @@ class GetRetinaEcomCustomerData extends RetinaAction
                 'username'         => $webUser->username ?? '',
                 'email'            => $webUser->email ?? '',
                 'favourites_count' => $customer?->stats?->number_favourites ?? 0,
+                'back_in_stock_count'   => $customer->backInStockReminder->count(),
                 'cart_count'       => $cartCount,
                 'cart_amount'      => $cartAmount,
             ],
