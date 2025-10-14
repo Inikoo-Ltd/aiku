@@ -125,6 +125,18 @@ class GetRetinaEcomNavigation
             ]
         ];
 
+        $groupNavigation['back-in-stocks'] = [
+            'label'   => __('Back In Stocks'),
+            'icon'    => ['fal', 'fa-heart'],
+            'root'    => 'retina.ecom.back_in_stock.',
+            'route'   => [
+                'name' => 'retina.ecom.back_in_stock.index'
+            ],
+            'topMenu' => [
+
+            ]
+        ];
+
         $groupNavigation['invoices'] = [
             'label' => __('Invoices'),
             'icon'  => ['fal', 'fa-file-invoice-dollar'],

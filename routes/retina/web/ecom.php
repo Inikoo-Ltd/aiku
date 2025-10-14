@@ -12,6 +12,7 @@
 use App\Actions\Retina\Billing\RetinaPdfInvoice;
 use App\Actions\Retina\Billing\UI\IndexRetinaEcomInvoices;
 use App\Actions\Retina\Billing\UI\ShowRetinaEcomInvoice;
+use App\Actions\Retina\Ecom\BackInStock\UI\IndexRetinaEcomBackInStocks;
 use App\Actions\Retina\Ecom\Basket\UI\ShowRetinaEcomBasket;
 use App\Actions\Retina\Ecom\Checkout\UI\ShowRetinaEcomCheckout;
 use App\Actions\Retina\Ecom\Favourite\UI\IndexRetinaEcomFavourites;
@@ -29,6 +30,10 @@ Route::prefix('checkout')->as('checkout.')->group(function () {
 
 Route::prefix('favourites')->as('favourites.')->group(function () {
     Route::get('/', IndexRetinaEcomFavourites::class)->name('index');
+});
+
+Route::prefix('back-in-stocks')->as('back_in_stock.')->group(function () {
+    Route::get('/', IndexRetinaEcomBackInStocks::class)->name('index');
 });
 
 Route::prefix('invoices')->name('invoices.')->group(function () {
