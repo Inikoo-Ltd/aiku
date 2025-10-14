@@ -190,6 +190,17 @@ onMounted(() => {
 })
 
 
+watch(
+  () => usePage().url, // watch the page URL
+  (newUrl, oldUrl) => {
+    if (layout.iris?.is_logged_in) {
+      layout.log_user()
+    }
+  },
+  { immediate: true }
+)
+
+
 const getTextColorDependsOnStatus = (status: string) => {
     switch (status) {
         case 'success':

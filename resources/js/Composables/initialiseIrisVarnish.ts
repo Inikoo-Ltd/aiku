@@ -13,7 +13,6 @@ import Cookies from 'js-cookie'
 export const initialiseIrisVarnish = async (layoutStore) => {
     const layout = layoutStore()
     let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
-    console.log('storageIris', storageIris)
 
     layout.iris.is_logged_in = storageIris?.is_logged_in ?? false
 
@@ -55,15 +54,13 @@ export const initialiseIrisVarnish = async (layoutStore) => {
         layout.user.customerSalesChannels = varnish.auth?.customerSalesChannels
     }
     
-    
     layout.iris.is_logged_in = varnish?.is_logged_in
     layout.iris.customer = varnish?.customer
 
-    /* Cookies.set('iris_logged_in', varnish?.is_logged_in, { expires: 7, path: '/' })
-    if (varnish?.auth?.user?.id) {
-        Cookies.set('iris_user_id', varnish.auth.user.id, { expires: 7, path: '/' })
-    } */
-
+    for(const item in varnish?.variables?.traffic_source_cookies){
+        let data = varnish?.variables?.traffic_source_cookies[item]
+        Cookies.set(item,data.value,data.duration)
+    }
 }
 
 
@@ -99,7 +96,22 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
         layout.iris_variables = {...layout.iris_variable,...varnish?.variables}
     }
 
-    
-
-
 }
+
+
+export const initialiseLogUser = async (layout) => {
+    const selectedRoute = route().has('iris.json.log_web_user_request') ? 'iris.json.log_web_user_request' : 'retina.json.log_web_user_request'
+
+    const getLogUser = async () => {
+        try {
+            const response = await axios.get(route(selectedRoute))
+
+            return response.data
+        } catch (error) {
+            console.error('Error fetching auth_data:', error)
+        } finally {}
+    }
+
+    const logDataUser = await getLogUser()
+}
+

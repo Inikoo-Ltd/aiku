@@ -12,7 +12,7 @@ import { watchEffect } from "vue"
 import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js"
 import { useEchoRetinaWebsite } from "@/Stores/echo-retina-website.js"
 import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
-import { initialiseIrisVarnishCustomerData } from '@/Composables/initialiseIrisVarnish'
+import { initialiseIrisVarnishCustomerData, initialiseLogUser } from '@/Composables/initialiseIrisVarnish'
 
 
 export const initialiseRetinaApp = () => {
@@ -148,6 +148,7 @@ export const initialiseRetinaApp = () => {
         }
 
         layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
+        layout.log_user = () => initialiseLogUser(layout)
 
     })
     
