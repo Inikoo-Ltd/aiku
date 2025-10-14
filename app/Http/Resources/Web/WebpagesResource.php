@@ -29,6 +29,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $website_url
  * @property mixed $title
  * @property mixed $website_slug
+ * @property mixed $canonical_url
  */
 class WebpagesResource extends JsonResource
 {
@@ -37,38 +38,26 @@ class WebpagesResource extends JsonResource
 
     public function toArray($request): array
     {
-        $href = '/';
 
-        if (app()->isProduction()) {
-            $href = 'https://www.';
-            if (str_starts_with($this->website_url, 'www.')) {
-                $href .= substr($this->website_url, 4);
-            } else {
-                $href .= $this->website_url;
-            }
-        } else {
-            $href = 'http://' . $this->website_url;
-        }
-
-        $href .= '/' . $this->url;
 
         return [
-            "id"       => $this->id,
-            "slug"     => $this->slug,
-            "level"    => $this->level,
-            "code"     => $this->code,
-            "url"      => $this->url,
-            "title"    => $this->title,
-            "workshop" => route('grp.org.shops.show.web.webpages.workshop', [
+            "id"            => $this->id,
+            "slug"          => $this->slug,
+            "level"         => $this->level,
+            "code"          => $this->code,
+            "url"           => $this->url,
+            "title"         => $this->title,
+            "workshop"      => route('grp.org.shops.show.web.webpages.workshop', [
                 'organisation' => $this->organisation_slug,
                 'shop'         => $this->shop_slug,
                 'website'      => $this->website_slug,
                 'webpage'      => $this->slug,
             ]),
-            "href"              => $href,
-            'canonical_url'     => $this->canonical_url,
-            "type"              => $this->type,
-            "typeIcon"          => $this->type->stateIcon()[$this->type->value] ?? ["fal", "fa-browser"],
+            "href"          => $this->canonical_url,
+            'canonical_url' => $this->canonical_url,
+            'path'          => $this->url,
+            "type"          => $this->type,
+            "typeIcon"      => $this->type->stateIcon()[$this->type->value] ?? ["fal", "fa-browser"],
 
             "sub_type"          => $this->sub_type,
             "created_at"        => $this->created_at,
