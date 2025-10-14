@@ -81,14 +81,14 @@ class GetIrisFirstHitData extends RetinaAction
 
             'customer'     => $this->customer,
             'variables'    => [
-                'reference'        => $this->customer->reference,
-                'name'             => $this->webUser->contact_name,
-                'username'         => $this->webUser->username,
-                'email'            => $this->webUser->email,
-                'favourites_count' => $this->customer->stats->number_favourites,
-                // 'items_count'      => $cartCount,  // TODO remove this
-                'cart_count'       => $cartCount,  // Count of unique items
-                'cart_amount'      => $cartAmount,
+                'reference'             => $this->customer->reference,
+                'name'                  => $this->webUser->contact_name,
+                'username'              => $this->webUser->username,
+                'email'                 => $this->webUser->email,
+                'favourites_count'      => $this->customer->stats->number_favourites,
+                'back_in_stock_count'   => $this->customer->backInStockReminder->count(),
+                'cart_count'            => $cartCount,
+                'cart_amount'           => $cartAmount,
             ],
         ];
     }

@@ -63,7 +63,7 @@ const onAddToBasket = async (product: ProductResource) => {
         product.transaction_id = response.data?.transaction_id
         product.quantity_ordered = response.data?.quantity_ordered
         setStatus('success')
-        layout.reload_handle(useIrisLayoutStore)
+        layout.reload_handle()
 
         // Luigi: event add to cart
         window?.dataLayer?.push({
@@ -117,7 +117,7 @@ const onUpdateQuantity = (product: ProductResource) => {
                 setStatus('success')
                 // product.quantity_ordered = product.quantity_ordered_new
                 set(props, ['product', 'quantity_ordered'], get(product, ['quantity_ordered_new'], null))
-                layout.reload_handle(useIrisLayoutStore)
+                layout.reload_handle()
             },
             onError: errors => {
                 console.log('eee',errors)
