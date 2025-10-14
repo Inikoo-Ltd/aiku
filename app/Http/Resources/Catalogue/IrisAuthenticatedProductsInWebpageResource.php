@@ -40,7 +40,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $website_id
  * @property mixed $shop_id
  */
-class IrisProductsInWebpageResourceToDelete extends JsonResource
+class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
 

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
+use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
@@ -119,7 +120,7 @@ trait WithIrisProductsInWebpage
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
-        return IrisProductsInWebpageResource::collection($products);
+        return IrisAuthenticatedProductsInWebpageResource::collection($products);
     }
 
     public function getAllowedFilters(): array

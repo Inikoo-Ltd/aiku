@@ -255,7 +255,7 @@ class ShowIrisWebpage
                         'type'   => 'simple',
                         'simple' => [
                             'label' => $parentWebpage->breadcrumb_label ?? $webpage->title ?? $webpage->code,
-                            'url'   => $this->getEnvironmentUrl($webpage->canonical_url)
+                            'url'   => $this->getEnvironmentUrl($parentWebpage->canonical_url)
                         ]
 
                     ];
