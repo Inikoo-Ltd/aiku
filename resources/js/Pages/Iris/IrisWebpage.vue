@@ -14,7 +14,7 @@ import { getIrisComponent } from '@/Composables/getIrisComponents'
 
 
 const props = defineProps<{
-  webpage : any
+  webpage_data : any
   web_blocks: any,
   webpage_img : any,
 }>()
@@ -41,7 +41,7 @@ onMounted(() => {
   // Inject structured data as script
   const script = document.createElement('script')
   script.type = 'application/ld+json'
-  let structuredData = props.webpage.structured_data
+  let structuredData = props.webpage_data.structured_data
 
   if (typeof structuredData !== 'string') {
     try {
@@ -77,16 +77,16 @@ onBeforeUnmount(() => {
 
 <template>
     <Head>
-        <title>{{ webpage.title }}</title>
-        <meta name="description" :content="webpage.description" />
+        <title>{{ webpage_data.title }}</title>
+        <meta name="description" :content="webpage_data.description" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" :content="webpage.title" />
-        <meta property="og:description" :content="webpage.description" />
+        <meta property="og:title" :content="webpage_data.title" />
+        <meta property="og:description" :content="webpage_data.description" />
         <meta property="og:url" :content="currentUrl" />
         <meta property="og:image" :content="webpage_img.png" />
-        <meta property="og:image:alt" :content="webpage.title" />
+        <meta property="og:image:alt" :content="webpage_data.title" />
         <meta property="og:locale" content="en_US" />
-        <meta property="og:site_name" :content="webpage.title" />
+        <meta property="og:site_name" :content="webpage_data.title" />
     </Head>
 
 

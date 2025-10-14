@@ -18,6 +18,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $title
  * @property mixed $url
  * @property mixed $parent_url
+ * @property mixed $canonical_url
  */
 class WebBlockFamiliesResource extends JsonResource
 {
@@ -27,18 +28,12 @@ class WebBlockFamiliesResource extends JsonResource
     {
         $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
 
-        $url = '';
-        if ($this->parent_url) {
-            $url = $this->parent_url.'/';
-        }
-        $url = '/'.$url.$this->url;
-
 
         return [
             'code'       => $this->code,
             'name'       => $this->name,
             'title'      => $this->title,
-            'url'        => $url,
+            'url'        => $this->canonical_url,
             'web_images' => $webImages
         ];
     }

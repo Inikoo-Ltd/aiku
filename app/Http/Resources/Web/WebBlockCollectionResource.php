@@ -14,6 +14,12 @@ use App\Http\Resources\HasSelfCall;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $slug
+ * @property mixed $code
+ * @property mixed $name
+ * @property mixed $canonical_url
+ */
 class WebBlockCollectionResource extends JsonResource
 {
     use HasSelfCall;
@@ -39,7 +45,7 @@ class WebBlockCollectionResource extends JsonResource
             'code'  => $this->code,
             'name'  => $this->name,
             'image' => $imageSources,
-            'url'   => $this->url,
+            'url'   => $this->canonical_url,
             'web_images' => $webImages,
             'products_route' => [
                 'name' => 'grp.json.collection.products.index',
