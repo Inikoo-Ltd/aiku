@@ -24,11 +24,11 @@ export const useLocaleStore = defineStore("locale", () => {
 		return new Intl.NumberFormat(language.value.code).format(number)
 	}
 
-	const currencyFormat = (currencyCode: string, amount: number): string => {
+	const currencyFormat = (currencyCode: string, amount: number | string): string => {
     if (amount == null) return "";
 
     // detect decimals from amount
-    const decimals = amount % 1 === 0 ? 2 : amount.toString().split(".")[1]?.length || 1;
+    const decimals = Number(amount) % 1 === 0 ? 2 : amount.toString().split(".")[1]?.length || 1;
 
     const formatter = new Intl.NumberFormat(language.value.code, {
         style: currencyCode || currencyInertia.value?.code ? "currency" : "decimal",
@@ -37,7 +37,7 @@ export const useLocaleStore = defineStore("locale", () => {
         maximumFractionDigits: decimals,
     });
 
-    	return formatter.format(amount);
+    	return formatter.format(Number(amount));
 	};
 
 	const currencySymbol = (currencyCode: string) => {

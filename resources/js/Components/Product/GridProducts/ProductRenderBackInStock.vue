@@ -1,0 +1,319 @@
+<script setup lang="ts">
+import Image from '@/Components/Image.vue'
+import { useLocaleStore } from "@/Stores/locale"
+import { inject, ref } from 'vue'
+import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { Link, router } from '@inertiajs/vue3'
+import { notify } from '@kyvg/vue3-notification'
+import { trans } from 'laravel-vue-i18n'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import { faEnvelope, faHeart } from '@far'
+import { faCircle, faHeart as fasHeart, faMedal } from '@fas'
+import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faQuestionCircle } from "@fal"
+import { faStarHalfAlt } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { ProductResource } from '@/types/Iris/Products'
+import NewAddToCartButton from '@/Components/CMS/Webpage/Products1/NewAddToCartButton.vue'
+import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
+import { routeType } from '@/types/route'
+import { parameterize } from '@sentry/vue'
+import LinkIris from '@/Components/Iris/LinkIris.vue'
+import { useIrisLayoutStore } from "@/Stores/irisLayout"
+library.add(faStarHalfAlt, faQuestionCircle)
+
+const layout = inject('layout', retinaLayoutStructure)
+
+const locale = useLocaleStore()
+
+
+const props = withDefaults(defineProps<{
+    product: ProductResource
+    attachToFavouriteRoute?: routeType
+    dettachToFavouriteRoute?: routeType
+    attachBackInStockRoute?: routeType
+    detachBackInStockRoute?: routeType
+
+}>(), {
+    attachToFavouriteRoute: () => ({
+        name: 'iris.models.favourites.store',
+    }),
+    dettachToFavouriteRoute: () => ({
+        name: 'iris.models.favourites.delete',
+    }),
+    attachBackInStockRoute: () => ({
+        name: 'iris.models.remind_back_in_stock.store',
+    }),
+    detachBackInStockRoute: () => ({
+        name: 'iris.models.remind_back_in_stock.delete',
+    }),
+})
+
+const emits = defineEmits<{
+    (e: 'afterOnAddFavourite', value: ProductResource): void
+    (e: 'afterOnUnselectFavourite', value: ProductResource): void
+    (e: 'afterOnAddBackInStock', value: ProductResource): void
+    (e: 'afterOnUnselectBackInStock', value: ProductResource): void
+}>()
+
+
+const isLoadingRemindBackInStock = ref(false)
+const currency = layout?.iris?.currency
+
+// Section: Add to Favourites
+const isLoadingFavourite = ref(false)
+const onAddFavourite = (product: ProductResource) => {
+
+    // Section: Submit
+    router.post(
+        route(props.attachToFavouriteRoute.name, {
+            product: product.id
+        }),
+        {
+            // item_id: [product.id]
+        },
+        {
+            preserveScroll: true,
+            only: ['iris'],
+            preserveState: true,
+            onStart: () => {
+                isLoadingFavourite.value = true
+            },
+            onSuccess: () => {
+                product.is_favourite = true
+                layout.reload_handle(useIrisLayoutStore)
+            },
+            onError: errors => {
+                console.error(errors)
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to add the product to favourites"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingFavourite.value = false
+                emits('afterOnAddFavourite', product)
+            },
+        }
+    )
+}
+const onUnselectFavourite = (product: ProductResource) => {
+
+    // Section: Submit
+    router.delete(
+        route(props.dettachToFavouriteRoute.name, {
+            product: product.id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ['iris'],
+            onStart: () => {
+                isLoadingFavourite.value = true
+            },
+            onSuccess: () => {
+                // notify({
+                //     title: trans("Success"),
+                //     text: trans("Added to portfolio"),
+                //     type: "success"
+                // })
+                layout.reload_handle(useIrisLayoutStore)
+                product.is_favourite = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove the product from favourites"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingFavourite.value = false
+                emits('afterOnUnselectFavourite', product)
+            },
+        }
+    )
+}
+
+
+// const onAddBackInStock = (product: ProductResource) => {
+
+//     // Section: Submit
+//     router.post(
+//         route(props.attachBackInStockRoute.name, {
+//             product: product.id
+//         }),
+//         {
+//             // item_id: [product.id]
+//         },
+//         {
+//             preserveScroll: true,
+//             only: ['iris'],
+//             preserveState: true,
+//             onStart: () => {
+//                 isLoadingRemindBackInStock.value = true
+//             },
+//             onSuccess: () => {
+//                 product.is_back_in_stock = true
+//             },
+//             onError: errors => {
+//                 notify({
+//                     title: trans("Something went wrong"),
+//                     text: trans("Failed to add the product to remind back in stock"),
+//                     type: "error"
+//                 })
+//             },
+//             onFinish: () => {
+//                 isLoadingRemindBackInStock.value = false
+//                 emits('afterOnAddBackInStock', product)
+//             },
+//         }
+//     )
+// }
+const onUnselectBackInStock = (product: ProductResource) => {
+    router.delete(
+        route(props.detachBackInStockRoute.name, {
+            product: product.id
+        }),
+        {
+            preserveScroll: true,
+            preserveState: true,
+            only: ['iris'],
+            onStart: () => {
+                isLoadingRemindBackInStock.value = true
+            },
+            onSuccess: () => {
+                // notify({
+                //     title: trans("Success"),
+                //     text: trans("Added to portfolio"),
+                //     type: "success"
+                // })
+                product.is_back_in_stock = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to remove the product from remind back in stock"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingRemindBackInStock.value = false
+                emits('afterOnUnselectBackInStock', product)
+            },
+        }
+    )
+}
+
+
+</script>
+
+<template>
+    <div class="pb-3 relative flex flex-col justify-between h-full" comp="product-render-ecom">
+
+        <!-- Top Section: Stock, Images, Title, Code, Price -->
+        <div class=" text-gray-800 isolate">
+            <div v-if="product?.top_seller"
+                class="z-10 absolute top-2 left-2 border text-xs font-bold px-2 py-0.5 rounded" :class="{
+                    'text-[#FFD700] bg-[#584b015] border-[#FFD700]': product.top_seller == 1, // Gold
+                    'text-[#C0C0C0] bg-[#C0C0C033] border-[#C0C0C0]': product.top_seller === 2, // Silver
+                    'text-[#CD7F32] bg-[#CD7F3222] border-[#CD7F32]': product.top_seller === 3  // Bronze
+                }">
+                <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2" fixed-width s />
+
+                <span class="hidden md:inline">{{ trans("BESTSELLER") }}</span>
+            </div>
+
+
+            <!-- Product Image -->
+            <component :is="product.url ? Link : 'div'" :href="product.url"
+                class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative">
+                <slot name="image" :product="product">
+                    <Image :src="product?.web_images?.main?.gallery" alt="product image" :style="{ objectFit: 'contain' }" />
+                </slot>
+
+                <div xv-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
+                    <button
+                        @click.prevent="()=> onUnselectBackInStock(product)"
+                        class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                        v-tooltip="trans('You will be notified when product is back in stock')"
+                    >
+                        <LoadingIcon  v-if="isLoadingRemindBackInStock" />
+                        <FontAwesomeIcon v-else :icon="faEnvelopeCircleCheck" fixed-width class="text-green-600" />
+                    </button>
+                </div>
+            </component>
+
+            <div class="px-3">
+                <!-- Title -->
+                <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1" type="internal">
+                    <template #default>
+                        {{ product.name }}
+                    </template>
+                </LinkIris>
+                <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
+                    {{ product.name }}
+                </div>
+
+                <!-- SKU and RRP -->
+                <div class="flex gap-x-2">
+                    <div class="w-full">
+                        <div class="flex justify-between text-xs text-gray-600 mb-1">
+                            <span>{{ product?.code }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Favorite Icon -->
+                    <div xv-if="layout?.iris?.is_logged_in" class="flex items-center">
+
+                        <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-xl px-2 -mr-2">
+                            <LoadingIcon />
+                        </div>
+                        <div v-else
+                            @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
+                            class="cursor-pointer xabsolute top-2 right-2 group text-xl px-2 -mr-2">
+
+                            <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
+                                class="text-pink-500" />
+                            <div v-else class="relative" v-tooltip="trans('Add To Favourite')">
+                                <!-- <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
+                                    fixed-width /> -->
+                                <FontAwesomeIcon :icon="faHeart" class="inline text-pink-300" fixed-width />
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+
+                <div v-if="layout?.iris?.is_logged_in"
+                    class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
+                    <div class="">
+                        <div>
+                            {{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price || 0) }}</span>
+                        </div>
+                        <div>
+                            <span class="text-sm text-gray-400 xtext-base font-normal">
+                                ({{ locale.currencyFormat(currency?.code, Number(Number(product.price) / Number(product.units)).toFixed(2)) }}/{{ product.unit }})
+                            </span>
+                        </div>
+                    </div>
+
+                    <div v-if="product.rrp" class="text-xs xmt-1 text-right">
+                        <div>RRP: {{ locale.currencyFormat(currency?.code, product.rrp || 0) }}</div>
+                        <div class="text-gray-400 xtext-base font-normal">
+                            ({{ locale.currencyFormat(currency?.code, (product.rrp / product.units).toFixed(2)) }}/{{
+                            product.unit }})
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+
+<style scoped></style>
