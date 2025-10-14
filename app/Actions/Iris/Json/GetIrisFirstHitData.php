@@ -86,9 +86,8 @@ class GetIrisFirstHitData extends RetinaAction
                 'username'              => $this->webUser->username,
                 'email'                 => $this->webUser->email,
                 'favourites_count'      => $this->customer->stats->number_favourites,
-                // 'items_count'        => $cartCount,  // TODO remove this
-                'back_in_stock_count'   => 0,  // TODO
-                'cart_count'            => $cartCount,  // Count of unique items
+                'back_in_stock_count'   => $this->customer->backInStockReminder->count(),
+                'cart_count'            => $cartCount,
                 'cart_amount'           => $cartAmount,
             ],
         ];
