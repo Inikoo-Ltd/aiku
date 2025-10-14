@@ -14,13 +14,7 @@ backend default {
     .connect_timeout = 1s;
     .first_byte_timeout = 30s;
     .between_bytes_timeout = 30s;
-    .probe = {
-        .url = "/health-ping";
-        .interval = 10s;
-        .timeout = 2s;
-        .window = 5;
-        .threshold = 2;
-    }
+
 }
 
 acl purge {
@@ -35,6 +29,7 @@ acl purge {
 sub vcl_init {
     # Place for VMOD initialisation if needed
 }
+
 
 sub normalize_accept_encoding {
     if (req.http.Accept-Encoding) {
@@ -64,6 +59,15 @@ sub set_login_flag_from_cookie {
 }
 
 sub vcl_recv {
+
+    # Do not cache unsubscribe.php
+    if (req.url ~ "^/unsubscribe\.php(\?.*)?$") {
+        return (pass);
+    }
+
+ unset req.http.Cookie;
+    return (hash);
+
     # Allow BAN/PURGE from trusted IPs
     if (req.method == "PURGE" || req.method == "BAN") {
         if (client.ip !~ purge) {
@@ -89,8 +93,13 @@ sub vcl_recv {
     # Derive login header from cookie (used by app and cache key)
     call set_login_flag_from_cookie;
 
-    # Always pass admin, API, or authenticated-necessary paths
-    if (req.url ~ "^/(admin|app|nova|api|horizon|telescope)(/|$)") {
+    # Aiku no cachable iris paths
+    if (req.url ~ "^/(app|json|disclosure|unsubscribe|locale|models|catalogue|invoice|attachment)(/|$)") {
+        return (pass);
+    }
+
+    # Common no cachable paths
+    if (req.url ~ "^/(admin|json|nova|api|horizon|telescope)(/|$)") {
         return (pass);
     }
 
@@ -99,18 +108,11 @@ sub vcl_recv {
         return (pass);
     }
 
-
-    # If request has cookies but is not static, consider passing unless explicitly cacheable
-    if (req.http.Cookie) {
-        # Allow static assets and Inertia requests to be cached even with cookies
-        if (!(req.url ~ "\.(css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$")) {
-            # If not an Inertia request, pass when cookies are present
-            if (!(req.http.X-Inertia || req.http.X-Inertia-Partial-Data || req.http.X-Inertia-Partial-Component)) {
-                return (pass);
-            }
-        }
+    # Do not cache static files: always pass through Varnish
+    if (req.url ~ "\.(pdf|csv|css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$") {
+        return (pass);
     }
-
+    unset req.http.Cookie;
     return (hash);
 }
 
@@ -132,17 +134,18 @@ sub vcl_hash {
 }
 
 sub vcl_backend_response {
+
     # Default TTL for dynamic content
     set beresp.ttl = 60s;
     set beresp.grace = 2m;
     set beresp.keep = 10m;
 
     # Don't cache if backend sets Set-Cookie for dynamic endpoints
-    if (beresp.http.Set-Cookie) {
-        set beresp.ttl = 0s;
-        set beresp.uncacheable = true;
-        return (deliver);
-    }
+//    if (beresp.http.Set-Cookie) {
+//        set beresp.ttl = 0s;
+//        set beresp.uncacheable = true;
+//        return (deliver);
+//    }
 
     # Inertia.js responses: cache JSON and vary on Inertia headers
     if (bereq.http.X-Inertia || beresp.http.X-Inertia) {
@@ -167,15 +170,6 @@ sub vcl_backend_response {
         set beresp.uncacheable = true;
     }
 
-    # Static assets: long TTL and strip cookies
-    if (bereq.url ~ "\.(css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$") {
-        unset beresp.http.Set-Cookie;
-        set beresp.ttl = 24h;
-        set beresp.grace = 1h;
-        if (!beresp.http.Cache-Control) {
-            set beresp.http.Cache-Control = "public, max-age=86400, immutable";
-        }
-    }
 
     # Enable gzip on text-like content
     if (beresp.http.Content-Type ~ "(text|javascript|json|xml|svg|font|css)") {
