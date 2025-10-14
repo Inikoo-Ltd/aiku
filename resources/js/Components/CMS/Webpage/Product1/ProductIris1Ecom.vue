@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { faCube, faLink, faHeart } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
+import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, onMounted, computed } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import { useLocaleStore } from '@/Stores/locale'
+import { useLocaleStore } from "@/Stores/locale"
 import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { router, Link } from "@inertiajs/vue3"
-import { Image as ImageTS } from '@/types/Image'
+import { Image as ImageTS } from "@/types/Image"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
@@ -22,9 +22,8 @@ import ButtonAddToBasket from "@/Components/Iris/Products/ButtonAddToBasket.vue"
 import { faEnvelope } from "@far"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
-import { useIrisLayoutStore } from "@/Stores/irisLayout"
 
-library.add(faCube, faLink)
+library.add(faCube, faLink, faPlus, faMinus)
 
 interface ProductResource {
     id: number
@@ -51,10 +50,9 @@ const props = withDefaults(defineProps<{
     fieldValue: any
     webpageData?: any
     blockData?: object
-    screenType: 'mobile' | 'tablet' | 'desktop'
-}>(), {
-})
-const layout = inject('layout', {})
+    screenType: "mobile" | "tablet" | "desktop"
+}>(), {})
+const layout = inject("layout", {})
 const currency = layout?.iris?.currency
 const locale = useLocaleStore()
 const isFavorite = ref(false)
@@ -67,7 +65,7 @@ const isLoadingRemindBackInStock = ref(false)
 const isLoadingFavourite = ref(false)
 const onAddFavourite = (product: ProductResource) => {
     router.post(
-        route('iris.models.favourites.store', {
+        route("iris.models.favourites.store", {
             product: product.id
         }),
         {
@@ -76,12 +74,12 @@ const onAddFavourite = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ["iris"],
             onStart: () => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, 'is_favourite', true)
+                set(props.fieldValue.product, "is_favourite", true)
                 layout.reload_handle()
             },
             onError: errors => {
@@ -93,26 +91,26 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-            },
+            }
         }
     )
 }
 
 const onUnselectFavourite = (product: ProductResource) => {
     router.delete(
-        route('iris.models.favourites.delete', {
+        route("iris.models.favourites.delete", {
             product: product.id
         }),
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ["iris"],
             onStart: () => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, 'is_favourite', false)
-                
+                set(props.fieldValue.product, "is_favourite", false)
+
             },
             onError: errors => {
                 notify({
@@ -123,14 +121,14 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-            },
+            }
         }
     )
 }
 
 const onAddBackInStock = (product: ProductResource) => {
     router.post(
-          route('iris.models.remind_back_in_stock.store', {
+        route("iris.models.remind_back_in_stock.store", {
             product: product.id
         }),
         {
@@ -139,12 +137,12 @@ const onAddBackInStock = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ["iris"],
             onStart: () => {
                 isLoadingRemindBackInStock.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, 'is_back_in_stock', true)
+                set(props.fieldValue.product, "is_back_in_stock", true)
             },
             onError: errors => {
                 notify({
@@ -155,25 +153,25 @@ const onAddBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
-            },
+            }
         }
     )
 }
 
 const onUnselectBackInStock = (product: ProductResource) => {
     router.delete(
-        route('iris.models.remind_back_in_stock.delete', {
+        route("iris.models.remind_back_in_stock.delete", {
             product: product.id
         }),
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ["iris"],
             onStart: () => {
                 isLoadingRemindBackInStock.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, 'is_back_in_stock', false)
+                set(props.fieldValue.product, "is_back_in_stock", false)
             },
             onError: errors => {
                 notify({
@@ -184,7 +182,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
-            },
+            }
         }
     )
 }
@@ -204,7 +202,7 @@ onMounted(() => {
             ecommerce: {
                 items: [
                     {
-                        item_id: props.fieldValue?.product?.luigi_identity,
+                        item_id: props.fieldValue?.product?.luigi_identity
                     }
                 ]
             }
@@ -223,7 +221,7 @@ const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldVa
         .map(item => ({
             label: item.label,
             column: item.column_in_db,
-            images: item.images,
+            images: item.images
         }))
 )
 
@@ -267,11 +265,11 @@ const validImages = computed(() => {
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
-                        :key="index">
+                         :key="index">
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <div v-else class="aspect-square w-full h-[15px]">
                             <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`"
-                                class="w-full h-full object-cover" />
+                                   class="w-full h-full object-cover" />
                         </div>
                         <span>{{ tag.name }}</span>
                     </div>
@@ -284,39 +282,40 @@ const validImages = computed(() => {
                     <div class="w-full">
                         <h1 class="!text-3xl font-bold">
                             <span v-if="Number(fieldValue.product.units) > 1">{{ Number(fieldValue.product.units)
-                            }}x</span> {{ fieldValue.product.name }}
+                                }}x</span> {{ fieldValue.product.name }}
                         </h1>
 
                         <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
                             <div>Product code: {{ fieldValue.product.code }}</div>
                             <!-- <div class="flex items-center gap-[1px]">
                             </div> -->
-                        </div>  
+                        </div>
 
                         <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between">
                             <!-- Stock info -->
                             <div class="flex items-center gap-2 text-sm">
                                 <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                    :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                                                 :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                                 <span>
                                     {{
                                         fieldValue.product.stock > 0
                                             ? trans("In stock") +
                                             ` (${fieldValue.product.stock} ` +
-                                    trans("available") +
-                                    `)`
-                                    : trans("Out Of Stock")
+                                            trans("available") +
+                                            `)`
+                                            : trans("Out Of Stock")
                                     }}
                                 </span>
                             </div>
 
                             <!-- Remind me button absolute -->
                             <button v-if="fieldValue.product.stock <= 0 && layout?.app?.environment === 'local'"
-                                 @click="() => fieldValue.product.is_back_in_stock ? onUnselectBackInStock(fieldValue.product) :  onAddBackInStock(fieldValue.product)"
-                                class="absolute right-0 bottom-2 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
+                                    @click="() => fieldValue.product.is_back_in_stock ? onUnselectBackInStock(fieldValue.product) :  onAddBackInStock(fieldValue.product)"
+                                    class="absolute right-0 bottom-2 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                                <FontAwesomeIcon v-else :icon="fieldValue.product.is_back_in_stock  ?  faEnvelopeCircleCheck : faEnvelope" :class="[fieldValue.product.is_back_in_stock  ? 'text-green-600' :'text-gray-600']" />
-                                <span>{{ fieldValue.product.is_back_in_stock ?  trans('will be notified when in Stock') :  trans("Remind me") }}</span>
+                                <FontAwesomeIcon v-else :icon="fieldValue.product.is_back_in_stock  ?  faEnvelopeCircleCheck : faEnvelope"
+                                                 :class="[fieldValue.product.is_back_in_stock  ? 'text-green-600' :'text-gray-600']" />
+                                <span>{{ fieldValue.product.is_back_in_stock ? trans("will be notified when in Stock") : trans("Remind me") }}</span>
                             </button>
                         </div>
 
@@ -329,15 +328,15 @@ const validImages = computed(() => {
                                 <LoadingIcon />
                             </div>
                             <div v-else
-                                @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
-                                class="cursor-pointer top-2 right-2 group text-2xl ">
+                                 @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
+                                 class="cursor-pointer top-2 right-2 group text-2xl ">
                                 <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="fasHeart" fixed-width
-                                    class="text-pink-500" />
+                                                 class="text-pink-500" />
                                 <span v-else class="">
                                     <FontAwesomeIcon :icon="fasHeart" fixed-width
-                                        class="hidden group-hover:inline text-pink-300" />
+                                                     class="hidden group-hover:inline text-pink-300" />
                                     <FontAwesomeIcon :icon="faHeart" fixed-width
-                                        class="inline group-hover:hidden text-pink-300" />
+                                                     class="inline group-hover:hidden text-pink-300" />
                                 </span>
                             </div>
                         </template>
@@ -350,17 +349,17 @@ const validImages = computed(() => {
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
                         <span class="text-gray-500 text-base font-normal">
                             ({{ locale.currencyFormat(currency?.code,
-                                (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/{{
+                            (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/{{
                                 fieldValue.product.unit }})
                         </span>
                     </div>
 
                     <div v-if="fieldValue.product.rrp"
-                        class="text-sm xtext-gray-800 xfont-semibold text-right xpl-4 text-gray-500">
+                         class="text-sm xtext-gray-800 xfont-semibold text-right xpl-4 text-gray-500">
                         <span class="whitespace-nowrap ">RRP:</span>
                         <span class=" text-base font-normal">
                             {{ locale.currencyFormat(currency?.code,
-                                (fieldValue.product.rrp / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit
+                            (fieldValue.product.rrp / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit
                             }}
                         </span>
                     </div>
@@ -378,8 +377,8 @@ const validImages = computed(() => {
                     </div>
 
                     <Link v-else :href="urlLoginWithRedirect()"
-                        class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-                    {{ trans("Login or Register for Wholesale Prices") }}
+                          class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+                        {{ trans("Login or Register for Wholesale Prices") }}
                     </Link>
                 </div>
 
@@ -392,14 +391,14 @@ const validImages = computed(() => {
                 </div>
                 <div v-if="fieldValue.setting?.information" class="my-4 space-y-2">
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
-                        :informations="fieldValue?.information" :styleData="fieldValue?.information_style" />
+                                            :informations="fieldValue?.information" :styleData="fieldValue?.information_style" />
                     <div v-if="fieldValue?.paymentData?.length > 0"
-                        class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2"
-                        :style="getStyles(fieldValue?.information_style?.title)">
+                         class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2"
+                         :style="getStyles(fieldValue?.information_style?.title)">
                         Secure Payments:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
-                                :src="logo.image" :alt="logo.code" class="h-4 px-1" />
+                                 :src="logo.image" :alt="logo.code" class="h-4 px-1" />
                         </div>
                     </div>
                 </div>
@@ -407,17 +406,17 @@ const validImages = computed(() => {
         </div>
 
         <div class="text-xs font-normal text-gray-700 my-6"
-            :style="getStyles(fieldValue?.description?.description_extra, screenType)">
+             :style="getStyles(fieldValue?.description?.description_extra, screenType)">
             <div ref="contentRef"
-                class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
-                :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
+                 class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
+                 :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
 
             <button v-if="showButton" @click="toggleExpanded" class="mt-1 text-xs underline focus:outline-none">
-                {{ expanded ? 'Show Less' : 'Read More' }}
+                {{ expanded ? "Show Less" : "Read More" }}
             </button>
         </div>
         <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
-            :styleData="fieldValue?.information_style" />
+                             :styleData="fieldValue?.information_style" />
     </div>
 
     <!-- Mobile Layout -->
@@ -431,7 +430,7 @@ const validImages = computed(() => {
                     {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
                     <span class="text-sm text-gray-400 xtext-base font-normal">
                         ({{ locale.currencyFormat(currency?.code,
-                            (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit
+                        (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit
                         }})
                     </span>
                 </div>
@@ -439,7 +438,7 @@ const validImages = computed(() => {
                     <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
                     <span class="text-gray-400 xtext-base font-normal">
                         ({{ locale.currencyFormat(currency?.code,
-                            (fieldValue.product.rrp / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit }})
+                        (fieldValue.product.rrp / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit }})
                     </span>
                 </div>
             </div>
@@ -447,15 +446,15 @@ const validImages = computed(() => {
             <!-- Favorite Icon -->
             <div v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in" class="mt-1">
                 <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer transition-colors duration-300"
-                    :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
-                    @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
+                                 :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
+                                 @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
             </div>
         </div>
 
 
         <div class="flex flex-wrap gap-2 mt-4">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in fieldValue.product.tags"
-                :key="index">
+                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                 <div v-else class="aspect-square w-full h-[15px]">
 
@@ -476,11 +475,11 @@ const validImages = computed(() => {
 
         <div class="mt-4">
             <InformationSideProduct v-if="fieldValue?.information?.length > 0" :informations="fieldValue?.information"
-                :styleData="fieldValue?.information_style" />
+                                    :styleData="fieldValue?.information_style" />
             <div class="text-sm font-semibold mb-2">Secure Payments:</div>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
-                    :alt="logo.code" class="h-4 px-1" />
+                     :alt="logo.code" class="h-4 px-1" />
             </div>
 
         </div>
@@ -490,7 +489,7 @@ const validImages = computed(() => {
         </div>
 
         <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
-            :styleData="fieldValue?.information_style" />
+                             :styleData="fieldValue?.information_style" />
     </div>
 
 </template>

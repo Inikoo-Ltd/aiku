@@ -4,7 +4,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { InputNumber } from 'primevue'
 import { router } from '@inertiajs/vue3'
-import { inject, ref, watch, computed } from 'vue'
+import { inject, ref, computed } from 'vue'
 import { debounce, get, set } from 'lodash-es'
 import { ProductResource } from '@/types/Iris/Products'
 import axios from 'axios'
@@ -15,9 +15,7 @@ import { faPlus } from "@far"
 import { faSave } from "@fad"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { useIrisLayoutStore } from "@/Stores/irisLayout"
 library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRight, faSave, faPlus)
 
 const props = defineProps<{
