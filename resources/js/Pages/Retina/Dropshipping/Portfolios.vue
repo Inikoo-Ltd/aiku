@@ -87,7 +87,7 @@ const props = defineProps<{
     }
     is_platform_connected: boolean
     customer_sales_channel: CustomerSalesChannel
-    manual_channels: object
+    channels: object
     count_product_not_synced: number
 
     // inactive: {}
@@ -319,7 +319,7 @@ const key = ulid()
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
 
-     
+
         <template #button-upload-to-shopify="{ action }">
             <Button @click="onUploadToShopify()" :style="action.style" :label="action.label" :loading="isLoadingUpload"
                     :disabled="!selectedData.products.length"
@@ -341,7 +341,7 @@ const key = ulid()
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')"
                     :icon="'fas fa-plus'"/>
 
-            <div class="rounded-md" v-if="manual_channels?.data?.length">
+            <div class="rounded-md" v-if="channels?.data?.length">
                 <!-- Section: Download button -->
                 <Button @click="(e) => _clone_popover?.toggle(e)" v-tooltip="trans('Open another options')"
                         :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length" class="!px-2 h-full"
@@ -353,7 +353,7 @@ const key = ulid()
                             {{ trans("Clone portfolio from channel:") }}
                         </div>
 
-                        <div v-for="(manual_channel, index) in manual_channels?.data" :key="index" class="flex flex-col gap-y-2 mb-1.5">
+                        <div v-for="(manual_channel, index) in channels?.data" :key="index" class="flex flex-col gap-y-2 mb-1.5">
                             <Button :loading="isLoadingClone" @click="() => onCloneManualPortfolio(manual_channel.id)"
                                 :label="(manual_channel.name || manual_channel.slug) + ' ('+manual_channel.number_portfolios+')'" full
                                 :style="'tertiary'"
