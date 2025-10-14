@@ -237,7 +237,7 @@ class ShowIrisWebpage
             ]
         ];
 
-        $runningUrl = '/';
+
         foreach ($parentPaths as $parentPath) {
             /** @var Webpage $parentWebpage */
             $parentWebpage = $this->getPathWebpage($webpage, $parentPath);
@@ -249,12 +249,10 @@ class ShowIrisWebpage
                         'type'   => 'simple',
                         'simple' => [
                             'label' => $parentWebpage->breadcrumb_label ?? $webpage->title ?? $webpage->code,
-                            'url'   => $runningUrl.$parentWebpage->url
+                            'url'   => $this->getEnvironmentUrl($webpage->canonical_url)
                         ]
 
                     ];
-
-                $runningUrl .= $parentWebpage->url.'/';
             }
         }
 
@@ -263,7 +261,7 @@ class ShowIrisWebpage
                 'type'   => 'simple',
                 'simple' => [
                     'label' => $webpage->breadcrumb_label ?? $webpage->title ?? $webpage->code,
-                    'url'   => $runningUrl.$webpage->url
+                    'url'   => $this->getEnvironmentUrl($webpage->canonical_url)
                 ]
 
             ];
