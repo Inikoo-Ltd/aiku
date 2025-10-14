@@ -65,8 +65,6 @@ sub vcl_recv {
         return (pass);
     }
 
- unset req.http.Cookie;
-    return (hash);
 
     # Allow BAN/PURGE from trusted IPs
     if (req.method == "PURGE" || req.method == "BAN") {
@@ -83,6 +81,22 @@ sub vcl_recv {
         return (pass);
     }
 
+ # Aiku no cachable iris paths
+    if (req.url ~ "^/(app|json|disclosure|unsubscribe|locale|models|catalogue|invoice|attachment)(/|$)") {
+        return (pass);
+    }
+
+    # Common no cachable paths
+    if (req.url ~ "^/(admin|json|nova|api|horizon|telescope)(/|$)") {
+        return (pass);
+    }
+
+     # If Authorization present, don't cache
+        if (req.http.Authorization) {
+            return (pass);
+        }
+
+
     # Normalize
     set req.http.host = std.tolower(req.http.host);
     call normalize_accept_encoding;
@@ -93,26 +107,14 @@ sub vcl_recv {
     # Derive login header from cookie (used by app and cache key)
     call set_login_flag_from_cookie;
 
-    # Aiku no cachable iris paths
-    if (req.url ~ "^/(app|json|disclosure|unsubscribe|locale|models|catalogue|invoice|attachment)(/|$)") {
-        return (pass);
-    }
 
-    # Common no cachable paths
-    if (req.url ~ "^/(admin|json|nova|api|horizon|telescope)(/|$)") {
-        return (pass);
-    }
 
-    # If Authorization present, don't cache
-    if (req.http.Authorization) {
-        return (pass);
-    }
 
     # Do not cache static files: always pass through Varnish
     if (req.url ~ "\.(pdf|csv|css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$") {
         return (pass);
     }
-    unset req.http.Cookie;
+    #unset req.http.Cookie;
     return (hash);
 }
 
@@ -139,6 +141,8 @@ sub vcl_backend_response {
     set beresp.ttl = 60s;
     set beresp.grace = 2m;
     set beresp.keep = 10m;
+
+    # Preserve Set-Cookie on backend responses; we only strip cookies on cached hits in vcl_deliver
 
     # Don't cache if backend sets Set-Cookie for dynamic endpoints
 //    if (beresp.http.Set-Cookie) {
@@ -180,6 +184,11 @@ sub vcl_backend_response {
 }
 
 sub vcl_deliver {
+    # Strip Set-Cookie on cache hits only
+    if (obj.hits > 0) {
+        unset resp.http.Set-Cookie;
+    }
+
     # Add debug headers (can be removed in production)
     if (obj.hits > 0) {
         set resp.http.X-Cache = "HIT";

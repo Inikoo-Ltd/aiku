@@ -102,9 +102,9 @@ class RetinaLogin
         RateLimiter::clear($this->throttleKey($request));
 
         $retinaHome = 'app/dashboard';
-        if ($ref = $request->get('ref')) {
-            $retinaHome = $ref;
-        }
+//        if ($ref = $request->get('ref')) {
+//            $retinaHome = $ref;
+//        }
 
         return $this->postProcessRetinaLogin($request, $retinaHome);
     }
