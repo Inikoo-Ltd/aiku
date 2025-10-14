@@ -9,17 +9,14 @@ import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faEnvelope, faHeart } from '@far'
 import { faCircle, faHeart as fasHeart, faMedal } from '@fas'
-import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle } from "@fal"
 import { faStarHalfAlt } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { ProductResource } from '@/types/Iris/Products'
-import NewAddToCartButton from '@/Components/CMS/Webpage/Products1/NewAddToCartButton.vue'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { routeType } from '@/types/route'
-import { parameterize } from '@sentry/vue'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 library.add(faStarHalfAlt, faQuestionCircle)
@@ -38,25 +35,19 @@ const props = withDefaults(defineProps<{
 
 }>(), {
     attachToFavouriteRoute: () => ({
-        name: 'iris.models.favourites.store',
+        name: 'retina.models.favourites.store',
     }),
     dettachToFavouriteRoute: () => ({
-        name: 'iris.models.favourites.delete',
+        name: 'retina.models.favourites.delete',
     }),
     attachBackInStockRoute: () => ({
-        name: 'iris.models.remind_back_in_stock.store',
+        name: 'retina.models.remind_back_in_stock.store',
     }),
     detachBackInStockRoute: () => ({
-        name: 'iris.models.remind_back_in_stock.delete',
+        name: 'retina.models.remind_back_in_stock.delete',
     }),
 })
 
-const emits = defineEmits<{
-    (e: 'afterOnAddFavourite', value: ProductResource): void
-    (e: 'afterOnUnselectFavourite', value: ProductResource): void
-    (e: 'afterOnAddBackInStock', value: ProductResource): void
-    (e: 'afterOnUnselectBackInStock', value: ProductResource): void
-}>()
 
 
 const isLoadingRemindBackInStock = ref(false)
@@ -76,7 +67,7 @@ const onAddFavourite = (product: ProductResource) => {
         },
         {
             preserveScroll: true,
-            only: ['iris'],
+            only: ['errors'],
             preserveState: true,
             onStart: () => {
                 isLoadingFavourite.value = true
@@ -95,7 +86,6 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-                emits('afterOnAddFavourite', product)
             },
         }
     )
@@ -110,16 +100,11 @@ const onUnselectFavourite = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ['errors'],
             onStart: () => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
                 layout.reload_handle(useIrisLayoutStore)
                 product.is_favourite = false
             },
@@ -132,7 +117,6 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-                emits('afterOnUnselectFavourite', product)
             },
         }
     )
@@ -186,11 +170,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 isLoadingRemindBackInStock.value = true
             },
             onSuccess: () => {
-                // notify({
-                //     title: trans("Success"),
-                //     text: trans("Added to portfolio"),
-                //     type: "success"
-                // })
                 product.is_back_in_stock = false
             },
             onError: errors => {
@@ -202,7 +181,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
-                emits('afterOnUnselectBackInStock', product)
             },
         }
     )
@@ -231,9 +209,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
                 class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative">
-                <slot name="image" :product="product">
-                    <Image :src="product?.web_images?.main?.gallery" alt="product image" :style="{ objectFit: 'contain' }" />
-                </slot>
+                <Image :src="product?.image?.source" :alt="product.name" :style="{ objectFit: 'contain' }" />
 
                 <div xv-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <button
@@ -249,7 +225,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
             <div class="px-3">
                 <!-- Title -->
-                <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1" type="internal">
+                <LinkIris v-if="product.url" :href="product.url" class="!leading-3 hover:text-gray-500 font-bold text-sm" type="internal">
                     <template #default>
                         {{ product.name }}
                     </template>
@@ -279,8 +255,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
                             <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
                                 class="text-pink-500" />
                             <div v-else class="relative" v-tooltip="trans('Add To Favourite')">
-                                <!-- <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
-                                    fixed-width /> -->
                                 <FontAwesomeIcon :icon="faHeart" class="inline text-pink-300" fixed-width />
                             </div>
 

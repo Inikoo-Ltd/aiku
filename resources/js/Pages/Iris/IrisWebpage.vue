@@ -18,8 +18,11 @@ const props = defineProps<{
   web_blocks: any,
   webpage_img : any,
 }>()
+
 defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
+
+const layout: any = inject("layout", {});
 
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const currentUrl = ref('')
@@ -56,6 +59,10 @@ onMounted(() => {
   checkScreenType()
   window.addEventListener('resize', checkScreenType)
   window.listWebBlocks = props.web_blocks
+
+
+  if(layout.iris.is_logged_in) layout.log_user()
+
 })
 
 
@@ -63,7 +70,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', checkScreenType)
 })
 
-const layout: any = inject("layout", {});
+
 
 
 </script>

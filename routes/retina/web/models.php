@@ -30,8 +30,10 @@ use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByCashOnDelivery;
 use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
+use App\Actions\Retina\CRM\DeleteRetinaBackInStockReminder;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\DeleteRetinaFavourite;
+use App\Actions\Retina\CRM\StoreRetinaBackInStockReminder;
 use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
 use App\Actions\Retina\CRM\StoreRetinaFavourite;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
@@ -153,6 +155,14 @@ Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilme
 Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->group(function () {
     Route::patch('update', UpdateRetinaCustomerComms::class)->name('update');
 });
+
+
+Route::post('favourite/{product:id}', StoreRetinaFavourite::class)->name('favourites.store');
+Route::delete('un-favourite/{product:id}', DeleteRetinaFavourite::class)->name('favourites.delete');
+
+Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
+Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
+
 
 Route::post('pallet-return', StoreRetinaPalletReturn::class)->name('pallet-return.store');
 Route::post('pallet-return/stored-items', [StoreRetinaPalletReturn::class, 'withStoredItems'])->name('pallet-return-stored-items.store');

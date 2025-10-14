@@ -10,7 +10,7 @@ import { router, usePage } from "@inertiajs/vue3"
 import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
-import { initialiseIrisVarnishCustomerData } from '@/Composables/initialiseIrisVarnish'
+import { initialiseIrisVarnishCustomerData, initialiseLogUser } from '@/Composables/initialiseIrisVarnish'
 
 
 export const initialiseIrisApp = () => {
@@ -81,6 +81,7 @@ export const initialiseIrisApp = () => {
         }
 
         layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
+        layout.log_user = () => initialiseLogUser(layout)
 
 
         // Set data of Locale (Language)

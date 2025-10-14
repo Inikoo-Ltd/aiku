@@ -19,8 +19,6 @@ import { faSearch } from "@fal"
 import { faExclamationTriangle, faLayerGroup } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
-import FontSize from "tiptap-extension-font-size"
-import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 import ProductRenderEcom from "./ProductRenderEcom.vue"
 
 

@@ -17,16 +17,16 @@ use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaFavourite extends RetinaAction
 {
-    public function handle(Customer $customer, Product $product): Favourite
+    public function handle(Customer $customer, Product $product): void
     {
-        return StoreFavourite::make()->action($customer, $product, []);
+        StoreFavourite::make()->action($customer, $product, []);
     }
 
-    public function asController(Product $product, ActionRequest $request): Favourite
+    public function asController(Product $product, ActionRequest $request): void
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer, $product);
+        $this->handle($this->customer, $product);
     }
 
 }

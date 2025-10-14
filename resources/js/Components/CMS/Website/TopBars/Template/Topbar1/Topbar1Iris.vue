@@ -153,7 +153,7 @@ const onClickLogout = () => {
 
             <!-- Section: Back in stock -->
             <ButtonWithLink
-                v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping' && !layout.iris_varnish?.isFetching"
+                v-if="layout.app?.environment === 'local' && checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping' && !layout.iris_varnish?.isFetching"
                 v-tooltip="trans('Reminder back in stock')"
                 url="/app/back-in-stocks"
                 type="transparent"
