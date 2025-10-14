@@ -158,6 +158,18 @@ const getTarget = (item) => {
     }
     return '_self';
 }
+
+const internalHref = (item) => {
+    // "https://www.aw-dropship.com/new",   -> /new
+    // "http://aw-dropship.com/new",   -> /new
+    // "www.aw-dropship.com/new",   -> /new
+    // "aw-dropship.com/new"   -> /new
+    if (!item.url) return '';
+
+    const path = item.url.replace(/^(https?:\/\/)?(www\.)?[^/]+/, "");
+    
+    return path
+}
 </script>
 
 <template>
@@ -189,6 +201,7 @@ const getTarget = (item) => {
                 :activeCustomIndex
                 :activeCustomTopIndex
                 :getHref
+                :internalHref
                 :getTarget
                 :setActiveCategory
                 :setActiveCustomCategory
@@ -217,7 +230,7 @@ const getTarget = (item) => {
                 :activeIndex
                 :activeCustomIndex
                 :activeCustomTopIndex
-                :getHref
+                :internalHref
                 :getTarget
                 :setActiveCategory
                 :setActiveCustomCategory

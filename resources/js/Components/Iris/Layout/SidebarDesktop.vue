@@ -6,21 +6,37 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { router } from '@inertiajs/vue3'
+import LinkIris from '../LinkIris.vue'
 library.add(faChevronRight, faExternalLink)
 
 
 
 const props = defineProps<{
     productCategories: {}
-    customMenusTop: {}
+    customMenusTop: {
+        name: string
+        url: string
+        type: string
+        target: string
+        sub_departments: {
+            name: string
+            url: string
+            type: string
+            target: string
+            families: {
+                name: string
+                url: string
+                type: string
+                target: string
+            }[]
+        }
+    }[]
     customTopSubDepartments: []
     customMenusBottom: {}
     customSubDepartments: []
     activeIndex: {}
     activeCustomIndex: {}
     activeCustomTopIndex: {}
-    getHref: Function
     getTarget: Function
     setActiveCategory: Function
     setActiveCustomCategory: Function
@@ -36,6 +52,7 @@ const props = defineProps<{
     changeActiveSubIndex: Function
     changeActiveCustomSubIndex: Function
     changeActiveCustomTopSubIndex: Function
+    internalHref: Function
 }>()
 
 const emit = defineEmits<{
@@ -82,6 +99,8 @@ const handleViewAllSubDepartment = (url: string) => {
     })
 }
 
+const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
+
 </script>
 
 <template>
@@ -100,18 +119,24 @@ const handleViewAllSubDepartment = (url: string) => {
                     :class="[
                         activeCustomTopIndex === customTopIndex
                             ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
-                            : ' hover:bg-gray-50'
+                            : 'hover:bg-gray-50'
                     ]"
                     @click="customTopItem.sub_departments && customTopItem.sub_departments.length > 0 ? setActiveCustomTopCategory(customTopIndex) : null">
                     <div>
-                        <a v-if="(!customTopItem.sub_departments || customTopItem.sub_departments.length === 0) && customTopItem.url !== null"
-                            :href="getHref(customTopItem)" :target="getTarget(customTopItem)" class="block">
+                        <LinkIris
+                            v-if="(!customTopItem.sub_departments || customTopItem.sub_departments.length === 0) && customTopItem.url !== null"
+                            :href="internalHref(customTopItem)"
+                            class="hover:underline"
+                            @success="() => isOpenMenuMobile = false"
+                            :type="customTopItem.type"
+                            :target="customTopItem.target"
+                        >
                             {{ customTopItem.name }}
-                        </a>
+                        </LinkIris>
                         <span v-else>{{ customTopItem.name }}</span>
                     </div>
                     <FontAwesomeIcon v-if="customTopItem.sub_departments && customTopItem.sub_departments.length > 0"
-                        :icon="faChevronRight" class="text-xs" />
+                        :icon="faChevronRight" fixed-width class="text-xs" />
                 </div>
                 <hr class="mt-4 border-gray-200">
             </div>
@@ -130,10 +155,10 @@ const handleViewAllSubDepartment = (url: string) => {
                         : ' hover:bg-gray-50'
                 ]" @click="setActiveCategory(index)">
                 <div>{{ item.name }}</div>
-                <FontAwesomeIcon :icon="faChevronRight" class="text-xs" />
+                <FontAwesomeIcon :icon="faChevronRight" fixed-width class="text-xs" />
             </div>
 
-            <!-- Custom Menus Section for Desktop -->
+            <!-- Section: Bottom navigation -->
             <div v-if="customMenusBottom && customMenusBottom.length > 0">
                 <hr class="my-4 mx-4 border-gray-300">
                 <div v-for="(customItem, customIndex) in customMenusBottom" :key="'custom-' + customIndex"
@@ -145,14 +170,20 @@ const handleViewAllSubDepartment = (url: string) => {
                     ]"
                     @click="customItem.sub_departments && customItem.sub_departments.length > 0 ? setActiveCustomCategory(customIndex) : null">
                     <div>
-                        <a v-if="(!customItem.sub_departments || customItem.sub_departments.length === 0) && customItem.url !== null"
-                            :href="getHref(customItem)" :target="getTarget(customItem)" class="block">
+                        <LinkIris
+                            v-if="(!customItem.sub_departments || customItem.sub_departments.length === 0) && customItem.url !== null"
+                            :href="internalHref(customItem)"
+                            class="hover:underline"
+                            @success="() => isOpenMenuMobile = false"
+                            :type="customItem.type"
+                            :target="customItem.target"
+                        >
                             {{ customItem.name }}
-                        </a>
+                        </LinkIris>
                         <span v-else>{{ customItem.name }}</span>
                     </div>
                     <FontAwesomeIcon v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
-                        :icon="faChevronRight" class="text-xs" />
+                        :icon="faChevronRight" fixed-width class="text-xs" />
                 </div>
             </div>
         </div>
@@ -180,12 +211,6 @@ const handleViewAllSubDepartment = (url: string) => {
                     </div>
 
                     <div class="p-2 px-4 font-bold">
-                        <!-- Original navigation (commented out) -->
-                        <!-- <a :href="'/' + sortedProductCategories[activeIndex].url" class="cursor-pointer">
-                            <Button :label="trans('View all')" :icon="faExternalLink" size="xs" />
-                        </a> -->
-                        
-                        <!-- New Inertia navigation with loading indicator -->
                         <Button 
                             :label="trans('View all')" 
                             :icon="faExternalLink" 
@@ -197,7 +222,7 @@ const handleViewAllSubDepartment = (url: string) => {
                     </div>
                 </div>
 
-                <!-- Custom Menus Subdepartments -->
+                <!-- Section: Bottom (Subdepartments) -->
                 <div v-if="activeCustomIndex !== null && customSubDepartments?.length">
                     <div v-for="(sub, sIndex) in customSubDepartments" :key="sIndex"
                         class="p-2 px-4 flex items-center justify-between cursor-pointer"
@@ -207,22 +232,23 @@ const handleViewAllSubDepartment = (url: string) => {
                                 : 'hover:bg-gray-50 text-gray-700'
                         ]" @click="changeActiveCustomSubIndex(sIndex)">
                         <div>
-                            <a v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
-                                :href="getHref(sub)" :target="getTarget(sub)" class="block">
+                            <LinkIris
+                                v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
+                                :href="internalHref(sub)"
+                                class="hover:underline"
+                                @success="() => isOpenMenuMobile = false"
+                                :target="getTarget(sub)"
+                                :type="sub.type"
+                            >
                                 {{ sub.name }}
-                            </a>
+                            </LinkIris>
                             <span v-else>{{ sub.name }}</span>
                         </div>
                         <FontAwesomeIcon :icon="faChevronRight" fixed-width class="text-xs" />
                     </div>
-                    <!-- <div class="p-2 px-4  cursor-pointer font-bold">
-                        <a :href="'/' + customMenus[activeCustomIndex].url">
-                            <Button label="View all" :icon="faExternalLink" size="xs" />
-                        </a>
-                    </div> -->
                 </div>
 
-                <!-- Custom Top Menus Subdepartments -->
+                <!-- Section: Top (Subdepartments) -->
                 <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
                     <div v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex"
                         class="p-2 px-4 flex items-center justify-between cursor-pointer"
@@ -232,14 +258,19 @@ const handleViewAllSubDepartment = (url: string) => {
                                 : 'hover:bg-gray-50 text-gray-700'
                         ]" @click="changeActiveCustomTopSubIndex(sIndex)">
                         <div>
-                            <a v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
-                                :href="getHref(sub)" :target="getTarget(sub)" class="block">
+                            <LinkIris
+                                v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
+                                :href="internalHref(sub)"
+                                class="hover:underline"
+                                @success="() => isOpenMenuMobile = false"
+                                :target="getTarget(sub)"
+                                :type="sub.type"
+                            >
                                 {{ sub.name }}
-                            </a>
+                            </LinkIris>
                             <span v-else>{{ sub.name }}</span>
                         </div>
-                        <FontAwesomeIcon :icon="faChevronRight"
-                            class="text-xs" />
+                        <FontAwesomeIcon :icon="faChevronRight" fixed-width class="text-xs" />
                     </div>
                 </div>
 
@@ -263,14 +294,19 @@ const handleViewAllSubDepartment = (url: string) => {
                 <div v-if="activeSubIndex !== null && sortedFamilies.length">
                     <div v-for="(child, cIndex) in sortedFamilies" :key="cIndex"
                         class="p-2 px-4  cursor-pointer hover:bg-gray-50">
-                        <a :href="'/' + child.url">{{ child.name }}</a>
+                        <LinkIris
+                            v-if="child.url !== null"
+                            :href="internalHref(child)"
+                            class="hover:underline"
+                            @success="() => isOpenMenuMobile = false"
+                            :target="getTarget(child)"
+                            :type="child.type"
+                        >
+                            {{ child.name }}
+                        </LinkIris>
+                        <span v-else>{{ child.name }}</span>
                     </div>
-                    <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">
-                        <!-- Original navigation (commented out) -->
-                        <!-- <a :href="'/' + sortedSubDepartments[activeSubIndex].url">
-                            <Button :label="trans('View all')" :icon="faExternalLink" size="xs" />
-                        </a> -->
-                        
+                    <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">                        
                         <!-- New Inertia navigation with loading indicator -->
                         <Button 
                             :label="trans('View all')" 
@@ -283,24 +319,38 @@ const handleViewAllSubDepartment = (url: string) => {
                     </div>
                 </div>
 
-                <!-- Custom Menus Families -->
+                <!-- Section: Bottom (Families) -->
                 <div v-if="activeCustomSubIndex !== null && customFamilies?.length">
                     <div v-for="(child, cIndex) in customFamilies" :key="cIndex"
                         class="p-2 px-4  cursor-pointer hover:bg-gray-50">
-                        <a v-if="child.url !== null" :href="getHref(child)" :target="getTarget(child)" >
+                        <LinkIris
+                            v-if="child.url !== null"
+                            :href="internalHref(child)"
+                            class="hover:underline"
+                            @success="() => isOpenMenuMobile = false"
+                            :target="getTarget(child)"
+                            :type="child.type"
+                        >
                             {{ child.name }}
-                        </a>
+                        </LinkIris>
                         <span v-else>{{ child.name }}</span>
                     </div>
                 </div>
 
-                <!-- Custom Top Menus Families -->
+                <!-- Section: Top (Families) -->
                 <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
                     <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"
                         class="p-2 px-4  cursor-pointer hover:bg-gray-50">
-                        <a v-if="child.url !== null" :href="getHref(child)" :target="getTarget(child)">
+                        <LinkIris
+                            v-if="child.url !== null"
+                            :href="internalHref(child)"
+                            class="hover:underline"
+                            @success="() => isOpenMenuMobile = false"
+                            :target="getTarget(child)"
+                            :type="child.type"
+                        >
                             {{ child.name }}
-                        </a>
+                        </LinkIris>
                         <span v-else>{{ child.name }}</span>
                     </div>
                 </div>

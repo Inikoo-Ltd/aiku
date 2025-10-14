@@ -7,35 +7,35 @@ type RouteType = string | Record<string, any>
 const layout = inject("layout", {})
 
 const props = withDefaults(
-  defineProps<{
-    href: RouteType
-    header?: string
-    method?: string
-    as?: string
-    class?: string
-    style?: Record<string, any>
-    label?: string
-    target?: string
-    type?: string // "internal" | "external"
-    canonical_url?: string
-  }>(),
-  {
-    header: "",
-    method: "get",
-    as: "a",
-    class: "",
-    style: () => ({}),
-    label: "",
-    target: "_self",
-    type: "internal",
-  }
+    defineProps<{
+        href: RouteType
+        header?: string
+        method?: string
+        as?: string
+        class?: string
+        style?: Record<string, any>
+        label?: string
+        target?: string
+        type?: string // "internal" | "external"
+        canonical_url?: string
+    }>(),
+    {
+        header: "",
+        method: "get",
+        as: "a",
+        class: "",
+        style: () => ({}),
+        label: "",
+        target: "_self",
+        type: "internal",
+    }
 )
 
 const emit = defineEmits<{
-  (e: "start"): void
-  (e: "success"): void
-  (e: "error"): void
-  (e: "finish"): void
+    (e: "start"): void
+    (e: "success"): void
+    (e: "error"): void
+    (e: "finish"): void
 }>()
 
 const computedHref = computed(() => {
@@ -64,16 +64,29 @@ const computedHref = computed(() => {
 </script>
 
 <template>
-  <Link v-if="type == 'internal'" :href="computedHref" :method="props.method"
-    :headers="{ is_logged_in: layout?.iris?.is_logged_in, ...props.header}" :as="props.as" :class="props.class"
-    :style="props.style" :target="props.target" @start="emit('start')"
-    @success="emit('success')"
-    @error="emit('error')"
-    @finish="emit('finish')">
-  <slot>{{ props.label }}</slot>
-  </Link>
-  <a v-else :href="props.href" :class="props.class" :style="props.style" :target="props.target"
-    rel="noopener noreferrer">
-    <slot>{{ props.label }}</slot>
-  </a>
+    <Link v-if="type == 'internal'"
+        :href="computedHref"
+        :method="props.method"
+        :headers="{ is_logged_in: layout?.iris?.is_logged_in, ...props.header }"
+        :as="props.as"
+        :class="props.class"
+        :style="props.style"
+        :target="props.target"
+        @start="emit('start')"
+        @success="emit('success')"
+        @error="emit('error')"
+        @finish="emit('finish')"
+    >
+        <slot>{{ props.label }}</slot>
+    </Link>
+    
+    <a v-else
+        :href="props.href"
+        :class="props.class"
+        :style="props.style"
+        :target="props.target"
+        rel="noopener noreferrer"
+    >
+        <slot>{{ props.label }}</slot>
+    </a>
 </template>
