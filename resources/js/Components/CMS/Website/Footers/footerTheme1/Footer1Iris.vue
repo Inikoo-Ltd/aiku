@@ -149,7 +149,7 @@ const getValueColumn4Transleted = (value: string) => {
         </div>
 
 
-        <div class=" grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-8">
             <!--  column 1 -->
             <div class="md:px-0 grid gap-y-3 md:gap-y-6 h-fit">
                 <div class="md:px-0 grid gap-y-3 md:gap-y-6 h-fit">
@@ -388,7 +388,6 @@ const getValueColumn4Transleted = (value: string) => {
 
                             <Button
                                 @click.prevent="onSubmitSubscribe"
-                                xtype="submit"
                                 :label="trans('Subscribe')"
                                 :loading="isLoadingSubmit"
                                 full

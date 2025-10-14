@@ -72,7 +72,6 @@ function closeDialog() {
 
 // Function to update the form and emit events
 function update() {
-    console.log('sssss',form.data())
     emit("update", form.data());
     emit("close");
 }
@@ -132,7 +131,7 @@ const target = [
                     :urlRoute="getRoute()" 
                     :value="form" 
                     :closeOnSelect="true" 
-                    label="href" 
+                    label="path" 
                     :onChange="onChangeLink"
                 />
             </div>

@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faDraftingCompass } from '@fortawesome/free-solid-svg-icons';
 import TiptapLinkDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapCustomLinkDialog.vue";
 
+
 const props = defineProps({
     editor : {
         type: Object,
