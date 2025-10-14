@@ -43,6 +43,7 @@ class DeleteCustomerSalesChannel extends OrgAction
                 $customerSalesChannel,
                 [
                     'status' => CustomerSalesChannelStatusEnum::CLOSED,
+                    'name' => $customerSalesChannel->name . ' - deleted - ' . rand(00, 99), // This for user can make another channel with same name
                     'closed_at' => now()
                 ]
             );
