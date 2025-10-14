@@ -27,6 +27,7 @@ class IndexCustomerBackInStockReminders extends OrgAction
 
     public function handle(Customer $parent, $prefix = null): LengthAwarePaginator
     {
+        $basket = $parent->orderInBasket;
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('products.code', $value)
@@ -45,8 +46,25 @@ class IndexCustomerBackInStockReminders extends OrgAction
 
         $query->leftJoin('products', 'back_in_stock_reminders.product_id', '=', 'products.id');
 
+        $select = [];
+        if ($basket) {
+            $query->leftJoin('transactions', function ($join) use ($basket) {
+                $join->on('products.id', '=', 'transactions.model_id')
+                    ->where('transactions.model_type', '=', 'Product')
+                    ->where('transactions.order_id', '=', $basket->id)
+                    ->whereNull('transactions.deleted_at');
+            });
+            $select[] = 'transactions.id as transaction_id';
+            $select[] = 'transactions.quantity_ordered as quantity_ordered';
+        }
+
+        $query->leftJoin('webpages', function ($join) {
+            $join->on('products.id', '=', 'webpages.model_id')
+                ->where('webpages.model_type', '=', 'Product');
+        });
+
         return $query->defaultSort('products.code')
-            ->select([
+            ->select(array_merge($select, [
                 'products.id',
                 'products.slug',
                 'products.code',
@@ -54,7 +72,21 @@ class IndexCustomerBackInStockReminders extends OrgAction
                 'products.description',
                 'products.price',
                 'products.image_id',
-            ])
+                'products.group_id',
+                'products.organisation_id',
+                'products.shop_id',
+                'products.available_quantity',
+                'products.rrp',
+                'products.state',
+                'products.status',
+                'products.created_at',
+                'products.updated_at',
+                'products.units',
+                'products.unit',
+                'products.top_seller',
+                'products.web_images',
+                'webpages.url',
+            ]))
             ->allowedSorts(['code', 'name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
