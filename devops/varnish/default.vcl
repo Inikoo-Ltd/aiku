@@ -9,13 +9,13 @@ import std;
 # - Safe PURGE (BAN) from localhost/private networks
 
 backend default {
-    .host = "127.0.0.1";
+    .host = "10.0.0.3";
     .port = "8080";
     .connect_timeout = 1s;
     .first_byte_timeout = 30s;
     .between_bytes_timeout = 30s;
     .probe = {
-        .url = "/healthz";
+        .url = "/health-ping";
         .interval = 10s;
         .timeout = 2s;
         .window = 5;
