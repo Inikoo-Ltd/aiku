@@ -55,7 +55,7 @@ const isFetched = ref(false)
 const fetchRecommenders = async () => {
     console.log('qqqqqqq')
     if (route().has('iris.json.product_category.last-ordered-products.index')) {
-        console.log('wwwwwwwwwwww')
+        // console.log('wwwwwwwwwwww')
         try {
             isLoadingFetch.value = true
             
@@ -117,7 +117,7 @@ onMounted(() => {
                         <SwiperSlide
                             v-for="(product, index) in listProducts"
                             :key="index"
-                            class="w-full cursor-grab relative !grid h-full min-h-full"
+                            class="p-[1px] w-full cursor-grab relative !grid h-full min-h-full"
                         >
                             <RecommendationCustomerRecentlyBoughtSlideIris
                                 :product
