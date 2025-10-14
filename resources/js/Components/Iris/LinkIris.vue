@@ -31,6 +31,13 @@ const props = withDefaults(
   }
 )
 
+const emit = defineEmits<{
+  (e: "start"): void
+  (e: "success"): void
+  (e: "error"): void
+  (e: "finish"): void
+}>()
+
 const computedHref = computed(() => {
   const env = layout?.app?.environment || "local"
   const domainType = layout?.retina?.type || "b2b"
@@ -73,8 +80,12 @@ const computedHref = computed(() => {
 </script>
 
 <template>
-  <Link v-if="type == 'internal'" :href="computedHref" :method="props.method" :headers="{is_logged_in : layout?.iris?.is_logged_in, ...props.header}" :as="props.as"
-    :class="props.class" :style="props.style" :target="props.target">
+  <Link v-if="type == 'internal'" :href="computedHref" :method="props.method"
+    :headers="{ is_logged_in: layout?.iris?.is_logged_in, ...props.header}" :as="props.as" :class="props.class"
+    :style="props.style" :target="props.target" @start="emit('start')"
+    @success="emit('success')"
+    @error="emit('error')"
+    @finish="emit('finish')">
   <slot>{{ props.label }}</slot>
   </Link>
   <a v-else :href="props.href" :class="props.class" :style="props.style" :target="props.target"

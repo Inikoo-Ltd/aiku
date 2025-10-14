@@ -70,7 +70,7 @@ const layout = inject('layout', layoutStructure)
 					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id" id="luigi_header_2" />
                 </div>
 
-				<div class="xcol-span-2 relative w-full h-auto">
+				<div class="relative w-full h-auto">
 					<div v-html="fieldValue?.text?.text" />
 				</div>
 			</div>

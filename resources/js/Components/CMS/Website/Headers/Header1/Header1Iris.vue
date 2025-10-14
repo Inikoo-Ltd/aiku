@@ -23,6 +23,7 @@ import {
 import { faHeart } from "@far"
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 library.add(
 	faPresentation,
@@ -102,13 +103,13 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 
 				<!-- Gold Member Button -->
 				<div class="justify-self-end w-fit">
-					<a :href="fieldValue?.button_1?.link?.href" :target="fieldValue?.button_1?.link?.target">
+					<LinkIris :href="fieldValue?.button_1?.link?.href" :target="fieldValue?.button_1?.link?.target" :canonical_url="fieldValue?.button_1?.link?.canonical_url" :type="fieldValue?.button_1?.link?.type">
 						<div v-if="checkVisible(fieldValue.button_1.visible, isLoggedIn)"
 							class="space-x-1.5 cursor-pointer whitespace-nowrap"
 							:style="getStyles(fieldValue.button_1.container.properties)">
 							<span v-html="fieldValue.button_1.text" />
 						</div>
-					</a>
+					</LinkIris>
 
 				</div>
 			</div>

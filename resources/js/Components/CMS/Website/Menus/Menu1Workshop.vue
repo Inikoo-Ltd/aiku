@@ -15,11 +15,12 @@ import {
 } from "@fas";
 import { faHeart } from "@far";
 import { faBars, faChevronLeft, faChevronRight as falChevronRight } from "@fal";
-import { ref, inject, nextTick, onMounted } from "vue";
+import { ref, inject, nextTick, onMounted, watch } from "vue";
 import { getStyles } from "@/Composables/styles";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { debounce } from "lodash-es";
 import { trans } from "laravel-vue-i18n";
+import LinkIris from "@/Components/Iris/LinkIris.vue";
 
 library.add(
     faChevronLeft,
@@ -69,7 +70,7 @@ const onClickNavigation = (navigation: any) => {
 const onClickSubnav = (link: any) => {
     if (!link?.link?.href) return;
     loadingItem.value = link.id || link.label;
-    setTimeout(() => (window.location.href = link.link.href), 600);
+    /* setTimeout(() => (window.location.href = link.link.href), 600); */
 };
 
 // Scroll logic
@@ -103,6 +104,8 @@ const getNavigationIcon = (navigation: any) => {
     if (navigation.type === "multiple") return "fas fa-chevron-down";
     return navigation.icon || null;
 };
+
+
 </script>
 
 <template>
@@ -153,8 +156,8 @@ const getNavigationIcon = (navigation: any) => {
             <nav ref="_scrollContainer" @scroll="checkScroll"
                 class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide ml-5">
                 <template v-for="(navigation, idxNavigation) in fieldValue?.navigation" :key="idxNavigation">
-                    <a @click.prevent="onClickNavigation(navigation)" @mouseenter="() => onMouseEnterMenu(navigation)"
-                        :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
+                    <component :is="navigation?.link?.href ? LinkIris : 'div'"  @mouseenter="() => onMouseEnterMenu(navigation)" :type="navigation?.link?.type"
+                        :style="getStyles(fieldValue?.navigation_container?.properties, screenType)" :href="navigation?.link?.href" :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
                             ? 'bg-gray-100 text-orange-500'
                             : navigation?.link?.href
@@ -165,7 +168,7 @@ const getNavigationIcon = (navigation: any) => {
                             <FontAwesomeIcon v-if="getNavigationIcon(navigation)" :icon="getNavigationIcon(navigation)"
                                 :spin="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
                         </div>
-                    </a>
+                    </component>
                 </template>
             </nav>
 
@@ -176,15 +179,15 @@ const getNavigationIcon = (navigation: any) => {
                 :style="getStyles(fieldValue?.container?.properties, screenType)">
                 <div class="grid grid-cols-4 gap-8 p-6">
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
-                        <component :is="subnav?.link?.href ? 'a' : 'div'" :href="subnav?.link?.href"
-                            :target="subnav?.link?.target" :style="{
+                        <component :is="subnav?.link?.href ? LinkIris : 'div'" :href="subnav?.link?.href" :type="subnav?.link?.type"
+                            :target="subnav?.link?.target" :canonical_url="subnav?.link?.canonical_url"  :style="{
                                 ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
                                 margin: 0,
                                 padding: 0,
                                 fontWeight: 600,
                                 ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
                             }" class="font-semibold text-gray-700 transition flex items-center gap-x-3"
-                            @click.prevent="subnav?.link?.href && onClickSubnav(subnav)">
+                             @start="()=>onClickSubnav(subnav)" @finish="()=>loadingItem = null">
                             <span>{{ subnav.title }}</span>
                             <!-- Spinner / Icon -->
                             <FontAwesomeIcon v-if="loadingItem === (subnav.id || subnav.label)" icon="fas fa-spinner"
