@@ -9,7 +9,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Actions\Iris\LogWebUserRequest;
+use App\Actions\Iris\RetinaLogWebUserRequest;
 use App\Actions\Retina\SysAdmin\ProcessRetinaWebUserRequest;
 use App\Actions\SysAdmin\WithLogRequest;
 use Closure;
@@ -21,7 +21,7 @@ class LogWebUserRequestMiddleware
 
     public function handle(Request $request, Closure $next)
     {
-        if (!LogWebUserRequest::make()->canLogWebUserRequest()) {
+        if (!RetinaLogWebUserRequest::make()->canLogWebUserRequest()) {
             return $next($request);
         }
 

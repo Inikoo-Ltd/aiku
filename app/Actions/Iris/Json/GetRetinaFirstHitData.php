@@ -9,8 +9,7 @@
 namespace App\Actions\Iris\Json;
 
 use App\Actions\Iris\CaptureTrafficSource;
-use App\Actions\Iris\LogWebUserRequest;
-use App\Actions\IrisAction;
+use App\Actions\Iris\RetinaLogWebUserRequest;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -28,7 +27,7 @@ class GetRetinaFirstHitData extends RetinaAction
     public function handle(): array
     {
 
-        LogWebUserRequest::run();
+        RetinaLogWebUserRequest::run();
 
         return $this->getIrisUserData();
     }
@@ -110,7 +109,7 @@ class GetRetinaFirstHitData extends RetinaAction
     public function asController(Collection $collection, ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);
-    
+
 
         return $this->handle();
     }
