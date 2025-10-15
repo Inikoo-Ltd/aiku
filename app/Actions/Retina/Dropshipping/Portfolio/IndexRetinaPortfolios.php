@@ -219,7 +219,7 @@ class IndexRetinaPortfolios extends RetinaAction
             return [
                 'char' => strtoupper(substr($group->first()->item_name, 0, 1)),
                 'count' => $group->count(),
-                'items' => $group
+                'ids' => $group->pluck('id')->implode(',')
             ];
         })->sortKeys();
 
