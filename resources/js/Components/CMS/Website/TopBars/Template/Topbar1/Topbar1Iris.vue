@@ -84,11 +84,13 @@ const onClickLogout = () => {
             },
             onSuccess: () => {
                 set(layout, ['iris', 'is_logged_in'], false)
-                let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
-                localStorage.setItem('iris', JSON.stringify({
-                    ...storageIris,
-                    is_logged_in: false
-                }))
+                if (typeof window !== "undefined") {
+                    let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
+                    localStorage.setItem('iris', JSON.stringify({
+                        ...storageIris,
+                        is_logged_in: false
+                    }))
+                }
             },
             onError: errors => {
                 notify({
