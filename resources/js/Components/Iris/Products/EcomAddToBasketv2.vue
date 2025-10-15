@@ -13,10 +13,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRight } from "@fal"
 import { faPlus } from "@far"
 import { faSave } from "@fad"
+import { faPlus as fasPlus, faMinus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRight, faSave, faPlus)
+library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRight, faSave, faPlus, fasPlus, faMinus)
 
 const props = defineProps<{
     product: ProductResource
@@ -218,6 +219,17 @@ const compIsAddToBasket = computed(() => {
                     :loading="isLoadingSubmitQuantityProduct"
                 />
             </template>
+
+            <Button
+                v-else
+                v-tooltip="trans('Nothing to save. Try adjust the number')"
+                @click="() => onUpdateQuantity(props.product)"
+                :label="trans(`Save`)"
+                icon="fad fa-save"
+                type="primary"
+                size="lg"
+                :disabled="true"
+            />
         </div>
         
         <div v-if="product.quantity_ordered" class="mt-1 xitalic text-gray-700 text-sm">
