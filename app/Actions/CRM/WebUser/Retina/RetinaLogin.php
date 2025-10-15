@@ -129,12 +129,17 @@ class RetinaLogin
         Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
 
 
+
         $language = $webUser->language;
         if ($language) {
             app()->setLocale($language->code);
         }
 
-        return redirect()->intended($retinaHome);
+        $response = redirect()->intended($retinaHome);
+        if ($ref = $request->get('ref')) {
+            $response->header('x-login-redirect', $ref);
+        }
+        return $response;
     }
 
 }
