@@ -60,7 +60,10 @@ class ProductResource extends JsonResource
             'is_name_reviewed' => $product->is_name_reviewed,
             'is_description_title_reviewed' => $product->is_description_title_reviewed,
             'is_description_reviewed' => $product->is_description_reviewed,
-            'is_description_extra_reviewed' => $product->is_description_extra_reviewed
+            'is_description_extra_reviewed' => $product->is_description_extra_reviewed,
+            'cpnp_number' => $product->cpnp_number,
+            'ufi_number' => $product->ufi_number,
+            'scpn_number' => $product->scpn_number,
         ];
     }
 }

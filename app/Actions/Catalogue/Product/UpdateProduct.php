@@ -318,6 +318,8 @@ class UpdateProduct extends OrgAction
             'marketing_dimensions'      => ['sometimes'],
 
             'cpnp_number'                  => ['sometimes', 'nullable', 'string'],
+            'ufi_number'                  => ['sometimes', 'nullable', 'string'],
+            'scpn_number'                  => ['sometimes', 'nullable', 'string'],
             'country_of_origin'            => ['sometimes', 'nullable', 'string'],
             'origin_country_id'            => ['sometimes', 'nullable', 'exists:countries,id'],
             'tariff_code'                  => ['sometimes', 'nullable', 'string'],
