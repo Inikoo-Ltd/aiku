@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -24,7 +24,7 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
-initialiseIrisVarnish(useIrisLayoutStore)
+
 const layout = useIrisLayoutStore()
 const isOpenMenuMobile = ref(false)
 provide('layout', layout)
@@ -90,6 +90,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
+})
+
+onBeforeMount(()=>{
+initialiseIrisVarnish(useIrisLayoutStore)
 })
 
 console.log('handle', usePage().props)

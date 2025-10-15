@@ -224,6 +224,8 @@ class UpdateTradeUnit extends GrpAction
 
 
             'cpnp_number'                  => ['sometimes', 'nullable', 'string'],
+            'ufi_number'                  => ['sometimes', 'nullable', 'string'],
+            'scpn_number'                  => ['sometimes', 'nullable', 'string'],
             'tariff_code'                  => ['sometimes', 'nullable', 'string'],
             'duty_rate'                    => ['sometimes', 'nullable', 'string'],
             'hts_us'                       => ['sometimes', 'nullable', 'string'],

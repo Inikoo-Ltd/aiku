@@ -36,6 +36,9 @@ class TradeUnitResource extends JsonResource
             'status' => $tradeUnit->status,
             'code'   => $tradeUnit->code,
             'id'     => $tradeUnit->id,
+            'cpnp_number' => $tradeUnit->cpnp_number,
+            'ufi_number' => $tradeUnit->ufi_number,
+            'scpn_number' => $tradeUnit->scpn_number,
 
             'barcode'              => $tradeUnit->barcode,
             'gross_weight'         => $tradeUnit->gross_weight,
