@@ -102,10 +102,6 @@ class RetinaLogin
         RateLimiter::clear($this->throttleKey($request));
 
         $retinaHome = 'app/dashboard';
-        if ($ref = $request->get('ref')) {
-            $retinaHome = $ref;
-        }
-
         return $this->postProcessRetinaLogin($request, $retinaHome);
     }
 
@@ -136,6 +132,7 @@ class RetinaLogin
         }
 
         $response = redirect()->intended($retinaHome);
+
         if ($ref = $request->get('ref')) {
             $response->header('x-login-redirect', $ref);
         }
