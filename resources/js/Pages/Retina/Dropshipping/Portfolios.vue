@@ -332,7 +332,7 @@ const key = ulid()
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
-                <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
+                <a v-if="props.product_count <= 500" :href="downloadUrl('images') as string" target="_blank" rel="noopener">
                     <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
                 </a>
 
