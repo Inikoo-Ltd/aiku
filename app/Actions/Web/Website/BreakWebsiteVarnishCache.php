@@ -2,33 +2,31 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 24 Jun 2023 13:12:05 Malaysia Time, Pantai Lembeng, Bali, Indonesia
- * Copyright (c) 2023, Raul A Perusquia Flores
+ * Created: Wed, 15 Oct 2025 19:32:46 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
 namespace App\Actions\Web\Website;
 
-use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\WithVarnishBan;
 
-class BreakWebsiteCache extends OrgAction
+class BreakWebsiteVarnishCache extends OrgAction
 {
-    public function handle(Website $website): Website
+    use WithVarnishBan;
+
+    public function handle(Website $website, Command $command = null): Website
     {
-        $key = config('iris.cache.website.prefix')."_$website->domain";
-        Cache::forget($key);
 
-        ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*');
-        ClearCacheByWildcard::run(config('iris.cache.webpage.prefix').'_'.$website->id.'_*');
 
-        if(config('iris.cache.varnish.enabled')){
-            BreakWebsiteVarnishCache::dispatch($website)->delay(1);
-        }
+        $banExpr        = "obj.http.X-AIKU-WEBSITE == $website->id";
+        $varnishCommand = "sudo varnishadm 'ban $banExpr'";
+
+        $this->runVarnishCommand($varnishCommand, $command);
 
         return $website;
     }
@@ -47,13 +45,14 @@ class BreakWebsiteCache extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'website:break_cache {slug}';
+        return 'website:break_varnish_cache {slug}';
     }
 
     public function asCommand(Command $command): int
     {
         $website = Website::where('slug', $command->argument('slug'))->first();
-        $this->handle($website);
+        $this->handle($website, $command);
+
         return 0;
     }
 

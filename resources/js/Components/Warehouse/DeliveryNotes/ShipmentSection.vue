@@ -631,11 +631,11 @@ const onCopyDataCustomer = (field: string) => {
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
                         <div class="flex justify-between items-center">
                             <label for="selectCountry" class="mb-1 block text-xs font-medium">
-                                {{ trans("Company Name") }}
+                                {{ trans("Company") }}
                             </label>
 
                             <div v-if="customer?.company_name" @click="() => onCopyDataCustomer('company_name')" class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
-                                {{ trans("Copy Customer's Company") }}
+                                {{ trans("Copy customer's Company") }}
                                 <InformationIcon :information="customer?.company_name" class="opacity-100" />
                             </div>
                         </div>
@@ -650,7 +650,7 @@ const onCopyDataCustomer = (field: string) => {
                             </label>
 
                             <div v-if="customer?.contact_name" @click="() => onCopyDataCustomer('contact_name')" class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
-                                {{ trans("Copy Customer's name") }}
+                                {{ trans("Copy customer's contact name") }}
                                 <InformationIcon :information="customer?.contact_name" class="opacity-100" />
                             </div>
                         </div>
@@ -665,7 +665,7 @@ const onCopyDataCustomer = (field: string) => {
                             </label>
 
                             <div v-if="customer?.phone" @click="() => onCopyDataCustomer('phone')" class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
-                                {{ trans("Copy Customer's phone") }}
+                                {{ trans("Copy customer's phone") }}
                                 <InformationIcon :information="customer?.phone" class="opacity-100" />
                             </div>
                         </div>
@@ -676,11 +676,11 @@ const onCopyDataCustomer = (field: string) => {
                     <div v-if="shipping_fields" class="col-span-2 mb-2">
                         <div class="flex justify-between items-center">
                             <label for="selectCountry" class="mb-1 block text-xs font-medium">
-                                {{ trans("Company Name") }}
+                                {{ trans("Email") }}
                             </label>
 
                             <div v-if="customer?.email" @click="() => onCopyDataCustomer('email')" class="text-xxs underline cursor-pointer text-gray-500 hover:text-gray-700">
-                                {{ trans("Copy Customer's email") }}
+                                {{ trans("Copy customer's email") }}
                                 <InformationIcon :information="customer?.email" class="opacity-100" />
                             </div>
                         </div>

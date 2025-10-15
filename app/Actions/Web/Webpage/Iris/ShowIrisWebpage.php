@@ -117,14 +117,6 @@ class ShowIrisWebpage
 
 
             if ($normalizedCanon !== $currentUrl) {
-                // Log the current and normalized canonical URLs for debugging/inspection
-                Log::critical('Iris canonical URL check', [
-                    'currentUrl'       => $currentUrl,
-                    'normalizedCanon'  => $normalizedCanon,
-                    'canonicalUrlRaw'  => $canonicalUrl,
-                    'environmentalUrl' => $this->getEnvironmentUrl($canonicalUrl),
-                ]);
-
                 return $this->getEnvironmentUrl($canonicalUrl);
             }
         }
