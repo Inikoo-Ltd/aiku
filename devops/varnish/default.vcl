@@ -175,9 +175,7 @@ sub vcl_backend_response {
 
     # Do not cache redirects (301, 302, 303, 307, 308)
     if (beresp.status == 301 || beresp.status == 302 || beresp.status == 303 || beresp.status == 307 || beresp.status == 308) {
-        set beresp.ttl = 0s;
-        set beresp.uncacheable = true;
-        return (deliver);
+        set beresp.ttl = 2d;
     }
 
     # Enable gzip on text-like content
@@ -207,6 +205,11 @@ sub vcl_deliver {
     # Echo login derivation for observability and for the app if needed
     if (req.http.X-Varnish-Logged-In) {
         set resp.http.X-Varnish-Logged-In = req.http.X-Varnish-Logged-In;
+    }
+
+    # If response is a redirect (3xx), set client cache to 1 day
+    if (resp.status == 301 || resp.status == 302 || resp.status == 303 || resp.status == 307 || resp.status == 308) {
+        set resp.http.Cache-Control = "public, max-age=14400";
     }
 
     set resp.http.Via = "varnish";
