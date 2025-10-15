@@ -142,18 +142,11 @@ sub vcl_hash {
 sub vcl_backend_response {
 
     # Default TTL for dynamic content
-    set beresp.ttl = 60s;
+    set beresp.ttl = 10d;
     set beresp.grace = 2m;
     set beresp.keep = 10m;
 
-    # Preserve Set-Cookie on backend responses; we only strip cookies on cached hits in vcl_deliver
 
-    # Don't cache if backend sets Set-Cookie for dynamic endpoints
-//    if (beresp.http.Set-Cookie) {
-//        set beresp.ttl = 0s;
-//        set beresp.uncacheable = true;
-//        return (deliver);
-//    }
 
     # Inertia.js responses: cache JSON and vary on Inertia headers
     if (bereq.http.X-Inertia || beresp.http.X-Inertia) {

@@ -58,20 +58,21 @@ class ShowIrisWebpage
         }
 
         return [
-            'status'      => 'ok',
-            'breadcrumbs' => $this->getIrisBreadcrumbs(
+            'status'       => 'ok',
+            'webpage_id'   => $webpage->id,
+            'breadcrumbs'  => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
-            'webpage_data'     => [
+            'webpage_data' => [
                 'structured_data' => $webpage->structured_data,
                 'title'           => $webpage->title,
                 'description'     => $webpage->description,
                 'canonical_url'   => $webpage->canonical_url,
 
             ],
-            'webpage_img' => $webpageImg,
-            'web_blocks'  => $webBlocks,
+            'webpage_img'  => $webpageImg,
+            'web_blocks'   => $webBlocks,
         ];
     }
 
@@ -193,16 +194,24 @@ class ShowIrisWebpage
     }
 
 
-    public function htmlResponse($webpageData): Response|RedirectResponse
+    public function htmlResponse($webpageData)
     {
         if (is_string($webpageData)) {
             return redirect()->to($webpageData, 301);
         }
 
-        return Inertia::render(
+
+        $response = Inertia::render(
             'IrisWebpage',
             $webpageData
-        );
+        )->toResponse(request());
+
+        $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
+        if (isset($webpageData['webpage_id'])) {
+            $response->header('X-AIKU-WEBPAGE', (string)$webpageData['webpage_id']);
+        }
+
+        return $response;
     }
 
 
