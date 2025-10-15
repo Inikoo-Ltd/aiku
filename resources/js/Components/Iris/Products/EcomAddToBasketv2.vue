@@ -8,6 +8,7 @@ import { inject, ref, computed } from 'vue'
 import { debounce, get, set } from 'lodash-es'
 import { ProductResource } from '@/types/Iris/Products'
 import axios from 'axios'
+import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRight } from "@fal"
@@ -38,7 +39,7 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
 }
 
 const isLoadingSubmitQuantityProduct = ref(false)
-const onAddToBasket = async (product: ProductResource) => {
+const onAddToBasket = async (product: ProductResource, quantity?: number) => {
     try {
         setStatus('loading')
         isLoadingSubmitQuantityProduct.value = true
@@ -47,7 +48,7 @@ const onAddToBasket = async (product: ProductResource) => {
                 product: product.id
             }),
             { 
-                quantity: get(product, ['quantity_ordered_new'], product.quantity_ordered)
+                quantity: quantity ?? get(product, ['quantity_ordered_new'], product.quantity_ordered)
             }
         )
 
@@ -152,7 +153,7 @@ const debAddAndUpdateProduct = debounce(() => {
     } else {
         onUpdateQuantity(props.product)
     }
-}, 900)
+}, 700)
 
 const compIsValueDirty = computed(() => {
     return get(props.product, ['quantity_ordered_new'], null) !== get(props.product, ['quantity_ordered'], null)
@@ -168,12 +169,12 @@ const compIsAddToBasket = computed(() => {
 
 <template>
     <div class="">
-        <div class="xw-full flex items-center gap-2 xmt-2 relative w-36">
+        <div class="flex items-center gap-2 relative w-36">
             <!-- {{ get(props.product, ['quantity_ordered_new'], null) }}
             {{ get(props.product, ['quantity_ordered'], null) }} -->
             <InputNumber
-                :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], 0) "
-                @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0), `debAddAndUpdateProduct()`)"
+                :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], null) "
+                @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
                 inputId="integeronly"
                 fluid
                 showButtons
@@ -186,17 +187,17 @@ const compIsAddToBasket = computed(() => {
                     minWidth: '4rem'
                 }"
             >
-                <template #incrementbuttonicon>
+                <template #incrementicon>
                     <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" />
                 </template>
-                <template #decrementbuttonicon>
+                <template #decrementicon>
                     <FontAwesomeIcon icon="fas fa-minus" class="" fixed-width aria-hidden="true" />
                 </template>
             </InputNumber>
             
-            <!-- <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 -right-7"/> -->
+            <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 -right-7"/>
 
-            <template v-if="compIsValueDirty">
+            <!-- <template v-if="compIsValueDirty">
                 <Button
                     v-if="compIsAddToBasket"
                     @click="() => onAddToBasket(props.product)"
@@ -218,18 +219,22 @@ const compIsAddToBasket = computed(() => {
                     :disabled="product.quantity_ordered_new > product.stock"
                     :loading="isLoadingSubmitQuantityProduct"
                 />
-            </template>
+            </template> -->
 
-            <Button
-                v-else
-                v-tooltip="trans('Nothing to save. Try adjust the number')"
-                @click="() => onUpdateQuantity(props.product)"
-                :label="trans(`Save`)"
-                icon="fad fa-save"
-                type="primary"
-                size="lg"
-                :disabled="true"
-            />
+            <div v-if="!product.quantity_ordered && !product.quantity_ordered_new" class="ml-8">
+                <Button
+                    v-if="compIsAddToBasket"
+                    @click="() => onAddToBasket(props.product, 1)"
+                    icon="far fa-plus"
+                    :label="trans(`Add to basket`)"
+                    type="primary"
+                    size="lg"
+                    :disabled="product.quantity_ordered > product.stock"
+                    :loading="isLoadingSubmitQuantityProduct"
+                />
+            </div>
+
+            
         </div>
         
         <div v-if="product.quantity_ordered" class="mt-1 xitalic text-gray-700 text-sm">
