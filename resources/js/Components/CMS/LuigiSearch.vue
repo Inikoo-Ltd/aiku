@@ -145,7 +145,8 @@ const importStyleCSS = () => {
 
 
 
-onBeforeMount(() => {
+onMounted(() => {
+    importStyleCSS()
     const script = document.createElement('script');
     script.src = "https://cdn.luigisbox.com/autocomplete.js";
     script.async = true;
@@ -156,9 +157,6 @@ onBeforeMount(() => {
     script.onerror = () => {
         console.error('Failed to load Luigi autocomplete script');
     }
-})
-onMounted(() => {
-    importStyleCSS()
 })
 
 const visitSearchPage = () => {

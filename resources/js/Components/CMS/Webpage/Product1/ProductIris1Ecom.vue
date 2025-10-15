@@ -465,7 +465,8 @@ const validImages = computed(() => {
         </div>
 
         <div class="mt-6 flex flex-col gap-2">
-            <ButtonAddToBasket :product="fieldValue.product" />
+            <!-- <ButtonAddToBasket :product="fieldValue.product" /> -->
+            <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
         </div>
 
         <div class="text-xs font-medium py-3">
