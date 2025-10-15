@@ -15,12 +15,14 @@ enum PlatformPortfolioLogsStatusEnum: string
     use EnumHelperTrait;
 
     case OK = 'ok';
+    case PROCESSING = 'processing';
     case FAIL = 'fail';
 
     public function labels(): array
     {
         return [
             'ok'    => 'Ok',
+            'processing'    => 'Processing',
             'fail'  => 'Fail'
         ];
     }

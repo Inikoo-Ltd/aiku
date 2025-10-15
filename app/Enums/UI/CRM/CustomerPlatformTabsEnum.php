@@ -17,7 +17,8 @@ enum CustomerPlatformTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE      = 'showcase';
+    case SHOWCASE = 'showcase';
+    case LOGS     = 'logs';
 
     public function blueprint(): array
     {
@@ -26,6 +27,12 @@ enum CustomerPlatformTabsEnum: string
                 'title' => __('Showcase'),
                 'icon'  => 'fal fa-tachometer-alt',
             ],
+            CustomerPlatformTabsEnum::LOGS => [
+                'title' => __('Logs'),
+                'icon'  => 'fal fa-clock',
+                'type'  => 'icon',
+                'align' => 'right',
+            ]
         };
     }
 }
