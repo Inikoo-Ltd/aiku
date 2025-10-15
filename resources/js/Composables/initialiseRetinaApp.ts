@@ -138,7 +138,7 @@ export const initialiseRetinaApp = () => {
 
         if (usePage().props.iris) {
             layout.iris = {
-                ...layout.iris,
+                //...layout.iris, this broke fulfilment in production
                 ...usePage().props.iris
             }            // layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
         }
