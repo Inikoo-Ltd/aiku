@@ -13,6 +13,7 @@ import { faChevronCircleDown } from '@fal'
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SwitchLanguage from "../SwitchLanguage.vue"
+import LinkIris from "../LinkIris.vue"
 
 library.add(faChevronRight, faExternalLink)
 
@@ -23,6 +24,7 @@ const props = defineProps<{
     activeIndex: {}
     activeCustomIndex: {}
     activeCustomTopIndex: {}
+    internalHref: Function
     getHref: Function
     getTarget: Function
     setActiveCategory: Function
@@ -54,7 +56,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     <!-- Custom Menu Top WITH Sub-departments -->
                     <Disclosure v-if="customTopItem.sub_departments && customTopItem.sub_departments.length > 0"
                         v-slot="{ open }">
-                        <DisclosureButton class="w-full text-left px-2 py-2 md:p-4 font-semibold text-gray-600 border-b">
+                        <DisclosureButton class="w-full text-left px-2 py-2 font-semibold border-b">
                             <div class="flex justify-between items-center xtext-lg"
                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                 <span>{{ customTopItem.name }}</span>
@@ -66,29 +68,29 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                         <DisclosurePanel class="disclosure-panel">
                             <div v-for="(subDept, subDeptIndex) in customTopItem.sub_departments"
                                 :key="subDeptIndex" class="mb-6">
-                                <a v-if="subDept?.url !== null" :href="getHref(subDept)"
+                                <LinkIris v-if="subDept?.url !== null" :href="internalHref(subDept)"
                                     :target="getTarget(subDept)"
-                                    class="block text-base font-bold text-gray-700 mb-2"
+                                    class="block text-base font-bold mb-2"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                     {{ subDept.name }}
-                                </a>
-                                <span v-else class="block text-base font-bold text-gray-700 mb-2"
+                                </LinkIris>
+                                <span v-else class="block text-base font-bold mb-2"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                     {{ subDept.name }}
                                 </span>
                                 <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
                                     <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
-                                        <a 
-                                            v-if="family?.url !== null" :href="getHref(family)" :target="getTarget(family)"
+                                        <LinkIris 
+                                            v-if="family?.url !== null" :href="internalHref(family)" :target="getTarget(family)"
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                            class="block text-sm text-gray-700 relative hover:text-primary transition-all">
+                                            class="block text-sm relative hover:text-primary transition-all">
                                             <span class="absolute left-0 -ml-4">–</span>
                                             {{ family.name }}
-                                        </a>
+                                        </LinkIris>
                                         <span v-else
                                             :key="'span-' + familyIndex" v-if="family?.url === null"
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                            class="block text-sm text-gray-700 relative">
+                                            class="block text-sm relative">
                                             <span class="absolute left-0 -ml-4">–</span>
                                             {{ family.name }}
                                         </span>
@@ -99,27 +101,27 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     </Disclosure>
 
                     <!-- Custom Menu Top SINGLE LINK -->
-                    <div v-else class="px-2 py-2 md:p-4 border-b">
-                        <a v-if="customTopItem?.url !== null" :href="getHref(customTopItem)"
+                    <div v-else class="px-2 py-2 border-b">
+                        <LinkIris v-if="customTopItem?.url !== null" :href="internalHref(customTopItem)"
                             :target="getTarget(customTopItem)"
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                            class="font-bold text-gray-600 xtext-lg">
+                            class="font-bold">
                             {{ customTopItem.name }}
-                        </a>
+                        </LinkIris>
 
                         <span v-else
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                            class="font-bold text-gray-600 xtext-lg">{{ customTopItem.name }}</span>
+                            class="font-bold">{{ customTopItem.name }}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Product Categories Section for Mobile -->
+            <!-- Middle: Product Categories (auto) -->
             <div v-for="(category, index) in sortedProductCategories" :key="index">
                 <!-- Product Category WITH Sub-departments -->
                 <Disclosure v-if="category.sub_departments && category.sub_departments.length > 0" as="div" class="border-b"
                     v-slot="{ open }">
-                    <DisclosureButton class="w-full text-left px-2 py-2 md:p-4 font-semibold text-gray-600 border-b">
+                    <DisclosureButton class="w-full text-left px-2 py-2 font-semibold border-b">
                         <div class="flex justify-between items-center xtext-lg"
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                             <span>{{ category.name }}</span>
@@ -131,28 +133,37 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     <DisclosurePanel class="disclosure-panel">
                         <div v-for="(subDept, subDeptIndex) in category.sub_departments"
                             :key="subDeptIndex" class="mb-6">
-                            <a v-if="subDept?.url !== null" :href="'/' + subDept.url"
-                                class="block text-base font-bold text-gray-700 mb-2"
-                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
-                                {{ subDept.name }}
-                            </a>
-                            <span v-else class="block text-base font-bold text-gray-700 mb-2"
+                            <LinkIris
+                                v-if="subDept?.url !== null"
+                                :href="internalHref(subDept)"
+                            >
+                                <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }"
+                                    class="block text-base font-bold mb-2">
+                                    <span class="absolute left-0 -ml-4">–</span>
+                                    {{ subDept.name }}
+                                </div>
+                            </LinkIris>
+                            <span v-else class="block text-base font-bold mb-2"
                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                 {{ subDept.name }}
                             </span>
-                            <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
+
+                            <div v-if="subDept.families" class="space-y-2 mt-2 pl-4 border-gray-200">
                                 <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
-                                    <a 
-                                        v-if="family?.url !== null" :href="'/' + family.url"
-                                        :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                        class="block text-sm text-gray-700 relative hover:text-primary transition-all">
-                                        <span class="absolute left-0 -ml-4">–</span>
-                                        {{ family.name }}
-                                    </a>
+                                    <LinkIris
+                                        v-if="family?.url !== null" 
+                                        :href="internalHref(family)"
+                                    >
+                                        <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                            class="block text-sm relative hover:text-primary transition-all">
+                                            <span class="absolute left-0 -ml-4">–</span>
+                                            {{ family.name }}
+                                        </div>
+                                    </LinkIris>
                                     <span v-else
                                         :key="'span-' + familyIndex" v-if="family?.url === null"
                                         :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                        class="block text-sm text-gray-700 relative">
+                                        class="block text-sm relative">
                                         <span class="absolute left-0 -ml-4">–</span>
                                         {{ family.name }}
                                     </span>
@@ -163,16 +174,18 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                 </Disclosure>
 
                 <!-- Product Category SINGLE LINK -->
-                <div v-else class="px-2 py-2 md:p-4 border-b">
-                    <a v-if="category?.url !== null" :href="'/' + category.url"
+                <div v-else class="px-2 py-2 border-b">
+                    <LinkIris
+                        v-if="category?.url !== null"
+                        :href="internalHref(category)"
                         :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                        class="font-bold text-gray-600 xtext-lg">
+                        class="font-bold">
                         {{ category.name }}
-                    </a>
+                    </LinkIris>
 
                     <span v-else
                         :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                        class="font-bold text-gray-600 xtext-lg">{{ category.name }}</span>
+                        class="font-bold">{{ category.name }}</span>
                 </div>
             </div>
 
@@ -183,7 +196,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     <!-- Custom Menu WITH Sub-departments -->
                     <Disclosure v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
                         v-slot="{ open }">
-                        <DisclosureButton class="w-full text-left px-2 py-2 md:p-4 font-semibold text-gray-600 border-b">
+                        <DisclosureButton class="w-full text-left px-2 py-2 font-semibold border-b">
                             <div class="flex justify-between items-center xtext-lg"
                                 :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                 <span>{{ customItem.name }}</span>
@@ -195,28 +208,29 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                         <DisclosurePanel class="disclosure-panel">
                             <div v-for="(subDept, subDeptIndex) in customItem.sub_departments"
                                 :key="subDeptIndex" class="mb-6">
-                                <a v-if="subDept?.url !== null" :href="'/' + subDept.url"
-                                    class="block text-base font-bold text-gray-700 mb-2"
+                                <LinkIris v-if="subDept?.url !== null" :href="internalHref(subDept)"
+                                    class="block text-base font-bold mb-2"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                     {{ subDept.name }}
-                                </a>
-                                <span v-else class="block text-base font-bold text-gray-700 mb-2"
+                                </LinkIris>
+
+                                <span v-else class="block text-base font-bold mb-2"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                     {{ subDept.name }}
                                 </span>
                                 <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
                                     <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
-                                        <a 
-                                            v-if="family?.url !== null" :href="getHref(family)" :target="getTarget(family)"
+                                        <LinkIris 
+                                            v-if="family?.url !== null" :href="internalHref(family)" :target="getTarget(family)"
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                            class="block text-sm text-gray-700 relative hover:text-primary transition-all">
+                                            class="block text-sm relative hover:text-primary transition-all">
                                             <span class="absolute left-0 -ml-4">–</span>
                                             {{ family.name }}
-                                        </a>
+                                        </LinkIris>
                                         <span v-else
                                             :key="'span-' + familyIndex" v-if="family?.url === null"
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                            class="block text-sm text-gray-700 relative">
+                                            class="block text-sm relative">
                                             <span class="absolute left-0 -ml-4">–</span>
                                             {{ family.name }}
                                         </span>
@@ -228,17 +242,17 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     </Disclosure>
 
                     <!-- Custom Menu SINGLE LINK -->
-                    <div v-else class="px-2 py-2 md:p-4 border-b">
-                        <a v-if="customItem?.url !== null" :href="getHref(customItem)"
+                    <div v-else class="px-2 py-2 border-b">
+                        <LinkIris v-if="customItem?.url !== null" :href="internalHref(customItem)"
                             :target="getTarget(customItem)"
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                            class="font-bold text-gray-600 xtext-lg">
+                            class="font-bold">
                             {{ customItem.name }}
-                        </a>
+                        </LinkIris>
 
                         <span v-else
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                            class="font-bold text-gray-600 xtext-lg">{{ customItem.name }}</span>
+                            class="font-bold">{{ customItem.name }}</span>
                     </div>
                 </div>
             </div>
