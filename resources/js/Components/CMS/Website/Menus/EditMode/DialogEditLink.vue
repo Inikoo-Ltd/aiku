@@ -119,7 +119,6 @@ function getRoute(): RouteConfig {
 // 🔹 Handlers
 //
 function selectQueryOnChange(e: { href: string; workshop?: string; id?: string, code?:any  }) {
-  console.log(e)
   link.value = {
 	type : 'internal',
 	code : e?.code ?? null,
@@ -130,7 +129,7 @@ function selectQueryOnChange(e: { href: string; workshop?: string; id?: string, 
   }
 }
 
-// Optional: watch for automatic updates to parent
+// Optional: watch for automatic updates to parentj
 /* watch(localModel, (val) => emit('update:modelValue', val), { deep: true }) */
 
 </script>
@@ -232,7 +231,7 @@ function selectQueryOnChange(e: { href: string; workshop?: string; id?: string, 
             <span class="text-sm text-gray-400">({{ value.canonical_url ||  value.href}})</span>
           </div>
           <div v-else class="w-full text-left pl-4">
-            <span>{{ value.canonical_url ||  value.href}}</span>
+            <span>{{ value.canonical_url ||  value.href }}</span>
           </div>
         </template>
       </PureMultiselectInfiniteScroll>
