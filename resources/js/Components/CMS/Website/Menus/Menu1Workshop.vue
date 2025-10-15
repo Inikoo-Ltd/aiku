@@ -202,7 +202,7 @@ const getNavigationIcon = (navigation: any) => {
                         <div v-for="linkData in subnav?.links" :key="subnav.title" class="space-y-4">
                             <LinkIris class="text-sm font-bold" :href="linkData.link.href" :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
                                 <template #default>
-                                     <div class="text-sm font-medium">{{ linkData.label }}</div>
+                                     <div class="text-sm text-gray-500 font-medium">{{ linkData.label }}</div>
                                 </template>
                             </LinkIris>   
                         </div>
