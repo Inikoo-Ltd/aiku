@@ -24,6 +24,7 @@ export interface LinkModel {
   id: string | null
   target: '_self' | '_blank'
   code : string | null
+  canonical_url : string | null
 }
 
 export interface NavigationModel {
@@ -61,7 +62,8 @@ const localModel = reactive<NavigationModel>({
     type: props.modelValue.link?.type ?? 'internal',
     href: props.modelValue.link?.href ?? null,
     workshop: props.modelValue.link?.workshop ?? null,
-	code : props.modelValue.link?.code ?? null,
+    canonical_url : props.modelValue.link?.canonical_url ?? null,
+	  code : props.modelValue.link?.code ?? null,
     id: props.modelValue.link?.id ?? null,
     target: props.modelValue.link?.target ?? '_self',
   },
@@ -120,9 +122,10 @@ function selectQueryOnChange(e: { href: string; workshop?: string; id?: string, 
   link.value = {
 	type : 'internal',
 	code : e.code ?? null,
-    href: e.href,
-    workshop: e.workshop ?? null,
-    id: e.id ?? null,
+  href: e.href,
+  workshop: e.workshop ?? null,
+  id: e.id ?? null,
+  canonical_url : e.canonical_url ?? null,
   }
 }
 
@@ -217,7 +220,7 @@ function selectQueryOnChange(e: { href: string; workshop?: string; id?: string, 
           <div>
             {{ option.code }}
             <span class="text-sm" :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">
-              ({{ option.href }})
+              ({{ option.path }})
             </span>
           </div>
         </template>
@@ -225,7 +228,7 @@ function selectQueryOnChange(e: { href: string; workshop?: string; id?: string, 
         <template #singlelabel="{ value }">
           <div class="w-full text-left pl-4">
             {{ value.code }}
-            <span class="text-sm text-gray-400">({{ value.href }})</span>
+            <span class="text-sm text-gray-400">({{ value.canonical_url }})</span>
           </div>
         </template>
       </PureMultiselectInfiniteScroll>
