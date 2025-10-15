@@ -27,9 +27,9 @@ const props = withDefaults(defineProps<{
 	props_selectquery?: any
 }>(), {})
 
+
 const emit = defineEmits(['update:modelValue'])
 
-// Menggunakan computed untuk menetapkan nilai default jika modelValue kosong
 const localModel = computed({
 	get: () => {
 		return props.modelValue ?? (props.defaultValue 
@@ -37,7 +37,7 @@ const localModel = computed({
 			: { type: 'internal', href: null, workshop: null, id: null, target: "_self", url: null, data: {} })
 	},
 	set: (newValue) => {
-		emit('update:modelValue', newValue) // 🔥 Emit perubahan ke modelValue
+		emit('update:modelValue', newValue)
 	}
 })
 
@@ -153,7 +153,13 @@ function getRoute() {
 				}"
 				:urlRoute="getRoute()" 
 				v-bind="props_selectquery"
-			/>
+			>
+			<template #singlelabel="{ value }">
+				<div class="flex items-center justify-start w-full px-2 text-gray-800  truncate">
+					{{ value?.path || value?.canonical_url || value?.href }}
+				</div>
+			</template>
+		</SelectQuery>
 		</div>
 	</div>
 </template>
