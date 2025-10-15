@@ -45,6 +45,7 @@ use App\Actions\Retina\Dropshipping\Orders\ShowRetinaDropshippingOrder;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfoliosCSV;
 use App\Actions\Retina\Dropshipping\Portfolio\IndexRetinaPortfolios;
 use App\Actions\Retina\Dropshipping\Portfolio\ShowRetinaDropshippingPortfolio;
+use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Retina\Dropshipping\Product\UI\IndexRetinaFilteredProducts;
 use App\Actions\Retina\Platform\EditRetinaCustomerSalesChannel;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
@@ -114,6 +115,9 @@ Route::prefix('channels/{customerSalesChannel}')->as('customer_sales_channels.')
         Route::get('/', ShowRetinaApiDropshippingDashboard::class)->name('dashboard');
     });
 
+    Route::prefix('platform-portfolio-logs')->as('platform_portfolio_logs.')->group(function () {
+        Route::get('', IndexPlatformPortfolioLogs::class)->name('index');
+    });
 
     Route::get('reconnect', ReconnectRetinaCustomerSalesChannel::class)->name('reconnect');
 });

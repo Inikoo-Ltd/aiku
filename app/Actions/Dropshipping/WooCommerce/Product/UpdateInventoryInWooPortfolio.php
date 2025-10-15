@@ -12,7 +12,6 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateInventoryInWooPortfolio
@@ -26,28 +25,13 @@ class UpdateInventoryInWooPortfolio
         $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
         $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)->get();
 
-        $productData = [];
         foreach ($customerSalesChannels as $customerSalesChannel) {
             $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
                 ->whereNotNull('platform_product_id')
                 ->get();
 
-            foreach ($portfolios as $portfolio) {
-                $product = $portfolio->item;
-
-                $productData['update'][] =
-                        [
-                            "id" => $portfolio->platform_product_id,
-                            "stock_quantity" => $product->available_quantity,
-                        ];
-            }
-
-
-            /** @var WooCommerceUser $wooCommerceUser */
-            $wooCommerceUser = $customerSalesChannel->user;
-
-            if (! blank($productData) && $wooCommerceUser) {
-                BulkUpdateWooPortfolio::dispatch($wooCommerceUser, $productData);
+            if ($customerSalesChannel->user) {
+                BulkUpdateWooPortfolio::dispatch($customerSalesChannel->user, $portfolios);
             }
         }
     }
