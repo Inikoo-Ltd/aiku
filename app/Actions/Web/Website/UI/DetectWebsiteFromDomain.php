@@ -24,7 +24,7 @@ class DetectWebsiteFromDomain
         $domain = $this->parseDomain($domain);
 
         /** @var Website $website */
-        $website = Website::where('domain', $domain)->first();
+        $website = Website::where('domain', $domain)->where('status', true)->first();
         if (!$website) {
             throw IrisWebsiteNotFound::make();
         }
