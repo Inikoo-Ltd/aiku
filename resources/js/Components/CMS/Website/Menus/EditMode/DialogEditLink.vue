@@ -119,9 +119,10 @@ function getRoute(): RouteConfig {
 // 🔹 Handlers
 //
 function selectQueryOnChange(e: { href: string; workshop?: string; id?: string, code?:any  }) {
+  console.log(e)
   link.value = {
 	type : 'internal',
-	code : e.code ?? null,
+	code : e?.code ?? null,
   href: e.href,
   workshop: e.workshop ?? null,
   id: e.id ?? null,
@@ -220,15 +221,18 @@ function selectQueryOnChange(e: { href: string; workshop?: string; id?: string, 
           <div>
             {{ option.code }}
             <span class="text-sm" :class="isSelected(option) ? 'text-indigo-200' : 'text-gray-400'">
-              ({{ option.path }})
+              ({{ option.path || option.href  }})
             </span>
           </div>
         </template>
 
         <template #singlelabel="{ value }">
-          <div class="w-full text-left pl-4">
+          <div v-if="value.code" class="w-full text-left pl-4">
             {{ value.code }}
-            <span class="text-sm text-gray-400">({{ value.canonical_url }})</span>
+            <span class="text-sm text-gray-400">({{ value.canonical_url ||  value.href}})</span>
+          </div>
+          <div v-else class="w-full text-left pl-4">
+            <span>{{ value.canonical_url ||  value.href}}</span>
           </div>
         </template>
       </PureMultiselectInfiniteScroll>
