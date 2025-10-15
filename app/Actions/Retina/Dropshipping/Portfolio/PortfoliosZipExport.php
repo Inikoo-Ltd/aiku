@@ -25,7 +25,7 @@ class PortfoliosZipExport
     /**
      * @throws \ZipStream\Exception\OverflowException
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel): void
+    public function handle(CustomerSalesChannel $customerSalesChannel, $ids = []): void
     {
         $zipFileName = 'images_'.Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference).'.zip';
         $zip         = new ZipStream(
@@ -34,7 +34,7 @@ class PortfoliosZipExport
         );
 
 
-        $imagesData = $this->getImages($customerSalesChannel);
+        $imagesData = $this->getImages($customerSalesChannel, $ids);
 
 
         foreach ($imagesData as $imageId => $imageData) {
@@ -72,10 +72,17 @@ class PortfoliosZipExport
     }
 
 
-    public function getImages(CustomerSalesChannel $customerSalesChannel): array
+    public function getImages(CustomerSalesChannel $customerSalesChannel, $ids = []): array
     {
         $imagesData = [];
-        foreach ($customerSalesChannel->portfolios as $portfolio) {
+
+        if (! blank($ids)) {
+            $portfolios = $customerSalesChannel->portfolios()->whereIn('id', $ids)->get();
+        } else {
+            $portfolios = $customerSalesChannel->portfolios;
+        }
+
+        foreach ($portfolios as $portfolio) {
             if ($portfolio->item instanceof Product) {
                 /** @var Product $product */
                 $product = $portfolio->item;

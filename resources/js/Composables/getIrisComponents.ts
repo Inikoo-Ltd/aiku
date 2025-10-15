@@ -45,6 +45,7 @@ import CTAVideo1Iris from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
 import families1Iris from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
 import BlogIris from '@/Components/CMS/Webpage/Blog/BlogIris.vue'
+import CarouselCtaIris from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaIris.vue'
 
 import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
 
@@ -136,7 +137,8 @@ const components = (shop_type?: string): Record<string, Component> => {
         'video-1'  : Video1Iris,
         "user-subscribe": UserSubscribeIris,
         "cta4" : Cta4,
-        "blog" : BlogIris
+        "blog" : BlogIris,
+        'carousel-cta' : CarouselCtaIris
     }
 }
 

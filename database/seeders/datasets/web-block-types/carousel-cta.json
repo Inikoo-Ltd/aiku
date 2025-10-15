@@ -1,0 +1,129 @@
+{
+	"slug": "carousel-cta",
+	"code": "carousel-cta",
+	"name": "Cta- Carousel",
+	"scope": "webpage",
+	"category": "element",
+	"icon": ["fal", "rectangle-wide"],
+	"website_type": ["info", "b2b", "b2", "dropshipping", "fulfilment", "digital_agency"],
+	"data": {
+		"fieldValue": {
+			"container": {
+				"properties": {
+					"border": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"color": "#000000",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						},
+						"rounded": {
+							"unit": "px",
+							"topleft": {
+								"value": 0
+							},
+							"topright": {
+								"value": 0
+							},
+							"bottomleft": {
+								"value": 0
+							},
+							"bottomright": {
+								"value": 0
+							}
+						}
+					},
+					"margin": {
+						"top": {
+							"value": 0
+						},
+						"left": {
+							"value": 0
+						},
+						"unit": "px",
+						"right": {
+							"value": 0
+						},
+						"bottom": {
+							"value": 0
+						}
+					},
+					"padding": {
+						"top": {
+							"value": 10
+						},
+						"left": {
+							"value": 10
+						},
+						"unit": "px",
+						"right": {
+							"value": 10
+						},
+						"bottom": {
+							"value": 10
+						}
+					},
+					"dimension": {
+						"width": {
+							"unit": "%",
+							"value": null
+						},
+						"height": {
+							"unit": "%",
+							"value": 100
+						}
+					},
+					"background": {
+						"type": "color",
+						"color": "#FFFFFF",
+						"image": {
+							"original": null
+						}
+					},
+					"justifyContent": "center"
+				}
+			},
+			"carousel_data": {
+				"carousel_setting": {
+					"spaceBetween": 16,
+					"loop": true,
+					"autoplay": true,
+					"slidesPerView": {
+						"mobile": 1,
+						"tablet": 1,
+						"desktop": 1
+					}
+				},
+				"cards": [
+					{
+						"button": {
+							"link": {
+								"type": "internal",
+								"href": "/",
+								"id": null,
+								"workshop_route": ""
+							},
+							"text": "Explore Here",
+							"container": {
+								"properties": null
+							}
+						},
+						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
+						"image": {
+							"alt": "Image 1",
+							"source": null
+						}
+					}
+				]
+			}
+		}
+	}
+}

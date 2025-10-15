@@ -10,18 +10,19 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DownloadPortfolioZipImages extends RetinaAction
 {
-    public function handle(CustomerSalesChannel $customerSalesChannel): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        PortfoliosZipExport::run($customerSalesChannel);
+        PortfoliosZipExport::run($customerSalesChannel, Arr::get($modelData, 'ids', []));
 
         $filename = 'images.zip';
-        $response = response()->streamDownload(function () use ($customerSalesChannel) {
-            PortfoliosZipExport::make()->handle($customerSalesChannel);
+        $response = response()->streamDownload(function () use ($customerSalesChannel, $modelData) {
+            PortfoliosZipExport::make()->handle($customerSalesChannel, Arr::get($modelData, 'ids', []));
         }, $filename);
 
         $response->headers->set('X-Accel-Buffering', 'no');
@@ -40,10 +41,23 @@ class DownloadPortfolioZipImages extends RetinaAction
         return true;
     }
 
+    public function rules(): array
+    {
+        return [
+            'ids' => ['nullable', 'array']
+        ];
+    }
+
+    public function prepareForValidation(ActionRequest $request): void
+    {
+        if (! blank($request->get('ids'))) {
+            $this->set('ids', explode(',', $request->get('ids')));
+        }
+    }
 
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): StreamedResponse
     {
         $this->initialisation($request);
-        return $this->handle($customerSalesChannel);
+        return $this->handle($customerSalesChannel, $this->validatedData);
     }
 }
