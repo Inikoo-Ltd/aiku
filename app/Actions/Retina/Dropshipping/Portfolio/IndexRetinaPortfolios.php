@@ -213,6 +213,15 @@ class IndexRetinaPortfolios extends RetinaAction
                 ->count();
         }
 
+        $groupedPortfolios = $this->customerSalesChannel->portfolios->groupBy(function ($portfolio) {
+            return strtoupper(substr($portfolio->item_name, 0, 1));
+        })->map(function ($group) {
+            return [
+                'char' => strtoupper(substr($group->first()->item_name, 0, 1)),
+                'count' => $group->count(),
+                'items' => $group
+            ];
+        })->sortKeys();
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -228,6 +237,9 @@ class IndexRetinaPortfolios extends RetinaAction
                     'icon'       => 'fal fa-cube',
                     'actions'    => $actions,
                 ],
+
+                'grouped_portfolios' => $groupedPortfolios,
+
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
                     'batch_all'                 => $bulkAllRoute,
