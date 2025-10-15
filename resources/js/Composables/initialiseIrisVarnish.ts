@@ -14,8 +14,9 @@ import { onMounted } from "vue"
 export const initialiseIrisVarnish = async (layoutStore) => {
     onMounted(async () => {
         const layout = layoutStore()
+        let storageIris = {}
         if (typeof window !== "undefined") {
-            let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
+            storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
             layout.iris.is_logged_in = storageIris?.is_logged_in ?? false
         }
     
