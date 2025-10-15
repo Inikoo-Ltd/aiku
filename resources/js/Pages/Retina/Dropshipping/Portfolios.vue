@@ -144,9 +144,9 @@ const onUploadToShopify = () => {
 };
 
 
-const downloadUrl = (type: string) => {
+const downloadUrl = (type: string, addParams: string = '') => {
     if (props.download_route?.[type]?.name) {
-        return route(props.download_route[type].name, props.download_route[type].parameters);
+        return route(props.download_route[type].name, {...props.download_route[type].parameters, ...{ids: addParams}});
     } else {
         return ''
     }
@@ -520,9 +520,11 @@ const key = ulid()
         <div class="flex flex-col gap-2">
             <div v-for="grouped in grouped_portfolios" class="flex justify-between gap-2">
                 <div class="my-auto">
-                    <span>{{grouped.char}}: ({{grouped.count}}) images</span>
+                    <span><b>{{grouped.char}}</b>: ({{grouped.count}}) images</span>
                 </div>
-                <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
+                <a v-if="grouped.count > 0" :href="downloadUrl('images', grouped.ids) as string" rel="noopener">
+                    <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
+                </a>
             </div>
         </div>
     </Modal>

@@ -26,6 +26,8 @@ trait HasProductInformation
     {
         return [
             'cpnp_number',
+            'scpn_number',
+            'ufi_number',
             'country_of_origin',
             'origin_country_id',
             'tariff_code',
