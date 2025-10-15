@@ -61,7 +61,7 @@ const products = ref<any[]>(
 );
 
 const q = ref("")
-const orderBy = ref(route()?.params?.order_by)
+const orderBy = ref(layout.params?.order_by)
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
@@ -79,27 +79,15 @@ const getRoutes = () => {
     if (props.fieldValue.model_type === "ProductCategory") {
         return {
             iris: {
-                route_products: {
-                    name: "iris.json.product_category.products.index",
-                    parameters: { productCategory: props.fieldValue.model_id }
-                },
-                route_out_of_stock_products: {
-                    name: "iris.json.product_category.out_of_stock_products.index",
-                    parameters: { productCategory: props.fieldValue.model_id }
-                }
+                route_products: `json/product-category/${props.fieldValue.model_id}/products`,
+                route_out_of_stock_products: `json/product-category/${props.fieldValue.model_id}/out-of-stock-products`
             }
         }
     } else if (props.fieldValue.model_type === "Collection") {
         return {
             iris: {
-                route_products: {
-                    name: "iris.json.collection.products.index",
-                    parameters: { collection: props.fieldValue.model_id }
-                },
-                route_out_of_stock_products: {
-                    name: "iris.json.collection.out_of_stock_products.index",
-                    parameters: { collection: props.fieldValue.model_id }
-                }
+                route_products: `json/collection/${props.fieldValue.model_id}/products`,
+                route_out_of_stock_products: `json/collection/${props.fieldValue.model_id}/out-of-stock-products`
             }
         }
     }
@@ -168,14 +156,10 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         : routes.iris.route_products
 
     try {
-        const response = await axios.get(route(currentRoute.name, {
-            ...currentRoute.parameters,
-            ...filters,
-            "filter[global]": q.value,
-            sort: orderBy.value,
-            index_perPage: 25,
-            page: page.value
-        }))
+        const fetchParameter = `?filter[global]=${q.value}&sort=${orderBy.value}&index_perPage=25&page=${page.value}`
+        const fetchUrl = `/${currentRoute}${fetchParameter}`
+        console.log('ewqewq', fetchUrl)
+        const response = await axios.get(fetchUrl)
 
         const data = response.data
 
@@ -327,13 +311,15 @@ const productInBasket = ref({
 const getRouteForProductInBasket = () => {
     const { model_type, model_id } = props.fieldValue;
     if (model_type == "ProductCategory") {
-        return route("iris.json.product_category.transaction_data", {
-            productCategory: model_id
-        });
+        return `json/product-category/${model_id}/transaction-data`
+        // return route("iris.json.product_category.transaction_data", {
+        //     productCategory: model_id
+        // });
     } else if (model_type == "Collection") {
-        return route("iris.json.collection.transaction_data", {
-            collection: model_id
-        });
+        return `json/collection/${model_id}/transaction-data`
+        // return route("iris.json.collection.transaction_data", {
+        //     collection: model_id
+        // });
     }
 };
 
