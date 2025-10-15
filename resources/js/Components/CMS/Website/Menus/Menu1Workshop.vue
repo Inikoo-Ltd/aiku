@@ -120,7 +120,7 @@ const getNavigationIcon = (navigation: any) => {
             :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
             class="relative flex justify-between items-center gap-x-2 px-4">
             <!-- All categories -->
-            <div v-if="layout.retina?.type !== 'fulfilment'" class="relative">
+            <div v-if="layout.retina?.type !== 'fulfilment'" class="relative" @mouseenter="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())">
                 <div @click="() => { isOpenMenuMobile = true }"
                     class="flex items-center gap-x-2 h-fit px-5 py-1 text-sm rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap">
                     <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400 text-[10px]" fixed-width
@@ -152,7 +152,7 @@ const getNavigationIcon = (navigation: any) => {
                 </div>
             </Transition>
 
-            <!-- Main Navigation -->
+            <!-- Section: list Navigation -->
             <nav ref="_scrollContainer" @scroll="checkScroll"
                 class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide ml-5">
                 <template v-for="(navigation, idxNavigation) in fieldValue?.navigation" :key="idxNavigation">
