@@ -229,6 +229,21 @@ class EditProduct extends OrgAction
                             'label' => __('code'),
                             'value' => $product->code
                         ],
+                        'cpnp_number' => [
+                            'type' => 'input',
+                            'label' => __('CPNP Number'),
+                            'value' => $product->cpnp_number
+                        ],
+                        'scpn_number' => [
+                            'type' => 'input',
+                            'label' => __('SCPN number'),
+                            'value' => $product->scpn_number
+                        ],
+                        'ufi_number' => [
+                            'type' => 'input',
+                            'label' => __('UFI Number'),
+                            'value' => $product->ufi_number
+                        ],
                     ]
                 ],
                 [

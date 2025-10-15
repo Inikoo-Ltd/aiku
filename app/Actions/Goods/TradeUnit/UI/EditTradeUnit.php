@@ -163,6 +163,21 @@ class EditTradeUnit extends OrgAction
                                     'label' => __('code'),
                                     'value' => $tradeUnit->code
                                 ],
+                                'cpnp_number' => [
+                                    'type' => 'input',
+                                    'label' => __('CPNP Number'),
+                                    'value' => $tradeUnit->cpnp_number
+                                ],
+                                'scpn_number' => [
+                                    'type' => 'input',
+                                    'label' => __('SCPN number'),
+                                    'value' => $tradeUnit->scpn_number
+                                ],
+                                'ufi_number' => [
+                                    'type' => 'input',
+                                    'label' => __('UFI Number'),
+                                    'value' => $tradeUnit->ufi_number
+                                ],
                             ],
                         ],
                         [
