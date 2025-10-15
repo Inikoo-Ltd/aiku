@@ -32,6 +32,13 @@ export const initialiseIrisVarnish = async (layoutStore) => {
                 console.log('Iris Varnish', response.data)
                 return response.data
             } catch (error) {
+                if (error?.status === 403) {
+                    localStorage.setItem('iris', JSON.stringify({
+                        ...storageIris,
+                        is_logged_in: false
+                    }))
+                    layout.iris.is_logged_in = false
+                }
                 console.error('Error fetching first hit:', error)
             } finally {
                 set(layout, ['iris_varnish', 'isFetching'], false)
@@ -41,6 +48,11 @@ export const initialiseIrisVarnish = async (layoutStore) => {
         const varnish = await getVarnishData()
     
         if (!varnish) {
+            // localStorage.setItem('iris', JSON.stringify({
+            //     ...storageIris,
+            //     is_logged_in: false
+            // }))
+            // layout.iris.is_logged_in = false
             return
         }
     
