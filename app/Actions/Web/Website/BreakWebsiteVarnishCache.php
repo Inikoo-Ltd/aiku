@@ -26,7 +26,6 @@ class BreakWebsiteVarnishCache extends OrgAction
         $banExpr        = "obj.http.X-AIKU-WEBSITE == $website->id";
         $varnishCommand = "sudo varnishadm 'ban $banExpr'";
 
-
         $this->runVarnishCommand($varnishCommand, $command);
 
         return $website;

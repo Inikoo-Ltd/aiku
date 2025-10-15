@@ -9,18 +9,20 @@
 namespace App\Actions\Web\Website;
 
 use App\Actions\OrgAction;
-use App\Models\Web\Website;
+use App\Actions\Traits\WithVarnishBan;
 use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class BreakAllWebsitesVarnishCache extends OrgAction
 {
-    public function handle(): void
+    use WithVarnishBan;
+
+    public function handle(Command $command = null): void
     {
-        foreach (Website::all() as $website) {
-            BreakWebsiteVarnishCache::run($website);
-        }
+        $varnishCommand = "sudo varnishadm 'ban req.url ~ .'";
+
+        $this->runVarnishCommand($varnishCommand, $command);
     }
 
     public function asController(ActionRequest $request): void
