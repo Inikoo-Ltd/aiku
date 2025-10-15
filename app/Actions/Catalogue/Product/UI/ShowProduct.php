@@ -228,6 +228,7 @@ class ShowProduct extends OrgAction
         }
 
         if ($product->family) {
+            $route=null;
             if ($product->subDepartment) {
                 $route = [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
@@ -239,7 +240,7 @@ class ShowProduct extends OrgAction
                         'family'        => $product->family->slug,
                     ]
                 ];
-            } else {
+            } elseif($product->department) {
                 $route = [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
                     'parameters' => [
@@ -251,12 +252,16 @@ class ShowProduct extends OrgAction
                 ];
             }
 
-            $miniBreadcrumbs[] = [
-                'label'   => $product->family->name,
-                'to'      => $route,
-                'tooltip' => __('Family').': '.$product->family->name,
-                'icon'    => ['fal', 'folder']
-            ];
+            if($route) {
+                $miniBreadcrumbs[] = [
+                    'label'   => $product->family->name,
+                    'to'      => $route,
+                    'tooltip' => __('Family').': '.$product->family->name,
+                    'icon'    => ['fal', 'folder']
+                ];
+            }
+
+
         }
 
 
