@@ -145,6 +145,8 @@ sub vcl_backend_response {
     set beresp.ttl = 10d;
     set beresp.grace = 2m;
     set beresp.keep = 10m;
+    # Store original TTL as header for later use in vcl_deliver
+    set beresp.http.X-Varnish-TTL = beresp.ttl;
 
 
 
@@ -190,6 +192,8 @@ sub vcl_deliver {
     # Strip Set-Cookie on cache hits only
     if (obj.hits > 0) {
         unset resp.http.Set-Cookie;
+        # Set client-side cache to 15 minutes on cache hits
+        set resp.http.Cache-Control = "public, max-age=180";
     }
 
     # Add debug headers (can be removed in production)
