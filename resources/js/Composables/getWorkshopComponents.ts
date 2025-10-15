@@ -47,6 +47,7 @@ import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Workshop.vue'
 import SeeAlso1Workshop from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Workshop.vue'
 import BlogWorkshop from '@/Components/CMS/Webpage/Blog/BlogWorkshop.vue'
 import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme1/EditFooter1Translation.vue'
+import CarouselCtaWorkshop from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaWorkshop.vue'
 
 
 
@@ -128,7 +129,8 @@ export const getComponent = (componentName: string) => {
         'video-1': Video1Workshop,
         "user-subscribe": UserSubscribeWorkshop,
         'cta4' :Cta4,
-        'blog' : BlogWorkshop
+        'blog' : BlogWorkshop,
+        'carousel-cta' : CarouselCtaWorkshop
     }
 
     return components[componentName] ?? NotFoundComponents
