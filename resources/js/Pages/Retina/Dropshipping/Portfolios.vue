@@ -51,6 +51,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     download_route: any
+    grouped_portfolios: any
     content?: {
         portfolio_empty?: {
             title?: string,
@@ -97,6 +98,7 @@ const props = defineProps<{
 const step = ref(props.step);
 const isPlatformManual = computed(() => props.platform_data.type === 'manual');
 const isOpenModalPortfolios = ref(false);
+const isOpenModalDownloadImages = ref(false);
 
 
 const isLoadingUpload = ref(false);
@@ -332,10 +334,10 @@ const key = ulid()
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
-                <a v-if="props.product_count <= 500" :href="downloadUrl('images') as string" target="_blank" rel="noopener">
+                <a v-if="props.product_count <= 200" :href="downloadUrl('images') as string" target="_blank" rel="noopener">
                     <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
                 </a>
-
+                <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')"
@@ -508,5 +510,20 @@ const key = ulid()
                                  @onDone="()=>{isOpenModalPortfolios = false, key = ulid()}" :platform_user_id
                                  :is_platform_connected
                                  :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
+    </Modal>
+
+    <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
+           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
+        <div class="mb-8">
+            <h3 class="text-center font-semibold">{{ trans('Images grouped by first letter from product code')}}</h3>
+        </div>
+        <div class="flex flex-col gap-2">
+            <div v-for="grouped in grouped_portfolios" class="flex justify-between gap-2">
+                <div class="my-auto">
+                    <span>{{grouped.char}}: ({{grouped.count}}) images</span>
+                </div>
+                <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
+            </div>
+        </div>
     </Modal>
 </template>
