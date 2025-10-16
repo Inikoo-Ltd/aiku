@@ -118,7 +118,7 @@ sub vcl_recv {
     if (req.url ~ "\.(pdf|csv|css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$") {
         return (pass);
     }
-    #unset req.http.Cookie;
+    
     return (hash);
 }
 
@@ -202,7 +202,12 @@ sub vcl_deliver {
 
     # Echo login derivation for observability and for the app if needed
     if (req.http.X-Varnish-Logged-In) {
-        set resp.http.X-Varnish-Logged-In = req.http.X-Varnish-Logged-In;
+        set resp.http.X-Debug-Varnish-Logged-In = req.http.X-Varnish-Logged-In;
+    }
+
+        # Echo login derivation for observability and for the app if needed
+    if (req.http.X-Varnish-Logged-Out) {
+        set resp.http.X-Debug-Varnish-Logged-Out = req.http.X-Varnish-Logged-Out;
     }
 
     # If response is a redirect (3xx), set client cache to 1 day
