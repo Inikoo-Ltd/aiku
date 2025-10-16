@@ -35,7 +35,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
                 if (error?.status === 403) {
                     localStorage.setItem('iris', JSON.stringify({
                         ...storageIris,
-                        is_logged_in: false
+                        is_logged_in: false,
+                        iris_variables : null
                     }))
                     layout.iris.is_logged_in = false
                 }
@@ -48,11 +49,11 @@ export const initialiseIrisVarnish = async (layoutStore) => {
         const varnish = await getVarnishData()
     
         if (!varnish) {
-            // localStorage.setItem('iris', JSON.stringify({
-            //     ...storageIris,
-            //     is_logged_in: false
-            // }))
-            // layout.iris.is_logged_in = false
+            /* localStorage.setItem('iris', JSON.stringify({
+                is_logged_in: false,
+                iris_variables : null
+            }))
+            layout.iris.is_logged_in = false */
             return
         }
     
@@ -62,7 +63,8 @@ export const initialiseIrisVarnish = async (layoutStore) => {
     
         localStorage.setItem('iris', JSON.stringify({
             ...storageIris,
-            is_logged_in: varnish?.is_logged_in
+            is_logged_in: varnish?.is_logged_in,
+            iris_variables : varnish?.variables
         }))
     
         layout.user = varnish.auth?.user
