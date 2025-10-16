@@ -49,6 +49,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import { setColorStyleRoot } from "@/Composables/useApp"
 
 library.add(faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
 
@@ -118,23 +119,10 @@ const onRefreshPage = () => {
     window.location.reload()
 }
 
-const setColorStyleRoot = () => {
-
-    const root = document.documentElement
-    root.style.setProperty('--grp-color-primary', layout?.app?.theme?.[0])
-    root.style.setProperty('--grp-color-secondary', layout?.app?.theme?.[2])
-    
-    root.style.setProperty('--theme-color-0', layout?.app?.theme?.[0])  // var(--theme-color-0)
-    root.style.setProperty('--theme-color-1', layout?.app?.theme?.[1])
-    root.style.setProperty('--theme-color-2', layout?.app?.theme?.[2])
-    root.style.setProperty('--theme-color-3', layout?.app?.theme?.[3])
-    root.style.setProperty('--theme-color-4', layout?.app?.theme?.[4])
-    root.style.setProperty('--theme-color-5', layout?.app?.theme?.[5])
-}
 
 onMounted(() => {
     onCheckAppVersion()
-    setColorStyleRoot()
+    setColorStyleRoot(layout?.app?.theme)
 })
 </script>
 
