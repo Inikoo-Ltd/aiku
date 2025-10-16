@@ -30,7 +30,6 @@ const isOpenMenuMobile = ref(false)
 provide('layout', layout)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
-
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const footer = usePage().props?.iris?.footer
@@ -92,9 +91,9 @@ onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
 })
 
-onBeforeMount(()=>{
+/* onBeforeMount(()=>{
 initialiseIrisVarnish(useIrisLayoutStore)
-})
+}) */
 
 console.log('handle', usePage().props)
 

@@ -36,6 +36,16 @@ interface App {
     environment: string | null
 }
 
+const getLocalStorage = () => {
+	let storageIris = {}
+	if (typeof window !== "undefined") {
+		storageIris = JSON.parse(localStorage.getItem("iris") || "{}") // Get layout from localStorage
+		return storageIris
+	}
+    
+    return storageIris
+}
+
 export const useIrisLayoutStore = defineStore('irisLayout', () => {
     const user = ref<User | null>(null)
     const app = ref<App>({
@@ -46,9 +56,16 @@ export const useIrisLayoutStore = defineStore('irisLayout', () => {
         environment: null // 'local' | 'staging'
     })
 
+    const iris_varnish = { 
+        isFetching : false
+    }
+    const iris = {
+        is_logged_in : getLocalStorage().is_logged_in || false
+    }
+    const iris_variables = getLocalStorage().iris_variables || {}
     const currentRoute = ref<string | undefined>("iris.login") // Define value to avoid route null at the first load
     const currentParams = ref<{[key: string]: string}>({})
     const currentQuery = ref<{[key: string]: string}>({})
 
-    return { user, app, currentRoute, currentParams, currentQuery }
+    return { user, app, currentRoute, currentParams, currentQuery, iris_varnish, iris_variables, iris }
 })

@@ -132,7 +132,7 @@ const onClickLogout = () => {
 
             <!-- Section: My account -->
             <ButtonWithLink type="transparent" class="bg-transparent"
-                v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping' && !layout.iris_varnish?.isFetching"
+                v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping') && !layout.iris_varnish?.isFetching"
                 v-tooltip="trans('My account')" url="/app/dashboard" :noHover="true">
                 <template #label>
                     <span class="text-white"> {{ trans('My account') }}</span>
@@ -141,7 +141,7 @@ const onClickLogout = () => {
 
             <!-- Section: Profile -->
             <ButtonWithLink
-                v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
+                v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) )&& !layout.iris_varnish?.isFetching"
                 v-tooltip="trans('Profile')" :url="layout.retina?.type == 'b2b' ? '/app/dashboard' : '/app/profile'"
                 icon="fal fa-user" type="transparent" :noHover="true">
                 <template #icon>
@@ -155,7 +155,7 @@ const onClickLogout = () => {
 
             <!-- Section: Back in stock -->
             <ButtonWithLink
-                v-if="layout.app?.environment === 'local' && checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping' && !layout.iris_varnish?.isFetching"
+                v-if="(layout.app?.environment === 'local' && checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping') && !layout.iris_varnish?.isFetching"
                 v-tooltip="trans('Reminder back in stock')"
                 url="/app/back-in-stocks"
                 type="transparent"
@@ -173,7 +173,7 @@ const onClickLogout = () => {
 
             <!-- Section: Favourite -->
             <ButtonWithLink
-                v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping' && !layout.iris_varnish?.isFetching"
+                v-if="(checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping') && !layout.iris_varnish?.isFetching"
                 v-tooltip="trans('Favourites')" url="/app/favourites" icon="fal fa-heart" type="transparent"
                 :noHover="true">
                 <template #icon>
@@ -192,7 +192,7 @@ const onClickLogout = () => {
 
             <!-- Section: Basket (cart) -->
             <ButtonWithLink
-                v-if="checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b' && !layout.iris_varnish?.isFetching"
+                v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b') && !layout.iris_varnish?.isFetching"
                 v-tooltip="trans('Cart count and amount')"
                 url="/app/basket"
                 :noHover="true"
@@ -219,7 +219,7 @@ const onClickLogout = () => {
 
             <!-- Section: Register -->
             <ButtonWithLink
-                v-if="checkVisible(model?.register?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
+                v-if="(checkVisible(model?.register?.visible || null, isLoggedIn)) && !layout.iris_varnish?.isFetching"
                 url="/app/register" icon="fal fa-user-plus" type="transparent" :noHover="true">
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-user-plus" :style="{ color: 'white' }" fixed-width

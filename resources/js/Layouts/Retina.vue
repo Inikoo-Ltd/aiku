@@ -10,7 +10,7 @@ import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
 import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSkull } from '@fal'
-import { onMounted, provide, ref, watch } from 'vue'
+import { onBeforeMount, onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
 import RetinaLayoutDs from "./RetinaLayoutDs.vue"
@@ -51,11 +51,11 @@ interface Notification {
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
 initialiseRetinaApp()
-initialiseIrisVarnish(useLayoutStore)
-
 const layout = useLayoutStore()
 
-
+onBeforeMount(() => {
+    initialiseIrisVarnish(useLayoutStore)
+})
 
 // Flash: Confetti
 const defaults = {
@@ -193,10 +193,10 @@ onMounted(() => {
 
 
 watch(
-  () => usePage().url, // watch the page URL
+  () => usePage().url,
   (newUrl, oldUrl) => {
     if (layout.iris?.is_logged_in) {
-      layout.log_user()
+      layout?.log_user()
     }
   },
   { immediate: true }

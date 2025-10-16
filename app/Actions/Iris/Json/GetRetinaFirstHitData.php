@@ -110,7 +110,6 @@ class GetRetinaFirstHitData extends RetinaAction
     {
         $this->initialisation($request);
 
-
         return $this->handle();
     }
 
