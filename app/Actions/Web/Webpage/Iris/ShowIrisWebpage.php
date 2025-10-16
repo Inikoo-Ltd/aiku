@@ -112,9 +112,12 @@ class ShowIrisWebpage
 
 
         if (!empty($canonicalUrl)) {
-            $currentUrl      = rtrim($request->fullUrl(), '/');
-            $normalizedCanon = $this->getEnvironmentUrl(rtrim($canonicalUrl, '/'));
+            // Use current URL without query parameters for canonical comparison
+            $currentUrl = rtrim($request->url(), '/');
 
+            // Normalize canonical URL to current environment and strip any query parameters
+            $canonNoQuery   = explode('?', $canonicalUrl, 2)[0];
+            $normalizedCanon = $this->getEnvironmentUrl(rtrim($canonNoQuery, '/'));
 
             if ($normalizedCanon !== $currentUrl) {
                 return $this->getEnvironmentUrl($canonicalUrl);
@@ -188,7 +191,17 @@ class ShowIrisWebpage
 
     public function htmlResponse($webpageData)
     {
+
         if (is_string($webpageData)) {
+            $queryParameters = Arr::except(request()->query(),[
+                'favicons','website','domain','currency_data','shop_type'
+            ]);
+            $queryString = http_build_query($queryParameters);
+
+            if($queryString){
+                $webpageData = $webpageData.'?'.$queryString;
+            }
+
             return redirect()->to($webpageData, 301);
         }
 
