@@ -91,9 +91,9 @@ onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
 })
 
-/* onBeforeMount(()=>{
+onBeforeMount(()=>{
 initialiseIrisVarnish(useIrisLayoutStore)
-}) */
+})
 
 console.log('handle', usePage().props)
 
