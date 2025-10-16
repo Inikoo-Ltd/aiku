@@ -42,21 +42,28 @@ class UpdateWebpage extends OrgAction
     {
 
         $currentSeoData = Arr::get($modelData, 'seo_data');
+        $oldSeoData     = $webpage->seo_data;
+        $oldUrl         = $webpage->url;
 
-        $oldSeoData = $webpage->seo_data;
-        $oldUrl     = $webpage->url;
-
-        if ($currentSeoData) {
-
-
-            $newData = [];
-            data_set($newData, 'structured_data', Arr::pull($currentSeoData, 'structured_data', Arr::get($oldSeoData, 'structured_data')));
-            data_set($newData, 'structured_data_type', Arr::pull($currentSeoData, 'structured_data_type', Arr::get($oldSeoData, 'structured_data_type')));
-            data_set($newData, 'meta_title', Arr::pull($currentSeoData, 'meta_title', Arr::get($oldSeoData, 'meta_title')));
-            data_set($newData, 'meta_description', Arr::pull($currentSeoData, 'meta_description', Arr::get($oldSeoData, 'meta_description')));
-
-            data_set($modelData, 'seo_data', $newData);
+        // Ensure seo_data exists as an array
+        if (!$currentSeoData) {
+            $currentSeoData = [];
         }
+
+        // Prepare new SEO data
+        $newData = [];
+
+        // Merge structured_data properly
+        data_set(
+            $newData,
+            'structured_data',
+            Arr::pull($modelData, 'structured_data', Arr::get($oldSeoData, 'structured_data', []))
+        );
+
+        // Example: reassign back to model or continue processin
+        $modelData['seo_data'] = $newData;
+    
+
 
         $imageSeo = Arr::pull($modelData, 'seo_image');
         if ($imageSeo) {
@@ -169,9 +176,8 @@ class UpdateWebpage extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
-            'seo_data'                  => ['sometimes', 'array:meta_title'],
-            //   'seo_data.meta_title'       => ['sometimes', 'nullable', 'string', 'max:72'],
-            //   'seo_data.meta_description' => ['sometimes', 'nullable', 'string', 'max:320'],
+            'seo_data'                  => ['sometimes', 'array'],
+            'structured_data'            =>  ['sometimes', 'string'],
             'level'                     => ['sometimes', 'integer'],
             'sub_type'                  => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
             'type'                      => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
@@ -213,7 +219,6 @@ class UpdateWebpage extends OrgAction
 
     public function asController(Webpage $webpage, ActionRequest $request): Webpage
     {
-
         $this->webpage = $webpage;
         $this->initialisationFromShop($webpage->shop, $request);
         return $this->handle($webpage, $this->validatedData);

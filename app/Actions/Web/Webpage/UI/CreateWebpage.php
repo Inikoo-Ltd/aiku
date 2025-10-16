@@ -128,14 +128,6 @@ class CreateWebpage extends OrgAction
                                     'value'     => '',
                                     'required'  => true,
                                 ],
-                                'seo_structure_type' => [
-                                    'type'     => 'select',
-                                    'label'    => __('seo structure type'),
-                                    'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
-                                    'value'    => null,
-                                    'required' => false,
-                                ],
-
                             ]
                         ]
                     ],
