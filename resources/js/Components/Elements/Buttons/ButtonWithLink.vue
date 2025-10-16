@@ -41,7 +41,7 @@ const props = defineProps<{
     buttonClass?: string
     iconRightRotation?: number | string
     iconRotation?: number | string
-    injectStyle: {}
+    injectStyle?: {}
 }>()
 
 const emits = defineEmits<{
