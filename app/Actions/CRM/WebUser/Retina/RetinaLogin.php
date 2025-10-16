@@ -12,8 +12,11 @@ use App\Actions\CRM\WebUser\AuthoriseWebUserWithLegacyPassword;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
 use App\Actions\SysAdmin\User\LogUserFailLogin;
 use App\Actions\Traits\WithLogin;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\CRM\WebUser;
+use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
@@ -131,12 +134,16 @@ class RetinaLogin
             app()->setLocale($language->code);
         }
 
-        $response = redirect()->intended($retinaHome);
-
-        if ($ref = $request->get('ref')) {
-            $response->header('x-login-redirect', $ref);
+        $webpage_key = request()->get('ref');
+        if ($webpage_key && is_numeric($webpage_key)) {
+            $webpage = Webpage::where('id', $webpage_key)->where('website_id', $request->get('website')->id)
+                ->where('state', WebpageStateEnum::LIVE)->first();
+            if ($webpage) {
+                $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
+            }
         }
-        return $response;
+        return redirect()->intended($retinaHome);
+
     }
 
 }
