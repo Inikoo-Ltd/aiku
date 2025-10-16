@@ -106,7 +106,7 @@ class ShowCustomerSalesChannel extends OrgAction
                 ],
                 'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($customerSalesChannel))
             ]
-        )->table(IndexPlatformPortfolioLogs::make()->tableStructure());
+        )->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));
     }
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array
