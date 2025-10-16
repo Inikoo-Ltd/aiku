@@ -31,7 +31,7 @@ class RepairCustomersOrdersInBasketId
         $order = Order::where('customer_id', $customer->id)->where('state', OrderStateEnum::CREATING)->first();
 
         $oldOrder = $customer->current_order_in_basket_id;
-        if (!$order) {
+        if ($order) {
             $customer->update([
                 'current_order_in_basket_id' => $order?->id,
             ]);
