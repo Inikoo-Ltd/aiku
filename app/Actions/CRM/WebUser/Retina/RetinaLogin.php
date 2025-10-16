@@ -35,7 +35,7 @@ class RetinaLogin
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(ActionRequest $request): RedirectResponse
+    public function handle(ActionRequest $request): array | RedirectResponse
     {
         $this->ensureIsNotRateLimited($request);
 
@@ -104,11 +104,10 @@ class RetinaLogin
 
         RateLimiter::clear($this->throttleKey($request));
 
-        $retinaHome = 'app/dashboard';
-        return $this->postProcessRetinaLogin($request, $retinaHome);
+        return $this->postProcessRetinaLogin($request);
     }
 
-    public function postProcessRetinaLogin($request, $retinaHome): RedirectResponse
+    public function postProcessRetinaLogin($request): array | RedirectResponse
     {
         RateLimiter::clear($this->throttleKey($request));
 
@@ -134,6 +133,7 @@ class RetinaLogin
             app()->setLocale($language->code);
         }
 
+        $retinaHome = '';
         $webpage_key = request()->get('ref');
         if ($webpage_key && is_numeric($webpage_key)) {
             $webpage = Webpage::where('id', $webpage_key)->where('website_id', $request->get('website')->id)
@@ -142,7 +142,8 @@ class RetinaLogin
                 $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
             }
         }
-        return redirect()->intended($retinaHome);
+
+        return [$retinaHome];
 
     }
 

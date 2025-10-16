@@ -29,7 +29,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
                 const response = await axios.get(selectedUrl)
                 set(layout, ['iris_varnish', 'isFetching'], false)
     
-                console.log('Iris Varnish', response.data)
+                // console.log('Iris Varnish', response.data)
                 return response.data
             } catch (error) {
                 if (error?.status === 403) {
@@ -40,7 +40,7 @@ export const initialiseIrisVarnish = async (layoutStore) => {
                     }))
                     layout.iris.is_logged_in = false
                 }
-                console.error('Error fetching first hit:', error)
+                // console.error('Error fetching first hit:', error)
             } finally {
                 set(layout, ['iris_varnish', 'isFetching'], false)
             }
@@ -94,7 +94,7 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
     
                 return response.data
             } catch (error) {
-                console.error('Error fetching auth_data:', error)
+                // console.error('Error fetching auth_data:', error)
             } finally {
                 set(layout, ['iris_varnish', 'isFetching'], false)
             }
@@ -122,7 +122,7 @@ export const initialiseLogUser = async (layout) => {
     
                 return response.data
             } catch (error) {
-                console.error('Error fetching web user:', error)
+                // console.error('Error fetching web user:', error)
             } finally {}
         }
     

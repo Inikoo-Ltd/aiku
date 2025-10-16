@@ -62,6 +62,7 @@ const props = defineProps<{
 console.log('-- Header data', props)
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
+// const isLoggedIn = false
 const sidebarMenu = inject('sidebarMenu', null) // come from layout PreviewLayout
 const computedSelectedSidebarData = computed(() => {
     return sidebarMenu?.value || layout.iris?.sidebar
@@ -166,28 +167,34 @@ onMounted(() => {
 
 <template>
     <div class="block md:hidden p-3">
-        <div class="flex justify-between items-center">
-            <!-- Section: Hamburger mobile -->
-            <IrisSidebarMenu
-                :header="headerData"
-                :menu="menuData"
-                :productCategories="productCategories"
-                :custom-menus-bottom="customMenusBottom"
-                :custom-menus-top="customMenusTop"
-                :screenType
-            />
+        <div class="xflex justify-between items-center grid"
+            :style="{
+                gridTemplateColumns: `repeat(${isLoggedIn ? 5 : 2}, minmax(0, 1fr))`
+            }"
+        >
+            <div class="text-left w-fit">
+                <!-- Section: Hamburger mobile -->
+                <IrisSidebarMenu
+                    :header="headerData"
+                    :menu="menuData"
+                    :productCategories="productCategories"
+                    :custom-menus-bottom="customMenusBottom"
+                    :custom-menus-top="customMenusTop"
+                    :screenType
+                />
+            </div>
 
             <!-- Section: Logo  -->
-            <div class="w-full px-4 mb-1">
-                <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] rounded">
+            <div class="w-full px-4 mb-1 flex justify-center items-center" :class="isLoggedIn ? 'col-span-3' : 'col-span-1'">
+                <component :is="true ? Link : 'div'" :href="'/'" class="block w-full max-h-[40px] max-w-44 rounded">
                     <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" :imageCover="true"
                         :style="{ objectFit: 'contain' }" />
                 </component>
             </div>
 
             <!-- Section: Profile -->
-            <div class="flex items-center cursor-pointer">
-                <Link href="/app/profile" v-if="isLoggedIn">
+            <div v-if="isLoggedIn" class="w-fit ml-auto flex items-center cursor-pointer text-xl">
+                <Link href="/app/profile">
                     <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
                     :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
                 </Link>

@@ -41,6 +41,7 @@ const props = defineProps<{
     buttonClass?: string
     iconRightRotation?: number | string
     iconRotation?: number | string
+    injectStyle?: {}
 }>()
 
 const emits = defineEmits<{
@@ -95,6 +96,7 @@ const dataToSend = props.body ?? props.routeTarget?.body
                 :class="props.buttonClass"
                 :iconRightRotation
                 :iconRotation
+                :injectStyle
             >
                 <template #loading>
                     <slot name="loading" />

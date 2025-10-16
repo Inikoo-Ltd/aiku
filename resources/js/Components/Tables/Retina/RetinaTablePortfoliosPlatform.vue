@@ -44,7 +44,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import {routeType} from "@/types/route";
-import {Message} from "primevue"
+import {InputText, Message} from "primevue"
 
 library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
@@ -384,6 +384,11 @@ const onDisableCheckbox = (item) => {
 }
 
 
+const listErrorProducts = ref({
+    
+})
+const selectedErrorProduct = ref(null)
+const isOpenModalErrorProduct = ref(false)
 </script>
 
 <template>
@@ -702,6 +707,10 @@ const onDisableCheckbox = (item) => {
                     :bindToLink="{
                         preserveScroll: true,
                     }"
+                    @error="(e) => {
+                        console.log('..........', e)
+                        set(listErrorProducts, [`x${item.id}`], e)
+                    }"
                 />
             </div>
         </template>
@@ -812,5 +821,34 @@ const onDisableCheckbox = (item) => {
             </div>
         </div>
     </Modal>
+
+    <Modal :isOpen="isOpenModalErrorProduct" width="w-full max-w-lg h-full max-h-[570px]" @close="isOpenModalErrorProduct = false">
+        <div>
+            <div class="text-xl font-semibold text-center">
+                Error Product
+            </div>
+            
+            <div>
+                {{ selectedErrorProduct }}
+                <label for="error-product-input" class="block text-sm font-semibold">Product title</label>
+                <div class="errorShake rounded">
+                    <InputText fluid inputId="error-product-input" modelValue="fgffffff" size="small" />
+                </div>
+                <div class="text-xs italic text-red-500 mt-1">
+                    *jvgfklsdnvbxcnbvcxlnbvcx
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <Button
+                    @click="() => console.log('zzzzzzzzzzzzz')"
+                    label="Submit change"
+                    full
+                />
+            </div>
+            
+        </div>
+    </Modal>
+
 </template>
 
