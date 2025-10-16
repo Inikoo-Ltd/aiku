@@ -8,10 +8,14 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -30,6 +34,10 @@ class StoreWooCommerceProduct extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
     {
+        $logs = StorePlatformPortfolioLog::run($portfolio, [
+            'type'   => PlatformPortfolioLogsTypeEnum::UPLOAD
+        ]);
+
         try {
             /** @var Product $product */
             $product = $portfolio->item;
@@ -77,6 +85,14 @@ class StoreWooCommerceProduct extends RetinaAction
 
             CheckWooPortfolio::run($portfolio, []);
 
+            $portfolio->refresh();
+
+            if ($portfolio->platform_status) {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+            }
+
             return $result;
         } catch (\Exception $e) {
             // Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
@@ -84,6 +100,13 @@ class StoreWooCommerceProduct extends RetinaAction
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [$e->getMessage()]
             ]);
+
+            if ($logs) {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $e->getMessage()
+                ]);
+            }
 
             return null;
         }

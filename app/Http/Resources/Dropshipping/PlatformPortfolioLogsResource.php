@@ -34,7 +34,7 @@ class PlatformPortfolioLogsResource extends JsonResource
             'created_at'    => $this->created_at,
             'type'          => $this->type,
             'status'        => $this->status,
-            'response'      => $this->response,
+            'response'      => $this->response ?? '-',
             'platform_id'   => $this->platform_id,
             'platform_type' => $this->platform_type,
             'platform_name' => $this->platform_name,
