@@ -236,7 +236,7 @@ const onClickLogout = () => {
 
             <!-- Section: Login -->
             <ButtonWithLink
-                v-if="checkVisible(model?.login?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
+                v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
                 :url="urlLoginWithRedirect()" icon="fal fa-sign-in" type="transparent" :noHover="true">
                 <template #icon>
                     <FontAwesomeIcon icon="fal fa-sign-in" :style="{ color: 'white' }" fixed-width aria-hidden="true" />
@@ -250,7 +250,7 @@ const onClickLogout = () => {
 
             <!-- Section: Logout -->
             <Button
-                v-if="checkVisible(model?.logout?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
+                v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
                 @click="() => onClickLogout()"
                 icon="fal fa-sign-out"
                 type="transparent"
@@ -267,12 +267,12 @@ const onClickLogout = () => {
                 </template>
             </Button>
 
-            <div  v-if="layout.iris_varnish?.isFetching" class="flex flex-col md:flex-row md:justify-between gap-x-4">
+            <!-- <div  v-if="layout.iris_varnish?.isFetching" class="flex flex-col md:flex-row md:justify-between gap-x-4">
                 <Skeleton  width="8rem" height="2rem"
                     class="rounded-xl opacity-70 bg-white/10 animate-pulse" />
                 <Skeleton  width="8rem" height="2rem"
                     class="rounded-xl opacity-70 bg-white/10 animate-pulse" />
-            </div>
+            </div> -->
         </div>
     </div>
 </template>

@@ -8,7 +8,7 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import { useLocaleStore } from "@/Stores/locale"
 import { router, usePage } from "@inertiajs/vue3"
 import { loadLanguageAsync } from "laravel-vue-i18n"
-import { watchEffect } from "vue"
+import { watch, watchEffect } from "vue"
 import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js"
 import { useEchoRetinaWebsite } from "@/Stores/echo-retina-website.js"
 import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
@@ -136,12 +136,6 @@ export const initialiseRetinaApp = () => {
             layout.retina = usePage().props.retina
         }
 
-        if (usePage().props.iris) {
-            layout.iris = {
-                //...layout.iris, this broke fulfilment in production
-                ...usePage().props.iris
-            }            // layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
-        }
 
         if (usePage().props.auth?.user?.avatar_thumbnail) {
             layout.avatar_thumbnail = usePage().props.auth.user.avatar_thumbnail
@@ -150,6 +144,15 @@ export const initialiseRetinaApp = () => {
         layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
         layout.log_user = () => initialiseLogUser(layout)
 
+    })
+
+    watch(() => usePage().props.iris, (newVal) => {
+        layout.iris = {
+            ...layout.iris,
+            ...newVal
+        }            // layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
+    }, {
+        immediate: true,
     })
     
     layout.app.name = "retina"

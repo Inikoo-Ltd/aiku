@@ -14,7 +14,6 @@ import { trans } from 'laravel-vue-i18n'
 import { debounce, get, set } from 'lodash-es'
 import { inject, ref } from 'vue'
 import { useLayoutStore } from "@/Stores/retinaLayout"
-import { initialiseIrisVarnishCustomerData } from '@/Composables/initialiseIrisVarnish'
 
 const props = defineProps<{
     data: any[] | TableTS

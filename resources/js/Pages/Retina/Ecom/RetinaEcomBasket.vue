@@ -30,7 +30,6 @@ import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 import { useLayoutStore } from "@/Stores/retinaLayout"
-import { initialiseIrisVarnishCustomerData } from '@/Composables/initialiseIrisVarnish'
 library.add(faTag, faCheck)
 
 interface ChargeResource {
