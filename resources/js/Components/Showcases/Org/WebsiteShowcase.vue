@@ -54,14 +54,14 @@ const links = computed(() => {
     ];
 
     // Add Edit Sidebar button only for dropshipping websites
-    if (props.data.website_type === "dropshipping") {
+    // if ('props.data.website_type' === "dropshipping") {
         baseLinks.splice(2, 0, {
             label: trans("Edit Sidebar"),
             route_target: props.data.layout.sidebarRoute,
             icon: faPencil,
             // disabled: layout?.app.environment !== 'local' 
         });
-    }
+    // }
 
     return baseLinks;
 });
