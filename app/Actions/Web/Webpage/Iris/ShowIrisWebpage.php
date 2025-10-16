@@ -76,8 +76,10 @@ class ShowIrisWebpage
 
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
-        if (config('iris.cache.varnish')) {
-            $loggedIn = $request->header('X-Logged-Status', 'Out') == 'In';
+
+        $xLoggedStatus = $request->header('X-Logged-Status');
+        if ($xLoggedStatus !== null) {
+            $loggedIn = $xLoggedStatus === 'In';
         } else {
             $loggedIn = auth()->check();
         }

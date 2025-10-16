@@ -50,8 +50,7 @@ sub normalize_accept_encoding {
 }
 
 sub set_login_flag_from_cookie {
-    # Derive login flag from presence of iris_vua cookie (value may be encrypted or not literally "true")
-    # Match cookie name safely among semicolon-delimited list, case-insensitive
+
     if (req.http.Cookie ~ "(?i)(^|; )iris_vua") {
         set req.http.X-Logged-Status = "In";
     } else {
