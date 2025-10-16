@@ -58,7 +58,7 @@ class MatchAssetsToMaster extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'products:match_to_master';
+        return 'assets:match_to_master';
     }
 
     public function asCommand(Command $command): int
