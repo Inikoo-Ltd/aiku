@@ -12,6 +12,7 @@ use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
 use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
 use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
+use App\Actions\Dropshipping\Shopify\Product\UpdateInventoryInShopifyPortfolio;
 use App\Actions\Dropshipping\WooCommerce\PingActiveWooChannel;
 use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
 use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
@@ -130,6 +131,10 @@ class Kernel extends ConsoleKernel
 
         $schedule->job(UpdateInventoryInWooPortfolio::makeJob())->hourly()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateWooStockInventories',
+        );
+
+        $schedule->job(UpdateInventoryInShopifyPortfolio::makeJob())->hourly()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'UpdateInventoryInShopifyPortfolio',
         );
 
         /*$schedule->job(CheckShopifyPortfolios::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
