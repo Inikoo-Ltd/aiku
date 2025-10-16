@@ -174,7 +174,7 @@ const internalHref = (item) => {
 
 <template>
     <div class="mobile-menu editor-class">
-        <button @click="isOpenMenuMobile = true">
+        <button @click="isOpenMenuMobile = true" class="text-xl">
             <FontAwesomeIcon :icon="props.header?.mobile?.menu?.icon || faBars"
                 :style="{ ...getStyles(header?.mobile?.menu?.container?.properties) }" />
         </button>
