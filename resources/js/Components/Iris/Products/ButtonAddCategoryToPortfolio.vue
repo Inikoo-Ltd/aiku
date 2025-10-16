@@ -286,9 +286,9 @@ onMounted(() => {
         </div>
     </div>
 
-    <Link v-else href="/app/login" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+    <a v-else href="/app/login" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
         {{ trans("Login / Register to Start") }}
-    </Link>
+    </a>
 
     <Popover ref="_popover">
         <div class="w-64 relative">

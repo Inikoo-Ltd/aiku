@@ -83,15 +83,27 @@ const layout = inject("layout", {})
                     <span v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
                 </a>
              </span> -->
-			<ButtonWithLink
-				v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
-				url="/app/login"
-				icon="fal fa-sign-in">
-				<template #label>
-					<span
-						v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
-				</template>
-			</ButtonWithLink>
+            <a href="/app/login"
+               v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
+
+            > Login </a>
+
+            <a href="/app/register" class="ml-4"
+               v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
+
+            > Register </a>
+
+
+
+<!--			<Button-->
+<!--				v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"-->
+<!--				icon="fal fa-sign-in">-->
+<!--				<template #label>ss-->
+<!--					<span-->
+<!--						v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />-->
+<!--				</template>-->
+<!--			</Button>-->
+
 			<!--   <span class="">
                 <a v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
                     :href="model?.register?.link?.href"
@@ -104,25 +116,25 @@ const layout = inject("layout", {})
                     <span v-html="textReplaceVariables(model?.register.text, layout.iris_variables)" />
                 </a>
             </span> -->
-			<ButtonWithLink
-				v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
-				url="/app/register"
-				icon="fal fa-user-plus"
-				type="transparent">
-				<template #icon>
-					<FontAwesomeIcon
-						icon="fal fa-user-plus"
-						class="text-white"
-						fixed-width
-						aria-hidden="true" />
-				</template>
+<!--			<ButtonWithLink-->
+<!--				v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"-->
+<!--				url="/app/register"-->
+<!--				icon="fal fa-user-plus"-->
+<!--				type="transparent">-->
+<!--				<template #icon>-->
+<!--					<FontAwesomeIcon-->
+<!--						icon="fal fa-user-plus"-->
+<!--						class="text-white"-->
+<!--						fixed-width-->
+<!--						aria-hidden="true" />-->
+<!--				</template>-->
 
-				<template #label>
-					<span
-						v-html="textReplaceVariables(model?.register.text, layout.iris_variables)"
-						class="text-white" />
-				</template>
-			</ButtonWithLink>
+<!--				<template #label>-->
+<!--					<span-->
+<!--						v-html="textReplaceVariables(model?.register.text, layout.iris_variables)"-->
+<!--						class="text-white" />-->
+<!--				</template>-->
+<!--			</ButtonWithLink>-->
 
 			<!-- Section: LogoutRetina -->
 			<!-- <a v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
