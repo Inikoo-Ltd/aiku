@@ -9,6 +9,7 @@
 namespace App\Http;
 
 use App\Http\Middleware\AddSentryBrowserProfilingHeader;
+use App\Http\Middleware\AddVaryHeader;
 use App\Http\Middleware\ApiBindGroupInstance;
 use App\Http\Middleware\CorneaAuthenticate;
 use App\Http\Middleware\DisableSSR;
@@ -169,6 +170,7 @@ class Kernel extends HttpKernel
         'iris'        => [
             DetectIrisWebsite::class,
             CheckWebsiteState::class,
+            AddVaryHeader::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -186,6 +188,7 @@ class Kernel extends HttpKernel
             DisableSSR::class,
             DetectWebsite::class,
             CheckWebsiteState::class,
+            AddVaryHeader::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
