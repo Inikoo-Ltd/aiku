@@ -29,7 +29,7 @@ trait WithLogin
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function asController(ActionRequest $request): RedirectResponse
+    public function asController(ActionRequest $request): RedirectResponse | array
     {
         return $this->handle($request);
     }

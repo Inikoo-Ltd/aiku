@@ -34,14 +34,45 @@ provide('isOpenMenuMobile', isOpenMenuMobile)
 
 const isLoading = ref(false)
 
-const submit = () => {
+const submit = async () => {
     isLoading.value = true
-    form.post(route('retina.login.store', {
-        ref: route().params?.['ref']
-    }), {
-        onError: () => isLoading.value = false,
-        onFinish: () => form.reset('password'),
-    })
+    try {
+        const response = await axios.post(
+            route('retina.login.store', {
+                ref: route().params?.['ref']
+            }),
+            { 
+                username: form.username,
+                password: form.password,
+                remember: form.remember,
+            }
+        )
+
+        console.log('Response axios:', response.data)
+        form.reset('password')
+
+        if (response.data) {
+            window.location.href = `${response.data}`
+        } else {
+            window.location.href = `/app/dashboard`
+        }
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    }
+
+    // form.post(route('retina.login.store', {
+    //     ref: route().params?.['ref']
+    // }), {
+    //     onSuccess: (e) => {
+    //         console.log('eeeeeeeee', e)
+    //     },
+    //     onError: () => isLoading.value = false,
+    //     onFinish: () => form.reset('password'),
+    // })
 }
 
 const inputUsername = ref(null)
