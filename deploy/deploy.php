@@ -138,6 +138,54 @@ task('deploy:save-ssr-checksums', function () {
 });
 
 
+desc('Flush varnish cache if ssr checksum if different as previous release');
+task('deploy:flush-varnish', function () {
+    $currentFile = '{{release_path}}/SSR_CHECKSUM';
+    $previousFile = '{{previous_release}}/SSR_CHECKSUM';
+
+    $current = '';
+    $previous = '';
+
+    // Read current checksum
+    try {
+        if (test('[ -f ' . $currentFile . ' ]')) {
+            $current = trim(run('cat ' . $currentFile));
+        } else {
+            writeln('SSR checksum: current file not found, will trigger cache flush.');
+        }
+    } catch (\Throwable $e) {
+        writeln('Error reading current SSR checksum: ' . $e->getMessage());
+    }
+
+    // Read previous checksum
+    try {
+        if (test('[ -f ' . $previousFile . ' ]')) {
+            $previous = trim(run('cat ' . $previousFile));
+        } else {
+            writeln('SSR checksum: previous file not found, will trigger cache flush.');
+        }
+    } catch (\Throwable $e) {
+        writeln('Error reading previous SSR checksum: ' . $e->getMessage());
+    }
+
+    $shouldFlush = false;
+
+    if ($previous === '' || $current === '' || $previous !== $current) {
+        $shouldFlush = true; // missing values, err on flushing
+    }
+
+    if ($shouldFlush) {
+        writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan websites:break_varnish_cache...');
+        try {
+            artisan('websites:break_varnish_cache', ['skipIfNoEnv', 'showOutput'])();
+            writeln('Varnish cache flush command executed.');
+        } catch (\Throwable $e) {
+            writeln('Error flushing Varnish cache: ' . $e->getMessage());
+        }
+    } else {
+        writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
+    }
+});
 
 set('keep_releases', 25);
 
@@ -172,4 +220,5 @@ task('deploy', [
     'artisan:octane:reload',
     'artisan:inertia:stop-ssr',
     'deploy:refresh-vue',
+    'deploy:flush-varnish',
 ]);
