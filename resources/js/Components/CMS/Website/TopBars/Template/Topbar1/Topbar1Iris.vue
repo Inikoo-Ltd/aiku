@@ -20,7 +20,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck)
 
-defineProps<{
+const props = defineProps<{
     screenType: "desktop" | "mobile" | "tablet"
 }>()
 
@@ -105,10 +105,10 @@ const onClickLogout = () => {
         }
     )
 }
+
 </script>
 
 <template>
-    <div></div>
     <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4 sticky top-0 z-50"
         :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
@@ -133,7 +133,11 @@ const onClickLogout = () => {
             <!-- Section: My account -->
             <ButtonWithLink type="transparent" class="bg-transparent"
                 v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping') && !layout.iris_varnish?.isFetching"
-                v-tooltip="trans('My account')" url="/app/dashboard" :noHover="true">
+                v-tooltip="trans('My account')"
+                url="/app/dashboard"
+                :noHover="true"
+                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
+            >
                 <template #label>
                     <span class="text-white"> {{ trans('My account') }}</span>
                 </template>
@@ -143,12 +147,16 @@ const onClickLogout = () => {
             <ButtonWithLink
                 v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) )&& !layout.iris_varnish?.isFetching"
                 v-tooltip="trans('Profile')" :url="layout.retina?.type == 'b2b' ? '/app/dashboard' : '/app/profile'"
-                icon="fal fa-user" type="transparent" :noHover="true">
+                icon="fal fa-user"
+                type="transparent"
+                :noHover="true"
+                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
+            >
                 <template #icon>
-                    <FontAwesomeIcon icon="fal fa-user" :style="{ color: 'white' }" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-user" fixed-width aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span class="text-white"
+                    <span class=""
                         v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
                 </template>
             </ButtonWithLink>
@@ -160,12 +168,13 @@ const onClickLogout = () => {
                 url="/app/back-in-stocks"
                 type="transparent"
                 :noHover="true"
+                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
             >
                 <template #icon>
-                    <FontAwesomeIcon icon="fas fa-envelope-circle-check" :style="{ color: 'white' }" class="align-middle" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fas fa-envelope-circle-check" class="align-middle" fixed-width aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span class="text-white">
+                    <span class="">
                         {{ layout.iris_variables?.back_in_stock_count }}
                     </span>
                 </template>
@@ -174,15 +183,20 @@ const onClickLogout = () => {
             <!-- Section: Favourite -->
             <ButtonWithLink
                 v-if="(checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping') && !layout.iris_varnish?.isFetching"
-                v-tooltip="trans('Favourites')" url="/app/favourites" icon="fal fa-heart" type="transparent"
-                :noHover="true">
+                v-tooltip="trans('Favourites')"
+                url="/app/favourites"
+                icon="fal fa-heart"
+                type="transparent"
+                :noHover="true"
+                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
+            >
                 <template #icon>
-                    <FontAwesomeIcon icon="fal fa-heart" :style="{ color: 'white' }" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-heart" fixed-width aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span class="text-white" v-if="model?.favourite?.text === `{{ favourites_count }}`"
+                    <span class="" v-if="model?.favourite?.text === `{{ favourites_count }}`"
                         v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
-                    <span class="text-white" v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
+                    <span class="" v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
                         {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
                         trans("favourites") : trans("favourite") }}
                     </span>
@@ -197,6 +211,7 @@ const onClickLogout = () => {
                 url="/app/basket"
                 :noHover="true"
                 type="transparent"
+                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
             >
                 <template #loading>
                     <span v-show="false" class=""></span>
@@ -205,48 +220,60 @@ const onClickLogout = () => {
                     <!-- <span class="text-white" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
                         v-html="textReplaceVariables(`{{ items_count }} ${trans('items')} ({{ cart_amount }})`, layout.iris_variables)">
                     </span> -->
-                    <span v-tooltip="trans('Number of products line')" class="text-white -mr-1.5" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                    <span v-tooltip="trans('Number of products line')" class=" -mr-1.5" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
                         v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
                     </span>
-                    <LoadingIcon v-if="isLoadingVisit" :style="{ color: 'white' }" />
-                    <FontAwesomeIcon v-else icon="fal fa-shopping-cart" :style="{ color: 'white' }" fixed-width
+                    <LoadingIcon v-if="isLoadingVisit" />
+                    <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width
                         aria-hidden="true" />
-                    <span class="text-white" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                    <span class="" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
                         v-html="textReplaceVariables(`{{ cart_amount }}`, layout.iris_variables)">
                     </span>
                 </template>
             </ButtonWithLink>
 
             <!-- Section: Register -->
-            <ButtonWithLink
-                v-if="(checkVisible(model?.register?.visible || null, isLoggedIn)) && !layout.iris_varnish?.isFetching"
-                url="/app/register" icon="fal fa-user-plus" type="transparent" :noHover="true">
-                <template #icon>
-                    <FontAwesomeIcon icon="fal fa-user-plus" :style="{ color: 'white' }" fixed-width
-                        aria-hidden="true" />
-                </template>
-
-                <template #label>
-
-                    <span class="text-white">
-                        {{ trans("Register") }}
-                    </span>
-                </template>
-            </ButtonWithLink>
+            <a href="/app/register">
+                <Button
+                    v-if="(checkVisible(model?.register?.visible || null, isLoggedIn)) && !layout.iris_varnish?.isFetching"
+                    xurl="/app/register"
+                    icon="fal fa-user-plus"
+                    type="transparent"
+                    :noHover="true"
+                    :injectStyle="getStyles(model?.container?.properties, props.screenType)"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-user-plus" fixed-width
+                            aria-hidden="true" />
+                    </template>
+                    <template #label>
+                        <span class="">
+                            {{ trans("Register") }}
+                        </span>
+                    </template>
+                </Button>
+            </a>
 
             <!-- Section: Login -->
-            <ButtonWithLink
-                v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
-                :url="urlLoginWithRedirect()" icon="fal fa-sign-in" type="transparent" :noHover="true">
-                <template #icon>
-                    <FontAwesomeIcon icon="fal fa-sign-in" :style="{ color: 'white' }" fixed-width aria-hidden="true" />
-                </template>
-                <template #label>
-                    <span class="text-white">
-                        {{ trans("Login") }}
-                    </span>
-                </template>
-            </ButtonWithLink>
+            <a :href="urlLoginWithRedirect()">
+                <Button
+                    v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
+                    xurl="urlLoginWithRedirect()"
+                    icon="fal fa-sign-in"
+                    type="transparent"
+                    :noHover="true"
+                    :injectStyle="getStyles(model?.container?.properties, props.screenType)"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-sign-in" xstyle="{ color: 'white' }" fixed-width aria-hidden="true" />
+                    </template>
+                    <template #label>
+                        <span class="text-inherit" :style="getStyles(model?.container?.properties, props.screenType)">
+                            {{ trans("Login") }}
+                        </span>
+                    </template>
+                </Button>
+            </a>
 
             <!-- Section: Logout -->
             <Button
@@ -256,12 +283,13 @@ const onClickLogout = () => {
                 type="transparent"
                 :noHover="true"
                 :loading="isLoadingLogout"
+                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
             >
                 <template #icon>
-                    <FontAwesomeIcon icon="fal fa-sign-out" :style="{ color: 'white' }" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-sign-out" fixed-width aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span class="text-white">
+                    <span class="">
                         {{ trans("Logout") }}
                     </span>
                 </template>
