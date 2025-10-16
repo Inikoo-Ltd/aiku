@@ -106,14 +106,15 @@ class StoreMasterAsset extends OrgAction
         return $masterAsset;
     }
 
-    public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnits): void
+    public function processTradeUnits(MasterAsset $masterAsset, array $tradeUnitsRaw): void
     {
         $stocks = [];
-        foreach ($tradeUnits as $item) {
+        $tradeUnits = [];
+        foreach ($tradeUnitsRaw as $item) {
             $tradeUnit = TradeUnit::find(Arr::get($item, 'id'));
-            $masterAsset->tradeUnits()->attach($tradeUnit->id, [
+            $tradeUnits[$tradeUnit->id] = [
                 'quantity' => Arr::get($item, 'quantity')
-            ]);
+            ];
 
 
             foreach ($tradeUnit->stocks as $stock) {
@@ -123,6 +124,7 @@ class StoreMasterAsset extends OrgAction
             }
         }
 
+        $masterAsset->tradeUnits()->sync($tradeUnits);
         $masterAsset->stocks()->sync($stocks);
         $masterAsset->refresh();
 
