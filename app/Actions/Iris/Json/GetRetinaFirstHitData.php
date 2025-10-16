@@ -15,6 +15,7 @@ use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Http\Resources\UI\LoggedWebUserResource;
 use App\Models\Catalogue\Collection;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -28,7 +29,7 @@ class GetRetinaFirstHitData extends RetinaAction
     {
 
         RetinaLogWebUserRequest::run();
-
+        Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
         return $this->getIrisUserData();
     }
 
