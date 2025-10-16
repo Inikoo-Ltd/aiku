@@ -38,15 +38,13 @@ class UpdateMasterAsset extends OrgAction
     {
 
         if (Arr::has($modelData, 'master_family_id')) {
-            $masterDepartmentID = null;
+
             $masterFamily = null;
             if ($modelData['master_family_id']) {
                 $masterFamily = MasterProductCategory::where('id', $modelData['master_family_id'])->first();
             }
 
-            if ($masterFamily) {
-                $masterDepartmentID = $masterFamily->master_department_id;
-            }
+            $masterDepartmentID = $masterFamily?->master_department_id;
             data_set($modelData, 'master_department_id', $masterDepartmentID);
         }
         if (Arr::has($modelData, 'name_i8n')) {

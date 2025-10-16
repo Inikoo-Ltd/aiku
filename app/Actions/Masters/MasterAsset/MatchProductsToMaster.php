@@ -1,8 +1,7 @@
 <?php
-
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 07 Aug 2025 17:55:46 Central European Summer Time, Plane Vienna-Malaga
+ * Created: Thu, 16 Oct 2025 14:39:33 Central Indonesia Time, Bali Office, Indonesia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
@@ -11,49 +10,48 @@ namespace App\Actions\Masters\MasterAsset;
 use App\Actions\Catalogue\Asset\UpdateAsset;
 use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\OrgAction;
-use App\Enums\Catalogue\Asset\AssetTypeEnum;
-use App\Models\Catalogue\Asset;
+use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Masters\MasterAsset;
 use Exception;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MatchAssetsToMaster extends OrgAction
+class MatchProductsToMaster extends OrgAction
 {
     use AsAction;
 
 
-    public function handle(Asset $asset): Asset
+    public function handle(Product $product): Product
     {
-        $masterShop = $asset->shop->masterShop;
+        $masterShop = $product->shop->masterShop;
 
         if (!$masterShop) {
-            return $asset;
+            return $product;
         }
 
-        $masterAsset = MasterAsset::where('master_shop_id', $masterShop->id)->whereRaw('LOWER(code) = LOWER(?)', [$asset->code])
-            ->where('type', $asset->type->value)
+        $masterAsset = MasterAsset::where('master_shop_id', $masterShop->id)->whereRaw('LOWER(code) = LOWER(?)', [$product->code])
+            ->where('type', MasterAssetTypeEnum::PRODUCT)
             ->first();
 
         if (!$masterAsset) {
-            return $asset;
+            return $product;
         }
 
         UpdateAsset::make()->action(
-            $asset,
+            $product->asset,
             [
                 'master_asset_id' => $masterAsset->id,
             ]
         );
 
-        if ($asset->type == AssetTypeEnum::PRODUCT) {
-            UpdateProduct::make()->action($asset->product, [
-                'master_product_id' => $masterAsset->id,
-            ]);
-        }
+
+        UpdateProduct::make()->action($product, [
+            'master_product_id' => $masterAsset->id,
+        ]);
 
 
-        return $asset;
+        return $product;
     }
 
     public function getCommandSignature(): string
@@ -63,33 +61,33 @@ class MatchAssetsToMaster extends OrgAction
 
     public function asCommand(Command $command): int
     {
-        $command->info('Matching asset to masters');
+        $command->info('Matching products to masters');
 
         $chunkSize = 100;
         $count = 0;
         $matchedCount = 0;
 
-        $totalCount = Asset::whereNull('master_asset_id')->count();
+        $totalCount = Product::whereNull('master_product_id')->count();
 
         $bar = $command->getOutput()->createProgressBar($totalCount);
         $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
 
-        Asset::whereNull('master_asset_id')->chunk(
+        Product::whereNull('master_product_id')->chunk(
             $chunkSize,
-            function ($assets) use (&$count, &$matchedCount, $bar, $command) {
-                foreach ($assets as $asset) {
+            function ($products) use (&$count, &$matchedCount, $bar, $command) {
+                foreach ($products as $product) {
                     try {
-                        $hadMaster = (bool)$asset->master_asset_id;
-                        $this->handle($asset);
-                        $hasNowMaster = (bool)$asset->master_asset_id;
+                        $hadMaster = (bool)$product->master_product_id;
+                        $this->handle($product);
+                        $hasNowMaster = (bool)$product->master_product_id;
 
                         if (!$hadMaster && $hasNowMaster) {
                             $matchedCount++;
                         }
                     } catch (Exception $e) {
-                        $command->error("Error processing asset $asset->id: {$e->getMessage()}");
+                        $command->error("Error processing asset $product->id: {$e->getMessage()}");
                     }
                     $count++;
                     $bar->advance();
@@ -99,7 +97,7 @@ class MatchAssetsToMaster extends OrgAction
 
         $bar->finish();
         $command->newLine();
-        $command->info("$count assets processed, $matchedCount newly matched to master assets");
+        $command->info("$count assets processed, $matchedCount newly matched to master products");
 
         return 0;
     }
