@@ -9,6 +9,7 @@
 namespace App\Actions\Maintenance\CRM;
 
 use App\Actions\CRM\Customer\ForceDeleteCustomer;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -36,6 +37,7 @@ class RepairCustomersOrdersInBasketId
             ]);
         }
         if ($order && $oldOrder != $order->id) {
+            CustomerHydrateBasket::run($customer);
             $command->info("Customer {$customer->slug}: $oldOrder  ->   {$order->id}");
         }
     }
