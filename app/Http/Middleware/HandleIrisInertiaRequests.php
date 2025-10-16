@@ -8,11 +8,8 @@
 
 namespace App\Http\Middleware;
 
-use App\Http\Resources\UI\LoggedWebUserResource;
-use App\Models\CRM\WebUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
@@ -26,8 +23,7 @@ class HandleIrisInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
-        /** @var WebUser $webUser */
-        $webUser = Auth::guard('retina')->user();
+
 
         $website = $request->get('website');
 
@@ -39,6 +35,7 @@ class HandleIrisInertiaRequests extends Middleware
             $websiteTheme = Arr::get($website->published_layout, 'theme');
 
             $firstLoadOnlyProps = [
+                'webpage_id'  => $website->id,
                 'currency'    => $request->get('currency_data'),
                 'environment' => app()->environment(),
                 'ziggy'       => function () use ($request) {
@@ -76,12 +73,6 @@ class HandleIrisInertiaRequests extends Middleware
                     'location' => $request->url(),
                 ],
 
-
-                // 'auth'     => [  // Moved to varnish
-                //     'user'                  => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
-                //     'webUser_count'         => $webUser?->customer?->webUsers?->count() ?? 1,
-                //     'customerSalesChannels' => $customerSalesChannels
-                // ],
             ],
             parent::share($request),
         );
