@@ -24,6 +24,7 @@ import { faHeart, faLowVision } from "@far"
 import { notify } from "@kyvg/vue3-notification"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import Blueprint from "./Blueprint"
+import { get, set } from "lodash"
 
 library.add(
 	faChevronRight,
@@ -131,9 +132,9 @@ const autoSave = async (value) => {
 			</TabPanel>
 			<TabPanel v-if="data">
 				<SideEditor 
-					v-model="data.data.fieldValue" 
+					:modelValue="get(data, ['data', 'fieldValue'], null)" 
 					:blueprint="Blueprint.blueprint"
-					@update:modelValue="(e) => { data.data.fieldValue = e , autoSave(data)}"
+					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e) , autoSave(data)}"
 				/>
 			</TabPanel>
 		</TabPanels>
