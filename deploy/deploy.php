@@ -64,6 +64,10 @@ task('deploy:build', function () {
             'cd {{release_path}}/public && rsync -a {{previous_release}}/public/retina . && rsync -a {{previous_release}}/public/iris . && rsync -a {{previous_release}}/public/grp . && rsync -a {{previous_release}}/public/pupil . && rsync -a {{previous_release}}/public/aiku-public .'
         );
 
+        run(
+            'cd {{release_path}}/bootstrap && rsync -a {{previous_release}}/bootstrap/ssr . '
+        );
+
 
     }
 });
@@ -97,7 +101,45 @@ task('deploy:refresh-vue', function () {
     }
 });
 
-set('keep_releases', 15);
+desc('Save ssr checksums');
+task('deploy:save-ssr-checksums', function () {
+    $manifestPath = '{{release_path}}/bootstrap/ssr/ssr-manifest.json';
+    $irisPath = '{{release_path}}/bootstrap/ssr/ssr-iris.mjs';
+
+    $manifestChecksum = '';
+    $irisChecksum = '';
+
+    try {
+        if (test('[ -f ' . $manifestPath . ' ]')) {
+            $manifestChecksum = trim(run("sha256sum $manifestPath | awk '{print $1}'"));
+        } else {
+            writeln("Warning: $manifestPath not found");
+        }
+    } catch (\Throwable $e) {
+        writeln('Error computing manifest checksum: ' . $e->getMessage());
+    }
+
+    try {
+        if (test('[ -f ' . $irisPath . ' ]')) {
+            $irisChecksum = trim(run("sha256sum $irisPath | awk '{print $1}'"));
+        } else {
+            writeln("Warning: $irisPath not found");
+        }
+    } catch (\Throwable $e) {
+        writeln('Error computing iris checksum: ' . $e->getMessage());
+    }
+
+    // Combine both checksums and write a single checksum file
+    $combined = hash('sha256', $manifestChecksum . '|' . $irisChecksum);
+
+    $checksumFile = '{{release_path}}/SSR_CHECKSUM';
+    run('printf %s ' . escapeshellarg($combined) . ' > ' . $checksumFile);
+    writeln('SSR checksum saved to ' . $checksumFile);
+});
+
+
+
+set('keep_releases', 25);
 
 set('shared_dirs', ['storage', 'private']);
 set('shared_files', [
@@ -123,6 +165,7 @@ task('deploy', [
     'artisan:migrate',
     'deploy:check-fe-changes',
     'deploy:build',
+    'deploy:save-ssr-checksums',
     'deploy:publish',
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
