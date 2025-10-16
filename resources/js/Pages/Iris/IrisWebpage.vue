@@ -39,7 +39,8 @@ onMounted(() => {
   currentUrl.value = window.location.href
 
   // Inject structured data as script
-  /* const script = document.createElement('script')
+  if(props.webpage_data.structured_data){
+  const script = document.createElement('script')
   script.type = 'application/ld+json'
   let structuredData = props.webpage_data.structured_data
 
@@ -53,8 +54,8 @@ onMounted(() => {
   }
 
   script.textContent = structuredData
-  document.head.appendChild(script) */
-
+  document.head.appendChild(script)
+}
 
   checkScreenType()
   window.addEventListener('resize', checkScreenType)

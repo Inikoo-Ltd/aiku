@@ -1,7 +1,5 @@
 <script setup lang='ts'>
-import PureMultiselect from '@/Components/Pure/PureMultiselect.vue'
 import codemirrorPkg from 'vue-codemirror';
-import { ref, watch } from "vue"
 import { json } from "@codemirror/lang-json"
 
 const props = defineProps<{
@@ -12,7 +10,6 @@ const props = defineProps<{
 const { Codemirror } = codemirrorPkg;
 const extensions = [json()]
 
-// Contoh default JSON-LD untuk SEO
 const defaultJsonLD = {
     "@context": "https://schema.org",
     "@type": "Organization",
@@ -34,30 +31,26 @@ const defaultJsonLD = {
     "vatID": "GB764298589"
 }
 
-// Simpan JSON dalam bentuk string untuk editor
-const jsonValue = ref(JSON.stringify(props.form?.[props.fieldName].structured_data || defaultJsonLD, null, 2))
 
-// Perubahan JSON yang diinput oleh user akan diperbarui ke form
-watch(jsonValue, (newValue) => {
-    try {
-        props.form[props.fieldName].structured_data = JSON.parse(newValue)
-    } catch (error) {
-        console.error("Invalid JSON:", error)
-    }
-})
+
 </script>
 
 <template>
     <div class="max-w-2xl rounded-md">
-        <!-- <div>
-            <label class="text-gray-600 font-semibold cursor-pointer">Structured Data Type</label>
-            <PureMultiselect v-model="form[fieldName].structured_data_type" :options="options" />
-        </div> -->
         <div class="mt-3">
             <label class="text-gray-600 font-semibold cursor-pointer">SEO Structured Data (JSON-LD)</label>
-            <Codemirror v-model="form[fieldName].structured_data"
-                :style="{ height: '500px', textOverflow: 'ellipsis', border: '1px solid #ddd' }" :autofocus="true"
-                :indent-with-tab="true" :tab-size="2" :extensions="extensions"  />
+            <Codemirror 
+                v-model="form[fieldName]"
+                :style="{ 
+                    height: '500px', 
+                    textOverflow: 'ellipsis', 
+                    border: '1px solid #ddd' 
+                }" 
+                :autofocus="true"
+                :indent-with-tab="true" 
+                :tab-size="2" 
+                :extensions="extensions"  
+            />
         </div>
     </div>
 </template>

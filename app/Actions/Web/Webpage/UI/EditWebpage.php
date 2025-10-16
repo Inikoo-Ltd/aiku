@@ -157,15 +157,11 @@ class EditWebpage extends OrgAction
                             'label'  => __('Structured data'),
                             'icon'   => 'fal fa-brackets-curly',
                             'fields' => [
-                                'webpage_type' => [
+                                'structured_data' => [
                                     'noTitle'  => true,
                                     'type'     => 'structure_data_website',
-                                    'options'  => Options::forEnum(WebpageSeoStructureTypeEnum::class),
-                                    'value'    => [
-                                        "structured_data"      => Arr::get($webpage->seo_data, 'structured_data') ?? '',
-                                        "structured_data_type" => Arr::get($webpage->seo_data, 'structured_data_type') ?? '',
-                                    ],
-                                    'required' => true,
+                                    'value'    => Arr::get($webpage->seo_data, 'structured_data') ?? '',
+                                    'required' => false,
                                 ],
                             ]
                         ],
