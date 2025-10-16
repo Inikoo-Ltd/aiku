@@ -19,7 +19,6 @@ import { ProductResource } from '@/types/Iris/Products'
 import NewAddToCartButton from './NewAddToCartButton.vue' // Import button baru
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { routeType } from '@/types/route'
-import { parameterize } from '@sentry/vue'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 library.add(faStarHalfAlt, faQuestionCircle)

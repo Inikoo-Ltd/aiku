@@ -21,6 +21,7 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
 import { irisStyleVariables } from '@/Composables/Workshop'
 import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
+import { setColorStyleRoot } from '@/Composables/useApp'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
@@ -75,6 +76,7 @@ const checkScreenType = () => {
 
 onMounted(() => {
     checkScreenType()
+    setColorStyleRoot(theme?.color)
     layout.app.webpage_layout = theme
     window.addEventListener('resize', checkScreenType)
 

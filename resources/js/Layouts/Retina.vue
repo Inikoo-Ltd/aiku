@@ -34,6 +34,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faSearch, faBell, faPlus } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
 import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
+import { setColorStyleRoot } from "@/Composables/useApp"
 
 library.add(faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote)
 library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
@@ -187,7 +188,8 @@ const hideSuperchatWidget = () => {
 
 onMounted(() => {
     // if (layout.iris?.is_have_gtm) {
-        hideSuperchatWidget()
+    setColorStyleRoot(layout?.app?.theme)
+    hideSuperchatWidget()
     // }
 })
 

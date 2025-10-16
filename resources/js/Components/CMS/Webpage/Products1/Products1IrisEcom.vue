@@ -20,6 +20,7 @@ import { faExclamationTriangle, faLayerGroup } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
 import ProductRenderEcom from "./ProductRenderEcom.vue"
+import * as Sentry from "@sentry/vue"
 
 
 const props = defineProps<{
@@ -156,7 +157,9 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         : routes.iris.route_products
 
     try {
-        const fetchParameter = `?filter[global]=${q.value}&sort=${orderBy.value}&index_perPage=25&page=${page.value}`
+        const sortByParameter = orderBy.value ? `&sort=${orderBy.value}` : ''
+
+        const fetchParameter = `?filter[global]=${q.value}${sortByParameter}&index_perPage=25&page=${page.value}`
         const fetchUrl = `/${currentRoute}${fetchParameter}`
         console.log('ewqewq', fetchUrl)
         const response = await axios.get(fetchUrl)
@@ -179,8 +182,9 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         }
 
     } catch (error) {
-        console.log(error)
-        notify({ title: "Error", text: "Failed to load products.", type: "error" })
+        console.error('Failed to load products', error)
+        Sentry?.captureException(error);
+        // notify({ title: "Error", text: "Failed to load products.", type: "error" })
     } finally {
         isLoadingInitial.value = false
         isLoadingMore.value = false
@@ -311,12 +315,12 @@ const productInBasket = ref({
 const getRouteForProductInBasket = () => {
     const { model_type, model_id } = props.fieldValue;
     if (model_type == "ProductCategory") {
-        return `json/product-category/${model_id}/transaction-data`
+        return `/json/product-category/${model_id}/transaction-data`
         // return route("iris.json.product_category.transaction_data", {
         //     productCategory: model_id
         // });
     } else if (model_type == "Collection") {
-        return `json/collection/${model_id}/transaction-data`
+        return `/json/collection/${model_id}/transaction-data`
         // return route("iris.json.collection.transaction_data", {
         //     collection: model_id
         // });
@@ -335,12 +339,12 @@ const fetchHasInBasket = async () => {
         const response = await axios.get(apiUrl);
         productInBasket.value.list = response.data || [];
     } catch (error) {
-        console.error(error);
-        notify({
-            title: "Error",
-            text: "Failed to load product portfolio.",
-            type: "error"
-        });
+        console.error('Failed to load product portfolio', error);
+        // notify({
+        //     title: "Error",
+        //     text: "Failed to load product portfolio.",
+        //     type: "error"
+        // });
     } finally {
         productInBasket.value.isLoading = false;
     }

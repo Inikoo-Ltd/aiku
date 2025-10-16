@@ -22,7 +22,7 @@ const props = defineProps<{
   <div class="">
     <Editor v-model="form[fieldName]">
       <template #editor-content="{ editor }">
-        <div class="editor-wrapper h-full border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-[var(--grp-color-primary)]">
+        <div class="editor-wrapper h-full border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-[var(--theme-color-0)]">
           <EditorContent :editor="editor" class="editor-content focus:outline-none" />
         </div>
       </template>
