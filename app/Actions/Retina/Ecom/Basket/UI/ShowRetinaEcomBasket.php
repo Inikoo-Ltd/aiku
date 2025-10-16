@@ -15,6 +15,7 @@ use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Catalogue\ChargeResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Helpers\AddressResource;
@@ -36,7 +37,7 @@ class ShowRetinaEcomBasket extends RetinaAction
             return null;
         }
 
-        return Order::find($customer->current_order_in_basket_id);
+        return Order::where('id', $customer->current_order_in_basket_id)->where('customer_id', $customer->id)->where('state', OrderStateEnum::CREATING)->first();
     }
 
 
