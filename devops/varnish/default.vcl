@@ -52,9 +52,9 @@ sub normalize_accept_encoding {
 sub set_login_flag_from_cookie {
     # Derive login flag from iris_vua cookie
     if (req.http.Cookie ~ "iris_vua=true") {
-        set req.http.X-Varnish-Logged-In = "1";
+        set req.http.X-Logged-Status = "In";
     } else {
-        set req.http.X-Varnish-Logged-In = "0";
+        set req.http.X-Logged-Status = "Out";
     }
 }
 
@@ -133,8 +133,8 @@ sub vcl_hash {
     if (req.http.X-Inertia-Partial-Data) { hash_data(req.http.X-Inertia-Partial-Data); }
 
     # Separate cache buckets by login status
-    if (req.http.X-Varnish-Logged-In) {
-        hash_data(req.http.X-Varnish-Logged-In);
+    if (req.http.X-Logged-Status) {
+        hash_data(req.http.X-Logged-Status);
     }
     return (lookup);
 }
@@ -201,14 +201,10 @@ sub vcl_deliver {
     set resp.http.X-Cache-Hits = obj.hits;
 
     # Echo login derivation for observability and for the app if needed
-    if (req.http.X-Varnish-Logged-In) {
-        set resp.http.X-Debug-Varnish-Logged-In = req.http.X-Varnish-Logged-In;
+    if (req.http.X-Logged-Status) {
+        set resp.http.X-Logged-Status = req.http.X-Logged-Status;
     }
 
-        # Echo login derivation for observability and for the app if needed
-    if (req.http.X-Varnish-Logged-Out) {
-        set resp.http.X-Debug-Varnish-Logged-Out = req.http.X-Varnish-Logged-Out;
-    }
 
     # If response is a redirect (3xx), set client cache to 1 day
     if (resp.status == 301 || resp.status == 302 || resp.status == 303 || resp.status == 307 || resp.status == 308) {

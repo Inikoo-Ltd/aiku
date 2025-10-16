@@ -12,12 +12,9 @@ use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -80,7 +77,7 @@ class ShowIrisWebpage
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
         if (config('iris.cache.varnish')) {
-            $loggedIn = $request->header('X-Varnish-Logged-In', false);
+            $loggedIn = $request->header('X-Logged-Status', 'Out') == 'In';
         } else {
             $loggedIn = auth()->check();
         }
@@ -116,7 +113,7 @@ class ShowIrisWebpage
             $currentUrl = rtrim($request->url(), '/');
 
             // Normalize canonical URL to current environment and strip any query parameters
-            $canonNoQuery   = explode('?', $canonicalUrl, 2)[0];
+            $canonNoQuery    = explode('?', $canonicalUrl, 2)[0];
             $normalizedCanon = $this->getEnvironmentUrl(rtrim($canonNoQuery, '/'));
 
             if ($normalizedCanon !== $currentUrl) {
@@ -189,16 +186,19 @@ class ShowIrisWebpage
     }
 
 
-    public function htmlResponse($webpageData)
+    public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
-
         if (is_string($webpageData)) {
-            $queryParameters = Arr::except(request()->query(),[
-                'favicons','website','domain','currency_data','shop_type'
+            $queryParameters = Arr::except(request()->query(), [
+                'favicons',
+                'website',
+                'domain',
+                'currency_data',
+                'shop_type'
             ]);
-            $queryString = http_build_query($queryParameters);
+            $queryString     = http_build_query($queryParameters);
 
-            if($queryString){
+            if ($queryString) {
                 $webpageData = $webpageData.'?'.$queryString;
             }
 
