@@ -12,7 +12,6 @@ import { onMounted } from "vue"
 
 
 export const initialiseIrisVarnish = async (layoutStore) => {
-    onMounted(async () => {
         const layout = layoutStore()
         let storageIris = {}
         if (typeof window !== "undefined") {
@@ -20,13 +19,14 @@ export const initialiseIrisVarnish = async (layoutStore) => {
             layout.iris.is_logged_in = storageIris?.is_logged_in ?? false
         }
     
-        const selectedRoute = route().has('iris.json.first_hit') ? 'iris.json.first_hit' : 'retina.json.first_hit'
+        const isAppRoute = window.location.pathname.startsWith('/app')
+        const selectedUrl = !isAppRoute ? '/json/first-hit' : '/app/json/first-hit'
     
         // Fetch: auth_data (GetIrisFirstHitData)
         const getVarnishData = async () => {
             try {
                 set(layout, ['iris_varnish', 'isFetching'], true)
-                const response = await axios.get(route(selectedRoute))
+                const response = await axios.get(selectedUrl)
                 set(layout, ['iris_varnish', 'isFetching'], false)
     
                 console.log('Iris Varnish', response.data)
@@ -79,18 +79,17 @@ export const initialiseIrisVarnish = async (layoutStore) => {
             let data = varnish?.variables?.traffic_source_cookies[item]
             Cookies.set(item,data.value,data.duration)
         }
-    })
 }
 
 
 export const initialiseIrisVarnishCustomerData = async (layout) => {
-    onMounted(async () => {
-        const selectedRoute = route().has('iris.json.ecom_customer_data') ? 'iris.json.ecom_customer_data' : 'retina.json.ecom_customer_data'
+        const isAppRoute = window.location.pathname.startsWith('/app')
+        const selectedUrl = !isAppRoute ? '/json/ecom-customer-data' : '/json/ecom-customer-data'
     
         // Fetch: auth_data (GetIrisFirstHitData)
         const getVarnishData = async () => {
             try {
-                const response = await axios.get(route(selectedRoute))
+                const response = await axios.get(selectedUrl)
                 set(layout, ['iris_varnish', 'isFetching'], false)
     
                 return response.data
@@ -110,17 +109,16 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
         if (varnish?.variables) {
             layout.iris_variables = {...layout.iris_variable,...varnish?.variables}
         }
-    })
 }
 
 
 export const initialiseLogUser = async (layout) => {
-    onMounted(async () => {
-        const selectedRoute = route().has('iris.json.log_web_user_request') ? 'iris.json.log_web_user_request' : 'retina.json.log_web_user_request'
+        const isAppRoute = window.location.pathname.startsWith('/app')
+        const selectedUrl = !isAppRoute ? '/json/log-web-user-request' : '/app/json/log-web-user-request'
     
         const getLogUser = async () => {
             try {
-                const response = await axios.get(route(selectedRoute))
+                const response = await axios.get(selectedUrl)
     
                 return response.data
             } catch (error) {
@@ -129,6 +127,5 @@ export const initialiseLogUser = async (layout) => {
         }
     
         const logDataUser = await getLogUser()
-    })
 }
 
