@@ -190,8 +190,6 @@ sub vcl_deliver {
     # Strip Set-Cookie on cache hits only
     if (obj.hits > 0) {
         unset resp.http.Set-Cookie;
-        # Set client-side cache to 15 minutes on cache hits
-        set resp.http.Cache-Control = "public, max-age=180";
     }
 
     # Add debug headers (can be removed in production)

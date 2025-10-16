@@ -119,6 +119,7 @@ class IndexPlatformPortfolioLogs extends OrgAction
                 ->column(key: 'type', label: __('Type'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'platform_name', label: __('Platform'), canBeHidden: false, sortable: false, searchable: true)
                 ->column(key: 'status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'response', label: __('Response'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: false);
         };
     }
