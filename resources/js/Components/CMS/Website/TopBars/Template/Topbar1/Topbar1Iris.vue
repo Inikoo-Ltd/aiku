@@ -7,7 +7,7 @@ import { faLaptopCode } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+// import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import { Skeleton } from "primevue"
 import { router } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
@@ -131,106 +131,119 @@ const onClickLogout = () => {
                 v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />
 
             <!-- Section: My account -->
-            <ButtonWithLink type="transparent" class="bg-transparent"
-                v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping') && !layout.iris_varnish?.isFetching"
-                v-tooltip="trans('My account')"
-                url="/app/dashboard"
-                :noHover="true"
-                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
-            >
-                <template #label>
-                    <span class="text-white"> {{ trans('My account') }}</span>
-                </template>
-            </ButtonWithLink>
+            <a href="/app/dashboard">
+                <Button
+                    v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping') && !layout.iris_varnish?.isFetching"
+                    type="transparent"
+                    class="bg-transparent"
+                    v-tooltip="trans('My account')"
+                    url=""
+                    :noHover="true"
+                    :injectStyle="getStyles(model?.container?.properties, props.screenType)"
+                >
+                    <template #label>
+                        <span class="text-white"> {{ trans('My account') }}</span>
+                    </template>
+                </Button>
+            </a>
 
             <!-- Section: Profile -->
-            <ButtonWithLink
-                v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) )&& !layout.iris_varnish?.isFetching"
-                v-tooltip="trans('Profile')" :url="layout.retina?.type == 'b2b' ? '/app/dashboard' : '/app/profile'"
-                icon="fal fa-user"
-                type="transparent"
-                :noHover="true"
-                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
-            >
-                <template #icon>
-                    <FontAwesomeIcon icon="fal fa-user" fixed-width aria-hidden="true" />
-                </template>
-                <template #label>
-                    <span class=""
-                        v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
-                </template>
-            </ButtonWithLink>
+            <a :href="layout.retina?.type == 'b2b' ? '/app/dashboard' : '/app/profile'">
+                <Button
+                    v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) )&& !layout.iris_varnish?.isFetching"
+                    v-tooltip="trans('Profile')"
+                    xurl="layout.retina?.type == 'b2b' ? '/app/dashboard' : '/app/profile'"
+                    icon="fal fa-user"
+                    type="transparent"
+                    :noHover="true"
+                    :injectStyle="getStyles(model?.container?.properties, props.screenType)"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-user" fixed-width aria-hidden="true" />
+                    </template>
+                    <template #label>
+                        <span class=""
+                            v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+                    </template>
+                </Button>
+            </a>
 
             <!-- Section: Back in stock -->
-            <ButtonWithLink
-                v-if="(layout.app?.environment === 'local' && checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping') && !layout.iris_varnish?.isFetching"
-                v-tooltip="trans('Reminder back in stock')"
-                url="/app/back-in-stocks"
-                type="transparent"
-                :noHover="true"
-                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
-            >
-                <template #icon>
-                    <FontAwesomeIcon icon="fas fa-envelope-circle-check" class="align-middle" fixed-width aria-hidden="true" />
-                </template>
-                <template #label>
-                    <span class="">
-                        {{ layout.iris_variables?.back_in_stock_count }}
-                    </span>
-                </template>
-            </ButtonWithLink>
+            <a href="/app/back-in-stocks">
+                <Button
+                    v-if="(layout.app?.environment === 'local' && checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping') && !layout.iris_varnish?.isFetching"
+                    v-tooltip="trans('Reminder back in stock')"
+                    url=""
+                    type="transparent"
+                    :noHover="true"
+                    :injectStyle="getStyles(model?.container?.properties, props.screenType)"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fas fa-envelope-circle-check" class="align-middle" fixed-width aria-hidden="true" />
+                    </template>
+                    <template #label>
+                        <span class="">
+                            {{ layout.iris_variables?.back_in_stock_count }}
+                        </span>
+                    </template>
+                </Button>
+            </a>
 
             <!-- Section: Favourite -->
-            <ButtonWithLink
-                v-if="(checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping') && !layout.iris_varnish?.isFetching"
-                v-tooltip="trans('Favourites')"
-                url="/app/favourites"
-                icon="fal fa-heart"
-                type="transparent"
-                :noHover="true"
-                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
-            >
-                <template #icon>
-                    <FontAwesomeIcon icon="fal fa-heart" fixed-width aria-hidden="true" />
-                </template>
-                <template #label>
-                    <span class="" v-if="model?.favourite?.text === `{{ favourites_count }}`"
-                        v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
-                    <span class="" v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
-                        {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
-                        trans("favourites") : trans("favourite") }}
-                    </span>
-                </template>
-            </ButtonWithLink>
+            <a href="/app/favourites">
+                <Button
+                    v-if="(checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping') && !layout.iris_varnish?.isFetching"
+                    v-tooltip="trans('Favourites')"
+                    url=""
+                    icon="fal fa-heart"
+                    type="transparent"
+                    :noHover="true"
+                    :injectStyle="getStyles(model?.container?.properties, props.screenType)"
+                >
+                    <template #icon>
+                        <FontAwesomeIcon icon="fal fa-heart" fixed-width aria-hidden="true" />
+                    </template>
+                    <template #label>
+                        <span class="" v-if="model?.favourite?.text === `{{ favourites_count }}`"
+                            v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
+                        <span class="" v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
+                            {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
+                            trans("favourites") : trans("favourite") }}
+                        </span>
+                    </template>
+                </Button>
+            </a>
 
 
             <!-- Section: Basket (cart) -->
-            <ButtonWithLink
-                v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b') && !layout.iris_varnish?.isFetching"
-                v-tooltip="trans('Cart count and amount')"
-                url="/app/basket"
-                :noHover="true"
-                type="transparent"
-                :injectStyle="getStyles(model?.container?.properties, props.screenType)"
-            >
-                <template #loading>
-                    <span v-show="false" class=""></span>
-                </template>
-                <template #label="{ isLoadingVisit }">
-                    <!-- <span class="text-white" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
-                        v-html="textReplaceVariables(`{{ items_count }} ${trans('items')} ({{ cart_amount }})`, layout.iris_variables)">
-                    </span> -->
-                    <span v-tooltip="trans('Number of products line')" class=" -mr-1.5" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
-                        v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
-                    </span>
-                    <LoadingIcon v-if="isLoadingVisit" />
-                    <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width
-                        aria-hidden="true" />
-                    <span class="" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
-                        v-html="textReplaceVariables(`{{ cart_amount }}`, layout.iris_variables)">
-                    </span>
-                </template>
-            </ButtonWithLink>
+            <a href="/app/basket">
+                <Button
+                    v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b') && !layout.iris_varnish?.isFetching"
+                    v-tooltip="trans('Cart count and amount')"
+                    url=""
+                    :noHover="true"
+                    type="transparent"
+                    :injectStyle="getStyles(model?.container?.properties, props.screenType)"
+                >
+                    <template #loading>
+                        <span v-show="false" class=""></span>
+                    </template>
+                    <template #label="{ isLoadingVisit }">
+                        <!-- <span class="text-white" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                            v-html="textReplaceVariables(`{{ items_count }} ${trans('items')} ({{ cart_amount }})`, layout.iris_variables)">
+                        </span> -->
+                        <span v-tooltip="trans('Number of products line')" class=" -mr-1.5" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                            v-html="textReplaceVariables(`({{ cart_count }})`, layout.iris_variables)">
+                        </span>
+                        <LoadingIcon v-if="isLoadingVisit" />
+                        <FontAwesomeIcon v-else icon="fal fa-shopping-cart" fixed-width
+                            aria-hidden="true" />
+                        <span class="" xv-html="textReplaceVariables(model?.cart?.text, layout.iris_variables)"
+                            v-html="textReplaceVariables(`{{ cart_amount }}`, layout.iris_variables)">
+                        </span>
+                    </template>
+                </Button>
+            </a>
 
             <!-- Section: Register -->
             <a href="/app/register">
