@@ -10,8 +10,6 @@ namespace App\Actions\Ordering\Order\UI;
 
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
-use App\Enums\Ordering\Platform\PlatformTypeEnum;
-use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
 
@@ -58,7 +56,7 @@ class GetEcomOrderActions
                             ]
                         ]
                     ],
-                    ($order->transactions()->count() > 0)  ?
+                    ($order->transactions()->count() > 0) ?
                         [
                             'type'    => 'button',
                             'style'   => 'save',

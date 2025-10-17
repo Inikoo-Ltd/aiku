@@ -8,7 +8,6 @@
 
 namespace App\Actions\Maintenance\CRM;
 
-use App\Actions\CRM\Customer\ForceDeleteCustomer;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;

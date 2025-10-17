@@ -206,7 +206,7 @@ class ShowOrder extends OrgAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $actions = $order->shop->type==ShopTypeEnum::DROPSHIPPING ?
+        $actions = $order->shop->type == ShopTypeEnum::DROPSHIPPING ?
             GetDropshippingOrderActions::run($order, $this->canEdit) :
             GetEcomOrderActions::run($order, $this->canEdit);
 
