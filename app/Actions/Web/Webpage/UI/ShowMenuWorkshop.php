@@ -83,6 +83,7 @@ class ShowMenuWorkshop extends OrgAction
                         'website' => $website->id
                     ]
                 ],
+                'shop_type'     => $website->shop->type,
                 'status'        => $isMenuActive ?? true,
                 'domain'        => $website->domain,
                 'data'          => GetWebsiteWorkshopMenu::run($website),

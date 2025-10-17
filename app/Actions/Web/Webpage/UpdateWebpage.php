@@ -62,7 +62,7 @@ class UpdateWebpage extends OrgAction
 
         // Example: reassign back to model or continue processin
         $modelData['seo_data'] = $newData;
-    
+
 
 
         $imageSeo = Arr::pull($modelData, 'seo_image');

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Catalogue\ProductCategory\Json\GetIrisProductCategoryNavigation;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsObject;
@@ -28,16 +29,31 @@ class GetWebsiteWorkshopSidebar
             'status' => true
         ];
 
+        $productCategories = [
+            'product_categories' => GetIrisProductCategoryNavigation::run($website)
+        ];
+
         if (!Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar')) {
 
+            $sidebar            = Arr::get($website->published_layout, 'sidebar', $sidebarDummy);
+            $sidebar['data']['fieldValue'] = array_merge(
+                $sidebar['data']['fieldValue'],
+                $productCategories
+            );
+
             return [
-                'sidebar'    => Arr::get($website->published_layout, 'sidebar', $sidebarDummy)
+                'sidebar'    => $sidebar
             ];
         }
 
+        $sidebar                        = Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar', $sidebarDummy);
+        $sidebar['data']['fieldValue']  = array_merge(
+            $sidebar['data']['fieldValue'],
+            $productCategories
+        );
 
         return [
-            'sidebar'    => Arr::get($website->unpublishedSidebarSnapshot, 'layout.sidebar', $sidebarDummy)
+            'sidebar'    => $sidebar
         ];
     }
 }

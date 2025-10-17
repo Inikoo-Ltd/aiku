@@ -83,7 +83,7 @@ class RetinaLogWebUserRequest extends RetinaAction
         return true;
     }
 
-    
+
     public function asController(ActionRequest $request): void
     {
         $this->initialisation($request);

@@ -48,6 +48,7 @@ const props = defineProps<{
 	autosaveRoute: routeType
 	webBlockTypes: Object
 	domain: string
+	shop_type: string  // 'fulfilment' | 'dropshipping' | 'b2b'
 }>()
 
 const Navigation = ref(props.data.menu)
@@ -109,6 +110,7 @@ watch(currentView, (newValue) => {
 	iframeClass.value = setIframeView(newValue)
 })
 
+console.log('---------', props.data.menu.data.fieldValue)
 
 </script>
 
@@ -129,6 +131,7 @@ watch(currentView, (newValue) => {
 				:webBlockTypes="webBlockTypes" 
 				:autosaveRoute="autosaveRoute"
 				@sendToIframe="sendToIframe"
+				:shopType="shop_type"
 			/>
 		</div>
 
@@ -164,7 +167,7 @@ watch(currentView, (newValue) => {
 	align-items: center;
 	justify-content: center;
 	background-color: rgba(255, 255, 255, 0.85);
-	z-index: 50;
+	z-index: 40;
 	backdrop-filter: blur(2px);
 }
 
