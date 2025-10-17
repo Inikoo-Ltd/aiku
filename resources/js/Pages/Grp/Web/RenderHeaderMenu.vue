@@ -79,10 +79,11 @@ const emits = defineEmits<{
           <div
             v-if="data?.header"
             :style="getStyles(data.header?.data?.fieldValue?.container?.properties, screenType)">
+            
             <MobileHeader 
                 :header-data="data.header?.data?.fieldValue" 
                 :menu-data="menu?.menu?.data?.fieldValue"
-                :productCategories="menu?.menu?.data?.productCategory" 
+                :productCategories="sidebar?.sidebar?.data?.fieldValue?.product_categories || []" 
                 :screenType="screenType" 
             />
         </div>
