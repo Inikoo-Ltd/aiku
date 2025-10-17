@@ -15,7 +15,7 @@ import {
 } from "@fas";
 import { faHeart } from "@far";
 import { faBars, faChevronLeft, faChevronRight as falChevronRight } from "@fal";
-import { ref, inject, nextTick, onMounted, computed } from "vue";
+import { ref, inject, nextTick, onMounted, computed, watch } from "vue";
 import { getStyles } from "@/Composables/styles";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
 import { debounce, get } from "lodash-es";
@@ -130,6 +130,16 @@ const computedSelectedSidebarData = computed(() => {
 
 const selectedMenu = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation
 
+const navHoverClass = ref(getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false))
+
+watch(
+  () => props.fieldValue?.hover,
+  () => {
+    navHoverClass.value = getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false)
+  },
+  { deep: true }
+)
+
 
 </script>
 
@@ -191,9 +201,9 @@ const selectedMenu = get(props, 'fieldValue.setting_on_sidebar.is_follow', false
                         :href="navigation?.link?.href"
                         :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
-                            ? 'bg-gray-100 text-orange-500'
+                            ? 'navigation'
                             : navigation?.link?.href
-                                ? 'cursor-pointer hover:bg-gray-100 hover:text-orange-500'
+                                ? 'cursor-pointer  navigation'
                                 : ''">
                         <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
                         <div>
@@ -235,12 +245,13 @@ const selectedMenu = get(props, 'fieldValue.setting_on_sidebar.is_follow', false
                                 class="text-[10px] text-gray-400" />
                         </component>
 
-                        <div v-for="linkData in subnav?.links" :key="subnav.title" class="space-y-4">
-                            <LinkIris class="text-sm font-bold" :href="linkData.link.href" :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
+                        <div v-for="linkData in subnav?.links" :key="subnav.title" class="space-y-4 navigation">
+                            <LinkIris class="text-sm font-bold " :href="linkData.link.href"
+                                :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
                                 <template #default>
-                                    <div class="text-sm text-gray-500 font-medium">{{ linkData.label }}</div>
+                                    <div class="text-sm text-gray-500 font-medium navigation">{{ linkData.label }}</div>
                                 </template>
-                            </LinkIris>   
+                            </LinkIris>
                         </div>
                     </div>
                 </div>
@@ -249,7 +260,7 @@ const selectedMenu = get(props, 'fieldValue.setting_on_sidebar.is_follow', false
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .container {
     max-width: 1980px;
 }
@@ -263,12 +274,23 @@ const selectedMenu = get(props, 'fieldValue.setting_on_sidebar.is_follow', false
     scrollbar-width: none;
 }
 
-.editor-class a  {
-   font-weight: 400;
+.editor-class a {
+    font-weight: 400;
 }
 
-.sub-nav-title  {
+.sub-nav-title {
     .editor-class a {
         font-weight: 600;
-    }}
+    }
+}
+
+
+.navigation {
+    &:hover {
+        background: v-bind('navHoverClass?.background || null') !important;
+        color: v-bind('navHoverClass?.color || null') !important;
+        font-family: v-bind('navHoverClass?.fontFamily || null') !important;
+        font-size: v-bind('navHoverClass?.fontSize || null') !important;
+    }
+}
 </style>

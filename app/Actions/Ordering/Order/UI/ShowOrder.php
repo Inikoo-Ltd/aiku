@@ -22,6 +22,7 @@ use App\Actions\Ordering\Transaction\UI\IndexTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\Ordering\OrderTabsEnum;
@@ -205,7 +206,9 @@ class ShowOrder extends OrgAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $actions = GetOrderActions::run($order, $this->canEdit);
+        $actions = $order->shop->type==ShopTypeEnum::DROPSHIPPING ?
+            GetDropshippingOrderActions::run($order, $this->canEdit) :
+            GetEcomOrderActions::run($order, $this->canEdit);
 
         $deliveryNoteRoute    = null;
         $deliveryNoteResource = null;

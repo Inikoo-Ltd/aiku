@@ -15,7 +15,7 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetOrderActions
+class GetDropshippingOrderActions
 {
     use AsObject;
 
@@ -78,6 +78,13 @@ class GetOrderActions
                         ] : [],
                 ],
                 OrderStateEnum::SUBMITTED => [
+                    [
+                        'type'    => 'button',
+                        'style'   => 'create',
+                        'tooltip' => __('Add a product'),
+                        'label'   => __('Add a product'),
+                        'key'     => 'add-product',
+                    ],
                     [
                         'type'    => 'button',
                         'style'   => 'save',
