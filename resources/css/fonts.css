@@ -79,6 +79,89 @@
 }
 
 
+/* Cardinal */
+@font-face {
+    font-family: 'Shoemaker';
+    src: url('@fonts/Shoemaker.ttf');
+    font-weight: 400;
+    font-display: swap;
+}
+
+/* Cardinal */
+@font-face {
+    font-family: 'Cardinal';
+    src: url('@fonts/Cardinal.ttf');
+    font-weight: 400;
+    font-display: swap;
+}
+
+/* Bunya */
+@font-face {
+    font-family: 'Bunya Thin';
+    src: url('@fonts/Bunya/Bunya-Thin_PERSONAL.ttf');
+    font-weight: 200;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Bunya Light';
+    src: url('@fonts/Bunya/Bunya-Light_PERSONAL.ttf');
+    font-weight: 300;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Bunya Regular';
+    src: url('@fonts/Bunya/Bunya-Regular_PERSONAL.ttf');
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Bunya Bold';
+    src: url('@fonts/Bunya/Bunya-Bold_PERSONAL.ttf');
+    font-weight: 700;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Bunya Black';
+    src: url('@fonts/Bunya/Bunya-Black_PERSONAL.ttf');
+    font-weight: 900;
+    font-display: swap;
+}
+
+/* Avenir */
+@font-face {
+    font-family: 'Avenir Black';
+    src: url('@fonts/Avenir/Avenir Black.ttf');
+    font-weight: 900;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Avenir Book';
+    src: url('@fonts/Avenir/Avenir Book.ttf');
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Avenir Heavy';
+    src: url('@fonts/Avenir/Avenir Heavy.ttf');
+    font-weight: 700;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Avenir Light';
+    src: url('@fonts/Avenir/Avenir Light.ttf');
+    font-weight: 300;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Avenir Medium';
+    src: url('@fonts/Avenir/Avenir Medium.ttf');
+    font-weight: 500;
+    font-display: swap;
+}
+
+
+
+
 /* Source Sans Pro */
 @font-face {
     font-family: 'Source Sans Pro';
