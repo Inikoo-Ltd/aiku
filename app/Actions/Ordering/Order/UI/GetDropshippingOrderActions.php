@@ -15,7 +15,7 @@ use App\Models\Dropshipping\Platform;
 use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetOrderActions
+class GetDropshippingOrderActions
 {
     use AsObject;
 
