@@ -146,7 +146,7 @@ class SaveShopifyProductData extends RetinaAction
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product data retrieval failed: ".$errorMessage);
+                // Sentry::captureMessage("Product data retrieval failed: ".$errorMessage);
 
                 return null;
             }
@@ -160,7 +160,7 @@ class SaveShopifyProductData extends RetinaAction
             if (isset($body['data']['product'])) {
                 $productData = $body['data']['product'];
             } else {
-                Sentry::captureMessage("Product data not found in response B");
+                // Sentry::captureMessage("Product data not found in response B");
 
             }
 
@@ -185,8 +185,7 @@ class SaveShopifyProductData extends RetinaAction
             // Format the response to match the expected structure
             return $this->formatProductResponse($productData);
         } catch (Exception $e) {
-            dd($e);
-            Sentry::captureException($e);
+            // Sentry::captureException($e);
 
             return null;
         }
