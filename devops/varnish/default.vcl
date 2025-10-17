@@ -50,8 +50,8 @@ sub normalize_accept_encoding {
 }
 
 sub set_login_flag_from_cookie {
-    # Derive login flag from iris_vua cookie
-    if (req.http.Cookie ~ "iris_vua=true") {
+
+    if (req.http.Cookie ~ "(?i)(^|; )iris_vua") {
         set req.http.X-Logged-Status = "In";
     } else {
         set req.http.X-Logged-Status = "Out";

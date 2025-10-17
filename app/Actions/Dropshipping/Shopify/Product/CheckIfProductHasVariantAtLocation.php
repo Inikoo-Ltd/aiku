@@ -73,7 +73,7 @@ class CheckIfProductHasVariantAtLocation
 
             if (!empty($response['errors']) || !isset($response['body'])) {
 
-                Sentry::captureMessage("Product inventory check failed:  shopifyUser: $shopifyUser->id  > $productId <    ".json_encode($response));
+                // Sentry::captureMessage("Product inventory check failed:  shopifyUser: $shopifyUser->id  > $productId <    ".json_encode($response));
 
                 return false;
             }
@@ -95,7 +95,7 @@ class CheckIfProductHasVariantAtLocation
 
             return false;
         } catch (\Exception $e) {
-            Sentry::captureException($e);
+            // Sentry::captureException($e);
 
             return false;
         }

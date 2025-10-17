@@ -329,9 +329,9 @@ class IndexCustomers extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'                             => __('customers'),
+                'title'                             => __('Customers'),
                 'pageHead'                          => array_filter([
-                    'title'         => __('customers'),
+                    'title'         => __('Customers'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-user'],
                         'title' => __('Customer')

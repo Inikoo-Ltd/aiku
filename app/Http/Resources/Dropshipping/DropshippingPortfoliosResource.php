@@ -173,6 +173,13 @@ class DropshippingPortfoliosResource extends JsonResource
                     'portfolio' => $this->id
                 ]
             ],
+            'unlink_portfolio' => [
+                'method'     => 'delete',
+                'name'       => 'retina.models.portfolio.unlink',
+                'parameters' => [
+                    'portfolio' => $this->id
+                ]
+            ],
             'update_portfolio' => [
                 'method'     => 'patch',
                 'name'       => 'retina.models.portfolio.update',

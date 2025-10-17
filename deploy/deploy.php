@@ -64,6 +64,10 @@ task('deploy:build', function () {
             'cd {{release_path}}/public && rsync -a {{previous_release}}/public/retina . && rsync -a {{previous_release}}/public/iris . && rsync -a {{previous_release}}/public/grp . && rsync -a {{previous_release}}/public/pupil . && rsync -a {{previous_release}}/public/aiku-public .'
         );
 
+        run(
+            'cd {{release_path}}/bootstrap && rsync -a {{previous_release}}/bootstrap/ssr . '
+        );
+
 
     }
 });
@@ -97,7 +101,93 @@ task('deploy:refresh-vue', function () {
     }
 });
 
-set('keep_releases', 15);
+desc('Save ssr checksums');
+task('deploy:save-ssr-checksums', function () {
+    $manifestPath = '{{release_path}}/bootstrap/ssr/ssr-manifest.json';
+    $irisPath = '{{release_path}}/bootstrap/ssr/ssr-iris.mjs';
+
+    $manifestChecksum = '';
+    $irisChecksum = '';
+
+    try {
+        if (test('[ -f ' . $manifestPath . ' ]')) {
+            $manifestChecksum = trim(run("sha256sum $manifestPath | awk '{print $1}'"));
+        } else {
+            writeln("Warning: $manifestPath not found");
+        }
+    } catch (\Throwable $e) {
+        writeln('Error computing manifest checksum: ' . $e->getMessage());
+    }
+
+    try {
+        if (test('[ -f ' . $irisPath . ' ]')) {
+            $irisChecksum = trim(run("sha256sum $irisPath | awk '{print $1}'"));
+        } else {
+            writeln("Warning: $irisPath not found");
+        }
+    } catch (\Throwable $e) {
+        writeln('Error computing iris checksum: ' . $e->getMessage());
+    }
+
+    // Combine both checksums and write a single checksum file
+    $combined = hash('sha256', $manifestChecksum . '|' . $irisChecksum);
+
+    $checksumFile = '{{release_path}}/SSR_CHECKSUM';
+    run('printf %s ' . escapeshellarg($combined) . ' > ' . $checksumFile);
+    writeln('SSR checksum saved to ' . $checksumFile);
+});
+
+
+desc('Flush varnish cache if ssr checksum if different as previous release');
+task('deploy:flush-varnish', function () {
+    $currentFile = '{{release_path}}/SSR_CHECKSUM';
+    $previousFile = '{{previous_release}}/SSR_CHECKSUM';
+
+    $current = '';
+    $previous = '';
+
+    // Read current checksum
+    try {
+        if (test('[ -f ' . $currentFile . ' ]')) {
+            $current = trim(run('cat ' . $currentFile));
+        } else {
+            writeln('SSR checksum: current file not found, will trigger cache flush.');
+        }
+    } catch (\Throwable $e) {
+        writeln('Error reading current SSR checksum: ' . $e->getMessage());
+    }
+
+    // Read previous checksum
+    try {
+        if (test('[ -f ' . $previousFile . ' ]')) {
+            $previous = trim(run('cat ' . $previousFile));
+        } else {
+            writeln('SSR checksum: previous file not found, will trigger cache flush.');
+        }
+    } catch (\Throwable $e) {
+        writeln('Error reading previous SSR checksum: ' . $e->getMessage());
+    }
+
+    $shouldFlush = false;
+
+    if ($previous === '' || $current === '' || $previous !== $current) {
+        $shouldFlush = true; // missing values, err on flushing
+    }
+
+    if ($shouldFlush) {
+        writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan websites:break_varnish_cache...');
+        try {
+            artisan('websites:break_varnish_cache', ['skipIfNoEnv', 'showOutput'])();
+            writeln('Varnish cache flush command executed.');
+        } catch (\Throwable $e) {
+            writeln('Error flushing Varnish cache: ' . $e->getMessage());
+        }
+    } else {
+        writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
+    }
+});
+
+set('keep_releases', 25);
 
 set('shared_dirs', ['storage', 'private']);
 set('shared_files', [
@@ -123,10 +213,12 @@ task('deploy', [
     'artisan:migrate',
     'deploy:check-fe-changes',
     'deploy:build',
+    'deploy:save-ssr-checksums',
     'deploy:publish',
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
     'artisan:inertia:stop-ssr',
     'deploy:refresh-vue',
+    'deploy:flush-varnish',
 ]);
