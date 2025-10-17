@@ -29,7 +29,7 @@ const isShowDetail = ref(false)
 const historicCLV = computed(() => parseFloat(props.data?.historic_clv_amount || '0'))
 const predictedCLV = computed(() => parseFloat(props.data?.predicted_clv_amount || '0'))
 
-// Perbandingan historic vs predicted
+//  historic vs predicted
 const historicPercentage = computed(() => {
     const total = historicCLV.value + predictedCLV.value
     if (total === 0) return 0
@@ -43,19 +43,19 @@ const historicPercentage = computed(() => {
             <div class="box-border">
                 <h3 class="text-lg font-bold">{{ locale.currencyFormat(currencyCode?.code, data?.total_clv_amount || 0) }}
                 </h3>
-                <span class="text-sm">{{ trans('Customer Lifetime Value (CLV)') }}</span>
+                <span class="text-sm">{{ trans('Customer Lifetime Value') }} (CLV)</span>
             </div>
 
             <!-- Progress Bar Comparison using PrimeVue -->
             <div class="mb-2 hover:ring-1 p-[2px] cursor-pointer rounded-md" @click="isShowDetail = true">
                 <!-- Single Progress Bar with Tooltip -->
                 <Tooltip placement="top">
-                    <ProgressBar 
-                        :value="historicPercentage" 
-                        :showValue="false" 
+                    <ProgressBar
+                        :value="historicPercentage"
+                        :showValue="false"
                         class="comparison-progressbar"
                     ></ProgressBar>
-                    
+
                     <template #popper>
                         <div class="flex flex-col gap-2 text-sm">
                             <div class="flex items-center gap-2">

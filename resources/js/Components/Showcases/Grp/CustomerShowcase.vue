@@ -43,7 +43,7 @@ import { faSpinnerThird } from '@fad'
 import { Tooltip } from 'floating-vue'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import EmailSubscribetion from "@/Components/EmailSubscribetion.vue"
-import CustomerHistory from "@/Components/CustomerHistory.vue"
+import CustomerClv from "@/Components/CustomerCLV.vue"
 import { notify } from "@kyvg/vue3-notification"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy)
@@ -463,7 +463,7 @@ const copyToClipboard = async (text: string, label: string) => {
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
             <div>
-                <CustomerHistory v-if="layout.app.environment === 'local'" :data="data?.stats"
+                <CustomerClv  :data="data?.stats"
                     :currencyCode="data.currency" />
             </div>
             <div class="justify-self-end ">

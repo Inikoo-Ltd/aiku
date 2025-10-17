@@ -2,7 +2,7 @@
 import { inject } from "vue";
 import WidgetOrganisations from "./Widget/WidgetOrganisations.vue"
 import WidgetShops from "./Widget/WidgetShops.vue"
-import CustomerHistory from "@/Components/CustomerHistory.vue";
+import CustomerClv from "@/Components/CustomerCLV.vue";
 
 const props = defineProps<{
 	intervals: {
@@ -33,6 +33,6 @@ const layout = inject('layout')
             :tableData="props.tableData"
             :intervals="props.intervals"
         />
-       <CustomerHistory v-if="layout?.app?.environment === 'local'" />
+       <CustomerClv v-if="layout?.app?.environment === 'local'" />
     </div>
 </template>
