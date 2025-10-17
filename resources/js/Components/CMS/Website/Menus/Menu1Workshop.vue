@@ -105,6 +105,16 @@ const getNavigationIcon = (navigation: any) => {
     return navigation.icon || null;
 };
 
+const navHoverClass = ref(getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false))
+
+watch(
+  () => props.fieldValue?.hover,
+  () => {
+    navHoverClass.value = getStyles(props.fieldValue?.hover?.container?.properties, props.screenType,false)
+  },
+  { deep: true }
+)
+
 
 </script>
 
@@ -155,16 +165,16 @@ const getNavigationIcon = (navigation: any) => {
 
             <!-- Section: list Navigation -->
             <nav ref="_scrollContainer" @scroll="checkScroll"
-                class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide ml-5">
+                class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide ml-5 ">
                 <template v-for="(navigation, idxNavigation) in fieldValue?.navigation" :key="idxNavigation">
                     <component :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)" :type="navigation?.link?.type"
                         :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href" :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
-                            ? 'bg-gray-100 text-orange-500'
+                            ? 'navigation'
                             : navigation?.link?.href
-                                ? 'cursor-pointer hover:bg-gray-100 hover:text-orange-500'
+                                ? 'cursor-pointer  navigation'
                                 : ''">
                         <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
                         <div>
@@ -180,8 +190,8 @@ const getNavigationIcon = (navigation: any) => {
                 class="z-[49] absolute left-0 top-full -translate-y-0.5 bg-white border w-full shadow-lg"
                 :class="isCollapsedOpen ? 'border-gray-300 ' : 'border-t-0'"
                 :style="getStyles(fieldValue?.container?.properties, screenType)">
-                <div class="grid grid-cols-4 gap-8 p-6">
-                    <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
+                <div class="grid grid-cols-4 gap-8 p-6 " >
+                    <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4 ">
                         <component :is="subnav?.link?.href ? LinkIris : 'div'" :href="subnav?.link?.href"
                             :type="subnav?.link?.type" :target="subnav?.link?.target"
                             :canonical_url="subnav?.link?.canonical_url" :style="{
@@ -190,8 +200,8 @@ const getNavigationIcon = (navigation: any) => {
                                 padding: 0,
                                 fontWeight: 600,
                                 ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
-                            }" class="font-semibold text-gray-700 transition flex items-center gap-x-3"
-                            @start="()=>onClickSubnav(subnav)" @finish="()=>loadingItem = null">
+                            }" class="font-semibold text-gray-700 transition flex items-center gap-x-3 navigation"
+                            @start="() => onClickSubnav(subnav)" @finish="() => loadingItem = null">
                             <span>{{ subnav.title }}</span>
                             <!-- Spinner / Icon -->
                             <FontAwesomeIcon v-if="loadingItem === (subnav.id || subnav.label)" icon="fas fa-spinner"
@@ -199,12 +209,13 @@ const getNavigationIcon = (navigation: any) => {
                             <FontAwesomeIcon v-else-if="subnav.icon" :icon="subnav.icon"
                                 class="text-[10px] text-gray-400" />
                         </component>
-                        <div v-for="linkData in subnav?.links" :key="subnav.title" class="space-y-4">
-                            <LinkIris class="text-sm font-bold" :href="linkData.link.href" :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
+                        <div v-for="linkData in subnav?.links" :key="subnav.title" class="space-y-4 navigation">
+                            <LinkIris class="text-sm font-bold " :href="linkData.link.href"
+                                :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
                                 <template #default>
-                                     <div class="text-sm text-gray-500 font-medium">{{ linkData.label }}</div>
+                                    <div class="text-sm text-gray-500 font-medium navigation">{{ linkData.label }}</div>
                                 </template>
-                            </LinkIris>   
+                            </LinkIris>
                         </div>
                     </div>
                 </div>
@@ -213,7 +224,7 @@ const getNavigationIcon = (navigation: any) => {
     </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .container {
     max-width: 1980px;
 }
@@ -227,12 +238,23 @@ const getNavigationIcon = (navigation: any) => {
     scrollbar-width: none;
 }
 
-.editor-class a  {
-   font-weight: 400;
+.editor-class a {
+    font-weight: 400;
 }
 
-.sub-nav-title  {
+.sub-nav-title {
     .editor-class a {
         font-weight: 600;
-    }}
+    }
+}
+
+
+.navigation {
+    &:hover {
+        background: v-bind('navHoverClass?.background || null') !important;
+        color: v-bind('navHoverClass?.color || null') !important;
+        font-family: v-bind('navHoverClass?.fontFamily || null') !important;
+        font-size: v-bind('navHoverClass?.fontSize || null') !important;
+    }
+}
 </style>
