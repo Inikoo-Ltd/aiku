@@ -591,7 +591,7 @@ const compSelectedDeck = computed(() => {
 })
 // const onClickProforma = async () => {
 //     const aaa = ;
-    
+
 //     // Section: Submit
 //     const url = route(props.proforma_invoice.route_download_pdf.name, {...props.proforma_invoice.route_download_pdf.parameters, ...aaa})
 //     console.log('url', url)
@@ -649,7 +649,7 @@ const copyToClipboard = async (text: string, label: string) => {
     </ConfirmDialog>
 
     <PageHeading :data="pageHead">
-        <template #button-add-products="{ action }">
+        <template #button-add-product="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
                     :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
@@ -674,18 +674,18 @@ const copyToClipboard = async (text: string, label: string) => {
         </template>
 
 
-        <template #otherBefore v-if="!props.readonly && layout?.app?.environment === 'local'">
-            <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents"
-                class="flex gap-2">
-                <Button :style="'secondary'" :icon="faPlus" :label="'Product'" tooltip="put a new Product"
-                    @click="(e) => { if (_refComponents) _refComponents.openModal() }" />
-                <Button v-if="
+       <!-- <template #otherBefore v-if="!props.readonly && layout?.app?.environment === 'local'">
+           <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents"
+               class="flex gap-2">
+               <Button :style="'secondary'" :icon="faPlus" :label="trans('Product')" :tooltip="trans('Add a product')"
+                   @click="(e) => { if (_refComponents) _refComponents.openModal() }" />
+               <Button v-if="
                     Object.keys(_refComponents.createNewQty).length > 0 ||
                     _refComponents.rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
                 " type="save" label="Save all changes" :loading="_refComponents.loadingsaveModify"
-                    @click="() => _refComponents.onSave()" />
+                   @click="() => _refComponents.onSave()" />
             </div>
-        </template>
+        </template> -->
 
         <template #other>
 
@@ -831,8 +831,8 @@ const copyToClipboard = async (text: string, label: string) => {
                             class="text-sm text-gray-500 cursor-pointer primaryLink">
                             #{{ box_stats?.customer.reference }}
                         </Link>
-                        <!-- <button @click="copyToClipboard(box_stats?.customer.reference, 'Customer reference')" 
-                            class="text-gray-400 hover:text-gray-600 transition-colors" 
+                        <!-- <button @click="copyToClipboard(box_stats?.customer.reference, 'Customer reference')"
+                            class="text-gray-400 hover:text-gray-600 transition-colors"
                             v-tooltip="trans('Copy to clipboard')">
                             <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                         </button> -->
