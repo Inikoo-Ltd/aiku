@@ -25,8 +25,8 @@ class BreakWebpageCache extends OrgAction
         $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
         Cache::forget($key);
 
-        if (config('iris.cache.varnish.enabled')) {
-            BreakWebpageVarnishCache::dispatch($webpage)->delay(1);
+        if (config('iris.cache.varnish')) {
+            BreakWebpageVarnishCache::dispatch($webpage)->delay(5);
         }
     }
 
