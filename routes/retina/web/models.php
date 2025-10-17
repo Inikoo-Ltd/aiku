@@ -18,6 +18,7 @@ use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
+use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
@@ -270,6 +271,7 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
+    Route::post('sync-shopify-portfolio', CheckShopifyPortfolios::class)->name('portfolio_shopify_sync');
 
     Route::patch('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
     Route::post('client', StoreRetinaCustomerClient::class)->name('customer-client.store');
