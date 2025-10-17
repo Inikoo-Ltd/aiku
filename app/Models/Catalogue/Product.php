@@ -257,7 +257,10 @@ class Product extends Model implements Auditable, HasMedia
         'trade_config'           => ProductTradeConfigEnum::class,
         'unit_relationship_type' => ProductUnitRelationshipType::class,
         'fetched_at'             => 'datetime',
-        'last_fetched_at'        => 'datetime'
+        'last_fetched_at'        => 'datetime',
+        'cpnp_number'            => 'string',
+        'ufi_number'             => 'string',
+        'scpn_number'            => 'string',
     ];
 
     protected $attributes = [

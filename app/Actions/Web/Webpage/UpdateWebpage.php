@@ -177,7 +177,7 @@ class UpdateWebpage extends OrgAction
                     ->max(12 * 1024)
             ],
             'seo_data'                  => ['sometimes', 'array'],
-            'structured_data'            =>  ['sometimes', 'string'],
+            'structured_data'            =>  ['sometimes','nullable', 'string'],
             'level'                     => ['sometimes', 'integer'],
             'sub_type'                  => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
             'type'                      => ['sometimes', Rule::enum(WebpageTypeEnum::class)],

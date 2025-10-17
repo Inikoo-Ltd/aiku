@@ -385,7 +385,7 @@ const onDisableCheckbox = (item) => {
 
 
 const listErrorProducts = ref({
-    
+
 })
 const selectedErrorProduct = ref(null)
 const isOpenModalErrorProduct = ref(false)
@@ -708,7 +708,7 @@ const isOpenModalErrorProduct = ref(false)
                         preserveScroll: true,
                     }"
                     @error="(e) => {
-                        console.log('..........', e)
+                        isOpenModalErrorProduct = true
                         set(listErrorProducts, [`x${item.id}`], e)
                     }"
                 />
@@ -827,7 +827,7 @@ const isOpenModalErrorProduct = ref(false)
             <div class="text-xl font-semibold text-center">
                 Error Product
             </div>
-            
+
             <div>
                 {{ selectedErrorProduct }}
                 <label for="error-product-input" class="block text-sm font-semibold">Product title</label>
@@ -846,7 +846,7 @@ const isOpenModalErrorProduct = ref(false)
                     full
                 />
             </div>
-            
+
         </div>
     </Modal>
 

@@ -15,6 +15,7 @@ use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrate
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Comms\Email\SendInvoiceDeletedNotification;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
@@ -65,6 +66,8 @@ class DeleteInvoice extends OrgAction
         } catch (Throwable) {
             //
         }
+
+        CustomerHydrateClv::dispatch($invoice->customer->id)->delay($this->hydratorsDelay);
 
         return $invoice;
     }

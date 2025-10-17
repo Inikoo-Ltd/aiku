@@ -54,6 +54,7 @@ class ShowIrisWebpage
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
 
+
         return [
             'status'       => 'ok',
             'webpage_id'   => $webpage->id,
@@ -62,7 +63,7 @@ class ShowIrisWebpage
                 parentPaths: $parentPaths
             ),
             'webpage_data' => [
-                'structured_data' => $webpage->structured_data,
+                'seo_data' => $webpage->seo_data,
                 'title'           => $webpage->title,
                 'description'     => $webpage->description,
                 'canonical_url'   => $webpage->canonical_url,

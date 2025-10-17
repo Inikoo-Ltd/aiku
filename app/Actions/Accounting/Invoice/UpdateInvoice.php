@@ -17,6 +17,7 @@ use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrate
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\OrgAction;
@@ -131,6 +132,11 @@ class UpdateInvoice extends OrgAction
             ])) {
                 InvoiceRecordSearch::dispatch($invoice);
             }
+        }
+
+
+        if (Arr::hasAny($changes, ['in_process', 'net_amount', 'org_net_amount', 'grp_net_amount'])) {
+            CustomerHydrateClv::dispatch($invoice->customer->id)->delay($this->hydratorsDelay);
         }
 
         if (Arr::hasAny($changes, ['billing_country_id', 'sales_channel_id', 'is_vip', 'external_invoicer_id'])) {
