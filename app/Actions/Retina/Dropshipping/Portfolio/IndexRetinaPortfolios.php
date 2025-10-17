@@ -8,13 +8,16 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
+use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
+use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
@@ -114,7 +117,7 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         $this->customerSalesChannel = $customerSalesChannel;
 
-        $this->initialisation($request);
+        $this->initialisation($request)->withTab(CustomerSalesChannelPortfolioTabsEnum::values());
 
         return $this->handle($customerSalesChannel, 'products');
     }
@@ -254,6 +257,11 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'grouped_portfolios' => $groupedPortfolios,
 
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => CustomerSalesChannelPortfolioTabsEnum::navigation()
+                ],
+
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
                     'batch_all'                 => $bulkAllRoute,
@@ -381,6 +389,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'product_count' => $this->customerSalesChannel->number_portfolios,
 
+                'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel)),
 
                 'count_product_not_synced' => $countProductsNotSync,
                 'platform_user_id'         => $platformUser?->id,
@@ -390,7 +399,8 @@ class IndexRetinaPortfolios extends RetinaAction
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels)//  Do now use the resource. Use an array of necessary data
             ]
-        )->table($this->tableStructure(prefix: 'products'));
+        )->table($this->tableStructure(prefix: 'products'))
+            ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): \Closure
