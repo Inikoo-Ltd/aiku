@@ -15,6 +15,10 @@ return new class () extends Migration {
     {
         Schema::table('customer_stats', function (Blueprint $table) {
 
+            $table->decimal('revenue_amount', 16)->default(0);
+            $table->decimal('revenue_amount_org_currency', 16)->default(0);
+            $table->decimal('revenue_amount_grp_currency', 16)->default(0);
+
             $table->decimal('lost_revenue_out_of_stock_amount', 16)->default(0);
             $table->decimal('lost_revenue_out_of_stock_amount_org_currency', 16)->default(0);
             $table->decimal('lost_revenue_out_of_stock_amount_grp_currency', 16)->default(0);
@@ -37,6 +41,11 @@ return new class () extends Migration {
     public function down(): void
     {
         Schema::table('customer_stats', function (Blueprint $table) {
+
+            $table->dropColumn('revenue_amount');
+            $table->dropColumn('revenue_amount_org_currency');
+            $table->dropColumn('revenue_amount_grp_currency');
+
             $table->dropColumn('lost_revenue_out_of_stock_amount');
             $table->dropColumn('lost_revenue_out_of_stock_amount_org_currency');
             $table->dropColumn('lost_revenue_out_of_stock_amount_grp_currency');

@@ -51,7 +51,7 @@ class GetWebsiteWorkshopSidebar
             $sidebar['data']['fieldValue'],
             $productCategories
         );
-        
+
         return [
             'sidebar'    => $sidebar
         ];
