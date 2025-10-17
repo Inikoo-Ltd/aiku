@@ -80,6 +80,13 @@ class GetDropshippingOrderActions
                 OrderStateEnum::SUBMITTED => [
                     [
                         'type'    => 'button',
+                        'style'   => 'create',
+                        'tooltip' => __('Add a product'),
+                        'label'   => __('Add a product'),
+                        'key'     => 'add-product',
+                    ],
+                    [
+                        'type'    => 'button',
                         'style'   => 'save',
                         'tooltip' => __('Send order to Warehouse'),
                         'label'   => __('Send to warehouse'),
