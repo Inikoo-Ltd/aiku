@@ -649,7 +649,7 @@ const copyToClipboard = async (text: string, label: string) => {
     </ConfirmDialog>
 
     <PageHeading :data="pageHead">
-        <template #button-add-products="{ action }">
+        <template #button-add-product="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
                     :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
@@ -674,18 +674,18 @@ const copyToClipboard = async (text: string, label: string) => {
         </template>
 
 
-<!--        <template #otherBefore v-if="!props.readonly && layout?.app?.environment === 'local'">-->
-<!--            <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents"-->
-<!--                class="flex gap-2">-->
-<!--                <Button :style="'secondary'" :icon="faPlus" :label="trans('Product')" :tooltip="trans('Add a product')"-->
-<!--                    @click="(e) => { if (_refComponents) _refComponents.openModal() }" />-->
-<!--                <Button v-if="-->
-<!--                    Object.keys(_refComponents.createNewQty).length > 0 ||-->
-<!--                    _refComponents.rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))-->
-<!--                " type="save" label="Save all changes" :loading="_refComponents.loadingsaveModify"-->
-<!--                    @click="() => _refComponents.onSave()" />-->
-<!--            </div>-->
-<!--        </template>-->
+       <!-- <template #otherBefore v-if="!props.readonly && layout?.app?.environment === 'local'">
+           <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents"
+               class="flex gap-2">
+               <Button :style="'secondary'" :icon="faPlus" :label="trans('Product')" :tooltip="trans('Add a product')"
+                   @click="(e) => { if (_refComponents) _refComponents.openModal() }" />
+               <Button v-if="
+                    Object.keys(_refComponents.createNewQty).length > 0 ||
+                    _refComponents.rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
+                " type="save" label="Save all changes" :loading="_refComponents.loadingsaveModify"
+                   @click="() => _refComponents.onSave()" />
+            </div>
+        </template> -->
 
         <template #other>
 

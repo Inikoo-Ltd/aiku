@@ -48,7 +48,7 @@ class GetEcomOrderActions
                         'type'    => 'button',
                         'style'   => 'secondary',
                         'icon'    => 'fal fa-plus',
-                        'key'     => 'add-products',
+                        'key'     => 'add-product',
                         'label'   => __('Add products'),
                         'tooltip' => __('Add products'),
                         'route'   => [
@@ -81,6 +81,12 @@ class GetEcomOrderActions
                         'tooltip' => __('Add a product'),
                         'label'   => __('Add a product'),
                         'key'     => 'add-product',
+                         'route'   => [
+                            'name'       => 'grp.models.order.transaction.store',
+                            'parameters' => [
+                                'order' => $order->id,
+                            ]
+                        ]
                     ],
                     [
                         'type'    => 'button',
