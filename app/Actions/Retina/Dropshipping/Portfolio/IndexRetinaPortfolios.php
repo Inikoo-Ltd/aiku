@@ -214,10 +214,10 @@ class IndexRetinaPortfolios extends RetinaAction
         }
 
         $groupedPortfolios = $this->customerSalesChannel->portfolios->groupBy(function ($portfolio) {
-            return strtoupper(substr($portfolio->item_name, 0, 1));
+            return strtoupper(substr($portfolio->item_code, 0, 1));
         })->map(function ($group) {
             return [
-                'char' => strtoupper(substr($group->first()->item_name, 0, 1)),
+                'char' => strtoupper(substr($group->first()->item_code, 0, 1)),
                 'count' => $group->count(),
                 'ids' => $group->pluck('id')->implode(',')
             ];
