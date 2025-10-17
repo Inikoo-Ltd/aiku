@@ -7,11 +7,9 @@ import { checkVisible, textReplaceVariables } from "@/Composables/Workshop"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSignIn, faHeart, faShoppingCart, faSignOut, faUser, faUserPlus } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 import { TopbarFulfilmentTypes } from "@/types/TopbarFulfilment"
-import { set } from "lodash-es"
-import Button from "@/Components/Elements/Buttons/Button.vue"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 library.add(faSignIn, faHeart, faShoppingCart, faSignOut, faUser, faUserPlus)
 
@@ -47,47 +45,48 @@ const layout = inject("layout", {})
 			class="action_buttons flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
 
 			<!-- Button: Register -->
-			<a
+			<LinkIris
 				v-if="checkVisible(model?.register?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
 				href="/app/register"
 				class="buttonTopbar"
             >
 				<FontAwesomeIcon icon="fal fa-user-plus" class="inline opacity-70" fixed-width aria-hidden="true" />
 				{{ trans("Register") }}
-			</a>
+			</LinkIris>
 
 
 			<!-- Button: Login -->
-            <a
+            <LinkIris
 				v-if="checkVisible(model?.login?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
 				href="/app/login"
+				type="internal"
 				class="ml-6 mr-4 buttonTopbar"
             >
 				<FontAwesomeIcon icon="fal fa-sign-in" class="inline opacity-70" fixed-width aria-hidden="true" />
 				{{ trans("Login") }}
-			</a>
+			</LinkIris>
 
 
 			<!-- Button: Profile -->
-            <a
+            <LinkIris
 				v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
 				href="/app/profile"
 				class="ml-6 mr-4 buttonTopbar whitespace-nowrap"
             >
 				<FontAwesomeIcon icon="fal fa-user" class="inline opacity-70" fixed-width aria-hidden="true" />
 				<span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
-			</a>
+			</LinkIris>
 
 
 			<!-- Button: Logout -->
-            <a
+            <LinkIris
 				v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
 				href="/app/logout"
 				class="ml-6 mr-4 buttonTopbar hover:!text-red-500 whitespace-nowrap"
             >
 				<FontAwesomeIcon icon="fal fa-sign-out" class="inline opacity-70" fixed-width aria-hidden="true" />
 				<span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
-			</a>
+			</LinkIris>
 
 		</div>
 	</div>
