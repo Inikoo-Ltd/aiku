@@ -40,7 +40,6 @@ const props = defineProps<{
     sidebar: {}
 }>()
 
-// console.log(props.sidebar);
 
 const isOpenMenuMobile = inject('isOpenMenuMobile')
 const layout: any = inject("layout", {});
@@ -146,6 +145,7 @@ watch(isPreviewLoggedIn, (value) => {
                     :loginMode="isPreviewLoggedIn"
                     @update:model-value="updateData(header.data)"
                     :screenType="screenType"
+                    :sidebar
                 />
             </div>
 

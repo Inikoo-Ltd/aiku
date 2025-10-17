@@ -7,9 +7,8 @@ import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import LinkIris from '../LinkIris.vue'
+import { router } from '@inertiajs/vue3'
 library.add(faChevronRight, faExternalLink)
-
-
 
 const props = defineProps<{
     productCategories: {}
@@ -100,6 +99,9 @@ const handleViewAllSubDepartment = (url: string) => {
 }
 
 const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
+const closeSidebar = () => {
+    isOpenMenuMobile.value = false;
+}
 
 </script>
 
@@ -127,7 +129,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
                             v-if="(!customTopItem.sub_departments || customTopItem.sub_departments.length === 0) && customTopItem.url !== null"
                             :href="internalHref(customTopItem)"
                             class="hover:underline"
-                            @success="() => isOpenMenuMobile = false"
+                            @success="() => closeSidebar()"
                             :type="customTopItem.type"
                             :target="customTopItem.target"
                         >
@@ -174,7 +176,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
                             v-if="(!customItem.sub_departments || customItem.sub_departments.length === 0) && customItem.url !== null"
                             :href="internalHref(customItem)"
                             class="hover:underline"
-                            @success="() => isOpenMenuMobile = false"
+                            @success="() => closeSidebar()"
                             :type="customItem.type"
                             :target="customItem.target"
                         >
@@ -236,7 +238,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
                                 v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
                                 :href="internalHref(sub)"
                                 class="hover:underline"
-                                @success="() => isOpenMenuMobile = false"
+                                @success="() => closeSidebar()"
                                 :target="getTarget(sub)"
                                 :type="sub.type"
                             >
@@ -262,7 +264,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
                                 v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
                                 :href="internalHref(sub)"
                                 class="hover:underline"
-                                @success="() => isOpenMenuMobile = false"
+                                @success="() => closeSidebar()"
                                 :target="getTarget(sub)"
                                 :type="sub.type"
                             >
@@ -298,7 +300,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
                             v-if="child.url !== null"
                             :href="internalHref(child)"
                             class="hover:underline"
-                            @success="() => isOpenMenuMobile = false"
+                            @success="() => closeSidebar()"
                             :target="getTarget(child)"
                             :type="child.type"
                         >
@@ -327,7 +329,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
                             v-if="child.url !== null"
                             :href="internalHref(child)"
                             class="hover:underline"
-                            @success="() => isOpenMenuMobile = false"
+                            @success="() => closeSidebar()"
                             :target="getTarget(child)"
                             :type="child.type"
                         >
@@ -345,7 +347,7 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
                             v-if="child.url !== null"
                             :href="internalHref(child)"
                             class="hover:underline"
-                            @success="() => isOpenMenuMobile = false"
+                            @success="() => closeSidebar()"
                             :target="getTarget(child)"
                             :type="child.type"
                         >

@@ -163,6 +163,8 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $estimated_back_in_stock_at
  * @property int|null $estimated_to_be_delivered_quantity
  * @property int|null $origin_country_id
+ * @property string|null $ufi_number
+ * @property string|null $scpn_number
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -255,7 +257,10 @@ class Product extends Model implements Auditable, HasMedia
         'trade_config'           => ProductTradeConfigEnum::class,
         'unit_relationship_type' => ProductUnitRelationshipType::class,
         'fetched_at'             => 'datetime',
-        'last_fetched_at'        => 'datetime'
+        'last_fetched_at'        => 'datetime',
+        'cpnp_number'            => 'string',
+        'ufi_number'             => 'string',
+        'scpn_number'            => 'string',
     ];
 
     protected $attributes = [

@@ -228,7 +228,7 @@ class ShowProduct extends OrgAction
         }
 
         if ($product->family) {
-            $route=null;
+            $route = null;
             if ($product->subDepartment) {
                 $route = [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
@@ -240,7 +240,7 @@ class ShowProduct extends OrgAction
                         'family'        => $product->family->slug,
                     ]
                 ];
-            } elseif($product->department) {
+            } elseif ($product->department) {
                 $route = [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
                     'parameters' => [
@@ -252,7 +252,7 @@ class ShowProduct extends OrgAction
                 ];
             }
 
-            if($route) {
+            if ($route) {
                 $miniBreadcrumbs[] = [
                     'label'   => $product->family->name,
                     'to'      => $route,

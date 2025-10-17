@@ -63,6 +63,7 @@ class CloneWebsiteMenu
             'navigation'          => $this->navigation,
             'sub_navigation'      => $this->subNavigation,
             'sub_navigation_link' => $this->subNavigationLink,
+            'setting_on_sidebar'  => $fromMenuData['setting_on_sidebar'] ?? null,
         ];
 
         $layout = data_set($fromBaseMenu, 'data.fieldValue', $fieldValue);

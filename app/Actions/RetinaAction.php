@@ -69,7 +69,7 @@ class RetinaAction
     {
         $this->webUser = $request->user();
 
-        if($this->webUser) {
+        if ($this->webUser) {
             $this->customer = $this->webUser?->customer;
             $this->fulfilmentCustomer = $this->customer?->fulfilmentCustomer;
             $this->shop = $this->customer?->shop;
@@ -173,7 +173,7 @@ class RetinaAction
             }
         }
 
-        if(!$this->shop) {
+        if (!$this->shop) {
             return false;
         }
 

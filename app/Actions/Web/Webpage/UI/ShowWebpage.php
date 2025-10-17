@@ -256,7 +256,8 @@ class ShowWebpage extends OrgAction
                     ]
                 ]
             ];
-        } elseif (in_array($webpage->type, [WebpageTypeEnum::STOREFRONT, WebpageTypeEnum::CONTENT])) {
+        } 
+        /* elseif (in_array($webpage->type, [WebpageTypeEnum::STOREFRONT, WebpageTypeEnum::CONTENT])) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
@@ -269,7 +270,7 @@ class ShowWebpage extends OrgAction
                     ]
                 ]
             ];
-        }
+        } */
 
         return $actions;
     }
