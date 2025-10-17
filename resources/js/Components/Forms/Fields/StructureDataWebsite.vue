@@ -1,56 +1,49 @@
 <script setup lang='ts'>
-import codemirrorPkg from 'vue-codemirror';
+import codemirrorPkg from 'vue-codemirror'
 import { json } from "@codemirror/lang-json"
+import { computed } from 'vue'
 
 const props = defineProps<{
-    form?: any
-    fieldName: string
-    options: string[] | {}
+  form?: Record<string, any>
+  fieldName: string
+  options?: string[] | Record<string, any>
 }>()
-const { Codemirror } = codemirrorPkg;
+
+const { Codemirror } = codemirrorPkg
 const extensions = [json()]
 
-const defaultJsonLD = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "url": "https://www.aw-fulfilment.co.uk",
-    "sameAs": ["https://www.ancientwisdom.biz", "https://www.aw-aromatics.com", "https://www.aw-dropship.com", "https://www.aw-fulfilment.eu", "https://www.awgifts.eu", "https://www.aw-dropship.eu", "https://www.awartisan.eu"],
-    "logo": "https://media.aiku.io/QdYcHDe3W11-zs5hwB_GsdGFeLbCAQZQKlLkFpAJjwE/bG9jYWw6Ly9tZWRpYS9TRy9FQy82MFIzMEMxSDc0UktFQ1NHLzhiNGY2NWMwLnBuZw.avif",
-    "name": "AW Fulfilment",
-    "description": "Put your description with keywords fulfilment in UK",
-    "email": "info@aw-fulfilment.co.uk",
-    "telephone": "+447377188459",
-    "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "Affinity Park, Europa Drive",
-        "addressLocality": "Sheffield",
-        "addressCountry": "United Kingdom",
-        "addressRegion": "South Yorkshire",
-        "postalCode": "S9 1XT"
-    },
-    "vatID": "GB764298589"
-}
-
-
-
+// Safe computed binding: always a string
+const codeValue = computed({
+  get() {
+    const value = props.form?.[props.fieldName]
+    return typeof value === 'string' ? value : value ? JSON.stringify(value, null, 2) : ''
+  },
+  set(newValue) {
+    if (props.form) {
+      props.form[props.fieldName] = newValue || null
+    }
+  }
+})
 </script>
 
 <template>
-    <div class="max-w-2xl rounded-md">
-        <div class="mt-3">
-            <label class="text-gray-600 font-semibold cursor-pointer">SEO Structured Data (JSON-LD)</label>
-            <Codemirror 
-                v-model="form[fieldName]"
-                :style="{ 
-                    height: '500px', 
-                    textOverflow: 'ellipsis', 
-                    border: '1px solid #ddd' 
-                }" 
-                :autofocus="true"
-                :indent-with-tab="true" 
-                :tab-size="2" 
-                :extensions="extensions"  
-            />
-        </div>
+  <div class="max-w-2xl rounded-md">
+    <div class="mt-3">
+      <label class="text-gray-600 font-semibold cursor-pointer">
+        SEO Structured Data (JSON-LD)
+      </label>
+      <Codemirror
+        v-model="codeValue"
+        :style="{
+          height: '500px',
+          textOverflow: 'ellipsis',
+          border: '1px solid #ddd'
+        }"
+        :autofocus="true"
+        :indent-with-tab="true"
+        :tab-size="2"
+        :extensions="extensions"
+      />
     </div>
+  </div>
 </template>
