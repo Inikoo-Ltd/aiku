@@ -56,5 +56,20 @@ export default {
 				},
 			],
 		},
+		{
+			name: "hover",
+			key: ['hover',"container", "properties"],
+			replaceForm: [
+				{
+					key: ["background"],
+					label: "Background",
+					type: "background",
+				},
+				{
+					key: ["text"],
+					type: "textProperty",
+				},
+			],
+		}
 	],
 }

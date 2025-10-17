@@ -38,7 +38,6 @@ const checkScreenType = () => {
 onMounted(() => {
   currentUrl.value = window.location.href
 
-  // Inject structured data as script
   if(props.webpage_data.structured_data){
   const script = document.createElement('script')
   script.type = 'application/ld+json'
@@ -63,7 +62,6 @@ onMounted(() => {
 
 
   if(layout.iris.is_logged_in) layout.log_user()
-
 })
 
 
