@@ -9,7 +9,6 @@
 namespace App\Actions\Web\Webpage;
 
 use App\Actions\OrgAction;
-use App\Actions\Web\Website\BreakWebsiteVarnishCache;
 use App\Models\Web\Webpage;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
@@ -26,7 +25,7 @@ class BreakWebpageCache extends OrgAction
         $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_out_'.$webpage->id;
         Cache::forget($key);
 
-        if(config('iris.cache.varnish.enabled')){
+        if (config('iris.cache.varnish.enabled')) {
             BreakWebpageVarnishCache::dispatch($webpage)->delay(1);
         }
     }

@@ -12,7 +12,6 @@
 
 namespace App\Actions\Maintenance\Masters;
 
-use App\Actions\Masters\MasterAsset\MatchAssetsToMaster;
 use App\Actions\Masters\MasterAsset\StoreMasterAsset;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
@@ -38,7 +37,7 @@ class RepairMasterAssetsTradeUnitsFromProducts
         MasterAsset::where('master_shop_id', $masterShop->id)
             ->where('code', 'VRUG-23')
             ->where('type', MasterAssetTypeEnum::PRODUCT)->orderBy('id')
-            ->chunk(1000, function ($models) use ($command, $seederShop,$masterShop) {
+            ->chunk(1000, function ($models) use ($command, $seederShop, $masterShop) {
                 foreach ($models as $masterProduct) {
 
 
@@ -46,7 +45,7 @@ class RepairMasterAssetsTradeUnitsFromProducts
 
                     $product = Product::where('shop_id', $seederShop->id)->where('master_product_id', $masterProduct->id)->first();
 
-                    if($product){
+                    if ($product) {
                         $product = Product::where('master_product_id', $masterProduct->id)->first();
 
                     }
@@ -67,8 +66,7 @@ class RepairMasterAssetsTradeUnitsFromProducts
 
 
 
-                    }
-                    else{
+                    } else {
 
                         $tradeUnits = $masterProduct->tradeUnits()->withPivot('quantity')->get();
                         $tradeUnitData = [];
