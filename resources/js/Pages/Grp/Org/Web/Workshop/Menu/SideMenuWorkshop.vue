@@ -20,6 +20,7 @@ import {
 	faList,
 	faPaintBrushAlt,
 } from "@fas"
+import { faEyeSlash } from "@fal"
 import { faHeart, faLowVision } from "@far"
 import { notify } from "@kyvg/vue3-notification"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
@@ -41,7 +42,8 @@ library.add(
 	faTimes,
 	faPlusCircle,
 	faBars,
-	faLowVision
+	faLowVision,
+	faEyeSlash
 )
 
 const props = defineProps<{
@@ -173,7 +175,8 @@ const urlToSidebar = computed(() => {
 						@auto-save="() => autoSave(data)"
 					/>
 					<Transition name="slide-to-right">
-						<div v-if="get(data, ['data', 'fieldValue', 'sidebar', 'is_follow'], false)" class="rounded bg-gray-700/30 absolute inset-0 w-[110%] h-[110%] top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex items-center justify-center text-white text-center">
+						<div v-if="get(data, ['data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], false)" class="rounded text-yellow-500 bg-gray-500/80 absolute inset-0 w-[110%] h-[110%] top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center">
+							<FontAwesomeIcon icon="fal fa-eye-slash" class="text-5xl" fixed-width aria-hidden="true" />
 							{{ trans("Will not showing due the data follow Sidebar") }}
 						</div>
 					</Transition>

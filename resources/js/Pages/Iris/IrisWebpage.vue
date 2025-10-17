@@ -38,10 +38,10 @@ const checkScreenType = () => {
 onMounted(() => {
   currentUrl.value = window.location.href
 
-  if(props.webpage_data.structured_data){
+  if(props?.webpage_data?.seo_data?.structured_data){
   const script = document.createElement('script')
   script.type = 'application/ld+json'
-  let structuredData = props.webpage_data.structured_data
+  let structuredData = props.webpage_data?.seo_data?.structured_data
 
   if (typeof structuredData !== 'string') {
     try {
@@ -52,7 +52,9 @@ onMounted(() => {
     }
   }
 
+  
   script.textContent = structuredData
+console.log('structuredData',script)
   document.head.appendChild(script)
 }
 
@@ -87,7 +89,6 @@ onBeforeUnmount(() => {
         <meta property="og:locale" content="en_US" />
         <meta property="og:site_name" :content="webpage_data.title" />
     </Head>
-
 
 
   <div class="bg-white">

@@ -41,6 +41,9 @@ import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/Pla
 import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 import { useTruncate } from "@/Composables/useTruncate"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import Tabs from "@/Components/Navigation/Tabs.vue";
+import { useTabChange } from "@/Composables/tab-change";
+import TableRetinaPlatformPortfolioLogs from "@/Components/Tables/Retina/TableRetinaPlatformPortfolioLogs.vue";
 
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
@@ -62,6 +65,7 @@ const props = defineProps<{
         }
     }
     products: TableTS
+    logs: {}
     routes: {
         batch_upload: routeType
         batch_all: routeType
@@ -312,15 +316,16 @@ const submitPortfolioAction = async (action: any) => {
     }
 }
 
+const currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
 const key = ulid()
 
 </script>
 
 <template>
-
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
-
 
         <template #button-upload-to-shopify="{ action }">
             <Button @click="onUploadToShopify()" :style="action.style" :label="action.label" :loading="isLoadingUpload"
@@ -377,7 +382,7 @@ const key = ulid()
             </div>
         </template>
     </PageHeading>
-
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <!-- Section: Alert if platform not connected yet -->
     <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
         <div v-if="platform_data.type === 'shopify'" class="px-2 md:px-6">
@@ -393,7 +398,7 @@ const key = ulid()
     </div>
 
     <!-- Section: Alert if there is product not synced -->
-    <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual" severity="warn"
+    <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual && currentTab === 'products'" severity="warn"
              class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
@@ -457,7 +462,7 @@ const key = ulid()
     </Message>
 
     <!-- retina.models.dropshipping.ebay.batch_upload -->
-    <div v-if="is_platform_connected || isPlatformManual">
+    <div v-if="(is_platform_connected || isPlatformManual) && currentTab === 'products'">
         <div v-if="props.product_count < 1"
             class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
             <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
@@ -498,6 +503,9 @@ const key = ulid()
                 v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
                 :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>
         </div>
+    </div>
+    <div v-else-if="currentTab === 'logs'">
+        <TableRetinaPlatformPortfolioLogs :data="logs" :tab="currentTab" />
     </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
