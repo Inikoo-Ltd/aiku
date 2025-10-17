@@ -11,6 +11,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 
 import { TopbarFulfilmentTypes } from "@/types/TopbarFulfilment"
 import { set } from "lodash-es"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faSignIn, faHeart, faShoppingCart, faSignOut, faUser, faUserPlus)
 
@@ -24,7 +25,7 @@ const layout = inject("layout", {})
 <template>
 	<div></div>
 	<div
-		id="top_bar"
+		id="topbar_fulfilment_1_iris"
 		class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4 hidden md:flex"
 		 :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
@@ -44,123 +45,57 @@ const layout = inject("layout", {})
 
 		<div
 			class="action_buttons flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
-			<!-- Section: Profile -->
-			<!--     <a v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
-                id="profile_button"
-                  :href="'/app/profile'"
-                :target="model?.profile?.link?.target"
-                class="space-x-1.5 whitespace-nowrap flex flex-nowrap items-center "
-                :style="getStyles(model?.profile.container?.properties)"
 
+			<!-- Button: Register -->
+			<a
+				v-if="checkVisible(model?.register?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
+				href="/app/register"
+				class="buttonTopbar"
             >
-                <FontAwesomeIcon icon='fal fa-user' class='' v-tooltip="trans('Profile')" fixed-width aria-hidden='true' />
-                <div v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
-            </a> -->
-			<ButtonWithLink
+				<FontAwesomeIcon icon="fal fa-user-plus" class="inline opacity-70" fixed-width aria-hidden="true" />
+				{{ trans("Register") }}
+			</a>
+
+
+			<!-- Button: Login -->
+            <a
+				v-if="checkVisible(model?.login?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
+				href="/app/login"
+				class="ml-6 mr-4 buttonTopbar"
+            >
+				<FontAwesomeIcon icon="fal fa-sign-in" class="inline opacity-70" fixed-width aria-hidden="true" />
+				{{ trans("Login") }}
+			</a>
+
+
+			<!-- Button: Profile -->
+            <a
 				v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
-				v-tooltip="trans('Profile')"
-				url="/app/profile"
-				icon="fal fa-user">
-				<template #label>
-					<span
-						v-html="
-							textReplaceVariables(model?.profile?.text, layout.iris_variables)
-						" />
-				</template>
-			</ButtonWithLink>
-
-			<!-- Section: Login -->
-			<!-- <span class="">
-                <a v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
-                    :href="model?.login?.link?.href"
-                    :target="model?.login?.link?.target"
-                    class="space-x-1.5 cursor-pointer whitespace-nowrap"
-                    id=""
-                    :style="getStyles(model?.login?.container?.properties)"
-
-                >
-                    <FontAwesomeIcon :icon='faSignIn' class='' fixed-width aria-hidden='true' />
-                    <span v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />
-                </a>
-             </span> -->
-            <a href="/app/login"
-               v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"
-
-            > Login </a>
-
-            <a href="/app/register" class="ml-4"
-               v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
-
-            > Register </a>
-
-
-
-<!--			<Button-->
-<!--				v-if="checkVisible(model?.login?.visible || null, isLoggedIn)"-->
-<!--				icon="fal fa-sign-in">-->
-<!--				<template #label>ss-->
-<!--					<span-->
-<!--						v-html="textReplaceVariables(model?.login?.text, layout.iris_variables)" />-->
-<!--				</template>-->
-<!--			</Button>-->
-
-			<!--   <span class="">
-                <a v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"
-                    :href="model?.register?.link?.href"
-                    :target="model?.register?.link?.target"
-                    class="space-x-1.5 cursor-pointer whitespace-nowrap "
-                    :style="getStyles(model?.register.container?.properties)"
-
-                >
-                    <FontAwesomeIcon :icon='faUserPlus' class='' fixed-width aria-hidden='true' />
-                    <span v-html="textReplaceVariables(model?.register.text, layout.iris_variables)" />
-                </a>
-            </span> -->
-<!--			<ButtonWithLink-->
-<!--				v-if="checkVisible(model?.register?.visible || null, isLoggedIn)"-->
-<!--				url="/app/register"-->
-<!--				icon="fal fa-user-plus"-->
-<!--				type="transparent">-->
-<!--				<template #icon>-->
-<!--					<FontAwesomeIcon-->
-<!--						icon="fal fa-user-plus"-->
-<!--						class="text-white"-->
-<!--						fixed-width-->
-<!--						aria-hidden="true" />-->
-<!--				</template>-->
-
-<!--				<template #label>-->
-<!--					<span-->
-<!--						v-html="textReplaceVariables(model?.register.text, layout.iris_variables)"-->
-<!--						class="text-white" />-->
-<!--				</template>-->
-<!--			</ButtonWithLink>-->
-
-			<!-- Section: LogoutRetina -->
-			<!-- <a v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
-                @click="()=>onLogout()"
-                class="space-x-1.5 whitespace-nowrap "
-                :style="getStyles(model?.logout.container?.properties)"
-
+				href="/app/profile"
+				class="ml-6 mr-4 buttonTopbar whitespace-nowrap"
             >
-                <FontAwesomeIcon :icon='faSignOut' v-tooltip="trans('Log out')" class='' fixed-width aria-hidden='true' />
-                <span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
-            </a> -->
-			<ButtonWithLink
+				<FontAwesomeIcon icon="fal fa-user" class="inline opacity-70" fixed-width aria-hidden="true" />
+				<span v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
+			</a>
+
+
+			<!-- Button: Logout -->
+            <a
 				v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)"
-				url="/app/logout"
-				method="post"
-				:data="{}"
-				icon="fal fa-sign-out"
-				@success="() => (set(layout, ['iris', 'is_logged_in'], false))"
-			>
-				<template #label>
-					<span
-						v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
-				</template>
-			</ButtonWithLink>
+				href="/app/logout"
+				class="ml-6 mr-4 buttonTopbar hover:!text-red-500 whitespace-nowrap"
+            >
+				<FontAwesomeIcon icon="fal fa-sign-out" class="inline opacity-70" fixed-width aria-hidden="true" />
+				<span v-html="textReplaceVariables(model?.logout?.text, layout.iris_variables)" />
+			</a>
+
 		</div>
 	</div>
 </template>
 
-<style></style>
+<style lang="scss" scoped>
+
+.buttonTopbar {
+	@apply font-normal hover:!no-underline hover:text-yellow-500 flex items-center gap-x-1.5 py-1
+}
+</style>
