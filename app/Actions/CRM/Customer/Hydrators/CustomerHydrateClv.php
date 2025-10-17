@@ -23,26 +23,33 @@ class CustomerHydrateClv implements ShouldBeUnique
 
     public string $commandSignature = 'hydrate:customer-clv {customer}';
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int $customerId): string
     {
-        return $customer->id;
+        return $customerId;
     }
 
     public function asCommand(Command $command)
     {
         $customer = Customer::where('slug', $command->argument('customer'))->first();
 
-        $this->handle($customer);
+        $this->handle($customer->id);
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int $customerId): void
     {
-        // Get customer's orders
-        $orders = $customer->orders()->get();
+        $customer = Customer::find($customerId);
 
-        if ($orders->isEmpty()) {
+        if (!$customer) {
+            return;
+        }
+
+        // Get customer's orders
+        $invoices = $customer->invoices()->where('in_process', false)->get();
+
+        if ($invoices->isEmpty()) {
             return; // No orders to calculate CLV
         }
+
         // Calculate for each currency type
         $currencies = ['', '_org_currency', '_grp_currency'];
 
@@ -58,25 +65,18 @@ class CustomerHydrateClv implements ShouldBeUnique
             }
 
             // 1. Calculate Average Purchase Value
-            $totalRevenue = $orders->sum($amountColumn);
-            $totalOrders = $orders->count();
+            $totalRevenue = $invoices->sum($amountColumn);
+            $totalOrders = $invoices->count();
             $averagePurchaseValue = $totalRevenue / $totalOrders;
 
             // 2. Calculate Average Purchase Frequency (orders per time period)
-            $firstOrderDate = $orders->min('created_at');
-            $lastOrderDate = $orders->max('created_at');
+            $firstOrderDate = $invoices->min('created_at');
+            $lastOrderDate = $invoices->max('created_at');
             $daysBetweenFirstAndLast = $firstOrderDate->diffInDays($lastOrderDate);
 
             $ordersPerMonth = $daysBetweenFirstAndLast > 0
                 ? ($totalOrders / $daysBetweenFirstAndLast) * 30
                 : $totalOrders;
-
-            if ($daysBetweenFirstAndLast > 0) {
-                $ordersPerDay = $totalOrders / $daysBetweenFirstAndLast;
-                $averagePurchaseFrequency = $ordersPerDay * 365; // annualized
-            } else {
-                $averagePurchaseFrequency = $totalOrders;
-            }
 
             // 3. Calculate Average Customer Lifespan (in years)
             $customerAge = (int) $customer->created_at->diffInDays(now());
@@ -84,13 +84,6 @@ class CustomerHydrateClv implements ShouldBeUnique
             $monthlyCustomerLifespan = (int) $customer->created_at->diffInMonths(now());
 
             $expectedRemainingLifespan = $monthlyCustomerLifespan / $averageCustomerLifespan;
-
-            // Use predicted lifespan based on churn if available
-            if ($customer->stats->churn_interval) {
-                $predictedLifespan = $customer->stats->churn_interval / 365;
-            } else {
-                $predictedLifespan = $averageCustomerLifespan;
-            }
 
             $customerValue = $monthlyCustomerLifespan * $averagePurchaseValue * $ordersPerMonth;
 
@@ -106,12 +99,12 @@ class CustomerHydrateClv implements ShouldBeUnique
         }
 
         // Calculate average time between orders (only once, currency-independent)
-        $firstOrderDate = $orders->min('date');
-        $lastOrderDate = $orders->max('date');
+        $firstOrderDate = $invoices->min('date');
+        $lastOrderDate = $invoices->max('date');
         $daysBetweenFirstAndLast = $firstOrderDate->diffInDays($lastOrderDate);
 
         $averageTimeBetweenOrders = $daysBetweenFirstAndLast > 0
-            ? ceil($daysBetweenFirstAndLast / max($orders->count() - 1, 1))
+            ? ceil($daysBetweenFirstAndLast / max($invoices->count() - 1, 1))
             : null;
 
         // Calculate days since last order
@@ -140,7 +133,7 @@ class CustomerHydrateClv implements ShouldBeUnique
             : null;
 
         // Add currency-independent stats
-        $stats['average_order_value'] = round($orders->sum('net_amount') / $orders->count(), 2);
+        $stats['average_order_value'] = round($invoices->sum('net_amount') / $invoices->count(), 2);
         $stats['average_time_between_orders'] = $averageTimeBetweenOrders;
         $stats['expected_date_of_next_order'] = $expectedNextOrder;
         $stats['churn_interval'] = $churnInterval;
