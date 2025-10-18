@@ -79,8 +79,8 @@ sub vcl_recv {
         }
 
          if(req.http.x-ban-all){
-            ban("req.url ~ /");
-            return(synth(200, "Ban all"));
+            ban("obj.http.x-aiku-website ~ .");
+            return(synth(200, "Ban all websites"));
          }
 
 
