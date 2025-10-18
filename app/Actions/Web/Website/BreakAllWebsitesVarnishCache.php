@@ -22,7 +22,7 @@ class BreakAllWebsitesVarnishCache extends OrgAction
     {
         $this->sendVarnishBanHttp(
             [
-                'x-ban' => 'all'
+                'x-ban-all' => 'all'
             ],
             $command
         );

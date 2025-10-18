@@ -68,8 +68,23 @@ sub vcl_recv {
         if (client.ip !~ purge) {
             return (synth(405, "Not allowed"));
         }
-        # Ban by host + URL
-        ban("req.http.host == '" + req.http.host + "' && req.url == '" + req.url + "'");
+        if(req.http.x-ban-webpage){
+            ban("obj.http.x-aiku-webpage == "+req.http.x-ban-webpage);
+            return(synth(200, "Ban webpage "+req.http.x-ban-webpage));
+        }
+
+        if(req.http.x-ban-website){
+            ban("obj.http.x-aiku-website == "+req.http.x-ban-website);
+            return(synth(200, "Ban website "+req.http.x-ban-website));
+        }
+
+         if(req.http.x-ban-all){
+            ban("req.url ~ /");
+            return(synth(200, "Ban all"));
+         }
+
+
+
         return (synth(200, "Purged"));
     }
 
