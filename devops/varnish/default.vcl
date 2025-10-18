@@ -8,7 +8,7 @@ import std;
 # - Long TTL for static assets
 # - Safe PURGE (BAN) from localhost/private networks
 
-backend default {
+backend defaultx {
     .host = "10.0.0.3";
     .port = "8080";
     .connect_timeout = 1s;
