@@ -22,12 +22,12 @@ class BreakWebpageVarnishCache extends OrgAction
     public function handle(Webpage $webpage, Command $command = null): Webpage
     {
 
-
-        $banExpr        = "obj.http.x-aiku-webpage == $webpage->id";
-        $varnishCommand = "sudo varnishadm 'ban $banExpr'";
-
-
-        $this->runVarnishCommand($varnishCommand, $command);
+        $this->sendVarnishBanHttp(
+            [
+                'x-ban-webpage' => $webpage->id,
+            ],
+            $command
+        );
 
         return $webpage;
     }
@@ -46,7 +46,7 @@ class BreakWebpageVarnishCache extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'webpage:break_varnish_cache {slug}';
+        return 'varnish:webpage {slug}';
     }
 
     public function asCommand(Command $command): int

@@ -20,9 +20,12 @@ class BreakAllWebsitesVarnishCache extends OrgAction
 
     public function handle(Command $command = null): void
     {
-        $varnishCommand = "sudo varnishadm 'ban req.url ~ .'";
-
-        $this->runVarnishCommand($varnishCommand, $command);
+        $this->sendVarnishBanHttp(
+            [
+                'x-ban' => 'all'
+            ],
+            $command
+        );
     }
 
     public function asController(ActionRequest $request): void
@@ -39,7 +42,7 @@ class BreakAllWebsitesVarnishCache extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'websites:break_varnish_cache';
+        return 'varnish';
     }
 
     public function asCommand(Command $command): int

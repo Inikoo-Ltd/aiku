@@ -10,6 +10,7 @@
 return [
     'cache' => [
         'varnish' => env('IRIS_VARNISH_ENABLED', false),
+        'varnish_host' => env('IRIS_VARNISH_HOST', 'http://127.0.0.1:6082/'),
         'website' => [
             'ttl' => env('IRIS_WEBSITE_CACHE_TTL', 3600), // 1 hour in seconds
             'prefix' => env('IRIS_WEBSITE_CACHE_PREFIX', 'iris_website_cache'),
