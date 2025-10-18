@@ -65,13 +65,13 @@ class CustomerHydrateClv implements ShouldBeUnique
             }
 
             // 1. Calculate Average Purchase Value
-            $totalRevenue = $invoices->sum($amountColumn);
-            $totalOrders = $invoices->count();
+            $totalRevenue         = $invoices->sum($amountColumn);
+            $totalOrders          = $invoices->count();
             $averagePurchaseValue = $totalRevenue / $totalOrders;
 
             // 2. Calculate Average Purchase Frequency (orders per time period)
-            $firstOrderDate = $invoices->min('created_at');
-            $lastOrderDate = $invoices->max('created_at');
+            $firstOrderDate          = $invoices->min('created_at');
+            $lastOrderDate           = $invoices->max('created_at');
             $daysBetweenFirstAndLast = $firstOrderDate->diffInDays($lastOrderDate);
 
             $ordersPerMonth = $daysBetweenFirstAndLast > 0
@@ -79,28 +79,33 @@ class CustomerHydrateClv implements ShouldBeUnique
                 : $totalOrders;
 
             // 3. Calculate Average Customer Lifespan (in years)
-            $customerAge = (int) $customer->created_at->diffInDays(now());
-            $averageCustomerLifespan = $customerAge / 365;
-            $monthlyCustomerLifespan = (int) $customer->created_at->diffInMonths(now());
+            $customerAge = (int)$customer->created_at->diffInDays(now());
 
-            $expectedRemainingLifespan = $monthlyCustomerLifespan / $averageCustomerLifespan;
+
+            $averageCustomerLifespan = $customerAge / 365;
+            $monthlyCustomerLifespan = (int)$customer->created_at->diffInMonths(now());
+
+            $expectedRemainingLifespan=0;
+            if($monthlyCustomerLifespan>0) {
+                $expectedRemainingLifespan = $monthlyCustomerLifespan / $averageCustomerLifespan;
+            }
 
             $customerValue = $monthlyCustomerLifespan * $averagePurchaseValue * $ordersPerMonth;
 
             // 4. Calculate CLV values
-            $historicClv = $averagePurchaseValue * $totalOrders;
+            $historicClv  = $averagePurchaseValue * $totalOrders;
             $predictedClv = $expectedRemainingLifespan * $customerValue;
-            $totalClv = $historicClv + $predictedClv;
+            $totalClv     = $historicClv + $predictedClv;
 
             // Store values with appropriate suffix
-            $stats['historic_clv_amount' . $currencySuffix] = round($historicClv, 2);
-            $stats['predicted_clv_amount' . $currencySuffix] = round($predictedClv, 2);
-            $stats['total_clv_amount' . $currencySuffix] = round($totalClv, 2);
+            $stats['historic_clv_amount'.$currencySuffix]  = round($historicClv, 2);
+            $stats['predicted_clv_amount'.$currencySuffix] = round($predictedClv, 2);
+            $stats['total_clv_amount'.$currencySuffix]     = round($totalClv, 2);
         }
 
         // Calculate average time between orders (only once, currency-independent)
-        $firstOrderDate = $invoices->min('date');
-        $lastOrderDate = $invoices->max('date');
+        $firstOrderDate          = $invoices->min('date');
+        $lastOrderDate           = $invoices->max('date');
         $daysBetweenFirstAndLast = $firstOrderDate->diffInDays($lastOrderDate);
 
         $averageTimeBetweenOrders = $daysBetweenFirstAndLast > 0
@@ -133,11 +138,11 @@ class CustomerHydrateClv implements ShouldBeUnique
             : null;
 
         // Add currency-independent stats
-        $stats['average_order_value'] = round($invoices->sum('net_amount') / $invoices->count(), 2);
+        $stats['average_order_value']         = round($invoices->sum('net_amount') / $invoices->count(), 2);
         $stats['average_time_between_orders'] = $averageTimeBetweenOrders;
         $stats['expected_date_of_next_order'] = $expectedNextOrder;
-        $stats['churn_interval'] = $churnInterval;
-        $stats['churn_risk_prediction'] = round($churnRiskPrediction, 4);
+        $stats['churn_interval']              = $churnInterval;
+        $stats['churn_risk_prediction']       = round($churnRiskPrediction, 4);
 
         $customer->stats()->update($stats);
     }
