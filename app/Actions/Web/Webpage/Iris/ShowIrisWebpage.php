@@ -205,7 +205,10 @@ class ShowIrisWebpage
                 $webpageData = $webpageData.'?'.$queryString;
             }
 
-            return redirect()->to($webpageData, 301);
+            return redirect()->to($webpageData, 301)
+                ->withHeaders([
+                    'x-original-referer'=>request()->headers->get('referer', '')
+                ]);
         }
 
 
