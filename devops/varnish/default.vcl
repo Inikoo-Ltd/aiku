@@ -166,9 +166,6 @@ sub vcl_recv {
     # Derive login header from cookie (used by app and cache key)
     call set_login_flag_from_cookie;
 
-
-
-
     # Do not cache static files: always pass through Varnish
     if (req.url ~ "\.(pdf|csv|css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$") {
         return (pass);
@@ -261,8 +258,12 @@ sub vcl_deliver {
     }
 
      if (req.http.X-Original-Referer) {
-            set resp.http.X-Original-Referer = req.http.X-Original-Referer;
-        }
+        set resp.http.X-Original-Referer = req.http.X-Original-Referer;
+     }
+
+      if (req.http.X-Stripped-Query) {
+        set resp.http.X-Traffic-Sources = req.http.X-Stripped-Query;
+      }
 
 
     # If response is a redirect (3xx), set client cache to 1 day
