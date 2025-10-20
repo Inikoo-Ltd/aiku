@@ -106,7 +106,7 @@ const closeSidebar = () => {
 </script>
 
 <template>
-    <div class="grid h-full bg-white" :class="[
+    <div class="grid h-full" :class="[
         (activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'grid-cols-2',
         (activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'grid-cols-3']"
     >
