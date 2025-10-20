@@ -8,13 +8,13 @@
 
 namespace App\Actions\Iris;
 
+use App\Actions\IrisAction;
 use App\Actions\Retina\SysAdmin\ProcessRetinaWebUserRequest;
-use App\Actions\RetinaAction;
 use App\Actions\Traits\CanLogWebUserRequest;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class RetinaLogWebUserRequest extends RetinaAction
+class IrisLogWebUserRequest extends IrisAction
 {
     use AsAction;
     use CanLogWebUserRequest;
