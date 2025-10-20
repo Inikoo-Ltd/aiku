@@ -133,7 +133,6 @@ const emits = defineEmits<{
 }>()
 
 const layout = inject('layout', {})
-console.log(layout)
 const _bubbleMenu = ref(null)
 const showDialog = ref(false)
 const contentResult = ref<string>()
@@ -889,7 +888,7 @@ onMounted(() => {
                                             <div class="mb-2">
                                                 <Select size="small"
                                                     :modelValue="editorInstance.getAttributes('tableCell')?.borderWidth"
-                                                    @update:modelValue="(e) => (console.log('qqq'), editorInstance?.chain().focus().setCellAttribute('borderWidth', e).run())"
+                                                    @update:modelValue="(e) => (editorInstance?.chain().focus().setCellAttribute('borderWidth', e).run())"
                                                     :options="tableBorderWidthOptions" optionLabel="label"
                                                     optionValue="value" :placeholder="trans('Select border width')"
                                                     fluid />

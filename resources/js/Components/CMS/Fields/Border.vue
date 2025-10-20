@@ -12,12 +12,12 @@ const emits = defineEmits<{
 }>()
 
 const localModelTemplate = {
-  top: { value: null },
-  left: { value: null },
+  top: { value: {} },
+  left: { value: {} },
   unit: 'px',
   color: null,
-  right: { value: null },
-  bottom: { value: null },
+  right: { value: {} },
+  bottom: { value: {} },
   rounded: {
     unit: 'px',
     topleft: { value: null },

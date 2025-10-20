@@ -1,16 +1,11 @@
 <script setup lang="ts">
-import { Swiper, SwiperSlide } from 'swiper/vue'
-import 'swiper/css'
-import 'swiper/css/pagination'
-import 'swiper/css/navigation'
-
-import { Pagination, Autoplay } from 'swiper/modules'
-import { getStyles } from '@/Composables/styles'
-import { faImage } from '@fas'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import Carousel from 'primevue/carousel'
 import Image from '@/Components/Image.vue'
 import { ulid } from 'ulid'
-import { inject } from 'vue'
+import { inject, ref, computed } from 'vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faImage } from '@fal'
+import { getStyles } from '@/Composables/styles'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 
 const props = defineProps<{
@@ -38,69 +33,128 @@ const props = defineProps<{
 }>()
 
 const layout: any = inject("layout", {})
-const keySwiper = ulid()
+const hasCards = computed(() =>
+  Array.isArray(props.fieldValue?.carousel_data?.cards) &&
+  props.fieldValue.carousel_data.cards.length > 0
+)
+const slidesPerView = computed(() =>
+  props.fieldValue?.carousel_data?.carousel_setting?.slidesPerView?.[props.screenType] || 1
+)
+const isLooping = computed(() => {
+  const settingsLoop = props.fieldValue?.carousel_data?.carousel_setting?.loop || false
+  return settingsLoop && props.fieldValue.carousel_data.cards.length > slidesPerView.value
+})
+const screenType = computed(() => props.screenType)
+const getHref = (data: any) => data?.link?.href
 
-const getHref = (item: any) => !!item?.link?.href
+
+const cardStyle = getStyles(props.fieldValue?.carousel_data?.card_container?.properties, props.screenType, false)
+
+
+const responsiveOptions = computed(() => {
+  const settings = props.fieldValue?.carousel_data?.carousel_setting || {}
+  return [
+    {
+      breakpoint: '1200px',
+      numVisible: settings.slidesPerView?.desktop || 4,
+      numScroll: 1
+    },
+    {
+      breakpoint: '992px',
+      numVisible: settings.slidesPerView?.tablet || 2,
+      numScroll: 1
+    },
+    {
+      breakpoint: '576px',
+      numVisible: settings.slidesPerView?.mobile || 1,
+      numScroll: 1
+    }
+  ]
+})
 </script>
 
 <template>
-  <div id="carousel">
+
+  <div id="carousel" class="relative">
     <div :style="{
-      ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-      ...getStyles(fieldValue?.container?.properties, screenType)
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+      ...getStyles(fieldValue?.container?.properties, props.screenType)
     }">
-      <Swiper :id="`carousel_1_iris_${keySwiper}`" :key="keySwiper" class="touch-pan-x touch-pan-y"
-        direction="horizontal" :passiveListeners="true" :simulateTouch="false" :touchStartPreventDefault="false"
-        :touchRatio="1" :touchAngle="30" :loop="fieldValue?.carousel_data?.carousel_setting?.loop"
-        :autoplay="fieldValue?.carousel_data?.carousel_setting?.autoplay" :pagination="{ clickable: true }"
-        :spaceBetween="fieldValue?.carousel_data?.carousel_setting?.spaceBetween || 0"
-        :slidesPerView="fieldValue?.carousel_data?.carousel_setting?.slidesPerView?.desktop" :breakpoints="{
-          0: { slidesPerView: fieldValue?.carousel_data?.carousel_setting?.slidesPerView?.mobile },
-          640: { slidesPerView: fieldValue?.carousel_data?.carousel_setting?.slidesPerView?.mobile },
-          768: { slidesPerView: fieldValue?.carousel_data?.carousel_setting?.slidesPerView?.tablet },
-          1024: { slidesPerView: fieldValue?.carousel_data?.carousel_setting?.slidesPerView?.desktop }
-        }" :modules="[Pagination, Autoplay]">
-        <SwiperSlide v-for="(card, index) in fieldValue.carousel_data.cards" :key="index" class="flex flex-col"
-          :style="{ height: '100%', overflow: 'auto', ...getStyles(fieldValue?.carousel_data?.card_container?.properties, screenType) }">
-          <component :is="getHref(card) ? LinkIris : 'div'" :href="card?.link?.href" :target="card?.link?.target" :canonical_url="card?.link?.canonical_url" :type="card?.link?.type"
-            class="flex-1 flex flex-col">
-            <template #default>
+      <Carousel v-show="hasCards" :value="fieldValue.carousel_data.cards" :numVisible="slidesPerView"
+        :circular="isLooping" :autoplayInterval="fieldValue?.carousel_data?.carousel_setting?.autoplay ? 500 : 0"
+        :responsiveOptions="responsiveOptions" class="w-full">
+        <template #item="{ data, index }" :showNavigators="false" :showIndicators="false">
+          <div class="card flex flex-col h-full">
+            <component :is="getHref(data) ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
+              :href="data?.link?.href" :target="data?.link?.target" class="flex flex-1 flex-col">
+              <!-- Image Container -->
               <div class="flex justify-center overflow-visible"
-                :style="getStyles(fieldValue?.carousel_data?.card_container?.container_image, screenType)">
+                :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)">
                 <div :class="[
-                  !card?.image?.source && 'w-full  flex items-center justify-center overflow-auto',
-                  'overflow-hidden'
-                ]" :style="getStyles(fieldValue?.carousel_data?.card_container?.image_properties, screenType)">
-                  <Image v-if="card?.image?.source" :src="card.image.source" :alt="card.image.alt || `image-${index}`"
-                    :style="getStyles(card?.image?.properties, screenType)" />
-                  <FontAwesomeIcon v-else :icon="faImage" class="text-gray-400 text-4xl" />
+                  'overflow-hidden',
+                  !data?.image?.source && 'w-full flex items-center justify-center overflow-auto',
+                ]">
+                  <Image :src="data.image.source" :alt="data.image.alt || `image-${index}`"
+                    :style="getStyles(data.image?.properties, screenType)" class="object-cover w-full h-auto" />
                 </div>
               </div>
 
-              <div v-if="fieldValue?.carousel_data?.carousel_setting?.use_text"
-                class="p-4 flex-1 flex flex-col justify-between">
-                <div v-html="card.text" />
+              <!-- Text Content -->
+              <div v-if="fieldValue.carousel_data.carousel_setting?.use_text"
+                class="p-4 flex flex-col flex-1 justify-between">
+                <div v-html="data.text" class="text-center leading-relaxed" />
               </div>
-            </template>
-          </component>
-        </SwiperSlide>
-      </Swiper>
+            </component>
+          </div>
+        </template>
+      </Carousel>
+
     </div>
   </div>
 </template>
 
-<style scoped lang="scss">
-:deep(.swiper-pagination-bullet) {
-  background-color: #d1d5db !important; // Tailwind's gray-300
-  opacity: 1;
-  transition: background-color 0.3s ease;
+<style scoped>
+:deep(.p-carousel-indicator-list) {
+  display: none;
 }
 
-:deep(.swiper-pagination-bullet-active) {
-  background: #4b5563 !important; // Tailwind's gray-600
+.card {
+  background: v-bind('cardStyle?.background || "transparent"') !important;
+
+  /* Padding */
+  padding-top: v-bind('cardStyle?.paddingTop || "0px"') !important;
+  padding-right: v-bind('cardStyle?.paddingRight || "0px"') !important;
+  padding-bottom: v-bind('cardStyle?.paddingBottom || "0px"') !important;
+  padding-left: v-bind('cardStyle?.paddingLeft || "0px"') !important;
+
+  /* Margin */
+  margin-top: v-bind('cardStyle?.marginTop || "0px"') !important;
+  margin-right: v-bind('cardStyle?.marginRight || "0px"') !important;
+  margin-bottom: v-bind('cardStyle?.marginBottom || "0px"') !important;
+  margin-left: v-bind('cardStyle?.marginLeft || "0px"') !important;
+
+  /* Border radius */
+  border-top-left-radius: v-bind('cardStyle?.borderTopLeftRadius || "0px"') !important;
+  border-top-right-radius: v-bind('cardStyle?.borderTopRightRadius || "0px"') !important;
+  border-bottom-left-radius: v-bind('cardStyle?.borderBottomLeftRadius || "0px"') !important;
+  border-bottom-right-radius: v-bind('cardStyle?.borderBottomRightRadius || "0px"') !important;
+
+  /* Border sides individually */
+  border-top: v-bind('cardStyle?.borderTop || "0px solid transparent"') !important;
+  border-bottom: v-bind('cardStyle?.borderBottom || "0px solid transparent"') !important;
+  border-left: v-bind('cardStyle?.borderLeft || "0px solid transparent"') !important;
+  border-right: v-bind('cardStyle?.borderRight || "0px solid transparent"') !important;
 }
 
-.swiper {
-  touch-action: pan-y;
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>
+

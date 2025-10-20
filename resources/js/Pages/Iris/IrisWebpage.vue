@@ -54,7 +54,6 @@ onMounted(() => {
 
   
   script.textContent = structuredData
-console.log('structuredData',script)
   document.head.appendChild(script)
 }
 
