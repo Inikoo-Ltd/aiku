@@ -6,7 +6,7 @@
 */
 
 
-interface ProductCategoryMenu {
+export interface ProductCategoryMenu {
     name: string
     url: string
     sub_departments: {
@@ -63,9 +63,14 @@ export const menuCategoriesToMenuStructure = (categories: ProductCategoryMenu[])
         return {
             id: `menu_dept_${department.name.toLowerCase().replace(/\s+/g, '_')}`,
             icon: {},
-            type: 'multiple',
+            type: department.sub_departments.length ? 'multiple' : 'single',
             label: department.name,
-            subnavs: department.sub_departments.map((subDept) => {
+            link: {
+                href: department.url,
+                target: "_self",
+                type: "internal",
+            },
+            subnavs: department.sub_departments.length ? department.sub_departments.map((subDept) => {
                 return {
                     id: `menu_subdept_${subDept.name.toLowerCase().replace(/\s+/g, '_')}`,
                     link: {
@@ -75,7 +80,7 @@ export const menuCategoriesToMenuStructure = (categories: ProductCategoryMenu[])
                         target: "_self",
                         workshop: null
                     },
-                    links: subDept.families.map((family) => {
+                    links: subDept.families.length ? subDept.families.map((family) => {
                         return {
                             id: `menu_family_${family.name.toLowerCase().replace(/\s+/g, '_')}`,
                             icon: {},
@@ -88,10 +93,10 @@ export const menuCategoriesToMenuStructure = (categories: ProductCategoryMenu[])
                             },
                             label: family.name
                         }
-                    }),
+                    }) : undefined,
                     title: subDept.name
                 }
-            })
+            }) : undefined
         }
     })
 
