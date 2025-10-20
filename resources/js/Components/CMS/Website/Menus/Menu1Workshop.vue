@@ -115,9 +115,10 @@ const computedSelectedSidebarData = computed(() => {
     }
 
     const selectedSidebar = sidebarMenu?.value || layout.iris?.sidebar
+    const selectedProductCategories = selectedSidebar?.data?.fieldValue?.product_categories || selectedSidebar.product_categories
 
     const customNavigationTop = selectedSidebar?.data?.fieldValue?.navigation || []
-    const productCategoriesAuto = menuCategoriesToMenuStructure(selectedSidebar?.data?.fieldValue?.product_categories) || []
+    const productCategoriesAuto = menuCategoriesToMenuStructure(selectedProductCategories) || []
     const customNavigationBottom = selectedSidebar?.data?.fieldValue?.navigation_bottom || []
 
     return [
