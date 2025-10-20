@@ -175,9 +175,9 @@ task('deploy:flush-varnish', function () {
     }
 
     if ($shouldFlush) {
-        writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan websites:break_varnish_cache...');
+        writeln('SSR checksum changed (or missing). Flushing Varnish cache via artisan varnish...');
         try {
-            artisan('websites:break_varnish_cache', ['skipIfNoEnv', 'showOutput'])();
+            artisan('varnish', ['skipIfNoEnv', 'showOutput'])();
             writeln('Varnish cache flush command executed.');
         } catch (\Throwable $e) {
             writeln('Error flushing Varnish cache: ' . $e->getMessage());

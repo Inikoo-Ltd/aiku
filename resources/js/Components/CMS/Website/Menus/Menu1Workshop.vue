@@ -115,7 +115,7 @@ const computedSelectedSidebarData = computed(() => {
     }
 
     const selectedSidebar = sidebarMenu?.value || layout.iris?.sidebar
-    const selectedProductCategories = selectedSidebar?.data?.fieldValue?.product_categories || selectedSidebar.product_categories
+    const selectedProductCategories = selectedSidebar?.data?.fieldValue?.product_categories || selectedSidebar?.product_categories
 
     const customNavigationTop = selectedSidebar?.data?.fieldValue?.navigation || []
     const productCategoriesAuto = menuCategoriesToMenuStructure(selectedProductCategories) || []
@@ -160,10 +160,14 @@ watch(
             <div v-if="layout.retina?.type !== 'fulfilment'" class="relative"
                 @mouseenter="() => (debSetCollapsedFalse(), debSetCollapsedTrue.cancel())">
                 <div @click="() => { isOpenMenuMobile = true }"
-                    class="flex items-center gap-x-2 h-fit px-5 py-1 text-sm rounded-full hover:bg-gray-100 border border-gray-300 w-fit cursor-pointer whitespace-nowrap">
-                    <FontAwesomeIcon icon="fal fa-bars" class="text-gray-400 text-[10px]" fixed-width
-                        aria-hidden="true" />
-                    <span class="font-medium text-gray-600">{{ trans("All Categories") }}</span>
+                    class="flex items-center gap-x-2 h-fit px-5 py-1 text-sm rounded-full hover:bg-gray-400/20 w-fit cursor-pointer whitespace-nowrap"
+                    :style="{
+                        border: `solid 1px ${fieldValue?.navigation_container?.properties?.text?.color}`,
+                        color: fieldValue?.navigation_container?.properties?.text?.color
+                    }"
+                >
+                    <FontAwesomeIcon icon="fal fa-bars" class="opacity-80 text-[10px]" fixed-width aria-hidden="true" />
+                    <span class="font-medium">{{ trans("All Categories") }}</span>
                 </div>
                 <Transition>
                     <div v-if="isAbleScrollToLeft"
