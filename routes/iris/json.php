@@ -45,7 +45,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
 
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
-    Route::get('log-web-user-request', RetinaLogWebUserRequest::class)->name('log_web_user_request');
+    Route::get('log-web-user-request', RetinaLogWebUserRequest::class)->name('hit');
 
     Route::get('collection/{collection:id}/portfolio-data', GetIrisPortfoliosInCollection::class)->name('collection.portfolio_data');
     Route::get('tags', GetIrisTags::class)->name('tags.index');

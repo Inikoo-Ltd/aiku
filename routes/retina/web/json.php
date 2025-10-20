@@ -41,4 +41,4 @@ Route::get('customer-sales-channel/{customerSalesChannel:id}/woo-products', GetW
 Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', GetEbayProducts::class)->name('dropshipping.customer_sales_channel.ebay_products');
 Route::get('first-hit', GetRetinaFirstHitData::class)->name('first_hit');
 Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
-Route::get('log-web-user-request', RetinaLogWebUserRequest::class)->name('log_web_user_request');
+Route::get('log-web-user-request', RetinaLogWebUserRequest::class)->name('hit');
