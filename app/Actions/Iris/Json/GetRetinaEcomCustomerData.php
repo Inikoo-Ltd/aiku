@@ -9,50 +9,29 @@
 namespace App\Actions\Iris\Json;
 
 use App\Actions\RetinaAction;
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Actions\Traits\HasIrisUserData;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetRetinaEcomCustomerData extends RetinaAction
 {
+    use HasIrisUserData;
+
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function handle(): array
     {
         return $this->getIrisUserData();
     }
 
-    protected function getIrisUserData(): array
-    {
-        $webUser = $this->webUser;
-        $customer = $this->customer ?? null;
-        $shop = $this->shop ?? null;
-
-        $cartCount  = 0;
-        $cartAmount = 0;
-
-        if ($shop && $shop->type === ShopTypeEnum::B2B && $customer?->orderInBasket) {
-            $orderInBasket = $customer->orderInBasket;
-            $cartCount     = $orderInBasket->number_item_transactions ?? 0;
-            $cartAmount    = $orderInBasket->total_amount ?? 0;
-        }
-
-        return [
-            'is_logged_in' => true,
-            'variables' => [
-                'reference'        => $customer?->reference ?? '',
-                'name'             => $webUser->contact_name ?? '',
-                'username'         => $webUser->username ?? '',
-                'email'            => $webUser->email ?? '',
-                'favourites_count' => $customer?->stats?->number_favourites ?? 0,
-                'back_in_stock_count'   => $customer->backInStockReminder->count(),
-                'cart_count'       => $cartCount,
-                'cart_amount'      => $cartAmount,
-            ],
-        ];
-    }
-
+    /**
+     * @throws \Psr\Container\ContainerExceptionInterface
+     * @throws \Psr\Container\NotFoundExceptionInterface
+     */
     public function asController(ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);
-
 
         return $this->handle();
     }
