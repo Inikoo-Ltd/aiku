@@ -53,37 +53,54 @@ export const initialiseIrisVarnish = async (layoutStore) => {
         }
     
         const varnish = await getVarnishData()
-    
-        if (!varnish) {
-            /* localStorage.setItem('iris', JSON.stringify({
+        if (!varnish) return
+
+        console.log('Initial Varnish Response:', varnish)
+
+        // --- Handle Not Logged In ---
+        if (!varnish.is_logged_in) {
+            localStorage.setItem('iris', JSON.stringify({
+                ...storageIris,
                 is_logged_in: false,
-                iris_variables : null
+                iris_variables: varnish?.variables ?? null,
             }))
-            layout.iris.is_logged_in = false */
+
+            layout.user = varnish.auth?.user || null
+            if (layout.user?.customerSalesChannels) {
+                layout.user.customerSalesChannels = null
+            }
+
+            layout.iris.is_logged_in = false
+            layout.iris.customer = null
             return
         }
-    
-        if (varnish?.variables) {
-            layout.iris_variables = varnish?.variables
+
+        // --- Handle Logged In ---
+        if (varnish.is_logged_in && varnish.variables) {
+            layout.iris_variables = varnish.variables
+
+            localStorage.setItem('iris', JSON.stringify({
+                ...storageIris,
+                is_logged_in: true,
+                iris_variables: varnish.variables,
+            }))
+
+            layout.user = varnish.auth?.user || null
+            if (varnish.auth?.customerSalesChannels) {
+                layout.user.customerSalesChannels = varnish.auth.customerSalesChannels
+            }
+
+            layout.iris.is_logged_in = true
+            layout.iris.customer = varnish.customer ?? null
         }
-    
-        localStorage.setItem('iris', JSON.stringify({
-            ...storageIris,
-            is_logged_in: varnish?.is_logged_in,
-            iris_variables : varnish?.variables
-        }))
-    
-        layout.user = varnish.auth?.user
-        if(varnish.auth?.customerSalesChannels) {
-            layout.user.customerSalesChannels = varnish.auth?.customerSalesChannels
-        }
-        
-        layout.iris.is_logged_in = varnish?.is_logged_in
-        layout.iris.customer = varnish?.customer
-    
-        for(const item in varnish?.variables?.traffic_source_cookies){
-            let data = varnish?.variables?.traffic_source_cookies[item]
-            Cookies.set(item,data.value,data.duration)
+
+        // --- Set Traffic Source Cookies ---
+        if (varnish?.traffic_source_cookies) {
+            for (const [key, cookieData] of Object.entries(varnish.traffic_source_cookies)) {
+                if (cookieData?.value) {
+                    Cookies.set(key, cookieData.value, cookieData.duration)
+                }
+            }
         }
 }
 
@@ -113,6 +130,8 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
         }
     
         const varnish = await getVarnishData()
+
+        console.log('Customer Data',varnish)
     
         if (!varnish) {
             return
@@ -126,7 +145,7 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
 
 export const initialiseLogUser = async (layout) => {
         const isAppRoute = window.location.pathname.startsWith('/app')
-        const selectedUrl = !isAppRoute ? '/json/log-web-user-request' : '/app/json/log-web-user-request'
+        const selectedUrl = !isAppRoute ? '/json/hit' : '/app/json/hit'
         const currentUrl = new URL(window.location.href)
         const headers = {
             'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '',
@@ -146,5 +165,7 @@ export const initialiseLogUser = async (layout) => {
         }
     
         const logDataUser = await getLogUser()
+
+        console.log('logDataUser',logDataUser)
 }
 
