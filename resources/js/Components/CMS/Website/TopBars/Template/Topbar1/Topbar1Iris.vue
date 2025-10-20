@@ -144,7 +144,7 @@ watch(
             <!-- Section: My account -->
             <LinkIris href="/app/dashboard" :type="'internal'">
                 <Button
-                    v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping') && !layout.iris_varnish?.isFetching"
+                    v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping')"
                     type="transparent"
                     v-tooltip="trans('My account')"
                     class="button"
@@ -158,7 +158,7 @@ watch(
             <!-- Section: Profile -->
             <LinkIris :href="layout.retina?.type == 'b2b' ? '/app/dashboard' : '/app/profile'" :type="'internal'">
                 <Button
-                    v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) )&& !layout.iris_varnish?.isFetching"
+                    v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))"
                     v-tooltip="trans('Profile')"
                     icon="fal fa-user"
                     type="transparent"
@@ -177,7 +177,7 @@ watch(
             <!-- Section: Back in stock -->
             <LinkIris href="/app/back-in-stocks" :type="'internal'">
                 <Button
-                    v-if="(layout.app?.environment === 'local' && checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping') && !layout.iris_varnish?.isFetching"
+                    v-if="(layout.app?.environment === 'local' && checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping')"
                     v-tooltip="trans('Reminder back in stock')"
                     type="transparent"
                     class="button"
@@ -196,7 +196,7 @@ watch(
             <!-- Section: Favourite -->
             <LinkIris href="/app/favourites" :type="'internal'">
                 <Button
-                    v-if="(checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping') && !layout.iris_varnish?.isFetching"
+                    v-if="(checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping')"
                     v-tooltip="trans('Favourites')"
                     icon="fal fa-heart"
                     type="transparent"
@@ -220,7 +220,7 @@ watch(
             <!-- Section: Basket (cart) -->
             <LinkIris href="/app/basket" :type="'internal'">
                 <Button
-                    v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b') && !layout.iris_varnish?.isFetching"
+                    v-if="(checkVisible(model?.cart?.visible || null, isLoggedIn) && layout.retina?.type == 'b2b')"
                     v-tooltip="trans('Cart count and amount')"  
                     type="transparent"
                     class="button"
@@ -245,7 +245,7 @@ watch(
             <!-- Section: Register -->
             <LinkIris href="/app/register" :type="'internal'">
                 <Button
-                    v-if="(checkVisible(model?.register?.visible || null, isLoggedIn)) && !layout.iris_varnish?.isFetching"
+                    v-if="(checkVisible(model?.register?.visible || null, isLoggedIn))"
                     icon="fal fa-user-plus"
                     type="transparent"
                     class="button"
