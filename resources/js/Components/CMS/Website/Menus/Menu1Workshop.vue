@@ -247,12 +247,13 @@ watch(
                         </component>
 
                         <div v-for="linkData in subnav?.links" :key="subnav.title" class="navigation">
-                            <LinkIris class="text-sm font-bold " :href="linkData.link.href"
+                            <LinkIris v-if="linkData.link?.href" class="text-sm font-bold " :href="linkData.link.href"
                                 :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
                                 <template #default>
                                     <div class="text-sm text-gray-500 font-medium navigation">{{ linkData.label }}</div>
                                 </template>
                             </LinkIris>
+                            <div v-else class="text-sm text-gray-500 font-medium navigation">{{ linkData.label }}</div>
                         </div>
                     </div>
                 </div>
