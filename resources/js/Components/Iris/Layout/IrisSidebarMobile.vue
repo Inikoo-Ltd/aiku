@@ -5,7 +5,7 @@ import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronRight, faExternalLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import { faSignIn, faSignOut, faTimesCircle } from '@fas'
@@ -45,6 +45,11 @@ const layout = inject('layout', retinaLayoutStructure)
 
 const isLoggedIn = inject('isPreviewLoggedIn', false)
 const onLogout = inject('onLogout', () => console.log('Logout function not injected'))
+
+const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
+const closeSidebar = () => {
+    isOpenMenuMobile.value = false;
+}
 </script>
 
 <template>
@@ -70,6 +75,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                                 :key="subDeptIndex" class="mb-6">
                                 <LinkIris v-if="subDept?.url !== null" :href="internalHref(subDept)"
                                     :target="getTarget(subDept)"
+                                    @success="() => closeSidebar()"
                                     class="block text-base font-bold mb-2"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                     {{ subDept.name }}
@@ -82,6 +88,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                                     <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
                                         <LinkIris 
                                             v-if="family?.url !== null" :href="internalHref(family)" :target="getTarget(family)"
+                                            @success="() => closeSidebar()"
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                             class="block text-sm relative hover:text-primary transition-all">
                                             <span class="absolute left-0 -ml-4">–</span>
@@ -104,6 +111,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     <div v-else class="px-2 py-2 border-b">
                         <LinkIris v-if="customTopItem?.url !== null" :href="internalHref(customTopItem)"
                             :target="getTarget(customTopItem)"
+                            @success="() => closeSidebar()"
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                             class="font-bold">
                             {{ customTopItem.name }}
@@ -124,7 +132,19 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     <DisclosureButton class="w-full text-left px-2 py-2 font-semibold border-b">
                         <div class="flex justify-between items-center xtext-lg"
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
-                            <span>{{ category.name }}</span>
+                            <!-- <span>{{ category.name }}</span> -->
+                            <LinkIris 
+                                v-if="category?.url !== null" :href="internalHref(category)" :target="getTarget(category)"
+                                @success="() => closeSidebar()"
+                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                class="block text-sm relative hover:text-primary transition-all">
+                                {{ category.name }}
+                            </LinkIris>
+                            <span v-else
+                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                class="block text-sm relative">
+                                {{ category.name }}
+                            </span>
                             <FontAwesomeIcon :icon="faChevronCircleDown" fixed-width
                                 :class="{ 'rotate-180': open, 'transition-transform duration-300': true }" />
                         </div>
@@ -135,6 +155,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                             :key="subDeptIndex" class="mb-6">
                             <LinkIris
                                 v-if="subDept?.url !== null"
+                                @success="() => closeSidebar()"
                                 :href="internalHref(subDept)"
                             >
                                 <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }"
@@ -152,6 +173,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                                 <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
                                     <LinkIris
                                         v-if="family?.url !== null" 
+                                        @success="() => closeSidebar()"
                                         :href="internalHref(family)"
                                     >
                                         <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
@@ -177,6 +199,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                 <div v-else class="px-2 py-2 border-b">
                     <LinkIris
                         v-if="category?.url !== null"
+                        @success="() => closeSidebar()"
                         :href="internalHref(category)"
                         :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                         class="font-bold">
@@ -210,6 +233,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                                 :key="subDeptIndex" class="mb-6">
                                 <LinkIris v-if="subDept?.url !== null" :href="internalHref(subDept)"
                                     class="block text-base font-bold mb-2"
+                                    @success="() => closeSidebar()"
                                     :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                     {{ subDept.name }}
                                 </LinkIris>
@@ -222,6 +246,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                                     <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
                                         <LinkIris 
                                             v-if="family?.url !== null" :href="internalHref(family)" :target="getTarget(family)"
+                                            @success="() => closeSidebar()"
                                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                             class="block text-sm relative hover:text-primary transition-all">
                                             <span class="absolute left-0 -ml-4">–</span>
@@ -245,6 +270,7 @@ const onLogout = inject('onLogout', () => console.log('Logout function not injec
                     <div v-else class="px-2 py-2 border-b">
                         <LinkIris v-if="customItem?.url !== null" :href="internalHref(customItem)"
                             :target="getTarget(customItem)"
+                            @success="() => closeSidebar()"
                             :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                             class="font-bold">
                             {{ customItem.name }}

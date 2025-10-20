@@ -150,14 +150,28 @@ const closeSidebar = () => {
 
             <!-- Product Categories List -->
             <div v-for="(item, index) in sortedProductCategories" :key="index"
-                class="p-2 px-4 flex items-center justify-between cursor-pointer"
+                class="p-2 px-4 flex items-center justify-between"
                 :class="[
                     activeIndex === index
-                        ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
-                        : ' hover:bg-gray-50'
-                ]" @click="setActiveCategory(index)">
-                <div>{{ item.name }}</div>
-                <FontAwesomeIcon :icon="faChevronRight" fixed-width class="text-xs" />
+                        ? ` cursor-pointer bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
+                        : item.sub_departments?.length
+                            ? 'cursor-pointer hover:bg-gray-50'
+                            : ''
+                ]" @click="item.sub_departments?.length ? setActiveCategory(index) : false">
+                <LinkIris
+                    v-if="item.url"
+                    :href="internalHref(item)"
+                    class="hover:underline"
+                    @success="() => closeSidebar()"
+                    :type="item.type"
+                    :target="item.target"
+                >
+                    {{ item.name }}
+                </LinkIris>
+                <div v-else>
+                    {{ item.name }}
+                </div>
+                <FontAwesomeIcon v-if="item.sub_departments?.length" :icon="faChevronRight" fixed-width class="text-xs" />
             </div>
 
             <!-- Section: Bottom navigation -->
@@ -208,7 +222,19 @@ const closeSidebar = () => {
                                 ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
                                 : 'hover:bg-gray-50 text-gray-700'
                         ]" @click="changeActiveSubIndex(sIndex)">
-                        <div>{{ sub.name }}</div>
+                        <LinkIris
+                            v-if="sub.url"
+                            :href="internalHref(sub)"
+                            class="hover:underline"
+                            @success="() => closeSidebar()"
+                            :type="sub.type"
+                            :target="sub.target"
+                        >
+                            {{ sub.name }}
+                        </LinkIris>
+                        <div v-else>
+                            {{ sub.name }}
+                        </div>
                         <FontAwesomeIcon :icon="faChevronRight" fixed-width class="text-xs" />
                     </div>
 
@@ -278,7 +304,7 @@ const closeSidebar = () => {
 
                 <!-- No subdepartments message -->
                 <div v-if="(activeIndex !== null && !sortedSubDepartments?.length) || (activeCustomIndex !== null && !customSubDepartments?.length) || (activeCustomTopIndex !== null && !customTopSubDepartments?.length)"
-                    class="p-2 text-gray-400 italic">
+                    class="px-4 text-gray-400 italic">
                     {{ trans("No subdepartments available") }}
                 </div>
             </div>
