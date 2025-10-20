@@ -797,6 +797,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('images/header', [UploadImagesToWebsite::class, 'header'])->name('header.images.store');
     Route::post('images/footer', [UploadImagesToWebsite::class, 'footer'])->name('footer.images.store');
     Route::post('images/favicon', [UploadImagesToWebsite::class, 'favicon'])->name('favicon.images.store');
+    Route::post('images/sidebar', [UploadImagesToWebsite::class, 'sidebar'])->name('sidebar.images.store');
 
 
     Route::post('/banner', StoreBanner::class)->name('banner.store');
