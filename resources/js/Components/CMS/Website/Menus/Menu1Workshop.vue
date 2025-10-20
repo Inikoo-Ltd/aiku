@@ -220,7 +220,7 @@ watch(
                 :class="isCollapsedOpen ? 'border-gray-300 ' : 'border-t-0'"
                 :style="getStyles(fieldValue?.container?.properties, screenType)">
                 <div class="grid grid-cols-4 gap-8 p-6">
-                    <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="space-y-4">
+                    <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="">
                         <component
                             :is="subnav?.link?.href ? LinkIris : 'div'"
                             :href="subnav?.link?.href"
@@ -245,7 +245,7 @@ watch(
                                 class="text-[10px] text-gray-400" />
                         </component>
 
-                        <div v-for="linkData in subnav?.links" :key="subnav.title" class="space-y-4 navigation">
+                        <div v-for="linkData in subnav?.links" :key="subnav.title" class="navigation">
                             <LinkIris class="text-sm font-bold " :href="linkData.link.href"
                                 :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
                                 <template #default>

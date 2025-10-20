@@ -21,12 +21,18 @@ export const initialiseIrisVarnish = async (layoutStore) => {
     
         const isAppRoute = window.location.pathname.startsWith('/app')
         const selectedUrl = !isAppRoute ? '/json/first-hit' : '/app/json/first-hit'
+        const currentUrl = new URL(window.location.href)
+        const headers = {
+            'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '',
+            'X-Original-Referer': currentUrl.origin + currentUrl.pathname,
+            'X-Requested-With': 'XMLHttpRequest',
+        }
     
         // Fetch: auth_data (GetIrisFirstHitData)
         const getVarnishData = async () => {
             try {
                 set(layout, ['iris_varnish', 'isFetching'], true)
-                const response = await axios.get(selectedUrl)
+                const response = await axios.get(selectedUrl,{ headers })
                 set(layout, ['iris_varnish', 'isFetching'], false)
     
                 // console.log('Iris Varnish', response.data)
@@ -85,11 +91,17 @@ export const initialiseIrisVarnish = async (layoutStore) => {
 export const initialiseIrisVarnishCustomerData = async (layout) => {
         const isAppRoute = window.location.pathname.startsWith('/app')
         const selectedUrl = !isAppRoute ? '/json/ecom-customer-data' : '/json/ecom-customer-data'
+        const currentUrl = new URL(window.location.href)
+        const headers = {
+            'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '',
+            'X-Original-Referer': currentUrl.origin + currentUrl.pathname,
+            'X-Requested-With': 'XMLHttpRequest',
+        }
     
         // Fetch: auth_data (GetIrisFirstHitData)
         const getVarnishData = async () => {
             try {
-                const response = await axios.get(selectedUrl)
+                const response = await axios.get(selectedUrl,{headers})
                 set(layout, ['iris_varnish', 'isFetching'], false)
     
                 return response.data
@@ -115,10 +127,17 @@ export const initialiseIrisVarnishCustomerData = async (layout) => {
 export const initialiseLogUser = async (layout) => {
         const isAppRoute = window.location.pathname.startsWith('/app')
         const selectedUrl = !isAppRoute ? '/json/log-web-user-request' : '/app/json/log-web-user-request'
+        const currentUrl = new URL(window.location.href)
+        const headers = {
+            'X-Traffic-Sources': currentUrl.search?.replace(/^\?/, '') || '',
+            'X-Original-Referer': currentUrl.origin + currentUrl.pathname,
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+        
     
         const getLogUser = async () => {
             try {
-                const response = await axios.get(selectedUrl)
+                const response = await axios.get(selectedUrl,{headers})
     
                 return response.data
             } catch (error) {
