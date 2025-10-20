@@ -707,7 +707,7 @@ const isOpenModalErrorProduct = ref(false)
                     }"
                     @error="(e) => {
                         selectedErrorProduct = item
-                        isOpenModalErrorProduct = true
+                        // isOpenModalErrorProduct = true
                         set(listErrorProducts, [`x${item.id}`], e)
                     }"
                 />
