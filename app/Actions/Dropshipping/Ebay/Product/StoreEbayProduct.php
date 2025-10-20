@@ -82,6 +82,7 @@ class StoreEbayProduct extends RetinaAction
             $handleError = function ($result) use ($portfolio, $ebayUser) {
                 if (isset($result['error'])) {
                     $errorMessage = $result['error'];
+                    $displayError = $ebayUser->getDisplayErrors($errorMessage);
 
                     if (is_string($errorMessage) && str_contains($errorMessage, 'eBay API request failed:')) {
                         $jsonPart = str_replace('eBay API request failed: ', '', $errorMessage);
@@ -94,7 +95,7 @@ class StoreEbayProduct extends RetinaAction
 
                     UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $errorMessage]);
 
-                    return $errorMessage;
+                    return $displayError;
                 }
                 return false;
             };
@@ -168,7 +169,7 @@ class StoreEbayProduct extends RetinaAction
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {
             $portfolio = UpdatePortfolio::run($portfolio, [
-                'errors_response' => [$e->getMessage()]
+                'errors_response' => $ebayUser->getDisplayErrors([$e->getMessage()])
             ]);
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);

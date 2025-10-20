@@ -18,6 +18,147 @@ use Illuminate\Support\Facades\Log;
 trait WithEbayApiRequest
 {
     /**
+     * Fields that require user action to fix
+     */
+    public const array ACTIONABLE_FIELDS = [
+        'sku',
+        'title',
+        'description',
+        'price',
+        'quantity',
+        'availableQuantity',
+        'categoryId',
+        'imageUrls',
+        'aspects',
+        'brand',
+        'mpn',
+        'upc',
+        'ean',
+        'isbn',
+        'condition',
+        'conditionDescription',
+        'format',
+        'listingPolicies',
+        'fulfillmentPolicyId',
+        'paymentPolicyId',
+        'returnPolicyId',
+        'merchantLocationKey',
+        'pricingSummary',
+    ];
+
+    /**
+     * Check if error requires user action
+     */
+    public static function isActionableError($errorResponse): bool
+    {
+        if (empty($errorResponse)) {
+            return false;
+        }
+
+        $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
+
+        if (!isset($errors['errors']) || !is_array($errors['errors'])) {
+            return false;
+        }
+
+        foreach ($errors['errors'] as $error) {
+            // Check if error has parameters with field names
+            if (isset($error['parameters']) && is_array($error['parameters'])) {
+                foreach ($error['parameters'] as $param) {
+                    if (isset($param['name']) && in_array($param['name'], self::ACTIONABLE_FIELDS)) {
+                        return true;
+                    }
+                }
+            }
+
+            // Check inputRefIds for field references (e.g., "$.product.title")
+            if (isset($error['inputRefIds']) && is_array($error['inputRefIds'])) {
+                foreach ($error['inputRefIds'] as $inputRef) {
+                    foreach (self::ACTIONABLE_FIELDS as $field) {
+                        if (str_contains(strtolower($inputRef), strtolower($field))) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            // Check error category - REQUEST errors often need user action
+            if (isset($error['category']) && $error['category'] === 'REQUEST') {
+                // Check if message mentions any actionable fields
+                $message = strtolower($error['message'] ?? '');
+                foreach (self::ACTIONABLE_FIELDS as $field) {
+                    if (str_contains($message, strtolower($field))) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get user-friendly error messages for display
+     */
+    public static function getDisplayErrors($errorResponse): ?array
+    {
+        if (!self::isActionableError($errorResponse)) {
+            return null;
+        }
+
+        $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
+        $displayErrors = [];
+
+        foreach ($errors['errors'] as $error) {
+            $fieldName = null;
+            $errorMessage = $error['message'] ?? 'Unknown error';
+
+            // Extract field name from parameters
+            if (isset($error['parameters'])) {
+                foreach ($error['parameters'] as $param) {
+                    if (isset($param['name']) && in_array($param['name'], self::ACTIONABLE_FIELDS)) {
+                        $fieldName = $param['name'];
+                        break;
+                    }
+                }
+            }
+
+            // Extract field name from inputRefIds
+            if (!$fieldName && isset($error['inputRefIds'])) {
+                foreach ($error['inputRefIds'] as $inputRef) {
+                    // Parse field name from JSON path like "$.product.title"
+                    if (preg_match('/\$\.(?:\w+\.)*(\w+)/', $inputRef, $matches)) {
+                        $possibleField = $matches[1];
+                        if (in_array($possibleField, self::ACTIONABLE_FIELDS)) {
+                            $fieldName = $possibleField;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Try to extract field from error message
+            if (!$fieldName) {
+                foreach (self::ACTIONABLE_FIELDS as $field) {
+                    if (stripos($errorMessage, $field) !== false) {
+                        $fieldName = $field;
+                        break;
+                    }
+                }
+            }
+
+            if ($fieldName) {
+                if (!isset($displayErrors[$fieldName])) {
+                    $displayErrors[$fieldName] = [];
+                }
+                $displayErrors[$fieldName][] = $errorMessage;
+            }
+        }
+
+        return !empty($displayErrors) ? $displayErrors : null;
+    }
+
+    /**
      * eBay API configuration
      */
     protected function getEbayConfig(): array
