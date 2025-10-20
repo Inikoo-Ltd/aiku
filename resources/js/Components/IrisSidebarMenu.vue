@@ -185,7 +185,7 @@ const internalHref = (item) => {
             padding: 0,
             ...getStyles(props.menu?.container?.properties),
             width: isMobile ? null : !isNull(activeIndex) || !isNull(activeCustomIndex) || !isNull(activeCustomTopIndex) ?
-                (!isNull(activeSubIndex) || !isNull(activeCustomSubIndex) || !isNull(activeCustomTopSubIndex)) ? '60%' : '40%' : '20%'
+                (!isNull(activeSubIndex) || !isNull(activeCustomSubIndex) || !isNull(activeCustomTopSubIndex)) ? '60%' : '41.3%' : '20%'
         }">
             <template #header>
                 <img :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="h-16" />

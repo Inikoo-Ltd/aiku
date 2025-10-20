@@ -115,9 +115,10 @@ const computedSelectedSidebarData = computed(() => {
     }
 
     const selectedSidebar = sidebarMenu?.value || layout.iris?.sidebar
+    const selectedProductCategories = selectedSidebar?.data?.fieldValue?.product_categories || selectedSidebar.product_categories
 
     const customNavigationTop = selectedSidebar?.data?.fieldValue?.navigation || []
-    const productCategoriesAuto = menuCategoriesToMenuStructure(selectedSidebar?.data?.fieldValue?.product_categories) || []
+    const productCategoriesAuto = menuCategoriesToMenuStructure(selectedProductCategories) || []
     const customNavigationBottom = selectedSidebar?.data?.fieldValue?.navigation_bottom || []
 
     return [
@@ -229,6 +230,7 @@ watch(
                             :style="{
                                 ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
                                 margin: 0,
+                                background: 'transparent',
                                 padding: 0,
                                 fontWeight: 600,
                                 ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
@@ -239,19 +241,29 @@ watch(
                         >
                             <span>{{ subnav.title }}</span>
                             <!-- Spinner / Icon -->
-                            <FontAwesomeIcon v-if="loadingItem === (subnav.id || subnav.label)" icon="fas fa-spinner"
-                                spin class="text-[10px] text-orange-500" />
-                            <FontAwesomeIcon v-else-if="subnav.icon" :icon="subnav.icon"
-                                class="text-[10px] text-gray-400" />
+                            <FontAwesomeIcon v-if="loadingItem === (subnav.id || subnav.label)" icon="fas fa-spinner" spin fixed-width class="text-[10px] text-orange-500" />
+                            <FontAwesomeIcon v-else-if="subnav.icon" :icon="subnav.icon" fixed-width class="text-[10px] text-gray-400" />
                         </component>
 
-                        <div v-for="linkData in subnav?.links" :key="subnav.title" class="navigation">
-                            <LinkIris class="text-sm font-bold " :href="linkData.link.href"
+                        <div v-for="linkData in subnav?.links"
+                            :key="subnav.title"
+                            class="navigation"
+                            :style="{
+                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                                margin: 0,
+                                background: 'transparent',
+                                padding: 0,
+                                fontWeight: 600,
+                                ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
+                            }"
+                        >
+                            <LinkIris v-if="linkData.link?.href" class="" :href="linkData.link.href"
                                 :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
                                 <template #default>
-                                    <div class="text-sm text-gray-500 font-medium navigation">{{ linkData.label }}</div>
+                                    <div class="py-1">{{ linkData.label }}</div>
                                 </template>
                             </LinkIris>
+                            <div v-else class="py-1">{{ linkData.label }}</div>
                         </div>
                     </div>
                 </div>
