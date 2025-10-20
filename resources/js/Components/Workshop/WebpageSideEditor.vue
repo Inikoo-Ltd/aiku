@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, defineProps, defineEmits, onMounted, onUnmounted, toRaw } from 'vue'
+import { ref, inject, defineProps, defineEmits, onMounted, onUnmounted, toRaw, computed, watch  } from 'vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import draggable from 'vuedraggable'
@@ -22,7 +22,7 @@ import { trans } from 'laravel-vue-i18n'
 import WeblockList from '@/Components/CMS/Webpage/WeblockList.vue'
 
 import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash, faPlus, faTrashAlt, faCopy, faPaste } from '@fal'
-import { faCogs, faExclamationTriangle, faLayerGroup } from '@fas'
+import { faBrush, faCogs, faExclamationTriangle, faLayerGroup } from '@fas'
 
 library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faEye, faEyeSlash)
 
@@ -32,6 +32,7 @@ const modelModalBlocklist = defineModel()
 const props = defineProps<{
   webpage: RootWebpage
   webBlockTypes: Root
+  selectedTab: Number
 }>()
 
 const emits = defineEmits<{
@@ -43,10 +44,11 @@ const emits = defineEmits<{
   (e: 'onSaveSiteSettings', value: object): void
   (e: 'openBlockList', value: boolean): void
   (e: 'onDuplicateBlock', value: Number): void
+  (e: 'update:selectedTab', value: Number): void
 }>()
 
 const confirm = useConfirm()
-const selectedTab = ref(1)
+/* const selectedTab = ref(1) */
 const addType = ref('current')
 const openedBlockSideEditor = inject('openedBlockSideEditor', ref(null))
 const openedChildSideEditor = inject('openedChildSideEditor', ref(null))
@@ -54,19 +56,26 @@ const isAddBlockLoading = inject('isAddBlockLoading', ref(null))
 const isLoadingDeleteBlock = inject('isLoadingDeleteBlock', ref(null))
 const isLoadingBlock = inject('isLoadingBlock', ref(null))
 const filterBlock = inject('filterBlock')
-const changeTab = (index: number) => (selectedTab.value = index)
+const changeTab = (index: number) => emits('update:selectedTab', index)
 const sendNewBlock = (block: Daum) => {
-  console.log('mmm', block, addType.value)
   emits('add', { block, type: addType.value })
 }
 const sendBlockUpdate = (block: Daum) => emits('update', block)
 const sendOrderBlock = (block: object) => emits('order', block)
 const sendDeleteBlock = (block: Daum) => emits('delete', block)
 
-const tabs = [
-  { label: 'Settings', icon: faCogs, tooltip: 'Page Setting' },
-  { label: 'Block', icon: faLayerGroup, tooltip: 'Blocks' }
-]
+const tabs = computed(() => {
+  const baseTabs = [
+    { label: 'Settings', icon: faCogs, tooltip: 'Page Setting' },
+    { label: 'Block', icon: faLayerGroup, tooltip: 'Blocks' }
+  ]
+
+  if (openedBlockSideEditor.value !== null) {
+    baseTabs.push({ label: 'Style', icon: faBrush, tooltip: 'Style' })
+  }
+
+  return baseTabs
+})
 
 const filterOptions = [
   { label: 'All', value: 'all' },
@@ -163,7 +172,19 @@ const duplicateBlock = (block: Daum) => {
   closeContextMenu()
 }
 
+const onClickBlock = (index) => {
+  if(openedBlockSideEditor.value === index) changeTab(2)
+  else { 
+    openedBlockSideEditor.value = index
+  }
+}
 
+watch(openedBlockSideEditor, (newVal) => {
+  if (newVal === null) {
+    console.log('masuk')
+    changeTab(1)
+  }
+})
 
 onMounted(() => {
   window.addEventListener('click', closeContextMenu)
@@ -171,9 +192,10 @@ onMounted(() => {
   window.openSideEditor = (index: number) => {
     openedBlockSideEditor.value = index
   }
-  
+
   window.listSideWebBlocks = props?.webpage?.layout?.web_blocks
 })
+
 onUnmounted(() => {
   window.removeEventListener('click', closeContextMenu)
 })
@@ -236,7 +258,7 @@ defineExpose({
                         getEditPermissions(element.web_block.layout.data) ? 'cursor-pointer hover:bg-gray-100' : 'cursor-not-allowed'
                       ]">
                       <button class="flex items-center gap-2 w-full"
-                        @click="() => openedBlockSideEditor = openedBlockSideEditor === index ? null : index"
+                        @click="()=>onClickBlock(index)"
                         :disabled="!getEditPermissions(element.web_block.layout.data)">
                         <FontAwesomeIcon icon="fal fa-bars" class="handle text-sm text-gray-400 cursor-grab" />
                         <span class="text-sm font-medium truncate">
@@ -269,27 +291,40 @@ defineExpose({
                         </button>
                       </div>
                     </div>
-
-                    <Collapse v-if="element?.web_block?.layout"
-                      :when="openedBlockSideEditor === index && getEditPermissions(element.web_block.layout.data)">
-                      <div class="p-2 space-y-2">
-                        <VisibleCheckmark v-model="element.visibility" @update:modelValue="sendBlockUpdate(element)" />
-                        <SideEditor v-model="element.web_block.layout.data.fieldValue"
-                          :panelOpen="openedChildSideEditor" :blueprint="getBlueprint(element.type, webpage)"
-                          :block="element" @update:modelValue="() => sendBlockUpdate(element)"
-                          :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: element.id } }" />
-                      </div>
-                    </Collapse>
                   </div>
                 </template>
               </draggable>
-
             </template>
             <div v-else class="flex flex-col items-center text-center py-6 text-gray-500">
               <FontAwesomeIcon :icon="['fal', 'browser']" class="text-4xl mb-2" />
               <span class="text-sm font-medium">You don't have any blocks</span>
             </div>
             <div v-if="isAddBlockLoading" class="mt-2 skeleton min-h-10 w-full rounded bg-red-500" />
+          </div>
+        </TabPanel>
+
+
+        <!-- Tab 3: Style -->
+        <TabPanel class="w-[400px] p-2">
+          <div class="max-h-[calc(100vh-220px)] overflow-y-auto">
+            <template v-if="openedBlockSideEditor !== null">
+              <Collapse :when="true">
+                <div class="p-2 space-y-2">
+                  <VisibleCheckmark v-model="webpage.layout.web_blocks[openedBlockSideEditor].visibility"
+                    @update:modelValue="sendBlockUpdate(webpage.layout.web_blocks[openedBlockSideEditor])" />
+                  <SideEditor
+                    v-model="webpage.layout.web_blocks[openedBlockSideEditor].web_block.layout.data.fieldValue"
+                    :panelOpen="openedChildSideEditor"
+                    :blueprint="getBlueprint(webpage.layout.web_blocks[openedBlockSideEditor].type, webpage)"
+                    :block="webpage.layout.web_blocks[openedBlockSideEditor]"
+                    @update:modelValue="() => sendBlockUpdate(webpage.layout.web_blocks[openedBlockSideEditor])"
+                    :uploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: webpage.layout.web_blocks[openedBlockSideEditor].id } }" />
+                </div>
+              </Collapse>
+            </template>
+            <template v-else>
+              <p class="text-gray-500 text-sm">Select a block to edit its style.</p>
+            </template>
           </div>
         </TabPanel>
       </TabPanels>

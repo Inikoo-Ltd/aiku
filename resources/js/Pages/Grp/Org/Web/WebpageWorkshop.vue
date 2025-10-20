@@ -90,6 +90,7 @@ const fullScreen = ref(false);
 const filterBlock = ref('all');
 const history = ref<any[]>([]);
 const future = ref<any[]>([]);
+const selectedTab = ref(1)
 
 provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
@@ -538,37 +539,44 @@ window.addEventListener('beforeunload', () => {
 
 
 onMounted(() => {
-  window.addEventListener("message", (event) => {
+  const handleMessage = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
     switch (key) {
-      case 'autosave': return onSaveWorkshop(value, false);
-      case 'activeBlock': return openedBlockSideEditor.value = value;
-      case 'activeChildBlock': return openedChildSideEditor.value = value;
+      case 'autosave':
+        return onSaveWorkshop(value, false);
+      case 'activeBlock':
+        openedBlockSideEditor.value = value;
+        return;
+      case 'activeChildBlock':
+        selectedTab.value = 2;
+        openedChildSideEditor.value = value;
+        return;
       case 'addBlock':
         if (_WebpageSideEditor.value) {
           isModalBlockList.value = true;
           addBlockParentIndex.value = value;
           _WebpageSideEditor.value.addType = value.type;
         }
-        break;
-      case 'deleteBlock': return sendDeleteBlock(value);
+        return;
+      case 'deleteBlock':
+        return sendDeleteBlock(value);
     }
-  })
-  const savedData = localStorage.getItem(data.value.code);
-  if (savedData) {
-  } else {
-    localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
-  }
-  history.value = [JSON.parse(JSON.stringify(data.value.layout))];
+  };
+
+  window.addEventListener("message", handleMessage);
+
+  onUnmounted(() => {
+    window.removeEventListener("message", handleMessage);
+  });
 });
+
 
 watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
 watch(currentView, (newValue) => iframeClass.value = setIframeView(newValue));
 watch(filterBlock, (newValue) => sendToIframe({ key: 'isPreviewLoggedIn', value: newValue }));
 
 const compUsersEditThisPage = computed(() => {
-
   return useLiveUsers().liveUsersArray.filter(user => (user?.current_page?.route_name === layout.currentRoute && user?.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
 })
 
@@ -610,7 +618,7 @@ const canRedo = computed(() => future.value.length > 0);
       <WebpageSideEditor ref="_WebpageSideEditor" v-model="isModalBlockList" :webpage="data"
         :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock" @add="addNewBlock"
         @order="sendOrderBlock" @setVisible="setHideBlock" @onSaveSiteSettings="onSaveSiteSettings"
-        @onDuplicateBlock="duplicateBlock" />
+        @onDuplicateBlock="duplicateBlock" v-model:selectedTab="selectedTab" @update:selected-tab="(e)=>selectedTab = e"/>
     </div>
 
     <!-- Preview Section -->
