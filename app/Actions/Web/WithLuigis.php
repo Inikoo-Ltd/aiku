@@ -382,7 +382,7 @@ trait WithLuigis
 
 
         $subDepartmentData = [];
-        if ($product->subDepartment->webpage && $product->subDepartment->webpage->state != WebpageStateEnum::LIVE) {
+        if ($product->subDepartment?->webpage && $product->subDepartment->webpage->state != WebpageStateEnum::LIVE) {
             $subDepartment     = $product->subDepartment;
             $subDepartmentData = [
                 "type"     => "sub_department",
