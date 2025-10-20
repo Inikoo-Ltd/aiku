@@ -580,7 +580,6 @@ const canRedo = computed(() => future.value.length > 0);
 </script>
 
 <template>
-
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
