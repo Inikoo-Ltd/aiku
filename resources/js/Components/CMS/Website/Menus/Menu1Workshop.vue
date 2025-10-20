@@ -109,22 +109,38 @@ const getNavigationIcon = (navigation: any) => {
 
 // Section: Sidebar menu
 const sidebarMenu = inject('sidebarMenu', null) // come from layout PreviewLayout
+const compSelectedSidebar = computed(() => {
+    return sidebarMenu?.value || layout.iris?.sidebar
+})
+const compCustomTopNavigation = computed(() => {
+    if (get(props, 'fieldValue.setting_on_sidebar.is_follow', false)) {
+        return compSelectedSidebar.value?.data?.fieldValue?.navigation
+    } else {
+        return null
+    }
+})
+const compCustomBottomNavigation = computed(() => {
+    if (get(props, 'fieldValue.setting_on_sidebar.is_follow', false)) {
+        return compSelectedSidebar.value?.data?.fieldValue?.navigation_bottom
+    } else {
+        return null
+    }
+})
 const computedSelectedSidebarData = computed(() => {
     if (!get(props, 'fieldValue.setting_on_sidebar.is_follow', false)) {
         return []
     }
 
-    const selectedSidebar = sidebarMenu?.value || layout.iris?.sidebar
-    const selectedProductCategories = selectedSidebar?.data?.fieldValue?.product_categories || selectedSidebar?.product_categories
+    const selectedProductCategories = compSelectedSidebar.value?.data?.fieldValue?.product_categories || compSelectedSidebar.value?.product_categories
 
-    const customNavigationTop = selectedSidebar?.data?.fieldValue?.navigation || []
+    // const customNavigationTop = compSelectedSidebar.value?.data?.fieldValue?.navigation || []
     const productCategoriesAuto = menuCategoriesToMenuStructure(selectedProductCategories) || []
-    const customNavigationBottom = selectedSidebar?.data?.fieldValue?.navigation_bottom || []
+    // const customNavigationBottom = compSelectedSidebar.value?.data?.fieldValue?.navigation_bottom || []
 
     return [
-        ...customNavigationTop,
+        // ...customNavigationTop,
         ...productCategoriesAuto,
-        ...customNavigationBottom,
+        // ...customNavigationBottom,
 
     ] 
 })
@@ -205,12 +221,57 @@ watch(
             <!-- Section: list menu Navigation -->
             <nav ref="_scrollContainer" @scroll="checkScroll"
                 class="relative flex text-sm text-gray-600 w-full overflow-x-auto scrollbar-hide ml-5">
+                <!-- Navigation: Custom Top (if follow sidebar) -->
+                <template v-for="(navigation, idxNavigation) in compCustomTopNavigation" :key="idxNavigation">
+                    <component
+                        :is="navigation?.link?.href ? LinkIris : 'div'"
+                        @mouseenter="() => onMouseEnterMenu(navigation)"
+                        :type="navigation?.link?.type"
+                        :style="getStyles(fieldValue?.custom_navigation_styling?.custom_top?.properties, screenType)"
+                        :href="navigation?.link?.href"
+                        :canonical_url="navigation?.link?.canonical_url"
+                        class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
+                            ? 'navigation'
+                            : navigation?.link?.href
+                                ? 'cursor-pointer  navigation'
+                                : ''">
+                        <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
+                        <div>
+                            <FontAwesomeIcon v-if="getNavigationIcon(navigation)" :icon="getNavigationIcon(navigation)"
+                                :spin="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
+                        </div>
+                    </component>
+                </template>
+
+                <!-- Navigation: main -->
                 <template v-for="(navigation, idxNavigation) in selectedMenu" :key="idxNavigation">
                     <component
                         :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)"
                         :type="navigation?.link?.type"
                         :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
+                        :href="navigation?.link?.href"
+                        :canonical_url="navigation?.link?.canonical_url"
+                        class="group w-full py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
+                            ? 'navigation'
+                            : navigation?.link?.href
+                                ? 'cursor-pointer  navigation'
+                                : ''">
+                        <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
+                        <div>
+                            <FontAwesomeIcon v-if="getNavigationIcon(navigation)" :icon="getNavigationIcon(navigation)"
+                                :spin="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
+                        </div>
+                    </component>
+                </template>
+
+                <!-- Navigation: Custom Bottom (if follow sidebar) -->
+                <template v-for="(navigation, idxNavigation) in compCustomBottomNavigation" :key="idxNavigation">
+                    <component
+                        :is="navigation?.link?.href ? LinkIris : 'div'"
+                        @mouseenter="() => onMouseEnterMenu(navigation)"
+                        :type="navigation?.link?.type"
+                        :style="getStyles(fieldValue?.custom_navigation_styling?.custom_bottom?.properties, screenType)"
                         :href="navigation?.link?.href"
                         :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen

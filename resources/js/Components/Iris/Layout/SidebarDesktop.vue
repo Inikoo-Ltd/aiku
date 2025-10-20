@@ -8,6 +8,7 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import LinkIris from '../LinkIris.vue'
 import { router } from '@inertiajs/vue3'
+import { ProductCategoryMenu } from '@/Composables/Iris/useMenu'
 library.add(faChevronRight, faExternalLink)
 
 const props = defineProps<{
@@ -43,7 +44,7 @@ const props = defineProps<{
     sortedFamilies: {}
     customFamilies: {}
     customTopFamilies: {}
-    sortedProductCategories: {}[]
+    sortedProductCategories: ProductCategoryMenu[]
     sortedSubDepartments: {}[]
     activeSubIndex: {}
     activeCustomSubIndex: {}
@@ -176,7 +177,7 @@ const closeSidebar = () => {
 
             <!-- Section: Bottom navigation -->
             <div v-if="customMenusBottom && customMenusBottom.length > 0">
-                <hr class="my-4 mx-4 border-gray-300">
+                <hr class="my-4 border-gray-300">
                 <div v-for="(customItem, customIndex) in customMenusBottom" :key="'custom-' + customIndex"
                     class="p-2 px-4 flex items-center justify-between cursor-pointer"
                     :class="[

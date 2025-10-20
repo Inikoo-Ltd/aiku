@@ -122,7 +122,7 @@ const props = defineProps<{
     handleTabUpdate?: Function
 }>()
 
-console.log(props);
+// console.log(props);
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout')

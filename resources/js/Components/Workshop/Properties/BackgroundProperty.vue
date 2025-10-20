@@ -9,6 +9,7 @@ import ColorPicker from '@/Components/Utils/ColorPicker.vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage, faPalette } from '@fal'
+import { faImage as fasImage } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { routeType } from '@/types/route'
 import { ImageData } from '@/types/Image'
@@ -20,7 +21,7 @@ import { set } from 'lodash-es'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import ColorGradientPicker from '@/Components/Utils/ColorGradientPicker.vue'
 
-library.add(faImage, faPalette)
+library.add(faImage, faPalette, fasImage)
 
 interface BackgroundProperty {
     type: string  // 'color', 'image', 'gradient'
@@ -130,12 +131,18 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
             <div class="group rounded-md relative shadow-lg border border-gray-300">
                 <div class="relative h-12 w-12 cursor-pointer rounded overflow-hidden">
                     <Image
+                        v-if="model?.image?.thumbnail"
                         :src="model?.image?.thumbnail"
                         :key="model?.image?.id"
                         :alt="model?.image?.name"
                         :imageCover="true"
                         class="h-full"
                     />
+
+                    <div v-else class="h-full flex items-center justify-center">
+                        <FontAwesomeIcon icon='fas fa-image' class='' fixed-width aria-hidden='true' />
+                    </div>
+
                     
                     <div v-if="model?.type === 'image'" @click="() => isOpenGallery = true" class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">
                         <FontAwesomeIcon icon='fal fa-image' class='text-white' fixed-width aria-hidden='true' />

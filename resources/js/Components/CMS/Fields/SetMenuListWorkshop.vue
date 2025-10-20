@@ -127,7 +127,7 @@ const autoSave = async (event) => {
     <!-- Drawer for Menu Editing -->
     <Drawer 
         v-model:visible="visibleDrawer" 
-        :header="data.data?.fieldValue.navigation[selectedMenu]?.label"
+        :header="data?.data?.fieldValue?.navigation?.[selectedMenu]?.label"
         position="right" 
         :pt="{ root: { style: 'width: 40vw' } }"
     >

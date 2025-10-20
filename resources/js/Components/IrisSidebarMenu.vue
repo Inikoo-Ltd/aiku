@@ -11,7 +11,7 @@ import IrisSidebarMobile from './Iris/Layout/IrisSidebarMobile.vue'
 
 const props = defineProps<{
     header: { logo?: { image: { source: string } } },
-    screenType: String
+    screenType: string
     productCategories: Array<any>
     menu?: { data: Array<any> }
     customMenusBottom?: Array<any>
@@ -179,16 +179,24 @@ const internalHref = (item) => {
                 :style="{ ...getStyles(header?.mobile?.menu?.container?.properties) }" />
         </button>
 
-        <Drawer v-model:visible="isOpenMenuMobile" :header="''" :showCloseIcon="true" :style="{
-            ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-            margin: 0,
-            padding: 0,
-            ...getStyles(props.menu?.container?.properties),
-            width: isMobile ? null : !isNull(activeIndex) || !isNull(activeCustomIndex) || !isNull(activeCustomTopIndex) ?
-                (!isNull(activeSubIndex) || !isNull(activeCustomSubIndex) || !isNull(activeCustomTopSubIndex)) ? '60%' : '41.3%' : '20%'
-        }">
+        <Drawer
+            v-model:visible="isOpenMenuMobile"
+            :header="''"
+            :showCloseIcon="false"
+            :style="{
+                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                margin: 0,
+                padding: 0,
+                border: 'none !important',
+                ...getStyles(props.menu?.container?.properties),
+                width: isMobile ? null : !isNull(activeIndex) || !isNull(activeCustomIndex) || !isNull(activeCustomTopIndex) ?
+                    (!isNull(activeSubIndex) || !isNull(activeCustomSubIndex) || !isNull(activeCustomTopSubIndex)) ? '60%' : '41.3%' : '20%'
+            }"
+        >
             <template #header>
-                <img :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="h-16" />
+                <div class="max-h-16 min-h-12">
+                    <img :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="object-contain" />
+                </div>
             </template>
 
             <!-- Sidebar Menu: Mobile -->
