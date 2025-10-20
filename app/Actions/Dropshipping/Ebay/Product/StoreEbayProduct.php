@@ -9,9 +9,13 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
@@ -31,6 +35,10 @@ class StoreEbayProduct extends RetinaAction
      */
     public function handle(EbayUser $ebayUser, Portfolio $portfolio)
     {
+        $logs = StorePlatformPortfolioLog::run($portfolio, [
+            'type'   => PlatformPortfolioLogsTypeEnum::UPLOAD
+        ]);
+
         try {
             /** @var Product $product */
             $product = $portfolio->item;
@@ -72,6 +80,8 @@ class StoreEbayProduct extends RetinaAction
                         'Type' => [
                             $product->department->name.'/'.$product->family->name
                         ],
+                        'Material' => ['Not Specified'],
+                        'Colour' => ['Multicolour']
                     ],
                     'brand' => 'AncientWisdom',
                     'mpn' => $product->code,
@@ -79,10 +89,9 @@ class StoreEbayProduct extends RetinaAction
                 ]
             ];
 
-            $handleError = function ($result) use ($portfolio, $ebayUser) {
+            $handleError = function ($result) use ($portfolio, $ebayUser, $logs) {
                 if (isset($result['error'])) {
                     $errorMessage = $result['error'];
-                    $displayError = $ebayUser->getDisplayErrors($errorMessage);
 
                     if (is_string($errorMessage) && str_contains($errorMessage, 'eBay API request failed:')) {
                         $jsonPart = str_replace('eBay API request failed: ', '', $errorMessage);
@@ -93,7 +102,14 @@ class StoreEbayProduct extends RetinaAction
                         }
                     }
 
-                    UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $errorMessage]);
+                    $displayError = $ebayUser->getDisplayErrors($errorMessage) ?? $errorMessage;
+
+                    UpdatePlatformPortfolioLog::run($logs, [
+                        'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                        'response' => $displayError
+                    ]);
+
+                    UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $displayError]);
 
                     return $displayError;
                 }
@@ -165,6 +181,14 @@ class StoreEbayProduct extends RetinaAction
             ]);
 
             CheckEbayPortfolio::run($portfolio);
+
+            $portfolio->refresh();
+
+            if ($portfolio->platform_status) {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+            }
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {
