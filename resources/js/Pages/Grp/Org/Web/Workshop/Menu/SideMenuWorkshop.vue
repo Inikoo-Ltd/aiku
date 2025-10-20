@@ -2,7 +2,7 @@
 import { ref, computed, inject } from "vue"
 import { routeType } from "@/types/route"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { TabGroup, Tab, TabPanels, TabPanel } from '@headlessui/vue'
+import { TabGroup, Tab, TabPanels, TabPanel, TabList } from '@headlessui/vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import WebBlockListDnd from "@/Components/CMS/Fields/WebBlockListDnd.vue"
 import SetMenuListWorkshop from "@/Components/CMS/Fields/SetMenuListWorkshop.vue"
@@ -19,12 +19,14 @@ import {
 	faThLarge,
 	faList,
 	faPaintBrushAlt,
+	faPaintBrush,
 } from "@fas"
 import { faEyeSlash } from "@fal"
 import { faHeart, faLowVision } from "@far"
 import { notify } from "@kyvg/vue3-notification"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import Blueprint from "./Blueprint"
+import BlueprintForCustomTopAndBottomNavigation from "./BlueprintForCustomTopAndBottomNavigation"
 import { get, set } from "lodash"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import { trans } from "laravel-vue-i18n"
@@ -57,7 +59,6 @@ const props = defineProps<{
 	webBlockTypes: {
 		data: Array<any>
 	}
-	shopType: string  // 'fulfilment' | 'dropshipping' | 'b2b'
 }>()
 
 const emits = defineEmits<{
@@ -68,20 +69,31 @@ const layout = inject('layout', layoutStructure)
 
 const selectedTab = ref(props.data ? 1 : 0)
 
-const tabs = [
-	{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
-	{ label: 'Menu', icon: faList, tooltip: 'menu' },
-	{ label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
-]
 
-function changeTab(index: Number) {
+function changeTab(index: number) {
 	selectedTab.value = index
 }
 
+const tabs = computed(() => {
+	const isFollowSidebar = get(props.data, ['data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], false)
+	const tabsList = [
+		{ label: 'Templates', icon: faThLarge, tooltip: trans('Template') },
+		{ label: 'Menu', icon: faList, tooltip: trans('Menu') },
+		{ label: 'Styling', icon: faPaintBrushAlt, tooltip: trans('Styling') },
+		{ label: 'Styling (for custom navigation)', icon: faPaintBrush, tooltip: trans('Styling (custom navigation)') },
+	]
+
+	if (isFollowSidebar) {
+		return tabsList
+	} else {
+		// Remove last tab if not following sidebar
+		return tabsList.slice(0, -1)
+	}
+})
 const computedTabs = computed(() => {
 	return props.data
-		? tabs
-		: [tabs[0]]
+		? tabs.value
+		: [tabs.value[0]]
 })
 
 const onPickBlock = (value: object) => {
@@ -119,13 +131,6 @@ const autoSave = async (value) => {
   }
 }
 
-const urlToSidebar = computed(() => {
-	return route('grp.org.shops.show.web.websites.workshop.sidebar', {
-		organisation: layout.currentParams?.organisation || 'x',
-		shop: layout.currentParams?.shop || 'x',
-		website: layout.currentParams?.website || 'x',
-	})
-})
 
 </script>
 
@@ -148,24 +153,6 @@ const urlToSidebar = computed(() => {
 
 			<!-- Tab: Menu -->
 			<TabPanel v-if="data">
-				<div v-if="shopType !== 'fulfilment'" class="border-dashed border-b border-gray-300 pb-6 mb-6">
-					<div class="flex justify-between mt-4 ">
-						<div>
-							{{ trans("Is follow sidebar navigation?") }}
-							<InformationIcon :information="trans('The data will be same like Sidebar')" />
-						</div>
-
-						<Toggle
-							:modelValue="get(data, ['data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], false)"
-							@update:modelValue="(value) => { set(data, ['data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], value), autoSave(data) }"
-						/>
-					</div>
-
-					<Link :href="urlToSidebar" class="text-xs underline hover:text-blue-500 cursor-pointer mt-2">
-						{{ trans("Open Sidebar workhop") }}
-						<FontAwesomeIcon icon="fal fa-external-link-alt" class="" fixed-width aria-hidden="true" />
-					</Link>
-				</div>
 				
 				<!-- need fix this components edit drawer -->
 				<div class="relative">
@@ -175,7 +162,7 @@ const urlToSidebar = computed(() => {
 						@auto-save="() => autoSave(data)"
 					/>
 					<Transition name="slide-to-right">
-						<div v-if="get(data, ['data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], false)" class="rounded text-yellow-500 bg-gray-500/80 absolute inset-0 w-[110%] h-[110%] top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center">
+						<div v-if="get(data, ['data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], false)" class="rounded text-yellow-500 bg-gray-500/80 absolute inset-0 w-[110%] h-[102%] top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center">
 							<FontAwesomeIcon icon="fal fa-eye-slash" class="text-5xl" fixed-width aria-hidden="true" />
 							{{ trans("Will not showing due the data follow Sidebar") }}
 						</div>
@@ -190,6 +177,24 @@ const urlToSidebar = computed(() => {
 					:blueprint="Blueprint.blueprint"
 					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e) , autoSave(data)}"
 				/>
+			</TabPanel>
+
+			<!-- Tab: Styling (custom navigation) -->
+			<TabPanel v-if="data">
+				<div class="relative">
+					<SideEditor
+						:modelValue="get(data, ['data', 'fieldValue', 'custom_navigation_styling'], null)"
+						:blueprint="BlueprintForCustomTopAndBottomNavigation.blueprint"
+						@update:modelValue="(e) => { set(data, ['data', 'fieldValue', 'custom_navigation_styling'], e) , autoSave(data)}"
+					/>
+					
+					<Transition name="slide-to-right">
+						<div v-if="!get(data, ['data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], false)" class="rounded text-yellow-500 bg-gray-500/80 absolute inset-0 w-full h-full top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center">
+							<FontAwesomeIcon icon="fal fa-eye-slash" class="text-5xl" fixed-width aria-hidden="true" />
+							{{ trans("Will not showing due the data not follow Sidebar") }}
+						</div>
+					</Transition>
+				</div>
 			</TabPanel>
 		</TabPanels>
 	</TabGroup>
