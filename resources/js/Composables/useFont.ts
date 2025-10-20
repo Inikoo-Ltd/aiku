@@ -8,6 +8,18 @@ export const useFontFamilyList = [
         value: "Arial, sans-serif",
     },
     {
+        label: "Avenir",
+        value: "Avenir, sans-serif",
+    },
+    {
+        label: "Bunya",
+        value: "Bunya, sans-serif",
+    },
+    {
+        label: "Cardinal",
+        value: "'Cardinal', serif",
+    },
+    {
         label: "Comfortaa",
         value: "'Comfortaa', sans-serif",
     },
@@ -34,6 +46,10 @@ export const useFontFamilyList = [
     {
         label: "Roman Melikhov",
         value: "'Roman Melikhov', serif",
+    },
+    {
+        label: "Shoemaker",
+        value: "'Shoemaker', sans-serif",
     },
     {
         label: "Source Sans Pro",

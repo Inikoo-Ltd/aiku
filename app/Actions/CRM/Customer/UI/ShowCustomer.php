@@ -143,13 +143,13 @@ class ShowCustomer extends OrgAction
                             'key'         => 'add_order',
                             'type'        => 'button',
                             'style'       => 'create',
-                            'label'       => 'Add order',
+                            'label'       => __('Add order'),
                             'fullLoading' => true,
                             'route'       => [
                                 'method'     => 'post',
                                 'name'       => 'grp.models.customer.submitted_order.store',
                                 'parameters' => [
-                                    'customer' => $this->parent->id
+                                    'customer' => $customer->id
                                 ]
                             ]
                         ] : [],

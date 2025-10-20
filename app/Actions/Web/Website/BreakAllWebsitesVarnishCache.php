@@ -11,35 +11,33 @@ namespace App\Actions\Web\Website;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithVarnishBan;
 use Illuminate\Console\Command;
-use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 
 class BreakAllWebsitesVarnishCache extends OrgAction
 {
     use WithVarnishBan;
 
-    public function handle(Command $command = null): void
+    public function handle(Command $command = null): array
     {
-        $varnishCommand = "sudo varnishadm 'ban req.url ~ .'";
-
-        $this->runVarnishCommand($varnishCommand, $command);
+        return $this->sendVarnishBanHttp(
+            [
+                'x-ban-all' => 'all'
+            ],
+            $command
+        );
     }
 
-    public function asController(ActionRequest $request): void
+    public function asController(ActionRequest $request): array
     {
-        $this->initialisationFromGroup($this->group, $request);
+        $this->initialisationFromGroup(group(), $request);
 
-        $this->handle();
+        return $this->handle();
     }
 
-    public function htmlResponse(): RedirectResponse
-    {
-        return back();
-    }
 
     public function getCommandSignature(): string
     {
-        return 'websites:break_varnish_cache';
+        return 'varnish';
     }
 
     public function asCommand(Command $command): int

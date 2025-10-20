@@ -17,6 +17,7 @@ use App\Actions\Billables\ShippingZoneSchema\Hydrators\ShippingZoneSchemaHydrate
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateSalesIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
@@ -61,6 +62,8 @@ trait WithRunInvoiceHydrators
         if ($invoice->shipping_zone_schema_id) {
             ShippingZoneSchemaHydrateUsageInInvoices::dispatch($invoice->shipping_zone_schema_id)->delay($this->hydratorsDelay);
         }
+
+        CustomerHydrateClv::dispatch($invoice->customer->id)->delay($this->hydratorsDelay);
 
         InvoiceRecordSearch::dispatch($invoice);
     }

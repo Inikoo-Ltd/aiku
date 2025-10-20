@@ -1,6 +1,8 @@
 vcl 4.1;
 
 import std;
+import querystring;
+
 
 # Base Varnish 8 configuration for Iris/Laravel
 # - Separates cache by login state using X-Varnish-Logged-In (derived from iris_vua cookie)
@@ -8,7 +10,7 @@ import std;
 # - Long TTL for static assets
 # - Safe PURGE (BAN) from localhost/private networks
 
-backend default {
+backend defaultx {
     .host = "10.0.0.3";
     .port = "8080";
     .connect_timeout = 1s;
@@ -27,7 +29,28 @@ acl purge {
 }
 
 sub vcl_init {
-    # Place for VMOD initialisation if needed
+        # Create a new filter for tracking parameters
+        new tracking_params_filter = querystring.filter();
+
+        # Add specific query string parameters to strip
+
+        # google adds
+        tracking_params_filter.add_string("gad_source");
+        tracking_params_filter.add_string("gad_campaignid");
+
+        #meta
+        tracking_params_filter.add_string("fbclid");
+        tracking_params_filter.add_glob("utm_*");
+
+        #bing
+        tracking_params_filter.add_string("msclkid");
+
+        #debug
+
+        tracking_params_filter.add_string("testa");
+        tracking_params_filter.add_string("testb");
+
+
 }
 
 
@@ -60,17 +83,32 @@ sub set_login_flag_from_cookie {
 
 sub vcl_recv {
 
-
-
-
     # Allow BAN/PURGE from trusted IPs
     if (req.method == "PURGE" || req.method == "BAN") {
         if (client.ip !~ purge) {
             return (synth(405, "Not allowed"));
         }
-        # Ban by host + URL
-        ban("req.http.host == '" + req.http.host + "' && req.url == '" + req.url + "'");
+        if(req.http.x-ban-webpage){
+            ban("obj.http.x-aiku-webpage == "+req.http.x-ban-webpage);
+            return(synth(200, "Ban webpage "+req.http.x-ban-webpage));
+        }
+
+        if(req.http.x-ban-website){
+            ban("obj.http.x-aiku-website == "+req.http.x-ban-website);
+            return(synth(200, "Ban website "+req.http.x-ban-website));
+        }
+
+         if(req.http.x-ban-all){
+            ban("obj.http.x-aiku-website ~ .");
+            return(synth(200, "Ban all websites"));
+         }
+
         return (synth(200, "Purged"));
+    }
+
+    # If X-Original-Referer is missing but Referer is present, copy it
+    if (!req.http.X-Original-Referer && req.http.Referer) {
+        set req.http.X-Original-Referer = req.http.Referer;
     }
 
     # Only cache GET/HEAD
@@ -80,12 +118,12 @@ sub vcl_recv {
 
 
 
-      # Do not cache unsubscribe.php
-        if (req.url ~ "^/unsubscribe\.php(\?.*)?$") {
-            return (pass);
-        }
+    # Do not cache unsubscribe.php
+    if (req.url ~ "^/unsubscribe\.php(\?.*)?$") {
+        return (pass);
+    }
 
- # Aiku no cachable iris paths
+    # Aiku no cachable iris paths
     if (req.url ~ "^/(app|json|disclosure|unsubscribe|locale|models|catalogue|invoice|attachment)(/|$)") {
         return (pass);
     }
@@ -95,11 +133,28 @@ sub vcl_recv {
         return (pass);
     }
 
-     # If Authorization present, don't cache
-        if (req.http.Authorization) {
-            return (pass);
-        }
+    # If Authorization present, don't cache
+    if (req.http.Authorization) {
+        return (pass);
+    }
 
+    # Log the stripped parameters to a new header, e.g., X-Stripped-Query
+    # The 'keep' mode in extract() ensures the original values are preserved
+    set req.http.X-Stripped-Query = tracking_params_filter.extract(req.url, mode = keep);
+
+    # Apply the filtering, which modifies req.url by removing the specified parameters
+    set req.url = tracking_params_filter.apply(req.url);
+
+    # Optional: Remove the trailing question mark if the query string is now empty
+    if (req.url ~ "\?$") {
+        set req.url = regsub(req.url, "\?$", "");
+    }
+
+    # Remove tracking query string parameters used by analytics tools
+    if (req.url ~ "(\?|&)(_branch_match_id|_bta_[a-z]+|_bta_c|_bta_tid|_ga|_gl|_ke|_kx|campid|cof|customid|cx|dclid|dm_i|ef_id|epik|fbclid|gad_source|gbraid|gclid|gclsrc|gdffi|gdfms|gdftrk|hsa_acc|hsa_ad|hsa_cam|hsa_grp|hsa_kw|hsa_mt|hsa_net|hsa_src|hsa_tgt|hsa_ver|ie|igshid|irclickid|matomo_campaign|matomo_cid|matomo_content|matomo_group|matomo_keyword|matomo_medium|matomo_placement|matomo_source|mc_[a-z]+|mc_cid|mc_eid|mkcid|mkevt|mkrid|mkwid|msclkid|mtm_campaign|mtm_cid|mtm_content|mtm_group|mtm_keyword|mtm_medium|mtm_placement|mtm_source|nb_klid|ndclid|origin|pcrid|piwik_campaign|piwik_keyword|piwik_kwd|pk_campaign|pk_keyword|pk_kwd|redirect_log_mongo_id|redirect_mongo_id|rtid|s_kwcid|sb_referer_host|sccid|si|siteurl|sms_click|sms_source|sms_uph|srsltid|toolid|trk_contact|trk_module|trk_msg|trk_sid|ttclid|twclid|utm_[a-z]+|utm_campaign|utm_content|utm_creative_format|utm_id|utm_marketing_tactic|utm_medium|utm_source|utm_source_platform|utm_term|vmcid|wbraid|yclid|zanpid)=") {
+        set req.url = regsuball(req.url, "(_branch_match_id|_bta_[a-z]+|_bta_c|_bta_tid|_ga|_gl|_ke|_kx|campid|cof|customid|cx|dclid|dm_i|ef_id|epik|fbclid|gad_source|gbraid|gclid|gclsrc|gdffi|gdfms|gdftrk|hsa_acc|hsa_ad|hsa_cam|hsa_grp|hsa_kw|hsa_mt|hsa_net|hsa_src|hsa_tgt|hsa_ver|ie|igshid|irclickid|matomo_campaign|matomo_cid|matomo_content|matomo_group|matomo_keyword|matomo_medium|matomo_placement|matomo_source|mc_[a-z]+|mc_cid|mc_eid|mkcid|mkevt|mkrid|mkwid|msclkid|mtm_campaign|mtm_cid|mtm_content|mtm_group|mtm_keyword|mtm_medium|mtm_placement|mtm_source|nb_klid|ndclid|origin|pcrid|piwik_campaign|piwik_keyword|piwik_kwd|pk_campaign|pk_keyword|pk_kwd|redirect_log_mongo_id|redirect_mongo_id|rtid|s_kwcid|sb_referer_host|sccid|si|siteurl|sms_click|sms_source|sms_uph|srsltid|toolid|trk_contact|trk_module|trk_msg|trk_sid|ttclid|twclid|utm_[a-z]+|utm_campaign|utm_content|utm_creative_format|utm_id|utm_marketing_tactic|utm_medium|utm_source|utm_source_platform|utm_term|vmcid|wbraid|yclid|zanpid)=[-_A-z0-9+(){}%.*]+&?", "");
+        set req.url = regsub(req.url, "[?|&]+$", "");
+    }
 
     # Normalize
     set req.http.host = std.tolower(req.http.host);
@@ -110,9 +165,6 @@ sub vcl_recv {
 
     # Derive login header from cookie (used by app and cache key)
     call set_login_flag_from_cookie;
-
-
-
 
     # Do not cache static files: always pass through Varnish
     if (req.url ~ "\.(pdf|csv|css|js|mjs|map|jpg|jpeg|png|gif|svg|webp|avif|ico|woff|woff2|ttf|eot|otf)(\?.*)?$") {
@@ -204,6 +256,14 @@ sub vcl_deliver {
     if (req.http.X-Logged-Status) {
         set resp.http.X-Logged-Status = req.http.X-Logged-Status;
     }
+
+     if (req.http.X-Original-Referer) {
+        set resp.http.X-Original-Referer = req.http.X-Original-Referer;
+     }
+
+      if (req.http.X-Stripped-Query) {
+        set resp.http.X-Traffic-Sources = req.http.X-Stripped-Query;
+      }
 
 
     # If response is a redirect (3xx), set client cache to 1 day

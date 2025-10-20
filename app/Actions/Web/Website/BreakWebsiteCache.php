@@ -26,9 +26,9 @@ class BreakWebsiteCache extends OrgAction
         ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*');
         ClearCacheByWildcard::run(config('iris.cache.webpage.prefix').'_'.$website->id.'_*');
 
-        if (config('iris.cache.varnish.enabled')) {
-            BreakWebsiteVarnishCache::dispatch($website)->delay(1);
-        }
+
+        BreakWebsiteVarnishCache::run($website);
+
 
         return $website;
     }
@@ -54,6 +54,7 @@ class BreakWebsiteCache extends OrgAction
     {
         $website = Website::where('slug', $command->argument('slug'))->first();
         $this->handle($website);
+
         return 0;
     }
 

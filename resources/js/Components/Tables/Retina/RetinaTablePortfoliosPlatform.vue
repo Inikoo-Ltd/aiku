@@ -281,8 +281,6 @@ const filteredPortfolios = computed(() => {
 const selectedVariant = ref<Product | null>(null)
 const onSubmitVariant = () => {
 
-    console.log(selectedVariant.value)
-
     /* selectedVariant.value = null
     selectedPortfolio.value = null */
 
@@ -708,6 +706,7 @@ const isOpenModalErrorProduct = ref(false)
                         preserveScroll: true,
                     }"
                     @error="(e) => {
+                        selectedErrorProduct = item
                         isOpenModalErrorProduct = true
                         set(listErrorProducts, [`x${item.id}`], e)
                     }"
@@ -828,21 +827,20 @@ const isOpenModalErrorProduct = ref(false)
                 Error Product
             </div>
 
-            <div>
-                {{ selectedErrorProduct }}
-                <label for="error-product-input" class="block text-sm font-semibold">Product title</label>
+            <div v-for="error in selectedErrorProduct?.error_response ?? []">
+                <label for="error-product-input" class="block text-sm font-semibold">Product {{ error?.name }}</label>
                 <div class="errorShake rounded">
-                    <InputText fluid inputId="error-product-input" modelValue="fgffffff" size="small" />
+                    <InputText fluid inputId="error-product-input" :modelValue="error?.value" size="small" />
                 </div>
                 <div class="text-xs italic text-red-500 mt-1">
-                    *jvgfklsdnvbxcnbvcxlnbvcx
+                    {{error?.message}}
                 </div>
             </div>
 
             <div class="mt-3">
                 <Button
-                    @click="() => console.log('zzzzzzzzzzzzz')"
-                    label="Submit change"
+                    @click="() => console.log('OK')"
+                    label="Try again"
                     full
                 />
             </div>

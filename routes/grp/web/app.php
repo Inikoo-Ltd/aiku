@@ -8,6 +8,9 @@
 
 use App\Actions\SysAdmin\Group\Seeders\SeedWebBlockTypes;
 use App\Actions\UI\Notification\IndexNotification;
+use App\Actions\Web\Webpage\BreakWebpageVarnishCache;
+use App\Actions\Web\Website\BreakAllWebsitesVarnishCache;
+use App\Actions\Web\Website\BreakWebsiteVarnishCache;
 use App\Models\SysAdmin\Group;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -50,14 +53,15 @@ Route::middleware(["auth"])->group(function () {
     }
 
 
-    // TODO VERY TEMPORARY WE NEED DELETE
-    \Illuminate\Support\Facades\Route::get('artisan-seed', function () {
+    Route::get('artisan-seed', function () {
         foreach (Group::all() as $group) {
             SeedWebBlockTypes::run($group);
-
-            return 'ok';
         }
     });
+
+    Route::get('ban/varnish', BreakAllWebsitesVarnishCache::class)->name('varnish');
+    Route::get('ban/varnish/webpage/{webpage}', BreakWebpageVarnishCache::class)->name('varnish.webpage');
+    Route::get('ban/varnish/website/{website}', BreakWebsiteVarnishCache::class)->name('varnish.website');
 
 
     Route::get('/notifications', IndexNotification::class)->name('notifications');
@@ -125,6 +129,7 @@ Route::middleware(["auth"])->group(function () {
 
     Route::fallback(function () {
         $status = 404;
+
         return Inertia::render('Errors/Error404', compact('status'))
             ->toResponse(request())
             ->setStatusCode($status);

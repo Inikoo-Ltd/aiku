@@ -19,34 +19,30 @@ class BreakWebpageVarnishCache extends OrgAction
 {
     use WithVarnishBan;
 
-    public function handle(Webpage $webpage, Command $command = null): Webpage
+    public function handle(Webpage $webpage, Command $command = null): array
     {
 
+        return $this->sendVarnishBanHttp(
+            [
+                'x-ban-webpage' => $webpage->id,
+            ],
+            $command
+        );
 
-        $banExpr        = "obj.http.x-aiku-webpage == $webpage->id";
-        $varnishCommand = "sudo varnishadm 'ban $banExpr'";
 
-
-        $this->runVarnishCommand($varnishCommand, $command);
-
-        return $webpage;
     }
 
-    public function asController(Webpage $webpage, ActionRequest $request): Webpage
+    public function asController(Webpage $webpage, ActionRequest $request): array
     {
         $this->initialisationFromShop($webpage->shop, $request);
 
         return $this->handle($webpage);
     }
 
-    public function htmlResponse(): RedirectResponse
-    {
-        return back();
-    }
 
     public function getCommandSignature(): string
     {
-        return 'webpage:break_varnish_cache {slug}';
+        return 'varnish:webpage {slug}';
     }
 
     public function asCommand(Command $command): int
