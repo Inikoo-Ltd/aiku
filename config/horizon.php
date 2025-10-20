@@ -294,7 +294,7 @@ return [
         ],
         'external-services' => [
             'connection'          => 'redis-long-running',
-            'queue'               => ['shopify', 'woo-commerce'],
+            'queue'               => ['shopify', 'woo','ebay'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 10,

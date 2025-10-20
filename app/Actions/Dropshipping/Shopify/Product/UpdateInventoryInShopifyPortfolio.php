@@ -13,25 +13,33 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class UpdateInventoryInShopifyPortfolio
 {
     use AsAction;
 
-    public string $commandSignature  = 'shopify:update-inventory';
+    public string $commandSignature = 'shopify:update-inventory';
+
+    public string $jobQueue = 'shopify';
 
     public function handle(): void
     {
-        $platform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
+        $platform              = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
         $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)->get();
 
+        /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
             $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
                 ->whereNotNull('platform_product_variant_id')
                 ->get();
 
             if ($customerSalesChannel->user) {
-                BulkUpdateShopifyPortfolio::run($customerSalesChannel->user, $portfolios);
+                try {
+                    BulkUpdateShopifyPortfolio::run($customerSalesChannel->user, $portfolios);
+                } catch (\Exception $e) {
+                    Sentry::captureException($e);
+                }
             }
         }
     }
