@@ -167,7 +167,11 @@ watch(
                 </div>
                 <Transition>
                     <div v-if="isAbleScrollToLeft"
-                        class="bg-gradient-to-r from-white via-white to-transparent absolute -right-20 z-10 top-0 h-full w-16 pointer-events-none" />
+                        class="absolute -right-24 z-10 top-0 h-full w-24 pointer-events-none"
+                        :style="{
+                            background: `linear-gradient(to right, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 45%, transparent 100%)`
+                        }"
+                    />
                 </Transition>
 
                 <Transition>
@@ -181,7 +185,11 @@ watch(
             <!-- Scroll Gradient + Arrows -->
             <Transition>
                 <div v-if="isAbleScrollToRight"
-                    class="bg-gradient-to-l from-white via-white to-transparent absolute right-8 z-10 top-0 h-full w-16 pointer-events-none" />
+                    class="absolute right-4 z-10 top-0 h-full w-24 pointer-events-none"
+                    :style="{
+                        background: `linear-gradient(to left, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 0%, ${layout?.app?.webpage_layout?.container?.properties?.background?.color} 35%, transparent 100%)`
+                    }"
+                />
             </Transition>
             <Transition>
                 <div v-if="isAbleScrollToRight" @click="scrollRight"
