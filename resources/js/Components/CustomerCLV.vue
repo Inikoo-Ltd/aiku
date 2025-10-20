@@ -81,7 +81,7 @@ const historicPercentage = computed(() => {
                     <span>{{ data?.average_time_between_orders }} {{ trans('days') }}</span>
                 </div>
                 <div v-if="data?.average_order_value" class="flex justify-between text-xs">
-                    <span class="font-semibold">{{ trans('Avarage order value') }}</span>
+                    <span class="font-semibold">{{ trans('Average order value') }}</span>
                     <span>{{ locale.currencyFormat(currencyCode?.code, data.average_order_value || 0) }}</span>
                 </div>
             </div>

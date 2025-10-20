@@ -28,7 +28,7 @@ class CustomerHydrateClv implements ShouldBeUnique
         return $customerId;
     }
 
-    public function asCommand(Command $command)
+    public function asCommand(Command $command): void
     {
         $customer = Customer::where('slug', $command->argument('customer'))->first();
 
