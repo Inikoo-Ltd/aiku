@@ -21,24 +21,75 @@ const props = defineProps<{
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout')
 
-const progressBarColor = computed(() => layout?.app?.theme[0])
-
 const isShowDetail = ref(false)
 
-// Calculate percentages for progress bar comparison
-const historicCLV = computed(() => parseFloat(props.data?.historic_clv_amount || '0'))
-const predictedCLV = computed(() => parseFloat(props.data?.predicted_clv_amount || '0'))
-
-//  historic vs predicted
 const historicPercentage = computed(() => {
-    const total = historicCLV.value + predictedCLV.value
-    if (total === 0) return 0
-    return (historicCLV.value / total) * 100
+    const expectedDate = props.data?.expected_date_of_next_order
+    if (!expectedDate) return 0
+
+    const dateObj = new Date(expectedDate)
+    if (isNaN(dateObj)) return 0
+
+    const diffDays = (dateObj - new Date()) / (1000 * 60 * 60 * 24)
+
+    let percentage = 0
+
+    if (diffDays >= 40) {
+        // Still far in the future → full blue
+        percentage = 100
+    } else if (diffDays >= 0) {
+        // In the next 0–40 days → getting closer, the bar is decreasing
+        percentage = (diffDays / 40) * 100
+    } else if (diffDays >= -40) {
+        // It has been more than 0–40 days → the red bar keeps rising
+        percentage = ((Math.abs(diffDays)) / 40) * 100
+    } else {
+        // More than 40 days overdue → full red
+        percentage = 100
+    }
+
+    return percentage
+})
+
+const progressBarColor = computed(() => {
+    const expectedDate = props.data?.expected_date_of_next_order
+    if (!expectedDate) return layout?.app?.theme[0]
+
+    const dateObj = new Date(expectedDate)
+    if (isNaN(dateObj)) return layout?.app?.theme[0]
+
+    const diffDays = (dateObj - new Date()) / (1000 * 60 * 60 * 24)
+
+    // If it's past today → red
+    if (diffDays < 0) {
+        return "#FF0000"
+    }
+
+    // Still ahead → blue (or default color)
+    return layout?.app?.theme[0]
+})
+
+const expectedOrderTooltip = computed(() => {
+    const expectedDate = props.data?.expected_date_of_next_order
+    if (!expectedDate) return trans("No expected order date available")
+
+    const dateObj = new Date(expectedDate)
+    if (isNaN(dateObj)) return trans("Invalid date")
+
+    const diffDays = Math.round((dateObj - new Date()) / (1000 * 60 * 60 * 24))
+
+    if (diffDays > 0) {
+        return trans("Customer expected to place an order in :days days", { days: diffDays })
+    } else if (diffDays === 0) {
+        return trans("Customer expected to place an order today")
+    } else {
+        return trans("Customer should have placed an order :days days ago", { days: Math.abs(diffDays) })
+    }
 })
 </script>
 
 <template>
-    <div class="border rounded-lg p-4">
+    <div :class="['border rounded-lg p-4', { 'hidden': !data.total_clv_amount }]">
         <div class="flex flex-col gap-2">
             <div class="box-border">
                 <h3 class="text-lg font-bold">{{ locale.currencyFormat(currencyCode?.code, data?.total_clv_amount || 0) }}
@@ -47,7 +98,7 @@ const historicPercentage = computed(() => {
             </div>
 
             <!-- Progress Bar Comparison using PrimeVue -->
-            <div class="mb-2 hover:ring-1 p-[2px] cursor-pointer rounded-md" @click="isShowDetail = true">
+            <div :class="['mb-2 hover:ring-1 p-[2px] cursor-pointer rounded-md', { 'hidden': !historicPercentage  }]" @click="isShowDetail = true">
                 <!-- Single Progress Bar with Tooltip -->
                 <Tooltip placement="top">
                     <ProgressBar
@@ -57,16 +108,7 @@ const historicPercentage = computed(() => {
                     ></ProgressBar>
 
                     <template #popper>
-                        <div class="flex flex-col gap-2 text-sm">
-                            <div class="flex items-center gap-2">
-                                <div class="w-3 h-3 rounded-sm" :style="{ backgroundColor: progressBarColor }"></div>
-                                <span>{{ trans('Historic') }}: {{ locale.currencyFormat(currencyCode?.code, historicCLV) }}</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-3 h-3 bg-gray-200 rounded-sm"></div>
-                                <span>{{ trans('Predicted') }}: {{ locale.currencyFormat(currencyCode?.code, predictedCLV) }}</span>
-                            </div>
-                        </div>
+                        <span class="text-xs">{{ expectedOrderTooltip }}</span>
                     </template>
                 </Tooltip>
             </div>
