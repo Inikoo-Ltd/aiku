@@ -56,7 +56,7 @@ export const resolveResponsiveValue = (
 
   export const getStyles = (
     properties: any,
-    screen: 'mobile' | 'tablet' | 'desktop' = 'desktop',
+    screen: string | 'mobile' | 'tablet' | 'desktop' = 'desktop',
     useImportant = true
 ) => {
     
