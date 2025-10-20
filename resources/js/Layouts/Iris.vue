@@ -22,6 +22,7 @@ import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
 import { irisStyleVariables } from '@/Composables/Workshop'
 import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
+import { getStyles } from '@/Composables/styles'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
@@ -142,10 +143,14 @@ console.log('handle', usePage().props)
             />
 
             <Breadcrumbs v-if="usePage().props.breadcrumbs?.length" id="iris_breadcrumbs"
-                class="md:py-4 px-2 w-full xborder-b-0 mx-auto transition-all xbg-gray-100 border-b-0 border-transparent"
+                class="md:py-4 px-2 w-full mx-auto transition-all border-b-0 border-transparent hover:text-red-500"
+                :style="{
+                    ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                }"
                 :breadcrumbs="usePage().props.breadcrumbs ?? []"
                 :navigation="usePage().props.navigation ?? []"
-                :layout="layout" />
+                :layout="layout"
+            />
 
             <main>
                 <div>
