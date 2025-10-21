@@ -30,6 +30,7 @@ import Shadow from '@/Components/CMS/Fields/Shadow.vue'
 import ColumnComponentPicker from '@/Components/CMS/Fields/ColumnComponentPicker.vue'
 import Disclosure from '@/Components/CMS/Fields/Disclosure.vue'
 import ArrayEdit from '@/Components/CMS/Fields/ArrayEdit/LabelAndOrderArray.vue'
+import ArrayEditDrawer from '@/Components/CMS/Fields/ArrayEditDrawer/LabelAndOrderArray.vue'
 import InputNumber from 'primevue/inputnumber';
 import fontFamily from "@/Components/Workshop/Properties/TextFontFamily.vue"
 import { set } from 'lodash-es'
@@ -91,7 +92,8 @@ export const getComponent = (componentName: string) => {
         'min_max_price' : MinMaxPrice, 
         'video-settings' : VideoSettings,
         'selectquery' : PureMultiselectInfiniteScroll,
-        'select_product' : SelectProducts
+        'select_product' : SelectProducts,
+        "array-data-drawer" : ArrayEditDrawer,
     }
     return components[componentName] ?? NotFoundComponents
 }

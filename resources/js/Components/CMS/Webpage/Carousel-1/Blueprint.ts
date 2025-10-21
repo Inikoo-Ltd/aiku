@@ -108,7 +108,7 @@ export default {
 				{
 					key: ["cards"],
 					name: "Cards  Data",
-					type: "array-data",
+					type: "array-data-drawer",
 					props_data: {
 						blueprint: CardBlueprint.blueprint,
 						order_name: "card",
