@@ -125,7 +125,7 @@ const deleteImage = () => {
 
         <div v-else class="h-32 relative flex justify-center items-center">
             <Image :src="modelValue" class="w-auto h-fit" />
-            <div class="absolute hover:bg-black/50 z-10 inset-0 flex items-center justify-center text-white text-sm opacity-0 group-hover:opacity-100">
+            <div class="absolute hover:bg-black/60 z-10 inset-0 flex items-center justify-center text-white text-sm opacity-0 group-hover:opacity-100">
                 {{ trans("Upload image") }}
             </div>
         </div>
