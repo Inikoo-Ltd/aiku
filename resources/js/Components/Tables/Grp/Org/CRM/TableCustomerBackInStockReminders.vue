@@ -33,11 +33,11 @@ function backInStockRoute(backInStockReminder: BackInStockRemainder) {
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(code)="{ item: backInStockReminder }">
             <Link :href="backInStockRoute(backInStockReminder)" class="primaryLink">
-                {{ backInStockReminder["product_code"] }}
+                {{ backInStockReminder["code"] }}
             </Link>
         </template>
         <template #cell(name)="{ item: backInStockReminder }">
-            {{ backInStockReminder["product_name"] }}
+            {{ backInStockReminder["name"] }}
         </template>
     </Table>
 </template>
