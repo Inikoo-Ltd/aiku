@@ -6,7 +6,6 @@ import { inject, ref, watch, computed, nextTick } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage } from '@fal'
 import { getStyles } from '@/Composables/styles'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
 
 const props = defineProps<{
   modelValue: any
