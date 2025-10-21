@@ -23,7 +23,7 @@ function favouriteRoute(favourite: CustomerFavourite) {
         [
             (route().params as RouteParams).organisation,
             (route().params as RouteParams).shop,
-            favourite.slug
+            favourite.slug_product
         ]);
 }
 
