@@ -276,9 +276,9 @@ const debouncedSaveSiteSettings = debounce(block => {
 
 const onSaveSiteSettings = block => debouncedSaveSiteSettings(block);
 
-const onSaveWorkshop = (block, snedChangeValue = true) => {
+const onSaveWorkshop = (block, sendChangeValue = true) => {
   if (cancelTokens.value[block.id]) cancelTokens.value[block.id]();
-  if (snedChangeValue) {
+  if (sendChangeValue) {
     sendToIframe({
       key: 'setWebpage',
       value: JSON.parse(JSON.stringify(data.value))
