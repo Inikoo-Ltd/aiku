@@ -81,7 +81,7 @@ const responsiveOptions = computed(() => {
       ...getStyles(fieldValue?.container?.properties, props.screenType)
     }">
       <Carousel v-show="hasCards" :value="fieldValue.carousel_data.cards" :numVisible="slidesPerView"
-        :circular="isLooping" :autoplayInterval="fieldValue?.carousel_data?.carousel_setting?.autoplay ? 500 : 0"
+        :circular="isLooping" :autoplayInterval="fieldValue?.carousel_data?.carousel_setting?.autoplay ? 5000 : 0"
         :responsiveOptions="responsiveOptions" class="w-full">
         <template #item="{ data, index }" :showNavigators="false" :showIndicators="false">
           <div class="card flex flex-col h-full">

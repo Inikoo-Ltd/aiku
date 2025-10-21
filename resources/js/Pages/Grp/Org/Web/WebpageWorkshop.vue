@@ -41,10 +41,13 @@ import {
   faEye,
   faWindWarning,
   faUndo,
-  faRedo
+  faRedo,
+  faChevronCircleLeft,
+  faChevronRight
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faChevronLeft } from "@far";
 
 library.add(
   faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars,
@@ -389,9 +392,9 @@ const beforePublish = (route, popover) => {
   const validation = JSON.stringify(data.value.layout);
   if (props.webpage.type == "catalogue") onPublish(route, popover)
   else {
-     validation.includes('<h1') || validation.includes('<H1')
-    ? onPublish(route, popover)
-    : confirmPublish(route, popover);
+    validation.includes('<h1') || validation.includes('<H1')
+      ? onPublish(route, popover)
+      : confirmPublish(route, popover);
   }
 
 };
@@ -588,6 +591,7 @@ const canRedo = computed(() => future.value.length > 0);
 </script>
 
 <template>
+
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
@@ -614,12 +618,31 @@ const canRedo = computed(() => future.value.length > 0);
   </ConfirmDialog>
 
   <div class="flex">
-    <div v-if="!fullScreen" class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1">
-      <WebpageSideEditor ref="_WebpageSideEditor" v-model="isModalBlockList" :webpage="data"
-        :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock" @add="addNewBlock"
-        @order="sendOrderBlock" @setVisible="setHideBlock" @onSaveSiteSettings="onSaveSiteSettings"
-        @onDuplicateBlock="duplicateBlock" v-model:selectedTab="selectedTab" @update:selected-tab="(e)=>selectedTab = e"/>
+
+    <!-- Sidebar content -->
+    <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[99]">
+      <!-- Sidebar Content -->
+      <div v-show="!fullScreen">
+        <WebpageSideEditor ref="_WebpageSideEditor" v-model="isModalBlockList" :webpage="data"
+          :webBlockTypes="webBlockTypes" @update="onSaveWorkshop" @delete="sendDeleteBlock" @add="addNewBlock"
+          @order="sendOrderBlock" @setVisible="setHideBlock" @onSaveSiteSettings="onSaveSiteSettings"
+          @onDuplicateBlock="duplicateBlock" v-model:selectedTab="selectedTab"
+          @update:selected-tab="(e) => selectedTab = e" />
+      </div>
+
+      <!-- Toggle Button -->
+      <button @click="fullScreen = !fullScreen" class="absolute top-1/2 -translate-y-1/2 right-[-18px]
+                bg-white text-gray-600 hover:text-gray-900 
+                rounded-full shadow-lg hover:shadow-xl 
+                p-2.5 transition-all duration-300 ease-in-out 
+                border border-gray-200 hover:border-gray-300 " title="Toggle Sidebar">
+        <FontAwesomeIcon :icon="!fullScreen ? faChevronLeft : faChevronRight" class="text-lg" />
+      </button>
     </div>
+
+
+    <!-- Side toggle button (always visible) -->
+
 
     <!-- Preview Section -->
     <div class="h-[calc(100vh-16vh)] w-full flex flex-col bg-gray-200 overflow-x-auto">
@@ -630,10 +653,9 @@ const canRedo = computed(() => future.value.length > 0);
             class="cursor-pointer hover:text-amber-600">
             <FontAwesomeIcon :icon="faEye" fixed-width />
           </div>
-          <div v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" class="cursor-pointer">
-            <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
-          </div>
-          <!-- Undo -->
+          <!--  <div v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" class="cursor-pointer">
+          <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
+        </div> -->
           <!-- Undo -->
           <div class="py-1 px-2" v-tooltip="'undo'"
             :class="canUndo ? 'cursor-pointer hover:text-amber-600' : 'opacity-40 cursor-not-allowed'"
