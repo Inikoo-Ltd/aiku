@@ -9,9 +9,13 @@ import Button from '@/Components/Elements/Buttons/Button.vue'
 import LinkIris from '../LinkIris.vue'
 import { router } from '@inertiajs/vue3'
 import { ProductCategoryMenu } from '@/Composables/Iris/useMenu'
+import { getStyles } from '@/Composables/styles'
 library.add(faChevronRight, faExternalLink)
 
 const props = defineProps<{
+    containerStyle: {
+        
+    }
     productCategories: {}
     customMenusTop: {
         name: string
@@ -104,6 +108,19 @@ const closeSidebar = () => {
     isOpenMenuMobile.value = false;
 }
 
+const styling = {
+    ...getStyles(layout?.app?.webpage_layout?.container?.properties),
+    ...getStyles(props.containerStyle)
+}
+function stripImportant(styles) {
+    const cleaned = {}
+    for (const [key, value] of Object.entries(styles)) {
+        cleaned[key] = value.replace(/\s*!important\s*/gi, "")
+    }
+    return cleaned
+}
+const cssSafeZzz = stripImportant(styling)
+
 </script>
 
 <template>
@@ -114,15 +131,14 @@ const closeSidebar = () => {
    
         <!-- Column 1: Categories + Custom Menus -->
         <div :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r', 'overflow-y-auto']">
-             
-            <!-- Sidebar: Top for Desktop -->
+            <!-- Sidebar: Top navigation -->
             <div v-if="customMenusTop && customMenusTop.length > 0">
                 <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex"
                     class="p-2 px-4 flex items-center justify-between cursor-pointer"
                     :class="[
                         activeCustomTopIndex === customTopIndex
-                            ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
-                            : 'hover:bg-gray-50'
+                            ? `navActive`
+                            : 'navInactive'
                     ]"
                     @click="customTopItem.sub_departments && customTopItem.sub_departments.length > 0 ? setActiveCustomTopCategory(customTopIndex) : null">
                     <div>
@@ -154,9 +170,9 @@ const closeSidebar = () => {
                 class="p-2 px-4 flex items-center justify-between"
                 :class="[
                     activeIndex === index
-                        ? ` cursor-pointer bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
+                        ? ` cursor-pointer navActive`
                         : item.sub_departments?.length
-                            ? 'cursor-pointer hover:bg-gray-50'
+                            ? 'navInactive'
                             : ''
                 ]" @click="item.sub_departments?.length ? setActiveCategory(index) : false">
                 <LinkIris
@@ -182,8 +198,8 @@ const closeSidebar = () => {
                     class="p-2 px-4 flex items-center justify-between cursor-pointer"
                     :class="[
                         activeCustomIndex === customIndex
-                            ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
-                            : ' hover:bg-gray-50'
+                            ? 'navActive'
+                            : 'navInactive'
                     ]"
                     @click="customItem.sub_departments && customItem.sub_departments.length > 0 ? setActiveCustomCategory(customIndex) : null">
                     <div>
@@ -220,8 +236,8 @@ const closeSidebar = () => {
                         class="p-2 px-4 flex items-center justify-between cursor-pointer"
                         :class="[
                             activeSubIndex === sIndex
-                                ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
-                                : 'hover:bg-gray-50 text-gray-700'
+                                ? `navActive`
+                                : 'navInactive'
                         ]" @click="changeActiveSubIndex(sIndex)">
                         <LinkIris
                             v-if="sub.url"
@@ -257,8 +273,8 @@ const closeSidebar = () => {
                         class="p-2 px-4 flex items-center justify-between cursor-pointer"
                         :class="[
                             activeCustomSubIndex === sIndex
-                                ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
-                                : 'hover:bg-gray-50 text-gray-700'
+                            ? 'navActive'
+                            : 'navInactive'
                         ]" @click="changeActiveCustomSubIndex(sIndex)">
                         <div>
                             <LinkIris
@@ -283,8 +299,8 @@ const closeSidebar = () => {
                         class="p-2 px-4 flex items-center justify-between cursor-pointer"
                         :class="[
                             activeCustomTopSubIndex === sIndex
-                                ? `bg-gray-100 font-semibold text-[${layout.iris.theme?.color[0]}]`
-                                : 'hover:bg-gray-50 text-gray-700'
+                                ? `navActive`
+                                : 'navInactive'
                         ]" @click="changeActiveCustomTopSubIndex(sIndex)">
                         <div>
                             <LinkIris
@@ -322,7 +338,7 @@ const closeSidebar = () => {
                 <!-- Product Categories Families -->
                 <div v-if="activeSubIndex !== null && sortedFamilies.length">
                     <div v-for="(child, cIndex) in sortedFamilies" :key="cIndex"
-                        class="p-2 px-4  cursor-pointer hover:bg-gray-50">
+                        class="p-2 px-4">
                         <LinkIris
                             v-if="child.url !== null"
                             :href="internalHref(child)"
@@ -335,8 +351,7 @@ const closeSidebar = () => {
                         </LinkIris>
                         <span v-else>{{ child.name }}</span>
                     </div>
-                    <div class="p-2 px-4  cursor-pointer hover:bg-gray-50 font-bold">                        
-                        <!-- New Inertia navigation with loading indicator -->
+                    <div class="p-2 px-4">
                         <Button 
                             :label="trans('View all')" 
                             :icon="faExternalLink" 
@@ -351,7 +366,7 @@ const closeSidebar = () => {
                 <!-- Section: Bottom (Families) -->
                 <div v-if="activeCustomSubIndex !== null && customFamilies?.length">
                     <div v-for="(child, cIndex) in customFamilies" :key="cIndex"
-                        class="p-2 px-4  cursor-pointer hover:bg-gray-50">
+                        class="p-2 px-4">
                         <LinkIris
                             v-if="child.url !== null"
                             :href="internalHref(child)"
@@ -369,7 +384,7 @@ const closeSidebar = () => {
                 <!-- Section: Top (Families) -->
                 <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
                     <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"
-                        class="p-2 px-4  cursor-pointer hover:bg-gray-50">
+                        class="p-2 px-4">
                         <LinkIris
                             v-if="child.url !== null"
                             :href="internalHref(child)"
@@ -393,3 +408,22 @@ const closeSidebar = () => {
         </div>
     </div>
 </template>
+
+<style lang="scss">
+.navActive {
+    @apply cursor-pointer;
+
+    color: v-bind('cssSafeZzz.background');
+    background: v-bind('cssSafeZzz.color');
+}
+.navInactive {
+    @apply cursor-pointer;
+
+    &:hover {
+        // color: v-bind('cssSafeZzz.color');
+        background: color-mix(in srgb, v-bind('cssSafeZzz.color') 15%, transparent);
+
+
+    }
+}
+</style>

@@ -240,6 +240,7 @@ const internalHref = (item) => {
             <!-- Sidebar Menu: Desktop -->
             <SidebarDesktop
                 v-else
+                :containerStyle="props.menu?.container?.properties"
                 :productCategories
                 :customMenusTop
                 :customTopSubDepartments
