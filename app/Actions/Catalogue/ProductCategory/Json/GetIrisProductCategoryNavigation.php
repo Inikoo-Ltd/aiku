@@ -23,21 +23,12 @@ class GetIrisProductCategoryNavigation extends IrisAction
         $data = [];
 
         $departments = DB::table('product_categories')
-            ->where('product_categories.type', 'department')
-            ->leftJoin('model_has_collections', function ($join) {
-                $join->on('product_categories.id', '=', 'model_has_collections.model_id')
-                    ->where('model_has_collections.model_type', 'ProductCategory');
-            })
-            ->join('collections', 'model_has_collections.collection_id', '=', 'collections.id')
-            ->leftJoin('webpages', function ($join) {
-                $join->on('collections.id', '=', 'webpages.model_id')
-                    ->where('webpages.model_type', '=', 'Collection');
-            })
-            ->where('product_categories.shop_id', $shop->id)
-            ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE->value)
-            ->whereNotNull('product_categories.webpage_id')
-            ->whereNull('product_categories.deleted_at')
-            ->select('product_categories.id', 'product_categories.name', 'product_categories.url', 'collections.name as collection_name', 'webpages.url as collection_url')
+            ->where('type', 'department')
+            ->where('shop_id', $shop->id)
+            ->where('state', ProductCategoryStateEnum::ACTIVE->value)
+            ->whereNotNull('webpage_id')
+            ->whereNull('deleted_at')
+            ->select('id', 'name', 'url')
             ->get();
 
         foreach ($departments as $department) {
@@ -50,21 +41,12 @@ class GetIrisProductCategoryNavigation extends IrisAction
             ];
 
             $subDepartments = DB::table('product_categories')
-                ->where('product_categories.type', 'sub_department')
-                ->leftJoin('model_has_collections', function ($join) {
-                    $join->on('product_categories.id', '=', 'model_has_collections.model_id')
-                        ->where('model_has_collections.model_type', 'ProductCategory');
-                })
-                ->join('collections', 'model_has_collections.collection_id', '=', 'collections.id')
-                ->leftJoin('webpages', function ($join) {
-                    $join->on('collections.id', '=', 'webpages.model_id')
-                        ->where('webpages.model_type', '=', 'Collection');
-                })
-                ->where('product_categories.department_id', $department->id)
-                ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE->value)
-                ->whereNotNull('product_categories.webpage_id')
-                ->whereNull('product_categories.deleted_at')
-                ->select('product_categories.id', 'product_categories.name', 'product_categories.url', 'collections.name as collection_name', 'webpages.url as collection_url')
+                ->where('type', 'sub_department')
+                ->where('department_id', $department->id)
+                ->where('state', ProductCategoryStateEnum::ACTIVE->value)
+                ->whereNotNull('webpage_id')
+                ->whereNull('deleted_at')
+                ->select('id', 'name', 'url')
                 ->limit(10)
                 ->get();
 
