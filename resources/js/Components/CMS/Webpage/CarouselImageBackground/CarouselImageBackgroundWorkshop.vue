@@ -17,39 +17,39 @@ const props = defineProps<{
 
 const emits = defineEmits<{ (e: 'autoSave'): void }>()
 
-const keySwiper = ref(ulid())
-const layout: any = inject("layout", {})
-const hasCards = computed(() =>
-  Array.isArray(props.modelValue?.carousel_data?.cards) &&
-  props.modelValue.carousel_data.cards.length > 0
-)
-const slidesPerView = computed(() =>
-  props.modelValue?.carousel_data?.carousel_setting?.slidesPerView?.[props.screenType] || 1
-)
-const isLooping = computed(() => {
-  const settingsLoop = props.modelValue?.carousel_data?.carousel_setting?.loop || false
-  return settingsLoop && props.modelValue.carousel_data.cards.length > slidesPerView.value
-})
-const screenType = computed(() => props.screenType)
+const refreshTrigger = ref(0)
+const layout: any = inject('layout', {})
 
-
-
-const cardStyle = ref(getStyles(props.modelValue?.carousel_data?.card_container?.properties, props.screenType, false))
-
+// Refresh carousel when layout or settings change
 const refreshCarousel = async (delay = 100) => {
   await new Promise(resolve => setTimeout(resolve, delay))
   refreshTrigger.value++
   await nextTick()
 }
 
-// Watch for any carousel setting or screen change
+const hasCards = computed(() =>
+  Array.isArray(props.modelValue?.carousel_data?.cards) &&
+  props.modelValue.carousel_data.cards.length > 0
+)
+
+const slidesPerView = computed(() =>
+  props.modelValue?.carousel_data?.carousel_setting?.slidesPerView?.[props.screenType] || 1
+)
+
+const isLooping = computed(() => {
+  const loop = props.modelValue?.carousel_data?.carousel_setting?.loop || false
+  return loop && props.modelValue.carousel_data.cards.length > slidesPerView.value
+})
+
+const cardStyle = ref(getStyles(props.modelValue?.carousel_data?.card_container?.properties, props.screenType, false))
+
+
 watch(
   () => [props.modelValue?.carousel_data?.carousel_setting, props.screenType],
   () => refreshCarousel(),
   { deep: true }
 )
 
-// Watch for card container property change (style update)
 watch(
   () => props.modelValue?.carousel_data?.card_container,
   async () => {
@@ -62,64 +62,43 @@ watch(
 const responsiveOptions = computed(() => {
   const settings = props.modelValue?.carousel_data?.carousel_setting || {}
   return [
-    {
-      breakpoint: '1200px',
-      numVisible: settings.slidesPerView?.desktop || 4,
-      numScroll: 1
-    },
-    {
-      breakpoint: '992px',
-      numVisible: settings.slidesPerView?.tablet || 2,
-      numScroll: 1
-    },
-    {
-      breakpoint: '576px',
-      numVisible: settings.slidesPerView?.mobile || 1,
-      numScroll: 1
-    }
+    { breakpoint: '1200px', numVisible: settings.slidesPerView?.desktop || 4, numScroll: 1 },
+    { breakpoint: '992px', numVisible: settings.slidesPerView?.tablet || 2, numScroll: 1 },
+    { breakpoint: '576px', numVisible: settings.slidesPerView?.mobile || 1, numScroll: 1 }
   ]
 })
 </script>
 
 <template>
-  <div id="carousel" class="relative">
-    <!-- Loading overlay -->
-    <div  :key="keySwiper" :style="{
+  <div id="carousel-background-image" class="relative w-full">
+
+
+    <!-- Carousel -->
+    <div :data-refresh="refreshTrigger" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
     }">
       <Carousel v-if="hasCards" :value="modelValue.carousel_data.cards" :numVisible="slidesPerView"
         :circular="isLooping" :autoplayInterval="0" :responsiveOptions="responsiveOptions" class="w-full">
-        <template #item="{ data, index }" :showNavigators="false" :showIndicators="false">
-          <div class="card flex flex-col h-full">
-            <component :is="'div'" class="flex flex-1 flex-col">
-              <!-- Image Container -->
-              <div class="flex justify-center overflow-visible"
-                :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)">
-                <div class="overflow-hidden w-full flex items-center justify-center h-[185px]">
-                  <!-- Image -->
-                  <Image v-if="data?.image?.source" :src="data.image.source" :alt="data.image.alt || `image-${index}`"
-                     :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)" />
-
-                  <!-- Placeholder Icon -->
-                  <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
-                    <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
-                  </div>
+        <template #item="{ data }">
+          <!-- WRAPPER: This adds gap safely -->
+          <div class="px-1 md:px-1 lg:px-1">
+            <article
+              class="card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
+              <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
+                class="absolute inset-0 -z-10 size-full object-fill hover:scale-105 transition-transform duration-500" />
+              <div class="absolute inset-0 -z-10"></div>
+              <div class="relative p-6 sm:p-8">
+                <div class="p-4 flex flex-col flex-1 justify-between">
+                  <div v-html="data.text" />
                 </div>
               </div>
-
-              <!-- Text Content -->
-              <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
-                class="p-4 flex flex-col flex-1 justify-between">
-                <div v-html="data.text" class="text-center leading-relaxed" />
-              </div>
-            </component>
-
+            </article>
           </div>
         </template>
       </Carousel>
-
     </div>
+
   </div>
 </template>
 
@@ -130,32 +109,25 @@ const responsiveOptions = computed(() => {
 
 .card {
   background: v-bind('cardStyle?.background || "transparent"') !important;
-
-  /* Padding */
   padding-top: v-bind('cardStyle?.paddingTop || "0px"') !important;
   padding-right: v-bind('cardStyle?.paddingRight || "0px"') !important;
   padding-bottom: v-bind('cardStyle?.paddingBottom || "0px"') !important;
   padding-left: v-bind('cardStyle?.paddingLeft || "0px"') !important;
 
-  /* Margin */
   margin-top: v-bind('cardStyle?.marginTop || "0px"') !important;
   margin-right: v-bind('cardStyle?.marginRight || "0px"') !important;
-  margin-bottom: v-bind('cardStyle?.marginBottom || "0px"') !important;
-  margin-left: v-bind('cardStyle?.marginLeft || "0px"') !important;
+  margin-bottom: v-bind('cardStyle?.marginBottom || "10px"') !important;
+  margin-left: v-bind('cardStyle?.marginLeft || "10px"') !important;
 
-  /* Border radius */
-  border-top-left-radius: v-bind('cardStyle?.borderTopLeftRadius || "0px"') !important;
-  border-top-right-radius: v-bind('cardStyle?.borderTopRightRadius || "0px"') !important;
-  border-bottom-left-radius: v-bind('cardStyle?.borderBottomLeftRadius || "0px"') !important;
-  border-bottom-right-radius: v-bind('cardStyle?.borderBottomRightRadius || "0px"') !important;
-
-  /* Border sides individually */
+  border-radius: v-bind('cardStyle?.borderRadius || "0px"') !important;
   border-top: v-bind('cardStyle?.borderTop || "0px solid transparent"') !important;
   border-bottom: v-bind('cardStyle?.borderBottom || "0px solid transparent"') !important;
   border-left: v-bind('cardStyle?.borderLeft || "0px solid transparent"') !important;
   border-right: v-bind('cardStyle?.borderRight || "0px solid transparent"') !important;
-}
 
+  height: v-bind('cardStyle?.height || "17rem"') !important;
+  width: v-bind('cardStyle?.width || null') !important;
+}
 
 .fade-enter-active,
 .fade-leave-active {
