@@ -620,7 +620,7 @@ const canRedo = computed(() => future.value.length > 0);
   <div class="flex">
 
     <!-- Sidebar content -->
-    <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[99]">
+    <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[10]">
       <!-- Sidebar Content -->
       <div v-show="!fullScreen">
         <WebpageSideEditor ref="_WebpageSideEditor" v-model="isModalBlockList" :webpage="data"
