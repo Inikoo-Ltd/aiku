@@ -13,13 +13,16 @@ use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use Lorisleiva\Actions\Concerns\AsCommand;
+use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class FetchWooOrders extends RetinaAction
 {
-    use AsCommand;
+    use AsAction;
 
     public string $commandSignature = 'fetch:woo-orders';
+
+    public string $jobQueue = 'woo';
 
     public function asCommand(): void
     {
@@ -36,9 +39,14 @@ class FetchWooOrders extends RetinaAction
             ->where('platform_status', true)
             ->get();
 
+        /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
             if ($customerSalesChannel->user) {
-                FetchWooUserOrders::run($customerSalesChannel->user);
+                try {
+                    FetchWooUserOrders::run($customerSalesChannel->user);
+                } catch (\Exception $e) {
+                    Sentry::captureException($e);
+                }
             }
         }
     }

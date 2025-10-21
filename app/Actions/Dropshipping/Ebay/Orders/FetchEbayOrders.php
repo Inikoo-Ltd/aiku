@@ -11,11 +11,14 @@ namespace App\Actions\Dropshipping\Ebay\Orders;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\EbayUser;
-use Lorisleiva\Actions\Concerns\AsCommand;
+use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class FetchEbayOrders extends RetinaAction
 {
-    use AsCommand;
+    use AsAction;
+
+    public string $jobQueue = 'ebay';
 
     public string $commandSignature = 'fetch:ebay-orders';
 
@@ -28,7 +31,11 @@ class FetchEbayOrders extends RetinaAction
     {
         $ebayUsers = EbayUser::whereNotNull('customer_sales_channel_id')->get();
         foreach ($ebayUsers as $ebayUser) {
-            FetchEbayUserOrders::run($ebayUser);
+            try {
+                FetchEbayUserOrders::run($ebayUser);
+            } catch (\Exception $e) {
+                Sentry::captureException($e);
+            }
         }
     }
 }

@@ -13,25 +13,33 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class UpdateInventoryInWooPortfolio
 {
     use AsAction;
 
-    public string $commandSignature  = 'woo:update-inventory';
+    public string $commandSignature = 'woo:update-inventory';
+
+    public string $jobQueue = 'woo';
 
     public function handle(): void
     {
-        $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
+        $platform              = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
         $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)->get();
 
+        /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
             $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
                 ->whereNotNull('platform_product_id')
                 ->get();
 
             if ($customerSalesChannel->user) {
-                BulkUpdateWooPortfolio::dispatch($customerSalesChannel->user, $portfolios);
+                try {
+                    BulkUpdateWooPortfolio::dispatch($customerSalesChannel->user, $portfolios);
+                } catch (\Exception $e) {
+                    Sentry::captureException($e);
+                }
             }
         }
     }

@@ -21,11 +21,13 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
 class CheckShopifyPortfolios extends OrgAction
 {
     use AsAction;
 
+    public string $jobQueue = 'shopify';
 
     private array $tableData = [];
 
@@ -53,7 +55,11 @@ class CheckShopifyPortfolios extends OrgAction
         foreach ($query->orderBy('status')->get() as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);
             if ($portfolio) {
-                $portfolio = CheckShopifyPortfolio::run($portfolio);
+                try {
+                    $portfolio = CheckShopifyPortfolio::run($portfolio);
+                } catch (\Exception $e) {
+                    Sentry::captureException($e);
+                }
 
 
                 if ($command) {
@@ -82,8 +88,8 @@ class CheckShopifyPortfolios extends OrgAction
         CheckShopifyPortfolios::dispatch($customerSalesChannel);
 
         $request->session()->flash('modal', [
-            'status'  => 'success',
-            'title'   => __('Success!'),
+            'status'      => 'success',
+            'title'       => __('Success!'),
             'description' => __('We already run the sync in background please wait.'),
         ]);
     }

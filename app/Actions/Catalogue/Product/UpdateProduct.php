@@ -181,7 +181,6 @@ class UpdateProduct extends OrgAction
                 'description',
                 'state',
                 'price',
-                'available_quantity'
             ]
         )) {
             ProductRecordSearch::dispatch($product);

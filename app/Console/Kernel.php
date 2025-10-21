@@ -113,11 +113,11 @@ class Kernel extends ConsoleKernel
             );
 
 
-        $schedule->job(FetchEbayOrders::makeJob())->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
+        $schedule->job(FetchEbayOrders::makeJob())->everyFiveMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchEbayOrders',
         );
 
-        $schedule->job(FetchWooOrders::makeJob())->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
+        $schedule->job(FetchWooOrders::makeJob())->everyThirtyMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
         );
 
