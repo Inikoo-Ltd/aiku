@@ -26,10 +26,10 @@ class SendPalletDeliveryNotification extends OrgAction
     {
         $palletDelivery->refresh();
 
-        broadcast(new BroadcastFulfilmentCustomerNotification(
+        /*broadcast(new BroadcastFulfilmentCustomerNotification(
             $palletDelivery->group,
             $palletDelivery
-        ))->toOthers();
+        ))->toOthers();*/
 
         StoreRetinaFulfilmentCustomerNotification::dispatch($palletDelivery);
     }
