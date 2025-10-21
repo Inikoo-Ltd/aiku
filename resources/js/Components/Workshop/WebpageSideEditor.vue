@@ -67,7 +67,7 @@ const sendDeleteBlock = (block: Daum) => emits('delete', block)
 const tabs = computed(() => {
   const baseTabs = [
     { label: 'Settings', icon: faCogs, tooltip: 'Page Setting' },
-    { label: 'Block', icon: faLayerGroup, tooltip: 'Blocks' }
+    { label: 'Layer', icon: faLayerGroup, tooltip: 'Blocks' }
   ]
 
   if (openedBlockSideEditor.value !== null) {
