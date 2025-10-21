@@ -83,7 +83,6 @@ function organisationRoute(order: Order) {
 
 function customerRoute(order: Order) {
   let routeCurr = route().current();
-  console.log(routeCurr);
   switch (routeCurr) {
     case "grp.overview.ordering.orders.index":
     case "grp.org.overview.orders_in_basket.index":
@@ -148,7 +147,7 @@ function customerRoute(order: Order) {
         <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
         {{ order["reference"] }}
         </Link>
-        
+
         <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
           class="text-yellow-500" fixed-width aria-hidden="true" />
         <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart"
@@ -162,9 +161,12 @@ function customerRoute(order: Order) {
     </template>
 
     <template #cell(customer_name)="{ item: order }">
-      <Link :href="customerRoute(order)" class="secondaryLink">
+      <Link v-if="order.customer_slug" :href="customerRoute(order)" class="secondaryLink">
       {{ order["customer_name"] }}
       </Link>
+        <div v-else>
+            {{ order["customer_name"] }}
+        </div>
     </template>
 
 
