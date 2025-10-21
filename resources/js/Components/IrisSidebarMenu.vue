@@ -198,11 +198,11 @@ const internalHref = (item) => {
             }"
         >
             <template #header>
-                <div class="h-16 w-full md:w-48 overflow-hidden">
+                <div class="max-h-16 md:max-w-52 overflow-hidden">
                     <Image
                         v-if="sidebarLogo"
                         :src="sidebarLogo"
-                        class="h-full w-full md:w-48 object-contain"
+                        class="h-fit w-full object-contain aspect-auto"
                         :alt="trans('Sidebar logo')"
                     />
                     <img v-else :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="w-full h-full object-contain" />
