@@ -248,7 +248,7 @@ const setChartOptions = () => ({
 				</template>
 				<template v-else>
 					<CountUp
-                        class="primaryLink inline-block"
+                        class="inline-block"
 						:endVal="widget?.value"
 						:duration="1.5"
 						:scrollSpyOnce="true"
@@ -323,7 +323,7 @@ const setChartOptions = () => ({
 				</template>
 				<template v-else>
 					<CountUp
-						class="primaryLink inline-block"
+						class="inline-block"
 						v-if="visual.type === 'number'"
 						:endVal="visual.value"
 						:duration="1.5"
@@ -350,7 +350,7 @@ const setChartOptions = () => ({
 				</template>
 				<template v-else>
 					<CountUp
-						:class="'primaryLink inline-block ' + visual?.class"
+						:class="'inline-block ' + visual?.class"
 						:endVal="visual.value"
 						:duration="1.5"
 						:scrollSpyOnce="true"
