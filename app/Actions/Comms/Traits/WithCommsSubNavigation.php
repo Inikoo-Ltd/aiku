@@ -41,14 +41,14 @@ trait WithCommsSubNavigation
                 ],
             ],
             [
-                "label"    => __("Newsletter"),
+                "label"    => __("Newsletters"),
                 "route"    => [
                     "name"       => "grp.org.shops.show.dashboard.comms.newsletter_outboxes.index",
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "leftIcon" => [
                     "icon"    => ["fal", "fa-newspaper"],
-                    "tooltip" => __("Newsletter"),
+                    "tooltip" => __("Newsletters"),
                 ],
             ],
             [

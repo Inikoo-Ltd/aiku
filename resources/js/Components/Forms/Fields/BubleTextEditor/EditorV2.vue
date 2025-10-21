@@ -89,7 +89,7 @@ import {
     faExternalLink,
     faTimesCircle,
 } from "@far"
-import { faTable, faPalette, faUnlink, faLanguage } from "@fal"
+import { faTable, faPalette, faUnlink, faLanguage, faTimes } from "@fal"
 import { faEraser, faTint, faTable as fasTable, } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -163,12 +163,6 @@ const editorInstance = useEditor({
         Paragraph,
         Document,
         Text,
-      /*   ...(ImagePlus ? [ImagePlus.configure({
-            wrapperStyle: { cursor: 'pointer' },
-        })] : []), */
-        /*  ImagePlus.configure({
-            wrapperStyle: { cursor: 'pointer' },
-        }), */
         CustomImage,
         History,
         Placeholder.configure({
@@ -517,16 +511,10 @@ const convertRemToPx = (remString) => {
 }
 
 const shouldShow = ({ editor, view, state, from, to }) => {
-    // tampil hanya jika ada teks yang diseleksi
     return true
 }
 
-const tippyOptions = ref({
-     reference: () => document.getElementById('tiptap'),
-    duration: 100,
-    boundary: 'viewport',
-    maxWidth: 780,
-}) // default kosong
+const tippyOptions = ref({})
 
 /* const onTranslate = async () => {
   try {
@@ -570,7 +558,7 @@ onMounted(() => {
 <template>
     <div id="tiptap" class="divide-y divide-gray-400">
         <Teleport to="body">
-            <BubbleMenu :should-show="shouldShow" ref="_bubbleMenu" :editor="editorInstance"
+            <BubbleMenu  ref="_bubbleMenu" :editor="editorInstance"
                 v-if="editorInstance && !showDialog" :tippy-options="tippyOptions"
                 class="w-full max-w-[56vw] sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]">
 
@@ -639,7 +627,7 @@ onMounted(() => {
                                         <!-- Clear Font Size Button -->
                                         <FontAwesomeIcon v-if="editorInstance?.getAttributes('textStyle').fontSize"
                                             @click="editorInstance?.chain().focus().unsetFontSize().run()"
-                                            icon="fal fa-times" class="text-red-500 ml-2 cursor-pointer"
+                                            :icon="faTimes" class="text-red-500 ml-2 cursor-pointer"
                                             aria-hidden="true" />
                                     </div>
 
