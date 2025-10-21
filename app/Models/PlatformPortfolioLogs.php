@@ -16,10 +16,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $group_id
  * @property int $organisation_id
- * @property int $shop_id
- * @property int $customer_id
+ * @property int|null $shop_id
+ * @property int|null $customer_id
  * @property int $customer_sales_channel_id
- * @property int $portfolio_id
+ * @property int|null $portfolio_id
  * @property int $platform_id
  * @property string $platform_type
  * @property PlatformPortfolioLogsTypeEnum $type

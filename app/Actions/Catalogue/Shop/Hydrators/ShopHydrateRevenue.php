@@ -48,11 +48,11 @@ class ShopHydrateRevenue implements ShouldBeUnique
         }
 
         $stats = [
-            'revenue_amount' => $customers->sum(fn($c) => $c->stats->revenue_amount ?? 0),
-            'lost_revenue_other_amount' => $customers->sum(fn($c) => $c->stats->lost_revenue_other_amount ?? 0),
-            'lost_revenue_out_of_stock_amount' => $customers->sum(fn($c) => $c->stats->lost_revenue_out_of_stock_amount ?? 0),
-            'lost_revenue_replacements_amount' => $customers->sum(fn($c) => $c->stats->lost_revenue_replacements_amount ?? 0),
-            'lost_revenue_compensations_amount' => $customers->sum(fn($c) => $c->stats->lost_revenue_compensations_amount ?? 0),
+            'revenue_amount' => $customers->sum(fn ($c) => $c->stats->revenue_amount ?? 0),
+            'lost_revenue_other_amount' => $customers->sum(fn ($c) => $c->stats->lost_revenue_other_amount ?? 0),
+            'lost_revenue_out_of_stock_amount' => $customers->sum(fn ($c) => $c->stats->lost_revenue_out_of_stock_amount ?? 0),
+            'lost_revenue_replacements_amount' => $customers->sum(fn ($c) => $c->stats->lost_revenue_replacements_amount ?? 0),
+            'lost_revenue_compensations_amount' => $customers->sum(fn ($c) => $c->stats->lost_revenue_compensations_amount ?? 0),
         ];
 
         $shopStats = $shop->orderingStats ?? new ShopOrderingStats(['shop_id' => $shop->id]);

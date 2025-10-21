@@ -14,7 +14,6 @@ use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreNewProductToCurrentEbay extends OrgAction
 {
