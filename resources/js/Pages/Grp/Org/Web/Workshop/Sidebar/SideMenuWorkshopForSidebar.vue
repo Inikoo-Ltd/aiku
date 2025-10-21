@@ -25,18 +25,7 @@ import { notify } from "@kyvg/vue3-notification"
 // import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 // import Blueprint from "./Blueprint"
 
-library.add(
-	faChevronRight,
-	faSignOutAlt,
-	faShoppingCart,
-	faHeart,
-	faSearch,
-	faChevronDown,
-	faTimes,
-	faPlusCircle,
-	faBars,
-	faLowVision
-)
+library.add( faChevronRight, faSignOutAlt, faShoppingCart, faHeart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faLowVision )
 
 const props = defineProps<{
 	data: {
@@ -46,6 +35,7 @@ const props = defineProps<{
 		}
 	}
 	autosaveRoute: routeType
+	uploadImageRoute: routeType
 	webBlockTypes: {
 		data: Array<any>
 	}
@@ -63,7 +53,7 @@ const tabs = [
 	// { label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
 ]
 
-function changeTab(index: Number) {
+function changeTab(index: number) {
 	selectedTab.value = index
 }
 
@@ -128,8 +118,12 @@ const autoSave = async (value) => {
 					:selectedWeblock="data.code" />
 			</TabPanel> -->
 			<TabPanel v-if="data">
-				<!-- need fix this components edit drawer -->
-				<SetMenuListWorkshopForSidebar :data="data" :autosaveRoute="autosaveRoute" @auto-save="() => autoSave(data)" />
+				<SetMenuListWorkshopForSidebar
+					:data="data"
+					:autosaveRoute="autosaveRoute"
+					@auto-save="() => autoSave(data)"
+					:uploadImageRoute
+				/>
 			</TabPanel>
 			<!-- <TabPanel  v-if="data">
 				<SideEditor

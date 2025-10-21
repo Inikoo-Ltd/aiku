@@ -43,9 +43,9 @@ library.add(
 const props = defineProps<{
 	pageHead: PageHeadingTypes
 	title: string
-	uploadImageRoute: routeType
 	data: {}
 	status: boolean
+	upload_image_route: routeType
 	autosaveRoute: routeType
 	webBlockTypes: Object
 	domain: string
@@ -136,6 +136,7 @@ watch(currentView, (newValue) => {
 				:data="data?.sidebar" 
 				:webBlockTypes="webBlockTypes" 
 				:autosaveRoute="autosaveRoute"
+				:uploadImageRoute="upload_image_route"
 				@sendToIframe="sendToIframe"
 			/>
 		</div>

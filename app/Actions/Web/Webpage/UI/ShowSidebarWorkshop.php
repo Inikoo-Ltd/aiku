@@ -70,8 +70,8 @@ class ShowSidebarWorkshop extends OrgAction
 
                 ],
 
-                'uploadImageRoute' => [
-                    'name'       => 'grp.models.website.menu.images.store',
+                'upload_image_route' => [
+                    'name'       => 'grp.models.website.sidebar.images.store',
                     'parameters' => [
                         'website' => $website->id
                     ]
