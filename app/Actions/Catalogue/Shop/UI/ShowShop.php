@@ -171,6 +171,31 @@ class ShowShop extends OrgAction
             );
         }
 
+        $revenueAmount       = (int) ($shop->orderingStats->revenue_amount);
+        $lostRevenue         = $shop->orderingStats->lost_revenue_other_amount;
+        $numberInvoices      = $shop->orderingStats->number_invoices;
+        $refundInvoices      = $shop->orderingStats->number_invoices_type_refund;
+        $currencySymbol      = $shop->currency->symbol;
+
+        $refundRatio         = $revenueAmount > 0 ? round(($lostRevenue / $revenueAmount) * 100, 2) : 0;
+        $invoicesRefundRatio = $numberInvoices > 0 ? round(($refundInvoices / $numberInvoices) * 100, 1) : 0;
+
+        if ($revenueAmount > 0) {
+            $widgetComponents[] = $this->getWidget(
+                data: [
+                    'value'       => $revenueAmount,
+                    'description' => __('Total Sales') . ' — ' . $refundRatio . '% ' . __('refunded'),
+                    'type'        => 'number',
+                    'currency_symbol' => $currencySymbol,
+                ],
+                visual: [
+                    'value' => $numberInvoices,
+                    'label' => __('Invoices') . ' — ' . $invoicesRefundRatio . '% ' . __('with refunds'),
+                    'type'  => 'number_with_label',
+                ]
+            );
+        }
+
         return [
             'dashboard_stats' => [
                 'widgets' => [
