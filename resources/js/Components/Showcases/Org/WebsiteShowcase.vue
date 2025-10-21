@@ -179,8 +179,8 @@ const dateAdd30MinutesLastReindex = computed(() => {
                         </ModalConfirmationDelete>
 
                         <ButtonWithLink v-if="luigi_data?.luigisbox_tracker_id" s
-                            v-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
-                            :disabled="!isAbleReindex" :routeTarget="{
+                            xv-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
+                            xdisabled="!isAbleReindex" :routeTarget="{
                                 name: 'grp.models.website_luigi.reindex',
                                 parameters: {
                                     website: data?.id

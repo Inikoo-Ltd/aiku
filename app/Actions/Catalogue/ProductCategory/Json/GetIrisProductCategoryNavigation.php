@@ -34,10 +34,21 @@ class GetIrisProductCategoryNavigation extends IrisAction
         foreach ($departments as $department) {
             $departmentUrl = $domain . '/' . $department->url;
 
+            $collections = DB::table('model_has_collections')
+                ->where('model_has_collections.model_id', $department->id)
+                ->where('model_has_collections.type', 'department')
+                ->leftJoin('collections', 'collections.id', '=', 'model_has_collections.collection_id')
+                ->leftJoin('webpages', 'webpages.id', '=', 'collections.webpage_id')
+                ->whereNotNull('collections.webpage_id')
+                ->select('collections.id', 'collections.name', 'webpages.url')
+                ->limit(10)
+                ->get()->toArray();
+
             $departmentData = [
                 'name' => $department->name,
                 'url' => $departmentUrl,
-                'sub_departments' => []
+                'sub_departments' => [],
+                'collections' => $collections
             ];
 
             $subDepartments = DB::table('product_categories')
@@ -53,10 +64,21 @@ class GetIrisProductCategoryNavigation extends IrisAction
             foreach ($subDepartments as $subDepartment) {
                 $subDepartmentUrl = $departmentUrl . '/' . $subDepartment->url;
 
+                $subCollections = DB::table('model_has_collections')
+                    ->where('model_has_collections.model_id', $subDepartment->id)
+                    ->where('model_has_collections.type', 'sub_department')
+                    ->leftJoin('collections', 'collections.id', '=', 'model_has_collections.collection_id')
+                    ->leftJoin('webpages', 'webpages.id', '=', 'collections.webpage_id')
+                    ->whereNotNull('collections.webpage_id')
+                    ->select('collections.id', 'collections.name', 'webpages.url')
+                    ->limit(10)
+                    ->get()->toArray();
+
                 $subDepartmentData = [
                     'name' => $subDepartment->name,
                     'url' => $subDepartmentUrl,
-                    'families' => []
+                    'families' => [],
+                    'collections' => $subCollections
                 ];
 
                 $families = DB::table('product_categories')
