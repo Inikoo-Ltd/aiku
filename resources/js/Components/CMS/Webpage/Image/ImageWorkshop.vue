@@ -91,7 +91,7 @@ const resolvedGap = computed(() => {
         :loop="true" :autoplay="false" :pagination="{ clickable: true }" :modules="[Autoplay, Pagination]"
         class="w-full">
         <SwiperSlide v-for="(image, index) in modelValue?.value?.images || []" :key="index" class="w-full">
-          <component :is="getHref(image) ? 'a' : 'div'" :href="getHref(image) || undefined" target="_blank"
+          <component :is="'div'" :href="getHref(image) || undefined" target="_blank"
             rel="noopener noreferrer" class="block w-full h-full">
             <Image :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{
               ...getStyles(modelValue.value.layout?.properties, screenType),
@@ -108,7 +108,7 @@ const resolvedGap = computed(() => {
       }">
         <div v-for="(image, index) in modelValue?.value?.images || []" :key="index"
           class="group relative hover:bg-white/40 flex flex-col h-full">
-          <component :is="getHref(image) ? 'a' : 'div'" :href="getHref(image) || undefined" target="_blank"
+          <component :is="'div'" :href="getHref(image) || undefined" target="_blank"
             rel="noopener noreferrer" class="block w-full h-full">
             <Image v-if="image?.source" :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`"
               :imageCover="true" class="w-full h-full aspect-square object-cover rounded-lg" :style="{
