@@ -45,6 +45,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import EmailSubscribetion from "@/Components/EmailSubscribetion.vue"
 import CustomerClv from "@/Components/CustomerCLV.vue"
 import { notify } from "@kyvg/vue3-notification"
+import CustomerSalesVsRefunds from "@/Components/CustomerSalesVsRefunds.vue";
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy)
 
@@ -462,9 +463,10 @@ const copyToClipboard = async (text: string, label: string) => {
 
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-            <div>
+            <div class="flex flex-col gap-4">
                 <CustomerClv  :data="data?.stats"
                     :currencyCode="data.currency" />
+                <CustomerSalesVsRefunds :data="data?.stats" :currency-code="data.currency" />
             </div>
             <div class="justify-self-end ">
                 <div
