@@ -43,7 +43,7 @@ class FetchWooOrders extends RetinaAction
         foreach ($customerSalesChannels as $customerSalesChannel) {
             if ($customerSalesChannel->user) {
                 try {
-                    FetchWooUserOrders::run($customerSalesChannel->user);
+                    FetchWooUserOrders::dispatch($customerSalesChannel->user);
                 } catch (\Exception $e) {
                     Sentry::captureException($e);
                 }
