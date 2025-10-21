@@ -69,7 +69,7 @@ class IndexPlatformPortfolioLogs extends OrgAction
             ])
             ->defaultSort('-platform_portfolio_logs.created_at')
             ->allowedSorts(['created_at', 'type', 'status', 'item_code'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, 'created_at', 'type', 'status', 'item_code'])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

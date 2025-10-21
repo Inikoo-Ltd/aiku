@@ -78,6 +78,7 @@ class IndexCustomerFavourites extends OrgAction
                 'products.unit',
                 'products.top_seller',
                 'products.web_images',
+                'products.slug',
                 'webpages.url',
         ]);
 

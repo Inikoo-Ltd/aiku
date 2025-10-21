@@ -94,6 +94,7 @@ class CustomerFavouritesResource extends JsonResource
             'units'      => $this->units,
             'unit'       => $this->unit,
             'url'        => $url,
+            'slug_product'       => $this->slug,   
             'web_images' => $this->web_images,
             'transaction_id' => $this->transaction_id ?? null,
             'quantity_ordered' => (int) $this->quantity_ordered ?? 0,

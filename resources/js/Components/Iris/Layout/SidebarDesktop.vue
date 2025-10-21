@@ -36,7 +36,7 @@ const props = defineProps<{
         }
     }[]
     customTopSubDepartments: []
-    customMenusBottom: {}
+    customMenusBottom: {}[]
     customSubDepartments: []
     activeIndex: {}
     activeCustomIndex: {}
@@ -45,12 +45,12 @@ const props = defineProps<{
     setActiveCategory: Function
     setActiveCustomCategory: Function
     setActiveCustomTopCategory: Function
-    sortedFamilies: {}
-    customFamilies: {}
-    customTopFamilies: {}
+    sortedFamilies: {}[]
+    customFamilies: {}[]
+    customTopFamilies: {}[]
     sortedProductCategories: ProductCategoryMenu[]
     sortedSubDepartments: {}[]
-    activeSubIndex: {}
+    activeSubIndex: number
     activeCustomSubIndex: {}
     activeCustomTopSubIndex: {}
     changeActiveSubIndex: Function
@@ -119,7 +119,7 @@ function stripImportant(styles) {
     }
     return cleaned
 }
-const cssSafeZzz = stripImportant(styling)
+const stylingWithoutImportant = stripImportant(styling)
 
 </script>
 
@@ -160,12 +160,11 @@ const cssSafeZzz = stripImportant(styling)
                 <hr class="mt-4 border-gray-200">
             </div>
 
-            <!-- Header -->
+            
+            <!-- Section: Auto Product Categories List -->
             <div class="flex items-center justify-between px-2 py-4 border-b">
                 <h3 class="font-semibold text-sm">{{ trans("Departments") }}</h3>
             </div>
-
-            <!-- Product Categories List -->
             <div v-for="(item, index) in sortedProductCategories" :key="index"
                 class="p-2 px-4 flex items-center justify-between"
                 :class="[
@@ -363,9 +362,9 @@ const cssSafeZzz = stripImportant(styling)
                     </div>
                 </div>
 
-                <!-- Section: Bottom (Families) -->
-                <div v-if="activeCustomSubIndex !== null && customFamilies?.length">
-                    <div v-for="(child, cIndex) in customFamilies" :key="cIndex"
+                <!-- Section: Top (Families) -->
+                <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
+                    <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"
                         class="p-2 px-4">
                         <LinkIris
                             v-if="child.url !== null"
@@ -381,9 +380,9 @@ const cssSafeZzz = stripImportant(styling)
                     </div>
                 </div>
 
-                <!-- Section: Top (Families) -->
-                <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
-                    <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"
+                <!-- Section: Bottom (Families) -->
+                <div v-if="activeCustomSubIndex !== null && customFamilies?.length">
+                    <div v-for="(child, cIndex) in customFamilies" :key="cIndex"
                         class="p-2 px-4">
                         <LinkIris
                             v-if="child.url !== null"
@@ -413,15 +412,15 @@ const cssSafeZzz = stripImportant(styling)
 .navActive {
     @apply cursor-pointer;
 
-    color: v-bind('cssSafeZzz.background');
-    background: v-bind('cssSafeZzz.color');
+    color: v-bind('stylingWithoutImportant.background');
+    background: v-bind('stylingWithoutImportant.color');
 }
 .navInactive {
     @apply cursor-pointer;
 
     &:hover {
-        // color: v-bind('cssSafeZzz.color');
-        background: color-mix(in srgb, v-bind('cssSafeZzz.color') 15%, transparent);
+        // color: v-bind('stylingWithoutImportant.color');
+        background: color-mix(in srgb, v-bind('stylingWithoutImportant.color') 15%, transparent);
 
 
     }

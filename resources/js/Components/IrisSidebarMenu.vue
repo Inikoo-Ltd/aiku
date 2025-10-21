@@ -205,7 +205,7 @@ const internalHref = (item) => {
                         class="h-fit w-full object-contain aspect-auto"
                         :alt="trans('Sidebar logo')"
                     />
-                    <img v-else :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="w-full h-full object-contain" />
+                    <img v-else :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="w-full h-auto max-h-16 object-contain" />
                 </div>
             </template>
 
