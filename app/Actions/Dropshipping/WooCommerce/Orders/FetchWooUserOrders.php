@@ -52,7 +52,11 @@ class FetchWooUserOrders extends OrgAction
 
         foreach ($wooOrders as $wooOrder) {
             if (!Arr::get($wooOrder, 'date_paid')) {
-                return;
+                continue;
+            }
+
+            if (! Arr::get($wooOrder, 'shipping.country')) {
+                continue;
             }
 
             if ($wooCommerceUser->customerSalesChannel?->shop) {
@@ -60,7 +64,7 @@ class FetchWooUserOrders extends OrgAction
 
                 if ($country) {
                     if (in_array($country->id, $wooCommerceUser->customerSalesChannel->shop->forbidden_dispatch_countries)) {
-                        return;
+                        continue;
                     }
                 }
             }
