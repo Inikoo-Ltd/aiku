@@ -10,6 +10,7 @@ import LinkIris from '../LinkIris.vue'
 import { router } from '@inertiajs/vue3'
 import { ProductCategoryMenu } from '@/Composables/Iris/useMenu'
 import { getStyles } from '@/Composables/styles'
+import SidebarDesktopNavigation from './SidebarDesktopNavigation.vue'
 library.add(faChevronRight, faExternalLink)
 
 const props = defineProps<{
@@ -33,7 +34,7 @@ const props = defineProps<{
                 type: string
                 target: string
             }[]
-        }
+        }[]
     }[]
     customTopSubDepartments: []
     customMenusBottom: {}[]
@@ -133,30 +134,20 @@ const stylingWithoutImportant = stripImportant(styling)
         <div :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r', 'overflow-y-auto']">
             <!-- Sidebar: Top navigation -->
             <div v-if="customMenusTop && customMenusTop.length > 0">
-                <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex"
-                    class="p-2 px-4 flex items-center justify-between cursor-pointer"
+                <SidebarDesktopNavigation
+                    v-for="(sub, sIndex) in customMenusTop" :key="sIndex"
+                    :nav="sub"
                     :class="[
-                        activeCustomTopIndex === customTopIndex
+                        activeCustomTopIndex === sIndex
                             ? `navActive`
                             : 'navInactive'
                     ]"
-                    @click="customTopItem.sub_departments && customTopItem.sub_departments.length > 0 ? setActiveCustomTopCategory(customTopIndex) : null">
-                    <div>
-                        <LinkIris
-                            v-if="(!customTopItem.sub_departments || customTopItem.sub_departments.length === 0) && customTopItem.url !== null"
-                            :href="internalHref(customTopItem)"
-                            class="hover:underline"
-                            @success="() => closeSidebar()"
-                            :type="customTopItem.type"
-                            :target="customTopItem.target"
-                        >
-                            {{ customTopItem.name }}
-                        </LinkIris>
-                        <span v-else>{{ customTopItem.name }}</span>
-                    </div>
-                    <FontAwesomeIcon v-if="customTopItem.sub_departments && customTopItem.sub_departments.length > 0"
-                        :icon="faChevronRight" fixed-width class="text-xs" />
-                </div>
+                    @click="sub.sub_departments && sub.sub_departments.length > 0 ? setActiveCustomTopCategory(sIndex) : null"
+                    :internalHref
+                    :activeSubIndex
+                    :closeSidebar
+                    :isWithArrowRight="sub.sub_departments && sub.sub_departments.length > 0"
+                />
                 <hr class="mt-4 border-gray-200">
             </div>
 
@@ -165,58 +156,40 @@ const stylingWithoutImportant = stripImportant(styling)
             <div class="flex items-center justify-between px-2 py-4 border-b">
                 <h3 class="font-semibold text-sm">{{ trans("Departments") }}</h3>
             </div>
-            <div v-for="(item, index) in sortedProductCategories" :key="index"
-                class="p-2 px-4 flex items-center justify-between"
+            <SidebarDesktopNavigation
+                v-for="(sub, sIndex) in sortedProductCategories" :key="sIndex"
+                :nav="sub"
                 :class="[
-                    activeIndex === index
+                    activeIndex === sIndex
                         ? ` cursor-pointer navActive`
-                        : item.sub_departments?.length
+                        : sub.sub_departments?.length
                             ? 'navInactive'
                             : ''
-                ]" @click="item.sub_departments?.length ? setActiveCategory(index) : false">
-                <LinkIris
-                    v-if="item.url"
-                    :href="internalHref(item)"
-                    class="hover:underline"
-                    @success="() => closeSidebar()"
-                    :type="item.type"
-                    :target="item.target"
-                >
-                    {{ item.name }}
-                </LinkIris>
-                <div v-else>
-                    {{ item.name }}
-                </div>
-                <FontAwesomeIcon v-if="item.sub_departments?.length" :icon="faChevronRight" fixed-width class="text-xs" />
-            </div>
+                ]"
+                @click="sub.sub_departments?.length ? setActiveCategory(sIndex) : false"
+                :internalHref
+                :activeSubIndex
+                :closeSidebar
+                :isWithArrowRight="!!sub.sub_departments?.length"
+            />
 
             <!-- Section: Bottom navigation -->
             <div v-if="customMenusBottom && customMenusBottom.length > 0">
                 <hr class="my-4 border-gray-300">
-                <div v-for="(customItem, customIndex) in customMenusBottom" :key="'custom-' + customIndex"
-                    class="p-2 px-4 flex items-center justify-between cursor-pointer"
+                <SidebarDesktopNavigation
+                    v-for="(sub, sIndex) in customMenusBottom" :key="sIndex"
+                    :nav="sub"
                     :class="[
-                        activeCustomIndex === customIndex
-                            ? 'navActive'
+                        activeCustomIndex === sIndex
+                            ? `navActive`
                             : 'navInactive'
                     ]"
-                    @click="customItem.sub_departments && customItem.sub_departments.length > 0 ? setActiveCustomCategory(customIndex) : null">
-                    <div>
-                        <LinkIris
-                            v-if="(!customItem.sub_departments || customItem.sub_departments.length === 0) && customItem.url !== null"
-                            :href="internalHref(customItem)"
-                            class="hover:underline"
-                            @success="() => closeSidebar()"
-                            :type="customItem.type"
-                            :target="customItem.target"
-                        >
-                            {{ customItem.name }}
-                        </LinkIris>
-                        <span v-else>{{ customItem.name }}</span>
-                    </div>
-                    <FontAwesomeIcon v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
-                        :icon="faChevronRight" fixed-width class="text-xs" />
-                </div>
+                    @click="sub.sub_departments && sub.sub_departments.length > 0 ? setActiveCustomCategory(sIndex) : null"
+                    :internalHref
+                    :activeSubIndex
+                    :closeSidebar
+                    :isWithArrowRight="sub.sub_departments && sub.sub_departments.length > 0"
+                />
             </div>
         </div>
 
@@ -229,93 +202,68 @@ const stylingWithoutImportant = stripImportant(styling)
             </div>
 
             <div class="overflow-y-auto">
-                <!-- Product Categories Subdepartments -->
+                <!-- Section: Top (Subdepartments) -->
+                <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
+                    <SidebarDesktopNavigation
+                        v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex"
+                        :nav="sub"
+                        :class="[
+                            activeCustomTopSubIndex === sIndex
+                                ? `navActive`
+                                : 'navInactive'
+                        ]"
+                        @click="changeActiveCustomTopSubIndex(sIndex)"
+                        :internalHref
+                        :activeSubIndex
+                        :closeSidebar
+                        isWithArrowRight
+                    />
+                </div>
+
+                <!-- Section: SubDepartments (Auto Product Categories) -->
                 <div v-if="activeIndex !== null && sortedSubDepartments?.length">
-                    <div v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex"
-                        class="p-2 px-4 flex items-center justify-between cursor-pointer"
+                    <SidebarDesktopNavigation
+                        v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex"
+                        :nav="sub"
                         :class="[
                             activeSubIndex === sIndex
                                 ? `navActive`
                                 : 'navInactive'
-                        ]" @click="changeActiveSubIndex(sIndex)">
-                        <LinkIris
-                            v-if="sub.url"
-                            :href="internalHref(sub)"
-                            class="hover:underline"
-                            @success="() => closeSidebar()"
-                            :type="sub.type"
-                            :target="sub.target"
-                        >
-                            {{ sub.name }}
-                        </LinkIris>
-                        <div v-else>
-                            {{ sub.name }}
-                        </div>
-                        <FontAwesomeIcon :icon="faChevronRight" fixed-width class="text-xs" />
-                    </div>
+                        ]"
+                        @click="changeActiveSubIndex(sIndex)"
+                        :internalHref
+                        :activeSubIndex
+                        :closeSidebar
+                        isWithArrowRight
+                    />
 
-                    <div class="p-2 px-4 font-bold">
+                    <div class="p-2 px-4">
                         <Button 
                             :label="trans('View all')" 
-                            :icon="faExternalLink" 
-                            size="xs" 
+                            :icon="faExternalLink"
+                            size="xs"
                             :loading="isLoadingProductCategory"
                             @click="handleViewAllProductCategory(sortedProductCategories[activeIndex].url)"
-                            class="cursor-pointer"
                         />
                     </div>
                 </div>
 
                 <!-- Section: Bottom (Subdepartments) -->
                 <div v-if="activeCustomIndex !== null && customSubDepartments?.length">
-                    <div v-for="(sub, sIndex) in customSubDepartments" :key="sIndex"
-                        class="p-2 px-4 flex items-center justify-between cursor-pointer"
+                    <SidebarDesktopNavigation
+                        v-for="(sub, sIndex) in customSubDepartments" :key="sIndex"
+                        :nav="sub"
                         :class="[
                             activeCustomSubIndex === sIndex
-                            ? 'navActive'
-                            : 'navInactive'
-                        ]" @click="changeActiveCustomSubIndex(sIndex)">
-                        <div>
-                            <LinkIris
-                                v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
-                                :href="internalHref(sub)"
-                                class="hover:underline"
-                                @success="() => closeSidebar()"
-                                :target="getTarget(sub)"
-                                :type="sub.type"
-                            >
-                                {{ sub.name }}
-                            </LinkIris>
-                            <span v-else>{{ sub.name }}</span>
-                        </div>
-                        <FontAwesomeIcon :icon="faChevronRight" fixed-width class="text-xs" />
-                    </div>
-                </div>
-
-                <!-- Section: Top (Subdepartments) -->
-                <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
-                    <div v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex"
-                        class="p-2 px-4 flex items-center justify-between cursor-pointer"
-                        :class="[
-                            activeCustomTopSubIndex === sIndex
                                 ? `navActive`
                                 : 'navInactive'
-                        ]" @click="changeActiveCustomTopSubIndex(sIndex)">
-                        <div>
-                            <LinkIris
-                                v-if="(!sub.families || sub.families.length === 0) && sub.url !== null"
-                                :href="internalHref(sub)"
-                                class="hover:underline"
-                                @success="() => closeSidebar()"
-                                :target="getTarget(sub)"
-                                :type="sub.type"
-                            >
-                                {{ sub.name }}
-                            </LinkIris>
-                            <span v-else>{{ sub.name }}</span>
-                        </div>
-                        <FontAwesomeIcon :icon="faChevronRight" fixed-width class="text-xs" />
-                    </div>
+                        ]"
+                        @click="changeActiveCustomSubIndex(sIndex)"
+                        :internalHref
+                        :activeSubIndex
+                        :closeSidebar
+                        isWithArrowRight
+                    />
                 </div>
 
                 <!-- No subdepartments message -->
@@ -334,35 +282,7 @@ const stylingWithoutImportant = stripImportant(styling)
             </div>
 
             <div class="overflow-y-auto">
-                <!-- Product Categories Families -->
-                <div v-if="activeSubIndex !== null && sortedFamilies.length">
-                    <div v-for="(child, cIndex) in sortedFamilies" :key="cIndex"
-                        class="p-2 px-4">
-                        <LinkIris
-                            v-if="child.url !== null"
-                            :href="internalHref(child)"
-                            class="hover:underline"
-                            @success="() => closeSidebar()"
-                            :target="getTarget(child)"
-                            :type="child.type"
-                        >
-                            {{ child.name }}
-                        </LinkIris>
-                        <span v-else>{{ child.name }}</span>
-                    </div>
-                    <div class="p-2 px-4">
-                        <Button 
-                            :label="trans('View all')" 
-                            :icon="faExternalLink" 
-                            size="xs" 
-                            :loading="isLoadingSubDepartment"
-                            @click="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
-                            class="cursor-pointer"
-                        />
-                    </div>
-                </div>
-
-                <!-- Section: Top (Families) -->
+                <!-- Families: Top -->
                 <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
                     <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"
                         class="p-2 px-4">
@@ -380,10 +300,37 @@ const stylingWithoutImportant = stripImportant(styling)
                     </div>
                 </div>
 
-                <!-- Section: Bottom (Families) -->
+                <!-- Families: Product Categories -->
+                <div v-if="activeSubIndex !== null && sortedFamilies.length">
+                    <SidebarDesktopNavigation
+                        v-for="(sub, sIndex) in sortedFamilies" :key="sIndex"
+                        :nav="sub"
+                        :class="[
+                            activeCustomTopSubIndex === sIndex
+                                ? `navActive`
+                                : 'navInactive'
+                        ]"
+                        aclick="changeActiveCustomTopSubIndex(sIndex)"
+                        :internalHref
+                        :activeSubIndex
+                        :closeSidebar
+                    />
+
+                    <div class="p-2 px-4">
+                        <Button 
+                            :label="trans('View all')" 
+                            :icon="faExternalLink" 
+                            size="xs" 
+                            :loading="isLoadingSubDepartment"
+                            @click="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
+                            class="cursor-pointer"
+                        />
+                    </div>
+                </div>
+
+                <!-- Families: Bottom -->
                 <div v-if="activeCustomSubIndex !== null && customFamilies?.length">
-                    <div v-for="(child, cIndex) in customFamilies" :key="cIndex"
-                        class="p-2 px-4">
+                    <div v-for="(child, cIndex) in customFamilies" :key="cIndex" class="p-2 px-4">
                         <LinkIris
                             v-if="child.url !== null"
                             :href="internalHref(child)"
@@ -412,15 +359,15 @@ const stylingWithoutImportant = stripImportant(styling)
 .navActive {
     @apply cursor-pointer;
 
-    color: v-bind('stylingWithoutImportant.background');
-    background: v-bind('stylingWithoutImportant.color');
+    color: v-bind('stylingWithoutImportant.background || "#ffffff"');
+    background: v-bind('stylingWithoutImportant.color || "#030712"');
 }
 .navInactive {
     @apply cursor-pointer;
 
     &:hover {
         // color: v-bind('stylingWithoutImportant.color');
-        background: color-mix(in srgb, v-bind('stylingWithoutImportant.color') 15%, transparent);
+        background: color-mix(in srgb, v-bind('stylingWithoutImportant.color || "#030712"') 15%, transparent);
 
 
     }

@@ -1,0 +1,39 @@
+<script setup lang="ts">
+import { faChevronRight } from "@far"
+import LinkIris from "../LinkIris.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+
+const props = defineProps<{
+    internalHref: Function
+    activeSubIndex: number | null
+    closeSidebar: Function
+    nav: {
+        name: string
+        url?: string
+        type?: "internal" | "external"
+        target?: string
+    }
+    isWithArrowRight?: boolean
+}>()
+</script>
+
+<template>
+    <div
+        class="p-2 px-4 flex items-center justify-between cursor-pointer"
+        >
+        <LinkIris
+            v-if="nav.url"
+            :href="internalHref(nav)"
+            class="hover:underline"
+            @success="() => closeSidebar()"
+            :type="nav.type"
+            :target="nav.target"
+        >
+            {{ nav.name }}
+        </LinkIris>
+        <div v-else>
+            {{ nav.name }}
+        </div>
+        <FontAwesomeIcon v-if="isWithArrowRight" :icon="faChevronRight" fixed-width class="text-xs" />
+    </div>
+</template>
