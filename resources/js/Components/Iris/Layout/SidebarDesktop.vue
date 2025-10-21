@@ -45,12 +45,12 @@ const props = defineProps<{
     setActiveCategory: Function
     setActiveCustomCategory: Function
     setActiveCustomTopCategory: Function
-    sortedFamilies: {}
-    customFamilies: {}
-    customTopFamilies: {}
+    sortedFamilies: {}[]
+    customFamilies: {}[]
+    customTopFamilies: {}[]
     sortedProductCategories: ProductCategoryMenu[]
     sortedSubDepartments: {}[]
-    activeSubIndex: {}
+    activeSubIndex: number
     activeCustomSubIndex: {}
     activeCustomTopSubIndex: {}
     changeActiveSubIndex: Function
@@ -119,7 +119,7 @@ function stripImportant(styles) {
     }
     return cleaned
 }
-const cssSafeZzz = stripImportant(styling)
+const stylingWithoutImportant = stripImportant(styling)
 
 </script>
 
@@ -413,15 +413,15 @@ const cssSafeZzz = stripImportant(styling)
 .navActive {
     @apply cursor-pointer;
 
-    color: v-bind('cssSafeZzz.background');
-    background: v-bind('cssSafeZzz.color');
+    color: v-bind('stylingWithoutImportant.background');
+    background: v-bind('stylingWithoutImportant.color');
 }
 .navInactive {
     @apply cursor-pointer;
 
     &:hover {
-        // color: v-bind('cssSafeZzz.color');
-        background: color-mix(in srgb, v-bind('cssSafeZzz.color') 15%, transparent);
+        // color: v-bind('stylingWithoutImportant.color');
+        background: color-mix(in srgb, v-bind('stylingWithoutImportant.color') 15%, transparent);
 
 
     }
