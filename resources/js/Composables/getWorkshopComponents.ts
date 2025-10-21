@@ -48,6 +48,7 @@ import SeeAlso1Workshop from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Workshop
 import BlogWorkshop from '@/Components/CMS/Webpage/Blog/BlogWorkshop.vue'
 import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme1/EditFooter1Translation.vue'
 import CarouselCtaWorkshop from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaWorkshop.vue'
+import CarouselImageBackground from '@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundWorkshop.vue'
 
 
 
@@ -130,7 +131,8 @@ export const getComponent = (componentName: string) => {
         "user-subscribe": UserSubscribeWorkshop,
         'cta4' :Cta4,
         'blog' : BlogWorkshop,
-        'carousel-cta' : CarouselCtaWorkshop
+        'carousel-cta' : CarouselCtaWorkshop,
+        'carousel-image-background' : CarouselImageBackground
     }
 
     return components[componentName] ?? NotFoundComponents

@@ -521,7 +521,12 @@ const shouldShow = ({ editor, view, state, from, to }) => {
     return true
 }
 
-const tippyOptions = ref({}) // default kosong
+const tippyOptions = ref({
+     reference: () => document.getElementById('tiptap'),
+    duration: 100,
+    boundary: 'viewport',
+    maxWidth: 780,
+}) // default kosong
 
 /* const onTranslate = async () => {
   try {
@@ -554,7 +559,7 @@ const tippyOptions = ref({}) // default kosong
 onMounted(() => {
   setTimeout(() => (contentResult.value = editorInstance.value?.getHTML()), 250)
   tippyOptions.value = {
-    appendTo: () => document.body,
+    reference: () => document.getElementById('tiptap'),
     duration: 100,
     boundary: 'viewport',
     maxWidth: 780,
@@ -989,7 +994,6 @@ onMounted(() => {
                     </section>
                 </div>
             </BubbleMenu>
-
         </Teleport>
 
 
@@ -1037,6 +1041,15 @@ onMounted(() => {
 
 
 <style scoped>
+
+.BubbleMenu {
+  position: fixed !important;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+}
+
 :deep(.tippy-box) {
     min-width: 10px !important;
     max-width: max-content !important;

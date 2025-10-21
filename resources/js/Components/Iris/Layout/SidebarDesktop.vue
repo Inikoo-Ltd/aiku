@@ -36,7 +36,7 @@ const props = defineProps<{
         }
     }[]
     customTopSubDepartments: []
-    customMenusBottom: {}
+    customMenusBottom: {}[]
     customSubDepartments: []
     activeIndex: {}
     activeCustomIndex: {}
@@ -160,12 +160,11 @@ const stylingWithoutImportant = stripImportant(styling)
                 <hr class="mt-4 border-gray-200">
             </div>
 
-            <!-- Header -->
+            
+            <!-- Section: Auto Product Categories List -->
             <div class="flex items-center justify-between px-2 py-4 border-b">
                 <h3 class="font-semibold text-sm">{{ trans("Departments") }}</h3>
             </div>
-
-            <!-- Product Categories List -->
             <div v-for="(item, index) in sortedProductCategories" :key="index"
                 class="p-2 px-4 flex items-center justify-between"
                 :class="[
@@ -363,9 +362,9 @@ const stylingWithoutImportant = stripImportant(styling)
                     </div>
                 </div>
 
-                <!-- Section: Bottom (Families) -->
-                <div v-if="activeCustomSubIndex !== null && customFamilies?.length">
-                    <div v-for="(child, cIndex) in customFamilies" :key="cIndex"
+                <!-- Section: Top (Families) -->
+                <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
+                    <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"
                         class="p-2 px-4">
                         <LinkIris
                             v-if="child.url !== null"
@@ -381,9 +380,9 @@ const stylingWithoutImportant = stripImportant(styling)
                     </div>
                 </div>
 
-                <!-- Section: Top (Families) -->
-                <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
-                    <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"
+                <!-- Section: Bottom (Families) -->
+                <div v-if="activeCustomSubIndex !== null && customFamilies?.length">
+                    <div v-for="(child, cIndex) in customFamilies" :key="cIndex"
                         class="p-2 px-4">
                         <LinkIris
                             v-if="child.url !== null"
