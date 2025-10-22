@@ -98,12 +98,18 @@ class EditWebpage extends OrgAction
                 'type'                => 'input',
                 'label'               => __('Breadcrumb label').' ('.__('Optional').')',
                 'information'         => __('To be used for the breadcrumbs, will use Meta Title if missing'),
+                'options'   => [
+                    'counter'   => true,
+                ],
                 'value'               => $webpage->title,
             ],
             'title'       => [
                 'type'                => 'input',
                 'label'               => __('Meta Title').' (& '.__('Browser title').')',
                 'information'         => __('This will be used for the title seen in the browser, and meta title for SEO'),
+                'options'   => [
+                    'counter'   => true,
+                ],
                 'value'               => $webpage->title,
             ],
 
@@ -111,6 +117,9 @@ class EditWebpage extends OrgAction
                 'type'                => 'textarea',
                 'label'               => __('Meta Description'),
                 'information'         => __('This will be used for the meta description'),
+                'options'   => [
+                    'counter'   => true,
+                ],
                 'value'               => $webpage->description,
                 "maxLength"     => 150,
                 "counter"       => true,
