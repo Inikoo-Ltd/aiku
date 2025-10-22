@@ -17,6 +17,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Web\Website\GetWebsiteWorkshopMenu;
+use App\Actions\Web\Website\GetWebsiteWorkshopSidebar;
 use App\Http\Resources\Helpers\SnapshotResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Snapshot;
@@ -43,6 +44,7 @@ class ShowSnapshotPreview extends OrgAction
                 'header' => GetWebsiteWorkshopHeader::run($website),
                 'footer' => GetWebsiteWorkshopFooter::run($website),
                 'navigation' => GetWebsiteWorkshopMenu::run($website),
+                'sidebar' => GetWebsiteWorkshopSidebar::run($website),
                 'layout' => Arr::get($website->published_layout, 'theme'),
             ]
         );

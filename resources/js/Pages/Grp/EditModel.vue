@@ -194,7 +194,7 @@ const handleIntersection = (element: Element, index: number) => (entries) => {
 
 const switchTab = (key: string) => {
     currentTab.value = key
-    console.log(key)
+    // console.log(key)
 
     // Update URL with query parameter
     router.visit('', {

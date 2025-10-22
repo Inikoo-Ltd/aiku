@@ -39,7 +39,7 @@ class TradeUnitResource extends JsonResource
             'cpnp_number' => $tradeUnit->cpnp_number,
             'ufi_number' => $tradeUnit->ufi_number,
             'scpn_number' => $tradeUnit->scpn_number,
-
+            'stock'         => $tradeUnit->orgStocks->sum('quantity_in_locations'),
             'barcode'              => $tradeUnit->barcode,
             'gross_weight'         => $tradeUnit->gross_weight,
             'marketing_weight'     => $tradeUnit->marketing_weight,

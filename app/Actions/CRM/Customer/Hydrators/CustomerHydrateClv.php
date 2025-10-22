@@ -85,8 +85,8 @@ class CustomerHydrateClv implements ShouldBeUnique
             $averageCustomerLifespan = $customerAge / 365;
             $monthlyCustomerLifespan = (int)$customer->created_at->diffInMonths(now());
 
-            $expectedRemainingLifespan=0;
-            if($monthlyCustomerLifespan>0) {
+            $expectedRemainingLifespan = 0;
+            if ($monthlyCustomerLifespan > 0) {
                 $expectedRemainingLifespan = $monthlyCustomerLifespan / $averageCustomerLifespan;
             }
 

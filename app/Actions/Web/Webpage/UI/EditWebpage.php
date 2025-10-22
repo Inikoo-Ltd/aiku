@@ -115,21 +115,19 @@ class EditWebpage extends OrgAction
                                 'code'       => [
                                     'type'                => 'input',
                                     'label'               => __('Code'),
-                                    'label_no_capitalize' => true,
                                     'value'               => $webpage->code,
                                     'required'            => true,
                                 ],
                                 'title'       => [
                                     'type'                => 'input',
                                     'label'               => __('Title'),
-                                    'label_no_capitalize' => true,
+                                    'information'         => __('This will be used for the page title and meta title'),
                                     'value'               => $webpage->title,
                                     'required'            => true,
                                 ],
                                 'url' => [
                                     'type'      => 'inputWithAddOn',
                                     'label'     => __('URL'),
-                                    'label_no_capitalize' => true,
                                     'leftAddOn' => [
                                         'label' => $isBlog ? 'https://' . $webpage->website->domain . '/blog' : 'https://' . $webpage->website->domain . '/'
                                     ],
@@ -139,7 +137,7 @@ class EditWebpage extends OrgAction
                                 'description'       => [
                                     'type'                => 'textarea',
                                     'label'               => __('Description'),
-                                    'label_no_capitalize' => true,
+                                    'information'         => __('This will be used for the meta description'),
                                     'value'               => $webpage->description,
                                     'required'            => true,
                                     "maxLength"     => 150,

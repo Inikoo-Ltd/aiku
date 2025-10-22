@@ -11,14 +11,12 @@ namespace App\Actions\Dropshipping\Ebay\Orders;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\EbayUser;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\AsCommand;
 use Sentry;
 
 class FetchEbayOrders extends RetinaAction
 {
-    use AsAction;
-
-    public string $jobQueue = 'ebay';
+    use AsCommand;
 
     public string $commandSignature = 'fetch:ebay-orders';
 

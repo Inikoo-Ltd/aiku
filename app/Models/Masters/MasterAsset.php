@@ -8,6 +8,8 @@
 
 namespace App\Models\Masters;
 
+use App\Enums\Masters\MasterAsset\MasterAssetProductsStatusEnum;
+use App\Enums\Masters\MasterAsset\MasterAssetStocksStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
@@ -91,8 +93,8 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $art4_image_id
  * @property int|null $art5_image_id
  * @property array<array-key, mixed>|null $marketing_dimensions
- * @property string|null $stocks_status
- * @property string|null $products_status
+ * @property MasterAssetStocksStatusEnum|null $stocks_status
+ * @property MasterAssetProductsStatusEnum|null $products_status
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
@@ -165,6 +167,8 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'variant_is_visible'   => 'boolean',
         'fetched_at'           => 'datetime',
         'last_fetched_at'      => 'datetime',
+        'stocks_status'        => MasterAssetStocksStatusEnum::class,
+        'products_status'      => MasterAssetProductsStatusEnum::class
     ];
 
     protected $attributes = [

@@ -19,9 +19,9 @@ class PingActiveWooChannel
     use asAction;
     use WithActionUpdate;
 
-    public string $commandSignature = 'PingActiveWooChannel:Check';
+    public string $commandSignature = 'woo:ping_active_channel';
 
-    public function asCommand()
+    public function asCommand(): void
     {
         $this->handle();
     }
@@ -36,6 +36,7 @@ class PingActiveWooChannel
             ->where('platform_status', true)
             ->get();
 
+        /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
             if ($customerSalesChannel->user) {
                 $customerSalesChannel = CheckWooChannel::run($customerSalesChannel->user);

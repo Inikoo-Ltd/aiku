@@ -9,13 +9,6 @@
 namespace App\Console;
 
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
-use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
-use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
-use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
-use App\Actions\Dropshipping\Shopify\Product\UpdateInventoryInShopifyPortfolio;
-use App\Actions\Dropshipping\WooCommerce\PingActiveWooChannel;
-use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
-use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
@@ -113,31 +106,31 @@ class Kernel extends ConsoleKernel
             );
 
 
-        $schedule->job(FetchEbayOrders::makeJob())->everyFiveMinutes()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('fetch:ebay-orders')->everyFiveMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchEbayOrders',
         );
 
-        $schedule->job(FetchWooOrders::makeJob())->everyThirtyMinutes()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('fetch:woo-orders')->everyThirtyMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
         );
 
-        $schedule->job(PingActiveWooChannel::makeJob())->everySixHours()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('woo:ping_active_channel')->everySixHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'PingActiveWooChannel',
         );
 
-        $schedule->job(ReviveInActiveWooChannel::makeJob())->daily()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('woo:revive_in_active_channel')->daily()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'ReviveInActiveWooChannel',
         );
 
-        $schedule->job(UpdateInventoryInWooPortfolio::makeJob())->hourly()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateWooStockInventories',
         );
 
-        $schedule->job(UpdateInventoryInShopifyPortfolio::makeJob())->hourly()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('shopify:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateInventoryInShopifyPortfolio',
         );
 
-        $schedule->job(CheckShopifyPortfolios::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+        $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'CheckShopifyPortfolios',
         );
 
