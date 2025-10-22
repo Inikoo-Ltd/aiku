@@ -11,7 +11,6 @@ namespace App\Actions\Web\Website;
 use App\Actions\OrgAction;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
-use Illuminate\Http\RedirectResponse;
 use Lorisleiva\Actions\ActionRequest;
 use App\Actions\Traits\WithVarnishBan;
 

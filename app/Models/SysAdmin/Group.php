@@ -79,6 +79,7 @@ use App\Models\Ordering\Adjustment;
 use App\Models\Ordering\Order;
 use App\Models\Ordering\Purge;
 use App\Models\Ordering\SalesChannel;
+use App\Models\PaymentGatewayLog;
 use App\Models\Procurement\PurchaseOrder;
 use App\Models\Production\Artefact;
 use App\Models\Production\ManufactureTask;
@@ -206,6 +207,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Outbox> $outboxes
  * @property-read LaravelCollection<int, Packing> $packings
  * @property-read LaravelCollection<int, PaymentAccount> $paymentAccounts
+ * @property-read LaravelCollection<int, PaymentGatewayLog> $paymentGatewayLogs
  * @property-read LaravelCollection<int, PaymentServiceProvider> $paymentServiceProviders
  * @property-read LaravelCollection<int, Payment> $payments
  * @property-read LaravelCollection<int, Picking> $pickings
@@ -956,6 +958,11 @@ class Group extends Authenticatable implements Auditable, HasMedia
     public function getMasterFamilies(): LaravelCollection
     {
         return $this->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get();
+    }
+
+    public function paymentGatewayLogs(): HasMany
+    {
+        return $this->hasMany(PaymentGatewayLog::class);
     }
 
 

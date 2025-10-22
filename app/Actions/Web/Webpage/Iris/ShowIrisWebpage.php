@@ -207,7 +207,7 @@ class ShowIrisWebpage
 
             return redirect()->to($webpageData, 301)
                 ->withHeaders([
-                    'x-original-referer'=>request()->headers->get('referer', '')
+                    'x-original-referer' => request()->headers->get('referer', '')
                 ]);
         }
 

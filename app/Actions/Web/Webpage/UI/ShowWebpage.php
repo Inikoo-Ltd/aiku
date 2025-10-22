@@ -23,7 +23,6 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Helpers\SnapshotResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Web\ExternalLinksResource;
@@ -256,7 +255,7 @@ class ShowWebpage extends OrgAction
                     ]
                 ]
             ];
-        } 
+        }
         /* elseif (in_array($webpage->type, [WebpageTypeEnum::STOREFRONT, WebpageTypeEnum::CONTENT])) {
             $actions[] = [
                 'type'  => 'button',
@@ -278,8 +277,6 @@ class ShowWebpage extends OrgAction
     public function htmlResponse(Webpage $webpage, ActionRequest $request): Response
     {
         $subNavigation = $this->getWebpageNavigation($webpage->website);
-        $website = $webpage->website;
-
 
         $actions = $this->getModelActions($webpage);
 
