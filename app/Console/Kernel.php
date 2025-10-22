@@ -122,6 +122,10 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'ReviveInActiveWooChannel',
         );
 
+        $schedule->command('ebay:ping')->daily()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'CheckAllEbayChannels',
+        );
+
         $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateWooStockInventories',
         );
