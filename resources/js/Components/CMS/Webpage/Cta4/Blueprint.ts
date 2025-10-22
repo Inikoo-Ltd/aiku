@@ -9,19 +9,27 @@ export default {
 				{
 					key: ["source"],
 					label: "Image",
-					type: "upload_image",
+					type: "image-cropped",
+					props_data: {
+						stencilProps: {
+							aspectRatio: 16 / 9,
+							movable: true,
+							scalable: true,
+							resizable: true,
+						},
+					},
 				},
 				{
 					key: ["alt"],
 					label: "Alternate Text",
 					type: "text",
 				},
-				{
+				/* {
 					key: ["properties", "dimension"],
 					label: "Dimension",
 					type: "dimension",
 					useIn: ["desktop", "tablet", "mobile"],
-				},
+				}, */
 				{
 					key: ["properties","padding"],
 					useIn: ["desktop", "tablet", "mobile"],
