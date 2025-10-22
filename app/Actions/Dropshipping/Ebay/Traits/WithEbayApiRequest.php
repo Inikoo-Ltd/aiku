@@ -46,6 +46,26 @@ trait WithEbayApiRequest
         'pricingSummary',
     ];
 
+    public function sanitizeForEbay($text): string
+    {
+        // Remove or replace problematic keywords
+        $problematic = [
+            'includes' => 'contains',
+            'include' => 'contain',
+            'javascript' => '',
+            '.cookie' => '',
+            'cookie(' => '',
+            'replace(' => '',
+            'IFRAME' => '',
+            'META' => '',
+            'base href' => '',
+        ];
+
+        $text = str_ireplace(array_keys($problematic), array_values($problematic), $text);
+
+        return preg_replace('/\b(includes?|javascript)\b/i', '', $text);
+    }
+
     /**
      * Check if error requires user action
      */

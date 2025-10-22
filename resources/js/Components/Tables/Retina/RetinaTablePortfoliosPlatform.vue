@@ -723,6 +723,9 @@ const isOpenModalErrorProduct = ref(false)
 						preserveScroll: true,
 					}"/>
         </template>
+        <template #cell(message)="{item}">
+            <span :class="item.message === 'OK' ? 'text-green-500' : 'text-red-500'">{{item.message}}</span>
+        </template>
     </Table>
 
     <!-- <pre>{{ data.data[0] }}</pre> -->
@@ -792,7 +795,7 @@ const isOpenModalErrorProduct = ref(false)
                                                      class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
                                                 </div>
                                             </div>
-                                            <div v-if="!item.no_price" xclick="() => selectProduct(item)"
+                                            <div v-if="!item.no_price && item.price" xclick="() => selectProduct(item)"
                                                  v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
                                                 {{
                                                     locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
