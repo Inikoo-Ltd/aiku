@@ -45,7 +45,7 @@ const props = defineProps<{
                 updated_at: string,
                 images: ImageTS
                 image_thumbnail: string | null
-                description_title: string | null,
+                // description_title: string | null,
                 description_extra: string | null
             }
         }
@@ -174,9 +174,9 @@ const routeAPI = window.location.origin + `/${props.data?.product?.data?.slug}/d
                     :routeToSpecificChannel="{ name: 'retina.models.portfolio.store_to_multi_channels', parameters: null }" /> -->
                     <div class="flex flex-col">
                         <dt class="text-sm text-gray-500">{{ trans("Description") }}</dt>
-                        <dd v-if="data?.product?.data?.description_title"
+                        <!-- <dd v-if="data?.product?.data?.description_title"
                             class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow"
-                            v-html="data?.product?.data?.description_title"></dd>
+                            v-html="data?.product?.data?.description_title"></dd> -->
                         <dd class="text-sm font-medium bg-gray-100 px-3 py-2 rounded shadow"
                             v-html="data?.product?.data?.description ?? '-'"></dd>
                         <dd v-if="data?.product?.data?.description_extra"

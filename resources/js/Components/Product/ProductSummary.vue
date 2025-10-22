@@ -270,17 +270,17 @@ console.log('product summary : ', props)
 					</div>
 
 					<!-- Combined Description -->
-					<div v-if="data?.description_title || data?.description || data?.description_extra"
+					<div v-if="!('data?.description_title') || data?.description || data?.description_extra"
 						class="space-y-2">
 						<dt class="text-gray-500">{{ trans("Description") }}</dt>
 						<dd class="font-medium">
 							<div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
 								<div v-if="!showFullDescription && data?.description_extra">
 									<!-- Show title and description, hide extra -->
-									<div v-if="data?.description_title"
+									<!-- <div v-if="data?.description_title"
 										class="text-base font-semibold text-gray-700 leading-relaxed mb-3"
 										v-html="data?.description_title">
-									</div>
+									</div> -->
 									<div v-if="data?.description" class="text-sm text-gray-700 leading-relaxed"
 										v-html="data?.description">
 									</div>
