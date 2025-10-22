@@ -12,16 +12,14 @@ use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\AsCommand;
 use Sentry;
 
 class UpdateInventoryInShopifyPortfolio
 {
-    use AsAction;
+    use AsCommand;
 
     public string $commandSignature = 'shopify:update-inventory';
-
-    public string $jobQueue = 'shopify';
 
     public function handle(): void
     {

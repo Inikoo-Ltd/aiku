@@ -13,16 +13,15 @@ use App\Actions\RetinaAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
-use Lorisleiva\Actions\Concerns\AsAction;
+use Lorisleiva\Actions\Concerns\AsCommand;
 use Sentry;
 
 class FetchWooOrders extends RetinaAction
 {
-    use AsAction;
+    use AsCommand;
 
     public string $commandSignature = 'fetch:woo-orders';
 
-    public string $jobQueue = 'woo';
 
     public function asCommand(): void
     {
