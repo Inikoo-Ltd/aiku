@@ -25,10 +25,6 @@ class StoreShopifyProduct extends RetinaAction
 {
     use WithActionUpdate;
 
-    public string $jobQueue = 'shopify';
-    public int $jobBackoff = 5;
-
-
     public function handle(Portfolio $portfolio, array $productData = []): array
     {
         /** @var ShopifyUser $shopifyUser */

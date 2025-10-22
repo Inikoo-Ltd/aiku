@@ -65,8 +65,8 @@ class ShowGroupDashboard extends OrgAction
                             'charts'      => [] // <-- to do (refactor), need to call OrganisationDashboardSalesChartsEnum
 
                         ]
-                    ]
-
+                    ],
+                    'ordering_stats' => $group->orderingStats,
                 ]
 
             ]

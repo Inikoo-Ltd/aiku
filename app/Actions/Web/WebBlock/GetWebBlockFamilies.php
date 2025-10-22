@@ -10,6 +10,7 @@ namespace App\Actions\Web\WebBlock;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebBlockCollectionResource;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
@@ -37,6 +38,9 @@ class GetWebBlockFamilies
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
                 ->where('show_in_website', true)
+                ->whereNotNull('webpages.id')
+                ->where('webpages.state', WebpageStateEnum::LIVE->value)
+
                 ->whereNull('product_categories.deleted_at')
                 ->get();
         } elseif ($webpage->model instanceof Collection) {

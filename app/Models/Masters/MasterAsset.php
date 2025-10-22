@@ -8,6 +8,8 @@
 
 namespace App\Models\Masters;
 
+use App\Enums\Masters\MasterAsset\MasterAssetProductsStatusEnum;
+use App\Enums\Masters\MasterAsset\MasterAssetStocksStatusEnum;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\Stock;
@@ -165,6 +167,8 @@ class MasterAsset extends Model implements Auditable, HasMedia
         'variant_is_visible'   => 'boolean',
         'fetched_at'           => 'datetime',
         'last_fetched_at'      => 'datetime',
+        'stocks_status'        => MasterAssetStocksStatusEnum::class,
+        'products_status'      => MasterAssetProductsStatusEnum::class
     ];
 
     protected $attributes = [

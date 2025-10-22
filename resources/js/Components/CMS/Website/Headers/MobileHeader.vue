@@ -35,6 +35,7 @@ import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { checkScreenType } from '@/Composables/useWindowSize'
 import { computed } from 'vue'
+import LinkIris from '@/Components/Iris/LinkIris.vue'
 
 // Add icons to the library
 library.add(
@@ -181,13 +182,15 @@ onMounted(() => {
                     :custom-menus-bottom="customMenusBottom"
                     :custom-menus-top="customMenusTop"
                     :screenType
-                    :sidebarLogo="computedSelectedSidebarData.data?.fieldValue?.sidebar_logo"
+                    :sidebarLogo="computedSelectedSidebarData?.data?.fieldValue?.sidebar_logo"
                 />
             </div>
 
             <!-- Section: Logo  -->
             <div class="w-full px-4 mb-1 flex justify-end items-center " :class="isLoggedIn ? 'col-span-3' : 'col-span-1'">
-                <component :is="true ? Link : 'div'" :href="'/'" class="block h-fit aspect-auto max-h-[50px] min-w-5 w-full max-w-32">
+                <component :is="true ? Link : 'div'" :href="'/'" class="block h-fit aspect-auto max-h-[50px] min-w-5 w-full max-w-32"
+                    :class="isLoggedIn ? 'mx-auto' : ''"
+                >
                     <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" ximageCover="true"
                         :style="{ objectFit: 'contain' }"
                     />
@@ -196,10 +199,10 @@ onMounted(() => {
 
             <!-- Section: Profile -->
             <div v-if="isLoggedIn" class="w-fit ml-auto flex items-center cursor-pointer text-xl">
-                <Link href="/app/profile">
+                <LinkIris href="/app/profile">
                     <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
                     :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
-                </Link>
+                </LinkIris>
             </div>
         </div>
 

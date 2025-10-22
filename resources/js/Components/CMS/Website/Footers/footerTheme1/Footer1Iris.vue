@@ -117,7 +117,7 @@ const getValueColumn4Transleted = (value: string) => {
             </div> -->
             <div>
                 <component v-if="modelValue?.logo?.source" :is="'span'" rel="noopener noreferrer"
-                    class="block w-fit h-auto pt-3">
+                    class="mx-auto md:mx-0 block w-fit h-auto pt-3">
                     <Image :style="getStyles(modelValue.logo.properties, screenType)" :alt="modelValue?.logo?.alt"
                         :imageCover="true" :src="modelValue?.logo?.source">
                     </Image>
