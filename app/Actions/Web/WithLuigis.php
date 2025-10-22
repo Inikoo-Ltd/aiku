@@ -201,7 +201,6 @@ trait WithLuigis
 
     public function reindexTags(Webpage|Website $parent, LaravelCollection $tags): void
     {
-
         $objects = [];
         foreach ($tags as $tag) {
             $url       = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
@@ -230,7 +229,6 @@ trait WithLuigis
      */
     public function reindexBrands(Webpage|Website $parent, LaravelCollection $brands): void
     {
-
         $objects = [];
         foreach ($brands as $brand) {
             $url       = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
@@ -448,6 +446,8 @@ trait WithLuigis
                 "product_id"      => $product->id,
                 "introduced_at"   => $product->created_at ? $product->created_at->format('c') : null,
                 "description"     => $product->description,
+                'website_id'      => $webpage->website_id,
+                'webpage_id'      => $webpage->id,
             ]),
             ...(count($familyData) || count($departmentData) || count($subDepartmentData) || count($brandObject) || count($tagsObject) ? [
                 "nested" => array_values(array_filter([

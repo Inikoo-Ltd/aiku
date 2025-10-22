@@ -21,7 +21,6 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
-use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -57,6 +56,11 @@ class StoreEbayProduct extends RetinaAction
             ];
 
             $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
+            $decoded = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $noTags = strip_tags($decoded);
+            $clean = preg_replace('/[^A-Za-z0-9.,;\'"!? \n-]/', ' ', $noTags);
+            $clean = preg_replace('/\s+/', ' ', trim($clean));
+            $descriptions = str_replace('(', '', str_replace(')', '', str_replace('.', ' ', $clean)));
 
             if (!$descriptions) {
                 $descriptions = $portfolio->item->name;
@@ -109,17 +113,23 @@ class StoreEbayProduct extends RetinaAction
                         'response' => $displayError
                     ]);
 
-                    UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $displayError]);
+                    UpdatePortfolio::make()->action($portfolio, [
+                        'upload_warning' => $displayError,
+                        'errors_response' => [
+                            'message' => $displayError
+                        ]
+                    ]);
 
                     return $displayError;
                 }
+
                 return false;
             };
 
             $productResult = $ebayUser->storeProduct($inventoryItem);
 
             if ($handleError($productResult)) {
-                throw ValidationException::withMessages(['message' => $handleError($productResult)]);
+                return;
             }
 
             $categories = $ebayUser->getCategorySuggestions($product->family->name);
@@ -131,7 +141,7 @@ class StoreEbayProduct extends RetinaAction
             }
 
             if ($handleError($categories)) {
-                throw ValidationException::withMessages(['message' => $handleError($categories)]);
+                return;
             }
 
             $offerExist = $ebayUser->getOffers([
@@ -152,7 +162,6 @@ class StoreEbayProduct extends RetinaAction
                         'category_id' => $categoryId
                     ]
                 );
-
             } else {
                 $offer = $ebayUser->storeOffer([
                     'sku' => Arr::get($inventoryItem, 'sku'),
@@ -165,19 +174,20 @@ class StoreEbayProduct extends RetinaAction
             }
 
             if ($handleError($offer)) {
-                throw ValidationException::withMessages(['message' => $handleError($offer)]);
+                return;
             }
 
             $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
 
             if ($handleError($publishedOffer)) {
-                throw ValidationException::withMessages(['message' => $handleError($publishedOffer)]);
+                return;
             }
 
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($offer, 'offerId'),
                 'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId'),
                 'upload_warning' => null,
+                'errors_response' => []
             ]);
 
             CheckEbayPortfolio::run($portfolio);
@@ -192,13 +202,7 @@ class StoreEbayProduct extends RetinaAction
 
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {
-            $portfolio = UpdatePortfolio::run($portfolio, [
-                'errors_response' => $ebayUser->getDisplayErrors([$e->getMessage()])
-            ]);
-
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
-
-            throw $e;
         }
     }
 }
