@@ -70,7 +70,6 @@ class CategoriseInvoice extends OrgAction
         $invoiceCategories = $invoice->organisation->invoiceCategories()->where('state', InvoiceCategoryStateEnum::ACTIVE)->orderBy('priority', 'desc')->get();
         /** @var InvoiceCategory $invoiceCategory */
         foreach ($invoiceCategories as $invoiceCategory) {
-
             $invoiceCategory = match ($invoiceCategory->type) {
                 InvoiceCategoryTypeEnum::SHOP_TYPE => $this->inHaystack($invoiceCategory, 'shop_types', $invoice->shop->type->value),
                 InvoiceCategoryTypeEnum::SHOP_FALLBACK => $this->shopFallback($invoice, $invoiceCategory),
@@ -191,12 +190,15 @@ class CategoriseInvoice extends OrgAction
 
         $query->chunk(1000, function (Collection $modelsData) use ($bar, $command) {
             foreach ($modelsData as $modelId) {
-                $invoice = Invoice::withTrashed()->find($modelId->id);
+                $invoice              = Invoice::withTrashed()->find($modelId->id);
+                $oldInvoiceCategoryId = $invoice->invoiceCategory?->id;
+                $oldInvoiceCategory   = $invoice->invoiceCategory;
+                $invoice              = $this->handle($invoice);
 
-                $oldInvoiceCategory = $invoice->invoiceCategory;
-                $invoice            = $this->handle($invoice);
 
-                if ($oldInvoiceCategory->id != $invoice->invoiceCategory->id) {
+                $newInvoiceCategoryId = $invoice->invoiceCategory?->id;
+
+                if ($oldInvoiceCategoryId != $newInvoiceCategoryId) {
                     $command->info("Invoice: $invoice->id $invoice->reference Category Changed:   ".$oldInvoiceCategory?->slug."     -> ".$invoice->invoiceCategory?->slug);
                 }
 
