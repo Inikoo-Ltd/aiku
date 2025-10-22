@@ -59,7 +59,7 @@ trait WithLuigis
         $content_type = 'application/json; charset=utf-8';
 
         $offsetSeconds = 0;
-        $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds) . ' GMT';
+        $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
 
         $accessToken = $this->getAccessToken($parent);
 
@@ -91,12 +91,12 @@ trait WithLuigis
             ->retry(3, 100)
             ->withBody($body, $content_type)
             ->{strtolower($method)}(
-                'https://live.luigisbox.com/' . $endPoint
+                'https://live.luigisbox.com/'.$endPoint
             );
 
 
         if ($response->failed()) {
-            throw new Exception('Failed to send request to Luigi\'s Box API: ' . $response->body());
+            throw new Exception('Failed to send request to Luigi\'s Box API: '.$response->body());
         }
     }
 
@@ -134,7 +134,7 @@ trait WithLuigis
                     try {
                         $this->request($website, '/v1/content', $body, 'post', $compressed);
                     } catch (Exception $e) {
-                        print "Failed to reindex website $website->domain: " . $e->getMessage() . "\n";
+                        print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
 
                         return;
                     }
@@ -153,7 +153,7 @@ trait WithLuigis
             try {
                 $this->request($parent, '/v1/content', $body);
             } catch (Exception $e) {
-                Log::error("Failed to reindex webpage $webpage->title: " . $e->getMessage());
+                Log::error("Failed to reindex webpage $webpage->title: ".$e->getMessage());
             }
         }
     }
@@ -195,16 +195,15 @@ trait WithLuigis
             $segments = [$webpage->url];
         }
 
-        return '/' . collect($segments)->implode('/');
+        return '/'.collect($segments)->implode('/');
     }
 
 
     public function reindexTags(Webpage|Website $parent, LaravelCollection $tags): void
     {
-
         $objects = [];
         foreach ($tags as $tag) {
-            $url       = '/search?lb.t[]=tag:' . $tag->name . '&q=' . $tag->name;
+            $url       = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
             $objects[] = [
                 "identity" => $url,
                 "type"     => "tag",
@@ -230,10 +229,9 @@ trait WithLuigis
      */
     public function reindexBrands(Webpage|Website $parent, LaravelCollection $brands): void
     {
-
         $objects = [];
         foreach ($brands as $brand) {
-            $url       = '/search?lb.f[]=brand:' . $brand->name . '&q=' . $brand->name;
+            $url       = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
             $objects[] = [
                 "identity" => $url,
                 "type"     => "brand",
@@ -274,7 +272,7 @@ trait WithLuigis
                         'objects' => $batch
                     ];
                     $this->request($website, '/v1/content/delete', $body, 'delete', $compressed);
-                    print "Deleted count " . count($batch) . " from website: $website->name\n";
+                    print "Deleted count ".count($batch)." from website: $website->name\n";
                 }
             });
     }
@@ -400,7 +398,7 @@ trait WithLuigis
         $brand       = $product->getBrand();
         $brandObject = [];
         if ($brand) {
-            $url         = '/search?lb.f[]=brand:' . $brand->name . '&q=' . $brand->name;
+            $url         = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
             $brandObject = [
                 "identity" => $url,
                 "type"     => "brand",
@@ -417,7 +415,7 @@ trait WithLuigis
         $tagsObject = [];
         if ($tags->isNotEmpty()) {
             foreach ($tags as $tag) {
-                $url          = '/search?lb.t[]=tag:' . $tag->name . '&q=' . $tag->name;
+                $url          = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
                 $tagsObject[] = [
                     "identity" => $url,
                     "type"     => "tag",
@@ -442,7 +440,7 @@ trait WithLuigis
                 "availability"    => intval($product->state == ProductStateEnum::ACTIVE),
                 "stock_qty"       => $product->available_quantity ?? 0,
                 "price"           => (float)$product->price ?? 0,
-                "formatted_price" => $product->currency->symbol . $product->price . '/' . $product->unit,
+                "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,
                 "image_link"      => Arr::get($product->imageSources(200, 200), 'original'),
                 "product_code"    => $product->code,
                 "product_id"      => $product->id,
