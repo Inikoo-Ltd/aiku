@@ -175,9 +175,10 @@ const deleteImage = () => emits("update:modelValue", null)
         <div v-if="currentFileUrl" class="p-4">
             <Cropper :src="currentFileUrl" ref="cropperRef" :stencil-props="stencilProps"
                 class="rounded-xl border border-gray-300 overflow-hidden w-full max-w-2xl h-[400px]" />
-            <div class="flex justify-end gap-2 mt-2">
-                <Button label="Cancel" @click="cancelCrop" size="xs" />
-                <Button label="Upload" @click="confirmCrop" size="xs" :loading="isLoadingSubmit" />
+            <div class="flex justify-center gap-2 mt-2">
+                <Button label="Cancel" type="negative" @click="cancelCrop" />
+                <Button @click="confirmCrop" :disabled="isLoadingSubmit" :loading="isLoadingSubmit"
+                    :label="isLoadingSubmit ? 'Uploading...' : 'Confirm & Upload'" />
             </div>
         </div>
     </Dialog>

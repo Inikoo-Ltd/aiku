@@ -27,18 +27,18 @@ const layout: any = inject("layout", {})
 </script>
 
 <template>
-	<div id="cta4">
-		<div class="grid grid-cols-1 md:grid-cols-2" :style="{
+	<div id="cta4" class="w-full">
+		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-			...getStyles(fieldValue.container?.properties, screenType)
+			...getStyles(fieldValue.container?.properties, screenType),
 		}">
-			<!-- 📝 Text & Button Block -->
-			<div class="flex flex-col justify-center"
-				:style="getStyles(fieldValue?.text_block?.properties, screenType)">
-				<div class="max-w-xl mx-auto w-full">
-					<div v-html="fieldValue.text" class="mb-6"></div>
-
-					<div class="flex justify-center">
+			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[400px]">
+				<!-- 🖼️ Left: Full Image Block -->
+				<div class="flex flex-col justify-center m-auto"
+					:style="getStyles(fieldValue?.text_block?.properties, screenType)">
+					<div class="max-w-xl w-full">
+						<div v-html="fieldValue.text" class="mb-6"></div>
+						<div class="flex justify-center">
 						<LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.taget"
 							typeof="button" :type="fieldValue?.button?.link?.type" :canonical_url="fieldValue?.button?.link?.canonical_url">
 							<template #default>
@@ -46,19 +46,16 @@ const layout: any = inject("layout", {})
 								:label="fieldValue?.button?.text" />
 							</template>
 						</LinkIris>
-
+					</div>
 					</div>
 				</div>
-			</div>
-      	<!-- 🖼️ Image Block -->
-			<div>
-				<div class="w-full flex justify-end" :style="getStyles(fieldValue?.image?.container?.properties, screenType)">
-					<Image v-if="fieldValue?.image?.source" :src="fieldValue.image.source" :imageCover="true"
-						:alt="fieldValue.image.alt || 'Image preview'" :imgAttributes="fieldValue.image.attributes"
+				<!-- 📝 Right: Text & Button Block -->
+				<div class="relative w-full h-full cursor-pointer overflow-hidden"
+					:style="getStyles(fieldValue?.image?.container?.properties, screenType)">
+					<Image :src="fieldValue.image.source" :imageCover="true"
+						:alt="fieldValue.image.alt || 'Image preview'"
+						class="absolute inset-0 w-full h-full object-cover" :imgAttributes="fieldValue.image.attributes"
 						:style="getStyles(fieldValue.image.properties, screenType)" />
-					<img v-else
-						src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
-						:alt="fieldValue?.image?.alt || 'Default placeholder image'" />
 				</div>
 			</div>
 		</div>
