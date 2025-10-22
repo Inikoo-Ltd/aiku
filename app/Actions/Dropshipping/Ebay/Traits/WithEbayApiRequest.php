@@ -324,10 +324,8 @@ trait WithEbayApiRequest
                 return $tokenData;
             }
 
-            throw new EbayApiException('Failed to refresh token: ' . $response->body());
         } catch (Exception $e) {
             Log::error('eBay Token Refresh Error: ' . $e->getMessage());
-            throw $e;
         }
     }
 
@@ -350,8 +348,6 @@ trait WithEbayApiRequest
             $tokenData = $this->refreshEbayToken();
             return $tokenData['access_token'];
         }
-
-        throw new EbayApiException('No valid access token available. Please re-authenticate with eBay.');
     }
 
     /**
@@ -430,10 +426,7 @@ trait WithEbayApiRequest
                 }
             }
 
-            throw new EbayApiException('eBay API request failed: ' . $response->body());
         } catch (Exception $e) {
-            Log::error('eBay API Request Error: ' . $e->getMessage());
-            throw $e;
         }
     }
 
@@ -1146,10 +1139,8 @@ trait WithEbayApiRequest
                 }
             }
 
-            throw new EbayApiException('eBay API request failed: ' . $response->body());
         } catch (Exception $e) {
             Log::error('eBay API Request Error: ' . $e->getMessage());
-            throw $e;
         }
     }
 }

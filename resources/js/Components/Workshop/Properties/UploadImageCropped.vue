@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import GalleryManagement from "@/Components/Utils/GalleryManagement/GalleryManagement.vue"
@@ -131,6 +131,13 @@ const onPickImage = (selectedImages: any[]) => {
     emits("autoSave")
 }
 
+const recommendedPixels = computed(() => {
+  const width = props.stencilProps?.width || 400 // default width
+  const ratio = props.stencilProps?.aspectRatio || 1
+  const height = Math.round(width / ratio)
+  return `${width} x ${height} px`
+})
+
 // --- Delete ---
 const deleteImage = () => emits("update:modelValue", null)
 </script>
@@ -155,6 +162,7 @@ const deleteImage = () => emits("update:modelValue", null)
             </div>
         </div>
     </div>
+    <div class="text-gray text-xs mt-2">Recommended image: {{ recommendedPixels }}</div>
 
     <!-- Buttons -->
     <div class="flex justify-between gap-2 mt-2">
@@ -163,6 +171,7 @@ const deleteImage = () => emits("update:modelValue", null)
         <Button v-if="modelValue" type="negative" icon="far fa-trash-alt" size="xs"
             @click="(event) => { event.stopPropagation(); deleteImage() }" />
     </div>
+    
 
     <!-- Gallery Dialog -->
     <Dialog v-model:visible="isOpenGalleryImages" modal header="Select Image" :style="{ width: '75%' }" closable>

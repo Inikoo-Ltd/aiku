@@ -8,7 +8,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { faImage, faPhotoVideo, faTrashAlt } from "@fal"
 import { routeType } from "@/types/route"
 import { cloneDeep } from "lodash-es"
-import { ref } from "vue"
+import { ref, computed } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faImage, faPhotoVideo, faTrashAlt)
@@ -114,6 +114,14 @@ const cancelCrop = () => {
   imagePreview.value = null
 }
 
+
+const recommendedPixels = computed(() => {
+  const width = props.stencilProps?.width || 400 // default width
+  const ratio = props.stencilProps?.aspectRatio || 1
+  const height = Math.round(width / ratio)
+  return `${width} x ${height} px`
+})
+
 </script>
 
 <template>
@@ -157,4 +165,5 @@ const cancelCrop = () => {
       :isLoadingSubmit="isLoadingSubmit"
     />
   </div>
+  <div class="text-gray text-sm mt-2">Recommended image: {{ recommendedPixels }}</div>
 </template>
