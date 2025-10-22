@@ -59,18 +59,12 @@ const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 					@dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
 					:style="getStyles(modelValue?.image?.container?.properties, screenType)">
 					<Image
-						v-if="modelValue?.image?.source"
 						:src="modelValue.image.source"
 						:imageCover="true"
 						:alt="modelValue.image.alt || 'Image preview'"
 						class="absolute inset-0 w-full h-full object-cover"
 						:imgAttributes="modelValue.image.attributes"
 						:style="getStyles(modelValue.image.properties, screenType)" />
-					<img
-						v-else
-						src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png"
-						:alt="modelValue?.image?.alt || 'Default placeholder image'"
-						class="absolute inset-0 w-full h-full object-cover" />
 				</div>
 
 				<!-- 📝 Right: Text & Button Block -->
