@@ -226,7 +226,7 @@ class EditProduct extends OrgAction
                     'fields' => [
                         'code' => [
                             'type'  => 'input',
-                            'label' => __('code'),
+                            'label' => __('Code'),
                             'value' => $product->code
                         ],
                         'cpnp_number' => [
@@ -252,27 +252,39 @@ class EditProduct extends OrgAction
                     'fields' => [
                         'name' => [
                             'type'  => 'input',
-                            'label' => __('name'),
+                            'label' => __('Name'),
+                            'options'   => [
+                                'counter'   => true,
+                            ],
                             'value' => $product->name
                         ],
                         'description_title' => [
                             'type'  => 'input',
-                            'label' => __('description title'),
+                            'label' => __('Description title'),
+                            'options'   => [
+                                'counter'   => true,
+                            ],
                             'value' => $product->description_title
                         ],
                         'description' => [
                             'type'  => 'textEditor',
-                            'label' => __('description'),
+                            'label' => __('Description'),
+                            'options'   => [
+                                'counter'   => true,
+                            ],
                             'value' => $product->description
                         ],
                         'description_extra' => [
                             'type'  => 'textEditor',
                             'label' => __('Extra description'),
+                            'options'   => [
+                                'counter'   => true,
+                            ],
                             'value' => $product->description_extra
                         ],
                         'gross_weight' => [
                             'type'  => 'input_number',
-                            'label' => __('gross weight'),
+                            'label' => __('Gross weight'),
                             'value' => $product->gross_weight,
                             'bind'  => [
                                 'suffix' => 'g'
@@ -280,7 +292,7 @@ class EditProduct extends OrgAction
                         ],
                         'marketing_weight' => [
                             'type'  => 'input_number',
-                            'label' => __('marketing weight'),
+                            'label' => __('Marketing weight'),
                             'value' => $product->marketing_weight,
                             'bind'  => [
                                 'suffix' => 'g'
@@ -288,7 +300,7 @@ class EditProduct extends OrgAction
                         ],
                         'marketing_dimensions' => [
                             'type'  => 'input-dimension',
-                            'label' => __('marketing dimension'),
+                            'label' => __('Marketing dimension'),
                             'value' => $product->marketing_dimensions,
                         ],
                     ]
@@ -336,7 +348,7 @@ class EditProduct extends OrgAction
                             'bind' => [
                                 'maxFractionDigits' => 3
                             ],
-                            'label'         => __('pricing ratio'),
+                            'label'         => __('Pricing ratio'),
                             'placeholder'   => __('Cost price ratio'),
                             'required'      => true,
                             'value'         => $product->cost_price_ratio,
@@ -351,17 +363,17 @@ class EditProduct extends OrgAction
                     'fields' => [
                         'unit'        => [
                             'type'  => 'input',
-                            'label' => __('unit'),
+                            'label' => __('Unit'),
                             'value' => $product->unit,
                         ],
                         'units'       => [
                             'type'  => 'input_number',
-                            'label' => __('units'),
+                            'label' => __('Units'),
                             'value' => $product->units,
                         ],
                         'barcode'       => [
                             'type'  => 'select',
-                            'label' => __('barcode'),
+                            'label' => __('Barcode'),
                             'value' => $product->barcode,
                             'readonly' => $product->tradeUnits->count() == 1,
                             'options' => $barcodes->mapWithKeys(function ($barcode) {
@@ -370,7 +382,7 @@ class EditProduct extends OrgAction
                         ],
                         'price'       => [
                             'type'     => 'input_number',
-                            'label'    => __('price'),
+                            'label'    => __('Price'),
                             'required' => true,
                             'value'    => $product->price,
                            /*  'bind'  => [
@@ -379,7 +391,7 @@ class EditProduct extends OrgAction
                         ],
                         'rrp'       => [
                             'type'     => 'input_number',
-                            'label'    => __('rrp'),
+                            'label'    => __('RRP'),
                             'required' => true,
                             'value'    => $product->rrp,
                             /* 'bind'  => [
@@ -388,7 +400,7 @@ class EditProduct extends OrgAction
                         ],
                         'state'       => [
                             'type'     => 'select',
-                            'label'    => __('state'),
+                            'label'    => __('State'),
                             'required' => true,
                             'value'    => $product->state,
                             'options'  => Options::forEnum(AssetStateEnum::class)
