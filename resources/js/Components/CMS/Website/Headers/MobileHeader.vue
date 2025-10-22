@@ -187,7 +187,9 @@ onMounted(() => {
 
             <!-- Section: Logo  -->
             <div class="w-full px-4 mb-1 flex justify-end items-center " :class="isLoggedIn ? 'col-span-3' : 'col-span-1'">
-                <component :is="true ? Link : 'div'" :href="'/'" class="block h-fit aspect-auto max-h-[50px] min-w-5 w-full max-w-32">
+                <component :is="true ? Link : 'div'" :href="'/'" class="block h-fit aspect-auto max-h-[50px] min-w-5 w-full max-w-32"
+                    :class="isLoggedIn ? 'mx-auto' : ''"
+                >
                     <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" ximageCover="true"
                         :style="{ objectFit: 'contain' }"
                     />
