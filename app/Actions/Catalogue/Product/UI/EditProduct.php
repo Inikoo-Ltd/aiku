@@ -253,6 +253,7 @@ class EditProduct extends OrgAction
                         'name' => [
                             'type'  => 'input',
                             'label' => __('Name'),
+                            'information'   => __('This will displayed as h1 in the product page on website.'),
                             'options'   => [
                                 'counter'   => true,
                             ],
