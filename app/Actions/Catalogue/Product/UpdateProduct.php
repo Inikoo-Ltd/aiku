@@ -17,6 +17,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
+use App\Actions\Web\Webpage\UpdateWebpage;
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Enums\Catalogue\Product\ProductTradeConfigEnum;
@@ -43,6 +44,18 @@ class UpdateProduct extends OrgAction
 
     public function handle(Product $product, array $modelData): Product
     {
+
+        $webpageData=[];
+        if (Arr::has($modelData, 'webpage_title')) {
+            $webpageData['title'] = Arr::pull($modelData, 'webpage_title');
+        }
+        if (Arr::has($modelData, 'webpage_description')) {
+            $webpageData['description'] = Arr::pull($modelData, 'webpage_description');
+        }
+        if (Arr::has($modelData, 'webpage_breadcrumb_label')) {
+            $webpageData['breadcrumb_label'] = Arr::pull($modelData, 'webpage_breadcrumb_label');
+        }
+
         $oldIsOutOfStock = $product->available_quantity > 0;
 
         $oldHistoricProduct = $product->current_historic_asset_id;
@@ -118,6 +131,11 @@ class UpdateProduct extends OrgAction
 
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
+
+        if($product->webpage){
+            UpdateWebpage::make()->action($product->webpage, $webpageData);
+        }
+
 
         if (Arr::has($changed, 'name')) {
             UpdateProductAndMasterTranslations::make()->action($product, [
@@ -200,9 +218,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInLuigi
-            )
+                    $changed,
+                    $fieldsUsedInLuigi
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
@@ -217,15 +235,13 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                $changed,
-                $fieldsUsedInWebpages
-            )
+                    $changed,
+                    $fieldsUsedInWebpages
+                )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);
         }
-
-
 
 
         if (Arr::has($changed, 'available_quantity')) {
@@ -257,7 +273,7 @@ class UpdateProduct extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'              => [
+            'code'                      => [
                 'sometimes',
                 'required',
                 'max:32',
@@ -272,23 +288,23 @@ class UpdateProduct extends OrgAction
                     ]
                 ),
             ],
-            'name'              => ['sometimes', 'required', 'max:250', 'string'],
-            'price'             => ['sometimes', 'required', 'numeric', 'min:0'],
-            'unit_price'        => ['sometimes', 'required', 'numeric', 'min:0'],
-            'description'       => ['sometimes', 'required', 'max:1500'],
-            'description_title' => ['sometimes', 'nullable', 'max:255'],
-            'description_extra' => ['sometimes', 'nullable', 'max:65500'],
-            'rrp'               => ['sometimes', 'nullable', 'numeric', 'min:0'],
-            'data'              => ['sometimes', 'array'],
-            'settings'          => ['sometimes', 'array'],
-            'status'            => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
-            'state'             => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
-            'trade_config'      => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
-            'follow_master'     => ['sometimes', 'boolean'],
-            'cost_price_ratio'  => ['sometimes', 'numeric', 'min:0'],
-            'family_id'         => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
-            'master_product_id' => ['sometimes', 'nullable', 'integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
-            'barcode'           => [
+            'name'                      => ['sometimes', 'required', 'max:250', 'string'],
+            'price'                     => ['sometimes', 'required', 'numeric', 'min:0'],
+            'unit_price'                => ['sometimes', 'required', 'numeric', 'min:0'],
+            'description'               => ['sometimes', 'required', 'max:1500'],
+            'description_title'         => ['sometimes', 'nullable', 'max:255'],
+            'description_extra'         => ['sometimes', 'nullable', 'max:65500'],
+            'rrp'                       => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'data'                      => ['sometimes', 'array'],
+            'settings'                  => ['sometimes', 'array'],
+            'status'                    => ['sometimes', 'required', Rule::enum(ProductStatusEnum::class)],
+            'state'                     => ['sometimes', 'required', Rule::enum(ProductStateEnum::class)],
+            'trade_config'              => ['sometimes', 'required', Rule::enum(ProductTradeConfigEnum::class)],
+            'follow_master'             => ['sometimes', 'boolean'],
+            'cost_price_ratio'          => ['sometimes', 'numeric', 'min:0'],
+            'family_id'                 => ['sometimes', 'nullable', Rule::exists('product_categories', 'id')->where('shop_id', $this->shop->id)],
+            'master_product_id'         => ['sometimes', 'nullable', 'integer', Rule::exists('master_assets', 'id')->where('master_shop_id', $this->shop->master_shop_id)],
+            'barcode'                   => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -317,7 +333,7 @@ class UpdateProduct extends OrgAction
             'marketing_dimensions'      => ['sometimes'],
 
             'cpnp_number'                  => ['sometimes', 'nullable', 'string'],
-            'ufi_number'                  => ['sometimes', 'nullable', 'string'],
+            'ufi_number'                   => ['sometimes', 'nullable', 'string'],
             'scpn_number'                  => ['sometimes', 'nullable', 'string'],
             'country_of_origin'            => ['sometimes', 'nullable', 'string'],
             'origin_country_id'            => ['sometimes', 'nullable', 'exists:countries,id'],
@@ -349,6 +365,10 @@ class UpdateProduct extends OrgAction
             'pictogram_health'             => ['sometimes', 'boolean'],
             'pictogram_oxidising'          => ['sometimes', 'boolean'],
             'pictogram_danger'             => ['sometimes', 'boolean'],
+
+            'webpage_title'       => ['sometimes', 'string'],
+            'webpage_description' => ['sometimes', 'string'],
+            'webpage_breadcrumb_label'    => ['sometimes', 'string', 'max:40'],
 
         ];
 

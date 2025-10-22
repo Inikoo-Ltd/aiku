@@ -55,7 +55,7 @@ class EditWebpage extends OrgAction
         return [
             'code'     => $webpage->code,
             'id'       => $webpage->id,
-            'href'     => 'https://' . $webpage->website->domain . '/' . $webpage->url,
+            'href'     => 'https://'.$webpage->website->domain.'/'.$webpage->url,
             "typeIcon" => $webpage->type->stateIcon()[$webpage->type->value] ?? ["fal", "fa-browser"],
         ];
     }
@@ -68,8 +68,8 @@ class EditWebpage extends OrgAction
         $isBlog = $webpage->type == WebpageTypeEnum::BLOG;
 
 
-        $fields=  [
-            "seo_image"         => [
+        $fields = [
+            "seo_image"        => [
                 "type"    => "image_crop_square",
                 "label"   => __("Preview image"),
                 "value"   => $webpage->imageSources(1200, 1200, 'seoImage'),
@@ -78,98 +78,96 @@ class EditWebpage extends OrgAction
                     "maxAspectRatio" => 12 / 4,
                 ]
             ],
-            'code'       => [
-                'type'                => 'input',
-                'label'               => __('Code'),
-                'information'         => __('Use for internal use'),
-                'value'               => $webpage->code,
-                'required'            => true,
+            'code'             => [
+                'type'        => 'input',
+                'label'       => __('Code'),
+                'information' => __('Use for internal use'),
+                'value'       => $webpage->code,
+                'required'    => true,
             ],
-            'url' => [
+            'url'              => [
                 'type'      => 'inputWithAddOn',
                 'label'     => __('URL'),
                 'leftAddOn' => [
-                    'label' => $isBlog ? 'https://' . $webpage->website->domain . '/blog' : 'https://' . $webpage->website->domain . '/'
+                    'label' => $isBlog ? 'https://'.$webpage->website->domain.'/blog' : 'https://'.$webpage->website->domain.'/'
                 ],
                 'value'     => $webpage->url,
                 'required'  => true,
             ],
-            'breadcrumb_label'       => [
-                'type'                => 'input',
-                'label'               => __('Breadcrumb label').' ('.__('Optional').')',
-                'information'         => __('To be used for the breadcrumbs, will use Meta Title if missing'),
-                'options'   => [
-                    'counter'   => true,
+            'breadcrumb_label' => [
+                'type'        => 'input',
+                'label'       => __('Breadcrumb label').' ('.__('Optional').')',
+                'information' => __('To be used for the breadcrumbs, will use Meta Title if missing'),
+                'options'     => [
+                    'counter' => true,
                 ],
-                'value'               => $webpage->title,
+                'value'       => $webpage->title,
             ],
-            'title'       => [
-                'type'                => 'input',
-                'label'               => __('Meta Title').' (& '.__('Browser title').')',
-                'information'         => __('This will be used for the title seen in the browser, and meta title for SEO'),
-                'options'   => [
-                    'counter'   => true,
+            'title'            => [
+                'type'        => 'input',
+                'label'       => __('Meta Title').' (& '.__('Browser title').')',
+                'information' => __('This will be used for the title seen in the browser, and meta title for SEO'),
+                'options'     => [
+                    'counter' => true,
                 ],
-                'value'               => $webpage->title,
+                'value'       => $webpage->title,
             ],
-
-            'description'       => [
-                'type'                => 'textarea',
-                'label'               => __('Meta Description'),
-                'information'         => __('This will be used for the meta description'),
-                'options'   => [
-                    'counter'   => true,
+            'description'      => [
+                'type'        => 'textarea',
+                'label'       => __('Meta Description'),
+                'information' => __('This will be used for the meta description'),
+                'options'     => [
+                    'counter' => true,
                 ],
-                'value'               => $webpage->description,
-                "maxLength"     => 150,
-                "counter"       => true,
+                'value'       => $webpage->description,
+                "maxLength"   => 150,
+                "counter"     => true,
             ],
         ];
 
 
-        if($webpage->model_type=='Product'){
-
+        if ($webpage->model_type == 'Product') {
             /** @var \App\Models\Catalogue\Product $product */
-            $product=$webpage->model;
-            $productFields=[
-                'product_name' => [
-                    'type'  => 'input',
-                    'label' => __('Product Name'),
-                    'information'   => __('This will displayed as h1 in the product page on website and in orders and invoices.'),
-                    'options'   => [
-                        'counter'   => true,
+            $product       = $webpage->model;
+            $productFields = [
+                'product_name'              => [
+                    'type'        => 'input',
+                    'label'       => __('Product Name'),
+                    'information' => __('This will displayed as h1 in the product page on website and in orders and invoices.'),
+                    'options'     => [
+                        'counter' => true,
                     ],
-                    'value' => $product->name
+                    'value'       => $product->name
                 ],
-                'product_description' => [
-                    'type'  => 'textEditor',
-                    'label' => __('Product Description'),
-                    'information'   => __('This show in product webpage'),
-                    'options'   => [
-                        'counter'   => true,
+                'product_description'       => [
+                    'type'        => 'textEditor',
+                    'label'       => __('Product Description'),
+                    'information' => __('This show in product webpage'),
+                    'options'     => [
+                        'counter' => true,
                     ],
-                    'value' => $product->description
+                    'value'       => $product->description
                 ],
                 'product_description_extra' => [
-                    'type'  => 'textEditor',
-                    'label' => __('Product Extra description'),
-                    'information'   => __('This above product specification in product webpage'),
-                    'options'   => [
-                        'counter'   => true,
+                    'type'        => 'textEditor',
+                    'label'       => __('Product Extra description'),
+                    'information' => __('This above product specification in product webpage'),
+                    'options'     => [
+                        'counter' => true,
                     ],
-                    'value' => $product->description_extra
+                    'value'       => $product->description_extra
                 ],
             ];
 
 
-            $fields=array_merge($fields,$productFields);
+            $fields = array_merge($fields, $productFields);
         }
 
 
-        $mainData=[
+        $mainData = [
             'label'  => $isBlog ? __('Blog') : __('Webpage'),
             'icon'   => 'fal fa-browser',
-            'fields' =>$fields
+            'fields' => $fields
 
         ];
 
@@ -181,13 +179,13 @@ class EditWebpage extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
 
                 'pageHead' => [
-                    'title' => __('Settings'),
-                    'icon' => [
+                    'title'      => __('Settings'),
+                    'icon'       => [
                         'icon'  => ['fal', 'sliders-h'],
                         'title' => __("Webpage settings")
                     ],
-                    'model' => $isBlog ? __('Blog') : __('Webpage'),
-                    'iconRight' => WebpageStateEnum::stateIcon()[$webpage->state->value],
+                    'model'      => $isBlog ? __('Blog') : __('Webpage'),
+                    'iconRight'  => WebpageStateEnum::stateIcon()[$webpage->state->value],
                     'afterTitle' => [
                         'label' => $webpage->getUrl(),
                     ],
@@ -223,20 +221,20 @@ class EditWebpage extends OrgAction
                             'label'  => __('Set online/closed'),
                             'icon'   => 'fal fa-broadcast-tower',
                             'fields' => [
-                                'state_data'       => [
-                                    'type'        => 'toggle_state_webpage',
-                                    'label'       => __('State'),
-                                    'placeholder' => __('Select webpage state'),
-                                    'required'    => true,
-                                    'options'     => Options::forEnum(WebpageStateEnum::class),
-                                    'searchable'  => true,
+                                'state_data' => [
+                                    'type'               => 'toggle_state_webpage',
+                                    'label'              => __('State'),
+                                    'placeholder'        => __('Select webpage state'),
+                                    'required'           => true,
+                                    'options'            => Options::forEnum(WebpageStateEnum::class),
+                                    'searchable'         => true,
                                     'default_storefront' => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
-                                    'init_options'  => $webpage->redirectWebpage ? [
+                                    'init_options'       => $webpage->redirectWebpage ? [
                                         $this->getFieldWebpageData($webpage->redirectWebpage)
                                     ] : null,
-                                    'value'       => [
-                                        'state'                 => $webpage->state,
-                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
+                                    'value'              => [
+                                        'state'               => $webpage->state,
+                                        'redirect_webpage_id' => $webpage->redirect_webpage_id,
                                     ],
                                 ],
                             ]
@@ -246,18 +244,18 @@ class EditWebpage extends OrgAction
                             'icon'   => 'fal fa-trash-alt',
                             'fields' => [
                                 'name' => [
-                                    'type'                  => 'delete_webpage',
-                                    'noSaveButton'          => true,
-                                    'current_state'         => $webpage->state,
-                                    'default_storefront'    => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
-                                    'init_options'  => $webpage->redirectWebpage ? [
+                                    'type'               => 'delete_webpage',
+                                    'noSaveButton'       => true,
+                                    'current_state'      => $webpage->state,
+                                    'default_storefront' => $this->getFieldWebpageData(Webpage::where('type', WebpageTypeEnum::STOREFRONT)->where('shop_id', $webpage->shop_id)->first()),
+                                    'init_options'       => $webpage->redirectWebpage ? [
                                         $this->getFieldWebpageData($webpage->redirectWebpage)
                                     ] : null,
-                                    'value'       => [
-                                        'state'                 => $webpage->state,
-                                        'redirect_webpage_id'   => $webpage->redirect_webpage_id,
+                                    'value'              => [
+                                        'state'               => $webpage->state,
+                                        'redirect_webpage_id' => $webpage->redirect_webpage_id,
                                     ],
-                                    'route_delete' => [
+                                    'route_delete'       => [
                                         'method'     => 'patch',
                                         'name'       => 'grp.models.webpage.delete',
                                         'parameters' => [
@@ -289,13 +287,14 @@ class EditWebpage extends OrgAction
             return ShowBlogWebpage::make()->getBreadcrumbs(
                 $routeName,
                 $routeParameters,
-                suffix: '(' . __('settings') . ')'
+                suffix: '('.__('settings').')'
             );
         }
+
         return ShowWebpage::make()->getBreadcrumbs(
             $routeName,
             $routeParameters,
-            suffix: '(' . __('settings') . ')'
+            suffix: '('.__('settings').')'
         );
     }
 }

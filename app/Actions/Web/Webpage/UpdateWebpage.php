@@ -208,6 +208,7 @@ class UpdateWebpage extends OrgAction
             'product_name'              => ['sometimes', 'required', 'max:250', 'string'],
             'product_description'       => ['sometimes', 'required', 'max:1500'],
             'product_description_extra' => ['sometimes', 'nullable', 'max:65500'],
+            'breadcrumb_label'    => ['sometimes', 'string', 'max:40'],
         ];
 
         if (!$this->strict) {
