@@ -288,6 +288,7 @@ const stylingWithoutImportant = stripImportant(styling)
                                         ? `navActive`
                                         : 'navInactive'
                                 ]"
+                                :internalHref
                                 :activeSubIndex
                                 :closeSidebar
                             />
@@ -382,6 +383,7 @@ const stylingWithoutImportant = stripImportant(styling)
                                     :nav="sub"
                                     :activeSubIndex
                                     :closeSidebar
+                                    :internalHref
                                 />
                             </template>
                         </div>
