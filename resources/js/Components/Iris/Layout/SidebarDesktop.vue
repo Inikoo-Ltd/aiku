@@ -202,7 +202,7 @@ const stylingWithoutImportant = stripImportant(styling)
             </div>
 
             <div class="overflow-y-auto">
-                <!-- Section: Top (Subdepartments) -->
+                <!-- Section: Subdepartments (Top) -->
                 <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
                     <SidebarDesktopNavigation
                         v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex"
@@ -248,7 +248,7 @@ const stylingWithoutImportant = stripImportant(styling)
                     </div>
                 </div>
 
-                <!-- Section: Bottom (Subdepartments) -->
+                <!-- Section: Subdepartments (Bottom) -->
                 <div v-if="activeCustomIndex !== null && customSubDepartments?.length">
                     <SidebarDesktopNavigation
                         v-for="(sub, sIndex) in customSubDepartments" :key="sIndex"
@@ -272,6 +272,29 @@ const stylingWithoutImportant = stripImportant(styling)
                     {{ trans("No subdepartments available") }}
                 </div>
             </div>
+
+            <!-- Collections: from Department -->
+            <template v-if="sortedProductCategories?.[activeIndex]?.collections.length">
+                <div v-if="activeIndex !== null" class="border-t bodashe border-gray-300 flex items-center justify-between mt-2 pt-4 pb-2 px-4">
+                    <h3 class="font-semibold text-sm">{{ trans("Collections") }}</h3>
+                </div>
+                <div class="">
+                    <div>
+                        <template v-for="(sub, sIndex) in sortedProductCategories[activeIndex]?.collections" :key="sIndex">
+                            <SidebarDesktopNavigation
+                                :nav="sub"
+                                xclass="[
+                                    activeCustomSubIndex === sIndex
+                                        ? `navActive`
+                                        : 'navInactive'
+                                ]"
+                                :activeSubIndex
+                                :closeSidebar
+                            />
+                        </template>
+                    </div>
+                </div>
+            </template>
         </div>
 
         <!-- Column 3: Families -->
@@ -301,32 +324,33 @@ const stylingWithoutImportant = stripImportant(styling)
                 </div>
 
                 <!-- Families: Product Categories -->
-                <div v-if="activeSubIndex !== null && sortedFamilies.length">
-                    <SidebarDesktopNavigation
-                        v-for="(sub, sIndex) in sortedFamilies" :key="sIndex"
-                        :nav="sub"
-                        :class="[
-                            activeCustomTopSubIndex === sIndex
-                                ? `navActive`
-                                : 'navInactive'
-                        ]"
-                        aclick="changeActiveCustomTopSubIndex(sIndex)"
-                        :internalHref
-                        :activeSubIndex
-                        :closeSidebar
-                    />
-
-                    <div class="p-2 px-4">
-                        <Button 
-                            :label="trans('View all')" 
-                            :icon="faExternalLink" 
-                            size="xs" 
-                            :loading="isLoadingSubDepartment"
-                            @click="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
-                            class="cursor-pointer"
+                <Transition name="slide-to-right">
+                    <div v-if="activeSubIndex !== null && sortedFamilies.length">
+                        <SidebarDesktopNavigation
+                            v-for="(sub, sIndex) in sortedFamilies" :key="sIndex"
+                            :nav="sub"
+                            :class="[
+                                activeCustomTopSubIndex === sIndex
+                                    ? `navActive`
+                                    : 'navInactive'
+                            ]"
+                            aclick="changeActiveCustomTopSubIndex(sIndex)"
+                            :internalHref
+                            :activeSubIndex
+                            :closeSidebar
                         />
+                        <div class="p-2 px-4">
+                            <Button
+                                :label="trans('View all')"
+                                :icon="faExternalLink"
+                                size="xs"
+                                :loading="isLoadingSubDepartment"
+                                @click="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
+                                class="cursor-pointer"
+                            />
+                        </div>
                     </div>
-                </div>
+                </Transition>
 
                 <!-- Families: Bottom -->
                 <div v-if="activeCustomSubIndex !== null && customFamilies?.length">
@@ -345,11 +369,24 @@ const stylingWithoutImportant = stripImportant(styling)
                     </div>
                 </div>
 
-                <!-- No families message -->
-                <div v-if="(activeSubIndex !== null && !sortedFamilies.length) || (activeCustomSubIndex !== null && !customFamilies.length) || (activeCustomTopSubIndex !== null && !customTopFamilies.length)"
-                    class="p-2 text-gray-400 italic">
-                    {{ trans("No further items") }}
-                </div>
+
+                <!-- Collections: from Sub Department -->
+                <template v-if="sortedSubDepartments?.[activeSubIndex]?.collections?.length">
+                    <div v-if="activeIndex !== null" class="border-t border-gray-300 flex items-center justify-between mt-2 pt-4 pb-2 px-4">
+                        <h3 class="font-semibold text-sm">{{ trans("Collections") }}</h3>
+                    </div>
+                    <div class="">
+                        <div>
+                            <template v-for="(sub, sIndex) in sortedSubDepartments?.[activeSubIndex]?.collections" :key="sIndex">
+                                <SidebarDesktopNavigation
+                                    :nav="sub"
+                                    :activeSubIndex
+                                    :closeSidebar
+                                />
+                            </template>
+                        </div>
+                    </div>
+                </template>
             </div>
         </div>
     </div>

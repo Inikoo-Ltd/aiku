@@ -4,7 +4,7 @@ import LinkIris from "../LinkIris.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const props = defineProps<{
-    internalHref: Function
+    internalHref?: Function
     activeSubIndex: number | null
     closeSidebar: Function
     nav: {
@@ -18,12 +18,10 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div
-        class="p-2 px-4 flex items-center justify-between cursor-pointer"
-        >
+    <div class="p-2 px-4 flex items-center justify-between gap-x-2 cursor-pointer" >
         <LinkIris
             v-if="nav.url"
-            :href="internalHref(nav)"
+            :href="internalHref ? internalHref(nav) : nav.url"
             class="hover:underline"
             @success="() => closeSidebar()"
             :type="nav.type"
