@@ -253,23 +253,16 @@ class EditProduct extends OrgAction
                         'name' => [
                             'type'  => 'input',
                             'label' => __('Name'),
-                            'information'   => __('This will displayed as h1 in the product page on website.'),
+                            'information'   => __('This will displayed as h1 in the product page on website and in orders and invoices.'),
                             'options'   => [
                                 'counter'   => true,
                             ],
                             'value' => $product->name
                         ],
-                        'description_title' => [
-                            'type'  => 'input',
-                            'label' => __('Description title'),
-                            'options'   => [
-                                'counter'   => true,
-                            ],
-                            'value' => $product->description_title
-                        ],
                         'description' => [
                             'type'  => 'textEditor',
                             'label' => __('Description'),
+                            'information'   => __('This show in product webpage'),
                             'options'   => [
                                 'counter'   => true,
                             ],
@@ -278,6 +271,7 @@ class EditProduct extends OrgAction
                         'description_extra' => [
                             'type'  => 'textEditor',
                             'label' => __('Extra description'),
+                            'information'   => __('This above product specification in product webpage'),
                             'options'   => [
                                 'counter'   => true,
                             ],
