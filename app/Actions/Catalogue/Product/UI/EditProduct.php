@@ -253,6 +253,7 @@ class EditProduct extends OrgAction
                         'name' => [
                             'type'  => 'input',
                             'label' => __('Name'),
+                            'information'   => __('This will displayed as h1 in the product page on website.'),
                             'options'   => [
                                 'counter'   => true,
                             ],
@@ -282,24 +283,27 @@ class EditProduct extends OrgAction
                             ],
                             'value' => $product->description_extra
                         ],
-                        'gross_weight' => [
+                        'marketing_weight' => [
                             'type'  => 'input_number',
-                            'label' => __('Gross weight'),
-                            'value' => $product->gross_weight,
+                            'label' => __('Marketing weight'),
+                            'information'   => __('In product page, this will be displayed in specifications as Net Weight'),
+                            'value' => $product->marketing_weight,
                             'bind'  => [
                                 'suffix' => 'g'
                             ]
                         ],
-                        'marketing_weight' => [
+                        'gross_weight' => [
                             'type'  => 'input_number',
-                            'label' => __('Marketing weight'),
-                            'value' => $product->marketing_weight,
+                            'label' => __('Gross weight'),
+                            'information'   => __('In product page, this will be displayed in specifications as Shipping Weight'),
+                            'value' => $product->gross_weight,
                             'bind'  => [
                                 'suffix' => 'g'
                             ]
                         ],
                         'marketing_dimensions' => [
                             'type'  => 'input-dimension',
+                            'information'   => __('In product page, this will be displayed in specifications as Dimensions'),
                             'label' => __('Marketing dimension'),
                             'value' => $product->marketing_dimensions,
                         ],

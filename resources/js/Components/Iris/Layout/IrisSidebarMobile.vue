@@ -14,6 +14,7 @@ import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import SwitchLanguage from "../SwitchLanguage.vue"
 import LinkIris from "../LinkIris.vue"
+import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 
 library.add(faChevronRight, faExternalLink)
 
@@ -298,7 +299,7 @@ const closeSidebar = () => {
         </div>
 
         <div class="login-section pl-3 pr-5 py-4 border-t border-[#e5e5e5] flex items-center">
-            <LinkIris v-if="!isLoggedIn" href="/app" class="w-full" type="internal">
+            <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="w-full" type="internal">
                 <Button
                     :label="trans('Login')"
                     full

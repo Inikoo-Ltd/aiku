@@ -160,9 +160,13 @@ onMounted(() => {
 })
 
 const visitSearchPage = () => {
-    console.log('visit', inputValue.value)
+    console.log('vzzzisit', inputValue.value)
     if (inputValue.value) {
-        router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
+        if (route().current()?.startsWith('iris.')) {
+            router.get(`/search?q=${encodeURIComponent(inputValue.value)}`)
+        } else {
+            window.location.href = `/search?q=${encodeURIComponent(inputValue.value)}`
+        }
     } else {
         notify({
             title: trans("Something went wrong"),
