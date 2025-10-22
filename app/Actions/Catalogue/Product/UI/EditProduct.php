@@ -102,7 +102,7 @@ class EditProduct extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Goods'),
+                'title'       => __('Editing product').' '.$product->code,
                 'warning' => $product->masterProduct ? [
                     'type'  =>  'warning',
                     'title' =>  'warning',
@@ -155,29 +155,7 @@ class EditProduct extends OrgAction
     }
 
 
-    /**
-     * @throws \Exception
-     */
-    public function getBlueprintX(Product $product): array
-    {
 
-
-        return [
-            [
-                'label'  => __('Price'),
-                'title'  => __('id'),
-                'icon'   => 'fa-light fa-dollar',
-                'fields' => [
-                    'price'       => [
-                        'type'     => 'input',
-                        'label'    => __('price'),
-                        'required' => true,
-                        'value'    => $product->price
-                    ],
-                ]
-            ],
-        ];
-    }
 
     /**
      * @throws \Exception
@@ -217,6 +195,73 @@ class EditProduct extends OrgAction
         $barcodes = $product->tradeUnits->pluck('barcode')->filter()->unique();
 
 
+        $nameFields = [
+            'name' => [
+                'type'  => 'input',
+                'label' => __('Name'),
+                'information'   => __('This will displayed as h1 in the product page on website and in orders and invoices.'),
+                'options'   => [
+                    'counter'   => true,
+                ],
+                'value' => $product->name
+            ],
+            'description' => [
+                'type'  => 'textEditor',
+                'label' => __('Description'),
+                'information'   => __('This show in product webpage'),
+                'options'   => [
+                    'counter'   => true,
+                ],
+                'value' => $product->description
+            ],
+            'description_extra' => [
+                'type'  => 'textEditor',
+                'label' => __('Extra description'),
+                'information'   => __('This above product specification in product webpage'),
+                'options'   => [
+                    'counter'   => true,
+                ],
+                'value' => $product->description_extra
+            ],
+
+        ];
+
+        if($product->webpage){
+            $webpage=$product->webpage;
+            $webpageNameFields=[
+                'webpage_breadcrumb_label' => [
+                    'type'        => 'input',
+                    'label'       => __('Breadcrumb label').' ('.__('Optional').')',
+                    'information' => __('To be used for the breadcrumbs, will use Meta Title if missing'),
+                    'options'     => [
+                        'counter' => true,
+                    ],
+                    'value'       => $webpage->title,
+                ],
+                'webpage_title'            => [
+                    'type'        => 'input',
+                    'label'       => __('Meta Title').' (& '.__('Browser title').')',
+                    'information' => __('This will be used for the title seen in the browser, and meta title for SEO'),
+                    'options'     => [
+                        'counter' => true,
+                    ],
+                    'value'       => $webpage->title,
+                ],
+                'webpage_description'      => [
+                    'type'        => 'textarea',
+                    'label'       => __('Meta Description'),
+                    'information' => __('This will be used for the meta description'),
+                    'options'     => [
+                        'counter' => true,
+                    ],
+                    'value'       => $webpage->description,
+                    "maxLength"   => 150,
+                    "counter"     => true,
+                ],
+            ];
+
+            $nameFields = array_merge($nameFields,$webpageNameFields);
+        }
 
         return array_filter(
             [
@@ -249,104 +294,31 @@ class EditProduct extends OrgAction
                 [
                     'label'  => __('Name/Description'),
                     'icon'   => 'fa-light fa-tag',
-                    'fields' => [
-                        'name' => [
-                            'type'  => 'input',
-                            'label' => __('Name'),
-                            'information'   => __('This will displayed as h1 in the product page on website.'),
-                            'options'   => [
-                                'counter'   => true,
-                            ],
-                            'value' => $product->name
-                        ],
-                        'description_title' => [
-                            'type'  => 'input',
-                            'label' => __('Description title'),
-                            'options'   => [
-                                'counter'   => true,
-                            ],
-                            'value' => $product->description_title
-                        ],
-                        'description' => [
-                            'type'  => 'textEditor',
-                            'label' => __('Description'),
-                            'options'   => [
-                                'counter'   => true,
-                            ],
-                            'value' => $product->description
-                        ],
-                        'description_extra' => [
-                            'type'  => 'textEditor',
-                            'label' => __('Extra description'),
-                            'options'   => [
-                                'counter'   => true,
-                            ],
-                            'value' => $product->description_extra
-                        ],
-                        'marketing_weight' => [
-                            'type'  => 'input_number',
-                            'label' => __('Marketing weight'),
-                            'information'   => __('In product page, this will be displayed in specifications as Net Weight'),
-                            'value' => $product->marketing_weight,
-                            'bind'  => [
-                                'suffix' => 'g'
-                            ]
-                        ],
-                        'gross_weight' => [
-                            'type'  => 'input_number',
-                            'label' => __('Gross weight'),
-                            'information'   => __('In product page, this will be displayed in specifications as Shipping Weight'),
-                            'value' => $product->gross_weight,
-                            'bind'  => [
-                                'suffix' => 'g'
-                            ]
-                        ],
-                        'marketing_dimensions' => [
-                            'type'  => 'input-dimension',
-                            'information'   => __('In product page, this will be displayed in specifications as Dimensions'),
-                            'label' => __('Marketing dimension'),
-                            'value' => $product->marketing_dimensions,
-                        ],
-                    ]
+                    'fields' => $nameFields
                 ],
-                /* !$product->master_product_id ? [
-                    'label'  => __('Translations'),
-                    'icon'   => 'fa-light fa-language',
-                    'fields' => [
-                        'name_i8n' => [
-                            'type'  => 'input_translation',
-                            'label' => __('translate name'),
-                            'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
-                            'main' => $product->name,
-                            'value' => $product->getTranslations('name_i8n')
-                        ],
-                        'description_title_i8n' => [
-                            'type'  => 'input_translation',
-                            'label' => __('translate description title'),
-                            'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
-                            'main' => $product->description_title,
-                            'value' => $product->getTranslations('description_title_i8n')
-                        ],
-                        'description_i8n' => [
-                            'type'  => 'textEditor_translation',
-                            'label' => __('translate description'),
-                            'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
-                            'main' => $product->description,
-                            'value' => $product->getTranslations('description_i8n')
-                        ],
-                        'description_extra_i8n' => [
-                            'type'  => 'textEditor_translation',
-                            'label' => __('translate description extra'),
-                            'languages' => GetLanguagesOptions::make()->getExtraGroupLanguages($product->shop->extra_languages),
-                            'main' => $product->description_extra,
-                            'value' => $product->getTranslations('description_extra_i8n')
-                        ],
-                    ]
-                ]: null, */
+
                 [
                     'label'  => __('Pricing'),
                     'icon'   => 'fa-light fa-money-bill',
                     'fields' => [
+                        'price'       => [
+                            'type'     => 'input_number',
+                            'label'    => __('Price'),
+                            'required' => true,
+                            'value'    => $product->price,
+                            /*  'bind'  => [
+                                 'suffix' => 'g'
+                             ] */
+                        ],
+                        'rrp'       => [
+                            'type'     => 'input_number',
+                            'label'    => __('RRP'),
+                            'required' => true,
+                            'value'    => $product->rrp,
+                            /* 'bind'  => [
+                                'suffix' => 'g'
+                            ] */
+                        ],
                         'cost_price_ratio' => [
                             'type'          => 'input_number',
                             'bind' => [
@@ -375,6 +347,30 @@ class EditProduct extends OrgAction
                             'label' => __('Units'),
                             'value' => $product->units,
                         ],
+                        'marketing_weight' => [
+                            'type'  => 'input_number',
+                            'label' => __('Marketing weight'),
+                            'information'   => __('In product page, this will be displayed in specifications as Net Weight'),
+                            'value' => $product->marketing_weight,
+                            'bind'  => [
+                                'suffix' => 'g'
+                            ]
+                        ],
+                        'gross_weight' => [
+                            'type'  => 'input_number',
+                            'label' => __('Gross weight'),
+                            'information'   => __('In product page, this will be displayed in specifications as Shipping Weight'),
+                            'value' => $product->gross_weight,
+                            'bind'  => [
+                                'suffix' => 'g'
+                            ]
+                        ],
+                        'marketing_dimensions' => [
+                            'type'  => 'input-dimension',
+                            'information'   => __('In product page, this will be displayed in specifications as Dimensions'),
+                            'label' => __('Marketing dimension'),
+                            'value' => $product->marketing_dimensions,
+                        ],
                         'barcode'       => [
                             'type'  => 'select',
                             'label' => __('Barcode'),
@@ -384,24 +380,7 @@ class EditProduct extends OrgAction
                                 return [$barcode => $barcode];
                             })->toArray()
                         ],
-                        'price'       => [
-                            'type'     => 'input_number',
-                            'label'    => __('Price'),
-                            'required' => true,
-                            'value'    => $product->price,
-                           /*  'bind'  => [
-                                'suffix' => 'g'
-                            ] */
-                        ],
-                        'rrp'       => [
-                            'type'     => 'input_number',
-                            'label'    => __('RRP'),
-                            'required' => true,
-                            'value'    => $product->rrp,
-                            /* 'bind'  => [
-                                'suffix' => 'g'
-                            ] */
-                        ],
+
                         'state'       => [
                             'type'     => 'select',
                             'label'    => __('State'),
@@ -409,22 +388,6 @@ class EditProduct extends OrgAction
                             'value'    => $product->state,
                             'options'  => Options::forEnum(AssetStateEnum::class)
                         ],
-                        //  'button'       => [
-                        //     'type'     => 'button',
-                        //     'label'    => __('off product'),
-                        //      'noSaveButton'          => true,
-                        //     'value'    => null,
-                        //     'icon'    => ['far', 'fa-power-off'],
-                        //     'type_button'   => 'negative',
-                        //     'label_button'    => __('off product'),
-                        //     'route'    => [
-                        //         'name'       => 'grp.models.product.offline',
-                        //         'parameters' => [
-                        //             'product' => $product->id
-                        //         ],
-                        //         'method'    => 'patch'
-                        //     ]
-                        // ],
                     ]
                 ],
                 [
