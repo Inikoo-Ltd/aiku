@@ -104,16 +104,19 @@ defineExpose({
     <form @submit.prevent="submit" class="divide-y divide-gray-200 w-full" :class="props.fieldData.full ? '' : 'max-w-2xl'">
         <dl class="pb-4 sm:pb-5 sm:grid sm:grid-cols-3 sm:gap-4 ">
             <!-- Title -->
-            <dt v-if="!fieldData.noTitle && fieldData.label" class="text-sm font-medium text-gray-400">
+            <dt v-if="!fieldData.noTitle && fieldData.label" class="qwezxctext-sm font-medium text-gray-400">
                 <div class="inline-flex items-start leading-none">
                     {{ fieldData.label }}
                     <FontAwesomeIcon v-if="fieldData.required" icon="fas fa-asterisk" class="font-light text-[12px] text-red-400 mr-1"/>
                     <div v-if="fieldData.information" v-tooltip="fieldData.information" class="opacity-50 hover:opacity-100 cursor-pointer ml-1">
                         <FontAwesomeIcon icon="fal fa-info-circle" class="text-gray-500" fixed-width aria-hidden="true" />
                     </div>
-                    <div v-if="fieldData.warning" v-tooltip="fieldData.warning" class="cursor-pointer ml-1">
-                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
-                    </div>
+                </div>
+                
+                <!-- Section: Warning -->
+                <div v-if="fieldData.warning" v-tooltip="fieldData.warning" class="my-2 text-xs border border-amber-500 rounded-sm bg-amber-100 py-1 px-2 text-balance text-amber-600">
+                    <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                    {{ fieldData.warning }}
                 </div>
             </dt>
 
