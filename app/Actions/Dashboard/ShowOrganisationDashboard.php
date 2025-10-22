@@ -70,8 +70,7 @@ class ShowOrganisationDashboard extends OrgAction
                             'tables'      => OrganisationDashboardSalesTableTabsEnum::tables($organisation),
                             'charts'      => []
                         ],
-                    ],
-                    'ordering_stats' => $organisation->orderingStats,
+                    ]
                 ]
 
             ]

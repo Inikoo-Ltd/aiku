@@ -248,13 +248,13 @@ const toggleExpanded = () => {
                     <span>{{`order ${formatNumber(modelValue?.product?.units)} for full pack`}}</span>
                 </div>
                 <div class="space-y-1">
-                    <div class="text-sm font-medium text-gray-800" :style="getStyles(modelValue?.description?.description_title, screenType)">
+                    <!-- <div class="text-sm font-medium text-gray-800" :style="getStyles(modelValue?.description?.description_title, screenType)">
                         <input v-if="templateEdit === 'webpage'" placeholder="Description title"
                             v-model="modelValue.product.description_title"
                             @update:model-value="(e) => onDescriptionUpdate('description_title', e)"
                             class="w-full bg-transparent text-sm border-0 px-0 py-0 focus:outline-none focus:ring-0 transition  font-medium text-gray-800 placeholder-gray-400" />
                         <div v-else>{{ modelValue.product.description_title }}</div>
-                    </div>
+                    </div> -->
 
                     <div class="text-xs font-normal text-gray-700" :style="getStyles(modelValue?.description?.description_content, screenType)">
                         <EditorV2 v-if="templateEdit === 'webpage'" v-model="modelValue.product.description"
