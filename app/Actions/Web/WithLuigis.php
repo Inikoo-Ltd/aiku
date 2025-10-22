@@ -34,20 +34,45 @@ trait WithLuigis
     use AsAction;
     use WithAttributes;
 
+    // public function digest($key, $content_type, $method, $endpoint, $date): string
+    // {
+    //     $data = "$method\n$content_type\n$date\n$endpoint";
+
+    //     return trim(base64_encode(hash_hmac('sha256', $data, $key, true)));
+    // }
+
     public function digest($key, $content_type, $method, $endpoint, $date): string
     {
-        $data = "$method\n$content_type\n$date\n$endpoint";
+        $data = "{$method}\n{$content_type}\n{$date}\n{$endpoint}";
 
-        return trim(base64_encode(hash_hmac('sha256', $data, $key, true)));
+        $signature = trim(base64_encode(hash_hmac('sha256', $data, $key, true)));
+
+        return $signature;
     }
 
     public function getAccessToken(Website|Webpage $parent): array
     {
         $website = $parent instanceof Website ? $parent : $parent->website;
+
         if (app()->environment('production')) {
-            return array_filter([Arr::get($website->settings, 'luigisbox.tracker_id'), Arr::get($website->settings, 'luigisbox.private_key')]);
+            $trackerId = Arr::get($website->settings, 'luigisbox.tracker_id');
+            $privateKey = Arr::get($website->settings, 'luigisbox.private_key');
+
+            Log::info('Tracker ID - PROD: ' . $trackerId);
+            Log::info('Private Key: ' . $privateKey);
+
+            return array_filter([$trackerId, $privateKey]);
         } else {
-            return array_filter([config('app.sandbox.luigisbox.tracker_id'), config('app.sandbox.luigisbox.private_key')]);
+            // $trackerId = config('app.sandbox.luigisbox.tracker_id');
+            // $privateKey = config('app.sandbox.luigisbox.private_key');
+
+            $trackerId = "483878-777949";
+            $privateKey = "b3d22400022aca2e0a656163aa3790e6516fcdc7897086688815131456df9c59";
+
+            Log::info('Sandbox Tracker ID - NOT-PROD: ' . $trackerId);
+            Log::info('Sandbox Private Key: ' . $privateKey);
+
+            return array_filter([$trackerId, $privateKey]);
         }
     }
 
@@ -59,9 +84,11 @@ trait WithLuigis
         $content_type = 'application/json; charset=utf-8';
 
         $offsetSeconds = 0;
-        $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
+        $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds) . ' GMT';
 
         $accessToken = $this->getAccessToken($parent);
+
+        Log::info('AccessToken: ' . json_encode($accessToken));
 
         [$publicKey, $privateKey] = $accessToken;
 
@@ -80,6 +107,11 @@ trait WithLuigis
             'Authorization'   => "Hello $publicKey:$signature",
         ];
 
+        Log::info('Header: ' . json_encode($header));
+
+        Log::info('Header Authorization:' . $header['Authorization']);
+
+
         if ($compressed) {
             $header['Content-Encoding'] = 'gzip';
             $body                       = gzencode(json_encode($body), 9);
@@ -87,16 +119,19 @@ trait WithLuigis
             $body = json_encode($body);
         }
 
+        Log::info('API Before Contacted');
+
         $response = Http::withHeaders($header)
             ->retry(3, 100)
             ->withBody($body, $content_type)
             ->{strtolower($method)}(
-                'https://live.luigisbox.com/'.$endPoint
+                'https://live.luigisbox.com/' . $endPoint
             );
 
+        Log::info('API Contacted');
 
         if ($response->failed()) {
-            throw new Exception('Failed to send request to Luigi\'s Box API: '.$response->body());
+            throw new Exception('Failed to send request to Luigi\'s Box API: ' . $response->body());
         }
     }
 
@@ -134,7 +169,7 @@ trait WithLuigis
                     try {
                         $this->request($website, '/v1/content', $body, 'post', $compressed);
                     } catch (Exception $e) {
-                        print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
+                        print "Failed to reindex website $website->domain: " . $e->getMessage() . "\n";
 
                         return;
                     }
@@ -153,7 +188,7 @@ trait WithLuigis
             try {
                 $this->request($parent, '/v1/content', $body);
             } catch (Exception $e) {
-                Log::error("Failed to reindex webpage $webpage->title: ".$e->getMessage());
+                Log::error("Failed to reindex webpage $webpage->title: " . $e->getMessage());
             }
         }
     }
@@ -195,7 +230,7 @@ trait WithLuigis
             $segments = [$webpage->url];
         }
 
-        return '/'.collect($segments)->implode('/');
+        return '/' . collect($segments)->implode('/');
     }
 
 
@@ -204,7 +239,7 @@ trait WithLuigis
 
         $objects = [];
         foreach ($tags as $tag) {
-            $url       = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
+            $url       = '/search?lb.t[]=tag:' . $tag->name . '&q=' . $tag->name;
             $objects[] = [
                 "identity" => $url,
                 "type"     => "tag",
@@ -233,7 +268,7 @@ trait WithLuigis
 
         $objects = [];
         foreach ($brands as $brand) {
-            $url       = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
+            $url       = '/search?lb.f[]=brand:' . $brand->name . '&q=' . $brand->name;
             $objects[] = [
                 "identity" => $url,
                 "type"     => "brand",
@@ -274,7 +309,7 @@ trait WithLuigis
                         'objects' => $batch
                     ];
                     $this->request($website, '/v1/content/delete', $body, 'delete', $compressed);
-                    print "Deleted count ".count($batch)." from website: $website->name\n";
+                    print "Deleted count " . count($batch) . " from website: $website->name\n";
                 }
             });
     }
@@ -400,7 +435,7 @@ trait WithLuigis
         $brand       = $product->getBrand();
         $brandObject = [];
         if ($brand) {
-            $url         = '/search?lb.f[]=brand:'.$brand->name.'&q='.$brand->name;
+            $url         = '/search?lb.f[]=brand:' . $brand->name . '&q=' . $brand->name;
             $brandObject = [
                 "identity" => $url,
                 "type"     => "brand",
@@ -417,7 +452,7 @@ trait WithLuigis
         $tagsObject = [];
         if ($tags->isNotEmpty()) {
             foreach ($tags as $tag) {
-                $url          = '/search?lb.t[]=tag:'.$tag->name.'&q='.$tag->name;
+                $url          = '/search?lb.t[]=tag:' . $tag->name . '&q=' . $tag->name;
                 $tagsObject[] = [
                     "identity" => $url,
                     "type"     => "tag",
@@ -442,7 +477,7 @@ trait WithLuigis
                 "availability"    => intval($product->state == ProductStateEnum::ACTIVE),
                 "stock_qty"       => $product->available_quantity ?? 0,
                 "price"           => (float)$product->price ?? 0,
-                "formatted_price" => $product->currency->symbol.$product->price.'/'.$product->unit,
+                "formatted_price" => $product->currency->symbol . $product->price . '/' . $product->unit,
                 "image_link"      => Arr::get($product->imageSources(200, 200), 'original'),
                 "product_code"    => $product->code,
                 "product_id"      => $product->id,
@@ -512,5 +547,95 @@ trait WithLuigis
             ProductCategoryTypeEnum::SUB_DEPARTMENT => 'sub_department',
             default => 'category',
         };
+    }
+
+
+    public function getAllObjects_backup(Website $parent): array
+    {
+        $accessToken = $this->getAccessToken($parent);
+
+        if (count($accessToken) < 2) {
+            Log::error('Luigi\'s Box access token is not configured properly');
+            return [];
+        }
+
+        try {
+            // Mengirim permintaan ke endpoint API
+            $response = $this->request($parent, 'v1/content_export', [], 'get');
+
+            // Log respons untuk debugging
+            Log::info('Luigi\'s Box API Response: ', ['response' => $response]);
+
+            // Validasi respons
+            if (is_array($response) && !empty($response)) {
+                return $response;
+            }
+
+            Log::warning('Luigi\'s Box API returned an empty or invalid response.');
+            return [];
+        } catch (Exception $e) {
+            // Log kesalahan jika terjadi exception
+            Log::error('Failed to fetch objects from Luigi\'s Box API: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+
+    public function getAllObjects(Website $parent): array
+    {
+
+        $trackerId = "";
+        $privateKey = "";
+
+        // Log untuk memastikan Tracker ID dan Private Key digunakan
+        Log::info('Hardcoded Tracker ID: ' . $trackerId);
+        Log::info('Hardcoded Private Key: ' . $privateKey);
+
+        try {
+            // Header dan konfigurasi untuk permintaan
+            $content_type = 'application/json; charset=utf-8';
+            $date = gmdate('D, d M Y H:i:s T');
+
+            // Membuat tanda tangan HMAC
+            $endpoint = 'v1/search?tracker_id=' . $trackerId;
+            $signature = $this->digest($privateKey, $content_type, 'GET', $endpoint, $date);
+
+            // Header untuk permintaan
+            $header = [
+                'Accept-Encoding' => 'gzip',
+                'Content-Type'    => $content_type,
+                'Date'            => $date,
+                'Authorization'   => "Hello $trackerId:$signature",
+            ];
+
+            Log::info('Endpoint: ' . json_encode($endpoint));
+            Log::info('Request Headers: ' . json_encode($header));
+
+            // Mengirim permintaan ke API Luigi's Box
+            $response = Http::withHeaders($header)
+                ->retry(3, 100)
+                ->get('https://live.luigisbox.com/' . $endpoint);
+
+            // Log respons untuk debugging
+            Log::info('Luigi\'s Box API Response: ', ['status' => $response->status(), 'body' => $response->body()]);
+
+            // Validasi respons
+            if ($response->successful()) {
+                $responseData = $response->json();
+                if (is_array($responseData) && !empty($responseData)) {
+                    return $responseData;
+                }
+
+                Log::warning('Luigi\'s Box API returned an empty or invalid response.');
+                return [];
+            }
+
+            Log::error('Luigi\'s Box API request failed with status: ' . $response->status());
+            return [];
+        } catch (Exception $e) {
+            // Log kesalahan jika terjadi exception
+            Log::error('Failed to fetch objects from Luigi\'s Box API: ' . $e->getMessage());
+            return [];
+        }
     }
 }
