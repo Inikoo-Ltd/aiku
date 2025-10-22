@@ -27,7 +27,6 @@ class CategoriseInvoice extends OrgAction
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'categorise:invoices {organisations?*} {--S|shop= shop slug} {--i|id=}';
 
     public function __construct()
     {
@@ -36,9 +35,12 @@ class CategoriseInvoice extends OrgAction
 
     public function handle(Invoice $invoice): void
     {
+
         $oldInvoiceCategory = $invoice->invoiceCategory;
 
         $invoiceCategory = $this->getInvoiceCategory($invoice);
+
+
         $invoice->update([
             'invoice_category_id' => $invoiceCategory?->id,
         ]);
@@ -134,11 +136,13 @@ class CategoriseInvoice extends OrgAction
         return null;
     }
 
+    public string $commandSignature = 'categorise:invoices {organisations?*} {--S|shop= shop slug} {--i|id=}';
+
 
     public function asCommand(Command $command): int
     {
         $command->info("Categorise invoices");
-        $query = DB::table('invoices')->select('id')->orderBy('id');
+        $query = DB::table('invoices')->whereNull('invoice_category_id')->select('id')->orderBy('id');
 
         if ($command->hasOption('shop') && $command->option('shop')) {
             $shop = Shop::where('slug', $command->option('shop'))->first();
@@ -171,7 +175,8 @@ class CategoriseInvoice extends OrgAction
         $query->chunk(1000, function (Collection $modelsData) use ($bar, $command) {
             foreach ($modelsData as $modelId) {
                 $invoice         = Invoice::withTrashed()->find($modelId->id);
-                $invoiceCategory = $this->getInvoiceCategory($invoice);
+
+                $invoiceCategory = $this->handle($invoice);
                 $command->info("Invoice: $invoice->id $invoice->reference Category: $invoiceCategory?->slug");
 
 
