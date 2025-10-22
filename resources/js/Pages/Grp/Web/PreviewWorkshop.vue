@@ -41,7 +41,7 @@ const props = defineProps<{
 }>()
 
 
-const isOpenMenuMobile = inject('isOpenMenuMobile')
+const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
 const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)
 const { mode } = route().params;

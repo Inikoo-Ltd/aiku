@@ -22,6 +22,7 @@ import ButtonAddToBasket from "@/Components/Iris/Products/ButtonAddToBasket.vue"
 import { faEnvelope } from "@far"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 library.add(faCube, faLink, faPlus, faMinus)
 
@@ -376,10 +377,10 @@ const validImages = computed(() => {
                         </div>
                     </div>
 
-                    <Link v-else :href="urlLoginWithRedirect()"
-                          class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+                    <LinkIris v-else :href="urlLoginWithRedirect()"
+                        class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                         {{ trans("Login or Register for Wholesale Prices") }}
-                    </Link>
+                    </LinkIris>
                 </div>
 
                 <div class="text-sm" :style="getStyles(fieldValue?.description?.description_title, screenType)">
@@ -466,10 +467,22 @@ const validImages = computed(() => {
 
         <div class="mt-6 flex flex-col gap-2">
             <!-- <ButtonAddToBasket :product="fieldValue.product" /> -->
-            <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
+            <div v-if="layout?.iris?.is_logged_in" class="w-full">
+                <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
+                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
+
+                <div v-else>
+                    <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+                </div>
+            </div>
+
+            <LinkIris v-else :href="urlLoginWithRedirect()"
+                class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+                {{ trans("Login or Register for Wholesale Prices") }}
+            </LinkIris>
         </div>
 
-        <div class="text-xs font-medium py-3">
+        <div class="mt-4 text-xs font-medium py-3">
             <div v-html="fieldValue.product.description"></div>
         </div>
 
