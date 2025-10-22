@@ -10,6 +10,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 
 import { TopbarFulfilmentTypes } from "@/types/TopbarFulfilment"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
+import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 
 library.add(faSignIn, faHeart, faShoppingCart, faSignOut, faUser, faUserPlus)
 
@@ -58,7 +59,7 @@ const layout = inject("layout", {})
 			<!-- Button: Login -->
             <LinkIris
 				v-if="checkVisible(model?.login?.visible || null, isLoggedIn) && !layout.iris_varnish?.isFetching"
-				href="/app/login"
+				:href="urlLoginWithRedirect()"
 				type="internal"
 				class="ml-6 mr-4 buttonTopbar"
             >
