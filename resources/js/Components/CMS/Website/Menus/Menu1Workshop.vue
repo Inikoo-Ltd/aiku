@@ -291,7 +291,6 @@ watch(
             <!-- Drawer: Sub Navigation -->
             <Collapse v-if="hoveredNavigation?.subnavs" :when="isCollapsedOpen" as="div"
                 class="z-[49] absolute left-0 top-full bg-white border-t w-full shadow-lg"
-                xclass="isCollapsedOpen ? 'border-t-gray-300 ' : 'border-t-0'"
                 :style="getStyles(fieldValue?.container?.properties, screenType)"
             >
                 <div class="grid grid-cols-4 gap-8 p-6">
