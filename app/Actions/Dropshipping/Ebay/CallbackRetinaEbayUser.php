@@ -66,7 +66,7 @@ class CallbackRetinaEbayUser extends OrgAction
                 $userData = $ebayUser->getUser();
 
                 if ($customerSalesChannel = CustomerSalesChannel::where('name', Arr::get($userData, 'username'))->first()) {
-                    UpdateEbayUser::run($customerSalesChannel, [
+                    $currentEbayUser = UpdateEbayUser::run($customerSalesChannel, [
                         'settings' => [
                             'credentials' => [
                                 'ebay_access_token' => $tokenData['access_token'],
@@ -78,20 +78,22 @@ class CallbackRetinaEbayUser extends OrgAction
 
                     $ebayUser->delete();
                     $ebayUser->customerSalesChannel()->delete();
+
+                    $ebayUser = $currentEbayUser;
+                } else {
+                    $ebayUser = UpdateEbayUser::run($ebayUser, [
+                        'name' => Arr::get($userData, 'username'),
+                    ]);
+
+                    UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
+                        'reference' => Arr::get($userData, 'username'),
+                        'name' => Arr::get($userData, 'username')
+                    ]);
+
+                    UpdateEbayUserData::dispatch($ebayUser);
                 }
 
-                $ebayUser = UpdateEbayUser::run($ebayUser, [
-                    'name' => Arr::get($userData, 'username'),
-                ]);
-
                 CheckEbayChannel::run($ebayUser);
-
-                UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
-                    'reference' => Arr::get($userData, 'username'),
-                    'name' => Arr::get($userData, 'username')
-                ]);
-
-                UpdateEbayUserData::dispatch($ebayUser);
 
                 $routeName = match ($ebayUser->customer->is_fulfilment) {
                     true => 'retina.fulfilment.dropshipping.customer_sales_channels.show',
