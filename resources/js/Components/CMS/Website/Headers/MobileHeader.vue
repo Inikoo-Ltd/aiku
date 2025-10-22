@@ -35,6 +35,7 @@ import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { checkScreenType } from '@/Composables/useWindowSize'
 import { computed } from 'vue'
+import LinkIris from '@/Components/Iris/LinkIris.vue'
 
 // Add icons to the library
 library.add(
@@ -198,10 +199,10 @@ onMounted(() => {
 
             <!-- Section: Profile -->
             <div v-if="isLoggedIn" class="w-fit ml-auto flex items-center cursor-pointer text-xl">
-                <Link href="/app/profile">
+                <LinkIris href="/app/profile">
                     <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
                     :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
-                </Link>
+                </LinkIris>
             </div>
         </div>
 
