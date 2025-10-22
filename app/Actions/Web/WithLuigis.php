@@ -448,6 +448,8 @@ trait WithLuigis
                 "product_id"      => $product->id,
                 "introduced_at"   => $product->created_at ? $product->created_at->format('c') : null,
                 "description"     => $product->description,
+                'website_id'      => $webpage->website_id,
+                'webpage_id'      => $webpage->id,
             ]),
             ...(count($familyData) || count($departmentData) || count($subDepartmentData) || count($brandObject) || count($tagsObject) ? [
                 "nested" => array_values(array_filter([
