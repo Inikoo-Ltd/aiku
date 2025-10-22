@@ -12,7 +12,7 @@ class ShopHydrateRevenue implements ShouldBeUnique
 {
     use AsAction;
 
-    public string $commandSignature = 'hydrate:store-revenue {shop}';
+    public string $commandSignature = 'hydrate:shop-revenue {shop}';
 
     public function getJobUniqueId(int $shopId): string
     {
