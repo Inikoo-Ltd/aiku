@@ -163,7 +163,7 @@ class EditProduct extends OrgAction
      */
     public function getBlueprint(Product $product): array
     {
-        $value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
+        //$value = OrgStocksInProductResource::collection(GetOrgStocksInProduct::run($product))->resolve();
 
 
         $family = $product->family;
@@ -237,7 +237,7 @@ class EditProduct extends OrgAction
                     'options'     => [
                         'counter' => true,
                     ],
-                    'value'       => $webpage->title,
+                    'value'       => $webpage->breadcrumb_label,
                 ],
                 'webpage_title'            => [
                     'type'        => 'input',
