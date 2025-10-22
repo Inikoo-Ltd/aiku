@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Webpage;
 
+use App\Actions\Catalogue\Product\UpdateProduct;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebpages;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebpages;
@@ -21,6 +22,7 @@ use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Web\WebpageResource;
+use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
 use App\Rules\AlphaDashSlash;
 use App\Rules\IUnique;
@@ -40,15 +42,21 @@ class UpdateWebpage extends OrgAction
 
     public function handle(Webpage $webpage, array $modelData): Webpage
     {
+        $oldSeoData = $webpage->seo_data;
+        $oldUrl     = $webpage->url;
 
-        $currentSeoData = Arr::get($modelData, 'seo_data');
-        $oldSeoData     = $webpage->seo_data;
-        $oldUrl         = $webpage->url;
 
-        // Ensure seo_data exists as an array
-        if (!$currentSeoData) {
-            $currentSeoData = [];
+        $productData = [];
+        if (Arr::has($modelData, 'product_name')) {
+            $productData['name'] = Arr::pull($modelData, 'product_name');
         }
+        if (Arr::has($modelData, 'product_description')) {
+            $productData['description'] = Arr::pull($modelData, 'product_description');
+        }
+        if (Arr::has($modelData, 'product_description_extra')) {
+            $productData['description_extra'] = Arr::pull($modelData, 'product_description_extra');
+        }
+
 
         // Prepare new SEO data
         $newData = [];
@@ -60,9 +68,8 @@ class UpdateWebpage extends OrgAction
             Arr::pull($modelData, 'structured_data', Arr::get($oldSeoData, 'structured_data', []))
         );
 
-        // Example: reassign back to model or continue processin
+        // Example: reassign back to model or continue processing
         $modelData['seo_data'] = $newData;
-
 
 
         $imageSeo = Arr::pull($modelData, 'seo_image');
@@ -98,6 +105,11 @@ class UpdateWebpage extends OrgAction
         $changes = Arr::except($webpage->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
+        if ($webpage->model instanceof Product) {
+            UpdateProduct::make()->action($webpage->model, $productData);
+        }
+
+
         if (Arr::has($changes, 'url')) {
             ProcessUpdateWebpageUrl::dispatch($webpage, $oldUrl);
         }
@@ -128,7 +140,7 @@ class UpdateWebpage extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'url'                       => [
+            'url'                            => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -150,7 +162,7 @@ class UpdateWebpage extends OrgAction
                     ]
                 ),
             ],
-            'code'                      => [
+            'code'                           => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -170,28 +182,33 @@ class UpdateWebpage extends OrgAction
                 ),
 
             ],
-            'seo_image'                 => [
+            'seo_image'                      => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'seo_data'                  => ['sometimes', 'array'],
-            'structured_data'            =>  ['sometimes','nullable', 'string'],
-            'level'                     => ['sometimes', 'integer'],
-            'sub_type'                  => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
-            'type'                      => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
+            'seo_data'                       => ['sometimes', 'array'],
+            'structured_data'                => ['sometimes', 'nullable', 'string'],
+            'level'                          => ['sometimes', 'integer'],
+            'sub_type'                       => ['sometimes', Rule::enum(WebpageSubTypeEnum::class)],
+            'type'                           => ['sometimes', Rule::enum(WebpageTypeEnum::class)],
             'state_data'                     => ['sometimes', 'array'],
-            'state_data.state'                     => ['sometimes', Rule::enum(WebpageStateEnum::class)],
-            'state_data.redirect_webpage_id'       => ['required_if:state_data.state,' . WebpageStateEnum::CLOSED->value, 'exists:webpages,id'],
+            'state_data.state'               => ['sometimes', Rule::enum(WebpageStateEnum::class)],
+            'state_data.redirect_webpage_id' => ['required_if:state_data.state,'.WebpageStateEnum::CLOSED->value, 'exists:webpages,id'],
             // 'state'                     => ['sometimes', Rule::enum(WebpageStateEnum::class)],
-            'webpage_type'              => ['sometimes', 'array'],
-            'ready_at'                  => ['sometimes', 'date'],
-            'live_at'                   => ['sometimes', 'date'],
-            'title'                     => ['sometimes', 'string'],
-            'show_in_parent'            => ['sometimes', 'nullable', 'boolean'],
-            'allow_fetch'               => ['sometimes', 'nullable', 'boolean'],
-            'description'               => ['sometimes', 'string']
+            'webpage_type'                   => ['sometimes', 'array'],
+            'ready_at'                       => ['sometimes', 'date'],
+            'live_at'                        => ['sometimes', 'date'],
+            'title'                          => ['sometimes', 'string'],
+            'show_in_parent'                 => ['sometimes', 'nullable', 'boolean'],
+            'allow_fetch'                    => ['sometimes', 'nullable', 'boolean'],
+            'description'                    => ['sometimes', 'string'],
+
+            'product_name'              => ['sometimes', 'required', 'max:250', 'string'],
+            'product_description'       => ['sometimes', 'required', 'max:1500'],
+            'product_description_extra' => ['sometimes', 'nullable', 'max:65500'],
+            'breadcrumb_label'    => ['sometimes', 'string', 'max:40'],
         ];
 
         if (!$this->strict) {
@@ -221,6 +238,7 @@ class UpdateWebpage extends OrgAction
     {
         $this->webpage = $webpage;
         $this->initialisationFromShop($webpage->shop, $request);
+
         return $this->handle($webpage, $this->validatedData);
     }
 

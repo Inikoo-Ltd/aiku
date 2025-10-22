@@ -45,7 +45,7 @@ delete attributes.value
             class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start">
             <p class="">
                 <!-- {{ pageBody.layout.profile.fields.about.notes }} -->
-                Letters: {{ form[fieldName]?.length || 0 }}
+                Characters: {{ form[fieldName]?.length || 0 }}
             </p>
             <p class="">
                 <!-- {{ pageBody.layout.profile.fields.about.notes }} -->

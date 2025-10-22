@@ -41,8 +41,6 @@ provide("dashboardTabActive", dashboardTabActive)
 		<DashboardWidget
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
-            :stats="props.dashboard?.super_blocks?.[0]?.ordering_stats"
-            :currencyCode="props.dashboard?.super_blocks?.[0]?.settings.currency_type.options?.[0]?.label"
 		/>
 
 	</div>

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f3ce2c32b69f2cd872444d00eaf6166a",
+    "content-hash": "44efa87208a9b99c418743c1ef199714",
     "packages": [
         {
             "name": "adawolfa/isdoc",
@@ -5215,16 +5215,16 @@
         },
         {
             "name": "kyon147/laravel-shopify",
-            "version": "v24.1.0",
+            "version": "v24.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Kyon147/laravel-shopify.git",
-                "reference": "8a1b3b47263f1b7462d5fa1a9ab6744eb0439d5f"
+                "reference": "42e7e2c1667ffa3ffa57f5112e340afffd0b26e3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Kyon147/laravel-shopify/zipball/8a1b3b47263f1b7462d5fa1a9ab6744eb0439d5f",
-                "reference": "8a1b3b47263f1b7462d5fa1a9ab6744eb0439d5f",
+                "url": "https://api.github.com/repos/Kyon147/laravel-shopify/zipball/42e7e2c1667ffa3ffa57f5112e340afffd0b26e3",
+                "reference": "42e7e2c1667ffa3ffa57f5112e340afffd0b26e3",
                 "shasum": ""
             },
             "require": {
@@ -5304,7 +5304,7 @@
                     "type": "open_collective"
                 }
             ],
-            "time": "2025-10-16T11:53:40+00:00"
+            "time": "2025-07-16T08:09:28+00:00"
         },
         {
             "name": "laminas/laminas-diactoros",
@@ -23477,7 +23477,7 @@
     ],
     "aliases": [],
     "minimum-stability": "beta",
-    "stability-flags": {},
+    "stability-flags": [],
     "prefer-stable": true,
     "prefer-lowest": false,
     "platform": {
@@ -23494,6 +23494,6 @@
         "ext-soap": "*",
         "ext-zlib": "*"
     },
-    "platform-dev": {},
-    "plugin-api-version": "2.6.0"
+    "platform-dev": [],
+    "plugin-api-version": "2.3.0"
 }

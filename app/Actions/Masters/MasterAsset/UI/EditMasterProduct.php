@@ -138,22 +138,34 @@ class EditMasterProduct extends GrpAction
                 'fields' => [
                     'name' => [
                         'type'  => 'input',
-                        'label' => __('name'),
+                        'label' => __('Name'),
+                        'options'   => [
+                            'counter'   => true,
+                        ],
                         'value' => $masterProduct->name
                     ],
                     'description_title' => [
                         'type'  => 'input',
-                        'label' => __('description title'),
+                        'label' => __('Description title'),
+                        'options'   => [
+                            'counter'   => true,
+                        ],
                         'value' => $masterProduct->description_title
                     ],
                     'description' => [
                         'type'  => 'textEditor',
-                        'label' => __('description'),
+                        'label' => __('Description'),
+                        'options'   => [
+                            'counter'   => true,
+                        ],
                         'value' => $masterProduct->description
                     ],
                     'description_extra' => [
                         'type'  => 'textEditor',
                         'label' => __('Extra description'),
+                        'options'   => [
+                            'counter'   => true,
+                        ],
                         'value' => $masterProduct->description_extra
                     ],
                 ]

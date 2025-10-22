@@ -89,6 +89,7 @@ class DashboardTotalInvoiceCategoriesSalesResource extends JsonResource
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices', $routeTargets['invoices']),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_minified', $routeTargets['invoices']),
             $this->getDashboardTableColumn($organisation->orderingIntervals, 'invoices_delta'),
+            $this->getDashboardTableColumn($organisation->orderingIntervals, 'lost_revenue_other_amount_org_currency'),
             $sales_invoice_category_currency,
             $sales_invoice_category_currency_minified,
             $sales_invoice_category_currency_delta,

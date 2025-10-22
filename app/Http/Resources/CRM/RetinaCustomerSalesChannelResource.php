@@ -44,6 +44,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             PlatformTypeEnum::SHOPIFY,
             PlatformTypeEnum::WOOCOMMERCE,
             PlatformTypeEnum::MAGENTO,
+            PlatformTypeEnum::EBAY,
 
         ])) {
             $reconnectRoute = [
@@ -74,7 +75,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'number_portfolios'       => $this->number_portfolios,
             'number_customer_clients' => $this->number_customer_clients,
             'number_orders'           => $this->number_orders,
-            'type'                    => $this->type,
+            'type'                    => $customerSalesChannels->platform->type,
             'status'                  => $this->status,
             'amount'                  => $this->total_amount,
             'platform_code'           => $this->platform_code,

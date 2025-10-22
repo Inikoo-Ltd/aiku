@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { inject, computed, defineProps } from "vue"
 import { trans } from "laravel-vue-i18n"
-import { Pie } from "vue-chartjs"
 import {
     Chart as ChartJS,
     Title,
@@ -10,102 +9,138 @@ import {
     ArcElement
 } from "chart.js"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faInfoCircle } from "@fal";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faInfoCircle } from "@fal"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
 const props = defineProps<{
-    data: {
-        revenue_amount: number
-        lost_revenue_other_amount: number
-        number_invoices: number
-        number_invoices_type_refund: number
+    scope: "group" | "organisation"
+    intervals: {
+        options: {
+            label: string
+            value: string
+            labelShort: string
+        }[]
+        value: string
     }
-    currencyCode: { code: string }
+    tableData: Record<string, any>
 }>()
 
-const locale = inject('locale', aikuLocaleStructure)
+const locale = inject("locale", aikuLocaleStructure)
+
+const keyForScope = (base: string) => {
+    return props.scope === "group"
+        ? base.replace("_org_", "_grp_")
+        : base
+}
 
 const refundRatio = computed(() => {
-    const { revenue_amount, lost_revenue_other_amount } = props.data
-    if (!revenue_amount) return 0
-    return (lost_revenue_other_amount / revenue_amount) * 100
+    const salesKey = keyForScope("sales_org_currency")
+    const refundKey = keyForScope("lost_revenue_other_amount_org_currency")
+
+    const revenue = Number(
+        props.tableData?.tables?.invoice_categories?.totals?.columns?.[salesKey]?.[props.intervals.value]?.raw_value || 0
+    )
+    const refunds = Number(
+        props.tableData?.tables?.invoice_categories?.totals?.columns?.[refundKey]?.[props.intervals.value]?.raw_value || 0
+    )
+
+    return revenue > 0 ? (refunds / revenue) * 100 : 0
 })
 
 const invoicesRefundRatio = computed(() => {
-    const { number_invoices, number_invoices_type_refund } = props.data
-    if (!number_invoices) return 0
-    return (number_invoices_type_refund / number_invoices) * 100
+    const number_invoices = Number(
+        props.tableData?.tables?.invoice_categories?.totals?.columns
+            ?.invoices?.[props.intervals.value]?.raw_value || 0
+    )
+    const number_invoices_refund = Number(
+        props.tableData?.tables?.invoice_categories?.totals?.columns
+            ?.refunds?.[props.intervals.value]?.raw_value || 0
+    )
+
+    return number_invoices > 0
+        ? (number_invoices_refund / number_invoices) * 100
+        : 0
 })
 
 const chartColors = ["#0D9488", "#F97316"]
 
-const chartData = computed(() => ({
-    labels: [trans("Total Sales"), trans("Refunds")],
-    datasets: [
-        {
-            backgroundColor: chartColors,
-            data: [
-                props.data.revenue_amount || 0,
-                props.data.lost_revenue_other_amount || 0
-            ],
-            borderWidth: 2,
-            hoverOffset: 8
-        }
-    ]
-}))
+const chartData = computed(() => {
+    const salesKey = keyForScope("sales_org_currency")
+    const refundKey = keyForScope("lost_revenue_other_amount_org_currency")
 
-const chartOptions = {
-    responsive: true,
-    plugins: {
-        legend: { display: false },
-        tooltip: {
-            callbacks: {
-                label: (context: any) =>
-                    `${locale.currencyFormat(context.code, context.parsed || 0)}`
+    const revenue = Number(
+        props.tableData?.tables?.invoice_categories?.totals?.columns?.[salesKey]?.[props.intervals.value]?.raw_value || 0
+    )
+    const refunds = Number(
+        props.tableData?.tables?.invoice_categories?.totals?.columns?.[refundKey]?.[props.intervals.value]?.raw_value || 0
+    )
+
+    return {
+        labels: [trans("Total Sales"), trans("Refunds")],
+        datasets: [
+            {
+                backgroundColor: chartColors,
+                data: [revenue, refunds],
+                borderWidth: 2,
+                hoverOffset: 8
             }
-        },
+        ]
     }
-}
+})
 </script>
 
 <template>
-    <div :class="['flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg', { hidden: data?.revenue_amount <= 0 }]">
+    <div
+        :class="[
+            'flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg',
+            {
+                hidden:
+                    (props.tableData?.tables?.invoice_categories?.totals?.columns?.[
+                        props.scope === 'group'
+                            ? 'sales_grp_currency'
+                            : 'sales_org_currency'
+                    ]?.[props.intervals.value]?.raw_value || 0) <= 0
+            }
+        ]"
+    >
         <div class="text-sm text-gray-700 w-full">
             <div class="text-base mb-1 text-gray-400">
                 {{ trans('Revenue') }}
-                <FontAwesomeIcon v-tooltip="trans('Shows the breakdown of total sales and refunds')" :icon="faInfoCircle" class="hover:text-gray-600" fixed-width aria-hidden="true" />
+                <FontAwesomeIcon
+                    v-tooltip="trans('Shows the breakdown of total sales and refunds')"
+                    :icon="faInfoCircle"
+                    class="hover:text-gray-600"
+                    fixed-width
+                    aria-hidden="true"
+                />
             </div>
-<!--            <div class="flex items-center gap-3 mb-2">-->
-<!--                <div class="flex items-center gap-1">-->
-<!--                    <span class="w-3 h-3 rounded-sm" :style="{ backgroundColor: chartColors[0] }"></span>-->
-<!--                    <span>{{ trans('Total Sales') }}</span>-->
-<!--                </div>-->
-<!--                <div class="flex items-center gap-1">-->
-<!--                    <span class="w-3 h-3 rounded-sm" :style="{ backgroundColor: chartColors[1] }"></span>-->
-<!--                    <span>{{ trans('Refunds') }}</span>-->
-<!--                </div>-->
-<!--            </div>-->
 
             <p>
-                <span class="font-semibold">{{ trans("Total Sales") }}: </span>
-                {{ locale.currencyFormat(currencyCode?.code, data?.revenue_amount || 0) }}
+                <span class="font-semibold">{{ trans("Total Sales") }}:</span>
+                {{
+                    props.tableData?.tables?.invoice_categories?.totals?.columns?.[
+                        props.scope === 'group'
+                            ? 'sales_grp_currency'
+                            : 'sales_org_currency'
+                        ]?.[props.intervals.value]?.formatted_value || 0
+                }}
                 <span class="text-xs text-gray-500">
                     ({{ refundRatio.toFixed(2) }}% {{ trans("refunded") }})
                 </span>
             </p>
+
             <p>
-                <span class="font-semibold">{{ trans("Invoices") }}: </span>
-                {{ data?.number_invoices?.toLocaleString() }}
+                <span class="font-semibold">{{ trans("Invoices") }}:</span>
+                {{
+                    props.tableData?.tables?.invoice_categories?.totals?.columns
+                        ?.invoices?.[props.intervals.value]?.formatted_value || 0
+                }}
                 <span class="text-xs text-gray-500">
                     ({{ invoicesRefundRatio.toFixed(1) }}% {{ trans("with refunds") }})
                 </span>
             </p>
         </div>
-
-<!--        <div class="w-28 h-28">-->
-<!--            <Pie :data="chartData" :options="chartOptions" />-->
-<!--        </div>-->
     </div>
 </template>

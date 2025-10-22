@@ -17,13 +17,6 @@ const props = defineProps<{
     tableData: {
 
     }
-    stats: {
-        revenue_amount: number
-        lost_revenue_other_amount: number
-        number_invoices: number
-        number_invoices_type_refund: number
-    }
-    currencyCode: { code: string }
 }>()
 
 const layout = inject('layout')
@@ -42,6 +35,11 @@ const layout = inject('layout')
             :intervals="props.intervals"
         />
        <CustomerClv v-if="layout?.app?.environment === 'local'" />
-        <SalesVsRefunds v-if="props.stats" :data="props.stats" :currencyCode="props.currencyCode" />
+        <SalesVsRefunds
+            v-if="props.tableData?.tables?.invoice_categories"
+            :scope="props.tableData?.tables?.organisations ? 'group' : 'organisation'"
+            :tableData="props.tableData"
+            :intervals="props.intervals"
+        />
     </div>
 </template>
