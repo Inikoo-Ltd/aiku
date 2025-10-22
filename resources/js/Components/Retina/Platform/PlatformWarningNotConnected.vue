@@ -95,7 +95,7 @@ const ipAddresses = [
         </div>
     </Message>
 
-    <Message severity="warning" class="mt-8 ">
+    <Message severity="warning" class="mt-8" v-if="customer_sales_channel.type === 'woocommerce'">
         <div class="ml-2 font-normal flex flex-col gap-x-4 items-center sm:flex-row justify-between w-full">
             <div>
                 <div class="inline items-center gap-x-2">

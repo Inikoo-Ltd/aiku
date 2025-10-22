@@ -65,13 +65,19 @@ class CallbackRetinaEbayUser extends OrgAction
                 $ebayUser->refresh();
                 $userData = $ebayUser->getUser();
 
-                if (CustomerSalesChannel::where('name', Arr::get($userData, 'username'))->exists()) {
-                    $ebayUser->customerSalesChannel->delete();
-                    $ebayUser->delete();
-                    return route('retina.dropshipping.customer_sales_channels.create', [
-                        'status' => 'error',
-                        'reason' => 'duplicate-ebay'
+                if ($customerSalesChannel = CustomerSalesChannel::where('name', Arr::get($userData, 'username'))->first()) {
+                    UpdateEbayUser::run($customerSalesChannel, [
+                        'settings' => [
+                            'credentials' => [
+                                'ebay_access_token' => $tokenData['access_token'],
+                                'ebay_refresh_token' => $tokenData['refresh_token'],
+                                'ebay_token_expires_at' => now()->addSeconds($tokenData['expires_in'])
+                            ]
+                        ]
                     ]);
+
+                    $ebayUser->delete();
+                    $ebayUser->customerSalesChannel()->delete();
                 }
 
                 $ebayUser = UpdateEbayUser::run($ebayUser, [
