@@ -111,6 +111,9 @@ defineExpose({
                     <div v-if="fieldData.information" v-tooltip="fieldData.information" class="opacity-50 hover:opacity-100 cursor-pointer ml-1">
                         <FontAwesomeIcon icon="fal fa-info-circle" class="text-gray-500" fixed-width aria-hidden="true" />
                     </div>
+                    <div v-if="fieldData.warning" v-tooltip="fieldData.warning" class="cursor-pointer ml-1">
+                        <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="text-amber-500" fixed-width aria-hidden="true" />
+                    </div>
                 </div>
             </dt>
 

@@ -341,7 +341,7 @@ const getSeverity = (type?: string) => {
                                 icon="fal fa-info-circle" class="ml-1 text-gray-400 hover:text-gray-700" fixed-width
                                 aria-hidden="true" />
                             <FontAwesomeIcon v-if="sectionData.warning" v-tooltip="sectionData.warning"
-                                icon="fal fa-exclamation-triangle" class="ml-1 text-yellow-400 hover:text-yellow-600" fixed-width
+                                icon="fas fa-exclamation-triangle" class="ml-1 text-amber-500 hover:text-amber-600" fixed-width
                                 aria-hidden="true" />
                             <!-- {{ tabActive }} -- {{ key == currentTab }} -->
                         </div>
