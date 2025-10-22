@@ -56,6 +56,11 @@ class StoreEbayProduct extends RetinaAction
             ];
 
             $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
+            $decoded = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $noTags = strip_tags($decoded);
+            $clean = preg_replace('/[^A-Za-z0-9.,;\'"!? \n-]/', ' ', $noTags);
+            $clean = preg_replace('/\s+/', ' ', trim($clean));
+            $descriptions = str_replace('(', '', str_replace(')', '', str_replace('.', ' ', $clean)));
 
             if (!$descriptions) {
                 $descriptions = $portfolio->item->name;
@@ -181,7 +186,8 @@ class StoreEbayProduct extends RetinaAction
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($offer, 'offerId'),
                 'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId'),
-                'upload_warning' => null
+                'upload_warning' => null,
+                'errors_response' => []
             ]);
 
             CheckEbayPortfolio::run($portfolio);
