@@ -262,7 +262,7 @@ return [
         ],
         'low-priority'      => [
             'connection'          => 'redis',
-            'queue'               => ['low-priority'],
+            'queue'               => ['low-priority','shopify', 'woo','ebay'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,
@@ -294,7 +294,7 @@ return [
         ],
         'external-services' => [
             'connection'          => 'redis-long-running',
-            'queue'               => ['shopify', 'woo','ebay'],
+            'queue'               => ['to_remove'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 10,

@@ -13,18 +13,13 @@ use App\Actions\RetinaAction;
 use App\Models\Dropshipping\EbayUser;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreBulkNewProductToCurrentEbay extends RetinaAction
 {
-    use AsAction;
-    use WithAttributes;
-
     /**
      * @throws \Exception
      */
-    public function handle(EbayUser $ebayUser, array $attributes = [])
+    public function handle(EbayUser $ebayUser, array $attributes = []): void
     {
         $portfolios = $ebayUser
             ->customerSalesChannel
@@ -41,12 +36,15 @@ class StoreBulkNewProductToCurrentEbay extends RetinaAction
     public function rules(): array
     {
         return [
-            'portfolios' => ['required', 'array'],
+            'portfolios'   => ['required', 'array'],
             'portfolios.*' => ['required', 'integer'],
         ];
     }
 
-    public function asController(EbayUser $ebayUser, ActionRequest $request)
+    /**
+     * @throws \Exception
+     */
+    public function asController(EbayUser $ebayUser, ActionRequest $request): void
     {
         $this->initialisation($request);
 

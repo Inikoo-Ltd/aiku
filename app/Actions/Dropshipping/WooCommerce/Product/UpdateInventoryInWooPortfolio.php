@@ -21,7 +21,6 @@ class UpdateInventoryInWooPortfolio
 
     public string $commandSignature = 'woo:update-inventory';
 
-    public string $jobQueue = 'woo';
 
     public function handle(): void
     {

@@ -20,9 +20,6 @@ class SaveWooProductData extends RetinaAction
 {
     use WithActionUpdate;
 
-    public string $jobQueue = 'woo';
-    public int $jobBackoff = 5;
-
 
     public function handle(Portfolio $portfolio): ?array
     {

@@ -21,8 +21,6 @@ class SaveEbayProductData extends RetinaAction
 {
     use WithActionUpdate;
 
-    public string $jobQueue = 'ebay';
-    public int $jobBackoff = 5;
 
 
     public function handle(Portfolio $portfolio): ?array
