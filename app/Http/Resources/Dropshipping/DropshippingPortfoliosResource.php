@@ -151,7 +151,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'updated_at'            => $this->updated_at,
             'platform_product_id'   => $this->platform_product_id,
             'upload_warning'        => $this->upload_warning,
-            'message'               => Arr::get($this->errors_response, 'message', 'OK'),
+            'message'               => Arr::get($this->errors_response, 'message', $this->platform_status ? 'OK' : ''),
             'shopify_product_data'  => Arr::get($this->data, 'shopify_product', []),
             'platform_product_data' => match ($this->platform->type) {
                 PlatformTypeEnum::WOOCOMMERCE => Arr::get($this->data, 'woo_product', []),
