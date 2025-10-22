@@ -9,33 +9,41 @@ export default {
 				{
 					key: ["source"],
 					label: "Image",
-					type: "upload_image",
+					type: "image-cropped",
+					props_data: {
+						stencilProps: {
+							aspectRatio: 16 / 9,
+							movable: true,
+							scalable: true,
+							resizable: true,
+						},
+					},
 				},
 				{
 					key: ["alt"],
 					label: "Alternate Text",
 					type: "text",
 				},
-				{
+				/* {
 					key: ["properties", "dimension"],
 					label: "Dimension",
 					type: "dimension",
 					useIn: ["desktop", "tablet", "mobile"],
-				},
+				}, */
 				{
-					key: ["properties","padding"],
+					key: ["properties", "padding"],
 					useIn: ["desktop", "tablet", "mobile"],
 					label: "Padding",
 					type: "padding",
 				},
 				{
-					key: ["properties","margin"],
+					key: ["properties", "margin"],
 					useIn: ["desktop", "tablet", "mobile"],
 					label: "Margin",
 					type: "margin",
 				},
 				{
-					key: ['container',"properties", "justifyContent"],
+					key: ['container', "properties", "justifyContent"],
 					label: "Justify Content",
 					useIn: ["desktop", "tablet", "mobile"],
 					type: "select",
@@ -163,13 +171,13 @@ export default {
 			key: ["text_block"],
 			replaceForm: [
 				{
-					key: ["properties","padding"],
+					key: ["properties", "padding"],
 					useIn: ["desktop", "tablet", "mobile"],
 					label: "Padding",
 					type: "padding",
 				},
 				{
-					key: ["properties","margin"],
+					key: ["properties", "margin"],
 					useIn: ["desktop", "tablet", "mobile"],
 					label: "Margin",
 					type: "margin",

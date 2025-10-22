@@ -156,12 +156,13 @@ class EditFamily extends OrgAction
                                 'fields' => [
                                     'code' => [
                                         'type'  => 'input',
-                                        'label' => __('code'),
+                                        'label' => __('Code'),
                                         'value' => $family->code
                                     ],
                                     'name' => $family->masterProductCategory ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('name'),
+                                        'label' => __('Name'),
+                                        'information'   => __('This name only for internal use (i.e listing in table)'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->name,
@@ -170,12 +171,14 @@ class EditFamily extends OrgAction
                                         'mode' => 'single'
                                     ] : [
                                         'type'  => 'input',
-                                        'label' => __('name'),
+                                        'label' => __('Name'),
+                                        'information'   => __('This name only for internal use (i.e listing in table)'),
                                         'value' => $family->name
                                     ],
                                     'description_title' => $family->masterProductCategory ? [
                                         'type'  => 'input_translation',
-                                        'label' => __('description title'),
+                                        'label' => __('Description title'),
+                                        'information'   => __('This will display in Family page as h1 title'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->description_title,
@@ -184,12 +187,12 @@ class EditFamily extends OrgAction
                                         'value' => $family->getTranslations('description_title_i8n')
                                     ] : [
                                          'type'  => 'input',
-                                         'label' => __('description title'),
+                                         'label' => __('Description title'),
                                          'value' => $family->description_title
                                     ],
                                     'description' => $family->masterProductCategory ? [
                                         'type'  => 'textEditor_translation',
-                                        'label' => __('description'),
+                                        'label' => __('Description'),
                                         'language_from' => 'en',
                                         'full' => true,
                                         'main' => $family->masterProductCategory->description,
@@ -198,7 +201,7 @@ class EditFamily extends OrgAction
                                         'value' => $family->getTranslations('description_i8n')
                                     ] : [
                                         'type'  => 'textEditor',
-                                        'label' => __('description'),
+                                        'label' => __('Description'),
                                         'value' => $family->description
                                     ],
                                     'description_extra' => $family->masterProductCategory ? [

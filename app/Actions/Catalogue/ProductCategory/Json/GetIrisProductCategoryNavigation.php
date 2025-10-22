@@ -34,7 +34,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
         foreach ($departments as $department) {
             $departmentUrl = $domain . '/' . $department->url;
 
-            $collections = DB::table('model_has_collections')
+            $collectionsRaw = DB::table('model_has_collections')
                 ->where('model_has_collections.model_id', $department->id)
                 ->where('model_has_collections.type', 'department')
                 ->leftJoin('collections', 'collections.id', '=', 'model_has_collections.collection_id')
@@ -42,7 +42,16 @@ class GetIrisProductCategoryNavigation extends IrisAction
                 ->whereNotNull('collections.webpage_id')
                 ->select('collections.id', 'collections.name', 'webpages.url')
                 ->limit(10)
-                ->get()->toArray();
+                ->get();
+
+            $collections = [];
+            foreach ($collectionsRaw as $collection) {
+                $collections[] = [
+                    'id' => $collection->id,
+                    'name' => $collection->name,
+                    'url' => $departmentUrl . '/' . $collection->url
+                ];
+            }
 
             $departmentData = [
                 'name' => $department->name,
@@ -64,7 +73,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
             foreach ($subDepartments as $subDepartment) {
                 $subDepartmentUrl = $departmentUrl . '/' . $subDepartment->url;
 
-                $subCollections = DB::table('model_has_collections')
+                $subCollectionsRaw = DB::table('model_has_collections')
                     ->where('model_has_collections.model_id', $subDepartment->id)
                     ->where('model_has_collections.type', 'sub_department')
                     ->leftJoin('collections', 'collections.id', '=', 'model_has_collections.collection_id')
@@ -72,7 +81,16 @@ class GetIrisProductCategoryNavigation extends IrisAction
                     ->whereNotNull('collections.webpage_id')
                     ->select('collections.id', 'collections.name', 'webpages.url')
                     ->limit(10)
-                    ->get()->toArray();
+                    ->get();
+
+                $subCollections = [];
+                foreach ($subCollectionsRaw as $subCollection) {
+                    $subCollections[] = [
+                        'id' => $subCollection->id,
+                        'name' => $subCollection->name,
+                        'url' => $subDepartmentUrl . '/' . $subCollection->url
+                    ];
+                }
 
                 $subDepartmentData = [
                     'name' => $subDepartment->name,

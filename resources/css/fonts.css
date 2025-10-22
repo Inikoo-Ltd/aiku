@@ -97,31 +97,31 @@
 
 /* Bunya */
 @font-face {
-    font-family: 'Bunya Thin';
+    font-family: 'Bunya';
     src: url('@fonts/Bunya/Bunya-Thin_PERSONAL.ttf');
     font-weight: 200;
     font-display: swap;
 }
 @font-face {
-    font-family: 'Bunya Light';
+    font-family: 'Bunya';
     src: url('@fonts/Bunya/Bunya-Light_PERSONAL.ttf');
     font-weight: 300;
     font-display: swap;
 }
 @font-face {
-    font-family: 'Bunya Regular';
+    font-family: 'Bunya';
     src: url('@fonts/Bunya/Bunya-Regular_PERSONAL.ttf');
     font-weight: 400;
     font-display: swap;
 }
 @font-face {
-    font-family: 'Bunya Bold';
+    font-family: 'Bunya';
     src: url('@fonts/Bunya/Bunya-Bold_PERSONAL.ttf');
     font-weight: 700;
     font-display: swap;
 }
 @font-face {
-    font-family: 'Bunya Black';
+    font-family: 'Bunya';
     src: url('@fonts/Bunya/Bunya-Black_PERSONAL.ttf');
     font-weight: 900;
     font-display: swap;
@@ -129,31 +129,31 @@
 
 /* Avenir */
 @font-face {
-    font-family: 'Avenir Black';
+    font-family: 'Avenir';
     src: url('@fonts/Avenir/Avenir Black.ttf');
     font-weight: 900;
     font-display: swap;
 }
 @font-face {
-    font-family: 'Avenir Book';
+    font-family: 'Avenir';
     src: url('@fonts/Avenir/Avenir Book.ttf');
     font-weight: 400;
     font-display: swap;
 }
 @font-face {
-    font-family: 'Avenir Heavy';
+    font-family: 'Avenir';
     src: url('@fonts/Avenir/Avenir Heavy.ttf');
     font-weight: 700;
     font-display: swap;
 }
 @font-face {
-    font-family: 'Avenir Light';
+    font-family: 'Avenir';
     src: url('@fonts/Avenir/Avenir Light.ttf');
     font-weight: 300;
     font-display: swap;
 }
 @font-face {
-    font-family: 'Avenir Medium';
+    font-family: 'Avenir';
     src: url('@fonts/Avenir/Avenir Medium.ttf');
     font-weight: 500;
     font-display: swap;

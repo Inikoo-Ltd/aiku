@@ -47,6 +47,7 @@ import MinMaxPrice from '@/Components/Workshop/Properties/MinMaxPrice.vue'
 import VideoSettings from '@/Components/Workshop/Properties/VideoSettings.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import SelectProducts from '@/Components/Workshop/Properties/SelectProducts.vue'
+import UploadImageCropped from '@/Components/Workshop/Properties/UploadImageCropped.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -94,6 +95,7 @@ export const getComponent = (componentName: string) => {
         'selectquery' : PureMultiselectInfiniteScroll,
         'select_product' : SelectProducts,
         "array-data-drawer" : ArrayEditDrawer,
+        "image-cropped" : UploadImageCropped
     }
     return components[componentName] ?? NotFoundComponents
 }

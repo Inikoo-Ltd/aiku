@@ -4,18 +4,16 @@ import { router } from "@inertiajs/vue3"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faSendBackward, faBringForward, faTrashAlt } from "@fas"
 import { trans } from "laravel-vue-i18n"
-import { useIrisLayoutStore } from "@/Stores/irisLayout"
 
 import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { sendMessageToParent } from "@/Composables/Workshop"
-import { getStyles } from "@/Composables/styles"
 
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import "@/../css/Iris/editor.css"
 import { ulid } from "ulid"
-import { keyBy } from "lodash"
+
 
 defineOptions({ layout: WebPreview })
 
@@ -33,6 +31,7 @@ const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
 const isPreviewMode = ref(false)
 const activeBlock = ref<number | null>(null)
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const key = ref(ulid())
 const defaultCurrency = {
   code: "GBP",
   symbol: "£",
@@ -59,12 +58,6 @@ const showWebpage = (item) => {
   return false
 }
 
-onMounted(() => {
-  layout.app.theme = props.layout?.color,
-  layout.app.webpage_layout = props.layout
-  updateIrisLayout()
-})
-
 const checkScreenType = () => {
   const width = window.innerWidth
   screenType.value = width < 640 ? 'mobile' : width < 1024 ? 'tablet' : 'desktop'
@@ -76,7 +69,6 @@ const updateData = (val: any) => {
 
 const handleMessage = (event: MessageEvent) => {
   const { key, value } = event.data
-
   if (key === "isPreviewLoggedIn") filterBlock.value = value
   if (key === "isPreviewMode") isPreviewMode.value = value
   if (key === "activeBlock") {
@@ -92,16 +84,24 @@ const handleMessage = (event: MessageEvent) => {
     reloadPage(true)
   }
 }
-const key = ref(ulid())
+
+const uploadImage = ()=>{
+  console.log('masuk')
+  sendMessageToParent("uploadImage", 'test')
+}
+
 const reloadPage = (withkey = false) => {
   router.reload({ only: ["webpage"] })
-  if(withkey) key.value = ulid()
+  if (withkey) key.value = ulid()
 }
 
 provide("reloadPage", reloadPage)
 provide("reloadPage", reloadPage)
 
 onMounted(() => {
+  layout.app.theme = props.layout?.color,
+  layout.app.webpage_layout = props.layout
+  updateIrisLayout()
   window.addEventListener("message", handleMessage)
   window.addEventListener("resize", checkScreenType)
   checkScreenType()
@@ -127,7 +127,7 @@ watch(filterBlock, () => {
     <div class="shadow-xl px-1 py-1">
       <div>
         <div v-if="data?.layout?.web_blocks?.length">
-          <TransitionGroup tag="div" name="list" class="relative">
+          <TransitionGroup tag="div" name="list" class="relative"> 
             <template v-for="(block, idx) in data.layout.web_blocks" :key="block.id">
               <section v-show="showWebpage(block)" :data-block-id="idx" class="w-full min-h-[50px] relative"
                 :class="{ 'border-4 active-block': activeBlock === idx }"
@@ -157,31 +157,24 @@ watch(filterBlock, () => {
                 </div>
 
                 <!-- Dynamic Block -->
-                <component 
-                  :is="getComponent(block.type)" 
-                  class="w-full" 
-                  :webpageData="data" 
-                  :blockData="block"
-                  :index-block="idx"
-                  :key="key"
-                  v-model="block.web_block.layout.data.fieldValue" :screenType="screenType"
-                  @autoSave="() => updateData(block)" />
+                <component :is="getComponent(block.type)" class="w-full" :webpageData="data" :blockData="block"
+                  :index-block="idx" :key="key" v-model="block.web_block.layout.data.fieldValue"
+                  :screenType="screenType" @autoSave="() => updateData(block)"/>
               </section>
             </template>
           </TransitionGroup>
         </div>
 
         <EmptyState v-else :data="{
-            title: trans('Pick First Block For Your Website'),
-            description: trans('Pick block from list'),
-          }" />
+          title: trans('Pick First Block For Your Website'),
+          description: trans('Pick block from list'),
+        }" />
       </div>
     </div>
   </div>
 </template>
 
 <style lang="scss">
-
 .trapezoid-button {
   @apply absolute z-[99] top-[-37px] left-1/2 px-5 py-1 text-white text-xs font-bold transition;
   transform: translateX(-50%);
@@ -195,7 +188,7 @@ watch(filterBlock, () => {
   }
 }
 
-#jsd-widget{
-    display: none !important;
+#jsd-widget {
+  display: none !important;
 }
 </style>
