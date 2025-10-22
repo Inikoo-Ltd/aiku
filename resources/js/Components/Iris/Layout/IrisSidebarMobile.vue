@@ -298,13 +298,13 @@ const closeSidebar = () => {
         </div>
 
         <div class="login-section pl-3 pr-5 py-4 border-t border-[#e5e5e5] flex items-center">
-            <ButtonWithLink
-                v-if="!isLoggedIn"
-                url="/app"
-                :label="trans('Login')"
-                full
-                :icon="faSignIn"
-            />
+            <LinkIris v-if="!isLoggedIn" href="/app" class="w-full" type="internal">
+                <Button
+                    :label="trans('Login')"
+                    full
+                    :icon="faSignIn"
+                />
+            </LinkIris>
             <div v-else @click="onLogout()" class="w-full">
                 <Button
                     type="negative"
