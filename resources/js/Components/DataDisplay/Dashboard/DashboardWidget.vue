@@ -3,6 +3,7 @@ import { inject } from "vue";
 import WidgetOrganisations from "./Widget/WidgetOrganisations.vue"
 import WidgetShops from "./Widget/WidgetShops.vue"
 import CustomerClv from "@/Components/CustomerCLV.vue";
+import SalesVsRefunds from "@/Components/DataDisplay/Dashboard/Widget/SalesVsRefunds.vue";
 
 const props = defineProps<{
 	intervals: {
@@ -16,6 +17,13 @@ const props = defineProps<{
     tableData: {
 
     }
+    stats: {
+        revenue_amount: number
+        lost_revenue_other_amount: number
+        number_invoices: number
+        number_invoices_type_refund: number
+    }
+    currencyCode: { code: string }
 }>()
 
 const layout = inject('layout')
@@ -34,5 +42,6 @@ const layout = inject('layout')
             :intervals="props.intervals"
         />
        <CustomerClv v-if="layout?.app?.environment === 'local'" />
+        <SalesVsRefunds v-if="props.stats" :data="props.stats" :currencyCode="props.currencyCode" />
     </div>
 </template>
