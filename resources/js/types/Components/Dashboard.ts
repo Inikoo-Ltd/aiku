@@ -17,6 +17,12 @@ export interface Dashboard {
         currency_code?: string
         current?: string
         total_tooltip?:{}[]
+        ordering_stats: {
+            revenue_amount: number
+            lost_revenue_other_amount: number
+            number_invoices: number
+            number_invoices_type_refund: number
+        }
     }[]
 }
 

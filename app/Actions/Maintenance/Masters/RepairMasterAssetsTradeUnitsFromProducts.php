@@ -35,13 +35,9 @@ class RepairMasterAssetsTradeUnitsFromProducts
         $seederShop = $this->getSeederShop($masterShop);
 
         MasterAsset::where('master_shop_id', $masterShop->id)
-            ->where('code', 'VRUG-23')
             ->where('type', MasterAssetTypeEnum::PRODUCT)->orderBy('id')
             ->chunk(1000, function ($models) use ($command, $seederShop, $masterShop) {
                 foreach ($models as $masterProduct) {
-
-
-
 
                     $product = Product::where('shop_id', $seederShop->id)->where('master_product_id', $masterProduct->id)->first();
 
@@ -78,7 +74,6 @@ class RepairMasterAssetsTradeUnitsFromProducts
                             ];
                         }
 
-                        dd($tradeUnitData);
 
 
                         $command->info("$masterShop->slug  Product not found for master product $masterProduct->id $masterProduct->code");
