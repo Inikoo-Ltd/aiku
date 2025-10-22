@@ -26,20 +26,14 @@ const props = withDefaults(defineProps<{
     multiple: boolean;
     maxSelected?: number;
     submitUpload?:Function
+    isLoadingSubmit?: boolean;
     //propsforUpload 
     uploadRoute: routeType;
-
-    
     //stockImages
     stockImagesRoute?: routeType;
-
-
     //images uploded
     imagesUploadedRoutes?: routeType;
     attachImageRoute: routeType;
-   
-   
-    isLoadingSubmit?: boolean;
 }>(), {
     multiple: false,
     tabs: () => ['upload', 'images_uploaded', 'stock_images'],

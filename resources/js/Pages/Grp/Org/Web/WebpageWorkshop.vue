@@ -7,13 +7,13 @@
 <script setup lang="ts">
 import {
   ref, onMounted, provide, watch, computed, inject,
-  IframeHTMLAttributes, onUnmounted, toRaw
+  IframeHTMLAttributes, onUnmounted,
 } from "vue";
 import { Head, router } from "@inertiajs/vue3";
 import * as Sentry from "@sentry/vue"
 import { capitalize } from "@/Composables/capitalize";
 import axios from "axios";
-import { debounce } from 'lodash-es';
+import { debounce, get, set } from 'lodash-es';
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import { useConfirm } from "primevue/useconfirm";
@@ -28,6 +28,8 @@ import WebpageSideEditor from "@/Components/Workshop/WebpageSideEditor.vue";
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue";
 import ConfirmDialog from 'primevue/confirmdialog';
 import ToggleSwitch from 'primevue/toggleswitch';
+import Dialog from 'primevue/dialog';
+import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
 
 import { Root, Daum } from "@/types/webBlockTypes";
 import { Root as RootWebpage } from "@/types/webpageTypes";
@@ -94,6 +96,11 @@ const filterBlock = ref('all');
 const history = ref<any[]>([]);
 const future = ref<any[]>([]);
 const selectedTab = ref(1)
+const dialogUploadImageVisible=ref(false)
+const imageUploadSetting = ref(null)
+
+const canUndo = computed(() => history.value.length > 1);
+const canRedo = computed(() => future.value.length > 0);
 
 provide('webpage_luigi_tracker_id', props.luigi_tracker_id)
 provide('currentView', currentView);
@@ -303,6 +310,7 @@ const onSaveWorkshopFromId = (blockId, from) => {
 provide('onSaveWorkshopFromId', onSaveWorkshopFromId);
 provide('onSaveWorkshop', onSaveWorkshop);
 
+
 const sendOrderBlock = async block => {
   if (orderBlockCancelToken.value) orderBlockCancelToken.value();
   router.post(
@@ -462,7 +470,6 @@ const SyncAurora = () => {
 };
 
 
-
 const saveState = () => {
   history.value.push(JSON.parse(JSON.stringify(data.value.layout)));
   localStorage.setItem(data.value.code, JSON.stringify(data.value.layout));
@@ -522,13 +529,21 @@ const afterUndoRedo = async (value) => {
 };
 
 
-
 // Clear all history
 const clearHistory = () => {
   history.value = [];
   future.value = [];
   localStorage.removeItem(data?.value?.code);
 };
+
+const closeUploadImage = (visible) => {
+  dialogUploadImageVisible.value = visible,
+  imageUploadSetting.value = null
+}
+
+watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
+watch(currentView, (newValue) => iframeClass.value = setIframeView(newValue));
+watch(filterBlock, (newValue) => sendToIframe({ key: 'isPreviewLoggedIn', value: newValue }));
 
 // When component is unmounted
 onUnmounted(() => {
@@ -562,6 +577,12 @@ onMounted(() => {
           _WebpageSideEditor.value.addType = value.type;
         }
         return;
+      case 'uploadImage':
+         if (value) {
+          dialogUploadImageVisible.value = true;
+          imageUploadSetting.value = value
+        }
+        return;
       case 'deleteBlock':
         return sendDeleteBlock(value);
     }
@@ -575,9 +596,6 @@ onMounted(() => {
 });
 
 
-watch(openedBlockSideEditor, (newValue) => sendToIframe({ key: 'activeBlock', value: newValue }));
-watch(currentView, (newValue) => iframeClass.value = setIframeView(newValue));
-watch(filterBlock, (newValue) => sendToIframe({ key: 'isPreviewLoggedIn', value: newValue }));
 
 const compUsersEditThisPage = computed(() => {
   return useLiveUsers().liveUsersArray.filter(user => (user?.current_page?.route_name === layout.currentRoute && user?.current_page?.route_params?.webpage === layout.currentParams?.webpage)).map(user => user.name ?? user.username)
@@ -586,12 +604,12 @@ const compUsersEditThisPage = computed(() => {
 const openWebsite = () => {
   window.open(props.url, '_blank')
 }
-const canUndo = computed(() => history.value.length > 1);
-const canRedo = computed(() => future.value.length > 0);
+
+
+
 </script>
 
 <template>
-
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead">
     <template #button-publish="{ action }">
@@ -610,7 +628,6 @@ const canRedo = computed(() => future.value.length > 0);
     </template>
   </PageHeading>
 
-
   <ConfirmDialog group="alert-publish">
     <template #icon>
       <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-500" />
@@ -618,8 +635,6 @@ const canRedo = computed(() => future.value.length > 0);
   </ConfirmDialog>
 
   <div class="flex">
-
-    <!-- Sidebar content -->
     <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[10]">
       <!-- Sidebar Content -->
       <div v-show="!fullScreen">
@@ -640,10 +655,6 @@ const canRedo = computed(() => future.value.length > 0);
       </button>
     </div>
 
-
-    <!-- Side toggle button (always visible) -->
-
-
     <!-- Preview Section -->
     <div class="h-[calc(100vh-16vh)] w-full flex flex-col bg-gray-200 overflow-x-auto">
       <div class="flex justify-between items-center px-2 py-1">
@@ -653,9 +664,6 @@ const canRedo = computed(() => future.value.length > 0);
             class="cursor-pointer hover:text-amber-600">
             <FontAwesomeIcon :icon="faEye" fixed-width />
           </div>
-          <!--  <div v-tooltip="'Full screen'" @click="fullScreen = !fullScreen" class="cursor-pointer">
-          <FontAwesomeIcon :icon="!fullScreen ? faExpandWide : faCompressWide" fixed-width />
-        </div> -->
           <!-- Undo -->
           <div class="py-1 px-2" v-tooltip="'undo'"
             :class="canUndo ? 'cursor-pointer hover:text-amber-600' : 'opacity-40 cursor-not-allowed'"
@@ -697,6 +705,35 @@ const canRedo = computed(() => future.value.length > 0);
       </div>
     </div>
   </div>
+
+  <Dialog 
+    v-model:visible="dialogUploadImageVisible" 
+    modal 
+    header="Upload Image" 
+    :style="{ width: '80rem' }"
+    @hide="()=>closeUploadImage(false)"
+  >
+   <ImageUploadWithCroppedFunction
+        @dialog="(visible) => closeUploadImage(visible)"
+        :model-value="get(data.layout.web_blocks[openedBlockSideEditor].web_block.layout.data.fieldValue, imageUploadSetting.key)"
+        @update:modelValue="(val) => {
+          set(
+            data.layout.web_blocks[openedBlockSideEditor].web_block.layout.data.fieldValue,
+            imageUploadSetting.key,
+            val
+          )
+          onSaveWorkshop(data.layout.web_blocks[openedBlockSideEditor])
+        }"
+        :stencilProps="imageUploadSetting.stencilProps"
+        :upload-routes="{
+          ...data.images_upload_route,
+          parameters: {
+            modelHasWebBlocks: data.layout.web_blocks[openedBlockSideEditor].id
+          }
+        }"
+    />
+  </Dialog>
+
 </template>
 
 
