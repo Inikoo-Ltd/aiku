@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop\Hydrators;
 use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Catalogue\Shop;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -22,11 +23,18 @@ class ShopHydrateVisitorsIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
 
     public string $jobQueue = 'low-priority';
-
+    public string $commandSignature = 'hydrate:shop-visitor-intervals {shop}';
 
     public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         return $this->getUniqueJobWithInterval($shop, $intervals, $doPreviousPeriods);
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $shop = Shop::where('slug', $command->argument('shop'))->first();
+
+        $this->handle($shop);
     }
 
     public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
