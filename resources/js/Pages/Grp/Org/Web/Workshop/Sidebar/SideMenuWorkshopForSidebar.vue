@@ -126,7 +126,7 @@ const autoSave = async (value) => {
 					:modelValue="get(data, ['data', 'fieldValue'], {})"
 					:blueprint="Blueprint.blueprint"
 					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e), autoSave(data) }"
-					:uploadImageRoute="null" />
+					:uploadImageRoute />
 			</TabPanel>
 			<TabPanel v-if="data">
 				<SetMenuListWorkshopForSidebar
