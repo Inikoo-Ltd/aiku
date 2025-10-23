@@ -33,9 +33,11 @@ class AddMissingProductCategoriesFromMaster
     {
         /** @var MasterProductCategory $masterFamily */
         foreach ($masterShop->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get() as $masterFamily) {
-            if ($masterFamily->status) {
+            if ($masterFamily->status && $masterFamily->stats->number_families>0) {
                 foreach ($masterShop->shops as $shop) {
-                    $this->upsertFamily($shop, $masterFamily);
+                    if($shop->is_aiku) {
+                        $this->upsertFamily($shop, $masterFamily);
+                    }
                 }
             }
         }
@@ -60,7 +62,9 @@ class AddMissingProductCategoriesFromMaster
         if (!$foundFamilyData) {
             $parent = $this->getParent($shop, $masterFamily);
             if ($parent) {
-                print "creating family: $code\n";
+                print "creating family: $code in $shop->slug \n";
+
+
 
                 $foundFamily = StoreProductCategory::make()->action(
                     $parent,
@@ -79,8 +83,6 @@ class AddMissingProductCategoriesFromMaster
 
             if ($foundFamily) {
                 $dataToUpdate = [
-                    //    'code' => $masterFamily->code,
-                    //    'name' => $masterFamily->name,
                     'master_product_category_id' => $masterFamily->id
                 ];
                 if ($masterFamily->description && !$foundFamily->description) {
@@ -124,7 +126,7 @@ class AddMissingProductCategoriesFromMaster
 
     public function getCommandSignature(): string
     {
-        return 'repair:add_missing_product_categories_from_master  {master}';
+        return 'repair:add_missing_product_categories_from_master {master}';
     }
 
     /**
