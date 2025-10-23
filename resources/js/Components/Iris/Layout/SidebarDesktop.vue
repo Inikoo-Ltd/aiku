@@ -109,18 +109,19 @@ const closeSidebar = () => {
     isOpenMenuMobile.value = false;
 }
 
-const styling = {
+const combinedStyleSidebarAndWebpage = {
     ...getStyles(layout?.app?.webpage_layout?.container?.properties),
     ...getStyles(props.containerStyle)
 }
-function stripImportant(styles) {
+function removeImportant(styles) {
     const cleaned = {}
     for (const [key, value] of Object.entries(styles)) {
         cleaned[key] = value.replace(/\s*!important\s*/gi, "")
     }
     return cleaned
 }
-const stylingWithoutImportant = stripImportant(styling)
+const stylingWithoutImportant = removeImportant(combinedStyleSidebarAndWebpage)
+const backgroundColorNoGradient = props.containerStyle.background?.color || layout?.app?.webpage_layout?.container?.properties?.background?.color?.replace(/\s*!important\s*/gi, "") || '#030712'
 
 </script>
 
@@ -407,7 +408,7 @@ const stylingWithoutImportant = stripImportant(styling)
 .navActive {
     @apply cursor-pointer;
 
-    color: v-bind('stylingWithoutImportant.background || "#ffffff"');
+    color: v-bind('backgroundColorNoGradient || "#ffffff"');
     background: v-bind('stylingWithoutImportant.color || "#030712"');
 }
 </style>
