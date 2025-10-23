@@ -56,15 +56,15 @@ const closeSidebar = () => {
 <template>
     <div class="menu-container-mobile">
         <div class="menu-content">
-            <!-- Section: top sidemenu -->
+            <!-- Section: Custom Top -->
             <div v-if="customMenusTop && customMenusTop.length > 0">
                 <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex">
-                    <!-- Custom Menu Top WITH Sub-departments -->
+                    <!-- Section: Custom Top (have Sub-departments) -->
                     <Disclosure v-if="customTopItem.sub_departments && customTopItem.sub_departments.length > 0"
                         v-slot="{ open }">
                         <DisclosureButton class="w-full text-left px-2 py-2 font-semibold border-b">
                             <div class="flex justify-between items-center xtext-lg"
-                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
+                                xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                 <span>{{ customTopItem.name }}</span>
                                 <FontAwesomeIcon :icon="faChevronCircleDown"
                                     :class="{ 'rotate-180': open, 'transition-transform duration-300': true }" />
@@ -78,11 +78,11 @@ const closeSidebar = () => {
                                     :target="getTarget(subDept)"
                                     @success="() => closeSidebar()"
                                     class="block text-base font-bold mb-2"
-                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
+                                    xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                     {{ subDept.name }}
                                 </LinkIris>
                                 <span v-else class="block text-base font-bold mb-2"
-                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
+                                    xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                     {{ subDept.name }}
                                 </span>
                                 <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
@@ -90,14 +90,14 @@ const closeSidebar = () => {
                                         <LinkIris 
                                             v-if="family?.url !== null" :href="internalHref(family)" :target="getTarget(family)"
                                             @success="() => closeSidebar()"
-                                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                             class="block text-sm relative hover:text-primary transition-all">
                                             <span class="absolute left-0 -ml-4">–</span>
                                             {{ family.name }}
                                         </LinkIris>
                                         <span v-else
                                             :key="'span-' + familyIndex" v-if="family?.url === null"
-                                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                             class="block text-sm relative">
                                             <span class="absolute left-0 -ml-4">–</span>
                                             {{ family.name }}
@@ -108,19 +108,21 @@ const closeSidebar = () => {
                         </DisclosurePanel>
                     </Disclosure>
 
-                    <!-- Custom Menu Top SINGLE LINK -->
+                    <!-- Section: Custom Top (Single link) -->
                     <div v-else class="px-2 py-2 border-b">
                         <LinkIris v-if="customTopItem?.url !== null" :href="internalHref(customTopItem)"
                             :target="getTarget(customTopItem)"
                             @success="() => closeSidebar()"
-                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                             class="font-bold">
                             {{ customTopItem.name }}
                         </LinkIris>
 
                         <span v-else
-                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                            class="font-bold">{{ customTopItem.name }}</span>
+                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                            class="font-bold">
+                            {{ customTopItem.name }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -132,17 +134,17 @@ const closeSidebar = () => {
                     v-slot="{ open }">
                     <DisclosureButton class="w-full text-left px-2 py-2 font-semibold border-b">
                         <div class="flex justify-between items-center xtext-lg"
-                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
+                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                             <!-- <span>{{ category.name }}</span> -->
                             <LinkIris 
                                 v-if="category?.url !== null" :href="internalHref(category)" :target="getTarget(category)"
                                 @success="() => closeSidebar()"
-                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                 class="block text-sm relative hover:text-primary transition-all">
                                 {{ category.name }}
                             </LinkIris>
                             <span v-else
-                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                 class="block text-sm relative">
                                 {{ category.name }}
                             </span>
@@ -159,14 +161,14 @@ const closeSidebar = () => {
                                 @success="() => closeSidebar()"
                                 :href="internalHref(subDept)"
                             >
-                                <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }"
+                                <div xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }"
                                     class="block text-base font-bold mb-2">
                                     <span class="absolute left-0 -ml-4">–</span>
                                     {{ subDept.name }}
                                 </div>
                             </LinkIris>
                             <span v-else class="block text-base font-bold mb-2"
-                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
+                                xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                 {{ subDept.name }}
                             </span>
 
@@ -177,7 +179,7 @@ const closeSidebar = () => {
                                         @success="() => closeSidebar()"
                                         :href="internalHref(family)"
                                     >
-                                        <div :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                        <div xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                             class="block text-sm relative hover:text-primary transition-all">
                                             <span class="absolute left-0 -ml-4">–</span>
                                             {{ family.name }}
@@ -185,7 +187,7 @@ const closeSidebar = () => {
                                     </LinkIris>
                                     <span v-else
                                         :key="'span-' + familyIndex" v-if="family?.url === null"
-                                        :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
+                                        xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
                                         class="block text-sm relative">
                                         <span class="absolute left-0 -ml-4">–</span>
                                         {{ family.name }}
@@ -202,13 +204,13 @@ const closeSidebar = () => {
                         v-if="category?.url !== null"
                         @success="() => closeSidebar()"
                         :href="internalHref(category)"
-                        :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                        xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                         class="font-bold">
                         {{ category.name }}
                     </LinkIris>
 
                     <span v-else
-                        :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                        xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                         class="font-bold">{{ category.name }}</span>
                 </div>
             </div>
@@ -222,7 +224,7 @@ const closeSidebar = () => {
                         v-slot="{ open }">
                         <DisclosureButton class="w-full text-left px-2 py-2 font-semibold border-b">
                             <div class="flex justify-between items-center xtext-lg"
-                                :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
+                                xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                 <span>{{ customItem.name }}</span>
                                 <FontAwesomeIcon :icon="faChevronCircleDown" fixed-width
                                     :class="{ 'rotate-180': open, 'transition-transform duration-300': true }" />
@@ -235,7 +237,7 @@ const closeSidebar = () => {
                                 <LinkIris v-if="subDept?.url !== null" :href="internalHref(subDept)"
                                     class="block text-base font-bold mb-2"
                                     @success="() => closeSidebar()"
-                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
+                                    xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
                                     {{ subDept.name }}
                                 </LinkIris>
 
@@ -272,13 +274,13 @@ const closeSidebar = () => {
                         <LinkIris v-if="customItem?.url !== null" :href="internalHref(customItem)"
                             :target="getTarget(customItem)"
                             @success="() => closeSidebar()"
-                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                             class="font-bold">
                             {{ customItem.name }}
                         </LinkIris>
 
                         <span v-else
-                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
+                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
                             class="font-bold">{{ customItem.name }}</span>
                     </div>
                 </div>

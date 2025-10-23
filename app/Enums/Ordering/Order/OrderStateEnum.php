@@ -60,7 +60,7 @@ enum OrderStateEnum: string
             ],
             'submitted'        => [
                 'tooltip' => __('Submitted'),
-                'icon'    => 'fal fa-paper-plane',
+                'icon'    => 'fal fa-inbox-in',
                 'class'   => 'text-indigo-400',
                 'color'   => 'indigo',
                 'app'     => [
@@ -120,7 +120,7 @@ enum OrderStateEnum: string
             ],
             'dispatched'       => [
                 'tooltip' => __('Dispatched'),
-                'icon'    => 'fal fa-shipping-fast',
+                'icon'    => 'fal fa-paper-plane',
                 'class'   => 'text-gray-500',
                 'color'   => 'purple',
                 'app'     => [

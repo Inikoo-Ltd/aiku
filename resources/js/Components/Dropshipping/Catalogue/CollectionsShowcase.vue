@@ -122,7 +122,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
         <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
           <div>
             <div class="flex items-center justify-between">
-              <h2 class="text-sm font-semibold text-gray-800">Department</h2>
+              <h2 class="text-sm font-semibold text-gray-800">Belongs to Department</h2>
               <Button type="create" size="xs" @click="isModalOpenDepartment = true" :label="'Department'" />
             </div>
             <hr class="mt-2 border-gray-200" />
@@ -141,7 +141,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
             </div>
           </div>
           <div v-else class="text-xs text-gray-400 italic text-center py-2">
-            No departments assigned.
+            No parent departments assigned.
           </div>
         </div>
 
@@ -149,7 +149,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
         <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
           <div>
             <div class="flex items-center justify-between">
-              <h2 class="text-sm font-semibold text-gray-800">Sub Department</h2>
+              <h2 class="text-sm font-semibold text-gray-800">Belongs to Sub Department</h2>
               <Button type="create" size="xs" @click="isModalOpenSubDepartment = true" :label="'Sub-Department'" />
             </div>
             <hr class="mt-2 border-gray-200" />
@@ -168,7 +168,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
             </div>
           </div>
           <div v-else class="text-xs text-gray-400 italic text-center py-2">
-            No sub departments assigned.
+            No parent sub-department assigned.
           </div>
         </div>
       </div>

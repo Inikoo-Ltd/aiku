@@ -38,12 +38,12 @@ const layout = inject("layout", {});
 const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
 
 const isMobile = ref(false);
-const activeIndex = ref(null); // active category
-const activeSubIndex = ref(null); // active subdepartment
-const activeCustomIndex = ref(null); // active custom menu
-const activeCustomSubIndex = ref(null); // active custom menu subdepartment
-const activeCustomTopIndex = ref(null); // active custom menu top
-const activeCustomTopSubIndex = ref(null); // active custom menu top subdepartment
+const activeIndex = ref<number | null>(null); // active category
+const activeSubIndex = ref<number | null>(null); // active subdepartment
+const activeCustomIndex = ref<number | null>(null); // active custom menu
+const activeCustomSubIndex = ref<number | null>(null); // active custom menu subdepartment
+const activeCustomTopIndex = ref<number | null>(null); // active custom menu top
+const activeCustomTopSubIndex = ref<number | null>(null); // active custom menu top subdepartment
 
 // Computed properties for sorted data
 const sortedProductCategories = computed(() => {
@@ -211,16 +211,17 @@ const internalHref = (item) => {
             }"
         >
             <template #header>
-                <div class="max-h-16 md:max-w-52 overflow-hidden">
-                    <Image
+                <div class="zmax-h-16 md:max-w-52 overflow-hidden">
+                    <!-- <Image
                         v-if="sidebarLogo"
                         :src="sidebarLogo"
                         class="h-fit w-full object-contain aspect-auto"
                         :alt="trans('Sidebar logo')"
-                    />
-                    <img v-else :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="w-full h-auto max-h-16 object-contain" />
+                    /> -->
+                    <img xv-else :src="sidebarLogo.original || header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="w-full h-auto max-h-20 object-contain" />
                 </div>
             </template>
+            <!-- {{ props.menu?.container?.properties }} -->
 
             <!-- Sidebar Menu: Mobile -->
             <IrisSidebarMobile
@@ -253,7 +254,7 @@ const internalHref = (item) => {
             <!-- Sidebar Menu: Desktop -->
             <SidebarDesktop
                 v-else
-                :containerStyle="props.menu?.container?.properties"
+                :containerStyle="props.sidebar?.data?.fieldValue?.container?.properties || props.menu?.container?.properties"
                 :productCategories
                 :customMenusTop
                 :customTopSubDepartments
@@ -280,7 +281,6 @@ const internalHref = (item) => {
                 :changeActiveCustomTopSubIndex="(index) => activeCustomTopSubIndex = index"
                 @closeMobileMenu="isOpenMenuMobile = false"
             />
-
         </Drawer>
     </div>
 </template>

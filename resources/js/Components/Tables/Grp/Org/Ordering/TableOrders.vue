@@ -20,6 +20,7 @@ import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import NotesDisplay from "@/Components/NotesDisplay.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle);
 
@@ -155,6 +156,14 @@ function customerRoute(order: Order) {
         <!-- <FontAwesomeIcon v-if="order.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt"
           class="text-yellow-500" fixed-width aria-hidden="true" /> -->
         <NotesDisplay :item="order" reference-field="reference" />
+        
+        <a v-if="JSON.parse(order.tracking_urls || '{}')?.[0]"
+            :href="JSON.parse(order.tracking_urls || '{}')[0]"
+            class="underline whitespace-nowrap"
+            target="_blank"
+        >
+            <Button size="xxs" :label="trans('Open tracking')" type="tertiary" iconRight="fal fa-external-link-alt" />
+        </a>
       </div>
 
 

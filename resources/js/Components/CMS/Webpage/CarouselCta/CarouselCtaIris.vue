@@ -45,29 +45,28 @@ const layout: any = inject("layout", {})
         :autoplayInterval="fieldValue.carousel_data.carousel_setting.autoplay ? 3000 : null"
         :circular="fieldValue.carousel_data.carousel_setting.loop">
         <template #item="{ data, index }">
+
+
           <div :style="{
             ...getStyles(data.container?.properties, screenType),
           }">
-            <div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[400px]">
-              <!-- 🖼️ Left: Full Image Block -->
-              <div class="relative w-full h-full cursor-pointer overflow-hidden"
+            <div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
+              <div class="relative w-full h-[250px] md:h-full cursor-pointer overflow-hidden"
                 :style="getStyles(data?.image?.container?.properties, screenType)">
                 <Image :src="data.image.source" :imageCover="true" :alt="data.image.alt || 'Image preview'"
                   class="absolute inset-0 w-full h-full object-cover" :imgAttributes="data.image.attributes"
                   :style="getStyles(data.image.properties, screenType)" />
               </div>
 
-              <!-- 📝 Right: Text & Button Block -->
-              <div class="flex flex-col justify-center m-auto"
+              <div class="flex flex-col justify-center m-auto p-4"
                 :style="getStyles(data?.text_block?.properties, screenType)">
                 <div class="max-w-xl w-full">
                   <div v-html="fieldValue.carousel_data.cards[index].text" />
-
                   <div class="flex justify-center mt-6">
                     <LinkIris :type="fieldValue.carousel_data.cards[index].button.link.type"
                       :href="fieldValue.carousel_data.cards[index].button.link.href"
                       :canonical_url="fieldValue.carousel_data.cards[index].button.link.canonical_url"
-                      :traget="fieldValue.carousel_data.cards[index].button.link.target">
+                      :target="fieldValue.carousel_data.cards[index].button.link.target">
                       <Button
                         :injectStyle="getStyles(fieldValue.carousel_data.cards[index].button.container?.properties, screenType)"
                         :label="fieldValue.carousel_data.cards[index]?.button?.text" />
@@ -77,6 +76,7 @@ const layout: any = inject("layout", {})
               </div>
             </div>
           </div>
+
         </template>
       </Carousel>
     </div>
