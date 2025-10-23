@@ -310,7 +310,6 @@ onMounted(() => {
                                         ({{ trans("Unknown") }})
                                     </span>
                                     <span
-                                        v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity), location_code: findLocation(itemValue.locations, proxyItem.hehe)?.location_code})"
                                         class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />
