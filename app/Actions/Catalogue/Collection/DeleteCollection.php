@@ -59,7 +59,7 @@ class DeleteCollection extends OrgAction
             $collection->delete();
         }
 
-        if($collection->webpage){
+        if ($collection->webpage) {
             DeleteWebpage::make()->action(webpage: $collection->webpage, forceDelete: true);
         }
 

@@ -47,17 +47,33 @@ class IndexMasterCollections extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterCollection::class);
+        $queryBuilder->leftjoin('master_collection_stats', 'master_collections.id', 'master_collection_stats.master_collection_id');
+
         $queryBuilder->select(
             [
                 'master_collections.id',
                 'master_collections.code',
                 'master_collections.description',
                 'master_collections.slug',
-                'master_collections.state',
                 'master_collections.products_status',
                 'master_collections.data',
+                'master_collections.name',
+                'master_collections.state',
+                /* 'master_collection_stats.number_families',
+                'master_collection_stats.number_products',
+                'master_collection_stats.number_parents', */
             ]
-        );
+        )
+            ->selectRaw(
+                '(
+        SELECT concat(string_agg(master_product_categories.slug,\',\'),\'|\',string_agg(master_product_categories.type,\',\'),\'|\',string_agg(master_product_categories.code,\',\'),\'|\',string_agg(master_product_categories.name,\',\')) FROM model_has_master_collections
+        left join master_product_categories on model_has_master_collections.model_id = master_product_categories.id
+        WHERE model_has_master_collections.master_collection_id = master_collections.id
+   
+        AND model_has_master_collections.model_type = ?
+    ) as parents_data',
+                ['ProductCategory',]
+            );
 
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_collections.master_shop_id', $parent->id);
@@ -96,10 +112,13 @@ class IndexMasterCollections extends OrgAction
                     ],
                 );
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'description', label: __('description'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'state', label: __('state'), canBeHidden: false)
-                ->defaultSort('code');
+           $table
+                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
+            $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: true);
+            $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true);
         };
     }
 

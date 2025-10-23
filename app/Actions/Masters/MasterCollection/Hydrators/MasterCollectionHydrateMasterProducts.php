@@ -26,7 +26,9 @@ class MasterCollectionHydrateMasterProducts implements ShouldBeUnique
     public function handle(MasterCollection $masterCollection): void
     {
         $stats = [
-            'number_products' => $masterCollection->masterProducts()->where('type', 'direct')->count(),
+            'number_master_products' => $masterCollection->masterProducts()->where('master_collection_has_models.type', 'direct')->count(),
+            'number_current_master_products' => $masterCollection->masterProducts()->where('master_assets.status', true)->where('master_collection_has_models.type', 'direct')->count(),
+
         ];
 
         $collectionStats = $masterCollection->stats;
