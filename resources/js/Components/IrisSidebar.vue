@@ -211,14 +211,14 @@ const internalHref = (item) => {
             }"
         >
             <template #header>
-                <div class="max-h-16 md:max-w-52 overflow-hidden">
-                    <Image
+                <div class="zmax-h-16 md:max-w-52 overflow-hidden">
+                    <!-- <Image
                         v-if="sidebarLogo"
                         :src="sidebarLogo"
                         class="h-fit w-full object-contain aspect-auto"
                         :alt="trans('Sidebar logo')"
-                    />
-                    <img v-else :src="header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="w-full h-auto max-h-16 object-contain" />
+                    /> -->
+                    <img xv-else :src="sidebarLogo.original || header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="w-full h-auto max-h-20 object-contain" />
                 </div>
             </template>
             <!-- {{ props.menu?.container?.properties }} -->
