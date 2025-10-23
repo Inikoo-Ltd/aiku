@@ -61,7 +61,7 @@ export default {
 		{
 			name: "Cards Data",
 			key: ["carousel_data", "cards"],
-			type: "array-data-drawer",
+			type: "array-data",
 			props_data: {
 				blueprint: CardBlueprint.blueprint,
 				order_name: "card",
