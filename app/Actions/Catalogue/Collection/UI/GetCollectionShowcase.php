@@ -20,10 +20,6 @@ class GetCollectionShowcase
 
     public function handle(Collection $collection): array
     {
-
-
-
-
         return [
 
             'image'                 => $collection->imageSources(720, 480),
@@ -31,8 +27,8 @@ class GetCollectionShowcase
             'name'                  => $collection->name,
             'id'                    => $collection->id,
             'slug'                  => $collection->slug,
-            'state'                => $collection->state,
-            'state_icon'          => $collection->state ? $collection->state->stateIcon()[$collection->state->value] : null,
+            'state'                 => $collection->state,
+            'state_icon'            => $collection->state ? $collection->state->stateIcon()[$collection->state->value] : null,
             'stats'                 => [
                 [
                     'label' => __('Department'),
@@ -71,8 +67,8 @@ class GetCollectionShowcase
                     ]
                 ],
             ],
-            'parent_departments'    => DepartmentResource::collection($collection->departments)->toArray(request()),
-            'parent_subdepartments' => SubDepartmentResource::collection($collection->subDepartments)->toArray(request()),
+            'parent_departments'    => DepartmentResource::collection($collection->parentDepartments)->toArray(request()),
+            'parent_subdepartments' => SubDepartmentResource::collection($collection->parentSubDepartments)->toArray(request()),
             'shop'                  => ShopResource::make($collection->shop)->toArray(request()),
 
             'routes' => [
