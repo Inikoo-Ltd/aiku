@@ -187,6 +187,7 @@ class StoreInvoice extends OrgAction
             return $invoice;
         });
 
+        $invoice->refresh();
         CategoriseInvoice::run($invoice);
 
 

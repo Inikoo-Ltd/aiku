@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterProductCategory;
 use App\Actions\HydrateModel;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterAssets;
+use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateStatus;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterFamilies;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterDepartmentHydrateMasterSubDepartments;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterFamilyHydrateFamilies;
@@ -36,6 +37,7 @@ class HydrateMasterProductCategory extends HydrateModel
 
         MasterFamilyHydrateMasterAssets::run($masterProductCategory);
         MasterFamilyHydrateFamilies::run($masterProductCategory);
+        MasterFamilyHydrateStatus::run($masterProductCategory);
     }
 
 

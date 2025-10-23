@@ -101,7 +101,7 @@ class EditWebpage extends OrgAction
                 'options'     => [
                     'counter' => true,
                 ],
-                'value'       => $webpage->title,
+                'value'       => $webpage->breadcrumb_label,
             ],
             'title'            => [
                 'type'        => 'input',
