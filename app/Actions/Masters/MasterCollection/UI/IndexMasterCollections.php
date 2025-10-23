@@ -59,9 +59,8 @@ class IndexMasterCollections extends OrgAction
                 'master_collections.data',
                 'master_collections.name',
                 'master_collections.state',
-                /* 'master_collection_stats.number_families',
-                'master_collection_stats.number_products',
-                'master_collection_stats.number_parents', */
+                'master_collection_stats.number_current_master_families',
+                'master_collection_stats.number_current_master_products',
             ]
         )
             ->selectRaw(
@@ -72,7 +71,7 @@ class IndexMasterCollections extends OrgAction
    
         AND model_has_master_collections.model_type = ?
     ) as parents_data',
-                ['ProductCategory',]
+                ['MasterProductCategory',]
             );
 
         if ($parent instanceof MasterShop) {
@@ -90,7 +89,7 @@ class IndexMasterCollections extends OrgAction
 
         return $queryBuilder
             ->defaultSort('master_collections.code')
-            ->allowedSorts(['code', 'description'])
+            ->allowedSorts(['code', 'description', 'number_current_master_families', 'number_current_master_products'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -112,13 +111,13 @@ class IndexMasterCollections extends OrgAction
                     ],
                 );
 
-           $table
+            $table
                 ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
             $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'number_families', label: __('Families'), canBeHidden: false, sortable: true);
-            $table->column(key: 'number_products', label: __('Products'), canBeHidden: false, sortable: true);
+            $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
+            $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);
         };
     }
 
@@ -155,6 +154,7 @@ class IndexMasterCollections extends OrgAction
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
         }
+
         return Inertia::render(
             'Masters/MasterCollections',
             [
