@@ -1,13 +1,22 @@
 export default {
 	blueprint: [
 		{
+			name: "image",
 			label: "Image",
 			key: ["image"],
 			replaceForm: [
 				{
 					key: ["source"],
 					label: "Image",
-					type: "upload_image",
+					type: "image-cropped",
+					props_data: {
+						stencilProps: {
+							aspectRatio: 16 / 9,
+							movable: true,
+							scalable: true,
+							resizable: true,
+						},
+					},
 				},
 				{
 					key: ["alt"],

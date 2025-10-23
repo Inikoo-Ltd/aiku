@@ -15,38 +15,38 @@ export default {
 					key: ["carousel_setting", "loop"],
 					type: "switch",
 				},
-				{
-					key: ["cards"],
-					name: "Cards  Data",
-					type: "array-data",
-					props_data: {
-						blueprint: CardBlueprint.blueprint,
-						order_name: "card",
-						can_drag: true,
-						can_delete: true,
-						can_add: true,
-						new_value_data: {
-							button: {
-								link: {
-									type: "internal",
-									href: "/",
-									id: null,
-									workshop_route: "",
-								},
-								text: "Explore Here",
-								container: {
-									properties: null,
-								},
-							},
-							text: "<h3>Lorem Ipsum</h3><p>description from the product</p>",
-							image: {
-								alt: "Image 1",
-								source: null,
-							},
+			],
+		},
+		{
+			key: ['carousel_data',"cards"],
+			name: "Cards  Data",
+			type: "array-data",
+			props_data: {
+				blueprint: CardBlueprint.blueprint,
+				order_name: "card",
+				can_drag: true,
+				can_delete: true,
+				can_add: true,
+				new_value_data: {
+					button: {
+						link: {
+							type: "internal",
+							href: "/",
+							id: null,
+							workshop_route: "",
+						},
+						text: "Explore Here",
+						container: {
+							properties: null,
 						},
 					},
+					text: "<h3>Lorem Ipsum</h3><p>description from the product</p>",
+					image: {
+						alt: "Image 1",
+						source: null,
+					},
 				},
-			],
+			},
 		},
 		{
 			name: "Layout",

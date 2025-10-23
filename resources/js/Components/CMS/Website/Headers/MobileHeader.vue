@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import IrisSidebarMenu from '@/Components/IrisSidebarMenu.vue'
+import IrisSidebar from '@/Components/IrisSidebar.vue'
 import { getStyles } from "@/Composables/styles";
 import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -175,7 +175,7 @@ onMounted(() => {
         >
             <div class="text-left w-fit">
                 <!-- Section: Hamburger mobile -->
-                <IrisSidebarMenu
+                <IrisSidebar
                     :header="headerData"
                     :menu="menuData"
                     :productCategories="productCategories"

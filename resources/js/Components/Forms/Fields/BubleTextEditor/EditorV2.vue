@@ -1041,7 +1041,7 @@ onMounted(() => {
 :deep(.tippy-box) {
     min-width: 10px !important;
     max-width: max-content !important;
-    background-color: red
+    background-color: transparent
 }
 
 
