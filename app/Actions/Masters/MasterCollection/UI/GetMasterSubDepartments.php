@@ -40,7 +40,7 @@ class GetMasterSubDepartments extends GrpAction
 
         $queryBuilder = QueryBuilder::for(MasterProductCategory::class);
         $queryBuilder->where('master_product_categories.master_shop_id', $parent->id);
-        $queryBuilder->whereNotIn('master_product_categories.id', $scope->departments()->pluck('model_id'));
+        $queryBuilder->whereNotIn('master_product_categories.id', $scope->parentMasterDepartments()->pluck('model_id'));
         return $queryBuilder
             ->defaultSort('master_product_categories.code')
             ->select([

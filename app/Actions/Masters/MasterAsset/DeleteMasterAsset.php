@@ -22,21 +22,21 @@ class DeleteMasterAsset extends OrgAction
     use WithMastersEditAuthorisation;
 
 
-    public function handle(MasterAsset $masterAsset, bool $forceDelete=true): MasterAsset
+    public function handle(MasterAsset $masterAsset, bool $forceDelete = true): MasterAsset
     {
-        if($masterAsset->stats){
+        if ($masterAsset->stats) {
             $masterAsset->stats->delete();
         }
 
-        if($masterAsset->salesIntervals){
+        if ($masterAsset->salesIntervals) {
             $masterAsset->salesIntervals->delete();
         }
 
         DB::table('assets')->where('master_asset_id', $masterAsset->id)->delete();
         DB::table('products')->where('master_product_id', $masterAsset->id)->delete();
-        if($forceDelete){
+        if ($forceDelete) {
             $masterAsset->forceDelete();
-        }else{
+        } else {
             $masterAsset->delete();
         }
 

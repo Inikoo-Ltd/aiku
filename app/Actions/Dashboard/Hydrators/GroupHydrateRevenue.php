@@ -43,11 +43,11 @@ class GroupHydrateRevenue implements ShouldBeUnique
         }
 
         $stats = [
-            'revenue_amount' => $organisations->sum(fn($o) => $o->orderingStats->revenue_amount ?? 0),
-            'lost_revenue_other_amount' => $organisations->sum(fn($o) => $o->orderingStats->lost_revenue_other_amount ?? 0),
-            'lost_revenue_out_of_stock_amount' => $organisations->sum(fn($o) => $o->orderingStats->lost_revenue_out_of_stock_amount ?? 0),
-            'lost_revenue_replacements_amount' => $organisations->sum(fn($o) => $o->orderingStats->lost_revenue_replacements_amount ?? 0),
-            'lost_revenue_compensations_amount' => $organisations->sum(fn($o) => $o->orderingStats->lost_revenue_compensations_amount ?? 0),
+            'revenue_amount' => $organisations->sum(fn ($o) => $o->orderingStats->revenue_amount ?? 0),
+            'lost_revenue_other_amount' => $organisations->sum(fn ($o) => $o->orderingStats->lost_revenue_other_amount ?? 0),
+            'lost_revenue_out_of_stock_amount' => $organisations->sum(fn ($o) => $o->orderingStats->lost_revenue_out_of_stock_amount ?? 0),
+            'lost_revenue_replacements_amount' => $organisations->sum(fn ($o) => $o->orderingStats->lost_revenue_replacements_amount ?? 0),
+            'lost_revenue_compensations_amount' => $organisations->sum(fn ($o) => $o->orderingStats->lost_revenue_compensations_amount ?? 0),
         ];
 
         $groupStats = $group->orderingStats ?? new GroupStats(['group_id' => $group->id]);

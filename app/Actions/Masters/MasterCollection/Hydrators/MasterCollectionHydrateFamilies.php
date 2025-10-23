@@ -27,7 +27,8 @@ class MasterCollectionHydrateFamilies implements ShouldBeUnique
     {
 
         $stats         = [
-            'number_families'    => $masterCollection->masterFamilies()->count(),
+            'number_master_families' => $masterCollection->masterFamilies()->count(),
+            'number_current_master_families' => $masterCollection->masterFamilies()->where('master_product_categories.status', true)->count(),
         ];
 
         $collectionStats = $masterCollection->stats;

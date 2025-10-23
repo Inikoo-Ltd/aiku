@@ -79,7 +79,7 @@ class IndexCollections extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Collection::class);
         $queryBuilder->where('collections.shop_id', $shop->id);
-        $queryBuilder->leftjoin('collection_stats', 'collections.id', 'collection_stats.collection_id');
+        $queryBuilder->leftjoin('collection_stats','collection_stats.collection_id','collections.id', );
 
 
         $queryBuilder

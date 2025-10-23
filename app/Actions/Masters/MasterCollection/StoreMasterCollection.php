@@ -33,7 +33,7 @@ class StoreMasterCollection extends GrpAction
     use WithImageCatalogue;
     use WithNoStrictRules;
 
-    public function handle(MasterShop|MasterProductCategory $parent, array $modelData): MasterCollection
+    public function handle(MasterShop|MasterProductCategory $parent, array $modelData, bool $createChildren = true): MasterCollection
     {
         $imageData = ['image' => Arr::pull($modelData, 'image')];
         if ($parent instanceof MasterProductCategory) {
@@ -57,8 +57,9 @@ class StoreMasterCollection extends GrpAction
 
         AttachMasterCollectionToModel::make()->action($parent, $masterCollection);
 
-        StoreCollectionsFromMasterCollection::make()->action($parent, $masterCollection);
-
+        if ($createChildren) {
+            StoreCollectionsFromMasterCollection::make()->action($parent, $masterCollection);
+        }
         MasterCollectionRecordSearch::dispatch($masterCollection);
         GroupHydrateMasterCollections::dispatch($masterCollection->group)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterCollections::dispatch($masterShop)->delay($this->hydratorsDelay);
@@ -93,7 +94,7 @@ class StoreMasterCollection extends GrpAction
                 File::image()
                     ->max(12 * 1024)
             ],
-            'description' => ['sometimes', 'required', 'max:1500'],
+            'description' => ['sometimes', 'nullable', 'max:15000'],
         ];
 
         if (!$this->strict) {
@@ -103,7 +104,7 @@ class StoreMasterCollection extends GrpAction
         return $rules;
     }
 
-    public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): MasterCollection
+    public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true, bool $createChildren = true): MasterCollection
     {
         if (!$audit) {
             MasterCollection::disableAuditing();
@@ -114,7 +115,7 @@ class StoreMasterCollection extends GrpAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisation($parent->group, $modelData);
 
-        return $this->handle($parent, $this->validatedData);
+        return $this->handle($parent, $this->validatedData, $createChildren);
     }
 
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterCollection
@@ -134,7 +135,7 @@ class StoreMasterCollection extends GrpAction
     public function htmlResponse(MasterCollection $masterCollection, ActionRequest $request): RedirectResponse
     {
         return Redirect::route('grp.masters.master_shops.show.master_collections.index', [
-            'masterShop' => $masterCollection->masterShop->slug,
+            'masterShop'       => $masterCollection->masterShop->slug,
             'masterCollection' => $masterCollection->slug
         ]);
     }

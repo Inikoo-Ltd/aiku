@@ -66,6 +66,17 @@ class StoreEbayProduct extends RetinaAction
                 $descriptions = $portfolio->item->name;
             }
 
+            $categories = $ebayUser->getCategorySuggestions($product->family->name);
+            $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
+
+            if (! $categoryId) {
+                $categories = $ebayUser->searchAvailableProducts($product->family->name);
+                $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
+            }
+
+            $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);
+            $productAttributes = $ebayUser->extractProductAttributes($product, $categoryAspects);
+
             $inventoryItem = [
                 'sku' => $product->code,
                 'availability' => [
@@ -77,16 +88,7 @@ class StoreEbayProduct extends RetinaAction
                 'product' => [
                     'title' => $portfolio->customer_product_name,
                     'description' => $descriptions,
-                    'aspects' =>  [
-                        'Brand' => [
-                            'AncientWisdom'
-                        ],
-                        'Type' => [
-                            $product->department->name.'/'.$product->family->name
-                        ],
-                        'Material' => ['Not Specified'],
-                        'Colour' => ['Multicolour']
-                    ],
+                    'aspects' =>  $productAttributes,
                     'brand' => 'AncientWisdom',
                     'mpn' => $product->code,
                     ...$imageUrls
@@ -130,14 +132,6 @@ class StoreEbayProduct extends RetinaAction
 
             if ($handleError($productResult)) {
                 return;
-            }
-
-            $categories = $ebayUser->getCategorySuggestions($product->family->name);
-            $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
-
-            if (! $categoryId) {
-                $categories = $ebayUser->searchAvailableProducts($product->family->name);
-                $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
             }
 
             if ($handleError($categories)) {

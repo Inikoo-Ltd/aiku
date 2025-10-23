@@ -578,7 +578,7 @@ class ShowDeliveryNote extends OrgAction
             if (
                 $deliveryNote->state === DeliveryNoteStateEnum::QUEUED && $case == DeliveryNoteStateEnum::QUEUED || $deliveryNote->state === DeliveryNoteStateEnum::HANDLING && $case == DeliveryNoteStateEnum::HANDLING
             ) {
-                $label .= ' ('.$deliveryNote->pickerUser->contact_name.')';
+                $label .= ' ('.$deliveryNote->pickerUser?->contact_name.')';
             }
 
 

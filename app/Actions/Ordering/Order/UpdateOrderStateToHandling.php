@@ -35,6 +35,7 @@ class UpdateOrderStateToHandling extends OrgAction
             OrderStateEnum::IN_WAREHOUSE,
             OrderStateEnum::HANDLING,
             OrderStateEnum::PACKED,
+            OrderStateEnum::FINALISED,
         ])) {
             $order->transactions()->update([
                 'state' => TransactionStateEnum::HANDLING

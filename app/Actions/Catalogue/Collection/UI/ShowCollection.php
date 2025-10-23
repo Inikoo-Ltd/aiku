@@ -130,6 +130,50 @@ class ShowCollection extends OrgAction
             $iconRight = $collection->state->stateIcon()[$collection->state->value];
         }
 
+
+        $actions = [
+            $collection->webpage
+                ?
+                [
+                    'type'    => 'button',
+                    'style'   => 'edit',
+                    'tooltip' => __('To Webpage'),
+                    'label'   => __('To Webpage'),
+                    'icon'    => ["fal", "fa-drafting-compass"],
+                    'route'   => [
+                        'name'       => 'grp.org.shops.show.web.webpages.show',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                            'shop'         => $this->shop->slug,
+                            'website'      => $this->shop->website->slug,
+                            'webpage'      => $collection->webpage->slug
+                        ]
+                    ]
+                ]
+                : [
+                    'type'    => 'button',
+                    'style'   => 'edit',
+                    'tooltip' => __('Create Webpage'),
+                    'label'   => __('Create Webpage'),
+                    'icon'    => ["fas", "fa-plus"],
+                    'route'   => [
+                        'name'       => 'grp.models.webpages.collection.store',
+                        'parameters' => $collection->id,
+                        'method'     => 'post'
+                    ]
+                ],
+            $this->canEdit ? [
+                'type'  => 'button',
+                'style' => 'edit',
+                'route' => [
+                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ] : false,
+
+        ];
+                    
+
         return Inertia::render(
             'Org/Catalogue/Collection',
             [
@@ -190,9 +234,8 @@ class ShowCollection extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-
                     ],
-                ],
+            ],
                 'routes'      => [
                     'departments' => [
                         'dataList'     => [

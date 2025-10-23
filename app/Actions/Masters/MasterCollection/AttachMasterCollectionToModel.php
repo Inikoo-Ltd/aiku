@@ -20,13 +20,16 @@ class AttachMasterCollectionToModel extends GrpAction
     public function handle(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection): MasterCollection
     {
         if ($parent instanceof MasterProductCategory) {
-            if ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            // Avoid attaching if already linked
+            $alreadyAttached = $parent->masterCollections()->where('master_collections.id', $masterCollection->id)->exists();
+
+            if (!$alreadyAttached && $parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $parent->masterCollections()->attach($masterCollection->id, [
                     'type' => 'master_department',
                 ]);
             }
 
-            if ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            if (!$alreadyAttached && $parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $parent->masterCollections()->attach($masterCollection->id, [
                     'type' => 'master_sub_department',
                 ]);
@@ -35,9 +38,14 @@ class AttachMasterCollectionToModel extends GrpAction
             MasterProductCategoryHydrateMasterCollections::dispatch($parent);
         }
         if ($parent instanceof MasterShop) {
-            $parent->masterCollections()->attach($masterCollection->id, [
-                'type' => 'master_shop',
-            ]);
+            // Avoid attaching if already linked
+            $alreadyAttached = $parent->masterCollections()->where('master_collections.id', $masterCollection->id)->exists();
+
+            if (!$alreadyAttached) {
+                $parent->masterCollections()->attach($masterCollection->id, [
+                    'type' => 'master_shop',
+                ]);
+            }
         }
 
 

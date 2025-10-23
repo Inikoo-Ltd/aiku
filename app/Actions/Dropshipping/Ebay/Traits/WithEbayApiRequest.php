@@ -178,6 +178,71 @@ trait WithEbayApiRequest
         return !empty($displayErrors) ? $displayErrors : null;
     }
 
+    public function extractProductAttributes($product, $categoryAspects)
+    {
+        $attributes = [];
+
+        // Get required aspects from category
+        $requiredAspects = collect($categoryAspects['aspects'] ?? [])
+            ->filter(fn ($aspect) => $aspect['aspectConstraint']['aspectRequired'] ?? false);
+
+        foreach ($requiredAspects as $aspect) {
+            $aspectName = $aspect['localizedAspectName'];
+
+            // Map your product data to eBay aspects
+            switch ($aspectName) {
+                case 'Style':
+                    // Try to get from product attributes or use default
+                    $attributes['Style'] = $product->style ??
+                        $product->attributes['style'] ??
+                        ['Not Specified'];
+                    break;
+                case 'Brand':
+                    $attributes['Brand'] = [$product->brand ?? 'Unbranded'];
+                    break;
+                case 'Department':
+                    $attributes['Department'] = ['Unisex Adults'];
+                    break;
+                    // Add more mappings as needed
+                default:
+                    // Use generic mapping or default value
+                    $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
+            }
+        }
+
+        return $attributes;
+    }
+
+    public function getDefaultValueForAspect($aspect)
+    {
+        // Return first recommended value or "Not Specified"
+        return $aspect['aspectValues'][0]['localizedValue'] ?? ['Not Specified'];
+    }
+
+    public function parseMissingAspects($errorMessage)
+    {
+        // Extract aspect name from error message
+        preg_match('/item specific (\w+)/', $errorMessage, $matches);
+        return $matches[1] ?? null;
+    }
+
+    public function getItemAspectsForCategory($categoryId)
+    {
+        try {
+            $endpoint = "/commerce/taxonomy/v1/category_tree/3/get_item_aspects_for_category";
+            return $this->makeEbayRequest('get', $endpoint, [
+                'category_id' => $categoryId
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to get eBay category aspects', [
+                'category_id' => $categoryId,
+                'error' => $e->getMessage()
+            ]);
+
+            return ['aspects' => []]; // Return empty aspects on failure
+        }
+    }
+
     /**
      * eBay API configuration
      */
@@ -424,9 +489,13 @@ trait WithEbayApiRequest
                 if ($response->successful()) {
                     return $response->json();
                 }
+            } else {
+                return $response->json();
             }
 
         } catch (Exception $e) {
+            Log::error('eBay Token Error: ' . $e->getMessage());
+            return [$e->getMessage()];
         }
     }
 
@@ -656,8 +725,7 @@ trait WithEbayApiRequest
                     "returnPolicyId" => Arr::get($this->settings, 'defaults.main_return_policy_id'),
                 ],
                 "categoryId" => Arr::get($offerData, 'category_id'),
-                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
-
+                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key')
             ];
 
             $endpoint = "/sell/inventory/v1/offer/$offerId";
