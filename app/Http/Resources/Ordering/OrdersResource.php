@@ -68,7 +68,6 @@ class OrdersResource extends JsonResource
             $payDetailedStatusTooltip = $payDetailedStatus;
         }
 
-
         return [
             'slug'                        => $this->slug,
             'reference'                   => $this->reference,
@@ -102,6 +101,9 @@ class OrdersResource extends JsonResource
             'internal_notes'              => $this->internal_notes,
             'public_notes'                => $this->public_notes,
             'shipping_notes'              => $this->shipping_notes,
+            'tracking'                    => $this->tracking,
+            'tracking_urls'               => $this->tracking_urls,
+            'combined_label_url'          => $this->combined_label_url
         ];
     }
 }

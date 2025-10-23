@@ -1,40 +1,73 @@
 <script setup lang="ts">
-import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/vue";
+import { ref, toRaw, inject, isRef } from "vue";
+import Accordion from "primevue/accordion";
+import AccordionPanel from "primevue/accordionpanel";
+import AccordionHeader from "primevue/accordionheader";
+import AccordionContent from "primevue/accordioncontent";
 import Button from "@/Components/Elements/Buttons/Button.vue";
-import { toRaw } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faTrash } from "@fal";
-import { routeType } from "@/types/route";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import SideEditorArrayEdit from "./SideEditorArrayEdit.vue";
 import draggable from "vuedraggable";
-import { debounce } from 'lodash-es'
+import { debounce } from "lodash-es";
+import { routeType } from "@/types/route";
 
-// Add icons to FontAwesome library
 library.add(faPlus, faTrash);
 
-// Define props
-const props = withDefaults(defineProps<{
-  blueprint: any;
-  uploadRoutes: routeType;
-  order_name: string;
-  can_drag: boolean;
-  can_delete: boolean;
-  can_add: boolean;
-  new_value_data: object;
-}>(), {
-  can_drag: true,
-  can_delete: true,
-  can_add: true
-});
+const props = withDefaults(
+  defineProps<{
+    blueprint: any;
+    uploadRoutes: routeType;
+    order_name: string;
+    can_drag: boolean;
+    can_delete: boolean;
+    can_add: boolean;
+    new_value_data: object;
+  }>(),
+  {
+    can_drag: true,
+    can_delete: true,
+    can_add: true,
+  }
+);
 
-const modelValue = defineModel({ required: true })
+const injectedActive: any = inject("activeChildBlockArray", ref(null));
+const activeChildBlockArrayBlock: any = inject("activeChildBlockArrayBlock", null);
 
-if (!modelValue.value) {
-  modelValue.value = []
-}
+const modelValue = defineModel({ required: true });
+if (!modelValue.value) modelValue.value = [];
 
-// Functions
+/* -----------------------
+   Helpers for active state
+   ----------------------- */
+const readRaw = () => (isRef(injectedActive) ? injectedActive.value : injectedActive);
+const isArrayMode = () => Array.isArray(readRaw());
+const isOpen = (index: number) => {
+  const raw = readRaw();
+  if (Array.isArray(raw)) return raw.includes(index);
+  return raw === index;
+};
+const setRaw = (next: any) => {
+  if (isRef(injectedActive)) injectedActive.value = next;
+  else injectedActive = next;
+};
+const toggleActive = (index: number) => {
+  const raw = readRaw();
+  if (Array.isArray(raw)) {
+    const next = Array.from(raw);
+    const pos = next.indexOf(index);
+    if (pos === -1) next.push(index);
+    else next.splice(pos, 1);
+    setRaw(next);
+  } else {
+    setRaw(raw === index ? null : index);
+  }
+};
+
+/* -----------------------
+   CRUD and update
+   ----------------------- */
 const addValue = () => {
   const newValue = toRaw(modelValue.value);
   newValue.push(props.new_value_data);
@@ -45,51 +78,81 @@ const removeValue = (index: number) => {
   const newValue = toRaw(modelValue.value);
   newValue.splice(index, 1);
   modelValue.value = newValue;
+
+  const raw = readRaw();
+  if (Array.isArray(raw)) {
+    setRaw(raw.filter((i: number) => i !== index));
+  } else if (raw === index) {
+    setRaw(null);
+  }
 };
 
-// Original function logic
 const updateProperty = (index: number, data: object) => {
   const newValue = toRaw(modelValue.value);
   newValue[index] = data;
   modelValue.value = newValue;
-}
-
-// Debounced version
-const onChangeProperty = debounce(updateProperty, 500)
-
+};
+const onChangeProperty = debounce(updateProperty, 500);
 </script>
 
-
-
 <template>
-    <div>
-        <draggable v-model="modelValue" item-key="index" :disabled="!can_drag" class="space-y-2" handle=".drag-handle">
-            <template #item="{ element: field, index }">
-                <div class="py-1">
-                    <Disclosure v-slot="{ open }">
-                        <DisclosureButton
-                            class="flex w-full items-center justify-between bg-gray-100 px-4 py-2 text-left text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-none focus-visible:ring focus-visible:ring-gray-500/75">
-                            <span class="drag-handle cursor-move">☰</span>
-                            <span>{{ order_name }} {{ index + 1 }}</span>
-                            <FontAwesomeIcon v-if="can_delete" :icon="faTrash" class="text-red-500 hover:text-red-700"
-                                @click.stop="removeValue(index)" />
-                        </DisclosureButton>
-                        <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">
-                            <SideEditorArrayEdit 
-                                :modelValue="modelValue[index]" 
-                                :uploadRoutes="uploadRoutes" 
-                                :blueprint="blueprint"  
-                                @update:model-value="(data) => onChangeProperty(index, data)" 
-                            />
-                        </DisclosurePanel>
-                    </Disclosure>
+  <div>
+    <draggable v-model="modelValue" item-key="index" :disabled="!can_drag" class="space-y-2"
+      handle=".drag-handle">
+      <template #item="{ element: field, index }">
+        <Accordion :value="isOpen(index) ? [index] : []" :multiple="isArrayMode()" @update:value="toggleActive(index)"
+          class="border border-gray-200 rounded-none">
+          <template #collapseicon>
+            <span></span>
+          </template>
+          <template #expandicon>
+            <span></span>
+          </template>
+          <AccordionPanel :value="index">
+            <AccordionHeader>
+              <div class="flex items-center justify-between w-full gap-2">
+                <div class="flex items-center gap-2">
+                  <span class="drag-handle cursor-move text-gray-500 hover:text-gray-700">☰</span>
+                  <span class="font-medium text-gray-700">{{ order_name }} {{ index + 1 }}</span>
                 </div>
-            </template>
-        </draggable>
-        <div v-if="can_add" class="my-2">
-            <Button type="dashed" :label="`Add ${order_name}`" :icon="faPlus" full @click="addValue"></Button>
-        </div>
+                <div>
+                  <FontAwesomeIcon 
+                    v-if="can_delete" 
+                    :icon="faTrash" 
+                    class="text-red-500 hover:text-red-700 transition-colors duration-200"
+                    @click.stop="removeValue(index)" 
+                  />
+                </div>
+              </div>
+            </AccordionHeader>
+
+            <AccordionContent v-show="isOpen(index)" class="p-3 bg-gray-50 rounded-b">
+              <SideEditorArrayEdit 
+                :modelValue="modelValue[index]" 
+                :uploadRoutes="uploadRoutes" 
+                :blueprint="blueprint"
+                @update:model-value="(data) => onChangeProperty(index, data)" 
+              />
+            </AccordionContent>
+          </AccordionPanel>
+        </Accordion>
+      </template>
+    </draggable>
+
+    <div v-if="can_add" class="my-2">
+      <Button type="dashed" :label="`Add ${order_name}`" :icon="faPlus" full @click="addValue" />
     </div>
+  </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.drag-handle {
+  cursor: grab;
+  font-size: 1rem;
+}
+
+::v-deep(.p-accordionheader) {
+  @apply flex items-center justify-between bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-none transition-colors duration-200 text-sm font-medium px-3 py-2;
+}
+
+</style>

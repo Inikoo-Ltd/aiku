@@ -4,7 +4,7 @@ import Image from '@/Components/Image.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { getStyles } from "@/Composables/styles"
 import LinkIris from '@/Components/Iris/LinkIris.vue';
-import {  inject } from 'vue'
+import { inject } from 'vue'
 
 
 const props = defineProps<{
@@ -45,24 +45,34 @@ const layout: any = inject("layout", {})
         :autoplayInterval="fieldValue.carousel_data.carousel_setting.autoplay ? 3000 : null"
         :circular="fieldValue.carousel_data.carousel_setting.loop">
         <template #item="{ data, index }">
-          <div class="relative bg-white" :style="{
-            ...getStyles(fieldValue?.carousel_data?.cards[index]?.container?.properties, screenType)
+          <div :style="{
+            ...getStyles(data.container?.properties, screenType),
           }">
-            <div class="relative h-80 overflow-hidden bg-indigo-600 md:absolute md:left-0 md:h-full md:w-1/3 lg:w-1/2">
-              <Image :src="data.image.source" :alt="data.image.alt" class="size-full object-cover" :imageCover="true" />
-            </div>
-            <div class="relative mx-auto max-w-7xl py-24 sm:py-32 lg:px-8 lg:py-40">
-              <div class="pl-6 pr-6 md:ml-auto md:w-2/3 md:pl-16 lg:w-1/2 lg:pl-24 lg:pr-0 xl:pl-32">
-                <div v-html="fieldValue.carousel_data.cards[index].text" />
-                <div class="flex justify-center">
-                  <LinkIris :type="fieldValue.carousel_data.cards[index].button.link.type"
-                    :href="fieldValue.carousel_data.cards[index].button.link.href"
-                    :canonical_url="fieldValue.carousel_data.cards[index].button.link.canonical_url"
-                    :traget="fieldValue.carousel_data.cards[index].button.link.target">
-                    <Button
-                      :injectStyle="getStyles(fieldValue.carousel_data.cards[index].button.container?.properties, screenType)"
-                      :label="fieldValue.carousel_data.cards[index]?.button?.text" />
-                  </LinkIris>
+            <div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[400px]">
+              <!-- 🖼️ Left: Full Image Block -->
+              <div class="relative w-full h-full cursor-pointer overflow-hidden"
+                :style="getStyles(data?.image?.container?.properties, screenType)">
+                <Image :src="data.image.source" :imageCover="true" :alt="data.image.alt || 'Image preview'"
+                  class="absolute inset-0 w-full h-full object-cover" :imgAttributes="data.image.attributes"
+                  :style="getStyles(data.image.properties, screenType)" />
+              </div>
+
+              <!-- 📝 Right: Text & Button Block -->
+              <div class="flex flex-col justify-center m-auto"
+                :style="getStyles(data?.text_block?.properties, screenType)">
+                <div class="max-w-xl w-full">
+                  <div v-html="fieldValue.carousel_data.cards[index].text" />
+
+                  <div class="flex justify-center mt-6">
+                    <LinkIris :type="fieldValue.carousel_data.cards[index].button.link.type"
+                      :href="fieldValue.carousel_data.cards[index].button.link.href"
+                      :canonical_url="fieldValue.carousel_data.cards[index].button.link.canonical_url"
+                      :traget="fieldValue.carousel_data.cards[index].button.link.target">
+                      <Button
+                        :injectStyle="getStyles(fieldValue.carousel_data.cards[index].button.container?.properties, screenType)"
+                        :label="fieldValue.carousel_data.cards[index]?.button?.text" />
+                    </LinkIris>
+                  </div>
                 </div>
               </div>
             </div>
