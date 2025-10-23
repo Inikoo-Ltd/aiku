@@ -47,6 +47,7 @@ provide("dashboardTabActive", dashboardTabActive)
 		/>
 
         <DashboardShopWidget
+            v-if="!props.dashboard?.super_blocks?.[0]?.blocks"
             :interval="props.dashboard?.super_blocks?.[0]?.intervals?.value"
             :data="props.dashboard?.super_blocks?.[0]?.interval_data"
         />
