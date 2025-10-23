@@ -7,6 +7,7 @@ import { faTriangle } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { set } from 'lodash-es'
 import { Dashboard } from "@/types/Components/Dashboard"
+import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardShopWidget.vue";
 library.add(faTriangle)
 
 const props = defineProps<{
@@ -23,10 +24,11 @@ provide("dashboardTabActive", dashboardTabActive)
 		<DashboardSettings
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 			:settings="props.dashboard?.super_blocks?.[0].settings"
-			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks[0].current_tab"
+			:currentTab="props.dashboard?.super_blocks?.[0]?.blocks?.[0]?.current_tab"
 		/>
 
 		<DashboardTable
+            v-if="props.dashboard?.super_blocks?.[0]?.blocks"
 			class="border-t border-gray-200"
 			:idTable="props.dashboard?.super_blocks?.[0]?.id"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
@@ -39,9 +41,14 @@ provide("dashboardTabActive", dashboardTabActive)
 		/>
 
 		<DashboardWidget
+            v-if="props.dashboard?.super_blocks?.[0]?.blocks"
 			:tableData="props.dashboard?.super_blocks?.[0]?.blocks[0]"
 			:intervals="props.dashboard?.super_blocks?.[0]?.intervals"
 		/>
 
+        <DashboardShopWidget
+            :interval="props.dashboard?.super_blocks?.[0]?.intervals?.value"
+            :data="props.dashboard?.super_blocks?.[0]?.interval_data"
+        />
 	</div>
 </template>
