@@ -9,21 +9,27 @@
 namespace App\Actions\Catalogue;
 
 use App\Actions\Catalogue\Collection\AttachCollectionToModel;
+use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\DeleteCollection;
 use App\Actions\Catalogue\Collection\StoreCollection;
 use App\Actions\Catalogue\Collection\StoreCollectionWebpage;
 use App\Actions\Catalogue\Collection\UpdateCollection;
 use App\Actions\Helpers\Translations\Translate;
+use App\Actions\Maintenance\Masters\AddMissingFamiliesToMaster;
+use App\Actions\Maintenance\Masters\AddMissingProductCategoriesFromMaster;
 use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
+use App\Actions\Masters\MasterCollection\AttachModelToMasterCollection;
 use App\Actions\Masters\MasterCollection\DeleteMasterCollection;
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterCollection\UpdateMasterCollection;
 use App\Actions\Web\Webpage\PublishWebpage;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Collection;
+use App\Models\Catalogue\Product;
+use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Language;
 use App\Models\Masters\MasterCollection;
-use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -43,10 +49,6 @@ class CloneCollections
         if ($deleteMissing) {
             $this->deleteCollectionsNotFoundInMaster($fromShop, $shop);
         }
-
-        // $this->attachFamiliesToCollections($fromShop, $shop);
-        // $this->attachProductsToCollections($fromShop, $shop);
-        // $this->attachCollectionsToCollections($fromShop, $shop);
     }
 
     public function deleteCollectionsNotFoundInMaster(MasterShop|Shop $fromShop, MasterShop|Shop $shop): void
@@ -65,14 +67,13 @@ class CloneCollections
         }
 
 
-
         foreach ($collections as $collection) {
             if (!in_array($collection->code, $codes->toArray())) {
                 if ($collection instanceof MasterCollection) {
-                   print "Deleting master collection  ".$collection->id." ".$collection->name."\n";;
+                    print "Deleting master collection  ".$collection->id." ".$collection->name."\n";
                     DeleteMasterCollection::run($collection, true);
                 } else {
-                    print "Deleting collection  ".$collection->id." ".$collection->name."\n";;
+                    print "Deleting collection  ".$collection->id." ".$collection->name."\n";
                     DeleteCollection::run($collection, true);
                 }
             }
@@ -161,6 +162,89 @@ class CloneCollections
         return $parents;
     }
 
+    /**
+     * @throws \Throwable
+     */
+    public function getChildren(Collection|MasterCollection $collection, MasterShop|Shop $target): array
+    {
+        $children = [];
+
+        if ($collection instanceof MasterCollection) {
+            foreach ($collection->masterProducts as $childrenMasterProduct) {
+                if ($childrenMasterProduct->pivot->type == 'direct') {
+                    if ($target instanceof Shop) {
+                        $_product = $childrenMasterProduct->products()->where('shop_id', $target->id)->first();
+                    }
+                    if ($_product) {
+                        $children[] = $_product;
+                    }
+                }
+            }
+
+            foreach ($collection->masterFamilies as $childrenMasterFamily) {
+                if ($target instanceof Shop) {
+                    $family = AddMissingProductCategoriesFromMaster::make()->upsertFamily($target, $childrenMasterFamily);
+                } else {
+                    $family = AddMissingFamiliesToMaster::make()->upsertMasterFamily($target, $childrenMasterFamily);
+                }
+
+                $children[] = $family;
+            }
+
+            foreach ($collection->masterCollections as $childrenMasterCollection) {
+                if ($target instanceof Shop) {
+                    $childrenCollection = $this->upsertCollection($target, $childrenMasterCollection);
+                } else {
+                    $childrenCollection = $this->upsertMasterCollection($target, $childrenMasterCollection);
+                }
+
+                $children[] = $childrenCollection;
+            }
+        } else {
+            foreach ($collection->products as $childrenProduct) {
+                if ($childrenProduct->pivot->type == 'direct') {
+                    if ($target instanceof Shop) {
+                        $product = Product::where('shop_id', $target->id)
+                            ->whereRaw("lower(code) = lower(?)", [$childrenProduct->code])->first();
+                    } else {
+                        $product = $childrenProduct->masterProduct;
+                    }
+                    if ($product) {
+                        $children[] = $product;
+                    }
+                }
+            }
+
+            foreach ($collection->families as $childrenFamily) {
+                if ($target instanceof Shop) {
+                    $family = ProductCategory::where('shop_id', $target->id)
+                        ->where('type', ProductCategoryTypeEnum::FAMILY)
+                        ->whereRaw("lower(code) = lower(?)", [$childrenFamily->code])->first();
+                } else {
+                    $family = $childrenFamily->masterProductCategory;
+                }
+
+                $children[] = $family;
+            }
+
+            foreach ($collection->collections as $childrenCollection) {
+                if ($target instanceof Shop) {
+                    $_collection = Collection::where('shop_id', $target->id)
+                        ->whereRaw("lower(code) = lower(?)", [$childrenCollection->code])->first();
+                } else {
+                    $_collection = $childrenCollection->masterCollection;
+                }
+
+                $children[] = $_collection;
+            }
+        }
+
+        return $children;
+    }
+
+    /**
+     * @throws \Throwable
+     */
     public function upsertMasterCollection(MasterShop $masterShop, Collection|MasterCollection $collection): MasterCollection|null
     {
         $code = $collection->code;
@@ -188,8 +272,6 @@ class CloneCollections
 
             $description = $collection->description;
             $description = Translate::run($description, $originalLanguage, $english);
-
-
 
 
             $foundMasterCollection = StoreMasterCollection::make()->action(
@@ -226,6 +308,13 @@ class CloneCollections
 
         UpdateCollection::run($collection, ['master_collection_id' => $foundMasterCollection?->id]);
 
+
+        $children = $this->getChildren($collection, $masterShop);
+        foreach ($children as $child) {
+            if ($child) {
+                AttachModelToMasterCollection::run($foundMasterCollection, $child);
+            }
+        }
 
         return $foundMasterCollection;
     }
@@ -313,12 +402,15 @@ class CloneCollections
         }
 
         foreach ($parents as $parent) {
-
-
-
             AttachCollectionToModel::run($parent, $foundCollection);
         }
 
+        $children = $this->getChildren($collection, $shop);
+        foreach ($children as $child) {
+            if ($child) {
+                AttachModelToCollection::run($foundCollection, $child);
+            }
+        }
 
         return $foundCollection;
     }
