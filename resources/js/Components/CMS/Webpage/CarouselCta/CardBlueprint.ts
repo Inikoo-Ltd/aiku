@@ -1,6 +1,7 @@
 export default {
 	blueprint: [
 		{
+			name: "image",
 			label: "Image",
 			key: ["image"],
 			replaceForm: [

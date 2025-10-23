@@ -56,7 +56,7 @@ const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
 
 const accordionKey = computed(() => {
     if (Array.isArray(props.blueprint.key)) {
-        return props.blueprint.key.join('.')
+        return props.blueprint.key.join('-')
     }
 
     return props.blueprint.key
