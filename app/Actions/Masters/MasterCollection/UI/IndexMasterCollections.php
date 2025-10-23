@@ -63,7 +63,17 @@ class IndexMasterCollections extends OrgAction
                 'master_collection_stats.number_products',
                 'master_collection_stats.number_parents', */
             ]
-        );
+        )
+            ->selectRaw(
+                '(
+        SELECT concat(string_agg(master_product_categories.slug,\',\'),\'|\',string_agg(master_product_categories.type,\',\'),\'|\',string_agg(master_product_categories.code,\',\'),\'|\',string_agg(master_product_categories.name,\',\')) FROM model_has_master_collections
+        left join master_product_categories on model_has_master_collections.model_id = master_product_categories.id
+        WHERE model_has_master_collections.master_collection_id = master_collections.id
+   
+        AND model_has_master_collections.model_type = ?
+    ) as parents_data',
+                ['ProductCategory',]
+            );
 
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_collections.master_shop_id', $parent->id);
