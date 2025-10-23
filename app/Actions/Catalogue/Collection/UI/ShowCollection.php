@@ -196,7 +196,7 @@ class ShowCollection extends OrgAction
                     'iconRight'  => $iconRight,
                     'container'  => $container,
                     'actions'    => [
-                        /* $collection->webpage
+                        $collection->webpage
                             ?
                             [
                                 'type'    => 'button',
@@ -234,9 +234,7 @@ class ShowCollection extends OrgAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ] : false,
-
-                    ], */
-                ],
+                    ],
             ],
                 'routes'      => [
                     'departments' => [
