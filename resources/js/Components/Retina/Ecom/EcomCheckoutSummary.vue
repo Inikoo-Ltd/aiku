@@ -31,7 +31,7 @@ const isModalShippingAddress = ref(false)
 </script>
 
 <template>
-    <div class="py-4 grid grid-cols-3 px-4">
+    <div class="py-4 grid grid-cols-2 md:grid-cols-3 gap-y-6 px-4">
         <!-- Section: Billing Address -->
         <div class="">
             <div class="font-semibold">
@@ -71,7 +71,7 @@ const isModalShippingAddress = ref(false)
         </div>
 
         <!-- Section: balance, charges, shipping, tax -->
-        <div>
+        <div class="col-span-2 md:col-span-1">
             <div class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
                 <div class="">{{ trans("Current balance") }}:</div>
                 <div>

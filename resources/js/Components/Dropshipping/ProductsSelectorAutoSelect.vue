@@ -140,7 +140,7 @@ watch(() => props.valueToRefetch, (newVal, oldVal) => {
                         <div class="font-semibold text-lg py-1">{{ props.label_result ?? trans("Result") }} ({{ locale?.number(portfoliosMeta?.total || 0) }})</div>
                     </div>
                     <div class="border-t border-gray-300 mb-1"></div>
-                    <div class="md:h-[400px] overflow-auto py-2 relative">
+                    <div class="max-h-[380px] md:h-[400px] overflow-auto py-2 relative">
                         <!-- Products list -->
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
                             <template v-if="!isLoadingFetch">
