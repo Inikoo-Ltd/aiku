@@ -54,16 +54,16 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                     <div :style="{
                         ...getStyles(data.container?.properties, screenType),
                     }">
-                        <div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[400px]">
-                            <!-- 🖼️ Left: Full Image Block -->
-                            <div class="relative w-full h-full cursor-pointer overflow-hidden" @click.stop="
+                        <div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
+
+                            <div class="relative w-full h-[250px] md:h-full cursor-pointer overflow-hidden" @click.stop="
                                 () => {
                                     sendMessageToParent('activeBlock', indexBlock)
                                     sendMessageToParent('activeChildBlock', bKeys[1])
                                     sendMessageToParent('activeChildBlockArray', index)
                                     sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
                                 }
-                            "  @dblclick.stop="() => sendMessageToParent('uploadImage', {...imageSettings, key : ['carousel_data','cards', index, 'image', 'source']})"
+                            " @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })"
                                 :style="getStyles(data?.image?.container?.properties, screenType)">
                                 <Image :src="data.image.source" :imageCover="true"
                                     :alt="data.image.alt || 'Image preview'"
@@ -72,8 +72,7 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                     :style="getStyles(data.image.properties, screenType)" />
                             </div>
 
-                            <!-- 📝 Right: Text & Button Block -->
-                            <div class="flex flex-col justify-center m-auto"
+                            <div class="flex flex-col justify-center m-auto p-4"
                                 :style="getStyles(data?.text_block?.properties, screenType)">
                                 <div class="max-w-xl w-full" @click="
                                     () => {
@@ -84,7 +83,7 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                 ">
                                     <EditorV2 v-if="data?.text" v-model="data.text"
                                         @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
-                                        @update:modelValue="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
+                                        @update:data="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
                                             name: webpageData.images_upload_route.name,
                                             parameters: {
                                                 ...webpageData.images_upload_route.parameters,
@@ -93,8 +92,9 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                         }" />
 
                                     <div class="flex justify-center">
-                                        <Button :injectStyle="getStyles(data?.button?.container?.properties, screenType)
-                                            " :label="data?.button?.text" @click.stop="
+                                        <Button
+                                            :injectStyle="getStyles(data?.button?.container?.properties, screenType)"
+                                            :label="data?.button?.text" @click.stop="
                                                 () => {
                                                     sendMessageToParent('activeBlock', indexBlock)
                                                     sendMessageToParent('activeChildBlock', bKeys[1])

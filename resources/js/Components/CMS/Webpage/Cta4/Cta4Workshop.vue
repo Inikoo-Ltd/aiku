@@ -45,19 +45,30 @@ const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue.container?.properties, screenType),
 		}">
-			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[400px]">
-				<!-- 🖼️ Left: Full Image Block -->
-				<div class="flex flex-col justify-center m-auto"
+			<div class="grid w-full grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 min-h-[auto] md:min-h-[400px]">
+				<!-- 🖼️ Image Block -->
+				<div class="relative w-full cursor-pointer overflow-hidden order-1 md:order-2 
+                   aspect-[3/2] md:aspect-auto" @click.stop="() => {
+					sendMessageToParent('activeBlock', indexBlock)
+					sendMessageToParent('activeChildBlock', bKeys[0])
+				}" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
+					:style="getStyles(modelValue?.image?.container?.properties, screenType)">
+					<Image :src="modelValue.image.source" :imageCover="true"
+						:alt="modelValue.image.alt || 'Image preview'"
+						class="absolute inset-0 w-full h-full object-cover" :imgAttributes="modelValue.image.attributes"
+						:style="getStyles(modelValue.image.properties, screenType)" />
+				</div>
+
+				<!-- 📝 Text & Button Block -->
+				<div class="flex flex-col justify-center m-auto order-2 md:order-1"
 					:style="getStyles(modelValue?.text_block?.properties, screenType)">
-					<div class="max-w-xl w-full" @click="
-						() => {
-							sendMessageToParent('activeBlock', indexBlock)
-							sendMessageToParent('activeChildBlock', bKeys[1])
-						}
-					">
+					<div class="max-w-xl w-full" @click="() => {
+						sendMessageToParent('activeBlock', indexBlock)
+						sendMessageToParent('activeChildBlock', bKeys[1])
+					}">
 						<Editor v-if="modelValue?.text" v-model="modelValue.text"
 							@focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
-							@update:modelValue="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
+							@update:modelValue="() => emits('autoSave')" class="mb-4" :uploadImageRoute="{
 								name: webpageData.images_upload_route.name,
 								parameters: {
 									...webpageData.images_upload_route.parameters,
@@ -66,28 +77,13 @@ const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 							}" />
 
 						<div class="flex justify-center">
-							<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)
-								" :label="modelValue?.button?.text" @click.stop="
-									() => {
-										sendMessageToParent('activeBlock', indexBlock)
-										sendMessageToParent('activeChildBlock', bKeys[2])
-									}
-								" />
+							<Button :injectStyle="getStyles(modelValue?.button?.container?.properties, screenType)"
+								:label="modelValue?.button?.text" @click.stop="() => {
+									sendMessageToParent('activeBlock', indexBlock)
+									sendMessageToParent('activeChildBlock', bKeys[2])
+								}" />
 						</div>
 					</div>
-				</div>
-				<!-- 📝 Right: Text & Button Block -->
-				<div class="relative w-full h-full cursor-pointer overflow-hidden" @click.stop="
-					() => {
-						sendMessageToParent('activeBlock', indexBlock)
-						sendMessageToParent('activeChildBlock', bKeys[0])
-					}
-				" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
-					:style="getStyles(modelValue?.image?.container?.properties, screenType)">
-					<Image :src="modelValue.image.source" :imageCover="true"
-						:alt="modelValue.image.alt || 'Image preview'"
-						class="absolute inset-0 w-full h-full object-cover" :imgAttributes="modelValue.image.attributes"
-						:style="getStyles(modelValue.image.properties, screenType)" />
 				</div>
 			</div>
 		</div>
