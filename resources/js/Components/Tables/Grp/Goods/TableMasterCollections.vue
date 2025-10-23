@@ -61,9 +61,9 @@ function collectionRoute(collection: {}) {
         </template>
         <template #cell(code)="{ item: collection }">
             <div class="flex items-center gap-2">
-              <!--   <Link :href="collectionRoute(collection) as string" class="primaryLink"> -->
+                <Link :href="collectionRoute(collection) as string" class="primaryLink">
                     {{ collection["code"] }}
-              <!--   </Link> -->
+                </Link>
 
                 <template v-if="collection.state === 'active'">
                     <FontAwesomeIcon
