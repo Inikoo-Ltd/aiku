@@ -26,6 +26,11 @@ class StoreProductFromMasterProduct extends GrpAction
      */
     public function handle(MasterAsset $masterAsset, array $modelData): void
     {
+
+        if (!$masterAsset->masterFamily) {
+            return;
+        }
+
         $productCategories = $masterAsset->masterFamily->productCategories;
 
         if ($productCategories) {
