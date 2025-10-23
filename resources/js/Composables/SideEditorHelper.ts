@@ -12,7 +12,7 @@ import Background from '@/Components/CMS/Fields/Background.vue'
 import ButtonProperties from '@/Components/CMS/Fields/ButtonProperties.vue'
 import UploadImage from '@/Components/Pure/UploadImage.vue'
 import Payments from '@/Components/CMS/Fields/Payment.vue'
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorForm.vue"
+/* import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorForm.vue" */
 import socialMedia from '@/Components/CMS/Fields/SocialMedia.vue'
 import Script from '@/Components/CMS/Fields/Script.vue'
 import SelectLayout from '@/Components/CMS/Fields/SelectLayout.vue'
@@ -56,7 +56,6 @@ export const getComponent = (componentName: string) => {
         'editorhtml': SideEditorInputHTML,
         'upload_image': UploadImage, //done
         'payment_templates': Payments, //done
-        'editor': Editor, //done
         'socialMedia': socialMedia, //done
         "VisibleLoggedIn": ButtonVisibleLoggedIn, //done
        /*  "properties": PanelProperties, */
