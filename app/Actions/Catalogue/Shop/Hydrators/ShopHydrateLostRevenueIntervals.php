@@ -1,0 +1,50 @@
+<?php
+
+namespace App\Actions\Catalogue\Shop\Hydrators;
+
+use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
+use App\Actions\Traits\WithIntervalsAggregators;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Models\Accounting\Invoice;
+use App\Models\Catalogue\Shop;
+use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Lorisleiva\Actions\Concerns\AsAction;
+
+class ShopHydrateLostRevenueIntervals implements ShouldBeUnique
+{
+    use AsAction;
+    use WithIntervalsAggregators;
+    use WithIntervalUniqueJob;
+
+    public string $jobQueue = 'urgent';
+    public string $commandSignature = 'hydrate:shop-lost-revenue-intervals {shop}';
+
+    public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
+    {
+        return $this->getUniqueJobWithInterval($shop, $intervals, $doPreviousPeriods);
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $shop = Shop::where('slug', $command->argument('shop'))->first();
+
+        $this->handle($shop);
+    }
+
+    public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
+    {
+        $stats = [];
+
+        $queryBase = Invoice::where('in_process', false)->where('group_id', $shop->id)->where('type', InvoiceTypeEnum::REFUND)->selectRaw('abs(sum(grp_net_amount)) as sum_aggregate');
+        $stats     = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBase,
+            statField: 'lost_revenue_other_amount_grp_currency_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
+
+        $shop->orderingIntervals()->update($stats);
+    }
+}
