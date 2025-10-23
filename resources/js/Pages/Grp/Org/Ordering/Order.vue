@@ -64,7 +64,7 @@ import {
     faMapMarkerAlt,
     faPlus,
     faEllipsisH,
-    faCopy
+    faCopy,faParachuteBox
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -83,7 +83,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import { ToggleSwitch } from "primevue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
+library.add(faParachuteBox,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
 interface UploadSection {
     title: {
@@ -375,15 +375,6 @@ const openModal = (action: any) => {
 }
 
 function onClickPayInvoice() {
-    // const pay = props.box_stats.products.payment.pay_amount
-    // const state = props.data.data?.state
-
-    // if (pay > 0 && state === "creating") {
-    //     isOpenModalPayment.value = false
-    // } else {
-    //     isOpenModalPayment.value = true
-    //     fetchPaymentMethod()
-    // }
 
     isOpenModalPayment.value = true
     fetchPaymentMethod()
@@ -392,15 +383,7 @@ function onClickPayInvoice() {
 const isOpenModalRefund = ref(false)
 
 function onClickPayRefund() {
-    // const pay = props.box_stats.products.payment.pay_amount
-    // const state = props.data.data?.state
 
-    // if (pay < 0 && state === "creating") {
-    //     isOpenModalRefund.value = false
-    // } else {
-    //     isOpenModalRefund.value = true
-    //     fetchPaymentMethod()
-    // }
 
     isOpenModalRefund.value = true
     fetchPaymentMethod()
@@ -412,7 +395,7 @@ const last_payment = computed(() => {
     return Array.isArray(props.box_stats.payments) && props.box_stats.payments.length > 0 ? props.box_stats.payments[props.box_stats.payments.length - 1] : null
 })
 
-// console.log("props.box_stats.payments", router)
+
 const generateRouteDeliveryNote = (slug: string) => {
     if (!slug) return ''
 
@@ -820,8 +803,32 @@ const copyToClipboard = async (text: string, label: string) => {
                 </div>
 
                 <div class="space-y-0.5 pl-1">
+
+                    <!-- Field: Client -->
+                    <div v-if="box_stats?.customer_client"
+                         class="pl-1 pb-2 flex items-center w-full gap-x-2">
+                        <div v-tooltip="trans('Customer client')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-parachute-box" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </div>
+                        <Link as="a" v-tooltip="trans('Customer client')"
+                              :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
+                              class="text-sm text-gray-500 cursor-pointer secondaryLink">
+                            {{ box_stats?.customer_client.contact_name }}
+                        </Link>
+                        <button @click="copyToClipboard(box_stats?.customer_client.contact_name, 'Customer client')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                        </button>
+                    </div>
+
+
+
+
+
+
                     <!-- Field: Reference Number -->
-                    <div v-if="box_stats?.customer.reference"
+                    <div v-if="box_stats?.customer.reference || box_stats?.customer.name"
                         class="pl-1 flex items-center w-full gap-x-2">
                         <div v-tooltip="trans('Customer')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
@@ -829,51 +836,13 @@ const copyToClipboard = async (text: string, label: string) => {
                         <Link as="a"
                             :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
                             class="text-sm text-gray-500 cursor-pointer primaryLink">
-                            #{{ box_stats?.customer.reference }}
+                            {{ box_stats?.customer.name }} ({{ box_stats?.customer.reference }})
                         </Link>
-                        <!-- <button @click="copyToClipboard(box_stats?.customer.reference, 'Customer reference')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button> -->
+
                     </div>
 
-                    <!-- Field: Customer -->
-                    <div v-if="!box_stats?.customer.reference"
-                        class="pl-1 flex items-center w-full gap-x-2">
-                        <div v-tooltip="trans('Contact name')" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
-                                aria-hidden="true" />
-                        </div>
-                        <Link as="a"
-                            :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
-                            class="text-sm text-gray-500 cursor-pointer secondaryLink">
-                            {{ box_stats?.customer.contact_name }}
-                        </Link>
-                        <button @click="copyToClipboard(box_stats?.customer.contact_name, 'Contact name')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
-                    </div>
 
-                    <!-- Field: Client -->
-                    <div v-if="box_stats?.customer_client"
-                        class="pl-1 flex items-center w-full gap-x-2">
-                        <div v-tooltip="trans('Customer client')" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-users" class="text-gray-400" fixed-width aria-hidden="true" />
-                        </div>
-                        <Link as="a"
-                            :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
-                            class="text-sm text-gray-500 cursor-pointer secondaryLink">
-                            {{ box_stats?.customer_client.contact_name }}
-                        </Link>
-                        <button @click="copyToClipboard(box_stats?.customer_client.contact_name, 'Customer client')"
-                            class="text-gray-400 hover:text-gray-600 transition-colors"
-                            v-tooltip="trans('Copy to clipboard')">
-                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
-                        </button>
-                    </div>
+
 
                     <!-- Field: Contact name -->
                     <dl v-else-if="box_stats?.customer.contact_name"
@@ -891,7 +860,7 @@ const copyToClipboard = async (text: string, label: string) => {
                     </dl>
 
                     <!-- Field: Company name -->
-                    <dl v-if="box_stats?.customer.company_name"
+                    <dl v-if="box_stats?.customer.company_name && box_stats?.customer.company_name!=box_stats?.customer.name"
                         class="pl-1 flex items-center w-full gap-x-2">
                         <dt v-tooltip="trans('Company name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
@@ -907,7 +876,7 @@ const copyToClipboard = async (text: string, label: string) => {
 
                     <!-- Field: Email -->
                     <dl v-if="box_stats?.customer.email" class="pl-1 flex items-center w-full gap-x-2">
-                        <dt v-tooltip="trans('Email')" class="flex-none">
+                        <dt v-tooltip="trans('Customer email')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
@@ -924,7 +893,7 @@ const copyToClipboard = async (text: string, label: string) => {
 
                     <!-- Field: Phone -->
                     <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full gap-x-2">
-                        <dt v-tooltip="trans('Phone')" class="flex-none">
+                        <dt v-tooltip="trans('Cuatomer phone')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
@@ -1037,7 +1006,7 @@ const copyToClipboard = async (text: string, label: string) => {
             <div class="text-xs md:text-sm">
 
 
-                <div class="xspace-y-0.5 pl-1">
+                <div class=" pl-1">
                     <!-- Field: Billing -->
                     <dl class="relative flex items-start w-full flex-none gap-x-1">
                         <dt class="flex-none pt-0.5 pl-1">
