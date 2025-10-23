@@ -11,7 +11,7 @@
 namespace App\Http\Resources\Masters;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-
+use App\Enums\Catalogue\Collection\CollectionStateEnum;
 /**
  * @property mixed $id
  * @property mixed $group_id
@@ -38,6 +38,35 @@ class MasterCollectionsResource extends JsonResource
             'master_shop_code' => $this->master_shop_code,
             'master_shop_name' => $this->master_shop_name,
             'used_in'          => $this->used_in,
+            'state_icon' => $this->state ? CollectionStateEnum::from($this->state->value)->stateIcon()[$this->state->value] : null,
+            'parents_data'            => $this->parseCollectionParentsData($this->parents_data),
         ];
+    }
+
+
+    private function parseCollectionParentsData(string|null $parentsData): array
+    {
+        $parents = [];
+        if ($parentsData == '|||' || $parentsData === null) {
+            return $parents;
+        }
+
+
+        list($slugsData, $typesData, $codesData, $namesData) = explode('|', $parentsData);
+        $slugs = explode(',', $slugsData);
+        $types = explode(',', $typesData);
+        $codes = explode(',', $codesData);
+        $names = explode(',', $namesData);
+
+        foreach ($slugs as $key => $slug) {
+            $parents[] = [
+                'slug'   => $slug,
+                'type' => $types[$key] ?? null,
+                'code' => $codes[$key] ?? null,
+                'name' => $names[$key] ?? null,
+            ];
+        }
+
+        return $parents;
     }
 }
