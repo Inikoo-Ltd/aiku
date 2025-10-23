@@ -40,8 +40,8 @@ trait WithInvoicesExport
                     $transaction->pallet = $pallet->reference;
                     $transaction->customerPallet = $pallet->customer_reference;
                 } elseif ($transaction->model_type == 'Rental' && $transaction->recurringBillTransaction) {
-                    $transaction->pallet = $transaction->recurringBillTransaction->item->reference;
-                    $transaction->customerPallet = $transaction->recurringBillTransaction->item->customer_reference;
+                    $transaction->pallet = $transaction->recurringBillTransaction->item?->reference;
+                    $transaction->customerPallet = $transaction->recurringBillTransaction->item?->customer_reference;
                 }
 
                 if (!empty($transaction->data['date'])) {

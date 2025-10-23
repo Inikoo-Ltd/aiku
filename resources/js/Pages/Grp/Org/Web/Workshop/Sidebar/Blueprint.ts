@@ -21,6 +21,20 @@ export default {
 				},
 			],
 		},
+		{
+			name: "Logo size",
+			key: ["logo_dimension"],
+			// icon: {
+			// 	icon: 'fal fa-image',
+			// },
+			replaceForm: [
+				{
+					key: ["dimension"],
+					label: "Dimension",
+					type: "dimension",
+				},
+			],
+		},
         // {
 		// 	name: "Navigation",
 		// 	key: ["navigation_container", "properties"],
