@@ -58,9 +58,10 @@ class IndexMasterCollections extends OrgAction
                 'master_collections.products_status',
                 'master_collections.data',
                 'master_collections.name',
-                'master_collections.state',
+                'master_collections.status',
                 'master_collection_stats.number_current_master_families',
                 'master_collection_stats.number_current_master_products',
+                'master_collection_stats.number_current_master_collections',
             ]
         )
             ->selectRaw(
@@ -89,7 +90,16 @@ class IndexMasterCollections extends OrgAction
 
         return $queryBuilder
             ->defaultSort('master_collections.code')
-            ->allowedSorts(['code', 'description', 'number_current_master_families', 'number_current_master_products'])
+            ->allowedSorts(
+                [
+                    'status',
+                    'code',
+                    'description',
+                    'number_current_master_families',
+                    'number_current_master_products',
+                    'number_current_master_collections'
+                ]
+            )
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -112,12 +122,13 @@ class IndexMasterCollections extends OrgAction
                 );
 
             $table
-                ->column(key: 'state_icon', label: '', canBeHidden: false, type: 'icon');
+                ->column(key: 'status_icon', label: '', canBeHidden: false, type: 'icon');
             $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
             $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);
+            $table->column(key: 'number_current_master_collections', label: __('Collections'), canBeHidden: false, sortable: true);
         };
     }
 
@@ -128,7 +139,7 @@ class IndexMasterCollections extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $masterCollections, ActionRequest $request): Response
     {
-        $title = __('master collections');
+        $title = __('Master collections');
 
         $icon          = '';
         $model         = null;

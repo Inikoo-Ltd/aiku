@@ -95,7 +95,7 @@ class ShowMasterCollection extends GrpAction
         return Inertia::render(
             'Masters/MasterCollection',
             [
-                'title'       => __('master collection'),
+                'title'       => __('Master collection'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterCollection,
                     $request->route()->getName(),

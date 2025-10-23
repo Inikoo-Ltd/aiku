@@ -20,20 +20,18 @@ enum MasterCollectionTabsEnum: string
 
 
     case SHOWCASE = 'showcase';
-    case FAMILIES            = 'families';
-    case PRODUCTS            = 'products';
-    case COLLECTIONS         = 'collections';
-    case SHOP_COLLECTIONS         = 'shop_collections';
-    case HISTORY  = 'history';
 
+    case PRODUCTS = 'products';
+    case FAMILIES = 'families';
+    case COLLECTIONS = 'collections';
 
-
+    case HISTORY = 'history';
+    case SHOP_COLLECTIONS = 'shop_collections';
 
 
     public function blueprint(): array
     {
         return match ($this) {
-
             MasterCollectionTabsEnum::HISTORY => [
                 'align' => 'right',
                 'type'  => 'icon',
@@ -42,20 +40,21 @@ enum MasterCollectionTabsEnum: string
 
             ],
             MasterCollectionTabsEnum::FAMILIES => [
-              'title' => __('Families'),
-              'icon'  => 'fal fa-folder',
+                'title' => __('Master Families'),
+                'icon'  => 'fal fa-folder',
             ],
             MasterCollectionTabsEnum::PRODUCTS => [
-                'title' => __('Products'),
+                'title' => __('Master Products'),
                 'icon'  => 'fal fa-cube',
             ],
             MasterCollectionTabsEnum::COLLECTIONS => [
-                'title' => __('Collections'),
-                'icon'  => 'fal fa-cube',
+                'title' => __('Master Collections'),
+                'icon'  => 'fal fa-album-collection',
             ],
             MasterCollectionTabsEnum::SHOP_COLLECTIONS => [
+                'align' => 'right',
                 'title' => __('Shop Collections'),
-                'icon'  => 'fal fa-cube',
+                'icon'  => 'fal fa-store',
             ],
             MasterCollectionTabsEnum::SHOWCASE => [
                 'title' => __('Overview'),

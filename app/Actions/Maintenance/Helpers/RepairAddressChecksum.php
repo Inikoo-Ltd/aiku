@@ -22,7 +22,7 @@ class RepairAddressChecksum
     /**
      * @throws \Throwable
      */
-    public function handle(Address $address,Command $command): void
+    public function handle(Address $address, Command $command): void
     {
         $checksum = $address->getChecksum();
         $address->update(['checksum' => $checksum]);
@@ -41,7 +41,7 @@ class RepairAddressChecksum
 
         $address = Address::find($command->argument('address_id'));
         try {
-            $this->handle($address,$command);
+            $this->handle($address, $command);
         } catch (Throwable $e) {
             $command->error($e->getMessage());
 

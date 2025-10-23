@@ -172,7 +172,7 @@ class ShowCollection extends OrgAction
             ] : false,
 
         ];
-                    
+
 
         return Inertia::render(
             'Org/Catalogue/Collection',
