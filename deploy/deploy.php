@@ -170,7 +170,9 @@ task('deploy:flush-varnish', function () {
 
     $shouldFlush = false;
 
-    if ($previous === '' || $current === '' || $previous !== $current) {
+    $frontEndChanged = get('front_end_changed');
+
+    if ($previous === '' || $current === '' || $previous !== $current || $frontEndChanged) {
         $shouldFlush = true; // missing values, err on flushing
     }
 
