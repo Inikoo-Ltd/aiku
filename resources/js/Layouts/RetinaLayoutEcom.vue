@@ -85,7 +85,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 			<!-- sidebar + main content -->
 			<main
-				class="flex flex-col md:flex-row gap-x-2 xmax-w-5xl lg:max-w-7xl w-full lg:mx-auto my-10 px-8 xl:px-0 transition-all">
+				class="flex flex-col md:flex-row gap-x-2 lg:max-w-7xl w-full lg:mx-auto my-10 px-4 lg:px-8 xl:px-0 transition-all">
 				<RetinaEcomLeftSidebar
 					v-if="layout.user"
 					:class="[
@@ -97,7 +97,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 				/>
 
 				<!-- RetinaLayoutDS -->
-				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
+				<div class="overflow-x-auto flex-1 flex flex-col pb-6 text-gray-700 relative">
 					<div class="flex justify-between items-end absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
 						<Breadcrumbs
 							class=""

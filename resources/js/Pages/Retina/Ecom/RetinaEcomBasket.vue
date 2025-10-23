@@ -563,7 +563,7 @@ const onChangeInsurance = async (val: boolean) => {
     />
     
     <template v-if="order">
-        <div class="mb-4 mx-4 mt-4 rounded-md border border-gray-200">
+        <div class="mb-4 mx-4 mt-4 overflow-x-auto rounded-md border border-gray-200">
             <TableEcomBasket
                 :data="transactions"
                 :updateRoute="routes.update_route"
@@ -642,8 +642,8 @@ const onChangeInsurance = async (val: boolean) => {
         </div>
         
         <div class="w-full px-4 mt-8">
-            <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
-                <div class="grid grid-cols-3 gap-x-4 w-full">
+            <div v-if="total_products > 0" class="flex flex-col md:flex-row justify-end px-6 gap-x-4">
+                <div class="grid md:grid-cols-3 gap-y-4 gap-x-4 w-full">
                     <div></div>
         
                     <!-- Input text: Delivery instructions -->
@@ -682,6 +682,8 @@ const onChangeInsurance = async (val: boolean) => {
                         />
                     </div>
                 </div>
+                
+                <!-- Section: button Place Order & button Checkout -->
                 <div v-if="!is_unable_dispatch" class="w-72 pt-5">
                     <!-- Place Order -->
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
@@ -700,6 +702,7 @@ const onChangeInsurance = async (val: boolean) => {
                             </div>
                         </div>
                     </template>
+                    
                     <!-- Checkout -->
                     <ButtonWithLink
                         v-else

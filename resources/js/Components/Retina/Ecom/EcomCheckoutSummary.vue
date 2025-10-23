@@ -31,7 +31,7 @@ const isModalShippingAddress = ref(false)
 </script>
 
 <template>
-    <div class="py-4 grid grid-cols-3 px-4 ">
+    <div class="py-4 grid grid-cols-3 px-4">
         <!-- Section: Billing Address -->
         <div class="">
             <div class="font-semibold">
