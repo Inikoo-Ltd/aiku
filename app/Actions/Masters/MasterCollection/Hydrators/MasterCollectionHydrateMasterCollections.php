@@ -28,7 +28,7 @@ class MasterCollectionHydrateMasterCollections implements ShouldBeUnique
     {
 
         $stats = [
-            'number_collections'    => $masterCollection->masterCollections()->count(),
+            'number_master_collections'    => $masterCollection->masterCollections()->count(),
         ];
 
         $collectionStats = $masterCollection->stats;
