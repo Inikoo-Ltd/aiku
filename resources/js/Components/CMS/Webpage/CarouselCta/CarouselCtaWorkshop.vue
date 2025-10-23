@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { inject, ref, watch } from 'vue'
+import { inject, computed } from 'vue'
 import Carousel from 'primevue/carousel'
 import Image from '@/Components/Image.vue'
 import Blueprint from './Blueprint'
+import CardBlueprint from './CardBlueprint'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import EditorV2 from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 import { sendMessageToParent } from "@/Composables/Workshop"
@@ -13,6 +14,7 @@ const props = defineProps<{
     webpageData?: any
     blockData?: Object
     screenType: 'mobile' | 'tablet' | 'desktop'
+    indexBlock: number
 }>()
 
 const emits = defineEmits<{
@@ -20,46 +22,89 @@ const emits = defineEmits<{
     (e: "autoSave"): void
 }>()
 
+const imageSettings = {
+    key: ["image", "source"],
+    stencilProps: {
+        aspectRatio: 16 / 9,
+        movable: true,
+        scalable: true,
+        resizable: true,
+    },
+}
+
+const isLooping = computed(() => {
+    const settingsLoop = props.modelValue?.carousel_data?.carousel_setting?.loop || false
+    return settingsLoop && props.modelValue.carousel_data.cards.length > 1
+})
+
 const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
+const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
+const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
 </script>
 
 <template>
     <div id="carousel-cta">
-        <div  :style="{
+        <div :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(modelValue.container?.properties, screenType)
         }">
-            <Carousel :value="modelValue.carousel_data.cards" :numVisible="1" :numScroll="1"
-                :circular="modelValue.carousel_data.carousel_setting.loop">
+            <Carousel :value="modelValue.carousel_data.cards" :numVisible="1" :numScroll="1" :circular="isLooping">
                 <template #item="{ data, index }">
-                    <div class="relative bg-white" :style="{
-                        ...getStyles(modelValue?.carousel_data?.cards[index]?.container?.properties, screenType)
+                    <div :style="{
+                        ...getStyles(data.container?.properties, screenType),
                     }">
-                        <div
-                            class="relative h-80 overflow-hidden bg-indigo-600 md:absolute md:left-0 md:h-full md:w-1/3 lg:w-1/2">
-                            <Image :src="data.image.source" :alt="data.image.alt" class="size-full object-cover"
-                                :imageCover="true" />
-                        </div>
-                        <div class="relative mx-auto max-w-7xl py-24 sm:py-32 lg:px-8 lg:py-40">
-                            <div class="pl-6 pr-6 md:ml-auto md:w-2/3 md:pl-16 lg:w-1/2 lg:pl-24 lg:pr-0 xl:pl-32">
-                                <EditorV2 v-model="modelValue.carousel_data.cards[index].text" @focus="() => {
+                        <div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[400px]">
+                            <!-- 🖼️ Left: Full Image Block -->
+                            <div class="relative w-full h-full cursor-pointer overflow-hidden" @click.stop="
+                                () => {
+                                    sendMessageToParent('activeBlock', indexBlock)
                                     sendMessageToParent('activeChildBlock', bKeys[1])
-                                }" @update:modelValue="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
-                                    name: webpageData.images_upload_route.name,
-                                    parameters: {
-                                        ...webpageData.images_upload_route.parameters,
-                                        modelHasWebBlocks: blockData?.id,
-                                    }
-                                }" />
-                                <div class="flex justify-center">
-                                    <Button
-                                        :injectStyle="getStyles(modelValue.carousel_data.cards[index].button.container?.properties, screenType)"
-                                        :label="modelValue.carousel_data.cards[index]?.button?.text" />
-                                </div>
+                                    sendMessageToParent('activeChildBlockArray', index)
+                                    sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
+                                }
+                            "  @dblclick.stop="() => sendMessageToParent('uploadImage', {...imageSettings, key : ['carousel_data','cards', index, 'image', 'source']})"
+                                :style="getStyles(data?.image?.container?.properties, screenType)">
+                                <Image :src="data.image.source" :imageCover="true"
+                                    :alt="data.image.alt || 'Image preview'"
+                                    class="absolute inset-0 w-full h-full object-cover"
+                                    :imgAttributes="data.image.attributes"
+                                    :style="getStyles(data.image.properties, screenType)" />
                             </div>
 
+                            <!-- 📝 Right: Text & Button Block -->
+                            <div class="flex flex-col justify-center m-auto"
+                                :style="getStyles(data?.text_block?.properties, screenType)">
+                                <div class="max-w-xl w-full" @click="
+                                    () => {
+                                        sendMessageToParent('activeBlock', indexBlock)
+                                        sendMessageToParent('activeChildBlock', bKeys[1])
+                                        sendMessageToParent('activeChildBlockArray', index)
+                                    }
+                                ">
+                                    <EditorV2 v-if="data?.text" v-model="data.text"
+                                        @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
+                                        @update:modelValue="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
+                                            name: webpageData.images_upload_route.name,
+                                            parameters: {
+                                                ...webpageData.images_upload_route.parameters,
+                                                modelHasWebBlocks: blockData?.id,
+                                            },
+                                        }" />
+
+                                    <div class="flex justify-center">
+                                        <Button :injectStyle="getStyles(data?.button?.container?.properties, screenType)
+                                            " :label="data?.button?.text" @click.stop="
+                                                () => {
+                                                    sendMessageToParent('activeBlock', indexBlock)
+                                                    sendMessageToParent('activeChildBlock', bKeys[1])
+                                                    sendMessageToParent('activeChildBlockArray', index)
+                                                    sendMessageToParent('activeChildBlockArrayBlock', baKeys[1])
+                                                }
+                                            " />
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </template>

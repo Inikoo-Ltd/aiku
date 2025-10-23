@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import { routeType } from '@/types/route'
+import { inject } from 'vue';
 
 const modelValue = defineModel<any>() // enables v-model
 const props = defineProps<{
@@ -12,19 +13,16 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: PaddingMarginModel): void
 }>()
 
-/* const onSaveWorkshopFromId = (blockId: number, from?: string) => {
-  emit("update:modelValue", modelValue.value);
-};
+const activeChildBlockArrayBlock: any = inject("activeChildBlockArrayBlock", null);
 
-provide("onSaveWorkshopFromId", onSaveWorkshopFromId); */
 
 </script>
 
 <template>
-    <SideEditor
-      :blueprint="blueprint"
-      v-model="modelValue"
-      :uploadImageRoute="uploadRoutes"
-      @update:modelValue="(e) =>{emit('update:modelValue', e)}"
-    />
+  <SideEditor :blueprint="blueprint" v-model="modelValue" :uploadImageRoute="uploadRoutes"
+    :panelOpen="activeChildBlockArrayBlock" @update:modelValue="(e) => { emit('update:modelValue', e) }" />
 </template>
+
+
+<style scoped>
+</style>

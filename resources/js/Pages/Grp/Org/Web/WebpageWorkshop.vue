@@ -41,10 +41,8 @@ import {
   faStars, faTimes, faBars, faExternalLink, faExpandWide, faCompressWide,
   faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull,
   faEye,
-  faWindWarning,
   faUndo,
   faRedo,
-  faChevronCircleLeft,
   faChevronRight
 } from "@fal";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -98,6 +96,8 @@ const future = ref<any[]>([]);
 const selectedTab = ref(1)
 const dialogUploadImageVisible=ref(false)
 const imageUploadSetting = ref(null)
+const activeChildBlockArray = ref<number | null>(null);
+const activeChildBlockArrayBlock = ref<number | null>(null);
 
 const canUndo = computed(() => history.value.length > 1);
 const canRedo = computed(() => future.value.length > 0);
@@ -110,6 +110,8 @@ provide('isAddBlockLoading', isAddBlockLoading);
 provide('isLoadingBlock', isLoadingBlock);
 provide('isLoadingDeleteBlock', isLoadingDeleteBlock);
 provide('filterBlock', filterBlock);
+provide('activeChildBlockArray', activeChildBlockArray);
+provide('activeChildBlockArrayBlock', activeChildBlockArrayBlock);
 
 // Utility
 const sendToIframe = (data: any) => {
@@ -570,6 +572,18 @@ onMounted(() => {
         selectedTab.value = 2;
         openedChildSideEditor.value = value;
         return;
+      case 'activeChildBlock':
+        selectedTab.value = 2;
+        openedChildSideEditor.value = value;
+        return;
+      case 'activeChildBlockArray':
+        selectedTab.value = 2;
+        activeChildBlockArray.value = value;
+        return;
+       case 'activeChildBlockArrayBlock':
+        selectedTab.value = 2;
+        activeChildBlockArrayBlock.value = value;
+        return;
       case 'addBlock':
         if (_WebpageSideEditor.value) {
           isModalBlockList.value = true;
@@ -604,8 +618,6 @@ const compUsersEditThisPage = computed(() => {
 const openWebsite = () => {
   window.open(props.url, '_blank')
 }
-
-
 
 </script>
 
