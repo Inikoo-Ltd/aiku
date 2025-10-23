@@ -532,6 +532,7 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
     }
 
+
     public function shopCollections(): HasMany
     {
         return $this->hasMany(Collection::class);

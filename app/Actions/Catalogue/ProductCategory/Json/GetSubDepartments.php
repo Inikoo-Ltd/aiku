@@ -46,7 +46,7 @@ class GetSubDepartments extends OrgAction
 
         $queryBuilder = QueryBuilder::for(ProductCategory::class);
         $queryBuilder->where('product_categories.shop_id', $parent->id);
-        $queryBuilder->whereNotIn('product_categories.id', $scope->subDepartments()->pluck('model_id'));
+        $queryBuilder->whereNotIn('product_categories.id', $scope->parentSubDepartments()->pluck('model_id'));
         return $queryBuilder
             ->defaultSort('product_categories.code')
             ->select([

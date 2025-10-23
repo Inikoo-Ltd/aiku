@@ -27,7 +27,7 @@ class CollectionHydrateParents implements ShouldBeUnique
     {
 
         $stats         = [
-            'number_parents'    => $collection->departments()->count() + $collection->subDepartments()->count(),
+            'number_parents'    => $collection->parentDepartments()->count() + $collection->parentSubDepartments()->count(),
         ];
 
 

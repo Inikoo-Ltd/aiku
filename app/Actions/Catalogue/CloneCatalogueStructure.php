@@ -36,7 +36,6 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
-use PhpOffice\PhpWord\Exception\Exception;
 
 class CloneCatalogueStructure
 {
@@ -321,7 +320,7 @@ class CloneCatalogueStructure
                         'comment' => 'Published after cloning',
                     ]
                 );
-            }catch (\Throwable $e){
+            } catch (\Throwable $e) {
                 print $foundDepartment->slug.' '.$e->getMessage()."\n";
             }
 
@@ -474,7 +473,7 @@ class CloneCatalogueStructure
                         'comment' => 'Published after cloning',
                     ]
                 );
-            }catch (\Throwable $e){
+            } catch (\Throwable $e) {
                 print $foundSubDepartment->slug.' '.$e->getMessage()."\n";
             }
         }

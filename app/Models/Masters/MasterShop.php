@@ -44,6 +44,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterAsset> $masterAssets
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterCollections
  * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $masterProductCategories
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterCollection> $masterShopMasterCollections
  * @property-read \App\Models\Masters\MasterShopOrderingIntervals|null $orderingIntervals
  * @property-read \App\Models\Masters\MasterShopOrderingStats|null $orderingStats
  * @property-read \App\Models\Masters\MasterShopSalesIntervals|null $salesIntervals
@@ -174,4 +175,11 @@ class MasterShop extends Model implements Auditable
     {
         return $this->morphToMany(MasterCollection::class, 'model', 'model_has_master_collections')->withTimestamps();
     }
+
+    public function masterShopMasterCollections(): HasMany
+    {
+        return $this->hasMany(MasterCollection::class);
+    }
+
+
 }

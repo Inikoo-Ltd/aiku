@@ -13,6 +13,7 @@ namespace App\Actions\Catalogue\Collection;
 use App\Actions\OrgAction;
 use App\Actions\Catalogue\Collection\Search\CollectionRecordSearch;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCollections;
+use App\Actions\Web\Webpage\DeleteWebpage;
 use App\Models\Catalogue\Shop;
 use App\Models\Catalogue\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -29,9 +30,15 @@ class DeleteCollection extends OrgAction
 
     private ?Collection $collection;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(Collection $collection, bool $forceDelete = false): Collection
     {
+
+
         if ($forceDelete) {
+
             DB::table('model_has_collections')->where('collection_id', $collection->id)->delete();
             DB::table('collection_has_models')->where('collection_id', $collection->id)->delete();
 
@@ -51,6 +58,11 @@ class DeleteCollection extends OrgAction
         } else {
             $collection->delete();
         }
+
+        if($collection->webpage){
+            DeleteWebpage::make()->action(webpage: $collection->webpage, forceDelete: true);
+        }
+
 
         CollectionRecordSearch::run($collection);
         ShopHydrateCollections::dispatch($collection->shop);

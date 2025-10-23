@@ -28,6 +28,14 @@ class DeleteMasterCollection extends GrpAction
 
     public function handle(MasterCollection $masterCollection, bool $forceDelete = false): MasterCollection
     {
+        DB::table('collections')->where('master_collection_id', $masterCollection->id)
+            ->update(
+                [
+                    'master_collection_id' => null
+                ]
+            );
+
+
         if ($forceDelete) {
             DB::table('model_has_master_collections')->where('master_collection_id', $masterCollection->id)->delete();
             DB::table('master_collection_has_models')->where('master_collection_id', $masterCollection->id)->delete();
