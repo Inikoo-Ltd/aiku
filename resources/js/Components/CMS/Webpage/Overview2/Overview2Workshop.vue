@@ -29,10 +29,16 @@ const emits = defineEmits<{
 	(e: "autoSave"): void
 }>()
 
-const isModalGallery = ref(false)
 
-function onSave() {
-	emits("autoSave")
+
+const imageSettings = {
+	key: ["image", "source"],
+	stencilProps: {
+		aspectRatio: 16 / 9,
+		movable: true,
+		scalable: true,
+		resizable: true,
+	},
 }
 
 const layout: any = inject("layout", {})
@@ -46,24 +52,22 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
 			...getStyles(modelValue.container?.properties, screenType)
 		}">
-			<!-- Section 1: Image -->
-			<div class="w-full h-64 sm:h-72 md:h-auto md:w-1/3 lg:w-1/2 bg-cover bg-center bg-no-repeat" @click="() => {
-				sendMessageToParent('activeBlock', indexBlock)
-				sendMessageToParent('activeChildBlock', bKeys[0])
-			}
-			">
-				<img v-if="!modelValue?.image?.source"
-					src="https://flowbite.s3.amazonaws.com/docs/gallery/square/image.jpg" :alt="modelValue?.image?.alt"
-					class="h-full w-full object-cover" />
-				<Image v-else :src="modelValue?.image?.source" :imageCover :alt="modelValue?.image?.alt"
-					:imgAttributes="modelValue?.image?.attributes" :style="getStyles(modelValue?.image?.properties)" />
+			<!-- Section 1: Image (fixed ratio) -->
+			<div class="w-full md:w-1/3 lg:w-1/2 relative cursor-pointer overflow-hidden bg-center bg-cover bg-no-repeat"
+				:style="{ aspectRatio: '16/9' }"
+				@dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)" @click="() => {
+					sendMessageToParent('activeBlock', indexBlock)
+					sendMessageToParent('activeChildBlock', bKeys[0])
+				}">
+				<Image :src="modelValue?.image?.source" :imageCover
+					:alt="modelValue?.image?.alt" :imgAttributes="modelValue?.image?.attributes"
+					:style="getStyles(modelValue?.image?.properties)" class="w-full h-full object-cover" />
 			</div>
 
 			<!-- Section 2: Content -->
-			<div @click="() => {
-				sendMessageToParent('activeBlock', indexBlock)
-			}" class="flex items-center justify-center w-full md:w-2/3 lg:w-1/2 bg-white bg-opacity-90 backdrop-blur px-6 py-12 sm:px-12 lg:px-20">
-				<Editor v-model="modelValue.text" @update:modelValue="() => emits('autoSave')"  />
+			<div @click="() => { sendMessageToParent('activeBlock', indexBlock) }"
+				class="flex items-center justify-center w-full md:w-2/3 lg:w-1/2 bg-white bg-opacity-90 backdrop-blur px-6 py-12 sm:px-12 lg:px-20">
+				<Editor v-model="modelValue.text" @update:modelValue="() => emits('autoSave')" />
 			</div>
 		</div>
 	</div>

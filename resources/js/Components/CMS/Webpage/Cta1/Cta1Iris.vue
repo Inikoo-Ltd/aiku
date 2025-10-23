@@ -30,31 +30,34 @@ const layout: any = inject("layout", {})
 	<div id="cta1" class="w-full">
 		<div :style="{
 			...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-			...getStyles(fieldValue.container?.properties, screenType)
+			...getStyles(fieldValue.container?.properties, screenType),
 		}">
-			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[400px]">
+			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
 				<!-- 🖼️ Left: Full Image Block -->
-				<div class="relative w-full h-full cursor-pointer overflow-hidden" :style="getStyles(fieldValue?.image?.container?.properties, screenType)">
-					<Image v-if="fieldValue?.image?.source" :src="fieldValue.image.source" :imageCover="true"
+				<div class="relative w-full h-[250px] md:h-full cursor-pointer overflow-hidden"
+					:style="getStyles(fieldValue?.image?.container?.properties, screenType)">
+					<Image :src="fieldValue.image.source" :imageCover="true"
 						:alt="fieldValue.image.alt || 'Image preview'"
 						class="absolute inset-0 w-full h-full object-cover" :imgAttributes="fieldValue.image.attributes"
 						:style="getStyles(fieldValue.image.properties, screenType)" />
 				</div>
 
 				<!-- 📝 Right: Text & Button Block -->
-				<div class="flex flex-col justify-center m-auto"
+				<div class="flex flex-col justify-center m-auto p-4"
 					:style="getStyles(fieldValue?.text_block?.properties, screenType)">
 					<div class="max-w-xl w-full">
-						<div v-html="fieldValue.text"  class="mb-6"></div>
-
-						<div class="flex justify-center">
-							<LinkIris :href="fieldValue?.button?.link?.href" :canonical_url="fieldValue?.button?.link?.canonical_url" :target="fieldValue?.button?.link?.taget"
-							typeof="button" :type="fieldValue?.button?.link?.type">
-							<template #default>
-								<Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
-									:label="fieldValue?.button?.text" />
-							</template>
-						</LinkIris>
+						<div v-html="fieldValue.text"></div>
+						<div class="flex justify-center mt-6">
+							<LinkIris :href="fieldValue?.button?.link?.href"
+								:canonical_url="fieldValue?.button?.link?.canonical_url"
+								:target="fieldValue?.button?.link?.taget" typeof="button"
+								:type="fieldValue?.button?.link?.type">
+								<template #default>
+									<Button
+										:injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
+										:label="fieldValue?.button?.text" />
+								</template>
+							</LinkIris>
 						</div>
 					</div>
 				</div>
