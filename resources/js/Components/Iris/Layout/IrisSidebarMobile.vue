@@ -62,7 +62,7 @@ const closeSidebar = () => {
                     <!-- Section: Custom Top (have Sub-departments) -->
                     <Disclosure v-if="customTopItem.sub_departments && customTopItem.sub_departments.length > 0"
                         v-slot="{ open }">
-                        <DisclosureButton class="w-full text-left px-2 py-2 font-semibold border-b">
+                        <DisclosureButton class="w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
                             <div class="flex justify-between items-center xtext-lg"
                                 xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                 <span>{{ customTopItem.name }}</span>
@@ -130,9 +130,9 @@ const closeSidebar = () => {
             <!-- Middle: Product Categories (auto) -->
             <div v-for="(category, index) in sortedProductCategories" :key="index">
                 <!-- Product Category WITH Sub-departments -->
-                <Disclosure v-if="category.sub_departments && category.sub_departments.length > 0" as="div" class="border-b"
+                <Disclosure v-if="category.sub_departments && category.sub_departments.length > 0" as="div" class=""
                     v-slot="{ open }">
-                    <DisclosureButton class="w-full text-left px-2 py-2 font-semibold border-b">
+                    <DisclosureButton class="w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
                         <div class="flex justify-between items-center xtext-lg"
                             xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                             <!-- <span>{{ category.name }}</span> -->
@@ -222,7 +222,7 @@ const closeSidebar = () => {
                     <!-- Custom Menu WITH Sub-departments -->
                     <Disclosure v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
                         v-slot="{ open }">
-                        <DisclosureButton class="w-full text-left px-2 py-2 font-semibold border-b">
+                        <DisclosureButton class="w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
                             <div class="flex justify-between items-center xtext-lg"
                                 xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
                                 <span>{{ customItem.name }}</span>
@@ -270,7 +270,7 @@ const closeSidebar = () => {
                     </Disclosure>
 
                     <!-- Custom Menu SINGLE LINK -->
-                    <div v-else class="px-2 py-2 border-b">
+                    <div v-else class="px-2 py-2 borderBottomColorSameAsText">
                         <LinkIris v-if="customItem?.url !== null" :href="internalHref(customItem)"
                             :target="getTarget(customItem)"
                             @success="() => closeSidebar()"
@@ -288,7 +288,7 @@ const closeSidebar = () => {
         </div>
 
         <!-- Switch Language -->
-        <div v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="border-t border-[#e5e5e5] px-4 mb-1 flex justify-between items-center text-xs">
+        <div v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="borderTopColorSameAsText px-4 mb-1 flex justify-between items-center text-xs">
             <div>{{ trans("Language") }}:</div>
             <SwitchLanguage>
                 <template #default="{ isLoadingChangeLanguage }">
@@ -300,7 +300,7 @@ const closeSidebar = () => {
             </SwitchLanguage>
         </div>
 
-        <div class="login-section pl-3 pr-5 py-4 border-t border-[#e5e5e5] flex items-center">
+        <div class="login-section pl-3 pr-5 py-4 borderTopColorSameAsText flex items-center">
             <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="w-full" type="internal">
                 <Button
                     :label="trans('Login')"
@@ -363,9 +363,20 @@ const closeSidebar = () => {
     }
 }
 
+.borderTopColorSameAsText {
+    border-top: 1px solid rgba(0, 0, 0, 0.5); /* fallback */
+    border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
+
+.borderBottomColorSameAsText {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.5); /* fallback */
+    border-color: color-mix(in srgb, currentColor 30%, transparent);
+}
 
 .disclosure-panel {
     padding: 0.75rem 1rem 1rem;
+    @apply borderBottomColorSameAsText;
+
 }
 
 .disclosure-panel a {
