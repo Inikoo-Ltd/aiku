@@ -50,7 +50,16 @@ function collectionRoute(collection: {}) {
     } 
 }
 
+function parentRoute(slug: string) {
 
+    return route(
+        "grp.helpers.redirect_collections_in_product_category",
+        [
+            slug
+        ]
+    )
+
+}
 
 </script>
 
@@ -61,9 +70,9 @@ function collectionRoute(collection: {}) {
         </template>
         <template #cell(code)="{ item: collection }">
             <div class="flex items-center gap-2">
-              <!--   <Link :href="collectionRoute(collection) as string" class="primaryLink"> -->
+                <Link :href="collectionRoute(collection) as string" class="primaryLink">
                     {{ collection["code"] }}
-              <!--   </Link> -->
+                </Link>
 
                 <template v-if="collection.state === 'active'">
                     <FontAwesomeIcon
@@ -86,9 +95,9 @@ function collectionRoute(collection: {}) {
             <template v-for="(parent, index) in collection.parents_data" :key="index">
                 <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" />
                 <FontAwesomeIcon v-else-if="parent.type === 'subdepartment'" :icon="faFolders" class="mr-1" v-tooltip="trans('Sub Department')" />
-               <!--  <Link :href="parentRoute(parent.slug) as string" class="secondaryLink"> -->
+                <Link :href="parentRoute(parent.slug) as string" class="secondaryLink">
                     {{ parent.code && parent.code.length > 6 ? parent.code.substring(0, 6) + "..." : parent.code }}
-               <!--  </Link> -->
+                </Link>
             </template>
         </template>
     </Table>
