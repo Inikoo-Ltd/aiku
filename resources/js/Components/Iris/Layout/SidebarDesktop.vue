@@ -121,7 +121,7 @@ function removeImportant(styles) {
     return cleaned
 }
 const stylingWithoutImportant = removeImportant(combinedStyleSidebarAndWebpage)
-const backgroundColorNoGradient = props.containerStyle.background?.color || layout?.app?.webpage_layout?.container?.properties?.background?.color?.replace(/\s*!important\s*/gi, "") || '#030712'
+const backgroundColorNoGradient = props.containerStyle?.background?.color || layout?.app?.webpage_layout?.container?.properties?.background?.color?.replace(/\s*!important\s*/gi, "")
 
 </script>
 
