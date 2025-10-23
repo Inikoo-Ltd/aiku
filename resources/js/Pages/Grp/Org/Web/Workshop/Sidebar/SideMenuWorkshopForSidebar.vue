@@ -22,6 +22,9 @@ import {
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
 import { notify } from "@kyvg/vue3-notification"
+import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
+import Blueprint from "./Blueprint"
+import { get, set } from "lodash"
 // import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 // import Blueprint from "./Blueprint"
 
@@ -49,8 +52,8 @@ const selectedTab = ref(props.data ? 0 : 0)
 
 const tabs = [
 	//{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
+	{ label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' },
 	{ label: 'Menu', icon: faList, tooltip: 'menu' },
-	// { label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
 ]
 
 function changeTab(index: number) {
@@ -60,7 +63,7 @@ function changeTab(index: number) {
 const computedTabs = computed(() => {
 	return props.data
 		? tabs
-		: [tabs[0]]
+		: [tabs[1]]
 })
 
 const onPickBlock = (value: object) => {
@@ -117,6 +120,14 @@ const autoSave = async (value) => {
 				<WebBlockListDnd :webBlockTypes="webBlockTypes" @pick-block="onPickBlock"
 					:selectedWeblock="data.code" />
 			</TabPanel> -->
+			<TabPanel  v-if="data">
+				<SideEditor
+					av-model="data.data.fieldValue"
+					:modelValue="get(data, ['data', 'fieldValue'], {})"
+					:blueprint="Blueprint.blueprint"
+					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e), autoSave(data) }"
+					:uploadImageRoute="null" />
+			</TabPanel>
 			<TabPanel v-if="data">
 				<SetMenuListWorkshopForSidebar
 					:data="data"
@@ -125,13 +136,6 @@ const autoSave = async (value) => {
 					:uploadImageRoute
 				/>
 			</TabPanel>
-			<!-- <TabPanel  v-if="data">
-				<SideEditor
-					v-model="data.data.fieldValue"
-					:blueprint="Blueprint.blueprint"
-					@update:modelValue="(e) => { data.data.fieldValue = e , autoSave(data)}"
-					:uploadImageRoute="null" />
-			</TabPanel> -->
 		</TabPanels>
 	</TabGroup>
 </template>

@@ -20,7 +20,19 @@ const props = defineProps<{
     customMenusBottom?: Array<any>
     customMenusTop?: Array<any>
     sidebarLogo: ImageTS
+    sidebar: {
+        data: {
+            fieldValue: {
+                sidebar_logo: ImageTS
+                container: {}
+                navigation: {}
+                navigation_bottom: {}
+                product_categories: {}
+            }
+        }
+    }
 }>();
+
 
 const layout = inject("layout", {});
 const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
@@ -52,12 +64,12 @@ const customMenusTop = computed(() => {
     return props.customMenusTop;
 });
 
-const sortedNavigation = computed(() => {
-    if (!props.menu?.navigation) return [];
-    return [...props.menu.navigation].sort((a, b) =>
-        (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' })
-    );
-});
+// const sortedNavigation = computed(() => {
+//     if (!props.menu?.navigation) return [];
+//     return [...props.menu.navigation].sort((a, b) =>
+//         (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' })
+//     );
+// });
 
 const sortedSubDepartments = computed(() => {
     if (activeIndex.value === null || !sortedProductCategories.value[activeIndex.value]?.sub_departments) return [];
@@ -193,6 +205,7 @@ const internalHref = (item) => {
                 padding: 0,
                 border: 'none !important',
                 ...getStyles(props.menu?.container?.properties),
+                ...getStyles(props.sidebar?.data?.fieldValue?.container?.properties),
                 width: isMobile ? null : !isNull(activeIndex) || !isNull(activeCustomIndex) || !isNull(activeCustomTopIndex) ?
                     (!isNull(activeSubIndex) || !isNull(activeCustomSubIndex) || !isNull(activeCustomTopSubIndex)) ? '798px' : '545px' : '290px'
             }"

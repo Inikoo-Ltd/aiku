@@ -183,6 +183,7 @@ onMounted(() => {
                     :custom-menus-top="customMenusTop"
                     :screenType
                     :sidebarLogo="computedSelectedSidebarData?.data?.fieldValue?.sidebar_logo"
+                    :sidebar="computedSelectedSidebarData"
                 />
             </div>
 

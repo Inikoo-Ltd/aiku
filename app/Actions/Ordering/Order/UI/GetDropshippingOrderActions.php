@@ -51,7 +51,7 @@ class GetDropshippingOrderActions
                         'type'    => 'button',
                         'style'   => 'secondary',
                         'icon'    => 'fal fa-plus',
-                        'key'     => 'add-products',
+                        'key'     => 'add-product',
                         'label'   => __('Add products'),
                         'tooltip' => __('Add products'),
                         'route'   => [

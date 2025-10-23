@@ -27,18 +27,19 @@ class CategoriseInvoice extends OrgAction
 {
     use WithHydrateCommand;
 
-    public string $commandSignature = 'categorise:invoices {organisations?*} {--S|shop= shop slug} {--i|id=}';
 
     public function __construct()
     {
         $this->model = Invoice::class;
     }
 
-    public function handle(Invoice $invoice): void
+    public function handle(Invoice $invoice): Invoice
     {
         $oldInvoiceCategory = $invoice->invoiceCategory;
 
         $invoiceCategory = $this->getInvoiceCategory($invoice);
+
+
         $invoice->update([
             'invoice_category_id' => $invoiceCategory?->id,
         ]);
@@ -57,6 +58,9 @@ class CategoriseInvoice extends OrgAction
                 InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
             }
         }
+        $invoice->refresh();
+
+        return $invoice;
     }
 
     public function getInvoiceCategory(Invoice $invoice): ?InvoiceCategory
@@ -66,7 +70,6 @@ class CategoriseInvoice extends OrgAction
         $invoiceCategories = $invoice->organisation->invoiceCategories()->where('state', InvoiceCategoryStateEnum::ACTIVE)->orderBy('priority', 'desc')->get();
         /** @var InvoiceCategory $invoiceCategory */
         foreach ($invoiceCategories as $invoiceCategory) {
-
             $invoiceCategory = match ($invoiceCategory->type) {
                 InvoiceCategoryTypeEnum::SHOP_TYPE => $this->inHaystack($invoiceCategory, 'shop_types', $invoice->shop->type->value),
                 InvoiceCategoryTypeEnum::SHOP_FALLBACK => $this->shopFallback($invoice, $invoiceCategory),
@@ -76,8 +79,7 @@ class CategoriseInvoice extends OrgAction
                 InvoiceCategoryTypeEnum::VIP => $invoice->is_vip ? $invoiceCategory : null,
                 InvoiceCategoryTypeEnum::EXTERNAL_INVOICER => $invoice->external_invoicer_id ? $invoiceCategory : null,
                 InvoiceCategoryTypeEnum::IN_SALES_CHANNEL => $this->inHaystack($invoiceCategory, 'sales_channel_ids', $invoice->sales_channel_id),
-
-                default => null,
+                InvoiceCategoryTypeEnum::IN_SALES_CHANNEL_SHOP => $this->salesChannelShop($invoice, $invoiceCategory),
             };
 
 
@@ -134,6 +136,20 @@ class CategoriseInvoice extends OrgAction
         return null;
     }
 
+    protected function salesChannelShop(Invoice $invoice, InvoiceCategory $invoiceCategory): ?InvoiceCategory
+    {
+        $shopsIds         = Arr::get($invoiceCategory->settings, 'shop_ids', []);
+        $salesChannelsIds = Arr::get($invoiceCategory->settings, 'sales_channel_ids', []);
+
+        if (in_array($invoice->shop_id, $shopsIds) && in_array($invoice->sales_channel_id, $salesChannelsIds)) {
+            return $invoiceCategory;
+        }
+
+        return null;
+    }
+
+    public string $commandSignature = 'categorise:invoices {organisations?*} {--S|shop= shop slug} {--i|id=} {--e|empty only empty}';
+
 
     public function asCommand(Command $command): int
     {
@@ -150,9 +166,13 @@ class CategoriseInvoice extends OrgAction
         if ($command->hasOption('id') && $command->option('id')) {
             $query->where('id', $command->option('id'));
         }
-        if ($command->hasOption('organisations') && $command->argument('organisations')) {
+        if ($command->argument('organisations')) {
             $this->getOrganisationsIds($command);
             $query->whereIn('organisation_id', $this->getOrganisationsIds($command));
+        }
+
+        if ($command->hasOption('empty')) {
+            $query->whereNull('invoice_category_id');
         }
 
 
@@ -170,9 +190,17 @@ class CategoriseInvoice extends OrgAction
 
         $query->chunk(1000, function (Collection $modelsData) use ($bar, $command) {
             foreach ($modelsData as $modelId) {
-                $invoice         = Invoice::withTrashed()->find($modelId->id);
-                $invoiceCategory = $this->getInvoiceCategory($invoice);
-                $command->info("Invoice: $invoice->id $invoice->reference Category: $invoiceCategory?->slug");
+                $invoice              = Invoice::withTrashed()->find($modelId->id);
+                $oldInvoiceCategoryId = $invoice->invoiceCategory?->id;
+                $oldInvoiceCategory   = $invoice->invoiceCategory;
+                $invoice              = $this->handle($invoice);
+
+
+                $newInvoiceCategoryId = $invoice->invoiceCategory?->id;
+
+                if ($oldInvoiceCategoryId != $newInvoiceCategoryId) {
+                    $command->info("Invoice: $invoice->id $invoice->reference Category Changed:   ".$oldInvoiceCategory?->slug."     -> ".$invoice->invoiceCategory?->slug);
+                }
 
 
                 $bar?->advance();
@@ -182,6 +210,7 @@ class CategoriseInvoice extends OrgAction
             $bar->finish();
             $command->info("");
         }
+
         return 0;
     }
 

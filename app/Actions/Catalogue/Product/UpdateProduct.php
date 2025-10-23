@@ -132,8 +132,8 @@ class UpdateProduct extends OrgAction
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if($product->webpage){
-            UpdateWebpage::make()->action($product->webpage, $webpageData);
+        if($product->webpage && !empty($webpageData)){
+           UpdateWebpage::make()->action($product->webpage, $webpageData);
         }
 
 
