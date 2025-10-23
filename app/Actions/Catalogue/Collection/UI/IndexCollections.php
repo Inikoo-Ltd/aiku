@@ -221,7 +221,7 @@ class IndexCollections extends OrgAction
             ],
         ];
         $actions   = [];
-       /*  if ($this->canEdit) {
+        if ($this->canEdit) {
             $actions[] = [
                 'type'    => 'button',
                 'style'   => 'create',
@@ -232,7 +232,7 @@ class IndexCollections extends OrgAction
                     'parameters' => $request->route()->originalParameters()
                 ]
             ];
-        } */
+        }
 
         $websiteDomain = null;
         if ($this->shop->website) {
