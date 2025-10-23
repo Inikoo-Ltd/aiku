@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Wed, 22 Oct 2025 11:26:34 Central Indonesia Time, Pantai Lembeng, Bali, Indonesia

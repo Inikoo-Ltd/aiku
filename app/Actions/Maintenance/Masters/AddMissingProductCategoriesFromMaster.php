@@ -33,9 +33,9 @@ class AddMissingProductCategoriesFromMaster
     {
         /** @var MasterProductCategory $masterFamily */
         foreach ($masterShop->masterProductCategories()->where('type', MasterProductCategoryTypeEnum::FAMILY)->get() as $masterFamily) {
-            if ($masterFamily->status && $masterFamily->stats->number_families>0) {
+            if ($masterFamily->status && $masterFamily->stats->number_families > 0) {
                 foreach ($masterShop->shops as $shop) {
-                    if($shop->is_aiku) {
+                    if ($shop->is_aiku) {
                         $this->upsertFamily($shop, $masterFamily);
                     }
                 }

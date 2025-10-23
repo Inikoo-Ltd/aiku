@@ -34,7 +34,6 @@ class UpdateCollection extends OrgAction
 
     public function handle(Collection $collection, array $modelData): Collection
     {
-
         $originalImageId = $collection->image_id;
 
         if (Arr::has($modelData, 'image')) {
@@ -44,8 +43,6 @@ class UpdateCollection extends OrgAction
             } else {
                 data_set($modelData, 'image_id', null, false);
             }
-
-
         }
         $collection = $this->update($collection, $modelData, ['data']);
 
@@ -70,7 +67,7 @@ class UpdateCollection extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'        => [
+            'code'                 => [
                 'sometimes',
                 'max:32',
                 new AlphaDashDot(),
@@ -84,15 +81,16 @@ class UpdateCollection extends OrgAction
                     ]
                 ),
             ],
-            'name'        => ['sometimes', 'max:250', 'string'],
-            'image'       => ['sometimes'],
-            'description' => ['sometimes', 'required', 'max:1500'],
-            'description_title' => ['sometimes', 'nullable', 'max:255'],
-            'description_extra' => ['sometimes', 'nullable', 'max:65500'],
-            'webpage_id'                => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
-            'url'                       => ['sometimes', 'nullable', 'string', 'max:250'],
-            'images'                    => ['sometimes', 'array'],
-            'image_id'          => ['sometimes', 'nullable', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'name'                 => ['sometimes', 'max:250', 'string'],
+            'image'                => ['sometimes'],
+            'description'          => ['sometimes', 'required', 'max:1500'],
+            'description_title'    => ['sometimes', 'nullable', 'max:255'],
+            'description_extra'    => ['sometimes', 'nullable', 'max:65500'],
+            'webpage_id'           => ['sometimes', 'integer', 'nullable', Rule::exists('webpages', 'id')->where('shop_id', $this->shop->id)],
+            'url'                  => ['sometimes', 'nullable', 'string', 'max:250'],
+            'images'               => ['sometimes', 'array'],
+            'image_id'             => ['sometimes', 'nullable', Rule::exists('media', 'id')->where('group_id', $this->organisation->group_id)],
+            'master_collection_id' => ['sometimes', 'integer', 'nullable'],
 
         ];
         if (!$this->strict) {
@@ -100,7 +98,6 @@ class UpdateCollection extends OrgAction
         }
 
         return $rules;
-
     }
 
     public function action(Collection $collection, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): Collection
@@ -109,8 +106,8 @@ class UpdateCollection extends OrgAction
         if (!$audit) {
             Location::disableAuditing();
         }
-        $this->asAction   = true;
-        $this->collection = $collection;
+        $this->asAction       = true;
+        $this->collection     = $collection;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($collection->shop, $modelData);
 

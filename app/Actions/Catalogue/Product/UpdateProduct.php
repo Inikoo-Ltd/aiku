@@ -45,7 +45,7 @@ class UpdateProduct extends OrgAction
     public function handle(Product $product, array $modelData): Product
     {
 
-        $webpageData=[];
+        $webpageData = [];
         if (Arr::has($modelData, 'webpage_title')) {
             $webpageData['title'] = Arr::pull($modelData, 'webpage_title');
         }
@@ -132,8 +132,8 @@ class UpdateProduct extends OrgAction
         $product = $this->update($product, $modelData);
         $changed = Arr::except($product->getChanges(), ['updated_at', 'last_fetched_at']);
 
-        if($product->webpage && !empty($webpageData)){
-           UpdateWebpage::make()->action($product->webpage, $webpageData);
+        if ($product->webpage && !empty($webpageData)) {
+            UpdateWebpage::make()->action($product->webpage, $webpageData);
         }
 
 
@@ -218,9 +218,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                    $changed,
-                    $fieldsUsedInLuigi
-                )
+                $changed,
+                $fieldsUsedInLuigi
+            )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             ReindexWebpageLuigiData::dispatch($product->webpage)->delay(60 * 15);
@@ -235,9 +235,9 @@ class UpdateProduct extends OrgAction
 
         if ($product->webpage
             && (Arr::hasAny(
-                    $changed,
-                    $fieldsUsedInWebpages
-                )
+                $changed,
+                $fieldsUsedInWebpages
+            )
                 || $isOutOfStock != $oldIsOutOfStock)
         ) {
             BreakProductInWebpagesCache::dispatch($product)->delay(15);

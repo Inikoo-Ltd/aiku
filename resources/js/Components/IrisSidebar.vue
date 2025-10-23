@@ -218,7 +218,7 @@ const internalHref = (item) => {
                         class="h-fit w-full object-contain aspect-auto"
                         :alt="trans('Sidebar logo')"
                     /> -->
-                    <img xv-else :src="sidebarLogo.original || header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="w-full h-auto max-h-20 object-contain" />
+                    <img xv-else :src="sidebarLogo?.original || header?.logo?.image?.source?.original" :alt="header?.logo?.alt" class="w-full h-auto max-h-20 object-contain" />
                 </div>
             </template>
             <!-- {{ props.menu?.container?.properties }} -->

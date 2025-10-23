@@ -43,11 +43,11 @@ class OrganisationHydrateRevenue implements ShouldBeUnique
         }
 
         $stats = [
-            'revenue_amount' => $shops->sum(fn($c) => $c->orderingStats->revenue_amount ?? 0),
-            'lost_revenue_other_amount' => $shops->sum(fn($c) => $c->orderingStats->lost_revenue_other_amount ?? 0),
-            'lost_revenue_out_of_stock_amount' => $shops->sum(fn($c) => $c->orderingStats->lost_revenue_out_of_stock_amount ?? 0),
-            'lost_revenue_replacements_amount' => $shops->sum(fn($c) => $c->orderingStats->lost_revenue_replacements_amount ?? 0),
-            'lost_revenue_compensations_amount' => $shops->sum(fn($c) => $c->orderingStats->lost_revenue_compensations_amount ?? 0),
+            'revenue_amount' => $shops->sum(fn ($c) => $c->orderingStats->revenue_amount ?? 0),
+            'lost_revenue_other_amount' => $shops->sum(fn ($c) => $c->orderingStats->lost_revenue_other_amount ?? 0),
+            'lost_revenue_out_of_stock_amount' => $shops->sum(fn ($c) => $c->orderingStats->lost_revenue_out_of_stock_amount ?? 0),
+            'lost_revenue_replacements_amount' => $shops->sum(fn ($c) => $c->orderingStats->lost_revenue_replacements_amount ?? 0),
+            'lost_revenue_compensations_amount' => $shops->sum(fn ($c) => $c->orderingStats->lost_revenue_compensations_amount ?? 0),
         ];
 
         $organisationStats = $organisation->orderingStats ?? new OrganisationStats(['organisation_id' => $organisation->id]);

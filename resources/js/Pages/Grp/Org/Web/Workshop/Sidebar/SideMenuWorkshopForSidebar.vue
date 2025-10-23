@@ -121,14 +121,17 @@ const autoSave = async (value) => {
 					:selectedWeblock="data.code" />
 			</TabPanel> -->
 			<TabPanel  v-if="data">
+				<!-- Panel: Appearance -->
 				<SideEditor
 					av-model="data.data.fieldValue"
 					:modelValue="get(data, ['data', 'fieldValue'], {})"
 					:blueprint="Blueprint.blueprint"
 					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e), autoSave(data) }"
-					:uploadImageRoute />
+					:uploadImageRoute
+				/>
 			</TabPanel>
 			<TabPanel v-if="data">
+				<!-- Panel: Menu List -->
 				<SetMenuListWorkshopForSidebar
 					:data="data"
 					:autosaveRoute="autosaveRoute"
