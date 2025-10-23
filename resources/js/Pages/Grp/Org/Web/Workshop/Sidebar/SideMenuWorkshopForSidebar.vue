@@ -52,8 +52,8 @@ const selectedTab = ref(props.data ? 0 : 0)
 
 const tabs = [
 	//{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
-	{ label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' },
-	{ label: 'Menu', icon: faList, tooltip: 'menu' },
+	{ label: 'Appearance', icon: faPaintBrushAlt, tooltip: 'Appearance' },
+	{ label: 'List elements', icon: faList, tooltip: 'List elements' },
 ]
 
 function changeTab(index: number) {
@@ -126,7 +126,7 @@ const autoSave = async (value) => {
 					:modelValue="get(data, ['data', 'fieldValue'], {})"
 					:blueprint="Blueprint.blueprint"
 					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e), autoSave(data) }"
-					:uploadImageRoute="null" />
+					:uploadImageRoute />
 			</TabPanel>
 			<TabPanel v-if="data">
 				<SetMenuListWorkshopForSidebar

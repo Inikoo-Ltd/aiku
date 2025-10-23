@@ -395,20 +395,19 @@ const stylingWithoutImportant = stripImportant(styling)
 </template>
 
 <style lang="scss">
-.navActive {
-    @apply cursor-pointer;
-
-    color: v-bind('stylingWithoutImportant.background || "#ffffff"');
-    background: v-bind('stylingWithoutImportant.color || "#030712"');
-}
 .navInactive {
     @apply cursor-pointer;
 
     &:hover {
         // color: v-bind('stylingWithoutImportant.color');
         background: color-mix(in srgb, v-bind('stylingWithoutImportant.color || "#030712"') 15%, transparent);
-
-
     }
+}
+
+.navActive {
+    @apply cursor-pointer;
+
+    color: v-bind('stylingWithoutImportant.background || "#ffffff"');
+    background: v-bind('stylingWithoutImportant.color || "#030712"');
 }
 </style>

@@ -36,6 +36,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use PhpOffice\PhpWord\Exception\Exception;
 
 class CloneCatalogueStructure
 {
@@ -310,13 +311,20 @@ class CloneCatalogueStructure
             }
         }
         if ($foundDepartment && !$foundDepartment->webpage) {
-            $webpage = StoreProductCategoryWebpage::make()->action($foundDepartment);
-            PublishWebpage::make()->action(
-                $webpage,
-                [
-                    'comment' => 'Published after cloning',
-                ]
-            );
+
+
+            try {
+                $webpage = StoreProductCategoryWebpage::make()->action($foundDepartment);
+                PublishWebpage::make()->action(
+                    $webpage,
+                    [
+                        'comment' => 'Published after cloning',
+                    ]
+                );
+            }catch (\Throwable $e){
+                print $foundDepartment->slug.' '.$e->getMessage()."\n";
+            }
+
         }
 
         if ($foundDepartment) {
@@ -458,13 +466,17 @@ class CloneCatalogueStructure
 
 
         if (!$foundSubDepartment->webpage) {
-            $webpage = StoreProductCategoryWebpage::make()->action($foundSubDepartment);
-            PublishWebpage::make()->action(
-                $webpage,
-                [
-                    'comment' => 'Published after cloning',
-                ]
-            );
+            try {
+                $webpage = StoreProductCategoryWebpage::make()->action($foundSubDepartment);
+                PublishWebpage::make()->action(
+                    $webpage,
+                    [
+                        'comment' => 'Published after cloning',
+                    ]
+                );
+            }catch (\Throwable $e){
+                print $foundSubDepartment->slug.' '.$e->getMessage()."\n";
+            }
         }
 
 

@@ -211,6 +211,13 @@ class IndexOrders extends OrgAction
             }
         }
 
+        $query->leftJoin('delivery_note_order', 'orders.id', '=', 'delivery_note_order.order_id')
+            ->leftJoin('delivery_notes', 'delivery_notes.id', '=', 'delivery_note_order.delivery_note_id')
+            ->leftJoin('model_has_shipments', function ($join) {
+                $join->on('delivery_notes.id', '=', 'model_has_shipments.model_id')
+                    ->where('model_has_shipments.model_type', '=', 'DeliveryNote');
+            })
+            ->leftJoin('shipments', 'model_has_shipments.shipment_id', '=', 'shipments.id');
 
         return $query->defaultSort('-orders.date')
             ->select([
@@ -245,7 +252,10 @@ class IndexOrders extends OrgAction
                 'orders.internal_notes',
                 'orders.public_notes',
                 'orders.shipping_notes',
-                'orders.to_be_paid_by'
+                'orders.to_be_paid_by',
+                'shipments.tracking_urls as tracking_urls',
+                'shipments.tracking as tracking',
+                'shipments.combined_label_url as combined_label_url',
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status']) // Ensure `id` is the first sort column
