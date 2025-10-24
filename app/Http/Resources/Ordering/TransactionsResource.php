@@ -9,8 +9,10 @@
 namespace App\Http\Resources\Ordering;
 
 use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use App\Models\SysAdmin\User;
+use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -49,6 +51,14 @@ class TransactionsResource extends JsonResource
             $media = Media::find($this->product_image_id);
         }
 
+        $webpageUrl = null;
+        if ($this->model_type === class_basename(Product::class)) {
+            $webpage = Webpage::where('model_id', $this->product_id)
+            ->where('model_type', class_basename(Product::class))->first();
+
+            $webpageUrl = $webpage->getUrl();
+        }
+        
         return [
             'id'                  => $this->id,
             'state'               => $this->state,
@@ -69,6 +79,7 @@ class TransactionsResource extends JsonResource
             'created_at'          => $this->created_at,
             'currency_code'       => $this->currency_code,
             'available_quantity'  => $this->available_quantity ?? 0,
+            'webpage_url'         => $webpageUrl,  // this is 'domain/aisb-06', should be 'domain/incense/resin-powders/aisb/aisb-06'
 
             'deleteRoute' => $request->user() instanceof User
                 ? [
