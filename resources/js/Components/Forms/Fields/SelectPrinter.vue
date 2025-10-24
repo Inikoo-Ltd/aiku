@@ -97,7 +97,7 @@ const selectOption = (val: string) => {
     <Dialog
       v-model:visible="showModal"
       modal
-      header="Select Options"
+      header="Select printer"
       :style="{ width: '35rem' }"
     >
     <div class="py-2">
