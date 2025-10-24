@@ -113,7 +113,6 @@ class ShowStoredItemReturn extends OrgAction
                     'next'     => ShowPalletReturn::make()->getNext($this->parent, $palletReturn, $request),
                 ],
                 'pageHead'    => [
-                    // 'container' => $container,
                     'subNavigation' => $subNavigation,
                     'title'         => $palletReturn->reference,
                     'model'         => __('return'),
