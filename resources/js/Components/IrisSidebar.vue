@@ -266,6 +266,7 @@ const internalHref = (item) => {
                 :changeActiveSubIndex="(index) => activeSubIndex = index"
                 :changeActiveCustomSubIndex="(index) => activeCustomSubIndex = index"
                 :changeActiveCustomTopSubIndex="(index) => activeCustomTopSubIndex = index"
+                :containerStyle="props.sidebar?.data?.fieldValue?.container?.properties || props.menu?.container?.properties"
             />
 
             <!-- Sidebar Menu: Desktop -->
