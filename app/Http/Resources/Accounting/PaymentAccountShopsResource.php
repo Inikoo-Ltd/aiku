@@ -28,15 +28,16 @@ class PaymentAccountShopsResource extends JsonResource
     public function toArray($request): array
     {
         return [
-            'id'                       => $this->id,
-            'shop_id'                  => $this->shop_id,
-            'shop_code'                => $this->shop_code,
-            'shop_name'                => $this->shop_name,
-            'shop_slug'                => $this->shop_slug,
+            'id'        => $this->id,
+            'shop_id'   => $this->shop_id,
+            'shop_code' => $this->shop_code,
+            'shop_name' => $this->shop_name,
+            'shop_slug' => $this->shop_slug,
 
-            'payment_account_code'                => $this->payment_account_code,
-            'payment_account_name'                => $this->payment_account_name,
-            'payment_account_slug'                => $this->payment_account_slug,
+            'payment_account_code' => $this->payment_account_code,
+            'payment_account_name' => $this->payment_account_name,
+            'payment_account_slug' => $this->payment_account_slug,
+            'activated_at'         => $this->activated_at,
 
             'number_payments'          => $this->number_payments,
             'amount_successfully_paid' => $this->amount_successfully_paid,
