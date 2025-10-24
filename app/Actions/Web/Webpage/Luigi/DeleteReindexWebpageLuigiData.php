@@ -1,16 +1,14 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 04-07-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 24 Oct 2025 08:23:08 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Web\Webpage;
+namespace App\Actions\Web\Webpage\Luigi;
 
-use App\Actions\Web\WithLuigis;
+use App\Actions\Web\Website\Luigi\WithLuigis;
 use App\Models\Web\Webpage;
 use Lorisleiva\Actions\Concerns\AsAction;
 

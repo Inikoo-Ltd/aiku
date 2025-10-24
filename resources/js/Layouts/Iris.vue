@@ -73,7 +73,7 @@ const checkScreenType = () => {
     else screenType.value = 'desktop'
 }
 
-
+provide('screenType', screenType)
 
 onMounted(() => {
     checkScreenType()
