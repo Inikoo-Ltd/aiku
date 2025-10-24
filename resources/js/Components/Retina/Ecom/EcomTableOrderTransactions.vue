@@ -1,6 +1,7 @@
 <script setup lang='ts'>
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Image from '@/Components/Image.vue'
+import LinkIris from '@/Components/Iris/LinkIris.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
@@ -25,16 +26,9 @@ const props = defineProps<{
 const locale = inject('locale', retinaLayoutStructure)
 
 function productRoute(product) {
-    // console.log(route().current())
     switch (route().current()) {
-        case 'grp.org.shops.show.crm.customers.show.orders.show':
-        case 'grp.org.shops.show.ordering.orders.show':
-            if(product.product_slug) {
-                return route(
-                    'grp.org.shops.show.catalogue.products.all_products.show',
-                    [route().params['organisation'], route().params['shop'], product.product_slug])
-            }
-            return ''
+        case 'retina.ecom.orders.show':
+            return product.webpage_url
         default:
             return ''
     }
@@ -88,9 +82,9 @@ const debounceUpdateQuantity = debounce(
 
         <!-- Column: Code -->
         <template #cell(asset_code)="{ item }">
-            <Link :href="productRoute(item)" class="primaryLink">
+            <LinkIris :href="productRoute(item)" class="primaryLink" target="_blank">
                 {{ item.asset_code }}
-            </Link>
+            </LinkIris>
         </template>
 
         <!-- Column: Net -->

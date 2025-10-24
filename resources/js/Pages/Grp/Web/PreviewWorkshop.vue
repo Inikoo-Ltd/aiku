@@ -126,7 +126,6 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 <template>
-    <pre>{{ props.navigation.menu.data.fieldValue.navigation. }}</pre>
     <div class="editor-class" :class="route().params?.mode !== 'iris' ? 'is-not-mode-iris' : ''">
         <div v-if="isInWorkshop" class="bg-gray-200 shadow-xl px-8 py-4 flex justify-center items-center gap-x-2">
             <ButtonPreviewLogin v-model="isPreviewLoggedIn" />
