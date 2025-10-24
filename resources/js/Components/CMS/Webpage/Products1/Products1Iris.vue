@@ -88,7 +88,7 @@ const getRoutes = () => {
         return {
             iris: {
                 route_products: {
-                    name: "iris.json.product_category.products.index",
+                    name: "iris.json.product_category.in_stock_products.index",
                     parameters: { productCategory: props.fieldValue.model_id }
                 },
                 route_out_of_stock_products: {
@@ -101,7 +101,7 @@ const getRoutes = () => {
         return {
             iris: {
                 route_products: {
-                    name: "iris.json.collection.products.index",
+                    name: "iris.json.collection.in_stock_products.index",
                     parameters: { collection: props.fieldValue.model_id }
                 },
                 route_out_of_stock_products: {
