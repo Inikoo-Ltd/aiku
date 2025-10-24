@@ -173,7 +173,7 @@ const compIsAddToBasket = computed(() => {
             <!-- {{ get(props.product, ['quantity_ordered_new'], null) }}
             {{ get(props.product, ['quantity_ordered'], null) }} -->
             <InputNumber
-                :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], null) "
+                :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], null)"
                 @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
                 inputId="integeronly"
                 fluid
