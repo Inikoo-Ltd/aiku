@@ -63,10 +63,10 @@ class ShowIrisWebpage
                 parentPaths: $parentPaths
             ),
             'webpage_data' => [
-                'seo_data' => $webpage->seo_data,
-                'title'           => $webpage->title,
-                'description'     => $webpage->description,
-                'canonical_url'   => $webpage->canonical_url,
+                'seo_data'      => $webpage->seo_data,
+                'title'         => $webpage->title,
+                'description'   => $webpage->description,
+                'canonical_url' => $webpage->canonical_url,
 
             ],
             'webpage_img'  => $webpageImg,
@@ -77,7 +77,6 @@ class ShowIrisWebpage
 
     public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
-
         $xLoggedStatus = $request->header('X-Logged-Status');
         if ($xLoggedStatus !== null) {
             $loggedIn = $xLoggedStatus === 'In';
@@ -231,7 +230,9 @@ class ShowIrisWebpage
         if ($path === null) {
             $webpageID = $website->storefront_id;
         } else {
-            $webpageID = DB::table('webpages')->where('website_id', $website->id)->where('url', $path)->value('id');
+            $webpageID = DB::table('webpages')->where('website_id', $website->id)
+                ->whereRaw("lower(url) = lower(?)", [$path])
+                ->value('id');
         }
 
 
