@@ -14,6 +14,7 @@ import { trans } from 'laravel-vue-i18n'
 import { debounce, get, set } from 'lodash-es'
 import { inject, ref } from 'vue'
 import { useLayoutStore } from "@/Stores/retinaLayout"
+import LinkIris from '@/Components/Iris/LinkIris.vue'
 
 const props = defineProps<{
     data: any[] | TableTS
@@ -27,16 +28,9 @@ const layout = inject("layout", {})
 const locale = inject('locale', retinaLayoutStructure)
 
 function productRoute(product) {
-    // console.log(route().current())
     switch (route().current()) {
-        case 'grp.org.shops.show.crm.customers.show.orders.show':
-        case 'grp.org.shops.show.ordering.orders.show':
-            if(product.product_slug) {
-                return route(
-                    'grp.org.shops.show.catalogue.products.all_products.show',
-                    [route().params['organisation'], route().params['shop'], product.product_slug])
-            }
-            return ''
+        case 'retina.ecom.basket.show':
+            return product.webpage_url
         default:
             return ''
     }
@@ -103,9 +97,9 @@ const debounceUpdateQuantity = debounce(
 
         <!-- Column: Code -->
         <template #cell(asset_code)="{ item }">
-            <Link :href="productRoute(item)" class="primaryLink">
+            <LinkIris :href="productRoute(item)" class="primaryLink" target="_blank">
                 {{ item.asset_code }}
-            </Link>
+            </LinkIris>
         </template>
 
         <!-- Column: Net -->

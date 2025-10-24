@@ -35,14 +35,10 @@ Route::middleware(["retina-auth:retina"])->group(function () {
     Route::get('product/{product:id}/transaction-data', GetIrisBasketTransactionsInProduct::class)->name('product.transaction_data')->withoutScopedBindings();
 
     Route::get('collection/{collection:id}/transaction-data', GetIrisBasketTransactionsInCollection::class)->name('collection.transaction_data');
-
-
-
 });
 
 
 Route::middleware(["iris-relax-auth:retina"])->group(function () {
-
     Route::get('first-hit', GetIrisFirstHitData::class)->name('first_hit');
     Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
     Route::get('hit', IrisLogWebUserRequest::class)->name('hit');

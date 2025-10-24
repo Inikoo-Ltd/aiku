@@ -65,7 +65,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'created_at'          => $transaction->created_at,
             'available_quantity'    => $transaction->available_quantity,
             'currency_code'       => $transaction->currency_code,
-            'webpage_url'         => $webpageUrl,
+            'webpage_url'         => $webpageUrl,  // this is 'domain/aisb-06', should be 'domain/incense/resin-powders/aisb/aisb-06'
             // 'image'               => $transaction->product_id ? Product::find($transaction->product_id)->imageSources(200, 200) : null,
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',
