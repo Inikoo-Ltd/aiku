@@ -24,9 +24,17 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
 
     public function handle(OrgStock $orgStock): void
     {
+        $quantityInLocations = $orgStock->locationOrgStocks()->sum('quantity');
+
+        $quantityAvailable = $quantityInLocations - $orgStock->quantity_in_submitted_orders - $orgStock->quantity_to_be_picked;
+
+        if ($quantityAvailable < 0) {
+            $quantityAvailable = 0;
+        }
+
         $orgStock->update([
-            'quantity_in_locations' =>
-                $orgStock->locationOrgStocks()->sum('quantity')
+            'quantity_in_locations' => $quantityInLocations,
+            'quantity_available'    => $quantityAvailable,
         ]);
 
         if ($orgStock->wasChanged('quantity_in_locations')) {
@@ -34,8 +42,6 @@ class OrgStockHydrateQuantityInLocations implements ShouldBeUnique
                 ProductHydrateAvailableQuantity::run($product);
             }
         }
-
-
     }
 
 
