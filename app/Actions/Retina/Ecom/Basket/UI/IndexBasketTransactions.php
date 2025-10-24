@@ -66,7 +66,7 @@ class IndexBasketTransactions extends OrgAction
                 'products.available_quantity as available_quantity',
             ])
             ->selectRaw("'{$order->currency->code}'  as currency_code")
-            ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered'])
+            ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered','price'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
