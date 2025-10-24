@@ -10,7 +10,7 @@
 
 use App\Actions\Analytics\GetSectionRoute;
 use App\Actions\Web\Banner\StoreBanner;
-use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
+use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;

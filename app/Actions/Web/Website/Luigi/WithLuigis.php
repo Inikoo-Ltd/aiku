@@ -1,14 +1,12 @@
 <?php
 
 /*
- * Author: Ganes <gustiganes@gmail.com>
- * Created on: 22-05-2025, Bali, Indonesia
- * Github: https://github.com/Ganes556
- * Copyright: 2025
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Fri, 24 Oct 2025 08:21:22 Central Indonesia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
-namespace App\Actions\Web;
+namespace App\Actions\Web\Website\Luigi;
 
 use App\Enums\Catalogue\Product\ProductStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -41,9 +39,8 @@ trait WithLuigis
         return trim(base64_encode(hash_hmac('sha256', $data, $key, true)));
     }
 
-    public function getAccessToken(Website|Webpage $parent): array
+    public function getAccessToken(Website $website): array
     {
-        $website = $parent instanceof Website ? $parent : $parent->website;
         if (app()->environment('production')) {
             return array_filter([Arr::get($website->settings, 'luigisbox.tracker_id'), Arr::get($website->settings, 'luigisbox.private_key')]);
         } else {
@@ -61,7 +58,13 @@ trait WithLuigis
         $offsetSeconds = 0;
         $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
 
-        $accessToken = $this->getAccessToken($parent);
+
+        if($parent instanceof Website){
+            $website = $parent;
+        }else{
+            $website = $parent->website;
+        }
+        $accessToken = $this->getAccessToken($website);
 
         [$publicKey, $privateKey] = $accessToken;
 
@@ -100,63 +103,6 @@ trait WithLuigis
         }
     }
 
-    /**
-     * @throws \Exception
-     */
-    public function reindex(Website|Webpage $parent): void
-    {
-        $accessToken = $this->getAccessToken($parent);
-        if (count($accessToken) < 2) {
-            Log::error('Luigi\'s Box access token is not configured properly');
-
-            return;
-        }
-        if ($parent instanceof Website) {
-            $website = $parent;
-            $website->webpages()
-                ->with('model')
-                ->where('state', 'live')
-                ->whereIn('type', [WebpageTypeEnum::CATALOGUE, WebpageTypeEnum::BLOG])
-                ->whereIn('model_type', ['Product', 'ProductCategory', 'Collection'])
-                ->chunk(1000, function ($webpages) use ($website) {
-                    $objects = [];
-                    foreach ($webpages as $webpage) {
-                        $object = $this->getObjectFromWebpage($webpage);
-                        if ($object) {
-                            $objects[] = $object;
-                        }
-                    }
-
-                    $body       = [
-                        'objects' => $objects
-                    ];
-                    $compressed = count($objects) >= 1000;
-                    try {
-                        $this->request($website, '/v1/content', $body, 'post', $compressed);
-                    } catch (Exception $e) {
-                        print "Failed to reindex website $website->domain: ".$e->getMessage()."\n";
-
-                        return;
-                    }
-                });
-        } else {
-            $webpage = $parent;
-            if ($webpage->type != WebpageTypeEnum::CATALOGUE && $webpage->type != WebpageTypeEnum::BLOG) {
-                return;
-            }
-
-            $objects[] = $this->getObjectFromWebpage($webpage);
-
-            $body = [
-                'objects' => $objects
-            ];
-            try {
-                $this->request($parent, '/v1/content', $body);
-            } catch (Exception $e) {
-                Log::error("Failed to reindex webpage $webpage->title: ".$e->getMessage());
-            }
-        }
-    }
 
     public function getWebpageUrl(Webpage $webpage): string
     {
@@ -312,10 +258,10 @@ trait WithLuigis
     /**
      * @throws \Exception
      */
-    public function deleteContentManual(Webpage $webpage, array $object): void
+    public function deleteContentManual(Website $website, array $object): void
     {
         $this->request(
-            $webpage,
+            $website,
             '/v1/content/delete',
             [
                 'objects' => [

@@ -20,7 +20,7 @@ use App\Actions\Web\ModelHasWebBlocks\StoreModelHasWebBlock;
 use App\Actions\Web\ModelHasWebBlocks\UpdateModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Webpage\HydrateWebpage;
-use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
+use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Webpage\Search\ReindexWebpageSearch;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Website\HydrateWebsite;
