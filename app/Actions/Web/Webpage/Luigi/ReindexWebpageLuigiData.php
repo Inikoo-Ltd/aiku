@@ -12,11 +12,9 @@ use App\Actions\OrgAction;
 use App\Actions\Web\Website\Luigi\WithLuigis;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Models\Web\Webpage;
-use App\Models\Web\Website;
 use Exception;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Log;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique

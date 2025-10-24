@@ -23,7 +23,6 @@ use Exception;
 use Illuminate\Database\Eloquent\Collection as LaravelCollection;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -59,9 +58,9 @@ trait WithLuigis
         $date          = gmdate('D, d M Y H:i:s', time() + $offsetSeconds).' GMT';
 
 
-        if($parent instanceof Website){
+        if ($parent instanceof Website) {
             $website = $parent;
-        }else{
+        } else {
             $website = $parent->website;
         }
         $accessToken = $this->getAccessToken($website);

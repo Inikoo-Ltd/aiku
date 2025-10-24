@@ -58,7 +58,7 @@ class TransactionsResource extends JsonResource
 
             $webpageUrl = $webpage->getUrl();
         }
-        
+
         return [
             'id'                  => $this->id,
             'state'               => $this->state,

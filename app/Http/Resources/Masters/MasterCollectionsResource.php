@@ -11,7 +11,6 @@
 namespace App\Http\Resources\Masters;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Enums\Catalogue\Collection\CollectionStateEnum;
 
 /**
  * @property int $id
@@ -52,7 +51,7 @@ class MasterCollectionsResource extends JsonResource
                 'tooltip' => __('Active'),
                 'icon'    => 'fas fa-check-circle',
                 'class'   => 'text-green-400'
-            ]:[
+            ] : [
                 'tooltip' => __('Closed'),
                 'icon'    => 'fas fa-times-circle',
                 'class'   => 'text-red-400'
