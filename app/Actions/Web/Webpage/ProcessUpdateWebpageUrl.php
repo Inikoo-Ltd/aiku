@@ -47,6 +47,7 @@ class ProcessUpdateWebpageUrl
         Cache::forget($key);
 
         UpdateWebpageCanonicalUrl::run($webpage);
+        BreakWebpageCache::run($webpage);
     }
 
 
