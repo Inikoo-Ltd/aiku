@@ -13,7 +13,15 @@ export default {
 				{
 					key: ["image", "source"],
 					label: "Upload image",
-					type: "upload_image",
+					type: "image-cropped",
+					props_data: {
+						stencilProps: {
+							aspectRatio: 4 / 2,
+							movable: true,
+							scalable: true,
+							resizable: true,
+						},
+					},
 				},
 				{
 					key: ["link"],
@@ -24,45 +32,6 @@ export default {
 					key: ["alt"],
 					label: "Alternate Text",
 					type: "text",
-				},
-				{
-					key: ["properties", "dimension"],
-					label: "Dimension",
-					type: "dimension",
-					useIn : ["desktop", "tablet"],
-				},
-				{
-					key: ["properties", "margin"],
-					label: "Margin",
-					type: "margin",
-					useIn : ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["properties", "padding"],
-					label: "Padding",
-					type: "padding",
-					useIn : ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["image", "attributes", "fetchpriority"],
-					label: trans("Fetch Priority"),
-					information: trans(
-						"Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."
-					),
-					type: "select",
-					props_data: {
-						placeholder: trans("Priority"),
-						options: [
-							{
-								label: trans("High"),
-								value: "high",
-							},
-							{
-								label: trans("Low"),
-								value: "low",
-							},
-						],
-					},
 				},
 			],
 		},

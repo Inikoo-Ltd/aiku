@@ -69,22 +69,38 @@ const handleUpload = async (files: File[]) => {
 const confirmCrop = async () => {
   try {
     isLoadingSubmit.value = true
+
     const { canvas } = cropperRef.value.getResult()
     if (!canvas) return
 
+    // Detect file type
+    const originalFile = selectedFile.value
+    const isPNG = originalFile?.type === "image/png"
+
+    // Convert canvas to Blob while keeping transparency if PNG
     const blob: Blob = await new Promise(resolve =>
-      canvas.toBlob(resolve, "image/jpeg", 0.9)
+      canvas.toBlob(
+        resolve,
+        isPNG ? "image/png" : "image/jpeg",
+        isPNG ? 1.0 : 0.9 // full quality for PNG, 0.9 for JPEG
+      )
     )
 
     const formData = new FormData()
-    formData.append("images[0]", blob, selectedFile.value?.name || "cropped.jpg")
+    formData.append(
+      "images[0]",
+      blob,
+      originalFile?.name || (isPNG ? "cropped.png" : "cropped.jpg")
+    )
 
+    // Upload the image
     const response = await axios.post(
       route(props.uploadRoutes.name, props.uploadRoutes.parameters),
       formData,
       { headers: { "Content-Type": "multipart/form-data" } }
     )
 
+    // Update model value
     const updatedModelValue = {
       ...props.modelValue,
       ...cloneDeep(response.data.data[0].source),
@@ -92,18 +108,27 @@ const confirmCrop = async () => {
 
     emits("update:modelValue", updatedModelValue)
     emits("dialog", false)
-    notify({ title: "Success", text: "Image uploaded successfully", type: "success" })
+    notify({
+      title: "Success",
+      text: `Image uploaded successfully as ${isPNG ? "PNG" : "JPEG"}`,
+      type: "success",
+    })
 
-    // reset
+    // Reset state
     isCropping.value = false
     selectedFile.value = null
     imagePreview.value = null
   } catch (error) {
-    notify({ title: "Failed", text: "Error while uploading image", type: "error" })
+    notify({
+      title: "Failed",
+      text: "Error while uploading image",
+      type: "error",
+    })
   } finally {
     isLoadingSubmit.value = false
   }
 }
+
 
 /**
  * Cancel cropping and go back to gallery

@@ -78,40 +78,52 @@ const startCrop = (file: File) => {
 
 // --- Confirm Crop ---
 const confirmCrop = async () => {
-    if (!cropperRef.value || !currentFile.value) return
-    try {
-        isLoadingSubmit.value = true
-        const { canvas } = cropperRef.value.getResult()
-        if (!canvas) return
+	if (!cropperRef.value || !currentFile.value) return
+	try {
+		isLoadingSubmit.value = true
 
-        const blob: Blob = await new Promise(resolve =>
-            canvas.toBlob(resolve, "image/jpeg", 0.9)
-        )
+		const { canvas } = cropperRef.value.getResult()
+		if (!canvas) return
 
-        const formData = new FormData()
-        formData.append("images[0]", blob, currentFile.value.name)
+		// Detect output format based on original file type
+		const fileType = currentFile.value.type === "image/png" ? "image/png" : "image/jpeg"
+		const fileExtension = fileType === "image/png" ? "png" : "jpg"
 
-        const response = await axios.post(
-            route(props.uploadRoutes.name, props.uploadRoutes.parameters),
-            formData,
-            { headers: { "Content-Type": "multipart/form-data" } }
-        )
+		const blob: Blob = await new Promise(resolve =>
+			canvas.toBlob(resolve, fileType, 0.9)
+		)
 
-        const updatedModelValue = cloneDeep(response.data.data[0].source)
-        emits("update:modelValue", updatedModelValue)
-        notify({ title: "Success", text: "Image uploaded successfully", type: "success" })
+		const formData = new FormData()
+		formData.append(`images[0]`, blob, currentFile.value.name.replace(/\.[^/.]+$/, `.${fileExtension}`))
 
-    } catch (error) {
-        notify({ title: "Failed", text: "Error while uploading image", type: "error" })
-    } finally {
-        isLoadingSubmit.value = false
-        cropperVisible.value = false
-        currentFile.value = null
-        if (currentFileUrl.value) {
-            URL.revokeObjectURL(currentFileUrl.value)
-            currentFileUrl.value = null
-        }
-    }
+		const response = await axios.post(
+			route(props.uploadRoutes.name, props.uploadRoutes.parameters),
+			formData,
+			{ headers: { "Content-Type": "multipart/form-data" } }
+		)
+
+		const updatedModelValue = cloneDeep(response.data.data[0].source)
+		emits("update:modelValue", updatedModelValue)
+		notify({
+			title: "Success",
+			text: "Image uploaded successfully",
+			type: "success",
+		})
+	} catch (error) {
+		notify({
+			title: "Failed",
+			text: "Error while uploading image",
+			type: "error",
+		})
+	} finally {
+		isLoadingSubmit.value = false
+		cropperVisible.value = false
+		currentFile.value = null
+		if (currentFileUrl.value) {
+			URL.revokeObjectURL(currentFileUrl.value)
+			currentFileUrl.value = null
+		}
+	}
 }
 
 // --- Cancel Crop ---
