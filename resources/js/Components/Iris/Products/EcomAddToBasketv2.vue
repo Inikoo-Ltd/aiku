@@ -153,6 +153,14 @@ const compIsAddToBasket = computed(() => {
     return !customer.value.quantity_ordered
 })
 
+const showWarning = () => {
+      notify({
+      title: "Stock limit reached",
+      text: `You cannot add more than ${customer.value.stock} items.`,
+      type: "error",
+    })
+}
+
 </script>
 
 <template>
@@ -174,7 +182,7 @@ const compIsAddToBasket = computed(() => {
                 }"
             >
                 <template #incrementicon>
-                    <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon icon="fas fa-plus" class="" fixed-width aria-hidden="true" @click="()=> customer.quantity_ordered == customer.stock ? showWarning() : null " />
                 </template>
                 <template #decrementicon>
                     <FontAwesomeIcon icon="fas fa-minus" class="" fixed-width aria-hidden="true" />
