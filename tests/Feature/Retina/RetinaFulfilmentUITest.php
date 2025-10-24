@@ -18,7 +18,7 @@ use App\Actions\Fulfilment\Space\StoreSpace;
 use App\Actions\Fulfilment\StoredItem\StoreStoredItem;
 use App\Actions\Fulfilment\StoredItemAudit\StoreStoredItemAudit;
 use App\Actions\Retina\Fulfilment\Pallet\StoreRetinaPalletFromDelivery;
-use App\Actions\Web\Webpage\ReindexWebpageLuigiData;
+use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Actions\Web\Website\LaunchWebsite;
 use App\Actions\Web\Website\UI\DetectWebsiteFromDomain;
 use App\Enums\Billables\Rental\RentalTypeEnum;

@@ -6,6 +6,7 @@ import { getStyles } from '@/Composables/styles'
 import Blueprint from './Blueprint'
 import CardBlueprint from './CardBlueprint'
 import { sendMessageToParent } from "@/Composables/Workshop"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 const props = defineProps<{
   modelValue: any
@@ -99,24 +100,31 @@ const imageSettings = {
         <template #item="{ data, index }">
           <!-- WRAPPER: This adds gap safely -->
           <div class="px-1 md:px-1 lg:px-1">
-            <article 
-              @click.stop="
+            <article @click.stop="
                 () => {
                   sendMessageToParent('activeBlock', indexBlock)
                   sendMessageToParent('activeChildBlock', bKeys[2])
                   sendMessageToParent('activeChildBlockArray', index)
                   sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
                 }
-              " 
+              "
               @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })"
-              class=" card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300"
-            >
+              class=" card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
               <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
                 class="absolute inset-0 -z-10 size-full object-fill hover:scale-105 transition-transform duration-500" />
               <div class="absolute inset-0 -z-10"></div>
               <div class="relative p-6 sm:p-8">
                 <div class="p-4 flex flex-col flex-1 justify-between">
                   <div v-html="data.text" />
+                  <div class="w-full mt-3" v-if="modelValue.carousel_data.carousel_setting.button">
+                    <Button :injectStyle="getStyles(data?.button?.container?.properties, screenType)"
+                      :label="data?.button?.text" @click.stop="
+                        () => {
+                          sendMessageToParent('activeBlock', indexBlock)
+                          sendMessageToParent('activeChildBlock', bKeys[2])
+                        }
+                      " />
+                  </div>
                 </div>
               </div>
             </article>

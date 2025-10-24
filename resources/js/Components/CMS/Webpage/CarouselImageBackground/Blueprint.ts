@@ -21,6 +21,11 @@ export default {
 					key: ["carousel_setting", "loop"],
 					type: "switch",
 				},
+				{
+					label: "use button",
+					key: ["carousel_setting", "button"],
+					type: "switch",
+				},
 			],
 		},
 		{

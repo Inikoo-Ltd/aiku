@@ -2,11 +2,11 @@
 
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Thu, 28 Aug 2025 16:38:29 Malaysia Time, Kuala Lumpur, Malaysia
+ * Created: Fri, 24 Oct 2025 08:50:05 Central Indonesia Time, Kuala Lumpur, Malaysia
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Web\Webpage;
+namespace App\Actions\Web\Webpage\Luigi;
 
 use App\Actions\OrgAction;
 use App\Models\Web\Webpage;
@@ -19,7 +19,7 @@ class ReindexWebpageLuigiAsync extends OrgAction
      */
     public function handle(Webpage $webpage): void
     {
-        ReindexWebpageLuigi::dispatch($webpage);
+        ReindexWebpageLuigiData::dispatch($webpage);
 
     }
 

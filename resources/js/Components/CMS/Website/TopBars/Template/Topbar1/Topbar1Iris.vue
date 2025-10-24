@@ -135,8 +135,6 @@ watch(
                 v-html="textReplaceVariables(model?.main_title?.text, layout.iris_variables)" />
         </div>
 
-
-
         <div class="hidden md:flex justify-between md:justify-start items-center gap-x-1 flex-wrap md:flex-nowrap">
             <SwitchLanguage
                 v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />

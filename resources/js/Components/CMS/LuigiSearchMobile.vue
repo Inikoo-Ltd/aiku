@@ -183,13 +183,12 @@ const visitSearchPage = () => {
             :value="inputValue"
             @input="(q) => (inputValue = q?.target?.value)"
             xdisabled
-            class="h-12 min-w-28 focus:border-transparent focus:ring-2 focus:ring-gray-700 w-full md:min-w-0 md:w-full rounded-full border border-[#d1d5db] disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
+            class="w-12 h-full focus:border-transparent  focus:ring-2 focus:ring-gray-700 border-transparent disabled:bg-gray-200 disabled:cursor-not-allowed pl-10"
             :id="id || 'inputLuigi'"
-            xstyle="height: 35px"
             :placeholder="trans('Search')"
             @keydown.enter="() => visitSearchPage()"
         />
-        <FontAwesomeIcon icon="far fa-search" class="group-focus-within:text-gray-700 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
+        <FontAwesomeIcon icon="far fa-search" class="pointer-events-none absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2" fixed-width aria-hidden="true" />
     </div>
 </template>
 

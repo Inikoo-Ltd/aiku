@@ -16,10 +16,8 @@ import "@/../css/Iris/editor.css"
 import { getStyles } from "@/Composables/styles";
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.vue';
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { Sidebar } from 'primevue';
 library.add(faTimes)
 
 defineOptions({ layout: WebPreview })
@@ -88,19 +86,16 @@ onMounted(() => {
         if (event.data.key === 'reload') {
             router.reload({
                 only: ['footer', 'header', 'webpage', 'navigation', 'sidebar'],
-                onSuccess: () => {
-                    if (props.webpage) data.value = props.webpage
-                }
             });
         }
     });
     checkScreenType()
     window.addEventListener('resize', checkScreenType)
-    if (props.sidebar) {
+
+    if (props.sidebar && route().current()?.includes('sidebar')) {
         isOpenMenuMobile.value = true
     }
 });
-
 
 
 const checkScreenType = () => {
@@ -131,6 +126,7 @@ watch(isPreviewLoggedIn, (value) => {
 
 
 <template>
+    <pre>{{ props.navigation.menu.data.fieldValue.navigation. }}</pre>
     <div class="editor-class" :class="route().params?.mode !== 'iris' ? 'is-not-mode-iris' : ''">
         <div v-if="isInWorkshop" class="bg-gray-200 shadow-xl px-8 py-4 flex justify-center items-center gap-x-2">
             <ButtonPreviewLogin v-model="isPreviewLoggedIn" />
@@ -162,7 +158,6 @@ watch(isPreviewLoggedIn, (value) => {
 
             <!-- Footer -->
             <component v-if="footer?.data?.data"
-
                 :is="isPreviewMode || route().current() == 'grp.websites.preview' || route().current() == 'grp.org.shops.show.web.webpages.snapshot.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
                 v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
         </div>
