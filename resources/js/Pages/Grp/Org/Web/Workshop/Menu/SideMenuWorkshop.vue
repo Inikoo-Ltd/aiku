@@ -63,6 +63,7 @@ const props = defineProps<{
 
 const emits = defineEmits<{
 	(e: 'sendToIframe', value: Object): void
+	(e: 'auto-save', value: Object): void
 }>()
 
 const layout = inject('layout', layoutStructure)
@@ -100,35 +101,8 @@ const onPickBlock = (value: object) => {
 	autoSave(value)
 }
 
-let controller: AbortController | null = null
 const autoSave = async (value) => {
-  // Cancel the previous request if still pending
-  if (controller) {
-    controller.abort()
-  }
-
-  // Create a new controller for this request
-  controller = new AbortController()
-
-  try {
-    const response = await axios.patch(
-      route(props.autosaveRoute.name, props.autosaveRoute.parameters),
-      { layout: value },
-      { signal: controller.signal }
-    )
-    emits('sendToIframe', { key: "reload", value: {} })
-  } catch (error: any) {
-    if (axios.isCancel(error) || error.name === "CanceledError" || error.message === "canceled") {
-      console.log("Autosave request cancelled")
-      return
-    }
-
-    notify({
-      title: "Something went wrong.",
-      text: error.message,
-      type: "error",
-    })
-  }
+ emits('auto-save',value)
 }
 
 

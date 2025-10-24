@@ -42,62 +42,17 @@ class StoreEbayProduct extends RetinaAction
             /** @var Product $product */
             $product = $portfolio->item;
 
-            $images = [];
-            if (app()->isProduction()) {
-                foreach ($product->images as $image) {
-                    $images[] = GetImgProxyUrl::run($image->getImage()->extension('jpg'));
-                }
-            } else {
-                $images[] = Arr::get($product->web_images, 'all.0.gallery.original');
-            }
-
-            $imageUrls = [
-                'imageUrls' => $images
-            ];
-
-            $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
-            $decoded = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-            $noTags = strip_tags($decoded);
-            $clean = preg_replace('/[^A-Za-z0-9.,;\'"!? \n-]/', ' ', $noTags);
-            $clean = preg_replace('/\s+/', ' ', trim($clean));
-            $descriptions = str_replace('(', '', str_replace(')', '', str_replace('.', ' ', $clean)));
-
-            if (!$descriptions) {
-                $descriptions = $portfolio->item->name;
-            }
-
-            $categories = $ebayUser->getCategorySuggestions($product->family->name);
-            $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
-
-            if (! $categoryId) {
-                $categories = $ebayUser->searchAvailableProducts($product->family->name);
-                $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
-            }
-
-            $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);
-            $productAttributes = $ebayUser->extractProductAttributes($product, $categoryAspects);
-
-            $inventoryItem = [
-                'sku' => $product->code,
-                'availability' => [
-                    'shipToLocationAvailability' => [
-                        'quantity' => $product->available_quantity
-                    ]
-                ],
-                'condition' => 'NEW',
-                'product' => [
-                    'title' => $portfolio->customer_product_name,
-                    'description' => $descriptions,
-                    'aspects' =>  $productAttributes,
-                    'brand' => 'AncientWisdom',
-                    'mpn' => $product->code,
-                    ...$imageUrls
-                ]
-            ];
-
             $handleError = function ($result) use ($portfolio, $ebayUser, $logs) {
-                if (isset($result['error'])) {
-                    $errorMessage = $result['error'];
+                if (isset($result['error']) || isset($result['errors'])) {
+                    if (isset($result['errors'])) {
+                        $errorMessage = $result;
+
+                        if (isset($errorMessage['errors'][0]['message'])) {
+                            $errorMessage = $errorMessage['errors'][0]['message'];
+                        }
+                    } else {
+                        $errorMessage = $result['error'];
+                    }
 
                     if (is_string($errorMessage) && str_contains($errorMessage, 'eBay API request failed:')) {
                         $jsonPart = str_replace('eBay API request failed: ', '', $errorMessage);
@@ -127,6 +82,71 @@ class StoreEbayProduct extends RetinaAction
 
                 return false;
             };
+
+            $images = [];
+            if (app()->isProduction()) {
+                foreach ($product->images as $image) {
+                    $images[] = GetImgProxyUrl::run($image->getImage()->extension('jpg'));
+                }
+            } else {
+                $images[] = Arr::get($product->web_images, 'all.0.gallery.original');
+            }
+
+            $imageUrls = [
+                'imageUrls' => $images
+            ];
+
+            $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
+            $decoded = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $noTags = strip_tags($decoded);
+            $clean = preg_replace('/[^A-Za-z0-9.,;\'"!? \n-]/', ' ', $noTags);
+            $clean = preg_replace('/\s+/', ' ', trim($clean));
+            $descriptions = str_replace('(', '', str_replace(')', '', str_replace('.', ' ', $clean)));
+
+            if (!$descriptions) {
+                $descriptions = $portfolio->item->name;
+            }
+
+            $categories = $ebayUser->getCategorySuggestions($product->family->name);
+            $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
+
+            if (! $categoryId) {
+                $categories = $ebayUser->searchAvailableProducts($product->family->name);
+
+                if ($handleError($categories)) {
+                    return;
+                }
+
+                $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
+            }
+
+            $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);
+            $productAttributes = $ebayUser->extractProductAttributes($product, $categoryAspects);
+
+            $aspects = [];
+            if (!blank($productAttributes)) {
+                $aspects = [
+                    'aspects' =>  $productAttributes,
+                ];
+            }
+
+            $inventoryItem = [
+                'sku' => $product->code,
+                'availability' => [
+                    'shipToLocationAvailability' => [
+                        'quantity' => $product->available_quantity
+                    ]
+                ],
+                'condition' => 'NEW',
+                'product' => [
+                    'title' => $portfolio->customer_product_name,
+                    'description' => $descriptions,
+                    ...$aspects,
+                    'brand' => 'AncientWisdom',
+                    'mpn' => $product->code,
+                    ...$imageUrls
+                ]
+            ];
 
             $productResult = $ebayUser->storeProduct($inventoryItem);
 

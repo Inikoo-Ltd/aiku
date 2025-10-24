@@ -447,6 +447,7 @@ const key = ulid()
 
                 <div>
                     <ButtonWithLink
+                        v-if="customer_sales_channel.type !== 'ebay'"
                         label="Upload all as new product"
                         size="xs"
                         :routeTarget="{

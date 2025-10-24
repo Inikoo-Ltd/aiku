@@ -21,7 +21,7 @@ class GetIrisProductsInProductCategory extends IrisAction
 
     public function handle(ProductCategory $productCategory, $stockMode = 'all'): LengthAwarePaginator
     {
-        $customer = request()->user()?->customer;
+        $customer     = request()->user()?->customer;
         $queryBuilder = $this->getBaseQuery($stockMode);
 
         $queryBuilder->select($this->getSelect());
@@ -34,8 +34,8 @@ class GetIrisProductsInProductCategory extends IrisAction
         } elseif ($productCategory->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
             $queryBuilder->where('sub_department_id', $productCategory->id);
         }
-        $baseUrl = $productCategory?->url ?? '';
-        $queryBuilder->selectRaw('\'' . $baseUrl . '\' as parent_url');
+        $baseUrl = $productCategory->url ?? '';
+        $queryBuilder->selectRaw('\''.$baseUrl.'\' as parent_url');
 
         $groupByColumns = ['products.id', 'webpages.id', 'webpages.url'];
         if ($customer) {
@@ -49,12 +49,11 @@ class GetIrisProductsInProductCategory extends IrisAction
         // Section: Sort
         $orderBy = request()->query('order_by');
         if ($orderBy) {
-            // Check if "-" prefix is used for DESC
             if (str_starts_with($orderBy, '-')) {
-                $column = ltrim($orderBy, '-');
+                $column    = ltrim($orderBy, '-');
                 $direction = 'desc';
             } else {
-                $column = $orderBy;
+                $column    = $orderBy;
                 $direction = 'asc';
             }
 
@@ -71,6 +70,9 @@ class GetIrisProductsInProductCategory extends IrisAction
     public function asController(ProductCategory $productCategory, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
+
         return $this->handle(productCategory: $productCategory);
     }
+
+
 }
