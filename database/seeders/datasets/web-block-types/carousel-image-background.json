@@ -94,11 +94,17 @@
 			"carousel_data": {
 				"cards": [
 					{
-						"link": {
-							"id": 9,
-							"href": null,
-							"type": "internal",
-							"workshop_route": null
+						"button": {
+							"link": {
+								"id": null,
+								"url": null,
+								"href": null,
+								"type": "internal"
+							},
+							"text": "Get Started",
+							"container": {
+								"properties": null
+							}
 						},
 						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
 						"image": {
@@ -107,41 +113,59 @@
 						}
 					},
 					{
-						"link": {
-							"id": 9,
-							"href": null,
-							"type": "internal",
-							"workshop_route": null
+						"button": {
+							"link": {
+								"id": null,
+								"url": null,
+								"href": null,
+								"type": "internal"
+							},
+							"text": "Get Started",
+							"container": {
+								"properties": null
+							}
 						},
 						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
 						"image": {
-							"alt": "Image 2",
+							"alt": "Image 1",
 							"source": null
 						}
 					},
 					{
-						"link": {
-							"id": 9,
-							"href": null,
-							"type": "internal",
-							"workshop_route": null
+						"button": {
+							"link": {
+								"id": null,
+								"url": null,
+								"href": null,
+								"type": "internal"
+							},
+							"text": "Get Started",
+							"container": {
+								"properties": null
+							}
 						},
 						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
 						"image": {
-							"alt": "Image 3",
+							"alt": "Image 1",
 							"source": null
 						}
 					},
 					{
-						"link": {
-							"id": 9,
-							"href": null,
-							"type": "internal",
-							"workshop_route": null
+						"button": {
+							"link": {
+								"id": null,
+								"url": null,
+								"href": null,
+								"type": "internal"
+							},
+							"text": "Get Started",
+							"container": {
+								"properties": null
+							}
 						},
 						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
 						"image": {
-							"alt": "Image 4",
+							"alt": "Image 1",
 							"source": null
 						}
 					}
@@ -260,8 +284,8 @@
 					}
 				},
 				"carousel_setting": {
-					"loop" : true,
-					"autoplay" : true,
+					"loop": true,
+					"autoplay": true,
 					"slidesPerView": {
 						"mobile": 1,
 						"tablet": 2,
