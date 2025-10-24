@@ -40,28 +40,28 @@ trait WithCommsSubNavigation
                     "tooltip" => __("Tree view of the webpages"),
                 ],
             ],
-            [
-                "label"    => __("Newsletters"),
-                "route"    => [
-                    "name"       => "grp.org.shops.show.dashboard.comms.newsletter_outboxes.index",
-                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-newspaper"],
-                    "tooltip" => __("Newsletters"),
-                ],
-            ],
-            [
-                "label"    => __("Marketing"),
-                "route"    => [
-                    "name"       => "grp.org.shops.show.dashboard.comms.marketing_outboxes.index",
-                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-bullhorn"],
-                    "tooltip" => __("Marketing"),
-                ],
-            ],
+//            [
+//                "label"    => __("Newsletters"),
+//                "route"    => [
+//                    "name"       => "grp.org.shops.show.dashboard.comms.newsletter_outboxes.index",
+//                    "parameters" => [$shop->organisation->slug, $shop->slug],
+//                ],
+//                "leftIcon" => [
+//                    "icon"    => ["fal", "fa-newspaper"],
+//                    "tooltip" => __("Newsletters"),
+//                ],
+//            ],
+//            [
+//                "label"    => __("Marketing"),
+//                "route"    => [
+//                    "name"       => "grp.org.shops.show.dashboard.comms.marketing_outboxes.index",
+//                    "parameters" => [$shop->organisation->slug, $shop->slug],
+//                ],
+//                "leftIcon" => [
+//                    "icon"    => ["fal", "fa-bullhorn"],
+//                    "tooltip" => __("Marketing"),
+//                ],
+//            ],
             [
                 "label"    => __("Marketing Notifications"),
                 "route"    => [
@@ -69,7 +69,7 @@ trait WithCommsSubNavigation
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "leftIcon" => [
-                    "icon"    => ["fal", "fa-radio"],
+                    "icon"    => ["fal", "fa-bullhorn"],
                     "tooltip" => __("Marketing Notifications"),
                 ],
             ],
@@ -84,17 +84,17 @@ trait WithCommsSubNavigation
                     "tooltip" => __("Customer Notifications"),
                 ],
             ],
-            [
-                "label"    => __("Cold Emails"),
-                "route"    => [
-                    "name"       => "grp.org.shops.show.dashboard.comms.cold_email_outboxes.index",
-                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-phone-volume"],
-                    "tooltip" => __("Cold Emails"),
-                ],
-            ],
+//            [
+//                "label"    => __("Cold Emails"),
+//                "route"    => [
+//                    "name"       => "grp.org.shops.show.dashboard.comms.cold_email_outboxes.index",
+//                    "parameters" => [$shop->organisation->slug, $shop->slug],
+//                ],
+//                "leftIcon" => [
+//                    "icon"    => ["fal", "fa-phone-volume"],
+//                    "tooltip" => __("Cold Emails"),
+//                ],
+//            ],
             [
                 "label"    => __("User Notifications"),
                 "route"    => [
@@ -117,18 +117,18 @@ trait WithCommsSubNavigation
                     "tooltip" => __("Push"),
                 ],
             ],
-            [
-                "label"    => __("Test"),
-                "route"    => [
-                    "name"       => "grp.org.shops.show.dashboard.comms.test_outboxes.index",
-                    "parameters" => [$shop->organisation->slug, $shop->slug],
-                ],
-                "leftIcon" => [
-                    "icon"    => ["fal", "fa-vial"],
-                    "tooltip" => __("Test"),
-                ],
-                'align'  => 'right'
-            ],
+//            [
+//                "label"    => __("Test"),
+//                "route"    => [
+//                    "name"       => "grp.org.shops.show.dashboard.comms.test_outboxes.index",
+//                    "parameters" => [$shop->organisation->slug, $shop->slug],
+//                ],
+//                "leftIcon" => [
+//                    "icon"    => ["fal", "fa-vial"],
+//                    "tooltip" => __("Test"),
+//                ],
+//                'align'  => 'right'
+//            ],
             [
                 "label"    => __("All"),
                 "route"    => [
