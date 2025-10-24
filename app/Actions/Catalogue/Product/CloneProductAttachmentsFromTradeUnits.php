@@ -71,5 +71,8 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
         }
 
         $product->attachments()->sync($attachments);
+
+        BreakProductInWebpagesCache::dispatch($product)->delay(1);
+
     }
 }

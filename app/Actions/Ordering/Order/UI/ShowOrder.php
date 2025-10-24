@@ -206,8 +206,10 @@ class ShowOrder extends OrgAction
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
 
-        $actions = $order->shop->type == ShopTypeEnum::DROPSHIPPING ?
-            GetDropshippingOrderActions::run($order, $this->canEdit) :
+        $actions = $order->shop->type == ShopTypeEnum::DROPSHIPPING
+            ?
+            GetDropshippingOrderActions::run($order, $this->canEdit)
+            :
             GetEcomOrderActions::run($order, $this->canEdit);
 
         $deliveryNoteRoute    = null;
@@ -277,41 +279,41 @@ class ShowOrder extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => OrderTabsEnum::navigation()
                 ],
-                'shop_type'     => $order->shop->type,
+                'shop_type'   => $order->shop->type,
                 'routes'      => [
-                    'modify'   => [
-                                'name' => 'grp.models.order.modification.save',
-                                'parameters' => [
-                                    'order' => $order->id
-                                ]
-                            ],
-                    'updateOrderRoute'  => [
+                    'modify'                     => [
+                        'name'       => 'grp.models.order.modification.save',
+                        'parameters' => [
+                            'order' => $order->id
+                        ]
+                    ],
+                    'updateOrderRoute'           => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.update',
                         'parameters' => [
                             'order' => $order->id,
                         ]
                     ],
-                    'rollback_dispatch' => [
+                    'rollback_dispatch'          => [
                         'method'     => 'patch',
                         'name'       => 'grp.models.order.rollback_dispatch',
                         'parameters' => [
                             'order' => $order->id
                         ]
                     ],
-                    'products_list'     => [
+                    'products_list'              => [
                         'name'       => 'grp.json.order.products',
                         'parameters' => [
                             'order' => $order->id
                         ]
                     ],
-                    'products_list_modification'     => [
+                    'products_list_modification' => [
                         'name'       => 'grp.json.order.products_for_modify',
                         'parameters' => [
                             'order' => $order->id
                         ]
                     ],
-                    'delivery_note'     => $deliveryNoteRoute
+                    'delivery_note'              => $deliveryNoteRoute
                 ],
 
                 'notes'                       => $this->getOrderNotes($order),
@@ -319,13 +321,13 @@ class ShowOrder extends OrgAction
                 'readonly'                    => $readonly,
                 'delivery_address_management' => GetOrderDeliveryAddressManagement::run(order: $order),
                 'contact_address'             => AddressResource::make($order->customer->address)->getArray(),
-                'box_stats'     => $this->getOrderBoxStats($order),
-                'currency'      => CurrencyResource::make($order->currency)->toArray(request()),
-                'data'          => OrderResource::make($order),
-                'delivery_note' => $deliveryNoteResource,
+                'box_stats'                   => $this->getOrderBoxStats($order),
+                'currency'                    => CurrencyResource::make($order->currency)->toArray(request()),
+                'data'                        => OrderResource::make($order),
+                'delivery_note'               => $deliveryNoteResource,
 
-                'proforma_invoice'  => [
-                    'check_list'       => [
+                'proforma_invoice' => [
+                    'check_list'         => [
                         [
                             'label' => __('Pro mode'),
                             'value' => 'pro_mode',
@@ -367,12 +369,12 @@ class ShowOrder extends OrgAction
                             'value' => 'group_by_tariff_code',
                         ],
                     ],
-                    'route_download_pdf'    => [
+                    'route_download_pdf' => [
                         'name'       => 'grp.org.shops.show.ordering.proforma_invoice.download',
                         'parameters' => [
                             'organisation' => $order->organisation->slug,
-                            'shop' => $order->shop->slug,
-                            'order' => $order->slug
+                            'shop'         => $order->shop->slug,
+                            'order'        => $order->slug
                         ]
                     ]
                 ],

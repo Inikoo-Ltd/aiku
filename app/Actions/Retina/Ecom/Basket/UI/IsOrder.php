@@ -25,6 +25,9 @@ trait IsOrder
 
     public function getOrderBoxStats(Order $order): array
     {
+
+        $taxCategory = $order->taxCategory;
+
         $payAmount   = $order->total_amount - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
 
@@ -249,7 +252,7 @@ trait IsOrder
                         'price_total' => $order->net_amount
                     ],
                     [
-                        'label'       => __('Tax 20%'),
+                        'label'       => __('Tax').' ('.$taxCategory->name.')',
                         'information' => '',
                         'price_total' => $order->tax_amount
                     ]
