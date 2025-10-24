@@ -76,11 +76,14 @@ class IndexOutboxes extends OrgAction
             $queryBuilder->where('outboxes.organisation_id', $parent->id);
         }
 
-        if ($bucket != 'all') {
+        if ($bucket == 'all') {
+            $queryBuilder->where('outboxes.model_type', '!=', 'Mailshot');
+        } else {
             $queryBuilder->where('outboxes.type', $bucket);
         }
 
         $queryBuilder->where('outboxes.is_applicable', true);
+
         return $queryBuilder
             ->defaultSort('outboxes.name')
             ->select([
@@ -176,69 +179,77 @@ class IndexOutboxes extends OrgAction
 
         return $this->handle($shop);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inShopNewsletter(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::NEWSLETTER->value);
+        return $this->handle(parent: $shop, bucket: OutboxTypeEnum::NEWSLETTER->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inShopMarketing(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::MARKETING->value);
+        return $this->handle(parent: $shop, bucket: OutboxTypeEnum::MARKETING->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inShopMarketingNotification(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::MARKETING_NOTIFICATION->value);
+        return $this->handle(parent: $shop, bucket: OutboxTypeEnum::MARKETING_NOTIFICATION->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inShopCustomerNotification(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::CUSTOMER_NOTIFICATION->value);
+        return $this->handle(parent: $shop, bucket: OutboxTypeEnum::CUSTOMER_NOTIFICATION->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inShopColdEmail(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::COLD_EMAIL->value);
+        return $this->handle(parent: $shop, bucket: OutboxTypeEnum::COLD_EMAIL->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inShopUserNotification(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::USER_NOTIFICATION->value);
+        return $this->handle(parent: $shop, bucket: OutboxTypeEnum::USER_NOTIFICATION->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inShopPush(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::PUSH->value);
+        return $this->handle(parent: $shop, bucket: OutboxTypeEnum::PUSH->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inShopTest(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle(parent:$shop, bucket:OutboxTypeEnum::TEST->value);
+        return $this->handle(parent: $shop, bucket: OutboxTypeEnum::TEST->value);
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -258,69 +269,77 @@ class IndexOutboxes extends OrgAction
 
         return $this->handle($fulfilment);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentNewsletter(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::NEWSLETTER->value);
+        return $this->handle(parent: $fulfilment, bucket: OutboxTypeEnum::NEWSLETTER->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentMarketing(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::MARKETING->value);
+        return $this->handle(parent: $fulfilment, bucket: OutboxTypeEnum::MARKETING->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentMarketingNotification(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::MARKETING_NOTIFICATION->value);
+        return $this->handle(parent: $fulfilment, bucket: OutboxTypeEnum::MARKETING_NOTIFICATION->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentCustomerNotification(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::CUSTOMER_NOTIFICATION->value);
+        return $this->handle(parent: $fulfilment, bucket: OutboxTypeEnum::CUSTOMER_NOTIFICATION->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentColdEmail(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::COLD_EMAIL->value);
+        return $this->handle(parent: $fulfilment, bucket: OutboxTypeEnum::COLD_EMAIL->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentUserNotification(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::USER_NOTIFICATION->value);
+        return $this->handle(parent: $fulfilment, bucket: OutboxTypeEnum::USER_NOTIFICATION->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentPush(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::PUSH->value);
+        return $this->handle(parent: $fulfilment, bucket: OutboxTypeEnum::PUSH->value);
     }
+
     /** @noinspection PhpUnusedParameterInspection */
     public function inFulfilmentTest(Organisation $organisation, Shop $shop, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
 
-        return $this->handle(parent:$fulfilment, bucket:OutboxTypeEnum::TEST->value);
+        return $this->handle(parent: $fulfilment, bucket: OutboxTypeEnum::TEST->value);
     }
 
 

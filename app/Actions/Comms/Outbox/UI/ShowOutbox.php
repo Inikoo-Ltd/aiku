@@ -40,6 +40,11 @@ class ShowOutbox extends OrgAction
 
     public function handle(Outbox $outbox): Outbox
     {
+
+        if ($outbox->model_type === 'Mailshot') {
+            abort(404);
+        }
+
         return $outbox;
     }
 
