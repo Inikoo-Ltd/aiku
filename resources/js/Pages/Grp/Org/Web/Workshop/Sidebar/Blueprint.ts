@@ -9,15 +9,15 @@ export default {
 					label: "Background",
 					type: "background",
 				},
-				// {
-				// 	key: ["border"],
-				// 	label: "Border",
-				// 	type: "border",
-				// },
 				{
 					key: ["text"],
 					label: "Text",
 					type: "textProperty",
+				},
+				{
+					key: ["border", "color"],
+					label: "Border",
+					type: "color",
 				},
 			],
 		},

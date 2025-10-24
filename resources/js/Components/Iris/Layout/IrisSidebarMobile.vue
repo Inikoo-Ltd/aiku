@@ -40,6 +40,7 @@ const props = defineProps<{
     activeCustomSubIndex: {}
     activeCustomTopSubIndex: {}
     changeActiveSubIndex: Function
+    containerStyle: {}
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -109,7 +110,7 @@ const closeSidebar = () => {
                     </Disclosure>
 
                     <!-- Section: Custom Top (Single link) -->
-                    <div v-else class="px-2 py-2 border-b">
+                    <div v-else class="px-2 py-2 borderBottomColorSameAsText">
                         <LinkIris v-if="customTopItem?.url !== null" :href="internalHref(customTopItem)"
                             :target="getTarget(customTopItem)"
                             @success="() => closeSidebar()"
@@ -199,7 +200,7 @@ const closeSidebar = () => {
                 </Disclosure>
 
                 <!-- Product Category SINGLE LINK -->
-                <div v-else class="px-2 py-2 border-b">
+                <div v-else class="px-2 py-2 borderBottomColorSameAsText">
                     <LinkIris
                         v-if="category?.url !== null"
                         @success="() => closeSidebar()"
@@ -365,12 +366,12 @@ const closeSidebar = () => {
 
 .borderTopColorSameAsText {
     border-top: 1px solid rgba(0, 0, 0, 0.5); /* fallback */
-    border-color: color-mix(in srgb, currentColor 30%, transparent);
+    border-color: v-bind('props.containerStyle?.border?.color || "color-mix(in srgb, currentColor 30%, transparent)"');
 }
 
 .borderBottomColorSameAsText {
     border-bottom: 1px solid rgba(0, 0, 0, 0.5); /* fallback */
-    border-color: color-mix(in srgb, currentColor 30%, transparent);
+    border-color: v-bind('props.containerStyle?.border?.color || "color-mix(in srgb, currentColor 30%, transparent)"');
 }
 
 .disclosure-panel {
