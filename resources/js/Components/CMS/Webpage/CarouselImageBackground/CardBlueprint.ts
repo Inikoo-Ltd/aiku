@@ -32,10 +32,50 @@ export default {
 			type: "editorhtml",
 		},
 		{
-			name : 'Link',
-			key: ["link"],
-			label: "Link",
-			type: "link",
+			name: "Button",
+			key: ["button"],
+			editGlobalStyle: "button",
+			replaceForm: [
+				{
+					key: ["link"],
+					label: "Link",
+					type: "link",
+				},
+				{
+					key: ["text"],
+					label: "Text",
+					type: "text",
+				},
+				{
+					key: ["container", "properties", "text"],
+					type: "textProperty",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "background"],
+					label: "Background",
+					type: "background",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "margin"],
+					label: "Margin",
+					type: "margin",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "padding"],
+					label: "Padding",
+					type: "padding",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "border"],
+					label: "Border",
+					type: "border",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+			],
 		},
 	],
 }
