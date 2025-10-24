@@ -22,7 +22,10 @@ library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRig
 
 const props = defineProps<{
     product: ProductResource
+    customerData : any
 }>()
+
+const customer = ref({...props.customerData})
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
@@ -62,6 +65,7 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
 
         product.transaction_id = response.data?.transaction_id
         product.quantity_ordered = response.data?.quantity_ordered
+        customer.value.transaction_id = response.data?.transaction_id
         setStatus('success')
         layout.reload_handle()
 
@@ -100,7 +104,7 @@ const onUpdateQuantity = (product: ProductResource) => {
     // console.log('stock in', stockInBasket)
     router.post(
         route('iris.models.transaction.update', {
-            transaction: product.transaction_id
+            transaction: customer.value.transaction_id 
         }),
         {
             quantity_ordered: get(product, ['quantity_ordered_new'], null)

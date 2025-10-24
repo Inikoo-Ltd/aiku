@@ -402,9 +402,9 @@ const validImages = computed(() => {
 
                 <!-- Section: Button add to cart -->
                 <div class="relative flex gap-2 mb-6">
-                    <div v-if="layout?.iris?.is_logged_in" class="w-full">
+                    <div v-if="layout?.iris?.is_logged_in && customerData" class="w-full">
                         <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
-                        <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="{...fieldValue.product, ...customerData}"  />
+                        <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" :customerData="customerData" :key="customerData.transaction_id" />
 
                         <div v-else>
                             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
