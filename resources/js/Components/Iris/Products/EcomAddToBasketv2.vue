@@ -51,7 +51,7 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
                 product: product.id
             }),
             { 
-                quantity: quantity ?? get(product, ['quantity_ordered_new'], product.quantity_ordered)
+                quantity: quantity ?? get(customer.value, ['quantity_ordered_new'], customer.value.quantity_ordered)
             }
         )
 
@@ -63,8 +63,9 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
             only: ['iris'],
         })
 
-        product.transaction_id = response.data?.transaction_id
-        product.quantity_ordered = response.data?.quantity_ordered
+        /* product.transaction_id = response.data?.transaction_id
+        product.quantity_ordered = response.data?.quantity_ordered */
+        customer.value.quantity_ordered = response.data?.quantity_ordered
         customer.value.transaction_id = response.data?.transaction_id
         setStatus('success')
         layout.reload_handle()
@@ -98,9 +99,6 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
 }
 
 const onUpdateQuantity = (product: ProductResource) => {
-
-    // Section: Submit
-    const stockInBasket = product.quantity_ordered ? product.quantity_ordered + get(product, ['quantity_ordered_new'], product.quantity_ordered) : product.quantity_ordered
     // console.log('stock in', stockInBasket)
     router.post(
         route('iris.models.transaction.update', {
@@ -140,51 +138,35 @@ const onUpdateQuantity = (product: ProductResource) => {
 }
 
 
-const addAndUpdateProduct = () => {
-    if (!props.product.quantity_ordered) {
-        onAddToBasket(props.product)
-    } else if (props.product.quantity_ordered_new === 0) {
-        onUpdateQuantity(props.product)
-    } else {
-        onUpdateQuantity(props.product)
-    }
-}
 const debAddAndUpdateProduct = debounce(() => {
-    if (!props.product.quantity_ordered) {
+    if (!customer.value.quantity_ordered) {
         onAddToBasket(props.product)
-    } else if (props.product.quantity_ordered_new === 0) {
-        onUpdateQuantity(props.product)
+    } else if (customer.value.quantity_ordered_new === 0) {
+        onUpdateQuantity(customer.value)
     } else {
-        onUpdateQuantity(props.product)
+        onUpdateQuantity(customer.value)
     }
 }, 700)
 
-const compIsValueDirty = computed(() => {
-    return get(props.product, ['quantity_ordered_new'], null) !== get(props.product, ['quantity_ordered'], null)
-})
 
 const compIsAddToBasket = computed(() => {
-    return !props.product.quantity_ordered
+    return !customer.value.quantity_ordered
 })
-// watch(() => get(props.product, ['quantity_ordered_new'], null), () => {
-//     debAddAndUpdateProduct()
-// })
+
 </script>
 
 <template>
     <div class="">
         <div class="flex items-center gap-2 relative w-36">
-            <!-- {{ get(props.product, ['quantity_ordered_new'], null) }}
-            {{ get(props.product, ['quantity_ordered'], null) }} -->
             <InputNumber
-                :modelValue="get(product, ['quantity_ordered_new'], null) === null ? product.quantity_ordered : get(product, ['quantity_ordered_new'], null)"
-                @input="(e) => (e.value ? set(product, ['quantity_ordered_new'], e.value) : set(product, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
+                :modelValue="get(customer, ['quantity_ordered_new'], null) === null ? customer.quantity_ordered : get(customer, ['quantity_ordered_new'], null)"
+                @input="(e) => (e.value ? set(customer, ['quantity_ordered_new'], e.value) : set(customer, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
                 inputId="integeronly"
                 fluid
                 showButtons
                 :disabled="isLoadingSubmitQuantityProduct"
                 :min="0"
-                :max="product.stock"
+                :max="customer.stock"
                 buttonLayout="horizontal"
                 :inputStyle="{
                     textAlign: 'center',
@@ -201,31 +183,7 @@ const compIsAddToBasket = computed(() => {
             
             <ConditionIcon :state="status" class="absolute top-1/2 -translate-y-1/2 -right-7"/>
 
-            <!-- <template v-if="compIsValueDirty">
-                <Button
-                    v-if="compIsAddToBasket"
-                    @click="() => onAddToBasket(props.product)"
-                    icon="far fa-plus"
-                    :label="trans(`Add to basket`)"
-                    type="primary"
-                    size="lg"
-                    :disabled="product.quantity_ordered > product.stock"
-                    :loading="isLoadingSubmitQuantityProduct"
-                />
-
-                <Button
-                    v-else
-                    @click="() => onUpdateQuantity(props.product)"
-                    :label="trans(`Save`)"
-                    icon="fad fa-save"
-                    type="primary"
-                    size="lg"
-                    :disabled="product.quantity_ordered_new > product.stock"
-                    :loading="isLoadingSubmitQuantityProduct"
-                />
-            </template> -->
-
-            <div v-if="!product.quantity_ordered && !product.quantity_ordered_new" class="ml-8">
+            <div v-if="!customer.quantity_ordered && !customer.quantity_ordered_new" class="ml-8">
                 <Button
                     v-if="compIsAddToBasket"
                     @click="() => onAddToBasket(props.product, 1)"
@@ -233,7 +191,7 @@ const compIsAddToBasket = computed(() => {
                     :label="trans(`Add to basket`)"
                     type="primary"
                     size="lg"
-                    :disabled="product.quantity_ordered > product.stock"
+                    :disabled="customer.quantity_ordered > customer.stock"
                     :loading="isLoadingSubmitQuantityProduct"
                 />
             </div>
@@ -241,15 +199,15 @@ const compIsAddToBasket = computed(() => {
             
         </div>
         
-        <div v-if="product.quantity_ordered" class="mt-1 xitalic text-gray-700 text-sm">
-            {{ trans("Current amount in basket") }}: <span class="font-semibold">{{ locale.currencyFormat(layout?.iris?.currency?.code, (props.product.price * product.quantity_ordered)) }}</span>
+        <div v-if="customer.quantity_ordered" class="mt-1 xitalic text-gray-700 text-sm">
+            {{ trans("Current amount in basket") }}: <span class="font-semibold">{{ locale.currencyFormat(layout?.iris?.currency?.code, (props.product.price * customer.quantity_ordered)) }}</span>
             <span>
-                <template v-if="product.quantity_ordered_new !== null && product.quantity_ordered_new !== undefined">
-                    <span v-if="product.quantity_ordered_new > product.quantity_ordered">
-                        <FontAwesomeIcon icon="fal fa-long-arrow-right" class="mx-1 align-middle" fixed-width aria-hidden="true" /> <span v-tooltip="trans('Increased :amount', { amount: locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered_new - product.quantity_ordered)))})">{{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered_new))) }}</span>
+                <template v-if="customer.quantity_ordered_new !== null && customer.quantity_ordered_new !== undefined">
+                    <span v-if="customer.quantity_ordered_new > customer.quantity_ordered">
+                        <FontAwesomeIcon icon="fal fa-long-arrow-right" class="mx-1 align-middle" fixed-width aria-hidden="true" /> <span v-tooltip="trans('Increased :amount', { amount: locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(customer.quantity_ordered_new - customer.quantity_ordered)))})">{{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(customer.quantity_ordered_new))) }}</span>
                     </span>
-                    <span v-else-if="product.quantity_ordered_new < product.quantity_ordered">
-                        <FontAwesomeIcon icon="fal fa-long-arrow-right" class="mx-1 align-middle" fixed-width aria-hidden="true" /> <span v-tooltip="trans('Decreased :amount', { amount: locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered - product.quantity_ordered_new)))})">{{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(product.quantity_ordered_new))) }}</span>
+                    <span v-else-if="customer.quantity_ordered_new < customer.quantity_ordered">
+                        <FontAwesomeIcon icon="fal fa-long-arrow-right" class="mx-1 align-middle" fixed-width aria-hidden="true" /> <span v-tooltip="trans('Decreased :amount', { amount: locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(customer.quantity_ordered - customer.quantity_ordered_new)))})">{{ locale.currencyFormat(layout?.iris?.currency?.code, Number(props.product.price * Number(customer.quantity_ordered_new))) }}</span>
                     </span>
                 </template>
             </span>

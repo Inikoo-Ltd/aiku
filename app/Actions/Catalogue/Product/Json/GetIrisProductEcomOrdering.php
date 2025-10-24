@@ -46,6 +46,7 @@ class GetIrisProductEcomOrdering extends IrisAction
                 'back_in_stock_id' => $back_in_stock_id,
                 'quantity_ordered'  => $quantityOrdered,
                 'transaction_id'    => $transactionId,
+                'stock'             => $product->available_quantity,
                 'quantity_ordered_new'  => $quantityOrdered ? (int) $quantityOrdered : null,
             ];
         }
