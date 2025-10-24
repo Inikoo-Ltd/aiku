@@ -31,6 +31,7 @@ import { get, set } from "lodash"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(
 	faChevronRight,
@@ -111,7 +112,7 @@ const handleIframeError = () => {
 }
 
 const currentView = ref('desktop')
-provide('currentView',currentView)
+provide('currentView', currentView)
 watch(currentView, (newValue) => {
 	iframeClass.value = setIframeView(newValue)
 })
@@ -127,14 +128,14 @@ const urlToSidebar = computed(() => {
 })
 
 let controller: AbortController | null = null
-const autoSave = async (value) => {
-	// Cancel the previous request if still pending
+const loadingAutoSave = ref(false)
+const autoSave = async (value: any) => {
 	if (controller) {
 		controller.abort()
 	}
 
-	// Create a new controller for this request
 	controller = new AbortController()
+	loadingAutoSave.value = true
 
 	try {
 		const response = await axios.patch(
@@ -144,7 +145,11 @@ const autoSave = async (value) => {
 		)
 		sendToIframe({ key: "reload", value: {} })
 	} catch (error: any) {
-		if (axios.isCancel(error) || error.name === "CanceledError" || error.message === "canceled") {
+		if (
+			axios.isCancel(error) ||
+			error.name === "CanceledError" ||
+			error.message === "canceled"
+		) {
 			console.log("Autosave request cancelled")
 			return
 		}
@@ -154,8 +159,14 @@ const autoSave = async (value) => {
 			text: error.message,
 			type: "error",
 		})
+	} finally {
+		if (controller && !controller.signal.aborted) {
+			loadingAutoSave.value = false
+			controller = null
+		}
 	}
 }
+
 </script>
 
 <template>
@@ -165,11 +176,14 @@ const autoSave = async (value) => {
 			<Publish :isLoading="isLoading" :is_dirty="true" v-model="comment"
 				@onPublish="(popover) => onPublish(action.route, popover)" />
 		</template>
+		<template #afterTitle>
+			<LoadingIcon v-if="loadingAutoSave" v-tooltip="trans('Saving..')" />
+		</template>
 	</PageHeading>
 
 	<div class="h-[85vh] grid grid-cols-12 gap-4 p-3">
 		<!-- SIDEBAR -->
-		<div  class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
+		<div class="col-span-3 bg-white rounded-xl shadow-md p-4 overflow-y-auto border">
 			<!-- Section: is follow Sidebar -->
 			<div v-if="shop_type !== 'fulfilment'" class="border-dashed border-b border-gray-300 pb-6 mb-6">
 				<div class="flex justify-between mt-4 ">
@@ -180,30 +194,25 @@ const autoSave = async (value) => {
 
 					<Toggle
 						:modelValue="get(data, ['menu', 'data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], false)"
-						@update:modelValue="(value) => { set(data, ['menu','data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], value), autoSave(data?.menu) }"
-					/>
+						@update:modelValue="(value) => { set(data, ['menu', 'data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], value), autoSave(data?.menu) }" />
 				</div>
 
 				<Link :href="urlToSidebar" class="text-xs underline hover:text-blue-500 cursor-pointer mt-2">
-					{{ trans("Open Sidebar workhop") }}
-					<FontAwesomeIcon icon="fal fa-external-link-alt" class="" fixed-width aria-hidden="true" />
+				{{ trans("Open Sidebar workhop") }}
+				<FontAwesomeIcon icon="fal fa-external-link-alt" class="" fixed-width aria-hidden="true" />
 				</Link>
 			</div>
 
 			<!-- Side workshop -->
-			<SideMenuWorkshop 
-				:data="data?.menu" 
-				:webBlockTypes="webBlockTypes" 
-				:autosaveRoute="autosaveRoute"
-				@sendToIframe="sendToIframe"
-			/>
+			<SideMenuWorkshop :data="data?.menu" :webBlockTypes="webBlockTypes" @auto-save="autoSave"
+				@sendToIframe="sendToIframe" />
 		</div>
 
 		<!-- PREVIEW SECTION -->
 		<div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
 			<!-- Controls -->
 			<div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
-				<ScreenView  @screenView="(e) => {currentView = e}" v-model="currentView" />
+				<ScreenView @screenView="(e) => { currentView = e }" v-model="currentView" />
 			</div>
 
 			<!-- Iframe Preview -->
@@ -211,8 +220,7 @@ const autoSave = async (value) => {
 				<div v-if="isIframeLoading" class="loading-overlay">
 					<ProgressSpinner />
 				</div>
-				<iframe :src="iframeSrc" :title="props.title"
-					:class="[iframeClass, isIframeLoading ? 'hidden' : '']"
+				<iframe :src="iframeSrc" :title="props.title" :class="[iframeClass, isIframeLoading ? 'hidden' : '']"
 					@error="handleIframeError" @load="isIframeLoading = false" ref="_iframe" />
 			</div>
 			<div v-else>
@@ -254,4 +262,3 @@ const autoSave = async (value) => {
 	}
 }
 </style>
-

@@ -48,7 +48,7 @@ const LBInitAutocompleteNew = async () => {
             TrackerId: layout.iris?.luigisbox_tracker_id,
             // Locale: layout.iris?.website_i18n?.current_language?.code || 'en',
             PriceFilter: {
-                minimumFractionDigits: 0,
+                minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
                 locale: locale.language.code,
                 prefixed: true,

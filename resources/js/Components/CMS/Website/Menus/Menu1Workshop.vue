@@ -60,12 +60,6 @@ const onMouseEnterMenu = (navigation: any) => {
     hoveredNavigation.value = navigation;
 };
 
-// Spinner logic for main nav
-const onClickNavigation = (navigation: any) => {
-    if (!navigation?.link?.href) return;
-    loadingItem.value = navigation.id || navigation.label;
-    setTimeout(() => (window.location.href = navigation.link.href), 600);
-};
 
 // Spinner logic for subnav
 const onClickSubnav = (link: any) => {
