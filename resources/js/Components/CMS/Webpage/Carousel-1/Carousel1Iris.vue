@@ -86,7 +86,7 @@ const responsiveOptions = computed(() => {
         <template #item="{ data, index }" :showNavigators="false" :showIndicators="false">
           <div class="card flex flex-col h-full">
             <component :is="getHref(data) ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
-              :href="data?.link?.href" :target="data?.link?.target" class="flex flex-1 flex-col">
+              :href="data?.link?.href" :target="data?.link?.target" class="flex flex-1 flex-col" :type="data?.link?.type">
               <!-- Image Container -->
               <div class="flex justify-center overflow-visible"
                 :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)">
