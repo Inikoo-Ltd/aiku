@@ -31,6 +31,12 @@ class RepairWebsiteLuigiData
      */
     public function handle(Website $website, Command $command): void
     {
+        $accessToken = $this->getAccessToken($website);
+        if (count($accessToken) < 2) {
+            return;
+        }
+
+
         $mibId = DB::table('webpages')->where('website_id', $website->id)->min('id');
         $maxId = DB::table('webpages')->where('website_id', $website->id)->max('id');
 
@@ -40,7 +46,6 @@ class RepairWebsiteLuigiData
         }
 
         for ($id = $mibId; $id <= $maxId; $id++) {
-
             $existInOtherWebsite = DB::table('webpages')->where('id', $id)->where('website_id', '!=', $website->id)->exists();
             if ($existInOtherWebsite) {
                 continue;
@@ -56,8 +61,7 @@ class RepairWebsiteLuigiData
                 ->first();
 
             if (!$webpage) {
-
-                $oldIdentity = "$website->group_id:$website->organisation_id:{$website->shop->id}:{$website->id}:$id";
+                $oldIdentity = "$website->group_id:$website->organisation_id:{$website->shop->id}:$website->id:$id";
 
                 $command->info("deleting object $oldIdentity");
 
@@ -68,18 +72,16 @@ class RepairWebsiteLuigiData
                         "type"     => "item",
                     ]
                 );
-
             }
-
-
         }
-
     }
-
 
 
     public string $commandSignature = 'repair:website_luigi_data {website?}';
 
+    /**
+     * @throws \Exception
+     */
     public function asCommand(Command $command): void
     {
         if ($command->argument('website')) {
