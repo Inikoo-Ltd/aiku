@@ -63,7 +63,8 @@ const contentRef = ref<Element | null>(null)
 const expanded = ref(false)
 const showButton = ref(false)
 const isLoadingRemindBackInStock = ref(false)
-const keyEcomAddToBasketv2 = ref(ulid())
+const customerData = ref(null)
+
 
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
@@ -202,7 +203,7 @@ const getOrderingProduct = async () => {
 
     // Update the local state
     set(props.fieldValue,"product", {...props.fieldValue.product, ...response.data})
-    keyEcomAddToBasketv2.value = ulid()
+    customerData.value = response.data
   } catch (error: any) {
     notify({
       title: trans("Something went wrong"),
@@ -403,7 +404,7 @@ const validImages = computed(() => {
                 <div class="relative flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
-                        <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" :key="keyEcomAddToBasketv2" />
+                        <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="{...fieldValue.product, ...customerData}"  />
 
                         <div v-else>
                             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
