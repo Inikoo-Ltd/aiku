@@ -1,20 +1,20 @@
-<script setup lang='ts'>
-import Button from '@/Components/Elements/Buttons/Button.vue'
-import Image from '@/Components/Image.vue'
-import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
-import Table from '@/Components/Table/Table.vue'
-import Tag from '@/Components/Tag.vue'
-import ConditionIcon from '@/Components/Utils/ConditionIcon.vue'
-import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { routeType } from '@/types/route'
-import { Table as TableTS} from '@/types/Table'
-import { Link, router } from '@inertiajs/vue3'
-import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
-import { debounce, get, set } from 'lodash-es'
-import { inject, ref } from 'vue'
+<script setup lang="ts">
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import Image from "@/Components/Image.vue"
+import NumberWithButtonSave from "@/Components/NumberWithButtonSave.vue"
+import Table from "@/Components/Table/Table.vue"
+import Tag from "@/Components/Tag.vue"
+import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { routeType } from "@/types/route"
+import { Table as TableTS } from "@/types/Table"
+import { Link, router } from "@inertiajs/vue3"
+import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
+import { debounce, get, set } from "lodash-es"
+import { inject, ref } from "vue"
 import { useLayoutStore } from "@/Stores/retinaLayout"
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 const props = defineProps<{
     data: any[] | TableTS
@@ -23,18 +23,9 @@ const props = defineProps<{
     state?: string
     readonly?: boolean
 }>()
-    
-const layout = inject("layout", {})
-const locale = inject('locale', retinaLayoutStructure)
 
-function productRoute(product) {
-    switch (route().current()) {
-        case 'retina.ecom.basket.show':
-            return product.webpage_url
-        default:
-            return ''
-    }
-}
+const layout = inject("layout", {})
+const locale = inject("locale", retinaLayoutStructure)
 
 
 // Section: Quantity
@@ -51,25 +42,25 @@ const onUpdateQuantity = (routeUpdate: routeType, idTransaction: number, value: 
                 notify({
                     title: trans("Something went wrong"),
                     text: e.message,
-                    type: "error",
+                    type: "error"
                 })
             },
             onStart: () => {
-                set(listState.value, [idTransaction, 'quantity'], 'loading'),
-                isLoading.value = 'quantity' + idTransaction
+                set(listState.value, [idTransaction, "quantity"], "loading"),
+                    isLoading.value = "quantity" + idTransaction
             },
             onSuccess: () => {
-                set(listState.value, [idTransaction, 'quantity'], 'success')
+                set(listState.value, [idTransaction, "quantity"], "success")
                 layout.reload_handle()
             },
             onFinish: () => {
                 isLoading.value = false,
-                setTimeout(() => {
-                    set(listState.value, [idTransaction, 'quantity'], null)
-                }, 3000)
+                    setTimeout(() => {
+                        set(listState.value, [idTransaction, "quantity"], null)
+                    }, 3000)
             },
-            only: ['transactions', 'summary', 'total_to_pay', 'balance', 'iris'],
-            preserveScroll: true,
+            only: ["transactions", "summary", "total_to_pay", "balance", "iris"],
+            preserveScroll: true
         }
     )
 }
@@ -97,9 +88,12 @@ const debounceUpdateQuantity = debounce(
 
         <!-- Column: Code -->
         <template #cell(asset_code)="{ item }">
-            <LinkIris :href="productRoute(item)" class="primaryLink" target="_blank">
+            <a v-if="item.webpage_url" :href="item.webpage_url" class="primaryLink" >
                 {{ item.asset_code }}
-            </LinkIris>
+            </a>
+            <span v-else>
+                  {{ item.asset_code }}
+            </span>
         </template>
 
         <!-- Column: Net -->
@@ -112,7 +106,7 @@ const debounceUpdateQuantity = debounce(
                 <div v-else class="text-gray-500 italic text-xs">
                     Stock: {{ locale.number(item.available_quantity || 0) }} available
                 </div>
-                
+
             </div>
         </template>
 
@@ -139,7 +133,7 @@ const debounceUpdateQuantity = debounce(
                     class="absolute ml-2 top-1/2 -translate-y-1/2 text-base"
                     :state="get(listState, [item.id, 'quantity'], null)"
                 />
-                
+
             </div>
         </template>
 

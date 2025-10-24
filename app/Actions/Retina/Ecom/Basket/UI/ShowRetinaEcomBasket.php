@@ -170,15 +170,6 @@ class ShowRetinaEcomBasket extends RetinaAction
             array_merge(
                 IndexRetinaEcomOrders::make()->getBreadcrumbs(),
                 [
-                    // [
-                    //     'type'   => 'simple',
-                    //     'simple' => [
-                    //         'route' => [
-                    //             'name' => 'retina.dropshipping.orders.index'
-                    //         ],
-                    //         'label'  => __('Orders'),
-                    //     ]
-                    // ]
                 ]
             );
     }
