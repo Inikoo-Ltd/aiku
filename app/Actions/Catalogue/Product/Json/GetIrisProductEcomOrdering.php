@@ -16,8 +16,6 @@ use Lorisleiva\Actions\ActionRequest;
 
 class GetIrisProductEcomOrdering extends IrisAction
 {
-    use WithIrisProductsInWebpage;
-
     public function handle(Product $product): array
     {
         $response = [];
@@ -62,5 +60,9 @@ class GetIrisProductEcomOrdering extends IrisAction
         return $this->handle($product);
     }
 
+    public function jsonResponse(array $products): array|\Illuminate\Http\Resources\Json\JsonResource
+    {
+        return $products;
+    }
 
 }
