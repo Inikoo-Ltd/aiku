@@ -10,7 +10,7 @@ import {Head, router} from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import {capitalize} from "@/Composables/capitalize"
 import Tabs from "@/Components/Navigation/Tabs.vue"
-import {computed, ref} from 'vue'
+import {computed, ref, inject} from 'vue'
 import type {Component} from 'vue'
 import {useTabChange} from "@/Composables/tab-change"
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -28,7 +28,6 @@ import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import axios from 'axios'
 import TableDeliveryNotes from "@/Components/Tables/Grp/Org/Dispatching/TableDeliveryNotes.vue"
 import {notify} from '@kyvg/vue3-notification'
-import OrderProductTable from '@/Components/Dropshipping/Orders/OrderProductTable.vue'
 import Modal from '@/Components/Utils/Modal.vue'
 import {Address, AddressManagement} from "@/types/PureComponent/Address"
 import {library} from "@fortawesome/fontawesome-svg-core"
@@ -43,7 +42,6 @@ import TableProductList from '@/Components/Tables/Grp/Helpers/TableProductList.v
 import {faSpinnerThird, faCheck} from '@far'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import DropshippingSummaryBasket from '@/Components/Retina/Dropshipping/DropshippingSummaryBasket.vue'
-import { inject } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'

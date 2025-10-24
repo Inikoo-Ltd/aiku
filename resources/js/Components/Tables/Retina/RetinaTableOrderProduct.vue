@@ -1,4 +1,3 @@
-
 <script setup lang='ts'>
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
@@ -13,7 +12,7 @@ import { trans } from 'laravel-vue-i18n'
 import { debounce } from 'lodash-es'
 import { inject, ref } from 'vue'
 
-const props = defineProps<{
+defineProps<{
     data: any[] | TableTS
     tab: string
     updateRoute: routeType
@@ -26,18 +25,12 @@ const locale = inject('locale', retinaLayoutStructure)
 
 
 function productRoute(product) {
-    // console.log(route().current())
-    switch (route().current()) {
-        case 'grp.org.shops.show.crm.customers.show.orders.show':
-        case 'grp.org.shops.show.ordering.orders.show':
-            if (product.product_slug) {
-                return route(
-                    'grp.org.shops.show.catalogue.products.all_products.show',
-                    [route().params['organisation'], route().params['shop'], product.product_slug])
-            }
-            return ''
-        default:
-            return ''
+    if (product.product_slug) {
+        return route(
+            'retina.catalogue.products.show',
+            [product.product_slug])
+    }else{
+        return ''
     }
 }
 
@@ -120,21 +113,7 @@ const debounceUpdateQuantity = debounce(
                     }}
                 </div>
 
-                <!-- <Transition name="spin-to-down">
-                    <span :key="item.quantity_ordered">
-                        {{ item['quantity_ordered'] }}
-                    </span>
-                </Transition> -->
 
-                <!-- <PureInput
-                    :modelValue="item.quantity_ordered"
-                    @onEnter="(e: number) => onUpdateQuantity(item.updateRoute, item.id, e)"
-                    @blur="(e: string) => e == item.quantity_ordered ? false : onUpdateQuantity(item.updateRoute, item.id, e)"
-                    :isLoading="isLoading === 'quantity' + item.id"
-                    type="number"
-                    align="right"
-                    :disabled="state === 'dispatched'"
-                /> -->
             </div>
 
         </template>
