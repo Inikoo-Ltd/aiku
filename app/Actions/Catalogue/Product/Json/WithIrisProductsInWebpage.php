@@ -177,7 +177,8 @@ trait WithIrisProductsInWebpage
             'available_quantity',
             'code',
             'name',
-            'rrp'
+            'rrp',
+            'margin'
         ];
     }
 

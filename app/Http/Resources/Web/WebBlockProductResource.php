@@ -50,6 +50,13 @@ class WebBlockProductResource extends JsonResource
             'unit'              => $product->unit,
         ];
 
+        $margin = '';
+        if ($product->rrp > 0) {
+            $margin     = percentage(round((($product->rrp - $product->price) / $this->rrp) * 100, 1), 100);
+            $rrpPerUnit = round($product->rrp / $product->units, 2);
+        }
+
+
         return [
             'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
@@ -65,6 +72,8 @@ class WebBlockProductResource extends JsonResource
             'image_id'          => $product->image_id,
             'currency_code'     => $product->currency->code,
             'rrp'               => $product->rrp,
+            'rrp_per_unit'      => $rrpPerUnit,
+            'margin'            => $margin,
             'price'             => $product->price,
             'status'            => $product->status,
             'state'             => $product->state,
