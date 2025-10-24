@@ -41,11 +41,12 @@ class GetIrisProductEcomOrdering extends IrisAction
             }
 
             $response = [
-                'favourite'        => (bool)$favourite,
+                'is_favourite'        => (bool)$favourite,
                 'back_in_stock'    => $back_in_stock,
                 'back_in_stock_id' => $back_in_stock_id,
-                'quantityOrdered'  => $quantityOrdered,
-                'transactionId'    => $transactionId,
+                'quantity_ordered'  => $quantityOrdered,
+                'transaction_id'    => $transactionId,
+                'quantity_ordered_new'  => $quantityOrdered ? (int) $quantityOrdered : null,
             ];
         }
 

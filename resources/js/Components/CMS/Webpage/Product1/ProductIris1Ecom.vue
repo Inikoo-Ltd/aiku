@@ -23,6 +23,8 @@ import { faEnvelope } from "@far"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
 import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
+import axios from "axios"
+import { ulid } from "ulid"
 
 library.add(faCube, faLink, faPlus, faMinus)
 
@@ -61,6 +63,7 @@ const contentRef = ref<Element | null>(null)
 const expanded = ref(false)
 const showButton = ref(false)
 const isLoadingRemindBackInStock = ref(false)
+const keyEcomAddToBasketv2 = ref(ulid())
 
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
@@ -188,6 +191,31 @@ const onUnselectBackInStock = (product: ProductResource) => {
     )
 }
 
+const getOrderingProduct = async () => {
+  isLoadingRemindBackInStock.value = true
+
+  try {
+    const url = route("iris.json.product.ecom_ordering_data", { product: props.fieldValue.product.id })
+    const response = await axios.get(url, {
+      params: {},
+    })
+
+    // Update the local state
+    set(props.fieldValue,"product", {...props.fieldValue.product, ...response.data})
+    keyEcomAddToBasketv2.value = ulid()
+  } catch (error: any) {
+    notify({
+      title: trans("Something went wrong"),
+      text: trans("Failed to remove the product from remind back in stock"),
+      type: "error",
+    })
+    console.error(error)
+    return null
+  } finally {
+    isLoadingRemindBackInStock.value = false
+  }
+}
+
 
 onMounted(() => {
     requestAnimationFrame(() => {
@@ -195,6 +223,8 @@ onMounted(() => {
             showButton.value = true
         }
     })
+
+    if(layout?.iris?.is_logged_in) getOrderingProduct()
 
     // Luigi: last_seen recommendations
     if (props.fieldValue?.product?.luigi_identity) {
@@ -211,9 +241,12 @@ onMounted(() => {
     }
 })
 
+
 const toggleExpanded = () => {
     expanded.value = !expanded.value
 }
+
+
 
 
 const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldValue.product.images :
@@ -370,7 +403,7 @@ const validImages = computed(() => {
                 <div class="relative flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in" class="w-full">
                         <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
-                        <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
+                        <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" :key="keyEcomAddToBasketv2" />
 
                         <div v-else>
                             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
