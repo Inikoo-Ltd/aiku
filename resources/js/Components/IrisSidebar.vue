@@ -200,9 +200,12 @@ const internalHref = (item) => {
 
 <template>
     <div class="mobile-menu editor-class">
-        <button @click="isOpenMenuMobile = true" class="text-xl">
+        <button @click="isOpenMenuMobile = true" class="">
             <FontAwesomeIcon :icon="props.header?.mobile?.menu?.icon || faBars"
-                :style="{ ...getStyles(header?.mobile?.menu?.container?.properties) }" />
+                :style="{ ...getStyles(header?.mobile?.menu?.container?.properties, screenType) }"
+                fixed-width
+                aria-hidden="true"
+            />
         </button>
 
         <Drawer

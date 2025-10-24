@@ -7,7 +7,7 @@ import Image from "@/Components/Image.vue"
 import { inject, watch, ref, onMounted } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
-import { faBaby, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
+import { faBaby, faShoppingCart as falShoppingCart, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
 import {
     faBackpack,
     faTruckLoading,
@@ -36,10 +36,12 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { checkScreenType } from '@/Composables/useWindowSize'
 import { computed } from 'vue'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
+import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
 // Add icons to the library
 library.add(
-    faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone, faBars,
+    faTimesCircle, faUser, faCactus, faBaby, falShoppingCart, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone, faBars,
     faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faUserCircle,
     faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock, falUserCircle
 );
@@ -159,21 +161,18 @@ watch(computedSelectedSidebarData,
     { immediate: true, deep: true } // Add options for immediate and deep watching
 );
 
-const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const screenType = inject('screenType', 'desktop')
 
-onMounted(() => {
-    screenType.value = checkScreenType()
-})
 </script>
 
 <template>
     <div class="block md:hidden p-3">
-        <div class="xflex justify-between items-center grid"
-            :style="{
-                gridTemplateColumns: `repeat(${isLoggedIn ? 5 : 2}, minmax(0, 1fr))`
+        <div class="xflex justify-between items-center grid grid-cols-5"
+            xstyle="{
+                gridTemplateColumns: `repeat(${true ? 5 : 2}, minmax(0, 1fr))`
             }"
         >
-            <div class="text-left w-fit">
+            <div class="text-left w-fit flex items-center gap-x-2 ">
                 <!-- Section: Hamburger mobile -->
                 <IrisSidebar
                     :header="headerData"
@@ -185,12 +184,21 @@ onMounted(() => {
                     :sidebarLogo="computedSelectedSidebarData?.data?.fieldValue?.sidebar_logo"
                     :sidebar="computedSelectedSidebarData"
                 />
+                
+                <!-- Search Bar -->
+                <LuigiSearchMobile
+                    v-if="layout.iris?.luigisbox_tracker_id"
+                    :style="{ ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType) }"
+                    id="luigi_mobile"
+                />
             </div>
 
             <!-- Section: Logo  -->
-            <div class="w-full px-4 mb-1 flex justify-end items-center " :class="isLoggedIn ? 'col-span-3' : 'col-span-1'">
-                <component :is="true ? Link : 'div'" :href="'/'" class="block h-fit aspect-auto max-h-[50px] min-w-5 w-full max-w-32"
-                    :class="isLoggedIn ? 'mx-auto' : ''"
+            <div class="w-full px-4 mb-1 flex justify-end items-center col-span-3">
+                <component
+                    :is="true ? LinkIris : 'div'"
+                    :href="'/'"
+                    class="mx-auto block h-fit aspect-auto max-h-[50px] min-w-5 w-full max-w-32"
                 >
                     <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" ximageCover="true"
                         :style="{ objectFit: 'contain' }"
@@ -199,18 +207,35 @@ onMounted(() => {
             </div>
 
             <!-- Section: Profile -->
-            <div v-if="isLoggedIn" class="w-fit ml-auto flex items-center cursor-pointer text-xl">
-                <LinkIris href="/app/profile">
-                    <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
-                    :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
+            <div class="w-fit ml-auto flex items-center gap-x-1 cursor-pointer">
+                <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="px-1">
+                    <FontAwesomeIcon
+                        icon="fal fa-sign-in"
+                        :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)"
+                        fixed-width aria-hidden="true"
+                    />
                 </LinkIris>
+
+                <template v-if="isLoggedIn">
+                    <LinkIris href="/app/profile" class="px-1">
+                        <FontAwesomeIcon
+                            :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : 'fal fa-user-circle'"
+                            :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)"
+                            fixed-width aria-hidden="true"
+                        />
+                    </LinkIris>
+                    
+                    <LinkIris href="/app/basket" class="px-1">
+                        <FontAwesomeIcon
+                            :icon="'fal fa-shopping-cart'"
+                            :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)"
+                            fixed-width aria-hidden="true"
+                        />
+                    </LinkIris>
+                </template>
             </div>
         </div>
 
-        <!-- Search Bar -->
-        <div v-if="layout.iris?.luigisbox_tracker_id" class="relative justify-self-center w-full">
-            <LuigiSearch id="luigi_mobile" />
-        </div>
     </div>
 </template>
 
