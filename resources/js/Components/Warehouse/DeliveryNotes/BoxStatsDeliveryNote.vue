@@ -13,15 +13,12 @@ import { inject, ref, toRaw } from "vue"
 import { routeType } from "@/types/route"
 import { set } from 'lodash-es'
 import { notify } from "@kyvg/vue3-notification"
-import { useTruncate } from "@/Composables/useTruncate"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { Fieldset, InputNumber, ToggleSwitch } from "primevue"
 import Icon from "@/Components/Icon.vue"
-import axios from "axios"
-import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 
 library.add(faIdCardAlt, faEnvelope, faPhone, faGift, faBoxFull, faWeight, faCube, faCubes, faBarcodeRead, faMapMarkerAlt)
 
@@ -247,8 +244,8 @@ const updateCollection = async (e: Event) => {
                         <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
                             aria-hidden="true" />
                     </dt>
-                    <dd class="text-gray-500" v-tooltip="'Reference'">
-                        #{{ boxStats?.customer.reference }}
+                    <dd class="text-gray-500" v-tooltip="trans('Customer')">
+                         {{ boxStats?.customer.name }} ({{ boxStats?.customer.reference }})
                     </dd>
                     </Link>
                     <!-- Field: Contact name -->
@@ -260,7 +257,7 @@ const updateCollection = async (e: Event) => {
                         <dd class="text-gray-500">{{ boxStats?.customer.contact_name }}</dd>
                     </div>
                     <!-- Field: Company name -->
-                    <div v-if="boxStats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2"
+                    <div v-if="boxStats?.customer.company_name && boxStats?.customer.company_name!=boxStats?.customer.name " class="pl-1 flex items-center w-full flex-none gap-x-2"
                         v-tooltip="trans('Company name')">
                         <dt class="flex-none">
                             <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width

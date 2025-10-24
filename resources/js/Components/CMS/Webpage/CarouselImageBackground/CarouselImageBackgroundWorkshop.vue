@@ -1,18 +1,19 @@
 <script setup lang="ts">
 import Carousel from 'primevue/carousel'
 import Image from '@/Components/Image.vue'
-import { ulid } from 'ulid'
 import { inject, ref, watch, computed, nextTick } from 'vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faImage } from '@fal'
 import { getStyles } from '@/Composables/styles'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
+import Blueprint from './Blueprint'
+import CardBlueprint from './CardBlueprint'
+import { sendMessageToParent } from "@/Composables/Workshop"
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 const props = defineProps<{
   modelValue: any
   webpageData?: any
   blockData?: Object
   screenType: 'mobile' | 'tablet' | 'desktop'
+  indexBlock: number
 }>()
 
 const emits = defineEmits<{ (e: 'autoSave'): void }>()
@@ -67,30 +68,63 @@ const responsiveOptions = computed(() => {
     { breakpoint: '576px', numVisible: settings.slidesPerView?.mobile || 1, numScroll: 1 }
   ]
 })
+
+const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
+const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
+
+const imageSettings = {
+  key: ["image", "source"],
+  stencilProps: {
+    aspectRatio: 1 / 1,
+    movable: true,
+    scalable: true,
+    resizable: true,
+  },
+}
+
 </script>
 
 <template>
   <div id="carousel-background-image" class="relative w-full">
-
-
     <!-- Carousel -->
     <div :data-refresh="refreshTrigger" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
-    }">
+    }" @click.stop="
+      () => {
+        sendMessageToParent('activeBlock', indexBlock)
+        sendMessageToParent('activeChildBlock', bKeys[0])
+      }">
       <Carousel v-if="hasCards" :value="modelValue.carousel_data.cards" :numVisible="slidesPerView"
         :circular="isLooping" :autoplayInterval="0" :responsiveOptions="responsiveOptions" class="w-full">
-        <template #item="{ data }">
+        <template #item="{ data, index }">
           <!-- WRAPPER: This adds gap safely -->
           <div class="px-1 md:px-1 lg:px-1">
-            <article
-              class="card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
+            <article @click.stop="
+                () => {
+                  sendMessageToParent('activeBlock', indexBlock)
+                  sendMessageToParent('activeChildBlock', bKeys[2])
+                  sendMessageToParent('activeChildBlockArray', index)
+                  sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
+                }
+              "
+              @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })"
+              class=" card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
               <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
                 class="absolute inset-0 -z-10 size-full object-fill hover:scale-105 transition-transform duration-500" />
               <div class="absolute inset-0 -z-10"></div>
               <div class="relative p-6 sm:p-8">
                 <div class="p-4 flex flex-col flex-1 justify-between">
                   <div v-html="data.text" />
+                  <div class="w-full mt-3" v-if="modelValue.carousel_data.carousel_setting.button">
+                    <Button :injectStyle="getStyles(data?.button?.container?.properties, screenType)"
+                      :label="data?.button?.text" @click.stop="
+                        () => {
+                          sendMessageToParent('activeBlock', indexBlock)
+                          sendMessageToParent('activeChildBlock', bKeys[2])
+                        }
+                      " />
+                  </div>
                 </div>
               </div>
             </article>

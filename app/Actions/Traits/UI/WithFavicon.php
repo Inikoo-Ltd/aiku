@@ -9,10 +9,10 @@
 namespace App\Actions\Traits\UI;
 
 use App\Actions\Helpers\Media\SaveModelFavicon;
+use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Models\Web\Website;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 
 trait WithFavicon
 {
@@ -32,8 +32,7 @@ trait WithFavicon
                 scope: 'favicon'
             );
 
-            $key = config('iris.cache.website.prefix')."_$website->domain";
-            Cache::forget($key);
+            BreakWebsiteCache::run($website);
 
         }
 

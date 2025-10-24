@@ -74,7 +74,7 @@ trait WithMasterDepartmentSubNavigation
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-album-collection'],
-                    'tooltip' => __('master collections')
+                    'tooltip' => __('Master collections')
                 ]
             ],
 
