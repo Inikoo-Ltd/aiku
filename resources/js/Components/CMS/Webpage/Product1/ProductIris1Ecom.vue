@@ -85,7 +85,7 @@ const onAddFavourite = (product: ProductResource) => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, "is_favourite", true)
+                set(customerData.value, "is_favourite", true)
                 layout.reload_handle()
             },
             onError: errors => {
@@ -115,7 +115,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, "is_favourite", false)
+                set(customerData.value, "is_favourite", false)
 
             },
             onError: errors => {
@@ -334,9 +334,9 @@ const validImages = computed(() => {
                                                  :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                                 <span>
                                     {{
-                                        fieldValue.product.stock > 0
+                                        customerData?.stock > 0
                                             ? trans("In stock") +
-                                            ` (${fieldValue.product.stock} ` +
+                                            ` (${customerData?.stock} ` +
                                             trans("available") +
                                             `)`
                                             : trans("Out Of Stock")
@@ -364,9 +364,9 @@ const validImages = computed(() => {
                                 <LoadingIcon />
                             </div>
                             <div v-else
-                                 @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
+                                 @click="() => customerData?.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
                                  class="cursor-pointer top-2 right-2 group text-2xl ">
-                                <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="fasHeart" fixed-width
+                                <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" fixed-width
                                                  class="text-pink-500" />
                                 <span v-else class="">
                                     <FontAwesomeIcon :icon="fasHeart" fixed-width
@@ -483,7 +483,7 @@ const validImages = computed(() => {
             <div v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in" class="mt-1">
                 <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer transition-colors duration-300"
                                  :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
-                                 @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
+                                 @click="() => customerData?.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
             </div>
         </div>
 
