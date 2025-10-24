@@ -20,7 +20,6 @@ use App\Models\Fulfilment\Fulfilment;
 use App\Models\Web\Website;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
@@ -92,9 +91,8 @@ class UpdateWebsite extends OrgAction
             WebsiteRecordSearch::run($website);
         }
 
-        if (Arr::has($changes, 'domain')) {
-            $key = config('iris.cache.website.prefix')."_$website->domain";
-            Cache::forget($key);
+        if (Arr::hasAny($changes, ['domain', 'settings'])) {
+            BreakWebsiteCache::run($website);
         }
 
         return $website;
@@ -104,7 +102,7 @@ class UpdateWebsite extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'domain'        => [
+            'domain'                => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -130,7 +128,7 @@ class UpdateWebsite extends OrgAction
                     ]
                 )
             ],
-            'code'          => [
+            'code'                  => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -151,50 +149,50 @@ class UpdateWebsite extends OrgAction
                 ),
 
             ],
-            'name'          => ['sometimes', 'required', 'string', 'max:255'],
-            'launched_at'   => ['sometimes', 'date'],
-            'state'         => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
-            'status'        => ['sometimes', 'boolean'],
-            'google_tag_id' => [
+            'name'                  => ['sometimes', 'required', 'string', 'max:255'],
+            'launched_at'           => ['sometimes', 'date'],
+            'state'                 => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
+            'status'                => ['sometimes', 'boolean'],
+            'google_tag_id'         => [
                 'sometimes',
                 'nullable',
                 'string',
                 'regex:/^GTM-[A-Z0-9]+$/'
             ],
-            'catalogue_template' => ['sometimes', 'array'],
-            'luigisbox_tracker_id' => [
+            'catalogue_template'    => ['sometimes', 'array'],
+            'luigisbox_tracker_id'  => [
                 'sometimes',
                 'string',
                 'nullable',
                 'regex:/^\d{6}-\d{6}$/'
             ],
-            'luigisbox_script_lbx' => [
+            'luigisbox_script_lbx'  => [
                 'sometimes',
                 'nullable',
                 'string',
             ],
-            'luigisbox_lbx_code' => [
+            'luigisbox_lbx_code'    => [
                 'sometimes',
                 'nullable',
                 'string',
                 'regex:/^LBX-\d{6}$/',
             ],
             'luigisbox_private_key' => ['sometimes', 'nullable', 'string'],
-            'last_reindex_at' => ['sometimes', 'nullable', 'string'],
-            'return_policy' => ['sometimes', 'string'],
-            'image'       => [
+            'last_reindex_at'       => ['sometimes', 'nullable', 'string'],
+            'return_policy'         => ['sometimes', 'string'],
+            'image'                 => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'favicon'       => [
+            'favicon'               => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'script_website' => [
+            'script_website'        => [
                 'sometimes',
                 'nullable',
                 'string',
@@ -229,7 +227,6 @@ class UpdateWebsite extends OrgAction
                     ]
                 )
             ];
-
         }
 
         return $rules;
@@ -252,7 +249,6 @@ class UpdateWebsite extends OrgAction
 
     public function asController(Website $website, ActionRequest $request): Website
     {
-        $this->scope   = $website->shop;
         $this->website = $website;
         $this->initialisationFromShop($website->shop, $request);
 
@@ -262,7 +258,6 @@ class UpdateWebsite extends OrgAction
 
     public function inFulfilment(Fulfilment $fulfilment, Website $website, ActionRequest $request): Website
     {
-        $this->scope   = $fulfilment;
         $this->website = $website;
         $this->initialisationFromFulfilment($fulfilment, $request);
 

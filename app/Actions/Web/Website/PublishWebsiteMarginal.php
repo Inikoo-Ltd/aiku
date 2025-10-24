@@ -17,7 +17,6 @@ use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Models\Helpers\Snapshot;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
 
 class PublishWebsiteMarginal extends OrgAction
@@ -102,9 +101,7 @@ class PublishWebsiteMarginal extends OrgAction
 
         $website->update($updateData);
 
-        $key = config('iris.cache.website.prefix')."_$website->domain";
-        Cache::forget($key);
-
+        BreakWebsiteCache::run($website);
 
         return $website;
     }
