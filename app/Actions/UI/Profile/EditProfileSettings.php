@@ -42,10 +42,10 @@ class EditProfileSettings
             $printers = cache()->remember($cacheKey, now()->addMinutes(), function () {
                 return GetPrintNodePrinters::make()->action([])->map(function ($printer) {
 
-                    $state=$printer->state;
-                    if($printer->state == 'offline'){
+                    $state = $printer->state;
+                    if ($printer->state == 'offline') {
                         $state = '🚫';
-                    }elseif($printer->state == 'online'){
+                    } elseif ($printer->state == 'online') {
                         $state = '✅';
                     }
 

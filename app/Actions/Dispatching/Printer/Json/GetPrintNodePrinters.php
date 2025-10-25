@@ -25,7 +25,7 @@ class GetPrintNodePrinters extends OrgAction
     public function handle(): Collection
     {
         $this->ensureClientInitialized();
-        return Printer::all(['limit'=>1000]);
+        return Printer::all(['limit' => 1000]);
     }
 
     public function jsonResponse(Collection $printers): Collection

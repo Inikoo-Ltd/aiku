@@ -350,7 +350,7 @@ class GetPalletReturnActions
             PalletReturnStateEnum::SUBMITTED
         ])) {
 
-            $actions[]=[
+            $actions[] = [
                 'type'   => 'button',
                 'style'  => 'tertiary',
                 'label'  => 'PDF',

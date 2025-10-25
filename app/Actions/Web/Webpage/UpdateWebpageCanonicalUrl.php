@@ -51,7 +51,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $canonicalUrl = $this->trimTrailingSlash($canonicalUrl);
         $canonicalUrl = replaceUrlSubdomain($canonicalUrl, $webpage->website->is_migrating ? 'v2' : 'www');
 
-        $canonicalUrl=strtolower($canonicalUrl);
+        $canonicalUrl = strtolower($canonicalUrl);
 
         $oldCanonicalUrl = $webpage->canonical_url;
         $webpage->update([
