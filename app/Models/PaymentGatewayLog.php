@@ -31,6 +31,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $outcome
  * @property string|null $api_point_model_type
  * @property int|null $api_point_model_id
+ * @property string|null $origin
+ * @property string|null $operation
+ * @property string|null $environment
  * @property-read Group $group
  * @property-read Payment|null $payment
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGatewayLog newModelQuery()
