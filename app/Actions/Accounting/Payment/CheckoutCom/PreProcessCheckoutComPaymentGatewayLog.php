@@ -11,6 +11,7 @@ namespace App\Actions\Accounting\Payment\CheckoutCom;
 use App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStateEnum;
 use App\Enums\Accounting\PaymentGatewayLog\PaymentGatewayLogStatusEnum;
 use App\Models\Accounting\TopUpPaymentApiPoint;
+use App\Models\Ordering\Order;
 use App\Models\PaymentGatewayLog;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
@@ -24,14 +25,16 @@ class PreProcessCheckoutComPaymentGatewayLog
     {
         $payload = $paymentGatewayLog->payload;
 
-        $gatewayId = Arr::get($payload, 'id');
+        $gatewayId        = Arr::get($payload, 'id');
+        $gatewayPaymentId = Arr::get($payload, 'data.id');
 
 
         $paymentGatewayLog->update([
-            'state'        => PaymentGatewayLogStateEnum::PREPROCESSING,
-            'gateway_id'   => $gatewayId,
-            'type'         => Arr::get($payload, 'type'),
-            'gateway_date' => Arr::get($payload, 'data.processed_on'),
+            'state'              => PaymentGatewayLogStateEnum::PREPROCESSING,
+            'gateway_id'         => $gatewayId,
+            'gateway_payment_id' => $gatewayPaymentId,
+            'type'               => Arr::get($payload, 'type'),
+            'gateway_date'       => Arr::get($payload, 'data.processed_on'),
         ]);
 
         if ($duplicatedPaymentGatewayLog = PaymentGatewayLog::where('id', '!=', $paymentGatewayLog->id)
@@ -76,7 +79,7 @@ class PreProcessCheckoutComPaymentGatewayLog
         $operation = Arr::get($payload, 'data.metadata.operation');
 
         $dataToUpdate = [
-            'operation'   => $operation,
+            'operation' => $operation,
         ];
 
         if ($operation == 'top_up') {
@@ -87,6 +90,16 @@ class PreProcessCheckoutComPaymentGatewayLog
                 $dataToUpdate['organisation_id']      = $topUpPaymentApiPoint->organisation_id;
                 $dataToUpdate['shop_id']              = $topUpPaymentApiPoint->customer?->shop_id;
                 $dataToUpdate['customer_id']          = $topUpPaymentApiPoint->customer_id;
+            } else {
+                $dataToUpdate['status'] = PaymentGatewayLogStatusEnum::FAIL;
+            }
+        } elseif ($operation == 'mit') {
+            $order = Order::where('id', Arr::get($payload, 'data.metadata.order_id'))->first();
+            if ($order) {
+                $dataToUpdate['organisation_id'] = $order->organisation_id;
+                $dataToUpdate['shop_id']         = $order->customer->shop_id;
+                $dataToUpdate['customer_id']     = $order->customer_id;
+                $dataToUpdate['order_id']        = $order->id;
             } else {
                 $dataToUpdate['status'] = PaymentGatewayLogStatusEnum::FAIL;
             }
@@ -112,14 +125,19 @@ class PreProcessCheckoutComPaymentGatewayLog
 
     public function getCommandSignature(): string
     {
-        return 'payment_gateway_log:process {payment_gateway_log}';
+        return 'payment_gateway_log:process {payment_gateway_log?}';
     }
 
     public function asCommand(Command $command): int
     {
-        $paymentGatewayLog = PaymentGatewayLog::find($command->argument('payment_gateway_log'));
-
-        $this->handle($paymentGatewayLog);
+        if ($command->argument('payment_gateway_log')) {
+            $paymentGatewayLog = PaymentGatewayLog::find($command->argument('payment_gateway_log'));
+            $this->handle($paymentGatewayLog);
+        } else {
+            foreach (PaymentGatewayLog::orderBy('id')->get() as $paymentGatewayLog) {
+                $this->handle($paymentGatewayLog);
+            }
+        }
 
         return 0;
     }
