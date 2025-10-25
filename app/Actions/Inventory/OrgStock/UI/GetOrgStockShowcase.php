@@ -81,7 +81,7 @@ class GetOrgStockShowcase
                                 'icon'    => 'fal fa-inventory',
                                 'tooltip' => __("Stock in locations"),
                             ],
-                            'value'         => 2150  // TODO: Artha
+                            'value'      => $orgStock->quantity_in_locations,
                         ],
                         'quantity_in_submitted_orders' => [
                             'icon_state' => [
