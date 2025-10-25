@@ -18,6 +18,7 @@ enum PaymentGatewayLogStatusEnum: string
     case OK = 'ok';
     case FAIL = 'fail';
     case NA = 'na';
+    case DUPLICATED = 'duplicated';
 
     public static function labels(): array
     {

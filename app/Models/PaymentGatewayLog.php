@@ -27,13 +27,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property string|null $type
- * @property string|null $date
  * @property string|null $outcome
  * @property string|null $api_point_model_type
  * @property int|null $api_point_model_id
  * @property string|null $origin
  * @property string|null $operation
  * @property string|null $environment
+ * @property string|null $gateway_date
+ * @property string|null $gateway_id
+ * @property string|null $processed_at
+ * @property int|null $organisation_id
+ * @property int|null $shop_id
+ * @property int|null $customer_id
  * @property-read Group $group
  * @property-read Payment|null $payment
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGatewayLog newModelQuery()
