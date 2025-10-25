@@ -9,6 +9,7 @@
 namespace App\Actions\Accounting\Payment\CheckoutCom;
 
 use App\Models\SysAdmin\Group;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -19,10 +20,42 @@ class ReceiveCheckoutComPaymentWebhook
     public function asController(ActionRequest $request): \Illuminate\Http\JsonResponse
     {
         $grpUlid = $request->headers->get('x-aiku-group-ulid');
-        $group   = Group::where('ulid', $grpUlid)->first();
-        if (!$group) {
-            $group = Group::find(1);
+        $authorization = $request->headers->get('authorization');
+
+        if (!$authorization) {
+            return response()->json([
+                'error' => 'Missing required header: authorization'
+            ], 400);
         }
+
+
+        if (!$grpUlid) {
+            return response()->json([
+                'error' => 'Missing required header: x-aiku-group-ulid'
+            ], 400);
+        }
+
+        $group = Group::where('ulid', $grpUlid)->first();
+        if (!$group) {
+            return response()->json([
+                'error' => 'Invalid header: x-aiku-group-ulid'
+            ], 400);
+        }
+
+        $validKeys=[];
+        if($sandboxKey=Arr::get($group->settings,'checkout_com.webhook_auth.sandbox.authorization')){
+            $validKeys[]=$sandboxKey;
+        }
+        if($productionKey=Arr::get($group->settings,'checkout_com.webhook_auth.production.authorization')){
+            $validKeys[]=$productionKey;
+        }
+
+        if(!in_array($authorization,$validKeys)){
+            return response()->json([
+                'error' => 'Unauthorized'
+            ], 400);
+        }
+
         $group->paymentGatewayLogs()->create([
             'payload' => $request->all(),
             'data' => [
