@@ -55,13 +55,16 @@ class PreProcessCheckoutComPaymentGatewayLog
 
         $environment = Arr::get($payload, 'data.metadata.environment');
 
+        $paymentGatewayLog->update([
+            'origin'      => 'aiku',
+            'environment' => Arr::get($payload, 'data.metadata.environment'),
+        ]);
+
         if (app()->isProduction() && $environment != 'production') {
             return $paymentGatewayLog;
         }
 
         $paymentGatewayLog = $this->processAiku($paymentGatewayLog);
-
-
 
         return ProcessCheckoutComPaymentGatewayLog::run($paymentGatewayLog);
     }
@@ -72,10 +75,7 @@ class PreProcessCheckoutComPaymentGatewayLog
 
         $operation = Arr::get($payload, 'data.metadata.operation');
 
-
         $dataToUpdate = [
-            'origin'      => 'aiku',
-            'environment' => Arr::get($payload, 'data.metadata.environment'),
             'operation'   => $operation,
         ];
 
