@@ -50,10 +50,10 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->reference = $order->reference;
 
 
-        $product = new Product();
-        $product->name       = 'items';
-        $product->quantity   = 1;
-        $product->unit_price = $toPayByOther;
+        $product                      = new Product();
+        $product->name                = 'items';
+        $product->quantity            = 1;
+        $product->unit_price          = $toPayByOther;
         $paymentSessionRequest->items = [$product];
 
         $paymentSessionRequest->three_ds          = new ThreeDsRequest();
@@ -63,6 +63,13 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->processing_channel_id = $channelID;
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($orderPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($orderPaymentApiPoint);
+
+        $paymentSessionRequest->metadata = [
+            'origin'         => 'aiku',
+            'operation'      => 'order',
+            'api_point_ulid' => $orderPaymentApiPoint->ulid,
+            'environment'    => app()->environment()
+        ];
 
         $paymentSessionRequest->disabled_payment_methods = [
             'bizum'

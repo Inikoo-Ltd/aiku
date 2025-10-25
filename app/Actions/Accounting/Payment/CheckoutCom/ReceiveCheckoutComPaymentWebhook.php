@@ -6,13 +6,13 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Accounting\Payment;
+namespace App\Actions\Accounting\Payment\CheckoutCom;
 
 use App\Models\SysAdmin\Group;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProcessCheckoutComPaymentWebhook
+class ReceiveCheckoutComPaymentWebhook
 {
     use AsAction;
 

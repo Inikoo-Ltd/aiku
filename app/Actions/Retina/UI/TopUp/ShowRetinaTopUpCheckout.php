@@ -54,6 +54,13 @@ class ShowRetinaTopUpCheckout extends RetinaAction
         $paymentSessionRequest->success_url           = $this->getSuccessUrl($topUpPaymentApiPoint);
         $paymentSessionRequest->failure_url           = $this->getFailureUrl($topUpPaymentApiPoint);
 
+        $paymentSessionRequest->metadata = [
+            'origin'         => 'aiku',
+            'operation'      => 'top_up',
+            'api_point_ulid' => $topUpPaymentApiPoint->ulid,
+            'environment'    => app()->environment()
+        ];
+
         $paymentSessionRequest->disabled_payment_methods = [
             'bizum'
         ];

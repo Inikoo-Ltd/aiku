@@ -26,6 +26,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<array-key, mixed>|null $payload
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $type
+ * @property string|null $date
+ * @property string|null $outcome
+ * @property string|null $api_point_model_type
+ * @property int|null $api_point_model_id
  * @property-read Group $group
  * @property-read Payment|null $payment
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PaymentGatewayLog newModelQuery()

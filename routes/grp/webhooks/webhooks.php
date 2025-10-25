@@ -6,7 +6,7 @@
  * Copyright (c) 2024, Raul A Perusquia Flores
  */
 
-use App\Actions\Accounting\Payment\ProcessCheckoutComPaymentWebhook;
+use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Comms\Notifications\GetSnsNotification;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFetchStock;
 use App\Actions\Dropshipping\Shopify\Fulfilment\Callback\CallbackFulfillmentOrderNotification;
@@ -22,7 +22,7 @@ use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerc
 
 Route::name('webhooks.')->group(function () {
     Route::post('sns', GetSnsNotification::class)->name('sns');
-    Route::any('checkout-com-payment', ProcessCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
+    Route::any('checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
 });
 
 Route::prefix('shopify/{shopifyUser:id}')->name('webhooks.shopify.')->group(function () {

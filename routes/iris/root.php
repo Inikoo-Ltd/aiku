@@ -7,7 +7,7 @@
  */
 
 use App\Actions\Accounting\Invoice\IrisPdfInvoice;
-use App\Actions\Accounting\Payment\ProcessCheckoutComPaymentWebhook;
+use App\Actions\Accounting\Payment\CheckoutCom\ReceiveCheckoutComPaymentWebhook;
 use App\Actions\Comms\Unsubscribe\ShowUnsubscribeFromAurora;
 use App\Actions\Helpers\Media\UI\DownloadAttachment;
 use App\Actions\Iris\Catalogue\DownloadIrisProduct;
@@ -19,7 +19,7 @@ use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use Illuminate\Support\Facades\Route;
 
 Route::name('webhooks.')->group(function () {
-    Route::any('webhooks/checkout-com-payment', ProcessCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
+    Route::any('webhooks/checkout-com-payment', ReceiveCheckoutComPaymentWebhook::class)->name('checkout_com_payment');
 });
 
 Route::get('/health-ping', function () {
