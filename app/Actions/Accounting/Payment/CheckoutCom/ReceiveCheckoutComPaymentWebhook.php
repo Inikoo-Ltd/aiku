@@ -56,13 +56,15 @@ class ReceiveCheckoutComPaymentWebhook
             ], 400);
         }
 
-        $group->paymentGatewayLogs()->create([
+        $paymentGatewayLog = $group->paymentGatewayLogs()->create([
             'payload' => $request->all(),
             'data' => [
                 'headers' => $request->headers->all(),
             ],
             'gateway' => 'checkout-com'
         ]);
+
+        PreProcessCheckoutComPaymentGatewayLog::run($paymentGatewayLog);
 
         return response()->json(['message' => 'Webhook received']);
     }

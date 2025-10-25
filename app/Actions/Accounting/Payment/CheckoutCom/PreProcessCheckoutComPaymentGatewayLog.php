@@ -24,14 +24,15 @@ class PreProcessCheckoutComPaymentGatewayLog
     {
         $payload = $paymentGatewayLog->payload;
 
-        $environment = Arr::get($payload, 'data.metadata.environment');
-
-        if (app()->isProduction() && $environment != 'production') {
-            return $paymentGatewayLog;
-        }
-
-
         $gatewayId = Arr::get($payload, 'id');
+
+
+        $paymentGatewayLog->update([
+            'state'        => PaymentGatewayLogStateEnum::PREPROCESSING,
+            'gateway_id'   => $gatewayId,
+            'type'         => Arr::get($payload, 'type'),
+            'gateway_date' => Arr::get($payload, 'data.processed_on'),
+        ]);
 
         if ($duplicatedPaymentGatewayLog = PaymentGatewayLog::where('id', '!=', $paymentGatewayLog->id)
             ->where('gateway_id', $gatewayId)
@@ -47,18 +48,20 @@ class PreProcessCheckoutComPaymentGatewayLog
             return $paymentGatewayLog;
         }
 
-        $paymentGatewayLog->update([
-            'gateway_id'   => $gatewayId,
-            'type'         => Arr::get($payload, 'type'),
-            'gateway_date' => Arr::get($payload, 'data.processed_on'),
-        ]);
 
-        if (Arr::get($payload, 'data.metadata.origin') == 'aiku') {
-            $paymentGatewayLog = $this->processAiku($paymentGatewayLog);
+        if (!Arr::get($payload, 'data.metadata.origin') == 'aiku') {
+            return $this->processAurora($paymentGatewayLog);
         }
-        $paymentGatewayLog->update([
-            'state' => PaymentGatewayLogStateEnum::PREPROCESSED
-        ]);
+
+        $environment = Arr::get($payload, 'data.metadata.environment');
+
+        if (app()->isProduction() && $environment != 'production') {
+            return $paymentGatewayLog;
+        }
+
+        $paymentGatewayLog = $this->processAiku($paymentGatewayLog);
+
+
 
         return ProcessCheckoutComPaymentGatewayLog::run($paymentGatewayLog);
     }
@@ -89,6 +92,19 @@ class PreProcessCheckoutComPaymentGatewayLog
             }
         }
 
+        $dataToUpdate['state'] = PaymentGatewayLogStateEnum::PREPROCESSED;
+        $paymentGatewayLog->update($dataToUpdate);
+
+        return $paymentGatewayLog;
+    }
+
+    public function processAurora(PaymentGatewayLog $paymentGatewayLog): PaymentGatewayLog
+    {
+        $dataToUpdate = [
+            'origin'      => 'aurora',
+            'environment' => 'production',
+
+        ];
         $paymentGatewayLog->update($dataToUpdate);
 
         return $paymentGatewayLog;

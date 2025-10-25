@@ -15,6 +15,7 @@ enum PaymentGatewayLogStateEnum: string
     use EnumHelperTrait;
 
     case RECEIVED = 'received';
+    case PREPROCESSING = 'preprocessing';
     case PREPROCESSED = 'preprocessed';
     case PROCESSED = 'processed';
 
