@@ -10,6 +10,7 @@ namespace App\Actions\Web\Webpage\Iris;
 
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -232,6 +233,8 @@ class ShowIrisWebpage
         } else {
             $webpageID = DB::table('webpages')->where('website_id', $website->id)
                 ->whereRaw("lower(url) = lower(?)", [$path])
+                ->where('state', '=', WebpageStateEnum::LIVE)
+                ->whereNull('deleted_at')
                 ->value('id');
         }
 

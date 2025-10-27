@@ -32,23 +32,37 @@ const props = defineProps<{
   screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
+
 const layout: any = inject("layout", {})
+
 const hasCards = computed(() =>
   Array.isArray(props.fieldValue?.carousel_data?.cards) &&
   props.fieldValue.carousel_data.cards.length > 0
 )
+
 const slidesPerView = computed(() =>
   props.fieldValue?.carousel_data?.carousel_setting?.slidesPerView?.[props.screenType] || 1
 )
+
 const isLooping = computed(() => {
   const settingsLoop = props.fieldValue?.carousel_data?.carousel_setting?.loop || false
   return settingsLoop && props.fieldValue.carousel_data.cards.length > slidesPerView.value
 })
+
 const screenType = computed(() => props.screenType)
+const cardStyle = ref(getStyles(props.fieldValue?.carousel_data?.card_container?.properties, props.screenType, false))
+const ImageContainer = ref(getStyles(props.fieldValue.carousel_data.card_container?.container_image, props.screenType, false))
+
+// Auto select aspect ratio based on slidesPerView
+const selectedAspectRatio = computed(() => {
+  if (!hasCards.value) return 1
+  if (slidesPerView.value === 1) return 1
+  if (slidesPerView.value <= 3) return 4 / 3
+  return 16 / 9
+})
+
 const getHref = (data: any) => data?.link?.href
 
-
-const cardStyle = getStyles(props.fieldValue?.carousel_data?.card_container?.properties, props.screenType, false)
 
 
 const responsiveOptions = computed(() => {
@@ -74,7 +88,6 @@ const responsiveOptions = computed(() => {
 </script>
 
 <template>
-
   <div id="carousel" class="relative">
     <div :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
@@ -88,10 +101,17 @@ const responsiveOptions = computed(() => {
             <component :is="getHref(data) ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
               :href="data?.link?.href" :target="data?.link?.target" class="flex flex-1 flex-col" :type="data?.link?.type">
               <!-- Image Container -->
-              <div class="overflow-hidden w-full flex items-center justify-center h-[185px]">
-                  <Image  :src="data.image.source" :alt="data.image.alt || `image-${index}`"
-                     :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)" />
+              <div class="flex justify-center overflow-visible"
+                :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)" >
+                <div class="overflow-hidden w-full flex items-center justify-center "
+                  :style="{ aspectRatio: selectedAspectRatio, ...getStyles(fieldValue.carousel_data.card_container?.image_properties, screenType) }">
+                  <Image v-if="data?.image?.source" :src="data.image.source" :alt="data.image.alt || `image-${index}`"
+                    :class="'image-container'" class="w-full h-full flex justify-center items-center" />
+                  <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
+                    <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
+                  </div>
                 </div>
+              </div>
 
               <!-- Text Content -->
               <div v-if="fieldValue.carousel_data.carousel_setting?.use_text"
@@ -102,7 +122,6 @@ const responsiveOptions = computed(() => {
           </div>
         </template>
       </Carousel>
-
     </div>
   </div>
 </template>
@@ -115,31 +134,30 @@ const responsiveOptions = computed(() => {
 .card {
   background: v-bind('cardStyle?.background || "transparent"') !important;
 
-  /* Padding */
   padding-top: v-bind('cardStyle?.paddingTop || "0px"') !important;
   padding-right: v-bind('cardStyle?.paddingRight || "0px"') !important;
   padding-bottom: v-bind('cardStyle?.paddingBottom || "0px"') !important;
   padding-left: v-bind('cardStyle?.paddingLeft || "0px"') !important;
 
-  /* Margin */
   margin-top: v-bind('cardStyle?.marginTop || "0px"') !important;
   margin-right: v-bind('cardStyle?.marginRight || "0px"') !important;
   margin-bottom: v-bind('cardStyle?.marginBottom || "0px"') !important;
   margin-left: v-bind('cardStyle?.marginLeft || "0px"') !important;
 
-  /* Border radius */
   border-top-left-radius: v-bind('cardStyle?.borderTopLeftRadius || "0px"') !important;
   border-top-right-radius: v-bind('cardStyle?.borderTopRightRadius || "0px"') !important;
   border-bottom-left-radius: v-bind('cardStyle?.borderBottomLeftRadius || "0px"') !important;
   border-bottom-right-radius: v-bind('cardStyle?.borderBottomRightRadius || "0px"') !important;
 
-  /* Border sides individually */
   border-top: v-bind('cardStyle?.borderTop || "0px solid transparent"') !important;
   border-bottom: v-bind('cardStyle?.borderBottom || "0px solid transparent"') !important;
   border-left: v-bind('cardStyle?.borderLeft || "0px solid transparent"') !important;
   border-right: v-bind('cardStyle?.borderRight || "0px solid transparent"') !important;
 }
 
+.image-container {
+  justify-content: v-bind('ImageContainer?.justifyContent || "center"') !important;;
+}
 
 .fade-enter-active,
 .fade-leave-active {
