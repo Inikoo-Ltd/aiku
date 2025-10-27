@@ -29,7 +29,7 @@ class GetIrisShopBrands extends IrisAction
         $perPage = 250;
         $queryBuilder = QueryBuilder::for(Brand::class);
 
-        $queryBuilder->join('model_has_brands', 'brands.id', '=', 'model_has_brands.tag_id')
+        $queryBuilder->join('model_has_brands', 'brands.id', '=', 'model_has_brands.brand_id')
             ->where('model_has_brands.shop_id', $this->shop->id);
 
         $queryBuilder
