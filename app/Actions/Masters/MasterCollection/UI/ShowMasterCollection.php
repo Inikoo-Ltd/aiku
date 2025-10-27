@@ -107,9 +107,9 @@ class ShowMasterCollection extends GrpAction
                 ],
                 'pageHead'    => [
                     'title'   => $masterCollection->name,
-                    'model'   => '',
+                    'model'   => __("Master collection"),
                     'icon'    => [
-                        'icon'  => ['fal', 'fa-layer-group'],
+                        'icon'  => ['fal', 'fa-album-collection'],
                         'title' => __('Master collection')
                     ],
                     'actions' => [],
