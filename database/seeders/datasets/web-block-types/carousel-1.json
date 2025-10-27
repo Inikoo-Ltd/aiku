@@ -145,18 +145,18 @@
 							},
 							"desktop": {
 								"top": {
-									"value": 1
+									"value": 0
 								},
 								"left": {
-									"value": 1
+									"value": 0
 								},
 								"unit": "px",
 								"color": "rgba(219, 219, 219, 1",
 								"right": {
-									"value": 1
+									"value": 0
 								},
 								"bottom": {
-									"value": 1
+									"value": 0
 								},
 								"rounded": {
 									"unit": "px",
@@ -207,7 +207,7 @@
 						},
 						"padding": {
 							"top": {
-								"value": 10
+								"value": 0
 							},
 							"left": {
 								"value": 0
@@ -217,7 +217,7 @@
 								"value": 0
 							},
 							"bottom": {
-								"value": 30
+								"value": 0
 							}
 						},
 						"dimension": {

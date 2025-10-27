@@ -105,8 +105,10 @@ export default {
 						},
 					],
 				},
-				{
-					key: ["cards"],
+			],
+		},
+		{
+					key: ["carousel_data","cards"],
 					name: "Cards  Data",
 					type: "array-data-drawer",
 					props_data: {
@@ -124,8 +126,6 @@ export default {
 						},
 					},
 				},
-			],
-		},
 		{
 			name: "Layout",
 			key: ["container", "properties"],
