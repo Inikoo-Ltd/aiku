@@ -14,6 +14,7 @@ use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Catalogue\Shop;
 use App\Models\Ordering\Order;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,10 +25,18 @@ class ShopHydrateOrderIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
 
     public string $jobQueue = 'sales';
+    public string $commandSignature = 'hydrate:shop-order-intervals {shop}';
 
     public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         return $this->getUniqueJobWithInterval($shop, $intervals, $doPreviousPeriods);
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $shop = Shop::where('slug', $command->argument('shop'))->first();
+
+        $this->handle($shop);
     }
 
     public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void
