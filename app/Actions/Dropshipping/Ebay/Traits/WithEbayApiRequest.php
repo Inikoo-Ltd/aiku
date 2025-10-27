@@ -198,7 +198,7 @@ trait WithEbayApiRequest
                         ['Not Specified'];
                     break;
                 case 'Brand':
-                    $attributes['Brand'] = [$product->brand ?? 'Unbranded'];
+                    $attributes['Brand'] = [$product->shop?->name ?? 'Unbranded'];
                     break;
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
