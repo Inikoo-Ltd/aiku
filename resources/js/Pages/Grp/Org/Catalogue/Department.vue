@@ -11,7 +11,7 @@ import {
     faBullhorn,
     faCameraRetro, faClock,
     faCube, faCubes,
-    faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling
+    faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling, faFolderDownload
 } from "@fal";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -49,7 +49,10 @@ library.add(
     faMoneyBillWave,
     faDiagramNext,
     faCubes,
-    faFolders, faBrowser, faSeedling
+    faFolders, 
+    faBrowser,
+    faSeedling,
+    faFolderDownload
 );
 
 

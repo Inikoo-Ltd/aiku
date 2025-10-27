@@ -128,7 +128,7 @@ class ShowSubDepartment extends OrgAction
                                 ]
                             ],
                             'tooltip' => __('Sub-Department'),
-                            'icon' => ['fal', 'folder-tree']
+                            'icon' => ['fal', 'fa-folder-download']
                         ],
                     ],
                 ),
@@ -136,7 +136,7 @@ class ShowSubDepartment extends OrgAction
                     'title'         => $subDepartment->name,
                     'model'         => __('Sub-department'),
                     'icon'          => [
-                        'icon'  => ['fal', 'fa-folder-tree'],
+                        'icon'  => ['fal', 'fa-folder-download'],
                         'title' => __('Sub-department')
                     ],
                     'actions'       => [

@@ -11,7 +11,7 @@ import {
     faBullhorn,
     faCameraRetro,
     faCube,
-    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser
+    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faFolderDownload
 } from "@fal";
 
 import PageHeading from "@/Components/Headings/PageHeading.vue";
@@ -47,7 +47,8 @@ library.add(
     faProjectDiagram,
     faUser,
     faMoneyBillWave,
-    faDiagramNext
+    faDiagramNext,
+    faFolderDownload
 );
 
 const layout = inject("layout", layoutStructure);
