@@ -5,7 +5,7 @@ import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronRight, faExternalLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
 import { faSignIn, faSignOut, faTimesCircle } from '@fas'
@@ -52,6 +52,10 @@ const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false));
 const closeSidebar = () => {
     isOpenMenuMobile.value = false;
 }
+
+const borderWidth = computed(() => {
+    return props.containerStyle?.border?.width ? `${props.containerStyle?.border?.width.value}${props.containerStyle?.border?.width.unit}` : '1px';
+})
 </script>
 
 <template>
@@ -365,12 +369,12 @@ const closeSidebar = () => {
 }
 
 .borderTopColorSameAsText {
-    border-top: 1px solid rgba(0, 0, 0, 0.5); /* fallback */
+    border-top: v-bind('`${borderWidth} solid rgba(0, 0, 0, 0.5)`'); /* fallback */
     border-color: v-bind('props.containerStyle?.border?.color || "color-mix(in srgb, currentColor 30%, transparent)"');
 }
 
 .borderBottomColorSameAsText {
-    border-bottom: 1px solid rgba(0, 0, 0, 0.5); /* fallback */
+    border-bottom: v-bind('`${borderWidth} solid rgba(0, 0, 0, 0.5)`'); /* fallback */
     border-color: v-bind('props.containerStyle?.border?.color || "color-mix(in srgb, currentColor 30%, transparent)"');
 }
 

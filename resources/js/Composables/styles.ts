@@ -165,6 +165,9 @@ export const resolveResponsiveValue = (
         borderColor: getVal(properties?.border, ['color']) && properties?.border?.color
             ? `${getVal(properties.border, ['color'])}`
             : null,
+        borderWidth: getVal(properties?.border, ['width']) && properties?.border?.width
+            ? `${getVal(properties.border, ['width', 'value'])}${getVal(properties.border, ['width', 'unit'])}`
+            : null,
 
         gap: getVal(properties?.gap, ['value']) && properties?.gap?.unit
             ? `${getVal(properties.gap, ['value'])}${properties.gap.unit}`
