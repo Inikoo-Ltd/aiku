@@ -20,13 +20,34 @@ enum PaymentAccountShopStateEnum: string
     case INACTIVE = 'inactive';
 
 
-    public static function labels(): array
+    public function label(): string
     {
-        return [
-            'in_process' => __('In Process'),
-            'active'     => __('Active'),
-            'inactive'   => __('Inactive'),
-        ];
+        return match ($this) {
+            self::IN_PROCESS => __('In Process'),
+            self::ACTIVE => __('Active'),
+            self::INACTIVE => __('Inactive'),
+        };
     }
+
+    public function stateIcon(): array
+    {
+        return match ($this) {
+            self::IN_PROCESS => [
+                'tooltip' => __('In Process'),
+                'icon'    => 'fal fa-seedling',
+            ],
+            self::ACTIVE => [
+                'tooltip' => __('Active'),
+                'icon'    => 'fas fa-check-circle',
+                'class'   => 'text-green-500'
+            ],
+            self::INACTIVE => [
+                'tooltip' => __('Inactive'),
+                'icon'    => 'fas fa-times-circle',
+                'class'   => 'text-red-500'
+            ],
+        };
+    }
+
 
 }
