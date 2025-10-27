@@ -41,6 +41,8 @@ enum MasterCollectionTabsEnum: string
                 $blueprint['number'] = $masterCollection->stats->number_current_master_products;
             } elseif ($case == self::COLLECTIONS) {
                 $blueprint['number'] = $masterCollection->stats->number_current_master_collections;
+            } elseif ($case == self::SHOP_COLLECTIONS) {
+                $blueprint['number'] = $masterCollection->stats->number_collections;
             }
 
             return [$case->value => $blueprint];

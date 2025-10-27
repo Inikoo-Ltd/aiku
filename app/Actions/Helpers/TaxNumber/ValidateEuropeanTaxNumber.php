@@ -11,7 +11,7 @@ namespace App\Actions\Helpers\TaxNumber;
 use App\Enums\Helpers\TaxNumber\TaxNumberStatusEnum;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Models\Helpers\TaxNumber;
-use Illuminate\Console\Command;
+use App\Actions\Helpers\TaxNumber\Concerns\AsTaxNumberCommand;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use SoapClient;
@@ -20,6 +20,7 @@ use SoapFault;
 class ValidateEuropeanTaxNumber
 {
     use AsAction;
+    use AsTaxNumberCommand;
 
     public function __construct(int $timeout = 10)
     {
@@ -64,6 +65,7 @@ class ValidateEuropeanTaxNumber
                 return $taxNumber;
             }
 
+
             try {
                 $number  = preg_replace('/\s+/', '', $taxNumber->number);
                 $country = strtoupper((string)$taxNumber->country_code);
@@ -78,6 +80,8 @@ class ValidateEuropeanTaxNumber
                         'vatNumber'   => $number
                     )
                 );
+
+
 
                 $validationDate = now();
                 $validationData = [
@@ -135,37 +139,5 @@ class ValidateEuropeanTaxNumber
         return 'validate:tax_number {id}';
     }
 
-    /**
-     * @throws \phpDocumentor\Reflection\Exception
-     */
-    public function asCommand(Command $command): int
-    {
-        $taxNumber = TaxNumber::findOrFail($command->argument('id'));
-        $taxNumber = $this->handle($taxNumber);
-
-
-        $fields = [
-            'id'                         => $taxNumber->id,
-            'type'                       => $taxNumber->type->value,
-            'country_code'               => $taxNumber->country_code,
-            'number'                     => $taxNumber->number,
-            'valid'                      => $taxNumber->valid ? 'true' : 'false',
-            'status'                     => $taxNumber->status->value,
-            'checked_at'                 => $taxNumber->checked_at,
-            'invalid_checked_at'         => $taxNumber->invalid_checked_at,
-            'external_service_failed_at' => $taxNumber->external_service_failed_at,
-        ];
-
-        foreach ($fields as $key => $value) {
-            $command->line(str_pad($key, 28).': '.($value ?? ''));
-        }
-
-        if (!empty($taxNumber->data)) {
-            $command->line('data:');
-            $command->line(json_encode($taxNumber->data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT));
-        }
-
-        return 0;
-    }
 
 }

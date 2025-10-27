@@ -15,5 +15,6 @@ enum TaxNumberValidationTypeEnum: string
     use EnumHelperTrait;
 
     case ONLINE = 'online';
+    case BASIC = 'basic';
     case MANUAL = 'manual';
 }

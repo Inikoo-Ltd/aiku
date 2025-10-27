@@ -92,11 +92,18 @@ class UpdateCustomer extends OrgAction
 
 
         if (Arr::has($modelData, 'tax_number')) {
-            $taxNumberData = Arr::get($modelData, 'tax_number');
-            Arr::forget($modelData, 'tax_number');
+            if ($this->strict) {
+                $taxNumberData = [];
+                data_set($taxNumberData, 'number', Arr::get($modelData, 'tax_number.number'));
+                data_set($taxNumberData, 'country_id', $customer->address->country_id);
+                Arr::forget($modelData, 'tax_number');
+            } else {
+                $taxNumberData = Arr::pull($modelData, 'tax_number');
+            }
 
 
-            if ($taxNumberData) {
+            if (Arr::get($taxNumberData, 'number')) {
+
                 if (!$customer->taxNumber) {
                     if (!Arr::get($taxNumberData, 'data.name')) {
                         Arr::forget($taxNumberData, 'data.name');
@@ -109,10 +116,11 @@ class UpdateCustomer extends OrgAction
 
                     StoreTaxNumber::run(
                         owner: $customer,
-                        modelData: $taxNumberData
+                        modelData: $taxNumberData,
+                        strict: $this->strict
                     );
                 } else {
-                    UpdateTaxNumber::run($customer->taxNumber, $taxNumberData);
+                    UpdateTaxNumber::run($customer->taxNumber, $taxNumberData, $this->strict);
                 }
             } elseif ($customer->taxNumber) {
                 DeleteTaxNumber::run($customer->taxNumber);
