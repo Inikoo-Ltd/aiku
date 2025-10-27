@@ -12,6 +12,7 @@ import { notify } from "@kyvg/vue3-notification"
 import debounce from "lodash/debounce"
 import ScreenView from "@/Components/ScreenView.vue";
 import { cloneDeep } from "lodash-es"
+import "@/../css/Iris/editor.css"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop)
 
@@ -97,7 +98,7 @@ const setIframeView = (view: string) => {
         @auto-save="autosave" @set-up-template="onPickTemplate" />
     </div>
 
-    <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-hidden border">
+    <div class="col-span-9 bg-white rounded-xl shadow-md flex flex-col overflow-auto border">
       <div class="flex justify-between items-center px-4 py-2 bg-gray-100 border-b">
         <div class="flex items-center gap-2 py-1 px-2 cursor-pointer lg:flex hidden selected-bg"
           v-tooltip="'Desktop view'">
@@ -107,10 +108,14 @@ const setIframeView = (view: string) => {
         </div>
       </div>
 
-      <div v-if="props.data.layout?.data?.fieldValue?.product" class="relative flex-1 overflow-auto" :class="['border-2 border-t-0 overflow-auto ', iframeClass]">
+    <div v-if="props.data.layout?.data?.fieldValue?.product" class="editor-class">
+      <div  class="relative flex-1 overflow-auto " :class="['border-2 border-t-0 overflow-auto ', iframeClass]">
         <component class="w-full" :is="getComponent(props.data.layout.code)" :screenType="currentView"
           :modelValue="props.data.layout.data.fieldValue" :templateEdit="'template'" :currency />
       </div>
+
+    </div>
+      
 
       <div v-else>
         <EmptyState />
