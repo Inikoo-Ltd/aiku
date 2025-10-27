@@ -295,14 +295,24 @@ const validImages = computed(() => {
                         </template>
                     </div>
                 </div>
-                <div v-if="layout?.iris?.is_logged_in" class="flex items-end pb-3 mb-3">
-                    <div class="text-gray-900 font-semibold text-3xl leading-none flex-grow min-w-0">
+                <div v-if="layout?.iris?.is_logged_in" class="flex flex-wrap gap-x-4 items-end mb-3">
+                    <div class="font-semibold text-2xl leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-
+                        <span class="text-gray-500 text-base font-normal">
+                            ({{ locale.currencyFormat(currency?.code,
+                            (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/{{
+                                fieldValue.product.unit }})
+                        </span>
                     </div>
-                    <div v-if="fieldValue.product.rrp"
-                        class="text-sm text-gray-800 font-semibold text-right whitespace-nowrap pl-4">
-                        <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
+
+                    <div v-if="fieldValue.product.rrp_per_unit"
+                         class="text-sm xtext-gray-800 xfont-semibold text-right xpl-4 text-gray-500">
+                        <span class="whitespace-nowrap ">RRP:</span>
+                        <span class=" text-base font-normal">
+                            {{ locale.currencyFormat(currency?.code,
+                            (fieldValue.product.rrp_per_unit / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit
+                            }}
+                        </span>
                     </div>
                 </div>
 
