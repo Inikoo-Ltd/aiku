@@ -12,6 +12,7 @@ import {
     faUser,
     faBrowser,
     faPlus, faMinus,
+    faFolderDownload,
 } from "@fal"
 import { faExclamationTriangle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -43,7 +44,9 @@ library.add(
     faProjectDiagram,
     faUser,
     faMoneyBillWave,
-    faBrowser, faExclamationTriangle
+    faBrowser, 
+    faExclamationTriangle,
+    faFolderDownload
 )
 
 

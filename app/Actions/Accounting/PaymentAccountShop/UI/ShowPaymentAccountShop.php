@@ -1,11 +1,10 @@
 <?php
 
 /*
- * author Arya Permana - Kirin
- * created on 17-02-2025-16h-50m
- * github: https://github.com/KirinZero0
- * copyright 2025
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 27 Oct 2025 14:09:41 Malaysia Time, Kuala Lumpur, Malaysia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Accounting\PaymentAccountShop\UI;
 
@@ -23,20 +22,22 @@ use App\Models\Catalogue\Shop;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
-use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
-class IndexPaymentAccountShops extends OrgAction
+class ShowPaymentAccountShop extends OrgAction
 {
     use WithPaymentAccountSubNavigation;
     use WithAccountingSubNavigation;
 
-    private PaymentAccount|Shop|Fulfilment $parent;
+
+    /**
+     * @var \App\Models\Accounting\PaymentAccount|\App\Models\Catalogue\Shop|\App\Models\Fulfilment\Fulfilment
+     */
+    private Fulfilment|PaymentAccount|Shop $parent;
 
     public function handle(PaymentAccount|Shop|Fulfilment $parent, $prefix = null): LengthAwarePaginator
     {
@@ -92,47 +93,6 @@ class IndexPaymentAccountShops extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(PaymentAccount|Shop|Fulfilment $parent, ?array $modelOperations = null, $prefix = null): Closure
-    {
-        return function (InertiaTable $table) use ($modelOperations, $prefix, $parent) {
-            if ($prefix) {
-                $table
-                    ->name($prefix)
-                    ->pageName($prefix.'Page');
-            }
-            $table
-                ->withGlobalSearch()
-                ->withModelOperations($modelOperations)
-                ->withEmptyState(
-                    [
-                        'title' => __('No shops'),
-                        'count' => $parent->stats->number_pas,
-                    ]
-                );
-
-            $table->column(key: 'state', label: '', canBeHidden: false, type: 'icon');
-            $table->column(key: 'show_in_checkout', label: '', canBeHidden: false, type: 'icon');
-
-            if ($parent instanceof PaymentAccount) {
-                $table->column(key: 'shop_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            } else {
-                $table->column(key: 'payment_account_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
-            }
-
-
-            $table
-                ->column(key: 'activated_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
-                ->column(key: 'number_payments', label: __('Payments'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'amount_successfully_paid', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
-                ->defaultSort('id');
-        };
-    }
-
-
-    public function jsonResponse(LengthAwarePaginator $paymentAccounts): AnonymousResourceCollection
-    {
-        return PaymentAccountShopsResource::collection($paymentAccounts);
-    }
 
 
     public function htmlResponse(LengthAwarePaginator $paymentAccountShops, ActionRequest $request): Response
@@ -147,7 +107,7 @@ class IndexPaymentAccountShops extends OrgAction
         }
 
         return Inertia::render(
-            'Org/Accounting/PaymentAccountShops',
+            'Org/Accounting/PaymentAccountShop',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
@@ -163,11 +123,11 @@ class IndexPaymentAccountShops extends OrgAction
 
 
             ]
-        )->table($this->tableStructure($this->parent));
+        );
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inShop(Organisation $organisation, Shop $shop, ActionRequest $request): LengthAwarePaginator
+    public function inShop(Organisation $organisation, Shop $shop, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request);
@@ -176,7 +136,7 @@ class IndexPaymentAccountShops extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
-    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ActionRequest $request): LengthAwarePaginator
+    public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $fulfilment;
         $this->initialisationFromFulfilment($fulfilment, $request);
@@ -185,7 +145,7 @@ class IndexPaymentAccountShops extends OrgAction
     }
 
 
-    public function asController(Organisation $organisation, PaymentAccount $paymentAccount, ActionRequest $request): LengthAwarePaginator
+    public function asController(Organisation $organisation, PaymentAccount $paymentAccount, ShowPaymentAccount $showPaymentAccount, ActionRequest $request): LengthAwarePaginator
     {
         $this->parent = $paymentAccount;
         $this->initialisation($organisation, $request);

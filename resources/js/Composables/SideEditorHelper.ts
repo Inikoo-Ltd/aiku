@@ -42,7 +42,8 @@ import TextInputSwitch from '@/Components/CMS/Fields/TextInputSwitch.vue'
 import TimelineArray from '@/Components/CMS/Fields/TimelineArray.vue'
 import IconPickerBox from '@/Components/CMS/Fields/IconPickerBox.vue'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
-import ToggleSwitch from 'primevue/toggleswitch';
+// import ToggleSwitch from 'primevue/toggleswitch';
+import ToggleSwitch from '@/Components/Pure/Toggle.vue';
 import MinMaxPrice from '@/Components/Workshop/Properties/MinMaxPrice.vue'
 import VideoSettings from '@/Components/Workshop/Properties/VideoSettings.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'

@@ -1,3 +1,5 @@
+import { trans } from "laravel-vue-i18n"
+
 export default {
     blueprint: [
         {
@@ -9,6 +11,13 @@ export default {
                     label: "Show Each Row",
                     type: "number",
                     useIn : ["desktop", "tablet", "mobile"],
+                },
+                {
+                    key: ["is_hide_filter"],
+                    label: "Hide Filter?",
+                    type: "switch",
+                    information: trans('Hide filter on products page i.e filter price, tags, brands'),
+                    // useIn : ["desktop", "tablet", "mobile"],
                 },
             ],
         },

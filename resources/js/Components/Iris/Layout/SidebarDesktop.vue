@@ -3,7 +3,7 @@ import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faChevronRight, faExternalLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { inject, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import LinkIris from '../LinkIris.vue'
@@ -114,6 +114,7 @@ const combinedStyleSidebarAndWebpage = {
     ...getStyles(props.containerStyle)
 }
 function removeImportant(styles) {
+    // Remove !important from styles
     const cleaned = {}
     for (const [key, value] of Object.entries(styles)) {
         cleaned[key] = value.replace(/\s*!important\s*/gi, "")
@@ -123,6 +124,10 @@ function removeImportant(styles) {
 const stylingWithoutImportant = removeImportant(combinedStyleSidebarAndWebpage)
 const backgroundColorNoGradient = props.containerStyle?.background?.color || layout?.app?.webpage_layout?.container?.properties?.background?.color?.replace(/\s*!important\s*/gi, "")
 
+
+const borderWidth = computed(() => {
+    return props.containerStyle?.border?.width ? `${props.containerStyle?.border?.width.value}${props.containerStyle?.border?.width.unit}` : '1px';
+})
 </script>
 
 <template>
@@ -149,12 +154,12 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
                     :closeSidebar
                     :isWithArrowRight="sub.sub_departments && sub.sub_departments.length > 0"
                 />
-                <hr class="mt-4 border-gray-200">
+                <hr class="borderBottomColorSameAsText">
             </div>
 
             
             <!-- Section: Auto Product Categories List -->
-            <div class="flex items-center justify-between px-2 py-4 border-b">
+            <div class="flex items-center justify-between px-2 py-4 borderBottomColorSameAsText">
                 <h3 class="font-semibold">{{ trans("Departments") }}</h3>
             </div>
             <SidebarDesktopNavigation
@@ -176,7 +181,7 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
 
             <!-- Section: Bottom navigation -->
             <div v-if="customMenusBottom && customMenusBottom.length > 0">
-                <hr class="my-4 border-gray-300">
+                <hr class="my-4 borderBottomColorSameAsText">
                 <SidebarDesktopNavigation
                     v-for="(sub, sIndex) in customMenusBottom" :key="sIndex"
                     :nav="sub"
@@ -280,7 +285,7 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
 
             <!-- Collections: from Department -->
             <template v-if="sortedProductCategories?.[activeIndex]?.collections.length">
-                <div v-if="activeIndex !== null" class="border-t bodashe border-gray-300 flex items-center justify-between mt-2 pt-4 pb-2 px-4">
+                <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
                     <h3 class="font-semibold">{{ trans("Collections") }}</h3>
                 </div>
                 <div class="">
@@ -378,7 +383,7 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
 
                 <!-- Collections: from Sub Department -->
                 <template v-if="sortedSubDepartments?.[activeSubIndex]?.collections?.length">
-                    <div v-if="activeIndex !== null" class="border-t border-gray-300 flex items-center justify-between mt-2 pt-4 pb-2 px-4">
+                    <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
                         <h3 class="font-semibold">{{ trans("Collections") }}</h3>
                     </div>
                     <div class="">
@@ -414,5 +419,15 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
 
     color: v-bind('backgroundColorNoGradient || "#ffffff"');
     background: v-bind('stylingWithoutImportant.color || "#030712"');
+}
+
+.borderTopColorSameAsText {
+    border-top: v-bind('`${borderWidth} solid rgba(0, 0, 0, 0.5)`'); /* fallback */
+    border-color: v-bind('props.containerStyle?.border?.color || "color-mix(in srgb, currentColor 30%, transparent)"');
+}
+
+.borderBottomColorSameAsText {
+    border-bottom: v-bind('`${borderWidth} solid rgba(0, 0, 0, 0.5)`'); /* fallback */
+    border-color: v-bind('props.containerStyle?.border?.color || "color-mix(in srgb, currentColor 30%, transparent)"');
 }
 </style>

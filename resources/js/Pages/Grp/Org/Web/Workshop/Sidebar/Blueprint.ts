@@ -1,3 +1,5 @@
+import { trans } from "laravel-vue-i18n"
+
 export default {
 	blueprint: [
 		{
@@ -16,8 +18,24 @@ export default {
 				},
 				{
 					key: ["border", "color"],
-					label: "Border",
+					label: "Lines",
+					information: trans('Lines that used to separates the menu'),
 					type: "color",
+				},
+				{
+					key: ["border", "width"],
+					label: "Lines thickness",
+					information: trans('Reasonal number is 0px to 12px'),
+					props_data: {
+						unit_option: [
+							{ label: 'px', value: 'px' },
+						],
+						defaultValue: {
+							value: 1,
+							unit: 'px',
+						}
+					},
+					type: "numberCss",
 				},
 			],
 		},

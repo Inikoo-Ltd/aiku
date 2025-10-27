@@ -65,7 +65,7 @@ const responsiveGridClass = computed(() => {
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue.container?.properties, screenType)
     }">
-      <transition name="slide-fade">
+      <transition v-if="!props.modelValue?.settings.is_hide_filter" name="slide-fade">
         <aside v-show="!isMobile && showAside" class="w-68 p-4">
           <FilterProducts v-model="filter" :productCategory="props.modelValue.model_id"/>
         </aside>
@@ -85,13 +85,15 @@ const responsiveGridClass = computed(() => {
 
         <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
           <div class="flex items-center w-full md:w-1/3 gap-2">
-            <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
-              aria-label="Open Filters" />
-            <div v-else class="">
-              <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto" aria-label="Open Filters" />
-            </div>
+            <template v-if="!props.modelValue?.settings.is_hide_filter">
+              <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
+                aria-label="Open Filters" />
+              <div v-else class="">
+                <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto" aria-label="Open Filters" />
+              </div>
+            </template>
 
-            <PureInput v-model="search" type="text" placeholder="Search products..." :clear="true" :isLoading="false"
+            <PureInput v-model="search" type="text" :placeholder="trans('Search products...')" :clear="true" :isLoading="false"
               :prefix="{ icon: faSearch, label: '' }" />
           </div>
 

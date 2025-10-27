@@ -1,30 +1,24 @@
 <?php
 
-/*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Sat, 19 Jul 2025 09:01:57 British Summer Time, Trnava, Slovakia
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
-
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
-use App\Enums\CRM\Customer\CustomerStateEnum;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
+use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateVisitorsIntervals implements ShouldBeUnique
+class ShopHydrateLostRevenueIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
     use WithIntervalUniqueJob;
 
-    public string $jobQueue = 'low-priority';
-    public string $commandSignature = 'hydrate:shop-visitor-intervals {shop}';
+    public string $jobQueue = 'urgent';
+    public string $commandSignature = 'hydrate:shop-lost-revenue-intervals {shop}';
 
     public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
@@ -42,12 +36,11 @@ class ShopHydrateVisitorsIntervals implements ShouldBeUnique
     {
         $stats = [];
 
-        $queryBase = Customer::where('state', CustomerStateEnum::ACTIVE)->where('shop_id', $shop->id)->selectRaw('count(*) as sum_aggregate');
+        $queryBase = Invoice::where('in_process', false)->where('group_id', $shop->id)->where('type', InvoiceTypeEnum::REFUND)->selectRaw('abs(sum(net_amount)) as sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'visitors_',
-            dateField: 'created_at',
+            statField: 'lost_revenue_other_amount_',
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );

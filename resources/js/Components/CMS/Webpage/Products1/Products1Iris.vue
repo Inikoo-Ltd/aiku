@@ -450,7 +450,7 @@ const responsiveGridClass = computed(() => {
         }">
 
             <!-- Sidebar Filters for Desktop -->
-            <transition name="slide-fade">
+            <transition v-if="!props.fieldValue?.settings?.is_hide_filter" name="slide-fade">
                 <aside v-show="!isMobile && showAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
                     <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
                 </aside>
@@ -463,14 +463,15 @@ const responsiveGridClass = computed(() => {
                 <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
                         
-                        <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
-                            aria-label="Open Filters" />
-
-                        <!-- Sidebar Toggle for Desktop -->
-                        <div v-else class="">
-                            <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
+                        <template v-if="!props.fieldValue?.settings?.is_hide_filter">
+                            <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
                                 aria-label="Open Filters" />
-                        </div>
+                            <!-- Sidebar Toggle for Desktop -->
+                            <div v-else class="">
+                                <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
+                                    aria-label="Open Filters" />
+                            </div>
+                        </template>
                         <PureInput v-model="q" @keyup.enter="handleSearch" type="text" placeholder="Search products..."
                             :clear="true" :isLoading="loadingInitial" :prefix="{ icon: faSearch, label: '' }" />
                     </div>

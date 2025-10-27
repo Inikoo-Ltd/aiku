@@ -223,7 +223,7 @@ class ShowProduct extends OrgAction
                     ]
                 ],
                 'tooltip' => __('Sub-department').': '.$product->subDepartment->name,
-                'icon'    => ['fal', 'folders']
+                'icon'    => ['fal', 'folder-download']
             ];
         }
 

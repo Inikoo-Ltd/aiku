@@ -86,7 +86,7 @@ class ShowWebsite extends OrgAction
                         'website'      => $website->slug
                     ]
                 ],
-                'icon'  => 'fal fa-folder-tree',
+                'icon'  => 'fal fa-folder-download',
                 "color" => "#f59e0b",
                 'value' => $website->webStats->number_webpages_sub_type_sub_department,
             ],

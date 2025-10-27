@@ -9,6 +9,16 @@ type CssProperty = {
   unit: string
 }
 
+const props = defineProps<{
+  unit_option?: {
+    label: string
+    value: string
+  }[]
+  defaultValue: {
+    unit: string
+    value: number
+  }
+}>()
 const emits = defineEmits<{
     (e: 'update:modelValue', value: string | number): void
 }>()
@@ -34,6 +44,11 @@ const normalizedModel = computed<CssProperty>({
 
 <template>
   <div>
-    <InputNumberCssProperty :modelValue="normalizedModel" @update:modelValue="(val)=> emits('update:modelValue',val)" />
+    <InputNumberCssProperty
+      :modelValue="normalizedModel"
+      @update:modelValue="(val)=> emits('update:modelValue',val)"
+      :unit_option
+      :defaultValue
+    />
   </div>
 </template>
