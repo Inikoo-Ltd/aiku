@@ -24,7 +24,7 @@ provide("dashboardTabActive", dashboardTabActive)
         <div v-if="props.dashboard?.super_blocks?.[0]?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pt-4">
             <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
                 <div>
-                    {{ props.dashboard?.super_blocks?.[0]?.interval_data?.visitors?.['1w'].formatted_value ?? 0 }}
+                    {{ props.dashboard?.super_blocks?.[0]?.interval_data?.visitors?.['all'].formatted_value ?? 0 }}
                     <span>Visitors</span>
                 </div>
             </div>
