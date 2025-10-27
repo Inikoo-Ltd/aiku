@@ -49,7 +49,6 @@ class ShowShop extends OrgAction
                     'settings'  => [
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
-//                        'currency_type'     => $this->dashboardCurrencyTypeSettings($shop, $userSettings),
                     ],
                     'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
                 ],

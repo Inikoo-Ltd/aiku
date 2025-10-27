@@ -36,11 +36,11 @@ class ShopHydrateLostRevenueIntervals implements ShouldBeUnique
     {
         $stats = [];
 
-        $queryBase = Invoice::where('in_process', false)->where('group_id', $shop->id)->where('type', InvoiceTypeEnum::REFUND)->selectRaw('abs(sum(grp_net_amount)) as sum_aggregate');
+        $queryBase = Invoice::where('in_process', false)->where('group_id', $shop->id)->where('type', InvoiceTypeEnum::REFUND)->selectRaw('abs(sum(net_amount)) as sum_aggregate');
         $stats     = $this->getIntervalsData(
             stats: $stats,
             queryBase: $queryBase,
-            statField: 'lost_revenue_other_amount_grp_currency_',
+            statField: 'lost_revenue_other_amount_',
             intervals: $intervals,
             doPreviousPeriods: $doPreviousPeriods
         );
