@@ -67,7 +67,7 @@ class GetRetinaPaymentAccountShopCheckoutComData
         $paymentSessionRequest->metadata = [
             'origin'         => 'aiku',
             'operation'      => 'order',
-            'api_point_ulid' => $orderPaymentApiPoint->ulid,
+            'api_point_id' => $orderPaymentApiPoint->id,
             'environment'    => app()->environment()
         ];
 
