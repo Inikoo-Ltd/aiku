@@ -126,7 +126,7 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'CheckAllEbayChannels',
         );
 
-        $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('woo:update-inventory')->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateWooStockInventories',
         );
 
@@ -138,6 +138,9 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'CheckShopifyPortfolios',
         );
 
+        $schedule->command('platform-logs:delete')->daily()->sentryMonitor(
+            monitorSlug: 'PlatformDeletePortfolioLogs',
+        );
 
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');
