@@ -6,6 +6,7 @@ import { inject, ref, watch, computed, nextTick } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage } from '@fal'
 import { getStyles } from '@/Composables/styles'
+import { faTimes } from '@fal'
 
 const props = defineProps<{
   modelValue: any
@@ -37,7 +38,7 @@ const cardStyle = ref(getStyles(props.modelValue?.carousel_data?.card_container?
 
 const refreshCarousel = async (delay = 100) => {
   await new Promise(resolve => setTimeout(resolve, delay))
-  refreshTrigger.value++
+  keySwiper.value = ulid()
   await nextTick()
 }
 
@@ -96,11 +97,8 @@ const responsiveOptions = computed(() => {
               <div class="flex justify-center overflow-visible"
                 :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)">
                 <div class="overflow-hidden w-full flex items-center justify-center h-[185px]">
-                  <!-- Image -->
                   <Image v-if="data?.image?.source" :src="data.image.source" :alt="data.image.alt || `image-${index}`"
                      :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)" />
-
-                  <!-- Placeholder Icon -->
                   <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
                     <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
                   </div>

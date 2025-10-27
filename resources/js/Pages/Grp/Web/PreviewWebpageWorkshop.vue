@@ -77,11 +77,9 @@ const handleMessage = (event: MessageEvent) => {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
   }
   if (key === "reload") reloadPage()
-
-  // ✅ Accept new webpage from iframe message
   if (key === "setWebpage") {
     data.value = value
-    reloadPage(true)
+   /*  reloadPage(true) */
   }
 }
 

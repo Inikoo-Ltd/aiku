@@ -88,16 +88,10 @@ const responsiveOptions = computed(() => {
             <component :is="getHref(data) ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
               :href="data?.link?.href" :target="data?.link?.target" class="flex flex-1 flex-col" :type="data?.link?.type">
               <!-- Image Container -->
-              <div class="flex justify-center overflow-visible"
-                :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)">
-                <div :class="[
-                  'overflow-hidden',
-                  !data?.image?.source && 'w-full flex items-center justify-center overflow-auto',
-                ]">
-                  <Image :src="data.image.source" :alt="data.image.alt || `image-${index}`"
-                    :style="getStyles(data.image?.properties, screenType)" class="object-cover w-full h-auto" />
+              <div class="overflow-hidden w-full flex items-center justify-center h-[185px]">
+                  <Image  :src="data.image.source" :alt="data.image.alt || `image-${index}`"
+                     :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)" />
                 </div>
-              </div>
 
               <!-- Text Content -->
               <div v-if="fieldValue.carousel_data.carousel_setting?.use_text"
