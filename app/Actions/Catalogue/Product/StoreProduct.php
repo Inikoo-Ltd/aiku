@@ -12,13 +12,11 @@ use App\Actions\Catalogue\Asset\StoreAsset;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBrandsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateForSale;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
-use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
@@ -182,9 +180,6 @@ class StoreProduct extends OrgAction
                 'current_historic_asset_id' => $historicAsset->id,
             ]
         );
-
-        ProductHydrateBrandsFromTradeUnits::dispatch($product);
-        ProductHydrateTagsFromTradeUnits::dispatch($product);
 
         return $product;
     }
