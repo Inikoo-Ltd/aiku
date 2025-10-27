@@ -10,6 +10,8 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Asset\UpdateAssetFromModel;
 use App\Actions\Catalogue\HistoricAsset\StoreHistoricAsset;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBrandsFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
 use App\Actions\Catalogue\Product\Search\ProductRecordSearch;
 use App\Actions\Catalogue\Product\Traits\WithProductOrgStocks;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
@@ -266,6 +268,8 @@ class UpdateProduct extends OrgAction
             UpdateHistoricProductInBasketTransactions::dispatch($product);
         }
 
+        ProductHydrateBrandsFromTradeUnits::dispatch($product);
+        ProductHydrateTagsFromTradeUnits::dispatch($product);
 
         return $product;
     }
