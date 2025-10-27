@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCubes, faSeedling } from "@fal"
+import { faCubes, faSeedling, faFolders } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle, faExclamationTriangle } from "@fas"
 
@@ -24,7 +24,7 @@ import { routeType } from "@/types/route"
 import { Image as ImageProxy } from "@/types/Image"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 
-library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt, faExclamationTriangle)
+library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt, faExclamationTriangle, faFolders)
 
 const props = defineProps<{
     pageHead: PageHeadingTS

@@ -210,7 +210,7 @@ class IndexSubDepartments extends OrgAction
         $title      = __('Sub-departments');
         $model      = '';
         $icon       = [
-            'icon'  => ['fal', 'fa-dot-circle'],
+            'icon'  => ['fal', 'fa-folders'],
             'title' => __('Sub-department')
         ];
         $afterTitle = null;
