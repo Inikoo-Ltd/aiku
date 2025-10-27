@@ -15,9 +15,13 @@ use App\Actions\Traits\Dashboards\Settings\WithDashboardCurrencyTypeSettings;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalOption;
 use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
+use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Dashboards\DashboardTotalShopInvoiceCategoriesSalesResource;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Platform;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -26,6 +30,7 @@ use Lorisleiva\Actions\ActionRequest;
 
 class ShowShop extends OrgAction
 {
+    use WithIntervalsAggregators;
     use WithDashboard;
     use WithDashboardSettings;
     use WithDashboardIntervalOption;
@@ -50,7 +55,10 @@ class ShowShop extends OrgAction
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                     ],
-                    'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
+                    'shop_blocks' => [
+                        'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
+                        'stats_box' => $shop->type->value === 'dropshipping' ? $this->getStatsBox($shop) : null,
+                    ],
                 ],
             ],
         ];
@@ -103,5 +111,94 @@ class ShowShop extends OrgAction
                 ],
             ],
         );
+    }
+
+    private function getStatsBox(Shop $shop): array
+    {
+        $cleanIntervals = function (array $stats, string $prefix): array {
+            $clean = [];
+            foreach ($stats as $key => $value) {
+                $cleanKey = str_replace($prefix, '', $key);
+                $clean[$cleanKey] = $value;
+            }
+            return $clean;
+        };
+
+        $queryBase = CustomerSalesChannel::query()->where('platform_status', true)->where('shop_id', $shop->id)->selectRaw('COUNT(*) as sum_aggregate');
+
+        $totalPlatformsIntervals = [];
+
+        $totalPlatformsIntervals = $this->getIntervalsData(
+            stats: $totalPlatformsIntervals,
+            queryBase: $queryBase,
+            statField: 'total_platforms_',
+            dateField: 'created_at',
+        );
+
+        $totalPlatformsIntervals = $cleanIntervals($totalPlatformsIntervals, 'total_platforms_');
+
+        $customerChannels = CustomerSalesChannel::where('platform_status', true)->where('shop_id', $shop->id)->with('platform')->get();
+
+        $metas = [];
+
+        foreach (PlatformTypeEnum::cases() as $platformType) {
+            $platformTypeName = $platformType->value;
+
+            $platformChannels = $customerChannels->filter(function ($channel) use ($platformTypeName) {
+                return $channel->platform->type->value === $platformTypeName;
+            });
+
+            $queryPlatform = CustomerSalesChannel::query()
+                ->where('platform_status', true)
+                ->where('shop_id', $shop->id)
+                ->whereHas('platform', function ($q) use ($platformTypeName) {
+                    $q->where('type', $platformTypeName);
+                })
+                ->selectRaw('COUNT(*) as sum_aggregate');
+
+            $platformIntervals = [];
+
+            $platformIntervals = $this->getIntervalsData(
+                stats: $platformIntervals,
+                queryBase: $queryPlatform,
+                statField: "total_{$platformTypeName}_",
+                dateField: 'created_at',
+            );
+
+            $platformIntervals = $cleanIntervals($platformIntervals, "total_{$platformTypeName}_");
+
+            $platformData = Platform::where('type', $platformType->value)->first();
+
+            $metas[] = [
+                'tooltip'   => __($platformType->labels()[$platformTypeName]),
+                'icon'      => [
+                    'tooltip' => $platformChannels->count() > 0 ? 'active' : 'inactive',
+                    'icon'    => $platformChannels->count() > 0 ? 'fas fa-check-circle' : 'fas fa-times-circle',
+                    'class'   => $platformChannels->count() > 0 ? 'text-green-500' : 'text-red-500',
+                ],
+                'logo_icon' => $platformTypeName,
+                'count'     => $platformIntervals,
+                'route'     => $platformData ? [
+                    'name' => 'grp.org.shops.show.crm.platforms.show',
+                    'parameters' => [
+                        'organisation' => $this->organisation->slug,
+                        'shop'         => $this->shop->slug,
+                        'platform'     => $platformData->slug,
+                    ],
+                ] : null,
+            ];
+        }
+
+        return [
+            'label'        => __('Customers Channels'),
+            'color'        => '#E87928',
+            'icon'         => [
+                'icon'          => 'fal fa-code-branch',
+                'tooltip'       => __('Channels'),
+                'icon_rotation' => '90',
+            ],
+            'value'        => $totalPlatformsIntervals,
+            'metas'        => $metas,
+        ];
     }
 }

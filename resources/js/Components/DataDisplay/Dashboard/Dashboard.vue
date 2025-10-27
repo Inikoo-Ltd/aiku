@@ -8,11 +8,14 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { set } from 'lodash-es'
 import { Dashboard } from "@/types/Components/Dashboard"
 import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardShopWidget.vue";
+import StatsBoxIntervals from "@/Components/Stats/StatsBoxIntervals.vue";
 library.add(faTriangle)
 
 const props = defineProps<{
 	dashboard?: Dashboard
 }>()
+
+console.log(props.dashboard?.super_blocks?.[0]?.stats_box);
 
 const dashboardTabActive = ref('')
 provide("dashboardTabActive", dashboardTabActive)
@@ -21,22 +24,22 @@ provide("dashboardTabActive", dashboardTabActive)
 
 <template>
 	<div>
-        <div v-if="props.dashboard?.super_blocks?.[0]?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pt-4">
+        <div v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pt-4">
             <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
                 <div>
-                    {{ props.dashboard?.super_blocks?.[0]?.interval_data?.visitors?.['all'].formatted_value ?? 0 }}
+                    {{ props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.visitors?.['all'].formatted_value ?? 0 }}
                     <span>Visitors</span>
                 </div>
             </div>
             <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
                 <div>
-                    {{ props.dashboard?.super_blocks?.[0]?.interval_data?.registrations?.['1w'].formatted_value ?? 0 }}
+                    {{ props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.registrations?.['1w'].formatted_value ?? 0 }}
                     <span>New Customers</span>
                 </div>
             </div>
             <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
                 <div>
-                    {{ props.dashboard?.super_blocks?.[0]?.interval_data?.orders?.['1w'].formatted_value ?? 0 }}
+                    {{ props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.orders?.['1w'].formatted_value ?? 0 }}
                     <span>Last Orders</span>
                 </div>
             </div>
@@ -68,9 +71,9 @@ provide("dashboardTabActive", dashboardTabActive)
 		/>
 
         <DashboardShopWidget
-            v-if="!props.dashboard?.super_blocks?.[0]?.blocks"
+            v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks"
             :interval="props.dashboard?.super_blocks?.[0]?.intervals?.value"
-            :data="props.dashboard?.super_blocks?.[0]?.interval_data"
+            :data="props.dashboard?.super_blocks?.[0]?.shop_blocks"
         />
 	</div>
 </template>

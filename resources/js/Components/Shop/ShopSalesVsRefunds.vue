@@ -9,8 +9,6 @@ import {
     ArcElement
 } from "chart.js"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
-import { faInfoCircle } from "@fal"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 ChartJS.register(Title, Tooltip, Legend, ArcElement)
 
