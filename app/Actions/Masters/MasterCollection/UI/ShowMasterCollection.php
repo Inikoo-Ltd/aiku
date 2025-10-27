@@ -116,7 +116,7 @@ class ShowMasterCollection extends GrpAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => MasterCollectionTabsEnum::navigation()
+                    'navigation' => MasterCollectionTabsEnum::navigationWithStats($masterCollection)
                 ],
                 'routes'      => [
                     'families'    => [

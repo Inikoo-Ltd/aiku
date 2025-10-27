@@ -35,6 +35,7 @@ import {
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import type { Navigation } from "@/types/Tabs"
+import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
 library.add(
 	faInfoCircle,
@@ -63,6 +64,7 @@ library.add(
 )
 
 const layoutStore = inject("layout", layoutStructure)
+const locale = inject('locale', aikuLocaleStructure)
 
 const props = defineProps<{
 	navigation: Navigation
@@ -183,8 +185,15 @@ const tabIconClass = function (
 									)
 								"
 								aria-hidden="true"
-								:rotation="tab.icon_rotation" />
-							{{ tab.title }}
+								:rotation="tab.icon_rotation"
+							/>
+							<span>{{ tab.title }}</span>
+
+							<div v-if="typeof tab.number == 'number'"
+                                class="ml-2 inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
+                                :class="tabSlug === currentTab ? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]' : 'bg-gray-200 '">
+                                {{ locale.number(tab.number || 0) }}
+                            </div>
 
 							<FontAwesomeIcon
 								v-if="tab.indicator"
@@ -221,6 +230,12 @@ const tabIconClass = function (
 							<span v-if="tab.type !== 'icon'" class="whitespace-nowrap">{{
 								tab.title
 							}}</span>
+
+							<div v-if="typeof tab.number == 'number'"
+                                class="ml-0.5 inline-flex items-center w-fit rounded-full px-2 py-0.5 text-xs font-medium tabular-nums"
+                                :class="tabSlug === currentTab ? 'bg-[var(--theme-color-0)] text-[var(--theme-color-1)]' : 'bg-gray-200 '">
+                                {{ locale.number(tab.number || 0) }}
+                            </div>
 
 							<FontAwesomeIcon
 								v-if="tab.indicator"
