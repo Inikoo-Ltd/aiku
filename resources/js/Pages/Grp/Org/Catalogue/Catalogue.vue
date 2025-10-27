@@ -130,6 +130,7 @@ const isLoadingMeta = ref<string | null>(null)
             <StatsBox
                 v-for="(stat, idxStat) in stats"
                 :stat="stat"
+                :key="idxStat"
             >
             </StatsBox>
         </dl>
