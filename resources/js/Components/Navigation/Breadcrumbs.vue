@@ -90,7 +90,7 @@ const isLoading = ref<string | boolean>(false)
         
                 <div class="flex items-center">
                     <!-- Shorter Breadcrumb on Mobile size -->
-                    <div v-if="breadcrumbs.length > 2 && breadcrumbIdx != 0" class="md:hidden">
+                    <div v-if="breadcrumbs.length > 2 && breadcrumbIdx != 0" class="md:hidden flex items-center">
                         <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
                         <span>...</span>
                     </div>
