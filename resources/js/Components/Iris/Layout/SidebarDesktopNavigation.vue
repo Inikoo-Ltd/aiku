@@ -18,11 +18,11 @@ const props = defineProps<{
 </script>
 
 <template>
-    <div class="p-2 px-4 flex items-center justify-between gap-x-2 cursor-pointer" >
+    <div class="p-2 px-4 flex items-center justify-between gap-x-2 " >
         <LinkIris
             v-if="nav.url"
             :href="internalHref ? internalHref(nav) : nav.url"
-            class="hover:underline"
+            class="hover:underline cursor-pointer"
             @success="() => closeSidebar()"
             :type="nav.type"
             :target="nav.target"
