@@ -223,20 +223,24 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
 
                 <!-- Section: SubDepartments (Auto Product Categories) -->
                 <div v-if="activeIndex !== null && sortedSubDepartments?.length">
-                    <SidebarDesktopNavigation
-                        v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex"
-                        :nav="sub"
-                        :class="[
-                            activeSubIndex === sIndex
-                                ? `navActive`
-                                : 'navInactive'
-                        ]"
-                        @click="changeActiveSubIndex(sIndex)"
-                        :internalHref
-                        :activeSubIndex
-                        :closeSidebar
-                        isWithArrowRight
-                    />
+                    <template
+                        v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex">
+                        <SidebarDesktopNavigation
+                            :nav="sub"
+                            :class="[
+                                activeSubIndex === sIndex
+                                    ? `navActive`
+                                    : sub?.families?.length
+                                        ? 'navInactive'
+                                        : ''
+                            ]"
+                            @click="sub?.families?.length ? changeActiveSubIndex(sIndex) : false"
+                            :internalHref
+                            :activeSubIndex
+                            :closeSidebar
+                            :isWithArrowRight="!!sub?.families?.length"
+                        />
+                    </template>
 
                     <div class="p-2 px-4">
                         <Button 
