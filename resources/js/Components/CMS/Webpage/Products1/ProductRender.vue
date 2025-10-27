@@ -9,7 +9,7 @@ import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faHeart } from '@far'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCircle, faStar, faHeart as fasHeart, faEllipsisV, faMedal} from '@fas'
+import { faCircle, faStar, faHeart as fasHeart, faEllipsisV, faMedal } from '@fas'
 import { Image as ImageTS } from '@/types/Image'
 import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
 import { getStyles } from "@/Composables/styles";
@@ -39,19 +39,19 @@ interface ProductResource {
     is_favourite?: boolean
     exist_in_portfolios_channel: number[]
     is_exist_in_all_channel: boolean
-    top_seller : number | null
-    web_images : {
-        main : {
+    top_seller: number | null
+    web_images: {
+        main: {
             original: ImageTS,
-            gallery : ImageTS
-        }    
+            gallery: ImageTS
+        }
     }
 }
 
 const props = defineProps<{
     product: ProductResource
-    productHasPortfolio : Array<Number>
-    style?: Object|null
+    productHasPortfolio: Array<Number>
+    style?: Object | null
     currency?: {
         code: string
         name: string
@@ -77,7 +77,7 @@ const onAddFavourite = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
@@ -106,7 +106,7 @@ const onUnselectFavourite = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
@@ -210,10 +210,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
                 <FontAwesomeIcon :icon="faMedal" class="w-3.5 h-3.5 mr-0 md:mr-2" :class="{
 
-                        'text-[#FFD700]': product.top_seller === 1, // Gold
-                        'text-[#C0C0C0]': product.top_seller === 2, // Silver
-                        'text-[#CD7F32]': product.top_seller === 3  // Bronze
-                    }" />
+                    'text-[#FFD700]': product.top_seller === 1, // Gold
+                    'text-[#C0C0C0]': product.top_seller === 2, // Silver
+                    'text-[#CD7F32]': product.top_seller === 3  // Bronze
+                }" />
 
                 <span class="hidden md:inline">BESTSELLER</span>
             </div>
@@ -251,7 +251,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                     {{ product.name }}
                 </template>
             </LinkIris>
-            
+
             <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 {{ product.name }}
             </div>
@@ -260,7 +260,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
             <div class="flex justify-between text-xs text-gray-600 mb-1">
                 <span>{{ product?.code }}</span>
                 <span v-if="product.rpp">
-                    RRP: {{ locale.currencyFormat((currency.code,product.rpp || 0)) }}/ {{ product.unit }}
+                    RRP: {{ locale.currencyFormat((currency.code, product.rpp || 0)) }}/ {{ product.unit }}
                 </span>
             </div>
 
@@ -289,14 +289,27 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
 
             <!-- Prices -->
-            <div v-if="layout?.iris?.is_logged_in" class="mb-3">
+            <div v-if="layout?.iris?.is_logged_in"
+                class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
+                <div class="">
+                    <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
+                        product.price || 0) }}</span></div>
+                    <div>
+                        <span class="text-sm text-gray-400 xtext-base font-normal">
+                            ({{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
+                            }}/{{
+                                product.unit }})
+                        </span>
+                    </div>
+                </div>
 
-                <div class="flex justify-between text-sm ">
-                    <span>{{trans('Price')}}: <span class="font-semibold">{{
-                            locale.currencyFormat(currency?.code,product.price) }}</span></span>
-                    <span><span v-tooltip="trans('Recommended retail price')">{{trans('RRP')}}</span>: <span
-                            class="font-semibold">{{ locale.currencyFormat(currency?.code,product.rrp) }}</span></span>
-
+                <div v-if="product.rrp_per_unit" class="text-xs xmt-1 text-right">
+                    <div>RRP: {{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}</div>
+                    <div class="text-gray-400 xtext-base font-normal">
+                        ({{ locale.currencyFormat(currency?.code, (product.rrp_per_unit / product.units).toFixed(2))
+                        }}/{{
+                            product.unit }})
+                    </div>
                 </div>
             </div>
         </div>
@@ -307,5 +320,4 @@ const onUnselectBackInStock = (product: ProductResource) => {
 </template>
 
 
-<style scoped>
-</style>
+<style scoped></style>
