@@ -116,7 +116,7 @@ class ShowCatalogue extends OrgAction
                         'metaRight' => [
                             'tooltip' => __('Sub Departments'),
                             'icon'    => [
-                                'icon'  => 'fal fa-folders',
+                                'icon'  => 'fal fa-folder-download',
                                 'class' => ''
                             ],
                             'route' => [

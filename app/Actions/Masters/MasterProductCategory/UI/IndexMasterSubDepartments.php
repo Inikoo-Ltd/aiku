@@ -141,7 +141,7 @@ class IndexMasterSubDepartments extends GrpAction
             'label' => __('Master Sub Departments')
         ];
         $iconRight  = [
-            'icon' => 'fal fa-folder-tree',
+            'icon' => 'fal fa-folder-download',
         ];
 
         return Inertia::render(

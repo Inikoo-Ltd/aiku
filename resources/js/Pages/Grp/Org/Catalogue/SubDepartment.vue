@@ -11,7 +11,7 @@ import {
     faBullhorn,
     faCameraRetro,
     faCube,
-    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser
+    faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload
 } from '@fal'
 
 import PageHeading from '@/Components/Headings/PageHeading.vue'
@@ -49,7 +49,9 @@ library.add(
     faProjectDiagram,
     faUser,
     faMoneyBillWave,
-    faDiagramNext,faBrowser
+    faDiagramNext,
+    faBrowser,
+    faFolderDownload
 )
 
 const locale = inject('locale', aikuLocaleStructure)
@@ -158,7 +160,7 @@ const onSubmitAddItem = async (idProduct: number[]) => {
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
-                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
+                        <FontAwesomeIcon :icon="item.icon" class="w-4 h-4"/>
                         <span class="">{{ item.label || '-' }}</span>
                     </component>
                 </div>
