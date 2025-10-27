@@ -12,7 +12,7 @@ use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductHydrateTagsFromBrands implements ShouldBeUnique
+class ProductHydrateBrandsFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
 
