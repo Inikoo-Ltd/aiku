@@ -177,6 +177,11 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $url = '';
         /** @var ProductCategory $productCategory */
         $productCategory = $webpage->model;
+
+        if (!$productCategory) {
+            $productCategory=ProductCategory::withTrashed()->where('id',$webpage->model_id)->first();
+        }
+
         if (!$productCategory) {
             return $url;
         }

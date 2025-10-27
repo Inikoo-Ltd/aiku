@@ -54,12 +54,12 @@ class PaymentAccountShop extends Model implements Auditable
     protected $table = 'payment_account_shop';
 
     protected $casts = [
-        'data'  => 'array',
-        'state' => PaymentAccountShopStateEnum::class,
-        'type'  => PaymentAccountTypeEnum::class,
-        'activated_at' => 'datetime',
+        'data'              => 'array',
+        'state'             => PaymentAccountShopStateEnum::class,
+        'type'              => PaymentAccountTypeEnum::class,
+        'activated_at'      => 'datetime',
         'last_activated_at' => 'datetime',
-        'inactive_at' => 'datetime',
+        'inactive_at'       => 'datetime',
 
 
     ];
@@ -107,7 +107,6 @@ class PaymentAccountShop extends Model implements Auditable
         }
 
         return $credentials;
-
     }
 
     public function getCheckoutComCredentials(): array
@@ -128,13 +127,11 @@ class PaymentAccountShop extends Model implements Auditable
     public function getCheckoutComChannel(): string
     {
         if (app()->environment('production')) {
-            return  Arr::get($this->data, 'credentials.payment_channel');
+            return Arr::get($this->data, 'credentials.payment_channel');
         } else {
             return config('app.sandbox.checkout_com.payment_channel');
         }
     }
-
-
 
 
 }

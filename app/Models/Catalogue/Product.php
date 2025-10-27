@@ -336,6 +336,16 @@ class Product extends Model implements Auditable, HasMedia
         return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
     }
 
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
+    }
+
+    public function brands(): MorphToMany
+    {
+        return $this->morphToMany(Brand::class, 'model', 'model_has_brands')->withTimestamps();
+    }
+
     public function productVariants(): HasMany
     {
         return $this->hasMany(Product::class, 'main_product_id');
