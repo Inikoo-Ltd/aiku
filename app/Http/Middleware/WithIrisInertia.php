@@ -68,6 +68,10 @@ trait WithIrisInertia
                 'id'   => $shop->id,
                 'slug' => $shop->slug,
                 'name' => $shop->name,
+                'number_brands' => $shop->stats->number_brands,
+                'number_current_brands' => $shop->stats->number_current_brands,
+                'number_tags' => $shop->stats->number_brands,
+                'number_current_tags' => $shop->stats->number_current_tags
             ],
             "website"              => WebsiteIrisResource::make($website)->getArray(),
             'theme'                => Arr::get($website->published_layout, 'theme'),
