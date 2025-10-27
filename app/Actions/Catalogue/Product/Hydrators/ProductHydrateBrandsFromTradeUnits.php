@@ -25,6 +25,10 @@ class ProductHydrateBrandsFromTradeUnits implements ShouldBeUnique
     {
         $brand = $product->getBrand();
 
-        $product->brands()->sync([$brand->id]);
+        $product->brands()->sync([
+            $brand->id => [
+                'shop_id'  => $product->shop_id
+            ]
+        ]);
     }
 }
