@@ -15,6 +15,7 @@ use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
+use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -25,10 +26,18 @@ class ShopHydrateInvoiceIntervals implements ShouldBeUnique
     use WithIntervalUniqueJob;
 
     public string $jobQueue = 'urgent';
+    public string $commandSignature = 'hydrate:shop-invoice-intervals {shop}';
 
     public function getJobUniqueId(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         return $this->getUniqueJobWithInterval($shop, $intervals, $doPreviousPeriods);
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $shop = Shop::where('slug', $command->argument('shop'))->first();
+
+        $this->handle($shop);
     }
 
     public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void

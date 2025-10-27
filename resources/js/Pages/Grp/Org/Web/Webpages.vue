@@ -9,7 +9,7 @@ import { Head, useForm } from '@inertiajs/vue3'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import TableWebpages from "@/Components/Tables/Grp/Org/Web/TableWebpages.vue"
 import { capitalize } from "@/Composables/capitalize"
-import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faSignInAlt, faBooks, faColumns, faInfoCircle, faNewspaper } from '@fal'
+import { faShapes, faSortAmountDownAlt, faSortAmountDown, faHome, faSignInAlt, faBooks, faColumns, faInfoCircle, faNewspaper, faFolderDownload } from '@fal'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -21,7 +21,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { ref } from 'vue'
 import { notify } from '@kyvg/vue3-notification'
 import { routeType } from '@/types/route'
-library.add(faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faSignInAlt, faBooks, faColumns, faInfoCircle, faNewspaper)
+library.add(faShapes, faSortAmountDownAlt, faSortAmountDown, faHome, faSignInAlt, faBooks, faColumns, faInfoCircle, faNewspaper, faFolderDownload)
 
 const props = defineProps<{
     pageHead: PageHeadingTypes
