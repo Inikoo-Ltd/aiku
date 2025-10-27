@@ -13,7 +13,8 @@ import {
     faBroadcastTower,
     faSkull,
     faRocket,
-    faExternalLink
+    faExternalLink,
+    faFolderDownload
 } from "@fal"
 
 import PageHeading from "@/Components/Headings/PageHeading.vue"
@@ -52,7 +53,8 @@ library.add(
     faBroadcastTower,
     faSkull,
     faRocket,
-    faExternalLink
+    faExternalLink,
+    faFolderDownload
 )
 
 

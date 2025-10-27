@@ -195,7 +195,7 @@ class ShowFamily extends OrgAction
                                 ]
                             ],
                             'tooltip' => __('Sub-Department'),
-                            'icon'    => ['fal', 'folder-tree']
+                            'icon'    => ['fal', 'folder-download']
                         ] : [],
 
                     ],
