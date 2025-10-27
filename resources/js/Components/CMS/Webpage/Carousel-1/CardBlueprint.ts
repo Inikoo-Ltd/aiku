@@ -7,51 +7,28 @@ export default {
 				{
 					key: ["source"],
 					label: "Image",
-					type: "upload_image",
+					type: "image-cropped",
+					props_data: {
+						stencilProps: {
+							aspectRatio: [1, 4/3, 16/9 ],
+							movable: true,
+							scalable: true,
+							resizable: true,
+						},
+					},
 				},
 				{
 					key: ["alt"],
 					label: "Alternate Text",
 					type: "text",
 				},	
-				{
-					key: ["properties", "object_fit"],
-					label: "Object Image",
-					useIn: ["desktop", "tablet", "mobile"],
-					type: "select",
-					props_data: {
-						placeholder: "Object",
-						options: [
-							{
-								label: "contain",
-								value: "contain",
-							},
-							{
-								label: "cover",
-								value: "cover",
-							},
-							{
-								label: "none",
-								value: "none",
-							},
-							{
-								label: "scale-down",
-								value: "scale-down",
-							},
-							{
-								label: "fill",
-								value: "fill",
-							},
-						],
-					},
-				},
 			],
 		},
-		{
+		/* {
 			key: ["text"],
 			label: "Text",
 			type: "editorhtml",
-		},
+		}, */
 		{
 			key: ["link"],
 			label: "Link",
