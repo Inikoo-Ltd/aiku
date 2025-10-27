@@ -94,12 +94,7 @@
 			"carousel_data": {
 				"cards": [
 					{
-						"link": {
-							"id": 9,
-							"href": "/",
-							"type": "internal",
-							"workshop_route": null
-						},
+						"link": null,
 						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
 						"image": {
 							"alt": "Image 1",
@@ -107,12 +102,7 @@
 						}
 					},
 					{
-						"link": {
-							"id": 9,
-							"href": "/",
-							"type": "internal",
-							"workshop_route": null
-						},
+						"link": null,
 						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
 						"image": {
 							"alt": "Image 2",
@@ -120,12 +110,7 @@
 						}
 					},
 					{
-						"link": {
-							"id": 9,
-							"href": "/",
-							"type": "internal",
-							"workshop_route": null
-						},
+						"link": null,
 						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
 						"image": {
 							"alt": "Image 3",
@@ -133,12 +118,7 @@
 						}
 					},
 					{
-						"link": {
-							"id": 9,
-							"href": "/",
-							"type": "internal",
-							"workshop_route": null
-						},
+						"link": null,
 						"text": "<h3>Lorem Ipsum</h3><p>description from the product</p>",
 						"image": {
 							"alt": "Image 4",

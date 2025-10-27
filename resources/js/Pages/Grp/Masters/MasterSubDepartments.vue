@@ -9,10 +9,10 @@
   import PageHeading from '@/Components/Headings/PageHeading.vue'
   import TableMasterSubDepartments from "@/Components/Tables/Grp/Goods/TableMasterSubDepartments.vue"
   import { capitalize } from "@/Composables/capitalize"
-  import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown,faHome } from '@fal'
+  import { faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown, faHome, faFolderDownload } from '@fal'
   import { library } from "@fortawesome/fontawesome-svg-core"
   import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
-  library.add( faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown ,faHome)
+  library.add( faShapes, faSortAmountDownAlt, faBrowser, faSortAmountDown ,faHome, faFolderDownload)
 
   defineProps<{
       pageHead: PageHeadingTypes

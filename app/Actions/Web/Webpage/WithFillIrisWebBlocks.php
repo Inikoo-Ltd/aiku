@@ -29,7 +29,7 @@ trait WithFillIrisWebBlocks
 
         if ($webBlockType === 'banner') {
             $parsedWebBlocks[$key] = GetBanner::run($webBlock);
-        } elseif (in_array($webBlockType, ['departments'])) {
+        } elseif (in_array($webBlockType, ['departments'])) { // not used
             $parsedWebBlocks[$key] = GetWebBlockDepartments::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['sub-departments-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockSubDepartments::run($webpage, $webBlock);
@@ -41,7 +41,7 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockFamily::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['product-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockProduct::run($webpage, $webBlock);
-        } elseif (in_array($webBlockType, ['collections-1'])) {
+        } elseif (in_array($webBlockType, ['collections-1'])) { // not used
             $parsedWebBlocks[$key] = GetWebBlockCollections::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['see-also-1'])) {
             $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);

@@ -38,7 +38,7 @@ class IndexMasterCollections extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('master_collections.code', $value)
-                    ->orWhereStartWith('master_collections.description', $value);
+                    ->orWhereStartWith('master_collections.name', $value);
             });
         });
 
@@ -53,7 +53,6 @@ class IndexMasterCollections extends OrgAction
             [
                 'master_collections.id',
                 'master_collections.code',
-                'master_collections.description',
                 'master_collections.slug',
                 'master_collections.products_status',
                 'master_collections.data',
@@ -94,7 +93,7 @@ class IndexMasterCollections extends OrgAction
                 [
                     'status',
                     'code',
-                    'description',
+                    'name',
                     'number_current_master_families',
                     'number_current_master_products',
                     'number_current_master_collections'

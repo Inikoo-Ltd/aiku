@@ -12,6 +12,7 @@ namespace App\Enums\UI\SupplyChain;
 
 use App\Enums\EnumHelperTrait;
 use App\Enums\HasTabs;
+use App\Models\Masters\MasterCollection;
 
 enum MasterCollectionTabsEnum: string
 {
@@ -28,6 +29,23 @@ enum MasterCollectionTabsEnum: string
     case HISTORY = 'history';
     case SHOP_COLLECTIONS = 'shop_collections';
 
+
+    public static function navigationWithStats(MasterCollection $masterCollection): array
+    {
+        return collect(self::cases())->mapWithKeys(function ($case) use ($masterCollection) {
+            $blueprint = $case->blueprint();
+
+            if ($case == self::PRODUCTS) {
+                $blueprint['number'] = $masterCollection->stats->number_current_master_families;
+            } elseif ($case == self::FAMILIES) {
+                $blueprint['number'] = $masterCollection->stats->number_current_master_products;
+            } elseif ($case == self::COLLECTIONS) {
+                $blueprint['number'] = $masterCollection->stats->number_current_master_collections;
+            }
+
+            return [$case->value => $blueprint];
+        })->all();
+    }
 
     public function blueprint(): array
     {

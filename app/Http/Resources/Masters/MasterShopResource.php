@@ -46,7 +46,7 @@ class MasterShopResource extends JsonResource
                          'metaRight'  => [
                              'tooltip' => __('Master Sub Departments'),
                              'icon'    => [
-                                 'icon'  => 'fal fa-folder-tree',
+                                 'icon'  => 'fal fa-folder-download',
                                  'class' => ''
                              ],
                              'route' => [

@@ -9,14 +9,14 @@ import { Head } from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import TableSubDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableSubDepartments.vue";
 import { capitalize } from "@/Composables/capitalize";
-import { faSeedling } from "@fal";
+import { faFolderDownload, faSeedling } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import Tabs from "@/Components/Navigation/Tabs.vue"
 
 
-library.add(faSeedling);
+library.add(faSeedling, faFolderDownload);
 
 const props = defineProps<{
   pageHead: object

@@ -13,7 +13,7 @@ export default {
 				},
 				/* {
 					label: "Space Between",
-					key: ["carousel_setting", "spaceBetween"],
+					key: ["carousel_setting", "spaceBetween"],+
 					type: "number",
 				}, */
 				{
