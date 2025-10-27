@@ -44,6 +44,7 @@ const metasWithInterval = computed(() => {
 
 <template>
     <component
+        v-if="activeValue !== 0"
         :is="stat.route?.name ? Link : 'div'"
         :href="stat.route?.name ? route(stat.route.name, stat.route.parameters) : ''"
         :style="{ color: stat.color }"
