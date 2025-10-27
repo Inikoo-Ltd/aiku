@@ -53,6 +53,7 @@ class SubDepartmentsResource extends JsonResource
             'image'           => $this->imageSources(720, 480),
             'state'           => [
                 'label' => $this->state->labels()[$this->state->value],
+                'tooltip' => $this->state->labels()[$this->state->value],
                 'icon'  => $this->state->stateIcon()[$this->state->value]['icon'],
                 'class' => $this->state->stateIcon()[$this->state->value]['class']
             ],

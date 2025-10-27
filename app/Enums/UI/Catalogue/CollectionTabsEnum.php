@@ -18,65 +18,16 @@ enum CollectionTabsEnum: string
     use HasTabsWithQuantity;
 
 
-
-    case SHOWCASE            = 'showcase';
-
-    // case DEPARTMENTS         = 'departments';
-    case FAMILIES            = 'families';
-    case PRODUCTS            = 'products';
-    case COLLECTIONS         = 'collections';
-    // case SALES               = 'sales';
-    // case CUSTOMERS           = 'customers';
-    // case OFFERS              = 'offers';
-    // case MAILSHOTS           = 'mailshots';
-    // case RELATED_CATEGORIES  = 'related_categories';
-
-    case HISTORY             = 'history';
-
-    // case DATA                = 'data';
-    // case IMAGES              = 'images';
-
+    case SHOWCASE = 'showcase';
+    case FAMILIES = 'families';
+    case PRODUCTS = 'products';
+    case COLLECTIONS = 'collections';
+    case HISTORY = 'history';
 
 
     public function blueprint(Collection $parent): array
     {
         return match ($this) {
-            // DepartmentTabsEnum::DATA => [
-            //     'title' => __('Database'),
-            //     'icon'  => 'fal fa-database',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-            // ],
-            // DepartmentTabsEnum::PRODUCTS => [
-            //     'title' => __('Products'),
-            //     'icon'  => 'fal fa-cube',
-            // ],
-            // DepartmentTabsEnum::FAMILIES => [
-            //     'title' => __('Families'),
-            //     'icon'  => 'fal fa-cubes',
-            // ],
-            // DepartmentTabsEnum::SALES => [
-            //     'title' => __('Sales'),
-            //     'icon'  => 'fal fa-money-bill-wave',
-            // ],
-            // DepartmentTabsEnum::CUSTOMERS => [
-            //     'title' => __('Customers'),
-            //     'icon'  => 'fal fa-user',
-            // ],DepartmentTabsEnum::OFFERS => [
-            //     'title' => __('Offers'),
-            //     'icon'  => 'fal fa-tags',
-            // ],DepartmentTabsEnum::MAILSHOTS => [
-            //     'title' => __('Mailshots'),
-            //     'icon'  => 'fal fa-bullhorn',
-            // ],DepartmentTabsEnum::RELATED_CATEGORIES => [
-            //     'title' => __('Related categories'),
-            //     'icon'  => 'fal fa-project-diagram',
-            // ],DepartmentTabsEnum::IMAGES=> [
-            //     'title' => __('Images'),
-            //     'icon'  => 'fal fa-camera-retro',
-            //     'type'  => 'icon',
-            //     'align' => 'right',
-            // ],
             CollectionTabsEnum::HISTORY => [
                 'title' => __('History'),
                 'icon'  => 'fal fa-clock',
@@ -87,10 +38,6 @@ enum CollectionTabsEnum: string
                 'title' => __('Details'),
                 'icon'  => 'fas fa-info-circle',
             ],
-            // CollectionTabsEnum::DEPARTMENTS => [
-            //     'title' => __("Departments")." ({$parent->stats->number_departments})",
-            //     'icon'  => 'fal fa-folder-tree',
-            // ],
             CollectionTabsEnum::FAMILIES => [
                 'title' => __('Families')." ({$parent->stats->number_families})",
                 'icon'  => 'fal fa-folder',

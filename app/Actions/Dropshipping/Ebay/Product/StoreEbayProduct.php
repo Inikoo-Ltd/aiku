@@ -122,12 +122,14 @@ class StoreEbayProduct extends RetinaAction
 
             $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);
             $productAttributes = $ebayUser->extractProductAttributes($product, $categoryAspects);
+            $aspects = [
+                'aspects' => [
+                    'EAN' => [$product->barcode],
+                ]
+            ];
 
-            $aspects = [];
             if (!blank($productAttributes)) {
-                $aspects = [
-                    'aspects' =>  $productAttributes,
-                ];
+                $aspects['aspects'] = array_merge($aspects['aspects'], $productAttributes);
             }
 
             $inventoryItem = [

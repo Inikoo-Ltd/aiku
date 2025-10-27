@@ -37,7 +37,7 @@ class UpdateInventoryInWooPortfolio
                 try {
                     BulkUpdateWooPortfolio::dispatch($customerSalesChannel->user, $portfolios);
                 } catch (\Exception $e) {
-                    Sentry::captureException($e);
+                    // Sentry::captureException($e);
                 }
             }
         }

@@ -137,7 +137,6 @@ class ShowCollection extends OrgAction
                 [
                     'type'    => 'button',
                     'style'   => 'edit',
-                    'tooltip' => __('To Webpage'),
                     'label'   => __('To Webpage'),
                     'icon'    => ["fal", "fa-drafting-compass"],
                     'route'   => [
@@ -153,7 +152,6 @@ class ShowCollection extends OrgAction
                 : [
                     'type'    => 'button',
                     'style'   => 'edit',
-                    'tooltip' => __('Create Webpage'),
                     'label'   => __('Create Webpage'),
                     'icon'    => ["fas", "fa-plus"],
                     'route'   => [

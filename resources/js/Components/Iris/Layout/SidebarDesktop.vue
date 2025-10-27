@@ -155,7 +155,7 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
             
             <!-- Section: Auto Product Categories List -->
             <div class="flex items-center justify-between px-2 py-4 border-b">
-                <h3 class="font-semibold text-sm">{{ trans("Departments") }}</h3>
+                <h3 class="font-semibold">{{ trans("Departments") }}</h3>
             </div>
             <SidebarDesktopNavigation
                 v-for="(sub, sIndex) in sortedProductCategories" :key="sIndex"
@@ -199,7 +199,7 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
             :class="[(activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'border-r']">
             <!-- Header -->
             <div v-if="activeIndex !== null" class="flex items-center justify-between py-4 px-4">
-                <h3 class="font-semibold text-sm">{{ trans("Sub-Departments") }}</h3>
+                <h3 class="font-semibold">{{ trans("Sub-Departments") }}</h3>
             </div>
 
             <div class="overflow-y-auto">
@@ -223,20 +223,24 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
 
                 <!-- Section: SubDepartments (Auto Product Categories) -->
                 <div v-if="activeIndex !== null && sortedSubDepartments?.length">
-                    <SidebarDesktopNavigation
-                        v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex"
-                        :nav="sub"
-                        :class="[
-                            activeSubIndex === sIndex
-                                ? `navActive`
-                                : 'navInactive'
-                        ]"
-                        @click="changeActiveSubIndex(sIndex)"
-                        :internalHref
-                        :activeSubIndex
-                        :closeSidebar
-                        isWithArrowRight
-                    />
+                    <template
+                        v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex">
+                        <SidebarDesktopNavigation
+                            :nav="sub"
+                            :class="[
+                                activeSubIndex === sIndex
+                                    ? `navActive`
+                                    : sub?.families?.length
+                                        ? 'navInactive'
+                                        : ''
+                            ]"
+                            @click="sub?.families?.length ? changeActiveSubIndex(sIndex) : false"
+                            :internalHref
+                            :activeSubIndex
+                            :closeSidebar
+                            :isWithArrowRight="!!sub?.families?.length"
+                        />
+                    </template>
 
                     <div class="p-2 px-4">
                         <Button 
@@ -277,7 +281,7 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
             <!-- Collections: from Department -->
             <template v-if="sortedProductCategories?.[activeIndex]?.collections.length">
                 <div v-if="activeIndex !== null" class="border-t bodashe border-gray-300 flex items-center justify-between mt-2 pt-4 pb-2 px-4">
-                    <h3 class="font-semibold text-sm">{{ trans("Collections") }}</h3>
+                    <h3 class="font-semibold">{{ trans("Collections") }}</h3>
                 </div>
                 <div class="">
                     <div>
@@ -303,7 +307,7 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
         <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null">
             <!-- Header -->
             <div  v-if="activeSubIndex !== null" class="flex items-center justify-between p-4">
-                <h3 class="font-semibold text-sm">{{ trans("Families") }}</h3>
+                <h3 class="font-semibold">{{ trans("Families") }}</h3>
             </div>
 
             <div class="overflow-y-auto">
@@ -375,7 +379,7 @@ const backgroundColorNoGradient = props.containerStyle?.background?.color || lay
                 <!-- Collections: from Sub Department -->
                 <template v-if="sortedSubDepartments?.[activeSubIndex]?.collections?.length">
                     <div v-if="activeIndex !== null" class="border-t border-gray-300 flex items-center justify-between mt-2 pt-4 pb-2 px-4">
-                        <h3 class="font-semibold text-sm">{{ trans("Collections") }}</h3>
+                        <h3 class="font-semibold">{{ trans("Collections") }}</h3>
                     </div>
                     <div class="">
                         <div>
