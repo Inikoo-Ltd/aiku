@@ -141,12 +141,12 @@ const closeSidebar = () => {
                                 v-if="category?.url !== null" :href="internalHref(category)" :target="getTarget(category)"
                                 @success="() => closeSidebar()"
                                 xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                class="block text-sm relative hover:text-primary transition-all">
+                                class="block relative hover:text-primary transition-all">
                                 {{ category.name }}
                             </LinkIris>
                             <span v-else
                                 xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                class="block text-sm relative">
+                                class="block relative">
                                 {{ category.name }}
                             </span>
                             <FontAwesomeIcon :icon="faChevronCircleDown" fixed-width
