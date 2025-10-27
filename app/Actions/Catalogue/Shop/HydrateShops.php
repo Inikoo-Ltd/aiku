@@ -11,6 +11,7 @@ namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAdjustments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBrands;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoDepartment;
@@ -44,6 +45,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProducts;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProspects;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePurges;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTags;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopUps;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVariants;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
@@ -104,6 +106,8 @@ class HydrateShops
         ShopHydrateVisitorsIntervals::run($shop);
         ShopHydratePlatformStats::run($shop);
         ShopHydrateProspects::run($shop);
+        ShopHydrateTags::run($shop);
+        ShopHydrateBrands::run($shop);
     }
 
 }

@@ -45,12 +45,14 @@ use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Brand;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\InvoiceTransactionHasFeedback;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Query;
 use App\Models\Helpers\SerialReference;
+use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
 use App\Models\Helpers\Timezone;
 use App\Models\Helpers\UniversalSearch;
@@ -704,4 +706,19 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(ShopPlatformStats::class);
     }
 
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Tag::class,
+            'model_has_tags'
+        );
+    }
+
+    public function brands(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Brand::class,
+            'model_has_brands'
+        );
+    }
 }

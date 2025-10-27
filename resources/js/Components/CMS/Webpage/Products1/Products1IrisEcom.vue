@@ -53,12 +53,12 @@ const props = defineProps<{
 
 const layout = inject("layout", retinaLayoutStructure)
 const products = ref<any[]>(
-  props.fieldValue?.products?.meta?.last_page == 1
-    ? [
-        ...(props.fieldValue?.products?.data ?? []),
-        ...(props.fieldValue?.products_out_of_stock?.data ?? [])
-      ]
-    : [...(props.fieldValue?.products?.data ?? [])]
+    props.fieldValue?.products?.meta?.last_page == 1
+        ? [
+            ...(props.fieldValue?.products?.data ?? []),
+            ...(props.fieldValue?.products_out_of_stock?.data ?? [])
+        ]
+        : [...(props.fieldValue?.products?.data ?? [])]
 );
 
 const q = ref("")
@@ -261,7 +261,7 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith("-")
     }
 
-    if (layout?.iris?.is_logged_in){
+    if (layout?.iris?.is_logged_in) {
         fetchProducts();
         fetchHasInBasket();
     }
@@ -300,7 +300,7 @@ const toggleSort = (key: string) => {
         sortKey.value = key
         isAscending.value = true
     }
-    
+
     orderBy.value = isAscending.value ? key : `-${key}`
     updateQueryParams()
     handleSearch()
@@ -365,6 +365,22 @@ const responsiveGridClass = computed(() => {
     return `grid-cols-${count}`
 })
 
+
+const search_sort_class = ref(getStyles(props.fieldValue?.search_sort?.sort?.properties, props.screenType, false))
+const placeholder_class = ref(getStyles(props.fieldValue?.search_sort?.search?.placeholder?.properties, props.screenType, false))
+const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false))
+
+watch(
+    () => props.fieldValue?.search_sort,
+    () => {
+        search_sort_class.value = getStyles(props.fieldValue?.search_sort?.sort?.properties, props.screenType, false)
+        placeholder_class.value = getStyles(props.fieldValue?.search_sort?.search?.placeholder?.properties, props.screenType, false)
+        search_class.value = getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false)
+    },
+    { deep: true }
+)
+
+
 </script>
 
 <template>
@@ -393,15 +409,29 @@ const responsiveGridClass = computed(() => {
                     <div class="flex items-center w-full md:w-1/3 gap-2">
                         <template v-if="!props.fieldValue?.settings?.is_hide_filter">
                             <Button v-if="isMobile" :icon="faFilter" @click="isShowFilters = true" class="!p-3 !w-auto"
-                                aria-label="Open Filters" />
+                                aria-label="Open Filters"
+                                :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             <!-- Sidebar Toggle for Desktop -->
                             <div v-else class="py-4">
                                 <Button :icon="faFilter" @click="isShowAside = !isShowAside" class="!p-3 !w-auto"
-                                    aria-label="Open Filters" />
+                                    aria-label="Open Filters"
+                                    :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             </div>
                         </template>
-                        <PureInput v-model="q" @keyup.enter="handleSearch" type="text" :placeholder="trans('Search products...')"
-                            :clear="true" :isLoading="isLoadingInitial" :prefix="{ icon: faSearch, label: '' }" />
+                        <div class="search-input w-full">
+                            <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
+                                :placeholder="trans('Search products...')" :clear="true" :isLoading="isLoadingInitial"
+                                :prefix="{ icon: faSearch, label: '' }">
+                                <template #prefix>
+                                    <div class="pl-3 whitespace-nowrap text-gray-400">
+                                        <FontAwesomeIcon :icon='faSearch' class='search-input' fixed-width
+                                            aria-hidden='true' />
+                                    </div>
+                                </template>
+                            </PureInput>
+
+                        </div>
+
                     </div>
 
                     <!-- Sort Tabs -->
@@ -416,17 +446,17 @@ const responsiveGridClass = computed(() => {
                         </button> -->
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
-                            class="pb-2 px-4 text-sm font-medium whitespace-nowrap flex items-center border-b-2 gap-1" :class="[
+                            class="pb-2 px-4 text-sm font-medium whitespace-nowrap flex items-center border-b-2 gap-1 sort-button"
+                            :class="[
                                 sortKey === option.value
                                     ? `border-[var(--iris-color-0)] text-[var(--iris-color-0)]`
                                     : `border-gray-300 text-gray-600 hover:text-[var(--iris-color-0)]`
-                            ]"
-                            :disabled="isLoadingInitial || isLoadingMore">
+                            ]" :disabled="isLoadingInitial || isLoadingMore">
                             {{ option.label }} {{ getArrow(option.value) }}
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Section: Results  -->
                 <div class="px-4 mb-2 flex justify-between items-center text-sm text-gray-600">
                     <div
@@ -463,14 +493,9 @@ const responsiveGridClass = computed(() => {
                     <template v-else-if="products.length">
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
-                            class="border relative rounded"
-                            :class="product.stock ? '' : 'bg-red-100'"
-                        >
-                            <ProductRenderEcom
-                                :product="product"
-                                :key="index"
-                                :hasInBasket="productInBasket.list[product.id]"
-                            />
+                            class="border relative rounded" :class="product.stock ? '' : 'bg-red-100'">
+                            <ProductRenderEcom :product="product" :key="index"
+                                :hasInBasket="productInBasket.list[product.id]" />
                         </div>
                     </template>
 
@@ -519,5 +544,30 @@ const responsiveGridClass = computed(() => {
 
 aside {
     transition: all 0.3s ease;
+}
+
+
+.sort-button {
+    color: v-bind('search_sort_class?.color || null') !important;
+    font-family: v-bind('search_sort_class?.fontFamily || null') !important;
+    font-size: v-bind('search_sort_class?.fontSize || null') !important;
+}
+
+.search-input {
+    color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+
+    :deep(input) {
+        color: v-bind('search_class?.color || null') !important;
+        font-family: v-bind('search_class?.fontFamily || null') !important;
+        font-size: v-bind('search_class?.fontSize || null') !important;
+    }
+
+    :deep(input::placeholder) {
+        color: v-bind('placeholder_class?.color || null') !important;
+        font-family: v-bind('placeholder_class?.fontFamily || null') !important;
+        font-size: v-bind('placeholder_class?.fontSize || null') !important;
+    }
 }
 </style>

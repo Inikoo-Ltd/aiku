@@ -72,6 +72,7 @@ class GetSubDepartmentsInWorkshop extends OrgAction
                 'product_categories.description_title',
                 'product_categories.created_at',
                 'product_categories.updated_at',
+                'product_categories.web_images',
 
             ])
             ->leftJoin('product_category_stats', 'product_categories.id', 'product_category_stats.product_category_id')

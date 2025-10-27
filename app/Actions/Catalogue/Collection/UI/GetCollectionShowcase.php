@@ -70,7 +70,7 @@ class GetCollectionShowcase
             'parent_departments'    => DepartmentResource::collection($collection->parentDepartments)->toArray(request()),
             'parent_subdepartments' => SubDepartmentResource::collection($collection->parentSubDepartments)->toArray(request()),
             'shop'                  => ShopResource::make($collection->shop)->toArray(request()),
-
+            'can_edit'              => false,
             'routes' => [
                 'departments_route'     => [
                     'name'       => 'grp.json.shop.catalogue.departments',

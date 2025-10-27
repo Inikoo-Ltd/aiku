@@ -12,7 +12,7 @@ use App\Models\Catalogue\Product;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ProductHydrateTagsFromBrands implements ShouldBeUnique
+class ProductHydrateBrandsFromTradeUnits implements ShouldBeUnique
 {
     use AsAction;
 
@@ -25,6 +25,11 @@ class ProductHydrateTagsFromBrands implements ShouldBeUnique
     {
         $brand = $product->getBrand();
 
-        $product->brands()->sync([$brand->id]);
+        $product->brands()->sync([
+            $brand->id => [
+                'shop_id'  => $product->shop_id,
+                'is_for_sale'  => $product->is_for_sale
+            ]
+        ]);
     }
 }

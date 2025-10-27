@@ -2,16 +2,16 @@
 
 namespace App\Actions\Web\Website;
 
-use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
-use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Web\WebBlockType\WebBlockCategoryScopeEnum;
-use App\Http\Resources\Catalogue\FamiliesResource;
-use App\Http\Resources\Catalogue\ProductsResource;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Http\Resources\Web\WebBlockTypesResource;
 use App\Models\Web\WebBlockType;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
+use App\Actions\Catalogue\Product\Json\GetIrisProductsInProductCategory;
 
 class GetWebsiteWorkshopFamily
 {
@@ -19,18 +19,32 @@ class GetWebsiteWorkshopFamily
 
     public function handle(Website $website): array
     {
+        $family = $website->shop->productCategories()
+            ->where('state', ProductCategoryStateEnum::ACTIVE)
+            ->where('type', ProductCategoryTypeEnum::FAMILY)
+            ->first();
+
+        if (!$family) {
+            return [
+                'web_block_types' => [],
+                'products' => [],
+                'layout' => [],
+                'autosaveRoute' => null,
+            ];
+        }
 
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::LIST_PRODUCTS->value)->get();
-
-        $families = $website->shop->productCategories()->where('state', ProductCategoryStateEnum::ACTIVE)->where('type', ProductCategoryTypeEnum::FAMILY)->get();
+        $products = IrisProductsInWebpageResource::collection(
+            GetIrisProductsInProductCategory::run(productCategory: $family, stockMode: 'all')
+        );
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
-            /* 'families'   => FamiliesResource::collection($families), */
-            // 'products'   => ProductsResource::collection($products),
-            'layout'    => Arr::get($website->unpublishedFamilySnapshot, 'layout.family', []),
+            'products' => $products,
+            'family' =>  $family,
+            'layout' => Arr::get($website->unpublishedFamilySnapshot, 'layout.family', []),
             'autosaveRoute' => [
-                'name'       => 'grp.models.website.autosave.family',
+                'name' => 'grp.models.website.autosave.family',
                 'parameters' => [
                     'website' => $website->id
                 ]
