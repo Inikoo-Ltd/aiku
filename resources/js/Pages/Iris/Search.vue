@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { layoutStructure } from "@/Composables/useLayoutStructure"
-import { computed, inject, onBeforeMount, ref } from "vue"
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faTools } from '@fas'
+import { inject, onBeforeMount, ref } from "vue"
+
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 
 
-const layout = inject('layout')
+const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
 
 // Init: Search result
