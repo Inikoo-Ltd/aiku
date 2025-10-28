@@ -177,7 +177,7 @@ class IndexMasterCollections extends OrgAction
                     'afterTitle'    => $afterTitle,
                     'iconRight'     => $iconRight,
                     'subNavigation' => $subNavigation,
-                    'actionsx'       => [
+                    'actions'       => [
                         [
                             'type'    => 'button',
                             'style'   => 'create',

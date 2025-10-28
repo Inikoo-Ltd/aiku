@@ -95,7 +95,7 @@ class StoreMasterCollection extends GrpAction
                 new IUnique(
                     table: 'master_collections',
                     extraConditions: [
-                        ['column' => 'master_shop_id', 'value' => $this->group->id],
+                        ['column' => 'master_shop_id', 'value' => $this->masterShop->id],
                         ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
