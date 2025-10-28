@@ -59,7 +59,10 @@ const layout = inject('layout', layoutStructure)
 						:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer"
 						class="block w-fit h-auto">
 							<template #default>
-								<Image :style="getStyles(fieldValue.logo.properties, screenType)"
+								<!-- <Image :style="getStyles(fieldValue.logo.properties, screenType)"
+									:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
+									class="object-contain w-full h-full" :src="fieldValue?.logo?.image?.source" /> -->
+									<Image
 									:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
 									class="object-contain w-full h-full" :src="fieldValue?.logo?.image?.source" />
 							</template>
