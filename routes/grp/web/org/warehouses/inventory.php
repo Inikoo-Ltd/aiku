@@ -43,9 +43,11 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
 
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
-            Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
-            Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
-            Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            Route::prefix('stocks_management')->group(function () {
+                Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
+                Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
+                Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            });
         });
     });
 
@@ -53,9 +55,11 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'current'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
-            Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
-            Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
-            Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            Route::prefix('stocks_management')->group(function () {
+                Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
+                Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
+                Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            });
         });
     });
 
@@ -63,9 +67,11 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'active'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
-            Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
-            Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
-            Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            Route::prefix('stocks_management')->group(function () {
+                Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
+                Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
+                Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            });
         });
     });
 
@@ -73,9 +79,11 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'inProcess'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
-            Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
-            Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
-            Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            Route::prefix('stocks_management')->group(function () {
+                Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
+                Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
+                Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            });
         });
     });
 
@@ -83,9 +91,11 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'discontinuing'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
-            Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
-            Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
-            Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            Route::prefix('stocks_management')->group(function () {
+                Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
+                Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
+                Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            });
         });
     });
 
@@ -93,9 +103,11 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'discontinued'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
-            Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
-            Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
-            Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            Route::prefix('stocks_management')->group(function () {
+                Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
+                Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
+                Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            });
         });
     });
 
@@ -103,9 +115,11 @@ Route::prefix('stocks')->as('org_stocks.')->group(function () {
         Route::get('/', [IndexOrgStocks::class, 'abnormality'])->name('index');
         Route::prefix('{orgStock}')->group(function () {
             Route::get('', ShowOrgStock::class)->name('show');
-            Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
-            Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
-            Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            Route::prefix('stocks_management')->group(function () {
+                Route::get('/fetch_locations', ShowOrgStockCheck::class)->name('fetch_locations');
+                Route::get('/submit_audit_stocks', ShowOrgStockEdit::class)->name('submit_audit_stocks');
+                Route::get('/update_stocks_location', ShowOrgStockMove::class)->name('update_stocks_location');
+            });
         });
     });
 });
