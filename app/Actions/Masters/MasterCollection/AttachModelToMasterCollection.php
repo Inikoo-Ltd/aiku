@@ -59,7 +59,7 @@ class AttachModelToMasterCollection extends GrpAction
                 $masterCollection->masterFamilies()->attach($model->id);
                 if ($attachChildren) {
                     foreach ($masterCollection->childrenCollections as $collection) {
-                        $shopModel = $model->children()->where('shop_id', $collection->shop_id)->first();
+                        $shopModel = $model->productCategories()->where('shop_id', $collection->shop_id)->first();
                         if ($shopModel) {
                             AttachModelToCollection::run($collection, $shopModel);
                         }

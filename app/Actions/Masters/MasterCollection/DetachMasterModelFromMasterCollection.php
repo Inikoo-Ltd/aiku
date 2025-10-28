@@ -55,7 +55,7 @@ class DetachMasterModelFromMasterCollection extends GrpAction
 
             if ($detachChildren) {
                 foreach ($masterCollection->childrenCollections as $collection) {
-                    $shopModel = $model->children()->where('shop_id', $collection->shop_id)->first();
+                    $shopModel = $model->productCategories()->where('shop_id', $collection->shop_id)->first();
                     if ($shopModel) {
                         DetachModelFromCollection::run($collection, $shopModel);
                     }
