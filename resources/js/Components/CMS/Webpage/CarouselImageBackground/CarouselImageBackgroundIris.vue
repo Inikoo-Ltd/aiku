@@ -16,7 +16,7 @@ const props = defineProps<{
         autoplay?: any
         spaceBetween?: number
         use_text?: boolean
-        button?:boolean
+        button?: boolean
       }
       cards: Array<any>
       card_container: {
@@ -81,19 +81,15 @@ const responsiveOptions = computed(() => {
               :href="data?.link?.href" :target="data?.link?.target"
               class="card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
               <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
-                class="absolute inset-0 -z-10 size-full object-fill hover:scale-105 transition-transform duration-500" />
-              <div class="absolute inset-0 -z-10"></div>
-              <div class="relative p-6 sm:p-8">
-                <div class="p-4 flex flex-col flex-1 justify-between">
-                  <div v-html="data.text" />
-                  <div class="w-full mt-3" v-if="fieldValue.carousel_data.carousel_setting.button">
-                    <LinkIris :href="data?.button?.link?.href"
-                      :canonical_url="data?.button?.link?.canonical_url" :target="data?.button?.link?.taget"
-                      typeof="button" :type="data?.button?.link?.type">
-                      <Button :injectStyle="getStyles(data?.button?.container?.properties, screenType)"
-                        :label="data?.button?.text" />
-                    </LinkIris>
-                  </div>
+                class="absolute inset-0 -z-10 w-full h-full object-cover" />
+              <div class="absolute inset-0 flex flex-col justify-start items-start p-6 text-white">
+                <div v-html="data.text" class="mb-4"></div>
+                <div v-if="fieldValue?.carousel_data?.carousel_setting.button">
+                  <LinkIris :href="data?.button?.link?.href" :canonical_url="data?.button?.link?.canonical_url"
+                    :target="data?.button?.link?.taget" typeof="button" :type="data?.button?.link?.type">
+                    <Button :injectStyle="getStyles(data?.button?.container?.properties, screenType)"
+                      :label="data?.button?.text" />
+                  </LinkIris>
                 </div>
               </div>
             </component>
