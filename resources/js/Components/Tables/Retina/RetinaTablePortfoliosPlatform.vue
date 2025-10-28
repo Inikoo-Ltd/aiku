@@ -393,9 +393,11 @@ const isLoadingSubmitErrorTitle = ref(false)
 const submitErrorProduct = (sel) => {
     // Section: Submit
     router.post(
-        route('retina.models.portfolio.update_new_ebay_product', sel.id),
+        route('retina.models.portfolio.update_new_ebay_product', {
+            portfolio: sel.product.id
+        }),
         {
-            data: sel.value
+            customer_product_name: sel.product.new_name
         },
         {
             preserveScroll: true,
@@ -409,11 +411,12 @@ const submitErrorProduct = (sel) => {
                     text: trans("Successfully submit the data"),
                     type: "success"
                 })
+                isOpenModalErrorProduct.value = false
             },
             onError: errors => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to set location"),
+                    text: trans("Try again or contact administrator"),
                     type: "error"
                 })
             },
@@ -746,8 +749,11 @@ const submitErrorProduct = (sel) => {
                         console.log('zvvcvc', a)
                     }"
                     @error="(e) => {
-                        console.log('aaaaaaaaaaaa', e)
-                        selectedErrorProduct = item
+                        console.log('aaaaaaaaaaaa', e, item)
+                        selectedErrorProduct = {
+                            product: item,
+                            error: e
+                        }
                         isOpenModalErrorProduct = true
                         set(listErrorProducts, [`x${item.id}`], e)
                     }"
@@ -871,13 +877,25 @@ const submitErrorProduct = (sel) => {
                 {{ trans("Error Product") }}
             </div>
 
-            <div v-for="error in selectedErrorProduct?.error_response ?? []">
-                <label for="error-product-input" class="block text-sm font-semibold">Product {{ error?.name }}</label>
+            <div v-if="selectedErrorProduct?.error?.title" av-for="error in selectedErrorProduct?.error_response ?? []" class="mt-6">
+                <label for="error-product-input" class="block text-sm font-semibold">{{ trans("Title") }}</label>
                 <div class="errorShake rounded">
-                    <InputText fluid inputId="error-product-input" :modelValue="error?.value" size="small" />
+                    <InputText
+                        :modelValue="get(selectedErrorProduct, ['product', 'new_name'], selectedErrorProduct?.product?.name)"
+                        @update:modelValue="(value) => set(selectedErrorProduct, ['product', 'new_name'], value)"
+                        fluid
+                        inputId="error-product-input"
+                        size="small"
+                        :disabled="isLoadingSubmitErrorTitle"
+                    />
                 </div>
-                <div class="text-xs italic text-red-500 mt-1">
-                    *{{error?.message}}
+
+                <div class="text-xs opacity-60 mt-1">
+                    {{ trans("Characters") }}: {{ get(selectedErrorProduct, ['product', 'new_name'], selectedErrorProduct?.product?.name)?.length }}
+                </div>
+
+                <div class="mt-4 text-xs italic text-red-500">
+                    *{{selectedErrorProduct?.error?.title}}
                 </div>
             </div>
 
