@@ -41,6 +41,14 @@ const props = defineProps<{
     activeCustomTopSubIndex: {}
     changeActiveSubIndex: Function
     containerStyle: {}
+    fieldValue: {
+        additional_items: {
+            items_list: {
+                icon: string[]  // ["fas", "galaxy"]
+                text: string  // "<p>Hello world</p>"
+            }
+        }
+    }
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -310,26 +318,16 @@ const onClickLuigi = () => {
 
         <!-- Section: List additional links -->
         <div class="flex flex-col gap-y-3 mb-8">
-            <LinkIris href="/app/profile" class="flex gap-x-2 items-center py-1">
-                <FontAwesomeIcon icon="fal fa-user-circle" class="text-xl" fixed-width aria-hidden="true" />
-                <div class="text-sm">
-                    {{ trans("My Account") }}
+            <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
+                :href="item?.url?.href ?? ''"
+                class="flex gap-x-2 items-center py-1"
+                :type="item.url?.type"
+                :target="item.url?.target"
+            >
+                <FontAwesomeIcon :icon="item.icon" class="text-xl" fixed-width aria-hidden="true" />
+                <div class="text-sm" v-html="item.text">
                 </div>
             </LinkIris>
-
-            <LinkIris v-if="layout?.iris?.shop?.type === 'b2b'" href="/app/favourites" class="flex gap-x-2 items-center py-1">
-                <FontAwesomeIcon icon="fal fa-heart" class="text-xl" fixed-width aria-hidden="true" />
-                <div class="text-sm">
-                    {{ trans("Favourites") }}
-                </div>
-            </LinkIris>
-
-            <!-- <LinkIris href="/app/profile" class="flex gap-x-2 items-center py-1">
-                <FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-xl" fixed-width aria-hidden="true" />
-                <div class="text-sm">
-                    {{ trans("Stockist List") }}
-                </div>
-            </LinkIris> -->
         </div>
 
         <!-- Switch Language -->

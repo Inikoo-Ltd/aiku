@@ -229,11 +229,10 @@ const autoSave = async (event?) => {
     <!-- Static Menu Separator -->
     <div class="flex items-center my-6">
         <!-- <div class="flex-grow border-t border-gray-300"></div> -->
-        <div class="px-8 py-5 bg-gray-200 w-full text-center text-gray-600 font-medium text-sm border border-gray-300 rounded">
+        <div class="px-8 py-5 bg-gray-200 w-full text-center text-gray-600 font-medium text-sm border border-dashed border-gray-400 rounded">
             {{ trans("Area reserved by system") }}
             <InformationIcon :information="trans('Automatically showed Departments list')" />
         </div>
-        <!-- <div class="flex-grow border-t border-gray-300"></div> -->
     </div>
 
     <!-- Bottom Navigation Area -->

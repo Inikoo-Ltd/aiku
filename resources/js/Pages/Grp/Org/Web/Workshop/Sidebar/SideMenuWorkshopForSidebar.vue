@@ -18,7 +18,7 @@ import {
 	faBars,
 	faThLarge,
 	faList,
-	faPaintBrushAlt,
+	faPaintBrushAlt, faEllipsisHAlt
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
 import { notify } from "@kyvg/vue3-notification"
@@ -28,7 +28,7 @@ import { get, set } from "lodash"
 // import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 // import Blueprint from "./Blueprint"
 
-library.add( faChevronRight, faSignOutAlt, faShoppingCart, faHeart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faLowVision )
+library.add( faChevronRight, faEllipsisHAlt, faSignOutAlt, faShoppingCart, faHeart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faLowVision )
 
 const props = defineProps<{
 	data: {
@@ -54,6 +54,7 @@ const tabs = [
 	//{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
 	{ label: 'Appearance', icon: faPaintBrushAlt, tooltip: 'Appearance' },
 	{ label: 'List elements', icon: faList, tooltip: 'List elements' },
+	{ label: 'Additional Items', icon: faEllipsisHAlt, tooltip: 'Additional Items' },
 ]
 
 function changeTab(index: number) {
@@ -66,9 +67,6 @@ const computedTabs = computed(() => {
 		: [tabs[1]]
 })
 
-const onPickBlock = (value: object) => {
-	autoSave(value)
-}
 
 let controller: AbortController | null = null
 const autoSave = async (value) => {
@@ -120,8 +118,9 @@ const autoSave = async (value) => {
 				<WebBlockListDnd :webBlockTypes="webBlockTypes" @pick-block="onPickBlock"
 					:selectedWeblock="data.code" />
 			</TabPanel> -->
+
+			<!-- Panel: Appearance -->
 			<TabPanel  v-if="data">
-				<!-- Panel: Appearance -->
 				<SideEditor
 					av-model="data.data.fieldValue"
 					:modelValue="get(data, ['data', 'fieldValue'], {})"
@@ -130,12 +129,24 @@ const autoSave = async (value) => {
 					:uploadImageRoute
 				/>
 			</TabPanel>
+			
+			<!-- Panel: Menu List -->
 			<TabPanel v-if="data">
-				<!-- Panel: Menu List -->
 				<SetMenuListWorkshopForSidebar
 					:data="data"
 					:autosaveRoute="autosaveRoute"
 					@auto-save="() => autoSave(data)"
+					:uploadImageRoute
+				/>
+			</TabPanel>
+			
+			<!-- Panel: Additional Items -->
+			<TabPanel v-if="data">
+				<SideEditor
+					key="others_tab"
+					:modelValue="get(data, ['data', 'fieldValue'], {})"
+					:blueprint="Blueprint.blueprint_additional_items"
+					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e), autoSave(data) }"
 					:uploadImageRoute
 				/>
 			</TabPanel>

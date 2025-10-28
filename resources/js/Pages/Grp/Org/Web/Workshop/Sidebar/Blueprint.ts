@@ -84,4 +84,43 @@ export default {
 		// 	],
 		// },
 	],
+	blueprint_additional_items: [
+		{
+			name: "Additional Items (bottom)",
+			key: ["additional_items"],
+			replaceForm: [
+				{
+					key: ["items_list"],
+					type: "array-data",
+					props_data: {
+						blueprint: [
+							{
+								key: ["icon"],
+								label: "Icon",
+								type: "icon-picker",
+							},
+							{
+								key: ["text"],
+								label: "Text",
+								type: "editorhtml",
+							},
+							{
+								key: ["url"],
+								label: "URL",
+								type: "link",
+							},
+						],
+						order_name: "item",
+						can_drag: true,
+						can_delete: true,
+						can_add: true,
+						new_value_data: {
+							text: "Lorem Ipsum",
+							icon: ["far", "chevron-right"]
+						},
+					},
+				},
+			],
+		},
+	],
 }

@@ -112,7 +112,7 @@ function getRoute() {
 							size="small" 
 							:value="option.value" 
 						/>
-						<label :for="`${option.value}${indexOption}`" class="cursor-pointer">{{ option.label }}</label>
+						<label @click="() => set(localModel, 'type', option.value)" class="cursor-pointer">{{ option.label }}</label>
 					</div>
 				</div>
 			</div>
@@ -125,7 +125,7 @@ function getRoute() {
 			<PureInput
 				v-if="localModel?.type == 'external'"
 				v-model="localModel.href"
-				placeholder="www.anotherwebsite.com/page"
+				placeholder="https://www.anotherwebsite.com/page"
 				v-bind="props_input"
 				@update:modelValue="(e) => {
 					set(localModel, 'href', e)
