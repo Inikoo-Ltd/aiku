@@ -266,7 +266,6 @@ class UpdateProduct extends OrgAction
             UpdateHistoricProductInBasketTransactions::dispatch($product);
         }
 
-
         return $product;
     }
 

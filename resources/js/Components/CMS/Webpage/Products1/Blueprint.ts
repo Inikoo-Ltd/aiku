@@ -37,7 +37,59 @@ export default {
                 },
             ],
         },
-
+        {
+             name: "Search & sort",
+             key: ["search_sort"],
+             replaceForm: [
+                {
+                    key: ['sort','properties',"text"],
+                    label: "sort",
+                    type: "textProperty",
+                },
+                {
+                    key: ['search','input','properties',"text"],
+                    label: "search",
+                    type: "textProperty",
+                },
+                {
+                    key: ['search','placeholder','properties',"text"],
+                    label: "search placeholder",
+                    type: "textProperty",
+                },
+            ],
+        },
+        {
+             name: "Filter",
+             key: ['filter',"button",'properties'],
+             replaceForm: [
+                 {
+                    key: ["text"],
+                    label: "Icon",
+                    type: "textProperty",
+                },
+				{
+					key: ["background"],
+					label: "Background",
+					type: "background",
+				},
+				{
+					key: ["margin"],
+					label: "Margin",
+					type: "margin",
+				},
+				{
+					key: ["padding"],
+					label: "Padding",
+					type: "padding",
+				},
+				{
+					key: ["border"],
+					label: "Border",
+					type: "border",
+				},
+            ],
+			
+        },
         {
             name: "Layout",
             key: ["container", "properties"],

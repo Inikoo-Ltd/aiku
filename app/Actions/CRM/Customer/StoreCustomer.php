@@ -147,7 +147,8 @@ class StoreCustomer extends OrgAction
 
                 StoreTaxNumber::run(
                     owner: $customer,
-                    modelData: $taxNumberData
+                    modelData: $taxNumberData,
+                    strict: $this->strict
                 );
             }
 
