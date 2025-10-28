@@ -18,6 +18,8 @@ use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
+use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalShopInvoiceCategoriesSalesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -57,7 +59,10 @@ class ShowShop extends OrgAction
                     ],
                     'shop_blocks' => [
                         'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
-                        'stats_box' => $shop->type->value === 'dropshipping' ? $this->getStatsBox($shop) : null,
+                        'stats_box'     => $shop->type->value === 'dropshipping' ? $this->getStatsBox($shop) : null,
+                        // Note: Experimental Data (Need to be checked)
+                        'table_header'  => $shop->type->value === 'dropshipping' ? json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true) : null,
+                        'table_body'    => $shop->type->value === 'dropshipping' ? json_decode(DashboardPlatformSalesResource::make($shop)->toJson(), true) : null
                     ],
                 ],
             ],

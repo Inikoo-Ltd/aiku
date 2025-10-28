@@ -255,7 +255,7 @@ class IndexCollections extends OrgAction
                     ],
                     'iconRight'     => $iconRight,
                     'container'     => $container,
-                    'actions'       => $actions,
+                    'actionsx'       => $actions,
                     'subNavigation' => $subNavigation,
                 ],
                 'routes'         => $routes,
