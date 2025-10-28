@@ -28,7 +28,6 @@ const emits = defineEmits<{
 const imageSettings = {
 	key: ["image", "source"],
 	stencilProps: {
-		aspectRatio: [16 / 9, 1],
 		movable: true,
 		scalable: true,
 		resizable: true,

@@ -7,6 +7,7 @@ import Image from "@/Components/Image.vue"
 import { inject, watch, ref, onMounted } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
+import OverlayBadge from 'primevue/overlaybadge';
 import { faBaby, faShoppingCart as falShoppingCart, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
 import {
     faBackpack,
@@ -58,7 +59,7 @@ const props = defineProps<{
         }
     },
     menuData: Object
-    productCategories : Array<any>
+    productCategories: Array<any>
     screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
@@ -134,7 +135,7 @@ watch(computedSelectedSidebarData,
         if (newValue) {
             const navigationBottomData = newValue?.data?.fieldValue?.navigation_bottom;
             const navigationData = newValue?.data?.fieldValue?.navigation;
-            
+
             // console.log('navigationBottomData', navigationBottomData);
             // Process navigation_bottom data
             if (navigationBottomData) {
@@ -145,7 +146,7 @@ watch(computedSelectedSidebarData,
                 customMenusBottom.value = [];
             }
             // console.log('navigationData 111', customMenusBottom.value);
-            
+
             // Process navigation data
             if (navigationData) {
                 const convertedTop = convertToDepartmentStructure(navigationData);
@@ -162,81 +163,61 @@ watch(computedSelectedSidebarData,
 );
 
 const screenType = inject('screenType', 'desktop')
-
+console.log('sss',layout)
 </script>
 
 <template>
     <div class="block md:hidden p-3">
-        <div class="xflex justify-between items-center grid grid-cols-5"
-            xstyle="{
-                gridTemplateColumns: `repeat(${true ? 5 : 2}, minmax(0, 1fr))`
-            }"
-        >
-            <div class="text-left w-fit flex items-center gap-x-2 ">
-                <!-- Section: Hamburger mobile -->
-                <IrisSidebar
-                    :header="headerData"
-                    :menu="menuData"
-                    :productCategories="productCategories"
-                    :custom-menus-bottom="customMenusBottom"
-                    :custom-menus-top="customMenusTop"
-                    :screenType
+        <div class="grid grid-cols-6 items-center justify-between">
+            <!-- Section: Hamburger & Search -->
+            <div class="flex items-center gap-x-2 w-fit">
+                <!-- Hamburger Sidebar -->
+                <IrisSidebar :header="headerData" :menu="menuData" :productCategories="productCategories"
+                    :custom-menus-bottom="customMenusBottom" :custom-menus-top="customMenusTop" :screenType="screenType"
                     :sidebarLogo="computedSelectedSidebarData?.data?.fieldValue?.sidebar_logo"
-                    :sidebar="computedSelectedSidebarData"
-                />
-                
+                    :sidebar="computedSelectedSidebarData" />
+
                 <!-- Search Bar -->
-                <LuigiSearchMobile
-                    v-if="layout.iris?.luigisbox_tracker_id"
-                    :style="{ ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType) }"
-                    id="luigi_mobile"
-                />
+                <LuigiSearchMobile v-if="layout.iris?.luigisbox_tracker_id" id="luigi_mobile" :style="{
+                    ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
+                }" />
             </div>
 
-            <!-- Section: Logo  -->
-            <div class="w-full px-4 mb-1 flex justify-end items-center col-span-3">
-                <component
-                    :is="true ? LinkIris : 'div'"
-                    :href="'/'"
-                    class="mx-auto block h-fit aspect-auto max-h-[50px] min-w-5 w-full max-w-32"
-                >
-                    <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" ximageCover="true"
-                        :style="{ objectFit: 'contain' }"
-                    />
+            <!-- Section: Logo -->
+            <div class="col-span-3 flex justify-end items-center w-full" :class="!isLoggedIn ?  layout.retina.type == 'b2b' ? 'justify-end' :'justify-center' : 'justify-end'">
+                <component :is="LinkIris" :href="'/'" class="block h-fit max-h-[50px] w-full max-w-32">
+                    <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" alt="logo"
+                        class="w-full h-auto object-contain" />
                 </component>
             </div>
 
             <!-- Section: Profile -->
-            <div class="w-fit ml-auto flex items-center gap-x-1 cursor-pointer">
+            <div class="col-span-2 flex items-center justify-end gap-x-2 w-full mr-3">
+                <!-- Not Logged In -->
                 <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="px-1">
-                    <FontAwesomeIcon
-                        icon="fal fa-sign-in"
-                        :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)"
-                        fixed-width aria-hidden="true"
-                    />
+                    <FontAwesomeIcon icon="fal fa-sign-in" fixed-width aria-hidden="true"
+                        :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
                 </LinkIris>
 
-                <template v-if="isLoggedIn">
+                <!-- Logged In -->
+                <template v-else>
+                    <OverlayBadge v-if="layout.retina.type == 'b2b'"  :value="layout?.iris_variables?.cart_count">
+                        <LinkIris href="/app/basket" class="px-1">
+                            <FontAwesomeIcon icon="fal fa-shopping-cart" fixed-width aria-hidden="true"
+                                :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
+                        </LinkIris>
+                    </OverlayBadge>
+
                     <LinkIris href="/app/profile" class="px-1">
-                        <FontAwesomeIcon
-                            :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : 'fal fa-user-circle'"
-                            :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)"
-                            fixed-width aria-hidden="true"
-                        />
-                    </LinkIris>
-                    
-                    <LinkIris href="/app/basket" class="px-1">
-                        <FontAwesomeIcon
-                            :icon="'fal fa-shopping-cart'"
-                            :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)"
-                            fixed-width aria-hidden="true"
-                        />
+                        <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon || 'fal fa-user-circle'" fixed-width
+                            aria-hidden="true"
+                            :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
                     </LinkIris>
                 </template>
             </div>
         </div>
-
     </div>
+
 </template>
 
 <style scoped></style>
