@@ -8,6 +8,8 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Catalogue\Collection\AttachModelToCollection;
+use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
@@ -21,18 +23,45 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Lorisleiva\Actions\ActionRequest;
 
-class DetachModelFromMasterCollection extends GrpAction
+class DetachMasterModelFromMasterCollection extends GrpAction
 {
-    public function handle(MasterCollection $masterCollection, MasterAsset|MasterProductCategory|MasterCollection $model): MasterCollection
+    public function handle(MasterCollection $masterCollection, MasterAsset|MasterProductCategory|MasterCollection $model, bool $attachChildren = true): MasterCollection
     {
         if ($model instanceof MasterAsset) {
             $masterCollection->masterProducts()->detach($model->id);
             MasterCollectionHydrateMasterProducts::dispatch($masterCollection);
+            if ($attachChildren) {
+                foreach ($masterCollection->childrenCollections as $collection) {
+                    $shopModel = $model->products()->where('shop_id', $collection->shop_id)->first();
+                    if ($shopModel) {
+                        DetachModelFromCollection::run($collection, $shopModel);
+                    }
+                }
+            }
         } elseif ($model instanceof MasterCollection) {
             $masterCollection->masterCollections()->detach($model->id);
+
+            if ($attachChildren) {
+                foreach ($masterCollection->childrenCollections as $collection) {
+                    $shopModel = $model->childrenCollections()->where('shop_id', $collection->shop_id)->first();
+                    if ($shopModel) {
+                        DetachModelFromCollection::run($collection, $shopModel);
+                    }
+                }
+            }
+
             MasterCollectionHydrateMasterCollections::dispatch($masterCollection);
         } else {
             $masterCollection->masterFamilies()->detach($model->id);
+
+            if ($attachChildren) {
+                foreach ($masterCollection->childrenCollections as $collection) {
+                    $shopModel = $model->children()->where('shop_id', $collection->shop_id)->first();
+                    if ($shopModel) {
+                        DetachModelFromCollection::run($collection, $shopModel);
+                    }
+                }
+            }
             MasterCollectionHydrateMasterFamilies::dispatch($masterCollection);
         }
 
@@ -42,8 +71,8 @@ class DetachModelFromMasterCollection extends GrpAction
     public function rules(): array
     {
         return [
-            'family'   => ['sometimes', Rule::exists('master_product_categories', 'id')->where('type', MasterProductCategoryTypeEnum::FAMILY)->where('group_id', $this->group->id)],
-            'product' => ['sometimes', Rule::exists('master_assets', 'id')->where('group_id', $this->group->id)],
+            'family'     => ['sometimes', Rule::exists('master_product_categories', 'id')->where('type', MasterProductCategoryTypeEnum::FAMILY)->where('group_id', $this->group->id)],
+            'product'    => ['sometimes', Rule::exists('master_assets', 'id')->where('group_id', $this->group->id)],
             'collection' => ['sometimes', Rule::exists('master_collections', 'id')->where('group_id', $this->group->id)],
         ];
     }
