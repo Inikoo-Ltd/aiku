@@ -72,32 +72,6 @@ class TaxNumber extends Model
 
     protected $guarded = [];
 
-    protected static function booted(): void
-    {
-        static::creating(
-            function (TaxNumber $taxNumber) {
-                /** @var Country $country */
-                $country                 = Country::find($taxNumber->country_id);
-                $taxNumber->country_code = $country?->code;
-                $taxNumber->type         = $taxNumber->getType($country);
-            }
-        );
-
-        static::created(
-            function (TaxNumber $taxNumber) {
-                $taxNumber->checksum = $taxNumber->getChecksum();
-                $taxNumber->save();
-            }
-        );
-
-        static::updated(function (TaxNumber $taxNumber) {
-            if ($taxNumber->wasChanged('country_id')) {
-                $taxNumber->country_code = $taxNumber->country?->code;
-                $taxNumber->type         = $taxNumber->getType($taxNumber->country);
-            }
-        });
-    }
-
 
     public function country(): BelongsTo
     {
@@ -111,7 +85,7 @@ class TaxNumber extends Model
         }
 
         $number = strtoupper(trim($this->number));
-        $cc = strtoupper(trim((string) $this->country_code));
+        $cc     = strtoupper(trim((string)$this->country_code));
 
         if ($cc === '') {
             return $number;
@@ -127,48 +101,21 @@ class TaxNumber extends Model
 
     public static function getType(?Country $country): TaxNumberTypeEnum
     {
-        $type = TaxNumberTypeEnum::OTHER;
-        if (!$country) {
+
+
+        if ($country) {
+            if ($country->code == 'GB') {
+                $type = TaxNumberTypeEnum::GB_VAT;
+            } elseif (Country::isInEU($country->code)) {
+                $type = TaxNumberTypeEnum::EU_VAT;
+            } else {
+                $type = TaxNumberTypeEnum::OTHER;
+            }
+
             return $type;
+        } else {
+            return TaxNumberTypeEnum::UNKNOWN;
         }
-        if (Country::isInEU($country->code)) {
-            return TaxNumberTypeEnum::EU_VAT;
-        }
-        if ($country->code == 'GB') {
-            return TaxNumberTypeEnum::GB_VAT;
-        }
-
-        return $type;
     }
 
-    public function getChecksum(): string
-    {
-        return md5(
-            json_encode(
-                array_filter(
-                    array_map(
-                        'strtolower',
-                        array_diff_key(
-                            $this->toArray(),
-                            array_flip(
-                                [
-                                    'id',
-                                    'owner_type',
-                                    'owner_id',
-                                    'checksum',
-                                    'created_at',
-                                    'updated_at',
-                                    'historic',
-                                    'usage',
-                                    'data',
-                                    'valid',
-                                    'country_code'
-                                ]
-                            )
-                        )
-                    )
-                )
-            )
-        );
-    }
 }

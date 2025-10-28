@@ -22,24 +22,19 @@ class StoreTaxNumber
 
     public function handle(Shop|Customer $owner, array $modelData = [], bool $strict = true): TaxNumber
     {
-        if ($strict) {
-            $type = TaxNumberTypeEnum::UNKNOWN;
-            if ($countryID = Arr::get($modelData, 'country_id')) {
-                $country = Country::find($countryID);
-                if ($country) {
-                    if ($country->code == 'GB') {
-                        $type = TaxNumberTypeEnum::GB_VAT;
-                    } elseif (Country::isInEU($country->code)) {
-                        $type = TaxNumberTypeEnum::EU_VAT;
-                    } else {
-                        $type = TaxNumberTypeEnum::OTHER;
-                    }
 
-                    data_set($modelData, 'country_code', $country->code, false);
-                }
-            }
-            data_set($modelData, 'type', $type, false);
+        $country = Country::find($modelData['country_id']);
+        if ($country) {
+            data_set($modelData, 'country_code', $country->code, false);
+            data_set($modelData, 'type', $this->getType($country), false);
+
         }
+        data_set($modelData, 'checksum', hash('sha512', implode('', [
+            Arr::get($modelData, 'number', ''),
+            Arr::get($modelData, 'country_id', '')
+        ])));
+
+
 
         /** @var TaxNumber $taxNumber */
         $taxNumber = $owner->taxNumber()->create($modelData);
@@ -53,5 +48,21 @@ class StoreTaxNumber
         }
 
         return $taxNumber;
+    }
+
+    public static function getType(?Country $country): TaxNumberTypeEnum
+    {
+        $type = TaxNumberTypeEnum::OTHER;
+        if (!$country) {
+            return $type;
+        }
+        if (Country::isInEU($country->code)) {
+            return TaxNumberTypeEnum::EU_VAT;
+        }
+        if ($country->code == 'GB') {
+            return TaxNumberTypeEnum::GB_VAT;
+        }
+
+        return $type;
     }
 }
