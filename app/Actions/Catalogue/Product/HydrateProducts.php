@@ -61,8 +61,8 @@ class HydrateProducts
         ProductHydrateImages::run($product);
         ProductHydrateTradeUnitsFields::run($product);
         ModelHydrateSingleTradeUnits::run($product);
-        ProductHydrateBrandsFromTradeUnits::dispatch($product);
-        ProductHydrateTagsFromTradeUnits::dispatch($product);
+        ProductHydrateBrandsFromTradeUnits::run($product);
+        ProductHydrateTagsFromTradeUnits::run($product);
     }
 
 }
