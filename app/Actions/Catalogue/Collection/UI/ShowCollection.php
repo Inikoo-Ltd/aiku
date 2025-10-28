@@ -131,46 +131,6 @@ class ShowCollection extends OrgAction
         }
 
 
-        $actions = [
-            $collection->webpage
-                ?
-                [
-                    'type'    => 'button',
-                    'style'   => 'edit',
-                    'label'   => __('To Webpage'),
-                    'icon'    => ["fal", "fa-drafting-compass"],
-                    'route'   => [
-                        'name'       => 'grp.org.shops.show.web.webpages.show',
-                        'parameters' => [
-                            'organisation' => $this->organisation->slug,
-                            'shop'         => $this->shop->slug,
-                            'website'      => $this->shop->website->slug,
-                            'webpage'      => $collection->webpage->slug
-                        ]
-                    ]
-                ]
-                : [
-                    'type'    => 'button',
-                    'style'   => 'edit',
-                    'label'   => __('Create Webpage'),
-                    'icon'    => ["fas", "fa-plus"],
-                    'route'   => [
-                        'name'       => 'grp.models.webpages.collection.store',
-                        'parameters' => $collection->id,
-                        'method'     => 'post'
-                    ]
-                ],
-            $this->canEdit ? [
-                'type'  => 'button',
-                'style' => 'edit',
-                'route' => [
-                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                    'parameters' => $request->route()->originalParameters()
-                ]
-            ] : false,
-
-        ];
-
 
         return Inertia::render(
             'Org/Catalogue/Collection',
@@ -224,14 +184,14 @@ class ShowCollection extends OrgAction
                                     'method'     => 'post'
                                 ]
                             ],
-                        $this->canEdit ? [
+                       /*  $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false,
+                        ] : false, */
                     ],
             ],
                 'routes'      => [
