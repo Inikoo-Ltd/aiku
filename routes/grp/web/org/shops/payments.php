@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('accounting-dashboard', ShowAccountingShopDashboard::class)->name('accounting.dashboard');
 
 Route::get('accounting-dashboard/accounts', [IndexPaymentAccountShops::class, 'inShop'])->name('accounting.accounts.index');
-Route::get('accounting-dashboard/accounts/{paymentAccountShop}', [ShowPaymentAccountShop::class, 'inShop'])->name('accounting.accounts.show');
+Route::get('accounting-dashboard/accounts/{paymentAccount}', [ShowPaymentAccountShop::class, 'inShop'])->name('accounting.accounts.show');
 
 Route::get('accounting-dashboard/payments', [IndexPayments::class, 'inShop'])->name('accounting.payments.index');
 Route::get('accounting-dashboard/customer-balances', [IndexCustomerBalances::class, 'inShop'])->name('accounting.customer_balances.index');

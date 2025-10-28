@@ -43,6 +43,10 @@ class PaymentAccountShopsResource extends JsonResource
             'state'                    => $this->state,
             'state_icon'               => $this->state->stateIcon(),
             'show_in_checkout'         => $this->show_in_checkout,
+            'show_in_checkout_icon'    => [
+                                            "tooltip" => __("Show In Checkout"),
+                                            "icon" => "fas fa-shopping-basket"
+                                          ],
             'number_payments'          => $this->number_payments,
             'amount_successfully_paid' => $this->amount_successfully_paid,
             'shop_currency_code'       => $this->shop_currency_code,
