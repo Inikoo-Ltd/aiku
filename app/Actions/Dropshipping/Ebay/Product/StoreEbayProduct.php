@@ -83,7 +83,7 @@ class StoreEbayProduct extends RetinaAction
                     ]);
 
                     if (! blank($params)) {
-                        throw ValidationException::withMessages([$params => $displayError]);
+                        throw ValidationException::withMessages(['title' => $displayError]);
                     }
 
                     return $displayError;
@@ -228,6 +228,7 @@ class StoreEbayProduct extends RetinaAction
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
+            throw $e;
         }
     }
 }
