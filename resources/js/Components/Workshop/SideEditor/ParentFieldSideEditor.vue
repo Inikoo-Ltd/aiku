@@ -16,6 +16,7 @@ import { faInfoCircle} from '@fal'
 import { faSparkles } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
+import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 library.add(faInfoCircle, faSparkles)
 
 const props = defineProps<{
@@ -27,6 +28,7 @@ const props = defineProps<{
         replaceForm: Array<any>
         icon?: any
         show_new_until?: string  // "2025-06-04"
+        information?: string  // For tooltip on i icon
     }
     uploadImageRoute?: routeType
 }>()
@@ -82,6 +84,8 @@ const isFutureDatePassed = (futureDate: string) => {
                 <Icon v-if="blueprint.icon" :data="blueprint.icon" />
                 <div>
                     <span>{{ blueprint.name }}</span>
+                    <InformationIcon v-if="blueprint.information" :information="blueprint.information" class="ml-1 opacity-50 hover:opacity-100 cursor-pointer" />
+
                     <!-- Section: 'New' label -->
                     <div v-if="blueprint.show_new_until && !isFutureDatePassed(blueprint.show_new_until)"
                         class="ml-2 inline bg-yellow-100 border border-yellow-300 text-yellow-600 whitespace-nowrap items-center gap-x-1 rounded select-none pl-0.5 pr-1 py-0.5 text-xs w-fit font-medium"
