@@ -15,6 +15,9 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { RouteParams } from "@/types/route-params"
 import { trans } from "laravel-vue-i18n"
+import { remove as loRemove } from 'lodash-es'
+import { ref } from 'vue'
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 
 library.add(fasCheckCircle,faTimesCircle,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree)
@@ -56,6 +59,7 @@ function parentRoute(slug: string) {
 
 }
 
+const isLoadingDetach = ref<string[]>([])
 </script>
 
 <template>
@@ -94,6 +98,16 @@ function parentRoute(slug: string) {
                     {{ parent.code && parent.code.length > 16 ? parent.code.substring(0, 16) + "..." : parent.code }}
                 </Link>
             </template>
+        </template>
+
+         <template #cell(actions)="{ item }">
+            <Link v-if="routes?.detach?.name" as="button"
+                :href="route(routes.detach.name, { ...routes.detach.parameters, collection : item.id })"
+                :method="routes.detach.method" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
+            </Link>
         </template>
     </Table>
 </template>
