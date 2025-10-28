@@ -11,6 +11,7 @@ namespace App\Actions\Traits\Hydrators;
 use App\Models\Accounting\InvoiceCategory;
 use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\Platform;
 use App\Models\Goods\Stock;
 use App\Models\Goods\StockFamily;
 use App\Models\Inventory\OrgStock;
@@ -20,7 +21,7 @@ use App\Models\SysAdmin\Organisation;
 
 trait WithIntervalUniqueJob
 {
-    public function getUniqueJobWithInterval(Group|Organisation|Shop|InvoiceCategory|Asset|StockFamily|Stock|OrgStock|OrgStockFamily $model, ?array $intervals = null, ?array $doPreviousPeriods = null): string
+    public function getUniqueJobWithInterval(Group|Organisation|Shop|InvoiceCategory|Asset|StockFamily|Stock|OrgStock|OrgStockFamily|Platform $model, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         $uniqueId = $model->id;
         return $this->getUniqueJobWithIntervalFromId($uniqueId, $intervals, $doPreviousPeriods);
