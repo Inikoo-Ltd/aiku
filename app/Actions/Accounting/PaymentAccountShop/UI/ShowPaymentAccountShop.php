@@ -16,6 +16,9 @@ use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
 use App\Actions\OrgAction;
 use App\Http\Resources\Accounting\PaymentAccountShopsResource;
 use App\Http\Resources\Accounting\PaymentAccountsResource;
+use App\Enums\UI\Accounting\PaymentAccountTabsEnum; 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Models\Master\MasterShop;
 use App\InertiaTable\InertiaTable;
 use App\Models\Accounting\PaymentAccount;
 use App\Models\Accounting\PaymentAccountShop;
@@ -52,11 +55,10 @@ class ShowPaymentAccountShop extends OrgAction
     public function htmlResponse(PaymentAccountShop $paymentAccountShop, ActionRequest $request): Response
     {
         $subNavigation = [];
-        if ($this->parent instanceof PaymentAccount) {
-            $subNavigation = $this->getPaymentAccountNavigation($this->parent);
-        } elseif ($this->parent instanceof Shop) {
+        $isFulfilment = $this->parent instanceof Fulfilment;
+        if (!$isFulfilment) {
             $subNavigation = $this->getSubNavigationShop($this->parent);
-        } elseif ($this->parent instanceof Fulfilment) {
+        } else {
             $subNavigation = $this->getSubNavigation($this->parent);
         }
 
@@ -69,8 +71,9 @@ class ShowPaymentAccountShop extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
+                    $isFulfilment,
                     $paymentAccountShop,
-                    $paymentAccountParent
+                    $paymentAccountParent,
                 ),
                 'pageHead'    => [
                     'subNavigation' => $subNavigation,
@@ -83,7 +86,7 @@ class ShowPaymentAccountShop extends OrgAction
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    // 'navigation' => PaymentAccountTabsEnum::navigation()
+                    'navigation' => PaymentAccountTabsEnum::navigation()
                 ],
                 'overview' => [
                     'dashboard' => [
@@ -113,7 +116,7 @@ class ShowPaymentAccountShop extends OrgAction
     public function inShop(Organisation $organisation, Shop $shop, string $showPaymentAccount, ActionRequest $request): PaymentAccountShop
     {
         $this->parent = $shop;
-        $this->initialisationFromShop($shop, $request);
+        $this->initialisationFromShop($shop, $request)->withTab(PaymentAccountTabsEnum::values());
 
         return $this->handle($shop, $showPaymentAccount);
     }
@@ -122,9 +125,25 @@ class ShowPaymentAccountShop extends OrgAction
     public function inFulfilment(Organisation $organisation, Fulfilment $fulfilment, string $showPaymentAccount, ActionRequest $request): PaymentAccountShop
     {
         $this->parent = $fulfilment;
-        $this->initialisationFromFulfilment($fulfilment, $request);
+        $this->initialisationFromFulfilment($fulfilment, $request)->withTab(PaymentAccountTabsEnum::values());
 
         return $this->handle($fulfilment, $showPaymentAccount);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inAccounting(Organisation $organisation, string $showPaymentAccount, string $shopSlug, ActionRequest $request): PaymentAccountShop
+    {
+        $parent = Shop::where('slug', $shopSlug)->firstOrFail();
+        if($parent->type == ShopTypeEnum::FULFILMENT){
+            $parent = $parent->fulfilment()->first();
+            $this->parent = $parent;
+            $this->initialisationFromFulfilment($parent, $request)->withTab(PaymentAccountTabsEnum::values());
+        }else{
+            $this->parent = $parent;
+            $this->initialisationFromShop($parent, $request)->withTab(PaymentAccountTabsEnum::values());
+        }
+        return $this->handle($parent, $showPaymentAccount);
+
     }
 
 
@@ -141,9 +160,9 @@ class ShowPaymentAccountShop extends OrgAction
         return PaymentAccountShop::where('id', $id)->firstOrFail();
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters, PaymentAccountShop $paymentAccountShop, PaymentAccount|null $paymentAccountParent = null): array
+    public function getBreadcrumbs(string $routeName, array $routeParameters, bool $isFulfilment, PaymentAccountShop $paymentAccountShop, PaymentAccount|null $paymentAccountParent = null): array
     {
-        $headCrumb = function (PaymentAccountShop $paymentAccountShop,  array $routeParameters, string $routeName, $paymentAccountParent = null) {
+        $headCrumb = function (PaymentAccountShop $paymentAccountShop,  array $routeParameters, string $routeName, $paymentAccountParent) {
             return [
                 [
                     'type'           => 'modelWithIndex',
@@ -163,8 +182,8 @@ class ShowPaymentAccountShop extends OrgAction
             ];
         };
 
-        return match ($routeName) {
-            'grp.org.fulfilments.show.operations.accounting.accounts.show' =>
+        return match ($isFulfilment) {
+            true =>
             array_merge(
                 (new ShowFulfilment())->getBreadcrumbs($routeParameters),
                 $headCrumb($paymentAccountShop,
@@ -183,7 +202,7 @@ class ShowPaymentAccountShop extends OrgAction
                     
                 )
             ),
-            'grp.org.shops.show.dashboard.payments.accounting.accounts.show' =>
+            false =>
             array_merge(
                 (new ShowShop())->getBreadcrumbs($routeParameters),
                 $headCrumb($paymentAccountShop, 

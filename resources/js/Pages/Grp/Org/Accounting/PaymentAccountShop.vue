@@ -32,8 +32,8 @@ const props = defineProps<{
         current: string
         navigation: {}
     }
-    // payments?: {}
-    // history: {}
+    payments?: {}
+    history: {}
 }>()
 
 
@@ -44,9 +44,9 @@ const component = computed(() => {
     const components: Component = {
         overview: PaymentAccountOverview,
         stats: PaymentAccountStats,
-        // payments: TablePayments,
-        // details: ModelDetails,
-        // history: TableHistories
+        payments: TablePayments,
+        details: ModelDetails,
+        history: TableHistories
     }
     
     return components[currentTab.value]

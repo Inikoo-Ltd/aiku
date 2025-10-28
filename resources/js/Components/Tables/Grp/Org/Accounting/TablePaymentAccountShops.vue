@@ -24,24 +24,26 @@ defineProps<{
 
 const locale = useLocaleStore();
 
-function disableEnableLink(param: any){
-    return route().current() === 'grp.org.accounting.payment-accounts.show.shops.index' ? '' : paymentRoute(param);
-}
+console.log(route().params);
 
 function paymentRoute(PaymentAccountShops: PaymentAccountShops) {
-    // org/{organisation}/shops/{shop}/dashboard/payments/accounting-dashboard/accounts/{paymentAccount}
-    // org/{organisation}/fulfilments/{fulfilment}/accounting-dashboard/accounts/{paymentAccount}
+    let routename = '';
+    let parent = '';
+    let slug = PaymentAccountShops.payment_account_slug;
 
-    // switch 
-    // case fulfilment route
-    // case shop route
-    // case accounting -> accounts -> accounts-ab
+    if(route().params['fulfilment']){
+        routename = 'grp.org.fulfilments.show.operations.accounting.accounts.show';
+        parent = route().params['fulfilment'];
+    }else if(route().params['shop']){
+        routename = 'grp.org.shops.show.dashboard.payments.accounting.accounts.show';
+        parent = route().params['shop'];
+    }else{
+        routename = 'grp.org.accounting.payment-accounts.show.parent';
+        parent = route().params['paymentAccount'];
+        slug = PaymentAccountShops.shop_slug
+    }
 
-    const routename = route().params['fulfilment'] ? 'grp.org.fulfilments.show.operations.accounting.accounts.show' : 'grp.org.shops.show.dashboard.payments.accounting.accounts.show';
-    const parent = route().params['fulfilment'] ?? route().params['shop'] ?? '';
-    return route(
-                routename,
-                [route().params['organisation'], parent, PaymentAccountShops.payment_account_slug]);
+    return route(routename, [route().params['organisation'], parent, slug]);
 }
 </script>
 
@@ -56,12 +58,12 @@ function paymentRoute(PaymentAccountShops: PaymentAccountShops) {
             <Icon v-if="paymentAccountShops.show_in_checkout" :data="paymentAccountShops.show_in_checkout_icon" />
         </template>
         <template #cell(shop_name)="{ item: paymentAccountShops }">
-            <Link :href="disableEnableLink(paymentAccountShops)" class="primaryLink" >
+            <Link :href="paymentRoute(paymentAccountShops)" class="primaryLink" >
                 {{ paymentAccountShops.shop_name }}
             </Link>
         </template>
         <template #cell(payment_account_name)="{ item: paymentAccountShops }">
-            <Link :href="disableEnableLink(paymentAccountShops)" class="primaryLink" >
+            <Link :href="paymentRoute(paymentAccountShops)" class="primaryLink" >
                 {{ paymentAccountShops.payment_account_name }}
             </Link>
         </template>

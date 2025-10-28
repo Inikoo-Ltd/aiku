@@ -35,6 +35,7 @@ use App\Actions\Accounting\PaymentAccount\UI\IndexCustomersInPaymentAccount;
 use App\Actions\Accounting\PaymentAccount\UI\IndexPaymentAccounts;
 use App\Actions\Accounting\PaymentAccount\UI\ShowPaymentAccount;
 use App\Actions\Accounting\PaymentAccountShop\UI\IndexPaymentAccountShops;
+use App\Actions\Accounting\PaymentAccountShop\UI\ShowPaymentAccountShop;
 use App\Actions\Accounting\UI\IndexCustomerBalances;
 use App\Actions\Accounting\UI\IndexInvoicesPerShop;
 use App\Actions\Accounting\UI\ShowAccountingDashboard;
@@ -65,6 +66,8 @@ Route::get('/providers/{orgPaymentServiceProvider}/payments/{payment}', [ShowPay
 
 
 Route::get('/accounts/{paymentAccount}/edit', EditPaymentAccount::class)->name('payment-accounts.edit');
+
+Route::get('/accounts/{paymentAccount}/shop/{shop}', [ShowPaymentAccountShop::class, 'inAccounting'])->name('payment-accounts.show.parent');
 
 Route::get('/accounts/create', CreatePaymentAccount::class)->name('payment-accounts.create');
 Route::get('/accounts/export', ExportPaymentAccounts::class)->name('payment-accounts.export');
