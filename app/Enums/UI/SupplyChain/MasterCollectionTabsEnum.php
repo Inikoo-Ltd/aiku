@@ -36,9 +36,9 @@ enum MasterCollectionTabsEnum: string
             $blueprint = $case->blueprint();
 
             if ($case == self::PRODUCTS) {
-                $blueprint['number'] = $masterCollection->stats->number_current_master_families;
-            } elseif ($case == self::FAMILIES) {
                 $blueprint['number'] = $masterCollection->stats->number_current_master_products;
+            } elseif ($case == self::FAMILIES) {
+                $blueprint['number'] = $masterCollection->stats->number_current_master_families;
             } elseif ($case == self::COLLECTIONS) {
                 $blueprint['number'] = $masterCollection->stats->number_current_master_collections;
             } elseif ($case == self::SHOP_COLLECTIONS) {

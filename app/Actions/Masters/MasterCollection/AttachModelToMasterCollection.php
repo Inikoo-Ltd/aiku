@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateFamilies;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterProducts;
 use App\Models\Masters\MasterAsset;
@@ -40,7 +40,7 @@ class AttachModelToMasterCollection extends GrpAction
             if (!$alreadyAttached) {
                 $masterCollection->masterFamilies()->attach($model->id);
             }
-            MasterCollectionHydrateFamilies::dispatch($masterCollection);
+            MasterCollectionHydrateMasterFamilies::dispatch($masterCollection);
         }
 
         return $masterCollection;
