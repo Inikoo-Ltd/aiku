@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject } from "vue"
+import { inject, computed } from "vue"
 import { faCube, faLink, faImage } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
@@ -28,7 +28,7 @@ const emits = defineEmits<{
 const imageSettings = {
 	key: ["image", "source"],
 	stencilProps: {
-		aspectRatio: 16 / 9,
+		aspectRatio: [16 / 9, 1],
 		movable: true,
 		scalable: true,
 		resizable: true,
@@ -46,18 +46,18 @@ const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 			...getStyles(modelValue.container?.properties, screenType),
 		}">
 			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
-
-				<div class="relative w-full h-[250px] md:h-full cursor-pointer overflow-hidden" @click.stop="
-					() => {
-						sendMessageToParent('activeBlock', indexBlock)
-						sendMessageToParent('activeChildBlock', bKeys[0])
-					}
-				" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
+				<div class="relative cursor-pointer overflow-hidden w-full"
+					:class="!modelValue.image.source ? '' : ' h-[250px] sm:h-[300px] md:h-[400px]'" @click.stop="
+						() => {
+							sendMessageToParent('activeBlock', indexBlock)
+							sendMessageToParent('activeChildBlock', bKeys[0])
+						}
+					" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
 					:style="getStyles(modelValue?.image?.container?.properties, screenType)">
 					<Image :src="modelValue.image.source" :imageCover="true"
 						:alt="modelValue.image.alt || 'Image preview'"
-						class="absolute inset-0 w-full h-full object-cover" :imgAttributes="modelValue.image.attributes"
-						:style="getStyles(modelValue.image.properties, screenType)" />
+						class="absolute inset-0 w-full h-full object-fill"
+						:imgAttributes="modelValue.image.attributes" />
 				</div>
 
 				<div class="flex flex-col justify-center m-auto p-4"

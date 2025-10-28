@@ -122,8 +122,8 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
         <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
           <div>
             <div class="flex items-center justify-between">
-              <h2 class="text-sm font-semibold text-gray-800">Belongs to Department</h2>
-              <Button type="create" size="xs" @click="isModalOpenDepartment = true" :label="'Department'" />
+              <h2 class="text-sm font-semibold text-gray-800">{{trans('Belongs to Department')}}</h2>
+              <Button type="create" size="xs" v-if="data?.can_edit" @click="isModalOpenDepartment = true" :label="'Department'" />
             </div>
             <hr class="mt-2 border-gray-200" />
           </div>
@@ -135,13 +135,13 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
                 <h3 class="text-sm font-medium text-gray-800 truncate">{{ dept.code || dept.name }}</h3>
                 <p class="text-xs text-gray-500 line-clamp-2">{{ dept.name || 'No name' }}</p>
               </div>
-              <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"
+              <Button type="negative" size="xs" :icon="faUnlink" v-if="data?.can_edit" v-tooltip="'Unassign'"
                 :loading="unassignLoadingIds.includes(dept.id)" @click="UnassignCollectionFormWebpage(dept.id)"
-                class="shrink-0" />
+                class="shrink-0"/>
             </div>
           </div>
           <div v-else class="text-xs text-gray-400 italic text-center py-2">
-            No parent departments assigned.
+            {{trans('No parent departments assigned.')}}
           </div>
         </div>
 
@@ -149,8 +149,8 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
         <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-4">
           <div>
             <div class="flex items-center justify-between">
-              <h2 class="text-sm font-semibold text-gray-800">Belongs to Sub Department</h2>
-              <Button type="create" size="xs" @click="isModalOpenSubDepartment = true" :label="'Sub-Department'" />
+              <h2 class="text-sm font-semibold text-gray-800">{{trans('Belongs to Sub Department')}}</h2>
+              <Button type="create" size="xs" v-if="data?.can_edit"  @click="isModalOpenSubDepartment = true" :label="'Sub-Department'" />
             </div>
             <hr class="mt-2 border-gray-200" />
           </div>
@@ -164,11 +164,11 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
               </div>
               <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"
                 :loading="unassignLoadingIds.includes(dept.id)" @click="UnassignCollectionFormWebpage(dept.id)"
-                class="shrink-0" />
+                class="shrink-0" v-if="data?.can_edit"/>
             </div>
           </div>
           <div v-else class="text-xs text-gray-400 italic text-center py-2">
-            No parent sub-department assigned.
+            {{trans('No parent sub-department assigned.')}}
           </div>
         </div>
       </div>
