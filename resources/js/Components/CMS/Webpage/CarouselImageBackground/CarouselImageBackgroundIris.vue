@@ -82,7 +82,7 @@ const responsiveOptions = computed(() => {
               class="card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
               <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
                 class="absolute inset-0 -z-10 w-full h-full object-cover" />
-              <div class="absolute inset-0 flex flex-col justify-start items-start p-6 text-white">
+              <div class="absolute inset-0 flex flex-col justify-start items-start p-6">
                 <div v-html="data.text" class="mb-4"></div>
                 <div v-if="fieldValue?.carousel_data?.carousel_setting.button">
                   <LinkIris :href="data?.button?.link?.href" :canonical_url="data?.button?.link?.canonical_url"

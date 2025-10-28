@@ -113,7 +113,7 @@ const imageSettings = {
               <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
                 class="absolute inset-0 -z-10 w-full h-full object-cover" />
               <div
-                class="absolute inset-0 flex flex-col justify-start items-start p-6 text-white ">
+                class="absolute inset-0 flex flex-col justify-start items-start p-6">
                 <div v-html="data.text" class="mb-4"></div>
                 <div v-if="modelValue?.carousel_data?.carousel_setting?.button">
                   <Button :injectStyle="getStyles(data?.button?.container?.properties, screenType)"
