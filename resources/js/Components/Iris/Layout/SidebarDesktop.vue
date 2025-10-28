@@ -150,8 +150,8 @@ const borderWidth = computed(() => {
     >
    
         <!-- Column 1: Categories + Custom Menus -->
-        <div class="flex flex-col justify-between" :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r', 'overflow-y-auto']">
-            <div>
+        <div class="flex flex-col justify-between gap-y-10" :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r']">
+            <div class="overflow-y-auto">
                 <!-- Sidebar: Top navigation -->
                 <div v-if="customMenusTop && customMenusTop.length > 0">
                     <SidebarDesktopNavigation
@@ -191,9 +191,9 @@ const borderWidth = computed(() => {
                     :closeSidebar
                     :isWithArrowRight="!!sub.sub_departments?.length"
                 />
+                
                 <!-- Section: Bottom navigation -->
-                <div v-if="customMenusBottom && customMenusBottom.length > 0">
-                    <hr class="my-4 borderBottomColorSameAsText">
+                <div v-if="customMenusBottom && customMenusBottom.length > 0" class="mt-4 borderTopColorSameAsText">
                     <SidebarDesktopNavigation
                         v-for="(sub, sIndex) in customMenusBottom" :key="sIndex"
                         :nav="sub"
@@ -216,7 +216,7 @@ const borderWidth = computed(() => {
                 <div v-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 pb-3 mb-3 xborder-b xborder-gray-300">
                     <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
                         :href="item?.url?.href ?? ''"
-                        class="flex gap-x-2 items-center py-1"
+                        class="flex gap-x-2 items-center py-1 hover:underline"
                         :type="item.url?.type"
                         :target="item.url?.target"
                     >
