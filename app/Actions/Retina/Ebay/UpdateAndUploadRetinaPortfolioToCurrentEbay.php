@@ -29,13 +29,13 @@ class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
     public function rules(): array
     {
         return [
-            'title' => ['sometimes', 'string']
+            'customer_product_name' => ['sometimes', 'string']
         ];
     }
 
     public function prepareForValidation(ActionRequest $request): void
     {
-        $this->set('customer_product_name', $request->get('title'));
+        $this->set('customer_product_name', $request->input('title'));
     }
 
     public function asController(Portfolio $portfolio, ActionRequest $request): void

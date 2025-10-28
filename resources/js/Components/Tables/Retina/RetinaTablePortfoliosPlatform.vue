@@ -402,7 +402,7 @@ const submitErrorProduct = (sel) => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingSubmitErrorTitle.value = true
             },
             onSuccess: () => {
@@ -726,7 +726,7 @@ const submitErrorProduct = (sel) => {
         <!-- Column: Actions 2 (Modal shopify) -->
         <template #cell(create_new)="{ item }">
             <!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
-            <div av-if="item.customer_sales_channel_platform_status  && !item.platform_status "
+            <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
                  class="flex gap-x-2 items-center">
                 <ButtonWithLink
                     v-tooltip="trans('Will create new product in :platform', {platform: props.platform_data.name})"
