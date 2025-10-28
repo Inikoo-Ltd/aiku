@@ -27,9 +27,8 @@ export const initialiseIrisApp = () => {
             }
         }
 
-        console.log('on nav')
         layout.currentParams = route().routeParams  // current params
-        layout.currentQuery = route().v().query  // current query
+        layout.currentQuery = route().queryParams  // current query
         layout.currentRoute = route().current()  // current route
     })
 
@@ -40,8 +39,6 @@ export const initialiseIrisApp = () => {
     }
 
 
-    console.log('USEPAGE() ', usePage().props)
-    console.log('--usepage().iris', usePage().props?.iris)
 
     watchEffect(() => {
         // Set currency to use by global

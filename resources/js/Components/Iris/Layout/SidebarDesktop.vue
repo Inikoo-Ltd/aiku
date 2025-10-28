@@ -58,6 +58,19 @@ const props = defineProps<{
     changeActiveCustomSubIndex: Function
     changeActiveCustomTopSubIndex: Function
     internalHref: Function
+    fieldValue: {
+        additional_items: {
+            items_list: {
+                icon: any
+                text: string
+                url: {
+                    href: string
+                    type: string
+                    target: string
+                }
+            }[]
+        }
+    }
 }>()
 
 const emit = defineEmits<{
@@ -137,65 +150,81 @@ const borderWidth = computed(() => {
     >
    
         <!-- Column 1: Categories + Custom Menus -->
-        <div :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r', 'overflow-y-auto']">
-            <!-- Sidebar: Top navigation -->
-            <div v-if="customMenusTop && customMenusTop.length > 0">
+        <div class="flex flex-col justify-between gap-y-10" :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r']">
+            <div class="overflow-y-auto">
+                <!-- Sidebar: Top navigation -->
+                <div v-if="customMenusTop && customMenusTop.length > 0">
+                    <SidebarDesktopNavigation
+                        v-for="(sub, sIndex) in customMenusTop" :key="sIndex"
+                        :nav="sub"
+                        :class="[
+                            activeCustomTopIndex === sIndex
+                                ? `navActive`
+                                : 'navInactive'
+                        ]"
+                        @click="sub.sub_departments && sub.sub_departments.length > 0 ? setActiveCustomTopCategory(sIndex) : null"
+                        :internalHref
+                        :activeSubIndex
+                        :closeSidebar
+                        :isWithArrowRight="sub.sub_departments && sub.sub_departments.length > 0"
+                    />
+                    <hr class="borderBottomColorSameAsText">
+                </div>
+                
+                <!-- Section: Auto Product Categories List -->
+                <div class="flex items-center justify-between px-2 py-4 borderBottomColorSameAsText">
+                    <h3 class="font-semibold">{{ trans("Departments") }}</h3>
+                </div>
                 <SidebarDesktopNavigation
-                    v-for="(sub, sIndex) in customMenusTop" :key="sIndex"
+                    v-for="(sub, sIndex) in sortedProductCategories" :key="sIndex"
                     :nav="sub"
                     :class="[
-                        activeCustomTopIndex === sIndex
-                            ? `navActive`
-                            : 'navInactive'
+                        activeIndex === sIndex
+                            ? ` cursor-pointer navActive`
+                            : sub.sub_departments?.length
+                                ? 'navInactive'
+                                : ''
                     ]"
-                    @click="sub.sub_departments && sub.sub_departments.length > 0 ? setActiveCustomTopCategory(sIndex) : null"
+                    @click="sub.sub_departments?.length ? setActiveCategory(sIndex) : false"
                     :internalHref
                     :activeSubIndex
                     :closeSidebar
-                    :isWithArrowRight="sub.sub_departments && sub.sub_departments.length > 0"
+                    :isWithArrowRight="!!sub.sub_departments?.length"
                 />
-                <hr class="borderBottomColorSameAsText">
+                
+                <!-- Section: Bottom navigation -->
+                <div v-if="customMenusBottom && customMenusBottom.length > 0" class="mt-4 borderTopColorSameAsText">
+                    <SidebarDesktopNavigation
+                        v-for="(sub, sIndex) in customMenusBottom" :key="sIndex"
+                        :nav="sub"
+                        :class="[
+                            activeCustomIndex === sIndex
+                                ? `navActive`
+                                : 'navInactive'
+                        ]"
+                        @click="sub.sub_departments && sub.sub_departments.length > 0 ? setActiveCustomCategory(sIndex) : null"
+                        :internalHref
+                        :activeSubIndex
+                        :closeSidebar
+                        :isWithArrowRight="sub.sub_departments && sub.sub_departments.length > 0"
+                    />
+                </div>
             </div>
-
             
-            <!-- Section: Auto Product Categories List -->
-            <div class="flex items-center justify-between px-2 py-4 borderBottomColorSameAsText">
-                <h3 class="font-semibold">{{ trans("Departments") }}</h3>
-            </div>
-            <SidebarDesktopNavigation
-                v-for="(sub, sIndex) in sortedProductCategories" :key="sIndex"
-                :nav="sub"
-                :class="[
-                    activeIndex === sIndex
-                        ? ` cursor-pointer navActive`
-                        : sub.sub_departments?.length
-                            ? 'navInactive'
-                            : ''
-                ]"
-                @click="sub.sub_departments?.length ? setActiveCategory(sIndex) : false"
-                :internalHref
-                :activeSubIndex
-                :closeSidebar
-                :isWithArrowRight="!!sub.sub_departments?.length"
-            />
-
-            <!-- Section: Bottom navigation -->
-            <div v-if="customMenusBottom && customMenusBottom.length > 0">
-                <hr class="my-4 borderBottomColorSameAsText">
-                <SidebarDesktopNavigation
-                    v-for="(sub, sIndex) in customMenusBottom" :key="sIndex"
-                    :nav="sub"
-                    :class="[
-                        activeCustomIndex === sIndex
-                            ? `navActive`
-                            : 'navInactive'
-                    ]"
-                    @click="sub.sub_departments && sub.sub_departments.length > 0 ? setActiveCustomCategory(sIndex) : null"
-                    :internalHref
-                    :activeSubIndex
-                    :closeSidebar
-                    :isWithArrowRight="sub.sub_departments && sub.sub_departments.length > 0"
-                />
+            <div class="mb-8 ">
+                <!-- Section: List additional links -->
+                <div v-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 pb-3 mb-3 xborder-b xborder-gray-300">
+                    <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
+                        :href="item?.url?.href ?? ''"
+                        class="flex gap-x-2 items-center py-1 hover:underline"
+                        :type="item.url?.type"
+                        :target="item.url?.target"
+                    >
+                        <FontAwesomeIcon :icon="item.icon" class="text-xl" fixed-width aria-hidden="true" />
+                        <div class="text-sm" v-html="item.text">
+                        </div>
+                    </LinkIris>
+                </div>
             </div>
         </div>
 

@@ -267,6 +267,7 @@ const internalHref = (item) => {
                 :changeActiveCustomSubIndex="(index) => activeCustomSubIndex = index"
                 :changeActiveCustomTopSubIndex="(index) => activeCustomTopSubIndex = index"
                 :containerStyle="props.sidebar?.data?.fieldValue?.container?.properties || props.menu?.container?.properties"
+                :fieldValue="props.sidebar?.data?.fieldValue"
             />
 
             <!-- Sidebar Menu: Desktop -->
@@ -298,6 +299,7 @@ const internalHref = (item) => {
                 :changeActiveCustomSubIndex="(index) => activeCustomSubIndex = index"
                 :changeActiveCustomTopSubIndex="(index) => activeCustomTopSubIndex = index"
                 @closeMobileMenu="isOpenMenuMobile = false"
+                :fieldValue="props.sidebar?.data?.fieldValue"
             />
         </Drawer>
     </div>

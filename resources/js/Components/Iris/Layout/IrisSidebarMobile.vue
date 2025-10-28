@@ -3,7 +3,7 @@ import { getStyles } from "@/Composables/styles"
 import { trans } from 'laravel-vue-i18n'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faChevronRight, faExternalLink } from "@fal"
+import { faChevronRight, faExternalLink, faSearch, faTimes, faMapMarkerAlt } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { computed, inject, ref } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
@@ -16,7 +16,7 @@ import SwitchLanguage from "../SwitchLanguage.vue"
 import LinkIris from "../LinkIris.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 
-library.add(faChevronRight, faExternalLink)
+library.add(faChevronRight, faExternalLink, faSearch, faTimes, faMapMarkerAlt)
 
 const props = defineProps<{
     productCategories: {}
@@ -41,6 +41,14 @@ const props = defineProps<{
     activeCustomTopSubIndex: {}
     changeActiveSubIndex: Function
     containerStyle: {}
+    fieldValue: {
+        additional_items: {
+            items_list: {
+                icon: string[]  // ["fas", "galaxy"]
+                text: string  // "<p>Hello world</p>"
+            }
+        }
+    }
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -56,11 +64,27 @@ const closeSidebar = () => {
 const borderWidth = computed(() => {
     return props.containerStyle?.border?.width ? `${props.containerStyle?.border?.width.value}${props.containerStyle?.border?.width.unit}` : '1px';
 })
+
+const onClickLuigi = () => {
+    const input = document.getElementById('luigi_mobile') as HTMLInputElement | null;
+    if (input) input.focus();
+}
 </script>
 
 <template>
     <div class="menu-container-mobile">
-        <div class="menu-content">
+        <!-- Section: input search -->
+        <div class="flex gap-x-4 items-center mb-4">
+            <div @click="() => onClickLuigi()" class="flex-grow border border-gray-300/40 rounded-md px-2 py-1">
+                <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
+                <span v-if="layout?.currentQuery?.q" class="ml-2 text-sm">{{layout?.currentQuery?.q}}</span>
+                <span v-else class="ml-2 text-sm italic opacity-60">{{ trans("I am looking for..") }}</span>
+            </div>
+
+            <FontAwesomeIcon icon="fal fa-times" class="opacity-50 text-xl" fixed-width aria-hidden="true" />
+        </div>
+
+        <div class="menu-content mb-4">
             <!-- Section: Custom Top -->
             <div v-if="customMenusTop && customMenusTop.length > 0">
                 <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex">
@@ -292,8 +316,22 @@ const borderWidth = computed(() => {
             </div>
         </div>
 
+        <!-- Section: List additional links -->
+        <div v-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 mb-8">
+            <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
+                :href="item?.url?.href ?? ''"
+                class="flex gap-x-2 items-center py-1"
+                :type="item.url?.type"
+                :target="item.url?.target"
+            >
+                <FontAwesomeIcon :icon="item.icon" class="text-xl" fixed-width aria-hidden="true" />
+                <div class="text-sm" v-html="item.text">
+                </div>
+            </LinkIris>
+        </div>
+
         <!-- Switch Language -->
-        <div v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="borderTopColorSameAsText px-4 mb-1 flex justify-between items-center text-xs">
+        <div v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="borderTopColorSameAsText px-1 mb-1 flex justify-between items-center text-xs">
             <div>{{ trans("Language") }}:</div>
             <SwitchLanguage>
                 <template #default="{ isLoadingChangeLanguage }">

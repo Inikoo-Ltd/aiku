@@ -6,14 +6,15 @@ import AccordionHeader from "primevue/accordionheader";
 import AccordionContent from "primevue/accordioncontent";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus, faTrash } from "@fal";
+import { faPlus, faTrashAlt } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import SideEditorArrayEdit from "./SideEditorArrayEdit.vue";
 import draggable from "vuedraggable";
 import { debounce } from "lodash-es";
 import { routeType } from "@/types/route";
+import { ulid } from "ulid"
 
-library.add(faPlus, faTrash);
+library.add(faPlus, faTrashAlt)
 
 const props = withDefaults(
   defineProps<{
@@ -69,15 +70,23 @@ const toggleActive = (index: number) => {
    CRUD and update
    ----------------------- */
 const addValue = () => {
-  const newValue = toRaw(modelValue.value);
-  newValue.push(props.new_value_data);
-  modelValue.value = newValue;
+  // const newValue = toRaw(modelValue.value);
+  // newValue.push(props.new_value_data);
+  // modelValue.value = newValue;
+  console.log('vxzxxx', props.new_value_data)
+  const newValueData = {
+    ...props.new_value_data,
+    ulid: ulid()
+  }
+  modelValue.value?.push(newValueData);
+
 };
 
 const removeValue = (index: number) => {
-  const newValue = toRaw(modelValue.value);
-  newValue.splice(index, 1);
-  modelValue.value = newValue;
+  // const newValue = toRaw(modelValue.value);
+  // newValue.splice(index, 1);
+  // modelValue.value = newValue;
+  modelValue.value?.splice(index, 1)
 
   const raw = readRaw();
   if (Array.isArray(raw)) {
@@ -97,8 +106,13 @@ const onChangeProperty = debounce(updateProperty, 500);
 
 <template>
   <div>
-    <draggable v-model="modelValue" item-key="index" :disabled="!can_drag" class="space-y-2"
-      handle=".drag-handle">
+    <draggable
+      v-model="modelValue"
+      item-key="index"
+      :disabled="!can_drag"
+      class="space-y-2"
+      handle=".drag-handle"
+    >
       <template #item="{ element: field, index }">
         <Accordion :value="isOpen(index) ? [index] : []" :multiple="isArrayMode()" @update:value="toggleActive(index)"
           class="border border-gray-200 rounded-none">
@@ -118,7 +132,7 @@ const onChangeProperty = debounce(updateProperty, 500);
                 <div>
                   <FontAwesomeIcon 
                     v-if="can_delete" 
-                    :icon="faTrash" 
+                    :icon="faTrashAlt" 
                     class="text-red-500 hover:text-red-700 transition-colors duration-200"
                     @click.stop="removeValue(index)" 
                   />
@@ -127,7 +141,8 @@ const onChangeProperty = debounce(updateProperty, 500);
             </AccordionHeader>
 
             <AccordionContent v-show="isOpen(index)" class="p-3 bg-gray-50 rounded-b">
-              <SideEditorArrayEdit 
+              <SideEditorArrayEdit
+                :key="field.ulid"
                 :modelValue="modelValue[index]" 
                 :uploadRoutes="uploadRoutes" 
                 :blueprint="blueprint"

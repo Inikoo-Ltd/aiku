@@ -33,7 +33,7 @@ const resolvedModel = computed({
 
 <template>
   <div class="flex items-center gap-3 w-full">
-    <div class="border-2 rounded-md p-2 w-fit">
+    <div class="border-2 rounded-md p-2 w-fit cursor-pointer hover:bg-gray-200">
       <IconPicker v-model="resolvedModel" v-bind="props" />
     </div>
 
