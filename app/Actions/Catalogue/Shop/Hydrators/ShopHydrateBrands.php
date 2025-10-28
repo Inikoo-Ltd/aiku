@@ -26,7 +26,7 @@ class ShopHydrateBrands implements ShouldBeUnique
     public function handle(Shop $shop): void
     {
         $stats = [
-            'number_brands' => $shop->brands()->where('is_for_sale', true)->count(),
+            'number_brands' => $shop->brands()->count(),
             'number_current_brands' => $shop->brands()->where('is_for_sale', true)->count()
         ];
 
