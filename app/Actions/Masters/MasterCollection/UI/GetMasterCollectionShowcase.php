@@ -29,7 +29,7 @@ class GetMasterCollectionShowcase
             'parent_departments'    => $masterCollection->parentMasterDepartments,
             'parent_subdepartments' => $masterCollection->parentMasterSubDepartments,
             'state_icon'            => $masterCollection->state ? $masterCollection->state->stateIcon()[$masterCollection->state->value] : null,
-            'can_edit'              => true,
+            'can_edit'              => false,
             'routes'                => [
                 'departments_route'     => [
                     'name'       => 'grp.json.master_shop.master_departments',
