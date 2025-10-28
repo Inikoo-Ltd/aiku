@@ -26,7 +26,7 @@ class ShopHydrateTags implements ShouldBeUnique
     public function handle(Shop $shop): void
     {
         $stats = [
-            'number_tags' => $shop->tags()->where('is_for_sale', true)->count(),
+            'number_tags' => $shop->tags()->count(),
             'number_current_tags' => $shop->tags()->where('is_for_sale', true)->count(),
         ];
 
