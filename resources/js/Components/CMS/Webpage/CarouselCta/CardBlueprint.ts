@@ -11,7 +11,7 @@ export default {
 					type: "image-cropped",
 					props_data: {
 						stencilProps: {
-							aspectRatio: 16 / 9,
+							aspectRatio: [16 / 9, 1],
 							movable: true,
 							scalable: true,
 							resizable: true,

@@ -35,6 +35,7 @@ class GetMasterCollectionShowcase
             'description_title_i8n' => $masterCollection->getTranslations('description_title_i8n'),
             'description_extra_i8n' => $masterCollection->getTranslations('description_extra_i8n'),
             'state_icon'          => $masterCollection->state ? $masterCollection->state->stateIcon()[$masterCollection->state->value] : null,
+            'can_edit'             => true,
             'stats'                 => [
                 [
                     'label' => __('Department'),
@@ -101,13 +102,6 @@ class GetMasterCollectionShowcase
                         'masterCollection' => $masterCollection->id,
                     ],
                     'method'     => 'delete'
-                ],
-            ],
-            'translation_box' => [
-                'title' => __('Multi-language Translations'),
-                'save_route' => [
-                'name'       => 'grp.models.master_collection.translations.update',
-                'parameters' => []
                 ],
             ],
         ];

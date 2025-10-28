@@ -41,7 +41,7 @@ class GetIrisShopTags extends IrisAction
                 'tags.name',
                 'tags.slug',
                 'tags.created_at',
-            ]);
+            ])->distinct();
 
         return $queryBuilder->defaultSort('name')
             ->allowedSorts(['name', 'created_at'])

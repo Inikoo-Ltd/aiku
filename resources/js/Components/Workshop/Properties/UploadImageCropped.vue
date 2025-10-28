@@ -149,7 +149,7 @@ const recommendedPixels = computed(() => {
 
 	// single ratio
 	const height = Math.round(width / (ratio || 1))
-	return `${width} × ${height} px`
+	return `${width} x ${height} px`
 })
 
 const deleteImage = () => emits("update:modelValue", null)

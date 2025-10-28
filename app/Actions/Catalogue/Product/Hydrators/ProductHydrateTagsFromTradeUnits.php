@@ -29,10 +29,12 @@ class ProductHydrateTagsFromTradeUnits implements ShouldBeUnique
         $tags = $product->tradeUnitTagsViaTradeUnits();
 
         foreach ($tags as $tag) {
-            $product->tags()->sync([$tag => [
-                'shop_id'  => $product->shop_id,
-                'is_for_sale'  => $product->is_for_sale
-            ]]);
+            if (isset($tag['id'])) {
+                $product->tags()->sync([$tag['id'] => [
+                    'shop_id'  => $product->shop_id,
+                    'is_for_sale'  => $product->is_for_sale
+                ]]);
+            }
         }
     }
 
