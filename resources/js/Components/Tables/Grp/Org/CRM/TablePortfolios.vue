@@ -332,7 +332,7 @@ const onDisableCheckbox = (item) => {
                 </div>
 
                 <ButtonWithLink v-tooltip="trans('Unselect product')" type="negative" icon="fal fa-skull"
-                    :routeTarget="item.update_portfolio" :body="{
+                    :routeTarget="item.routes.delete_route" :body="{
                         'status': false,
                     }" size="xs" :bindToLink="{
                     preserveScroll: true,

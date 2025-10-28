@@ -8,6 +8,7 @@
 
 namespace App\Actions\Helpers\TaxNumber;
 
+use App\Actions\Helpers\TaxNumber\Concerns\HasTaxNumberType;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Helpers\Country;
@@ -19,27 +20,23 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class StoreTaxNumber
 {
     use AsAction;
+    use HasTaxNumberType;
 
     public function handle(Shop|Customer $owner, array $modelData = [], bool $strict = true): TaxNumber
     {
-        if ($strict) {
-            $type = TaxNumberTypeEnum::UNKNOWN;
-            if ($countryID = Arr::get($modelData, 'country_id')) {
-                $country = Country::find($countryID);
-                if ($country) {
-                    if ($country->code == 'GB') {
-                        $type = TaxNumberTypeEnum::GB_VAT;
-                    } elseif (Country::isInEU($country->code)) {
-                        $type = TaxNumberTypeEnum::EU_VAT;
-                    } else {
-                        $type = TaxNumberTypeEnum::OTHER;
-                    }
 
-                    data_set($modelData, 'country_code', $country->code, false);
-                }
-            }
-            data_set($modelData, 'type', $type, false);
+        $country = Country::find($modelData['country_id']);
+        if ($country) {
+            data_set($modelData, 'country_code', $country->code, false);
+            data_set($modelData, 'type', $this->getTaxNumberType($country), false);
+
         }
+        data_set($modelData, 'checksum', hash('sha512', implode('', [
+            Arr::get($modelData, 'number', ''),
+            Arr::get($modelData, 'country_id', '')
+        ])));
+
+
 
         /** @var TaxNumber $taxNumber */
         $taxNumber = $owner->taxNumber()->create($modelData);
@@ -54,4 +51,5 @@ class StoreTaxNumber
 
         return $taxNumber;
     }
+
 }

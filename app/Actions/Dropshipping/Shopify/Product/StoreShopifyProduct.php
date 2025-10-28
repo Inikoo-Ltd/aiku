@@ -64,6 +64,7 @@ class StoreShopifyProduct extends RetinaAction
                   descriptionHtml
                   productType
                   vendor
+                  tags
                   options {
                         id
                         name
@@ -102,6 +103,7 @@ class StoreShopifyProduct extends RetinaAction
                     'descriptionHtml' => $product->description.' '.$product->description_extra,
                     'productType'     => $product->family?->name,
                     'vendor'          => $product->shop->name,
+                    'tags'            => $product->tags()->pluck('name')->toArray()
                 ],
                 'media'   => $media,
             ];

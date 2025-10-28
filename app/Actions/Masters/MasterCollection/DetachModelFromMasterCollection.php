@@ -9,7 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateFamilies;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterProducts;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
@@ -33,7 +33,7 @@ class DetachModelFromMasterCollection extends GrpAction
             MasterCollectionHydrateMasterCollections::dispatch($masterCollection);
         } else {
             $masterCollection->masterFamilies()->detach($model->id);
-            MasterCollectionHydrateFamilies::dispatch($masterCollection);
+            MasterCollectionHydrateMasterFamilies::dispatch($masterCollection);
         }
 
         return $masterCollection;
