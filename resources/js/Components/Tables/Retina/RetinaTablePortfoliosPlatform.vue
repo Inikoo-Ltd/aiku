@@ -397,7 +397,7 @@ const submitErrorProduct = (sel) => {
             portfolio: sel.product.id
         }),
         {
-            customer_product_name: sel.product.new_name
+            title: sel.product.new_name
         },
         {
             preserveScroll: true,
@@ -746,10 +746,10 @@ const submitErrorProduct = (sel) => {
                         preserveScroll: true,
                     }"
                     @success="(a) => {
-                        console.log('zvvcvc', a)
+                        // console.log('zvvcvc', a)
                     }"
                     @error="(e) => {
-                        console.log('aaaaaaaaaaaa', e, item)
+                        // console.log('aaaaaaaaaaaa', e, item)
                         selectedErrorProduct = {
                             product: item,
                             error: e
