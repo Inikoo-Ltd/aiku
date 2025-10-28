@@ -385,8 +385,44 @@ const onDisableCheckbox = (item) => {
 const listErrorProducts = ref({
 
 })
+
+// Section: Modal Error Product (i.e Ebay title too long)
 const selectedErrorProduct = ref(null)
 const isOpenModalErrorProduct = ref(false)
+const isLoadingSubmitErrorTitle = ref(false)
+const submitErrorProduct = (sel) => {
+    // Section: Submit
+    router.post(
+        route('retina.models.portfolio.update_new_ebay_product', sel.id),
+        {
+            data: sel.value
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSubmitErrorTitle.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to set location"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitErrorTitle.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -686,7 +722,8 @@ const isOpenModalErrorProduct = ref(false)
 
         <!-- Column: Actions 2 (Modal shopify) -->
         <template #cell(create_new)="{ item }">
-            <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
+            <!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
+            <div av-if="item.customer_sales_channel_platform_status  && !item.platform_status "
                  class="flex gap-x-2 items-center">
                 <ButtonWithLink
                     v-tooltip="trans('Will create new product in :platform', {platform: props.platform_data.name})"
@@ -705,9 +742,13 @@ const isOpenModalErrorProduct = ref(false)
                     :bindToLink="{
                         preserveScroll: true,
                     }"
+                    @success="(a) => {
+                        console.log('zvvcvc', a)
+                    }"
                     @error="(e) => {
+                        console.log('aaaaaaaaaaaa', e)
                         selectedErrorProduct = item
-                        // isOpenModalErrorProduct = true
+                        isOpenModalErrorProduct = true
                         set(listErrorProducts, [`x${item.id}`], e)
                     }"
                 />
@@ -827,7 +868,7 @@ const isOpenModalErrorProduct = ref(false)
     <Modal :isOpen="isOpenModalErrorProduct" width="w-full max-w-lg h-full max-h-[570px]" @close="isOpenModalErrorProduct = false">
         <div>
             <div class="text-xl font-semibold text-center">
-                Error Product
+                {{ trans("Error Product") }}
             </div>
 
             <div v-for="error in selectedErrorProduct?.error_response ?? []">
@@ -836,15 +877,16 @@ const isOpenModalErrorProduct = ref(false)
                     <InputText fluid inputId="error-product-input" :modelValue="error?.value" size="small" />
                 </div>
                 <div class="text-xs italic text-red-500 mt-1">
-                    {{error?.message}}
+                    *{{error?.message}}
                 </div>
             </div>
 
             <div class="mt-3">
                 <Button
-                    @click="() => console.log('OK')"
-                    label="Try again"
+                    @click="() => submitErrorProduct(selectedErrorProduct)"
+                    :label="trans('Try again')"
                     full
+                    :loading="isLoadingSubmitErrorTitle"
                 />
             </div>
 
