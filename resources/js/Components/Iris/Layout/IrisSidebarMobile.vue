@@ -317,7 +317,7 @@ const onClickLuigi = () => {
         </div>
 
         <!-- Section: List additional links -->
-        <div class="flex flex-col gap-y-3 mb-8">
+        <div v-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 mb-8">
             <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
                 :href="item?.url?.href ?? ''"
                 class="flex gap-x-2 items-center py-1"
