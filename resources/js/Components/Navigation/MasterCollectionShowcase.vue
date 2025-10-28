@@ -135,19 +135,19 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
           <div>
             <div class="flex items-center justify-between">
               <h2 class="text-sm font-semibold text-gray-800">Department</h2>
-              <Button type="create" size="xs" @click="isModalOpenDepartment = true" :label="'Department'" />
+              <Button type="create" size="xs" v-if="data?.can_edit"  @click="isModalOpenDepartment = true" :label="'Department'" />
             </div>
             <hr class="mt-2 border-gray-200" />
           </div>
 
           <div v-if="data.parent_departments?.length" class="space-y-1 max-h-64 overflow-auto">
-            <div v-for="dept in data.parent_departments" :key="dept.id"
+            <div v-for="dept in data.parent_departments" :key="dept.id" 
               class="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-md p-3 hover:shadow-sm transition">
               <div class="flex-1 min-w-0">
                 <h3 class="text-sm font-medium text-gray-800 truncate">{{ dept.code || dept.name }}</h3>
                 <p class="text-xs text-gray-500 line-clamp-2">{{ dept.name || 'No name' }}</p>
               </div>
-              <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"
+              <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'" v-if="data?.can_edit" 
                 :loading="unassignLoadingIds.includes(dept.id)" @click="UnassignCollectionFormWebpage(dept.id)"
                 class="shrink-0" />
             </div>
@@ -162,7 +162,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
           <div>
             <div class="flex items-center justify-between">
               <h2 class="text-sm font-semibold text-gray-800">Sub Department</h2>
-              <Button type="create" size="xs" @click="isModalOpenSubDepartment = true" :label="'Sub-Department'" />
+              <Button type="create" size="xs" @click="isModalOpenSubDepartment = true"  v-if="data?.can_edit"  :label="'Sub-Department'" />
             </div>
             <hr class="mt-2 border-gray-200" />
           </div>
@@ -175,7 +175,7 @@ const attachToparent = async (key : string , data: { id: number }[]) => {
                 <p class="text-xs text-gray-500 line-clamp-2">{{ dept.name || 'No Name' }}</p>
               </div>
               <Button type="negative" size="xs" :icon="faUnlink" v-tooltip="'Unassign'"
-                :loading="unassignLoadingIds.includes(dept.id)" @click="UnassignCollectionFormWebpage(dept.id)"
+                :loading="unassignLoadingIds.includes(dept.id)" v-if="data?.can_edit"  @click="UnassignCollectionFormWebpage(dept.id)"
                 class="shrink-0" />
             </div>
           </div>
