@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateParents;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollections;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -48,6 +49,7 @@ class AttachCollectionToModel extends OrgAction
             }
         }
 
+        CollectionHydrateParents::run($collection);
 
         return $collection;
     }

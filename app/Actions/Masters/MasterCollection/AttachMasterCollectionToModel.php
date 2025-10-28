@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateParents;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
 use App\Models\Masters\MasterCollection;
@@ -48,6 +49,8 @@ class AttachMasterCollectionToModel extends GrpAction
             }
         }
 
+
+        MasterCollectionHydrateParents::run($masterCollection);
 
         return $masterCollection;
     }

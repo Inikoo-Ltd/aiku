@@ -9,6 +9,7 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateParents;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Models\Masters\MasterCollection;
@@ -35,6 +36,7 @@ class DetachMasterCollectionFromModel extends GrpAction
             MasterProductCategoryHydrateMasterCollections::dispatch($oldParent);
         }
 
+        MasterCollectionHydrateParents::run($masterCollection);
 
         return $parent;
     }
