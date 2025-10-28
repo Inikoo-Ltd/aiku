@@ -7,8 +7,11 @@ use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Accounting\Invoice;
+use App\Models\Catalogue\Product;
+use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
+use App\Models\Dropshipping\Portfolio;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -80,11 +83,46 @@ class PlatformHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        // TODO: fill the new_portfolios
+        $newPortfoliosQueryBase = Portfolio
+            ::where('item_type', class_basename(Product::class))
+            ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
+            ->where('platform_id', $platform->id)
+            ->selectRaw('count(distinct portfolios.item_id) as sum_aggregate');
 
-        // TODO: fill the new_customer_client
+        $stats = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $newPortfoliosQueryBase,
+            statField: 'new_portfolios_',
+            dateField: 'portfolios.created_at',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
 
-        // TODO: fill the sales_grp_currency
+        $newCustomerClientQueryBase = CustomerClient
+            ::where('platform_id', $platform->id)
+            ->selectRaw('count(*) as sum_aggregate');
+
+        $stats = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $newCustomerClientQueryBase,
+            statField: 'new_customer_client_',
+            dateField: 'created_at',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
+
+        $salesGrpCurrencyQueryBase = Invoice
+            ::where('in_process', false)
+            ->where('platform_id', $platform->id)
+            ->selectRaw('sum(grp_net_amount) as  sum_aggregate');
+
+        $stats     = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $salesGrpCurrencyQueryBase,
+            statField: 'sales_grp_currency_',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
 
         return;
     }
