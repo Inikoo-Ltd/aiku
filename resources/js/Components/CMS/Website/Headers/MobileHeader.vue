@@ -184,7 +184,7 @@ console.log('sss',layout)
             </div>
 
             <!-- Section: Logo -->
-            <div class="col-span-3 flex justify-end items-center w-full" :class="!isLoggedIn ?  layout.retina.type == 'b2b' ? 'justify-end' :'justify-center' : 'justify-end'">
+            <div class="col-span-3 flex justify-end items-center w-full" :class="!isLoggedIn ?  layout.retina?.type == 'b2b' ? 'justify-end' :'justify-center' : 'justify-end'">
                 <component :is="LinkIris" :href="'/'" class="block h-fit max-h-[50px] w-full max-w-32">
                     <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" alt="logo"
                         class="w-full h-auto object-contain" />
@@ -201,7 +201,7 @@ console.log('sss',layout)
 
                 <!-- Logged In -->
                 <template v-else>
-                    <OverlayBadge v-if="layout.retina.type == 'b2b'"  :value="layout?.iris_variables?.cart_count">
+                    <OverlayBadge v-if="layout.retina?.type == 'b2b'"  :value="layout?.iris_variables?.cart_count">
                         <LinkIris href="/app/basket" class="px-1">
                             <FontAwesomeIcon icon="fal fa-shopping-cart" fixed-width aria-hidden="true"
                                 :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
