@@ -27,7 +27,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 const imageSettings = {
 	key: ["image", "source"],
 	stencilProps: {
-		aspectRatio: 16 / 9,
+		aspectRatio: [16 / 9],
 		movable: true,
 		scalable: true,
 		resizable: true,
@@ -52,7 +52,7 @@ const imageSettings = {
           ...getStyles(modelValue.image.properties, screenType),
           aspectRatio: imageSettings.aspectRatio
         }"
-		@dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
+		    @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
         @click="() => {
           sendMessageToParent('activeBlock', indexBlock)
           sendMessageToParent('activeChildBlock', bKeys[0])

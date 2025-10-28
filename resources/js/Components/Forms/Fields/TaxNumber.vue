@@ -206,16 +206,16 @@ const validateVAT = (vatInput: any) => {
 
     // Handle invalid VAT
     if (!validation.isValid) {
-        const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
-        set(registrationWarning.value, ['tax_number'], messageWarning);
-        set(props.form, ['errors', props.fieldName], messageWarning);
+        // const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
+        // set(registrationWarning.value, ['tax_number'], messageWarning);
+        // set(props.form, ['errors', props.fieldName], messageWarning);
         // props.form.reset();
         return updateFormValue(validation);;
     }
 
     // Valid VAT and no mismatch, update the form value
     updateFormValue(validation);
-        set(props.form, ['errors', props.fieldName], '');
+        // set(props.form, ['errors', props.fieldName], '');
         // props.form.clearErrors(props.fieldName)
 };
 

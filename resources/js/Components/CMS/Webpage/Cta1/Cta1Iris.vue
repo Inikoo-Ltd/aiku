@@ -33,16 +33,14 @@ const layout: any = inject("layout", {})
 			...getStyles(fieldValue.container?.properties, screenType),
 		}">
 			<div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
-				<!-- 🖼️ Left: Full Image Block -->
-				<div class="relative w-full h-[250px] md:h-full cursor-pointer overflow-hidden"
+				<div class="relative cursor-pointer overflow-hidden w-full" :class="!fieldValue.image.source ? '' : 'h-[250px] sm:h-[300px] md:h-[400px]'"
 					:style="getStyles(fieldValue?.image?.container?.properties, screenType)">
 					<Image :src="fieldValue.image.source" :imageCover="true"
 						:alt="fieldValue.image.alt || 'Image preview'"
-						class="absolute inset-0 w-full h-full object-cover" :imgAttributes="fieldValue.image.attributes"
-						:style="getStyles(fieldValue.image.properties, screenType)" />
+						class="absolute inset-0 w-full h-full object-fill"
+						:imgAttributes="fieldValue.image.attributes" />
 				</div>
 
-				<!-- 📝 Right: Text & Button Block -->
 				<div class="flex flex-col justify-center m-auto p-4"
 					:style="getStyles(fieldValue?.text_block?.properties, screenType)">
 					<div class="max-w-xl w-full">

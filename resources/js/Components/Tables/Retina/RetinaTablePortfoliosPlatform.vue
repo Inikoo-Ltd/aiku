@@ -385,8 +385,47 @@ const onDisableCheckbox = (item) => {
 const listErrorProducts = ref({
 
 })
+
+// Section: Modal Error Product (i.e Ebay title too long)
 const selectedErrorProduct = ref(null)
 const isOpenModalErrorProduct = ref(false)
+const isLoadingSubmitErrorTitle = ref(false)
+const submitErrorProduct = (sel) => {
+    // Section: Submit
+    router.post(
+        route('retina.models.portfolio.update_new_ebay_product', {
+            portfolio: sel.product.id
+        }),
+        {
+            title: sel.product.new_name
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSubmitErrorTitle.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+                isOpenModalErrorProduct.value = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Try again or contact administrator"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitErrorTitle.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -686,6 +725,7 @@ const isOpenModalErrorProduct = ref(false)
 
         <!-- Column: Actions 2 (Modal shopify) -->
         <template #cell(create_new)="{ item }">
+            <!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
             <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
                  class="flex gap-x-2 items-center">
                 <ButtonWithLink
@@ -705,9 +745,16 @@ const isOpenModalErrorProduct = ref(false)
                     :bindToLink="{
                         preserveScroll: true,
                     }"
+                    @success="(a) => {
+                        // console.log('zvvcvc', a)
+                    }"
                     @error="(e) => {
-                        selectedErrorProduct = item
-                        // isOpenModalErrorProduct = true
+                        // console.log('aaaaaaaaaaaa', e, item)
+                        selectedErrorProduct = {
+                            product: item,
+                            error: e
+                        }
+                        isOpenModalErrorProduct = true
                         set(listErrorProducts, [`x${item.id}`], e)
                     }"
                 />
@@ -827,24 +874,37 @@ const isOpenModalErrorProduct = ref(false)
     <Modal :isOpen="isOpenModalErrorProduct" width="w-full max-w-lg h-full max-h-[570px]" @close="isOpenModalErrorProduct = false">
         <div>
             <div class="text-xl font-semibold text-center">
-                Error Product
+                {{ trans("Error Product") }}
             </div>
 
-            <div v-for="error in selectedErrorProduct?.error_response ?? []">
-                <label for="error-product-input" class="block text-sm font-semibold">Product {{ error?.name }}</label>
+            <div v-if="selectedErrorProduct?.error?.title" av-for="error in selectedErrorProduct?.error_response ?? []" class="mt-6">
+                <label for="error-product-input" class="block text-sm font-semibold">{{ trans("Title") }}</label>
                 <div class="errorShake rounded">
-                    <InputText fluid inputId="error-product-input" :modelValue="error?.value" size="small" />
+                    <InputText
+                        :modelValue="get(selectedErrorProduct, ['product', 'new_name'], selectedErrorProduct?.product?.name)"
+                        @update:modelValue="(value) => set(selectedErrorProduct, ['product', 'new_name'], value)"
+                        fluid
+                        inputId="error-product-input"
+                        size="small"
+                        :disabled="isLoadingSubmitErrorTitle"
+                    />
                 </div>
-                <div class="text-xs italic text-red-500 mt-1">
-                    {{error?.message}}
+
+                <div class="text-xs opacity-60 mt-1">
+                    {{ trans("Characters") }}: {{ get(selectedErrorProduct, ['product', 'new_name'], selectedErrorProduct?.product?.name)?.length }}
+                </div>
+
+                <div class="mt-4 text-xs italic text-red-500">
+                    *{{selectedErrorProduct?.error?.title}}
                 </div>
             </div>
 
             <div class="mt-3">
                 <Button
-                    @click="() => console.log('OK')"
-                    label="Try again"
+                    @click="() => submitErrorProduct(selectedErrorProduct)"
+                    :label="trans('Try again')"
                     full
+                    :loading="isLoadingSubmitErrorTitle"
                 />
             </div>
 

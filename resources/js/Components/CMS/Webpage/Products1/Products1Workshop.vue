@@ -80,7 +80,7 @@ watch(
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
       ...getStyles(modelValue.container?.properties, screenType)
     }">
-      <transition v-if="!props.modelValue?.settings.is_hide_filter" name="slide-fade">
+      <transition v-if="!props.modelValue?.settings?.is_hide_filter" name="slide-fade">
         <aside v-show="!isMobile && showAside" class="w-68 p-4">
           <FilterProducts v-model="filter" :productCategory="props.modelValue.model_id"/>
         </aside>
@@ -100,7 +100,7 @@ watch(
         <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
           <div class="flex items-center w-full md:w-1/3 gap-2">
             
-            <template v-if="!props.modelValue?.settings.is_hide_filter">
+            <template v-if="!props.modelValue?.settings?.is_hide_filter">
               <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
                 aria-label="Open Filters"  :injectStyle="getStyles(modelValue?.filter?.button?.properties,screenType)"/>
               <div v-else class="">
