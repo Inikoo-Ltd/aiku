@@ -351,6 +351,8 @@ const sendDeleteBlock = async (block: Daum) => {
       onCancelToken: token => deleteBlockCancelToken.value = token.cancel,
       onSuccess: e => {
         data.value = e.props.webpage;
+        openedBlockSideEditor.value = null
+        openedChildSideEditor.value = null
         saveState()
         sendToIframe({ key: 'reload', value: {} });
       },

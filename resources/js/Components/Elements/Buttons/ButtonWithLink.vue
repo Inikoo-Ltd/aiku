@@ -48,7 +48,7 @@ const emits = defineEmits<{
     (e: "finish"): void
     (e: "start"): void
     (e: "error", error: {}): void
-    (e: "success"): void
+    (e: "success", data: {}): void
 }>()
 
 const isLoadingVisit = ref(false)
@@ -69,7 +69,7 @@ const dataToSend = props.body ?? props.routeTarget?.body
         :is="props.routeTarget || props.url ? Link : 'div'"
         :href="props.url || (props.routeTarget?.name ? route(props.routeTarget?.name, props.routeTarget?.parameters) : '#')"
         @start="() => (isLoadingVisit = true, emits('start'))"
-        :onSuccess="() => (emits('success'))"
+        :onSuccess="(a: {}) => (emits('success', a))"
         @error="(e: {}) => (isWithError ? setError(e) : false, emits('error', e))"
         @finish="() => (fullLoading ? '' : isLoadingVisit = false, emits('finish'))"
         :method="props.method || props.routeTarget?.method || undefined"

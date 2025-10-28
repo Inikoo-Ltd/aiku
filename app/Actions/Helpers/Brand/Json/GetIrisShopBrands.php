@@ -39,7 +39,7 @@ class GetIrisShopBrands extends IrisAction
                 'brands.reference',
                 'brands.name',
                 'brands.slug',
-            ]);
+            ])->distinct();
 
         return $queryBuilder->defaultSort('name')
             ->allowedSorts(['name', 'created_at'])

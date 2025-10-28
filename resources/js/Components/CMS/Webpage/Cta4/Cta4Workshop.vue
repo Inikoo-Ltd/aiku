@@ -28,7 +28,7 @@ const emits = defineEmits<{
 const imageSettings = {
 	key: ["image", "source"],
 	stencilProps: {
-		aspectRatio: 16 / 9,
+		aspectRatio: [16 / 9, 1],
 		movable: true,
 		scalable: true,
 		resizable: true,
@@ -47,16 +47,23 @@ const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 		}">
 			<div class="grid w-full grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 min-h-[auto] md:min-h-[400px]">
 				<!-- 🖼️ Image Block -->
-				<div class="relative w-full cursor-pointer overflow-hidden order-1 md:order-2 
-                   aspect-[3/2] md:aspect-auto" @click.stop="() => {
-					sendMessageToParent('activeBlock', indexBlock)
-					sendMessageToParent('activeChildBlock', bKeys[0])
-				}" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
-					:style="getStyles(modelValue?.image?.container?.properties, screenType)">
-					<Image :src="modelValue.image.source" :imageCover="true"
+				<div 
+					class="relative w-full cursor-pointer overflow-hidden order-1 md:order-2  md:aspect-auto" 
+					:class="!modelValue.image.source ? '' : ' h-[250px] sm:h-[300px] md:h-[400px]'"
+					@click.stop="() => {
+						sendMessageToParent('activeBlock', indexBlock)
+						sendMessageToParent('activeChildBlock', bKeys[0])
+					}" 
+					@dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
+					:style="getStyles(modelValue.image.properties, screenType)" 
+				>
+					<Image 
+						:src="modelValue.image.source" 
+						:imageCover="true"
 						:alt="modelValue.image.alt || 'Image preview'"
-						class="absolute inset-0 w-full h-full object-cover" :imgAttributes="modelValue.image.attributes"
-						:style="getStyles(modelValue.image.properties, screenType)" />
+						class="absolute inset-0 w-full h-full object-cover" 
+						:imgAttributes="modelValue.image.attributes"
+					/>
 				</div>
 
 				<!-- 📝 Text & Button Block -->

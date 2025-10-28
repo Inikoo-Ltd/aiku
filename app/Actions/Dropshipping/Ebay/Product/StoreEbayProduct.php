@@ -21,6 +21,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -44,8 +45,11 @@ class StoreEbayProduct extends RetinaAction
 
             $handleError = function ($result) use ($portfolio, $ebayUser, $logs) {
                 if (isset($result['error']) || isset($result['errors'])) {
+                    $params = '';
                     if (isset($result['errors'])) {
                         $errorMessage = $result;
+
+                        $params = Arr::get($result['errors'], '0.parameters.0.name');
 
                         if (isset($errorMessage['errors'][0]['message'])) {
                             $errorMessage = $errorMessage['errors'][0]['message'];
@@ -73,9 +77,14 @@ class StoreEbayProduct extends RetinaAction
                     UpdatePortfolio::make()->action($portfolio, [
                         'upload_warning' => $displayError,
                         'errors_response' => [
+                            'params' => $params,
                             'message' => $displayError
                         ]
                     ]);
+
+                    if (! blank($params)) {
+                        throw ValidationException::withMessages(['title' => $displayError]);
+                    }
 
                     return $displayError;
                 }
@@ -219,6 +228,7 @@ class StoreEbayProduct extends RetinaAction
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
+            throw $e;
         }
     }
 }
