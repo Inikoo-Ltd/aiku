@@ -302,7 +302,7 @@ class CloneCollections
 
 
         foreach ($parents as $parent) {
-            AttachMasterCollectionToModel::run($parent, $foundMasterCollection);
+            AttachMasterCollectionToModel::run($parent, $foundMasterCollection, false);
         }
 
 
@@ -312,7 +312,7 @@ class CloneCollections
         $children = $this->getChildren($collection, $masterShop);
         foreach ($children as $child) {
             if ($child) {
-                AttachModelToMasterCollection::run($foundMasterCollection, $child);
+                AttachModelToMasterCollection::run($foundMasterCollection, $child, false);
             }
         }
 

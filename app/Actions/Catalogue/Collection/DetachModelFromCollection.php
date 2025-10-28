@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateCollections;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateFamilies;
 use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateProducts;
 use App\Actions\OrgAction;
@@ -22,11 +23,14 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DetachModelFromCollection extends OrgAction
 {
-    public function handle(Collection $collection, Product|ProductCategory $model): Collection
+    public function handle(Collection $collection, Product|ProductCategory|Collection $model): Collection
     {
         if ($model instanceof Product) {
             $collection->products()->detach($model->id);
             CollectionHydrateProducts::dispatch($collection);
+        } elseif ($model instanceof Collection) {
+            $collection->collections()->detach($model->id);
+            CollectionHydrateCollections::dispatch($collection);
         } else {
             $collection->families()->detach($model->id);
             CollectionHydrateFamilies::dispatch($collection);
@@ -41,7 +45,7 @@ class DetachModelFromCollection extends OrgAction
     public function rules(): array
     {
         return [
-            'family'   => ['sometimes', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::FAMILY)->where('shop_id', $this->shop->id)],
+            'family'  => ['sometimes', Rule::exists('product_categories', 'id')->where('type', ProductCategoryTypeEnum::FAMILY)->where('shop_id', $this->shop->id)],
             'product' => ['sometimes', Rule::exists('products', 'id')->where('shop_id', $this->shop->id)],
         ];
     }

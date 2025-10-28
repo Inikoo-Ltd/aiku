@@ -131,7 +131,7 @@ const onSubmitAttach = async ({
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <section v-if="currentTab == 'families'">
+          <!--   <section v-if="currentTab == 'families'">
                 <Button
                     type="secondary"
                     label="Attach families"
@@ -157,7 +157,7 @@ const onSubmitAttach = async ({
                     @click="isModalOpen.collections.value = true"
                     :tooltip="trans('Attach products to this collections')"
                 />
-            </section>
+            </section> -->
         </template>
     </PageHeading>
 

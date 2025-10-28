@@ -8,8 +8,9 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\GrpAction;
-use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateFamilies;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterProducts;
 use App\Models\Masters\MasterAsset;
@@ -18,13 +19,21 @@ use App\Models\Masters\MasterProductCategory;
 
 class AttachModelToMasterCollection extends GrpAction
 {
-    public function handle(MasterCollection $masterCollection, MasterProductCategory|MasterAsset|MasterCollection $model): MasterCollection
+    public function handle(MasterCollection $masterCollection, MasterProductCategory|MasterAsset|MasterCollection $model, bool $attachChildren = true): MasterCollection
     {
         if ($model instanceof MasterAsset) {
             // Avoid attaching if already linked
             $alreadyAttached = $masterCollection->masterProducts()->where('master_assets.id', $model->id)->exists();
             if (!$alreadyAttached) {
                 $masterCollection->masterProducts()->attach($model->id);
+                if ($attachChildren) {
+                    foreach ($masterCollection->childrenCollections as $collection) {
+                        $shopModel = $model->products()->where('shop_id', $collection->shop_id)->first();
+                        if ($shopModel) {
+                            AttachModelToCollection::run($collection, $shopModel);
+                        }
+                    }
+                }
             }
             MasterCollectionHydrateMasterProducts::dispatch($masterCollection);
         } elseif ($model instanceof MasterCollection) {
@@ -32,6 +41,15 @@ class AttachModelToMasterCollection extends GrpAction
             $alreadyAttached = $masterCollection->masterCollections()->where('master_collections.id', $model->id)->exists();
             if (!$alreadyAttached) {
                 $masterCollection->masterCollections()->attach($model->id);
+
+                if ($attachChildren) {
+                    foreach ($masterCollection->childrenCollections as $collection) {
+                        $shopModel = $model->childrenCollections()->where('shop_id', $collection->shop_id)->first();
+                        if ($shopModel) {
+                            AttachModelToCollection::run($collection, $shopModel);
+                        }
+                    }
+                }
             }
             MasterCollectionHydrateMasterCollections::dispatch($masterCollection);
         } else {
@@ -39,8 +57,16 @@ class AttachModelToMasterCollection extends GrpAction
             $alreadyAttached = $masterCollection->masterFamilies()->where('master_product_categories.id', $model->id)->exists();
             if (!$alreadyAttached) {
                 $masterCollection->masterFamilies()->attach($model->id);
+                if ($attachChildren) {
+                    foreach ($masterCollection->childrenCollections as $collection) {
+                        $shopModel = $model->productCategories()->where('shop_id', $collection->shop_id)->first();
+                        if ($shopModel) {
+                            AttachModelToCollection::run($collection, $shopModel);
+                        }
+                    }
+                }
             }
-            MasterCollectionHydrateFamilies::dispatch($masterCollection);
+            MasterCollectionHydrateMasterFamilies::dispatch($masterCollection);
         }
 
         return $masterCollection;
@@ -48,7 +74,6 @@ class AttachModelToMasterCollection extends GrpAction
 
     public function action(MasterCollection $masterCollection, MasterProductCategory|MasterAsset|MasterCollection $model): MasterCollection
     {
-
         $this->asAction = true;
         $this->initialisation($masterCollection->group, []);
 

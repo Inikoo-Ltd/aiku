@@ -101,30 +101,28 @@ const imageSettings = {
           <!-- WRAPPER: This adds gap safely -->
           <div class="px-1 md:px-1 lg:px-1">
             <article @click.stop="
-                () => {
-                  sendMessageToParent('activeBlock', indexBlock)
-                  sendMessageToParent('activeChildBlock', bKeys[2])
-                  sendMessageToParent('activeChildBlockArray', index)
-                  sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
-                }
-              "
-              @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })"
-              class=" card relative isolate flex flex-col justify-end overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
+              () => {
+                sendMessageToParent('activeBlock', indexBlock)
+                sendMessageToParent('activeChildBlock', bKeys[2])
+                sendMessageToParent('activeChildBlockArray', index)
+                sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
+              }
+            " @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })"
+              class="card relative isolate flex items-center justify-center overflow-hidden rounded-2xl hover:shadow-xl transition-all duration-300">
+              <!-- Background image -->
               <Image :src="data?.image?.source" :alt="data?.image?.alt" :imageCover="true"
-                class="absolute inset-0 -z-10 size-full object-fill hover:scale-105 transition-transform duration-500" />
-              <div class="absolute inset-0 -z-10"></div>
-              <div class="relative p-6 sm:p-8">
-                <div class="p-4 flex flex-col flex-1 justify-between">
-                  <div v-html="data.text" />
-                  <div class="w-full mt-3" v-if="modelValue.carousel_data.carousel_setting.button">
-                    <Button :injectStyle="getStyles(data?.button?.container?.properties, screenType)"
-                      :label="data?.button?.text" @click.stop="
-                        () => {
-                          sendMessageToParent('activeBlock', indexBlock)
-                          sendMessageToParent('activeChildBlock', bKeys[2])
-                        }
-                      " />
-                  </div>
+                class="absolute inset-0 -z-10 w-full h-full object-cover" />
+              <div
+                class="absolute inset-0 flex flex-col justify-start items-start p-6">
+                <div v-html="data.text" class="mb-4"></div>
+                <div v-if="modelValue?.carousel_data?.carousel_setting?.button">
+                  <Button :injectStyle="getStyles(data?.button?.container?.properties, screenType)"
+                    :label="data?.button?.text" @click.stop="
+                      () => {
+                        sendMessageToParent('activeBlock', indexBlock)
+                        sendMessageToParent('activeChildBlock', bKeys[2])
+                      }
+                    " />
                 </div>
               </div>
             </article>
@@ -132,7 +130,6 @@ const imageSettings = {
         </template>
       </Carousel>
     </div>
-
   </div>
 </template>
 
