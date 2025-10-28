@@ -23,6 +23,7 @@ use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
@@ -33,6 +34,9 @@ class StoreMasterCollection extends GrpAction
     use WithImageCatalogue;
     use WithNoStrictRules;
 
+    /**
+     * @throws \Throwable
+     */
     public function handle(MasterShop|MasterProductCategory $parent, array $modelData, bool $createChildren = true): MasterCollection
     {
         $imageData = ['image' => Arr::pull($modelData, 'image')];
@@ -45,21 +49,26 @@ class StoreMasterCollection extends GrpAction
         data_set($modelData, 'group_id', $masterShop->group_id);
         data_set($modelData, 'master_shop_id', $masterShop->id);
 
-        $masterCollection = MasterCollection::create($modelData);
+        $masterCollection = DB::transaction(function () use ($parent, $modelData, $imageData, $createChildren) {
+            $masterCollection = MasterCollection::create($modelData);
+            $masterCollection->stats()->create();
+            $masterCollection->salesIntervals()->create();
+            $masterCollection->orderingStats()->create();
 
-        $masterCollection->stats()->create();
-        $masterCollection->salesIntervals()->create();
-        $masterCollection->orderingStats()->create();
+            if ($imageData['image']) {
+                $this->processCatalogueImage($imageData, $masterCollection);
+            }
 
-        if ($imageData['image']) {
-            $this->processCatalogueImage($imageData, $masterCollection);
-        }
+            AttachMasterCollectionToModel::make()->action($parent, $masterCollection);
 
-        AttachMasterCollectionToModel::make()->action($parent, $masterCollection);
+            if ($createChildren) {
+                StoreCollectionsFromMasterCollection::make()->action($parent, $masterCollection);
+            }
+            $masterCollection->refresh();
 
-        if ($createChildren) {
-            StoreCollectionsFromMasterCollection::make()->action($parent, $masterCollection);
-        }
+            return $masterCollection;
+        });
+
         MasterCollectionRecordSearch::dispatch($masterCollection);
         GroupHydrateMasterCollections::dispatch($masterCollection->group)->delay($this->hydratorsDelay);
         MasterShopHydrateMasterCollections::dispatch($masterShop)->delay($this->hydratorsDelay);
@@ -104,6 +113,9 @@ class StoreMasterCollection extends GrpAction
         return $rules;
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true, bool $createChildren = true): MasterCollection
     {
         if (!$audit) {
@@ -118,6 +130,9 @@ class StoreMasterCollection extends GrpAction
         return $this->handle($parent, $this->validatedData, $createChildren);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterCollection
     {
         $this->initialisation($masterShop->group, $request);
@@ -125,6 +140,9 @@ class StoreMasterCollection extends GrpAction
         return $this->handle($masterShop, $this->validatedData);
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function inMasterProductCategory(MasterProductCategory $masterProductCategory, ActionRequest $request): MasterCollection
     {
         $this->initialisation($masterProductCategory->group, $request);

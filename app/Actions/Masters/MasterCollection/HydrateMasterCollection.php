@@ -9,9 +9,11 @@
 namespace App\Actions\Masters\MasterCollection;
 
 use App\Actions\HydrateModel;
-use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateFamilies;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateCollections;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterCollections;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterProducts;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateParents;
 use App\Actions\Traits\WithNormalise;
 use App\Models\Masters\MasterCollection;
 use Illuminate\Console\Command;
@@ -26,9 +28,11 @@ class HydrateMasterCollection extends HydrateModel
 
     public function handle(MasterCollection $masterCollection): void
     {
-        MasterCollectionHydrateFamilies::run($masterCollection);
+        MasterCollectionHydrateMasterFamilies::run($masterCollection);
         MasterCollectionHydrateMasterCollections::run($masterCollection);
         MasterCollectionHydrateMasterProducts::run($masterCollection);
+        MasterCollectionHydrateParents::run($masterCollection);
+        MasterCollectionHydrateCollections::run($masterCollection);
     }
 
 

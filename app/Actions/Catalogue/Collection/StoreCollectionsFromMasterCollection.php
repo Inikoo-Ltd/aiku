@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\Collection;
 
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateCollections;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
@@ -38,6 +39,8 @@ class StoreCollectionsFromMasterCollection extends GrpAction
                 StoreCollection::make()->action($productCategory, $data);
             }
         }
+
+        MasterCollectionHydrateCollections::run($masterCollection);
 
     }
 

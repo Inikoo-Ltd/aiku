@@ -235,7 +235,7 @@ use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
 use App\Actions\Masters\MasterCollection\DeleteMasterCollection;
 use App\Actions\Masters\MasterCollection\DetachMasterCollectionFromModel;
-use App\Actions\Masters\MasterCollection\DetachModelFromMasterCollection;
+use App\Actions\Masters\MasterCollection\DetachMasterModelFromMasterCollection;
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DeleteImageFromMasterProductCategory;
@@ -412,7 +412,7 @@ Route::prefix('master-product-category/{masterProductCategory:id}')->name('maste
 
 Route::prefix('master-collection/{masterCollection:id}')->name('master_collection.')->group(function () {
     Route::post('attach-models', AttachModelsToMasterCollection::class)->name('attach-models');
-    Route::delete('detach-models', DetachModelFromMasterCollection::class)->name('detach-models');
+    Route::delete('detach-models', DetachMasterModelFromMasterCollection::class)->name('detach-models');
     Route::delete('delete', DeleteMasterCollection::class)->name('delete');
     Route::post('attach-parents', AttachMultipleParentsToAMasterCollection::class)->name('attach_parents');
 });

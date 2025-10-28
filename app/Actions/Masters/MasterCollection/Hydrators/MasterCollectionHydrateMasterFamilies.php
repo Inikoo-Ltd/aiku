@@ -13,7 +13,7 @@ use App\Models\Masters\MasterCollection;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class MasterCollectionHydrateFamilies implements ShouldBeUnique
+class MasterCollectionHydrateMasterFamilies implements ShouldBeUnique
 {
     use AsAction;
     use WithEnumStats;

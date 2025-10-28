@@ -99,7 +99,7 @@ class StoreCollection extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
-            'description' => ['sometimes', 'required', 'max:1500'],
+            'description' => ['sometimes', 'nullable', 'max:1500'],
             'master_collection_id' => ['sometimes'],
         ];
 
