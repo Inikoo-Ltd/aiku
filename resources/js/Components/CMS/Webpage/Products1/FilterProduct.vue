@@ -35,10 +35,10 @@ onMounted(() => {
 
 
     let hidden_list = []
-    if (layout.iris.shop.number_current_brands < 1) {
+    if (layout.iris?.shop?.number_current_brands < 1) {
         hidden_list.push('brands_filter')
     }
-    if (layout.iris.shop.number_current_tags < 1) {
+    if (layout.iris?.shop?.number_current_tags < 1) {
         hidden_list.push('tags_filter')
     }
     blueprintCopy.value.map((item) => {
