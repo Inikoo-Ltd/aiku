@@ -8,6 +8,7 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Catalogue\Collection\DetachCollectionFromModel;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateParents;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
@@ -18,11 +19,26 @@ use App\Models\Masters\MasterShop;
 
 class DetachMasterCollectionFromModel extends GrpAction
 {
-    public function handle(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection): MasterShop|MasterProductCategory
+    public function handle(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection, bool $detachChildren = true): MasterShop|MasterProductCategory
     {
         $oldParent = $masterCollection->parent;
 
         $parent->masterCollections()->detach($masterCollection);
+
+        if ($detachChildren) {
+            foreach ($masterCollection->childrenCollections as $collection) {
+
+                if ($parent instanceof MasterShop) {
+                    $shopParent = $parent->shops()->where('shop_id', $collection->shop_id)->first();
+                } else {
+                    $shopParent = $parent->productCategories()->where('shop_id', $collection->shop_id)->first();
+                }
+
+                if ($shopParent) {
+                    DetachCollectionFromModel::run($shopParent, $collection);
+                }
+            }
+        }
 
         if ($parent instanceof MasterProductCategory) {
             $shop = $parent->masterShop;

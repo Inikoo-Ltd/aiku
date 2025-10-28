@@ -302,7 +302,7 @@ class CloneCollections
 
 
         foreach ($parents as $parent) {
-            AttachMasterCollectionToModel::run($parent, $foundMasterCollection);
+            AttachMasterCollectionToModel::run($parent, $foundMasterCollection, false);
         }
 
 

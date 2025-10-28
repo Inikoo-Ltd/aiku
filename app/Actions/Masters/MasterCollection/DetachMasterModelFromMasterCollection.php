@@ -8,7 +8,6 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
-use App\Actions\Catalogue\Collection\AttachModelToCollection;
 use App\Actions\Catalogue\Collection\DetachModelFromCollection;
 use App\Actions\GrpAction;
 use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateMasterFamilies;
@@ -25,12 +24,12 @@ use Lorisleiva\Actions\ActionRequest;
 
 class DetachMasterModelFromMasterCollection extends GrpAction
 {
-    public function handle(MasterCollection $masterCollection, MasterAsset|MasterProductCategory|MasterCollection $model, bool $attachChildren = true): MasterCollection
+    public function handle(MasterCollection $masterCollection, MasterAsset|MasterProductCategory|MasterCollection $model, bool $detachChildren = true): MasterCollection
     {
         if ($model instanceof MasterAsset) {
             $masterCollection->masterProducts()->detach($model->id);
             MasterCollectionHydrateMasterProducts::dispatch($masterCollection);
-            if ($attachChildren) {
+            if ($detachChildren) {
                 foreach ($masterCollection->childrenCollections as $collection) {
                     $shopModel = $model->products()->where('shop_id', $collection->shop_id)->first();
                     if ($shopModel) {
@@ -41,7 +40,7 @@ class DetachMasterModelFromMasterCollection extends GrpAction
         } elseif ($model instanceof MasterCollection) {
             $masterCollection->masterCollections()->detach($model->id);
 
-            if ($attachChildren) {
+            if ($detachChildren) {
                 foreach ($masterCollection->childrenCollections as $collection) {
                     $shopModel = $model->childrenCollections()->where('shop_id', $collection->shop_id)->first();
                     if ($shopModel) {
@@ -54,7 +53,7 @@ class DetachMasterModelFromMasterCollection extends GrpAction
         } else {
             $masterCollection->masterFamilies()->detach($model->id);
 
-            if ($attachChildren) {
+            if ($detachChildren) {
                 foreach ($masterCollection->childrenCollections as $collection) {
                     $shopModel = $model->children()->where('shop_id', $collection->shop_id)->first();
                     if ($shopModel) {

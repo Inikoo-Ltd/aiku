@@ -28,6 +28,7 @@ class AttachMultipleParentsToAMasterCollection extends GrpAction
 
     public function handle(MasterCollection $masterCollection, array $modelData): MasterCollection
     {
+
         // Attach departments
         foreach (Arr::get($modelData, 'departments', []) as $modelID) {
             if (!DB::table('model_has_master_collections')->where('master_collection_id', $masterCollection->id)->where('model_type', 'MasterProductCategory')->where('model_id', $modelID)->exists()) {

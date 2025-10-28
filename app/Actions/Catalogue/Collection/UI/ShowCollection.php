@@ -93,7 +93,7 @@ class ShowCollection extends OrgAction
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
     {
         $title      = $collection->code;
-        $model      = __('collection');
+        $model      = __('Collection');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
             'title' => __('Collection')
