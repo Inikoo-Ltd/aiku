@@ -156,6 +156,11 @@ const imageSettings = {
   border-left: v-bind('cardStyle?.borderLeft || "0px solid transparent"') !important;
   border-right: v-bind('cardStyle?.borderRight || "0px solid transparent"') !important;
 
+  border-top-left-radius: v-bind('cardStyle?.borderTopLeftRadius || null') !important;
+  border-top-right-radius: v-bind('cardStyle?.borderTopRightRadius || null') !important;
+  border-bottom-left-radius: v-bind('cardStyle?.borderBottomLeftRadius || null') !important;
+  border-bottom-right-radius: v-bind('cardStyle?.borderBottomRightRadius || null') !important;
+
   height: v-bind('cardStyle?.height || "17rem"') !important;
   width: v-bind('cardStyle?.width || null') !important;
 }
