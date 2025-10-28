@@ -19,9 +19,9 @@ class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
 {
     use AsAction;
 
-    public function handle(Portfolio $portfolio): void
+    public function handle(Portfolio $portfolio, array $modelData): void
     {
-        $portfolio = UpdatePortfolio::run($portfolio);
+        $portfolio = UpdatePortfolio::run($portfolio, $modelData);
 
         StoreNewProductToCurrentEbay::run($portfolio->customerSalesChannel->user, $portfolio);
     }
@@ -42,7 +42,7 @@ class UpdateAndUploadRetinaPortfolioToCurrentEbay extends RetinaAction
     {
 
         $this->initialisation($request);
-        $this->handle($portfolio);
+        $this->handle($portfolio, $this->validatedData);
     }
 
 }
