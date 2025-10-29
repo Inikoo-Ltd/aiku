@@ -371,7 +371,7 @@ class CloneCollections
                 $dataToUpdate = array_merge(
                     $descriptionFields,
                     [
-                        'code' => $collection->code,
+                      //  'code' => $collection->code,
                     ]
                 );
 

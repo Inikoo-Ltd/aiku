@@ -143,7 +143,10 @@ const showDialog = ref(false);
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
                     <!-- Breadcrumb link or text -->
-                    <component :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
+                    <span v-if="!item.to">
+                        {{ item.label || '-' }}
+                    </span>
+                    <component v-else :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
                         :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to
                             ? 'text-gray-500'

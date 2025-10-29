@@ -35,6 +35,11 @@ class StoreMasterCollection extends GrpAction
     use WithNoStrictRules;
 
     /**
+     * @var \App\Models\Masters\MasterProductCategory|\App\Models\Masters\MasterShop
+     */
+    private MasterShop|MasterProductCategory $masterShop;
+
+    /**
      * @throws \Throwable
      */
     public function handle(MasterShop|MasterProductCategory $parent, array $modelData, bool $createChildren = true): MasterCollection
@@ -90,7 +95,7 @@ class StoreMasterCollection extends GrpAction
                 new IUnique(
                     table: 'master_collections',
                     extraConditions: [
-                        ['column' => 'group_id', 'value' => $this->group->id],
+                        ['column' => 'master_shop_id', 'value' => $this->masterShop->id],
                         ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
@@ -118,6 +123,13 @@ class StoreMasterCollection extends GrpAction
      */
     public function action(MasterShop|MasterProductCategory $parent, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true, bool $createChildren = true): MasterCollection
     {
+        if ($parent instanceof MasterProductCategory) {
+            $this->masterShop = $parent->masterShop;
+        } else {
+            $this->masterShop = $parent;
+        }
+
+
         if (!$audit) {
             MasterCollection::disableAuditing();
         }
@@ -135,6 +147,7 @@ class StoreMasterCollection extends GrpAction
      */
     public function asController(MasterShop $masterShop, ActionRequest $request): MasterCollection
     {
+        $this->masterShop = $masterShop;
         $this->initialisation($masterShop->group, $request);
 
         return $this->handle($masterShop, $this->validatedData);
@@ -145,6 +158,8 @@ class StoreMasterCollection extends GrpAction
      */
     public function inMasterProductCategory(MasterProductCategory $masterProductCategory, ActionRequest $request): MasterCollection
     {
+        $this->masterShop = $masterProductCategory->masterShop;
+
         $this->initialisation($masterProductCategory->group, $request);
 
         return $this->handle($masterProductCategory, $this->validatedData);

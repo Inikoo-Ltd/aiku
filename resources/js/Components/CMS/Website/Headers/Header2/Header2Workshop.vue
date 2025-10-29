@@ -105,7 +105,7 @@ const layout = inject('layout', {})
 						<component v-if="modelValue?.logo?.image?.source" :is="'div'"
 							class="absolute inset-0 w-full h-full">
 							<template #default>
-								<Image :style="getStyles(modelValue.logo.properties, screenType)"
+								<Image 
 									:alt="modelValue?.logo?.image?.alt || modelValue?.logo?.alt" :imageCover="true"
 									class="object-contain w-full h-full" :src="modelValue?.logo?.image?.source" />
 							</template>

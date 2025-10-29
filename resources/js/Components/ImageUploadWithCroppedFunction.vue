@@ -70,12 +70,12 @@ const knownRatios: Record<number, string> = {
 
 // Format ratio labels
 const formatRatioLabel = (ratio: number) => {
+	if (ratio === null) return "custom"
 	const closest = Object.keys(knownRatios)
 		.map(Number)
 		.reduce((prev, curr) =>
 			Math.abs(curr - ratio) < Math.abs(prev - ratio) ? curr : prev
 		)
-
 	if (Math.abs(closest - ratio) < 0.01) {
 		return knownRatios[closest]
 	}
@@ -87,10 +87,20 @@ const recommendedPixels = computed(() => {
 	const width = props.stencilProps?.width || 400
 	const ratio = props.stencilProps?.aspectRatio
 
+	// if aspectRatio is an array → show all recommended sizes (skip null / "Free")
 	if (Array.isArray(ratio)) {
-		return ratio.map((r) => `${width} × ${Math.round(width / r)} px`).join(", ")
+		return ratio
+			.filter((r) => r !== null) // 👈 ignore "Free" mode
+			.map((r) => `${width} × ${Math.round(width / r)} px`)
+			.join(", ")
 	}
 
+	// single ratio (null means "Free")
+	if (ratio === null) {
+		return "Free cropping allowed"
+	}
+
+	// single fixed ratio
 	const height = Math.round(width / (ratio || 1))
 	return `${width} × ${height} px`
 })
@@ -200,67 +210,42 @@ onBeforeUnmount(() => {
 		<!-- CROPPER MODE -->
 		<div v-if="isCropping" class="w-full">
 			<div class="flex flex-col items-center gap-4">
-				<h2
-					class="font-semibold text-gray-700 text-lg"
-					aria-label="Crop and adjust image before upload"
-				>
+				<h2 class="font-semibold text-gray-700 text-lg" aria-label="Crop and adjust image before upload">
 					Adjust Image Before Upload
 				</h2>
 
 				<!-- Aspect ratio selector -->
 				<div v-if="aspectRatios.length > 1" class="flex gap-2 justify-center mb-2">
-					<Button
-						v-for="ratio in aspectRatios"
-						:key="ratio + selectedRatio"
-						:label="formatRatioLabel(ratio)"
-						:variant="selectedRatio === ratio ? 'primary' : 'tertiary'"
-						size="xs"
-						@click="selectedRatio = ratio"
-					/>
+					<Button v-for="ratio in aspectRatios" :key="ratio + selectedRatio" :label="formatRatioLabel(ratio)"
+						:variant="selectedRatio === ratio ? 'primary' : 'tertiary'" size="xs"
+						@click="selectedRatio = ratio" />
 				</div>
 
 				<!-- Cropper Component -->
-				<Cropper
-					ref="cropperRef"
-					:src="imagePreview"
+				<Cropper ref="cropperRef" :src="imagePreview"
 					:stencil-props="{ ...stencilProps, aspectRatio: selectedRatio }"
 					alt="Image being cropped before upload"
-					class="rounded-xl border border-gray-300 overflow-hidden w-full max-w-2xl h-[400px]"
-				/>
+					class="rounded-xl border border-gray-300 overflow-hidden w-full max-w-2xl h-[400px]" />
 
 				<!-- Action buttons -->
 				<div class="flex justify-center gap-3">
-					<Button
-						@click="cancelCrop"
-						type="negative"
-						label="Cancel"
-						aria-label="Cancel cropping"
-					/>
+					<Button @click="cancelCrop" type="negative" label="Cancel" aria-label="Cancel cropping" />
 
-					<Button
-						@click="confirmCrop"
-						:disabled="isLoadingSubmit"
-						:loading="isLoadingSubmit"
+					<Button @click="confirmCrop" :disabled="isLoadingSubmit" :loading="isLoadingSubmit"
 						:label="isLoadingSubmit ? 'Uploading...' : 'Confirm & Upload'"
-						aria-label="Confirm and upload cropped image"
-					/>
+						aria-label="Confirm and upload cropped image" />
 				</div>
 			</div>
 		</div>
 
 		<!-- GALLERY MODE -->
-		<GalleryManagement
-			v-else
-			:submitUpload="handleUpload"
-			:maxSelected="1"
-			:tabs="['upload', 'images_uploaded', 'stock_images']"
-			@submitSelectedImages="onPickImage"
-			:isLoadingSubmit="isLoadingSubmit"
-		/>
+		<GalleryManagement v-else :submitUpload="handleUpload" :maxSelected="1"
+			:tabs="['upload', 'images_uploaded', 'stock_images']" @submitSelectedImages="onPickImage"
+			:isLoadingSubmit="isLoadingSubmit" />
 	</div>
 
 	<!-- Recommended size info -->
-	<div class="text-gray text-sm mt-2">
+	<div v-if="stencilProps?.aspectRatio" class="text-gray text-sm mt-2">
 		Recommended image size: {{ recommendedPixels }}
 	</div>
 </template>

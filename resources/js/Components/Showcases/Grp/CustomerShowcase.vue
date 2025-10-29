@@ -354,7 +354,7 @@ const copyToClipboard = async (text: string, label: string) => {
                                     aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                <a :href="`tel:${data.customer.email}`">{{ data?.customer?.phone }}</a>
+                                <a :href="`tel:${data.customer.phone}`">{{ data?.customer?.phone }}</a>
                             </dd>
                             <button @click="copyToClipboard(data?.customer?.phone, 'Phone')"
                                 class="text-gray-400 hover:text-gray-600 transition-colors"
