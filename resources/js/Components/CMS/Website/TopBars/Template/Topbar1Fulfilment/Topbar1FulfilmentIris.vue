@@ -19,6 +19,7 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 
 const onLogout = inject("onLogout")
 const layout = inject("layout", {})
+const screenType = inject("screenType", "desktop")
 </script>
 
 <template>
