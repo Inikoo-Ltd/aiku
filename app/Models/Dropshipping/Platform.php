@@ -85,4 +85,9 @@ class Platform extends Model
     {
         return $this->hasOne(PlatformSalesIntervals::class);
     }
+
+    public function shopSalesIntervals(): HasMany
+    {
+        return $this->hasMany(PlatformShopSalesIntervals::class);
+    }
 }
