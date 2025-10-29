@@ -33,6 +33,10 @@ const props = withDefaults(
   }
 );
 
+const emits = defineEmits<{
+    (e: "update:modelValue", value: any): void
+}>()
+
 const injectedActive: any = inject("activeChildBlockArray", ref(null));
 const activeChildBlockArrayBlock: any = inject("activeChildBlockArrayBlock", null);
 
@@ -79,6 +83,7 @@ const addValue = () => {
     ulid: ulid()
   }
   modelValue.value?.push(newValueData);
+  emits("update:modelValue", modelValue.value)
 
 };
 
@@ -87,6 +92,7 @@ const removeValue = (index: number) => {
   // newValue.splice(index, 1);
   // modelValue.value = newValue;
   modelValue.value?.splice(index, 1)
+  emits("update:modelValue", modelValue.value)
 
   const raw = readRaw();
   if (Array.isArray(raw)) {
