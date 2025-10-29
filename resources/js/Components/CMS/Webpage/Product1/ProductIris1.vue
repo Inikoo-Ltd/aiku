@@ -342,9 +342,6 @@ const profitMargin = computed(() => {
                                 <span class="flex items-center gap-1 font-semibold text-xs"
                                     :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
                                     (
-                                    <FontAwesomeIcon
-                                        :icon="profitMargin > 0 ? 'fa-solid fa-arrow-trend-up' : 'fa-solid fa-arrow-trend-down'"
-                                        class="text-[10px]" />
                                     {{ profitMargin > 0 ? '+' + profitMargin : profitMargin }}%
                                     )
                                 </span>
@@ -473,9 +470,6 @@ const profitMargin = computed(() => {
                     <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
                     <span class="flex items-center gap-1" :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
                         (
-                        <FontAwesomeIcon
-                            :icon="profitMargin > 0 ? 'fa-solid fa-arrow-trend-up' : 'fa-solid fa-arrow-trend-down'"
-                            class="text-[10px]" />
                         {{ profitMargin > 0 ? '+' + profitMargin : profitMargin }}%
                         )
                     </span>
