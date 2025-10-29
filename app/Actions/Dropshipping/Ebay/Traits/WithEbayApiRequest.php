@@ -819,7 +819,7 @@ trait WithEbayApiRequest
 
             $fulfillment = [
                 'lineItems' => $fulfillmentData['line_items'],
-                'shippedDate' => $fulfillmentData['shipped_date'] ?? now()->toISOString(),
+                'shippedDate' => now()->toISOString(),
                 'shippingCarrierCode' => $fulfillmentData['carrier_code'] ?? 'USPS',
                 'trackingNumber' => $fulfillmentData['tracking_number'] ?? null
             ];
@@ -827,6 +827,7 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
             Log::error('Fulfill eBay Order Error: ' . $e->getMessage());
+            \Sentry::captureMessage($e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
