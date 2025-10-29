@@ -14,6 +14,7 @@ use App\Actions\Helpers\Redirects\RedirectDeliveryNotesLink;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInCustomerLink;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopFromDashboard;
 use App\Actions\Helpers\Redirects\RedirectInvoicesInShopLink;
+use App\Actions\Helpers\Redirects\RedirectMasterCollectionLink;
 use App\Actions\Helpers\Redirects\RedirectMasterProductCategoryLink;
 use App\Actions\Helpers\Redirects\RedirectMasterProductLink;
 use App\Actions\Helpers\Redirects\RedirectOrgStockLink;
@@ -49,6 +50,8 @@ Route::get('redirect-picking-session/{pickingSession:id}', RedirectPickingSessio
 
 Route::get('redirect-master-product/{masterAsset:id}', RedirectMasterProductLink::class)->name('redirect_master_product');
 Route::get('redirect-master-product-category/{masterProductCategory:id}', RedirectMasterProductCategoryLink::class)->name('redirect_master_product_category');
+Route::get('redirect-master-collections/{masterCollection:id}', RedirectMasterCollectionLink::class)->name('redirect_master_collection');
+
 
 Route::get('redirect-outbox/{outbox:id}', RedirectOutboxLink::class)->name('redirect_outbox');
 Route::get('redirect-outbox-workshop/{outbox:id}', RedirectOutboxWorkShopLink::class)->name('redirect_outbox_workshop');
