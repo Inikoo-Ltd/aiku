@@ -42,6 +42,7 @@ use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\PlatformShopSalesIntervals;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Helpers\Address;
@@ -720,5 +721,10 @@ class Shop extends Model implements HasMedia, Auditable
             Brand::class,
             'model_has_brands'
         );
+    }
+
+    public function platformSalesIntervals(): HasOne
+    {
+        return $this->hasOne(PlatformShopSalesIntervals::class);
     }
 }
