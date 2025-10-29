@@ -819,7 +819,7 @@ trait WithEbayApiRequest
 
             $fulfillment = [
                 'lineItems' => $fulfillmentData['line_items'],
-                'shippedDate' => $fulfillmentData['shipped_date'] ?? now()->toISOString(),
+                'shippedDate' => now()->toISOString(),
                 'shippingCarrierCode' => $fulfillmentData['carrier_code'] ?? 'USPS',
                 'trackingNumber' => $fulfillmentData['tracking_number'] ?? null
             ];
