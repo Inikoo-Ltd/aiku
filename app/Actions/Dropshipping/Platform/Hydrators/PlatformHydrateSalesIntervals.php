@@ -33,6 +33,11 @@ class PlatformHydrateSalesIntervals implements ShouldBeUnique
     {
         $platform = Platform::where('slug', $command->argument('platform'))->first();
 
+        if (!$platform) {
+            $command->error("Platform not found.");
+            return;
+        }
+
         $this->handle($platform);
     }
 
@@ -116,7 +121,7 @@ class PlatformHydrateSalesIntervals implements ShouldBeUnique
             ->where('platform_id', $platform->id)
             ->selectRaw('sum(grp_net_amount) as  sum_aggregate');
 
-        $stats     = $this->getIntervalsData(
+        $stats = $this->getIntervalsData(
             stats: $stats,
             queryBase: $salesGrpCurrencyQueryBase,
             statField: 'sales_grp_currency_',
@@ -124,6 +129,6 @@ class PlatformHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        return;
+        $platform->salesIntervals()->updateOrCreate(['platform_id' => $platform->id], $stats);
     }
 }

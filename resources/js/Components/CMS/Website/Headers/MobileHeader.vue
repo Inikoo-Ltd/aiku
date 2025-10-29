@@ -34,7 +34,6 @@ import {
 import { faLambda } from "@fad";
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { checkScreenType } from '@/Composables/useWindowSize'
 import { computed } from 'vue'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
