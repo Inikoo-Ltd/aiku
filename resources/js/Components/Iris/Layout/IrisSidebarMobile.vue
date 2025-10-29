@@ -65,26 +65,13 @@ const borderWidth = computed(() => {
     return props.containerStyle?.border?.width ? `${props.containerStyle?.border?.width.value}${props.containerStyle?.border?.width.unit}` : '1px';
 })
 
-const onClickLuigi = () => {
-    const input = document.getElementById('luigi_mobile') as HTMLInputElement | null;
-    if (input) input.focus();
-}
 </script>
 
 <template>
-    <div class="menu-container-mobile">
-        <!-- Section: input search -->
-        <div class="flex gap-x-4 items-center mb-4">
-            <div @click="() => onClickLuigi()" class="flex-grow border border-gray-300/40 rounded-md px-2 py-1">
-                <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
-                <span v-if="layout?.currentQuery?.q" class="ml-2 text-sm">{{layout?.currentQuery?.q}}</span>
-                <span v-else class="ml-2 text-sm italic opacity-60">{{ trans("I am looking for..") }}</span>
-            </div>
+    <div class="flex flex-col h-full">
 
-            <FontAwesomeIcon icon="fal fa-times" class="opacity-50 text-xl" fixed-width aria-hidden="true" />
-        </div>
-
-        <div class="menu-content mb-4">
+        <!-- Section: Navigation links -->
+        <div class="flex-1 overflow-y-auto pb-4 mb-4">
             <!-- Section: Custom Top -->
             <div v-if="customMenusTop && customMenusTop.length > 0">
                 <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex">
@@ -364,18 +351,18 @@ const onClickLuigi = () => {
 </template>
 
 <style scoped lang="scss">
-.menu-container-mobile {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    // background: #fff;
-}
+// .menu-container-mobile {
+//     display: flex;
+//     flex-direction: column;
+//     height: 100%;
+//     // background: #fff;
+// }
 
-.menu-content {
-    flex: 1;
-    overflow-y: auto;
-    padding-bottom: 1rem;
-}
+// .menu-content {
+//     flex: 1;
+//     overflow-y: auto;
+//     padding-bottom: 1rem;
+// }
 
 .login-section {
     // flex-shrink: 0;

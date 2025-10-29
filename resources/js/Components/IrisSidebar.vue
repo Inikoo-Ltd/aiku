@@ -196,6 +196,12 @@ const internalHref = (item) => {
     
     return path
 }
+
+
+const onClickLuigi = () => {
+    const input = document.getElementById('luigi_mobile') as HTMLInputElement | null;
+    if (input) input.focus();
+}
 </script>
 
 <template>
@@ -222,21 +228,35 @@ const internalHref = (item) => {
                 width: isMobile ? null : !isNull(activeIndex) || !isNull(activeCustomIndex) || !isNull(activeCustomTopIndex) ?
                     (!isNull(activeSubIndex) || !isNull(activeCustomSubIndex) || !isNull(activeCustomTopSubIndex)) ? '798px' : '545px' : '290px'
             }"
+            class="h-screen"
         >
             <template #header>
-                <div class="md:max-w-[270px] overflow-hidden">
-                    <!-- <Image
-                        v-if="sidebarLogo"
-                        :src="sidebarLogo"
-                        class="h-fit w-full object-contain aspect-auto"
-                        :alt="trans('Sidebar logo')"
-                    /> -->
-                    <img
-                        xv-else :src="sidebarLogo?.original || header?.logo?.image?.source?.original"
-                        :alt="header?.logo?.alt"
-                        zclass="w-full h-auto max-h-20 object-contain"
-                        :style="getStyles(props.sidebar?.data?.fieldValue?.logo_dimension)"
-                    />
+                <div>
+                    <div class="md:max-w-[270px] overflow-hidden">
+                        <!-- <Image
+                            v-if="sidebarLogo"
+                            :src="sidebarLogo"
+                            class="h-fit w-full object-contain aspect-auto"
+                            :alt="trans('Sidebar logo')"
+                        /> -->
+                        <img
+                            xv-else :src="sidebarLogo?.original || header?.logo?.image?.source?.original"
+                            :alt="header?.logo?.alt"
+                            zclass="w-full h-auto max-h-20 object-contain"
+                            :style="getStyles(props.sidebar?.data?.fieldValue?.logo_dimension)"
+                        />
+                    </div>
+                    
+                    <!-- Section: input search -->
+                    <div class="mt-6 flex gap-x-4 items-center">
+                        <div @click="() => onClickLuigi()" class="flex-grow border border-gray-300/40 rounded-md px-2 py-1">
+                            <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
+                            <span v-if="layout?.currentQuery?.q" class="ml-2 text-sm">{{layout?.currentQuery?.q}}</span>
+                            <span v-else class="ml-2 text-sm italic opacity-60">{{ trans("I am looking for..") }}</span>
+                        </div>
+
+                        <FontAwesomeIcon icon="fal fa-times" class="opacity-50 text-xl" fixed-width aria-hidden="true" />
+                    </div>
                 </div>
             </template>
 
