@@ -23,6 +23,8 @@ const props = defineProps<{
     screenType: "desktop" | "mobile" | "tablet"
 }>()
 
+const screenTypeInject = inject("screenType", "desktop")
+
 interface ModelTopbar1 {
     profile: {
         text: string
@@ -105,14 +107,14 @@ const onClickLogout = () => {
     )
 }
 
-const buttonClass = ref(getStyles(model.value?.button?.container?.properties, props.screenType, false))
-const buttonHoverClass = ref(getStyles(model.value?.button?.hover?.container?.properties, props.screenType,false))
+const buttonClass = ref(getStyles(model.value?.button?.container?.properties, screenTypeInject, false))
+const buttonHoverClass = ref(getStyles(model.value?.button?.hover?.container?.properties, screenTypeInject,false))
 
 watch(
   () => model.value?.button,
   () => {
-    buttonClass.value = getStyles(model.value?.button?.container?.properties, props.screenType,false)
-    buttonHoverClass.value = getStyles(model.value?.button?.hover?.container?.properties, props.screenType,false)
+    buttonClass.value = getStyles(model.value?.button?.container?.properties, screenTypeInject,false)
+    buttonHoverClass.value = getStyles(model.value?.button?.hover?.container?.properties, screenTypeInject,false)
   },
   { deep: true }
 )
@@ -122,9 +124,9 @@ watch(
 <template>
     <div id="top_bar_1_iris" class="py-1 px-4 flex flex-col md:flex-row md:justify-between gap-x-4 sticky top-0 z-50"
         :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenTypeInject),
         margin: 0,
-        ...getStyles(model?.container?.properties, screenType)
+        ...getStyles(model?.container?.properties, screenTypeInject)
     }">
         <!-- layout?.app?.webpage_layout?.container?.properties   // TODO: should exist in Retina -->
 

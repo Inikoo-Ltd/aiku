@@ -89,7 +89,6 @@ const scrollToRight = () => {
     const el = scrollerRef.value
     if (!el) return
 
-    console.log('aaaaa', el.scrollWidth, el.clientWidth, el.scrollWidth - el.clientWidth)
     const a = el.scrollWidth - el.clientWidth
     setTimeout(() => {
         // el.scrollLeft = 2000
