@@ -144,7 +144,7 @@ const responsiveOptions = computed(() => {
                 class="p-4 flex flex-col flex-1 justify-between">
                 <div  class="text-center leading-relaxed" >
                 <EditorV2 v-model="data.text" @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
-                  @update:modelValue="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
+                  @update:modelValue="() => emits('autoSave')"  :uploadImageRoute="{
                     name: webpageData.images_upload_route.name,
                     parameters: {
                       ...webpageData.images_upload_route.parameters,
