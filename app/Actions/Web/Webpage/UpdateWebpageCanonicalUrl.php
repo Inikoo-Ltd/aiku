@@ -131,7 +131,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $url  = '';
 
 
-        foreach ($collection->subDepartments as $subDepartment) {
+        foreach ($collection->parentSubDepartments as $subDepartment) {
             if ($subDepartment->webpage && $subDepartment->webpage->state != WebpageStateEnum::CLOSED) {
                 $url = $this->getProductCategoryCanonicalUrl($subDepartment->webpage);
 
@@ -141,7 +141,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         }
 
         if (!$done) {
-            foreach ($collection->departments as $department) {
+            foreach ($collection->parentSubDepartments as $department) {
                 if ($department->webpage && $department->webpage->state != WebpageStateEnum::CLOSED) {
                     $url = $this->getProductCategoryCanonicalUrl($department->webpage);
                     break;
@@ -179,7 +179,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $productCategory = $webpage->model;
 
         if (!$productCategory) {
-            $productCategory=ProductCategory::withTrashed()->where('id',$webpage->model_id)->first();
+            $productCategory = ProductCategory::withTrashed()->where('id', $webpage->model_id)->first();
         }
 
         if (!$productCategory) {
