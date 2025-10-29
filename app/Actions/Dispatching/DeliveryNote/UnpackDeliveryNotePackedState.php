@@ -8,8 +8,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Dispatching\DeliveryNoteItem\CalculateDeliveryNoteItemTotalPicked;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
-use App\Actions\Dispatching\Picking\UpdatePicking;
+use App\Actions\Dispatching\Picking\DeletePicking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
 use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
 use App\Actions\OrgAction;
@@ -18,9 +19,9 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
-use App\Enums\Dispatching\Picking\PickingTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\User;
+use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 
 class UnpackDeliveryNotePackedState extends OrgAction
@@ -42,16 +43,15 @@ class UnpackDeliveryNotePackedState extends OrgAction
         data_set($modelData, 'parcels', []);
 
         foreach ($deliveryNote->deliveryNoteItems as $item) {
-            UpdateDeliveryNoteItem::run($item, [
-                'state' => DeliveryNoteItemStateEnum::HANDLING,
-                'quantity_picked' => 0
+            UpdateDeliveryNoteItem::make()->action($item, [
+                'state' => DeliveryNoteItemStateEnum::HANDLING->value
             ]);
 
             foreach ($item->pickings as $picking) {
-                UpdatePicking::run($picking, [
-                    'type' => PickingTypeEnum::NOT_PICK
-                ]);
+                DeletePicking::run($picking);
             }
+
+            CalculateDeliveryNoteItemTotalPicked::run($item);
         }
 
         if ($deliveryNote->type != DeliveryNoteTypeEnum::REPLACEMENT) {
@@ -97,5 +97,17 @@ class UnpackDeliveryNotePackedState extends OrgAction
         $this->initialisationFromShop($deliveryNote->shop, []);
 
         return $this->handle($deliveryNote);
+    }
+
+    public string $commandSignature = 'delivery-note:unpack {deliveryNote}';
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    public function asCommand(Command $command): void
+    {
+        $deliveryNote = DeliveryNote::where('slug', $command->argument('deliveryNote'))->first();
+
+        $this->handle($deliveryNote);
     }
 }
