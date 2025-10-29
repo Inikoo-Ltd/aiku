@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from 'vue'
+import { inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -14,7 +14,7 @@ import { Image as ImageTS } from '@/types/Image'
 import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
 import { getStyles } from "@/Composables/styles";
 import { faEnvelope } from '@fal'
-import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
+import { faArrowTrendDown, faArrowTrendUp, faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -198,6 +198,13 @@ const onUnselectBackInStock = (product: ProductResource) => {
     )
 }
 
+const profitMargin = computed(() => {
+  const price = props.product?.price
+  const rrp = props.product?.rrp
+  if (!price || !rrp) return 0
+  return Math.floor(((rrp - price) / rrp) * 100)
+})
+
 
 
 </script>
@@ -295,7 +302,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                     <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
                         product.price || 0) }}</span></div>
                     <div>
-                        <span class="text-sm text-gray-400 xtext-base font-normal">
+                        <span class="text-sm text-gray-400  font-normal">
                             ({{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
                             }}/{{
                                 product.unit }})
@@ -303,14 +310,15 @@ const onUnselectBackInStock = (product: ProductResource) => {
                     </div>
                 </div>
 
-                <div v-if="product.rrp_per_unit" class="text-xs xmt-1 text-right">
-                    <div>RRP: {{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}</div>
-                    <div class="text-gray-400 xtext-base font-normal">
-                        ({{ locale.currencyFormat(currency?.code, (product.rrp_per_unit / product.units).toFixed(2))
-                        }}/{{
+                <div v-if="product?.rrp" class="text-xs mt-1 text-right">
+                        <div>
+                            RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} <span v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ profitMargin > 0 ? '+' + profitMargin : profitMargin }}% )</span>
+                            <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
+                            ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} / {{
                             product.unit }})
+                        </div>
+                        </div>
                     </div>
-                </div>
             </div>
         </div>
 

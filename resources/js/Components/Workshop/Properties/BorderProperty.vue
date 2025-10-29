@@ -114,7 +114,7 @@ const iconRoundedCorner = `<svg xmlns="http://www.w3.org/2000/svg" width="100%" 
                 <div class="text-xs">{{ trans('Color') }}</div>
                 <ColorPicker
                     :color="get(model, 'color', 'rgba(0, 0, 0, 1)')"
-                    @changeColor="(newColor)=> (set(model, 'color', `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a}`), emits('update:modelValue', model))"
+                    @changeColor="(newColor)=> (set(model, 'color', `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})`), emits('update:modelValue',model))"
                     closeButton
                 >
                     <template #button>

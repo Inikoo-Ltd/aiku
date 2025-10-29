@@ -6,11 +6,14 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faBars, faChevronCircleDown } from '@fal';
 import { getStyles } from "@/Composables/styles";
 import { isNull } from 'lodash-es';
-import SidebarDesktop from './Iris/Layout/SidebarDesktop.vue'
+import IrisSidebarDesktop from './Iris/Layout/IrisSidebarDesktop.vue'
 import IrisSidebarMobile from './Iris/Layout/IrisSidebarMobile.vue'
 import { Image as ImageTS } from '@/types/Image'
 import Image from './Image.vue'
 import { trans } from 'laravel-vue-i18n'
+import { faSearch, faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faSearch, faTimes)
 
 const props = defineProps<{
     header: { logo?: { image: { source: string } } },
@@ -196,6 +199,12 @@ const internalHref = (item) => {
     
     return path
 }
+
+
+const onClickLuigi = () => {
+    const input = document.getElementById('luigi_mobile') as HTMLInputElement | null;
+    if (input) input.focus();
+}
 </script>
 
 <template>
@@ -222,34 +231,50 @@ const internalHref = (item) => {
                 width: isMobile ? null : !isNull(activeIndex) || !isNull(activeCustomIndex) || !isNull(activeCustomTopIndex) ?
                     (!isNull(activeSubIndex) || !isNull(activeCustomSubIndex) || !isNull(activeCustomTopSubIndex)) ? '798px' : '545px' : '290px'
             }"
+            class="h-screen"
         >
             <template #header>
-                <div class="md:max-w-[270px] overflow-hidden">
-                    <!-- <Image
-                        v-if="sidebarLogo"
-                        :src="sidebarLogo"
-                        class="h-fit w-full object-contain aspect-auto"
-                        :alt="trans('Sidebar logo')"
-                    /> -->
-                    <img
-                        xv-else :src="sidebarLogo?.original || header?.logo?.image?.source?.original"
-                        :alt="header?.logo?.alt"
-                        zclass="w-full h-auto max-h-20 object-contain"
-                        :style="getStyles(props.sidebar?.data?.fieldValue?.logo_dimension)"
-                    />
+                <div>
+                    <div class="md:max-w-[270px] overflow-hidden">
+                        <!-- <Image
+                            v-if="sidebarLogo"
+                            :src="sidebarLogo"
+                            class="h-fit w-full object-contain aspect-auto"
+                            :alt="trans('Sidebar logo')"
+                        /> -->
+                        <img
+                            xv-else :src="sidebarLogo?.original || header?.logo?.image?.source?.original"
+                            :alt="header?.logo?.alt"
+                            zclass="w-full h-auto max-h-20 object-contain"
+                            :style="getStyles(props.sidebar?.data?.fieldValue?.logo_dimension)"
+                        />
+                    </div>
+                    
+                    <!-- Section: input search -->
+                    <div class="md:hidden mt-6 flex gap-x-4 items-center">
+                        <div @click="() => onClickLuigi()" class="flex-grow border border-gray-300/40 rounded-md px-2 py-1">
+                            <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
+                            <span v-if="layout?.currentQuery?.q" class="ml-2 text-sm">{{layout?.currentQuery?.q}}</span>
+                            <span v-else class="ml-2 text-sm italic opacity-60">{{ trans("I am looking for..") }}</span>
+                        </div>
+
+                        <FontAwesomeIcon icon="fal fa-times" class="opacity-50 text-xl" fixed-width aria-hidden="true" />
+                    </div>
                 </div>
             </template>
 
             <!-- Sidebar Menu: Mobile -->
             <IrisSidebarMobile
                 v-if="isMobile"
+                :containerStyle="props.sidebar?.data?.fieldValue?.container?.properties || props.menu?.container?.properties"
                 :productCategories
                 :customMenusTop
+                :customTopSubDepartments
                 :customMenusBottom
+                :customSubDepartments
                 :activeIndex
                 :activeCustomIndex
                 :activeCustomTopIndex
-                :getHref
                 :internalHref
                 :getTarget
                 :setActiveCategory
@@ -266,12 +291,12 @@ const internalHref = (item) => {
                 :changeActiveSubIndex="(index) => activeSubIndex = index"
                 :changeActiveCustomSubIndex="(index) => activeCustomSubIndex = index"
                 :changeActiveCustomTopSubIndex="(index) => activeCustomTopSubIndex = index"
-                :containerStyle="props.sidebar?.data?.fieldValue?.container?.properties || props.menu?.container?.properties"
+                @closeMobileMenu="isOpenMenuMobile = false"
                 :fieldValue="props.sidebar?.data?.fieldValue"
             />
 
             <!-- Sidebar Menu: Desktop -->
-            <SidebarDesktop
+            <IrisSidebarDesktop
                 v-else
                 :containerStyle="props.sidebar?.data?.fieldValue?.container?.properties || props.menu?.container?.properties"
                 :productCategories

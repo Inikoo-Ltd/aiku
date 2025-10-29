@@ -15,40 +15,74 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import SwitchLanguage from "../SwitchLanguage.vue"
 import LinkIris from "../LinkIris.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
+import { router } from '@inertiajs/vue3'
+import { ProductCategoryMenu } from "@/Composables/Iris/useMenu"
+import SidebarDesktopNavigation from "./SidebarDesktopNavigation.vue"
 
 library.add(faChevronRight, faExternalLink, faSearch, faTimes, faMapMarkerAlt)
 
 const props = defineProps<{
+    containerStyle: {
+        
+    }
     productCategories: {}
-    customMenusTop: {}[]
-    customMenusBottom: {}
+    customMenusTop: {
+        name: string
+        url: string
+        type: string
+        target: string
+        sub_departments: {
+            name: string
+            url: string
+            type: string
+            target: string
+            families: {
+                name: string
+                url: string
+                type: string
+                target: string
+            }[]
+        }[]
+    }[]
+    customTopSubDepartments: []
+    customMenusBottom: {}[]
+    customSubDepartments: []
     activeIndex: {}
     activeCustomIndex: {}
     activeCustomTopIndex: {}
-    internalHref: Function
-    getHref: Function
     getTarget: Function
     setActiveCategory: Function
     setActiveCustomCategory: Function
     setActiveCustomTopCategory: Function
-    sortedFamilies: {}
-    customFamilies: {}
-    customTopFamilies: {}
-    sortedProductCategories: {}[]
+    sortedFamilies: {}[]
+    customFamilies: {}[]
+    customTopFamilies: {}[]
+    sortedProductCategories: ProductCategoryMenu[]
     sortedSubDepartments: {}[]
-    activeSubIndex: {}
+    activeSubIndex: number
     activeCustomSubIndex: {}
     activeCustomTopSubIndex: {}
     changeActiveSubIndex: Function
-    containerStyle: {}
+    changeActiveCustomSubIndex: Function
+    changeActiveCustomTopSubIndex: Function
+    internalHref: Function
     fieldValue: {
         additional_items: {
             items_list: {
-                icon: string[]  // ["fas", "galaxy"]
-                text: string  // "<p>Hello world</p>"
-            }
+                icon: any
+                text: string
+                url: {
+                    href: string
+                    type: string
+                    target: string
+                }
+            }[]
         }
     }
+}>()
+
+const emit = defineEmits<{
+    closeMobileMenu: []
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -65,317 +99,391 @@ const borderWidth = computed(() => {
     return props.containerStyle?.border?.width ? `${props.containerStyle?.border?.width.value}${props.containerStyle?.border?.width.unit}` : '1px';
 })
 
-const onClickLuigi = () => {
-    const input = document.getElementById('luigi_mobile') as HTMLInputElement | null;
-    if (input) input.focus();
+
+// Loading states for View all buttons
+const isLoadingProductCategory = ref(false)
+const isLoadingSubDepartment = ref(false)
+
+// Handle navigation with loading state
+const handleViewAllProductCategory = (url: string) => {
+    isLoadingProductCategory.value = true
+    router.visit('/' + url, {
+        onFinish: () => {
+            isLoadingProductCategory.value = false
+            // Emit event to close mobile drawer
+            emit('closeMobileMenu')
+        },
+        onError: () => {
+            isLoadingProductCategory.value = false
+            // Emit event to close mobile drawer
+            emit('closeMobileMenu')
+        }
+    })
+}
+
+const handleViewAllSubDepartment = (url: string) => {
+    isLoadingSubDepartment.value = true
+    router.visit('/' + url, {
+        onFinish: () => {
+            isLoadingSubDepartment.value = false
+            // Emit event to close mobile drawer
+            emit('closeMobileMenu')
+        },
+        onError: () => {
+            isLoadingSubDepartment.value = false
+            // Emit event to close mobile drawer
+            emit('closeMobileMenu')
+        }
+    })
 }
 </script>
 
 <template>
-    <div class="menu-container-mobile">
-        <!-- Section: input search -->
-        <div class="flex gap-x-4 items-center mb-4">
-            <div @click="() => onClickLuigi()" class="flex-grow border border-gray-300/40 rounded-md px-2 py-1">
-                <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
-                <span v-if="layout?.currentQuery?.q" class="ml-2 text-sm">{{layout?.currentQuery?.q}}</span>
-                <span v-else class="ml-2 text-sm italic opacity-60">{{ trans("I am looking for..") }}</span>
-            </div>
-
-            <FontAwesomeIcon icon="fal fa-times" class="opacity-50 text-xl" fixed-width aria-hidden="true" />
-        </div>
-
-        <div class="menu-content mb-4">
-            <!-- Section: Custom Top -->
-            <div v-if="customMenusTop && customMenusTop.length > 0">
-                <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex">
-                    <!-- Section: Custom Top (have Sub-departments) -->
-                    <Disclosure v-if="customTopItem.sub_departments && customTopItem.sub_departments.length > 0"
-                        v-slot="{ open }">
-                        <DisclosureButton class="w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
-                            <div class="flex justify-between items-center xtext-lg"
-                                xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
-                                <span>{{ customTopItem.name }}</span>
-                                <FontAwesomeIcon :icon="faChevronCircleDown"
-                                    :class="{ 'rotate-180': open, 'transition-transform duration-300': true }" />
-                            </div>
-                        </DisclosureButton>
-
-                        <DisclosurePanel class="disclosure-panel">
-                            <div v-for="(subDept, subDeptIndex) in customTopItem.sub_departments"
-                                :key="subDeptIndex" class="mb-6">
-                                <LinkIris v-if="subDept?.url !== null" :href="internalHref(subDept)"
-                                    :target="getTarget(subDept)"
-                                    @success="() => closeSidebar()"
-                                    class="block text-base font-bold mb-2"
-                                    xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
-                                    {{ subDept.name }}
-                                </LinkIris>
-                                <span v-else class="block text-base font-bold mb-2"
-                                    xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
-                                    {{ subDept.name }}
-                                </span>
-                                <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
-                                    <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
-                                        <LinkIris 
-                                            v-if="family?.url !== null" :href="internalHref(family)" :target="getTarget(family)"
-                                            @success="() => closeSidebar()"
-                                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                            class="block text-sm relative hover:text-primary transition-all">
-                                            <span class="absolute left-0 -ml-4">–</span>
-                                            {{ family.name }}
-                                        </LinkIris>
-                                        <span v-else
-                                            :key="'span-' + familyIndex" v-if="family?.url === null"
-                                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                            class="block text-sm relative">
-                                            <span class="absolute left-0 -ml-4">–</span>
-                                            {{ family.name }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </DisclosurePanel>
-                    </Disclosure>
-
-                    <!-- Section: Custom Top (Single link) -->
-                    <div v-else class="px-2 py-2 borderBottomColorSameAsText">
-                        <LinkIris v-if="customTopItem?.url !== null" :href="internalHref(customTopItem)"
-                            :target="getTarget(customTopItem)"
-                            @success="() => closeSidebar()"
-                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                            class="font-bold">
-                            {{ customTopItem.name }}
-                        </LinkIris>
-
-                        <span v-else
-                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                            class="font-bold">
-                            {{ customTopItem.name }}
-                        </span>
-                    </div>
+    <div class="flex flex-col h-full">
+        <Transition name="slide-absolute-to-right">
+            <!-- 3: Families -->
+            <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null">
+                <div @click="changeActiveSubIndex(null), changeActiveCustomTopSubIndex(null), changeActiveCustomSubIndex(null)" class="">
+                    <FontAwesomeIcon icon="fal fa-chevron-left" class="text-xs" fixed-width aria-hidden="true" />
+                    {{ sortedSubDepartments?.[activeSubIndex]?.name }}
+                    {{ customTopSubDepartments?.[activeCustomTopSubIndex]?.name }}
+                    {{ customSubDepartments?.[activeCustomSubIndex]?.name }}
                 </div>
-            </div>
 
-            <!-- Middle: Product Categories (auto) -->
-            <div v-for="(category, index) in sortedProductCategories" :key="index">
-                <!-- Product Category WITH Sub-departments -->
-                <Disclosure v-if="category.sub_departments && category.sub_departments.length > 0" as="div" class=""
-                    v-slot="{ open }">
-                    <DisclosureButton class="w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
-                        <div class="flex justify-between items-center xtext-lg"
-                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
-                            <!-- <span>{{ category.name }}</span> -->
-                            <LinkIris 
-                                v-if="category?.url !== null" :href="internalHref(category)" :target="getTarget(category)"
-                                @success="() => closeSidebar()"
-                                xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                class="block relative hover:text-primary transition-all">
-                                {{ category.name }}
-                            </LinkIris>
-                            <span v-else
-                                xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                class="block relative">
-                                {{ category.name }}
-                            </span>
-                            <FontAwesomeIcon :icon="faChevronCircleDown" fixed-width
-                                :class="{ 'rotate-180': open, 'transition-transform duration-300': true }" />
-                        </div>
-                    </DisclosureButton>
+                <!-- Header -->
+                <div  v-if="activeSubIndex !== null" class="flex items-center justify-between pt-4 pb-2 px-4">
+                    <h3 class="font-semibold">{{ trans("Families") }}</h3>
+                </div>
 
-                    <DisclosurePanel class="disclosure-panel">
-                        <div v-for="(subDept, subDeptIndex) in category.sub_departments"
-                            :key="subDeptIndex" class="mb-6">
+                <div class="overflow-y-auto">
+                    <!-- 3: Families: Top -->
+                    <div v-if="activeCustomTopSubIndex !== null && customTopFamilies?.length">
+                        <div v-for="(child, cIndex) in customTopFamilies" :key="cIndex"
+                            class="p-2 px-4">
                             <LinkIris
-                                v-if="subDept?.url !== null"
+                                v-if="child.url !== null"
+                                :href="internalHref(child)"
+                                class="hover:underline"
                                 @success="() => closeSidebar()"
-                                :href="internalHref(subDept)"
+                                :target="getTarget(child)"
+                                :type="child.type"
                             >
-                                <div xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }"
-                                    class="block text-base font-bold mb-2">
-                                    <span class="absolute left-0 -ml-4">–</span>
-                                    {{ subDept.name }}
-                                </div>
+                                {{ child.name }}
                             </LinkIris>
-                            <span v-else class="block text-base font-bold mb-2"
-                                xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
-                                {{ subDept.name }}
-                            </span>
+                            <span v-else>{{ child.name }}</span>
+                        </div>
+                    </div>
 
-                            <div v-if="subDept.families" class="space-y-2 mt-2 pl-4 border-gray-200">
-                                <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
-                                    <LinkIris
-                                        v-if="family?.url !== null" 
-                                        @success="() => closeSidebar()"
-                                        :href="internalHref(family)"
-                                    >
-                                        <div xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                            class="block text-sm relative hover:text-primary transition-all">
-                                            <span class="absolute left-0 -ml-4">–</span>
-                                            {{ family.name }}
-                                        </div>
-                                    </LinkIris>
-                                    <span v-else
-                                        :key="'span-' + familyIndex" v-if="family?.url === null"
-                                        xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                        class="block text-sm relative">
-                                        <span class="absolute left-0 -ml-4">–</span>
-                                        {{ family.name }}
-                                    </span>
-                                </div>
+                    <!-- 3: Families: Product Categories -->
+                    <Transition name="slide-to-right">
+                        <div v-if="activeSubIndex !== null && sortedFamilies.length">
+                            <SidebarDesktopNavigation
+                                v-for="(sub, sIndex) in sortedFamilies" :key="sIndex"
+                                :nav="sub"
+                                :class="[
+                                    activeCustomTopSubIndex === sIndex
+                                        ? `navActive`
+                                        : 'navInactive'
+                                ]"
+                                aclick="changeActiveCustomTopSubIndex(sIndex)"
+                                :internalHref
+                                :activeSubIndex
+                                :closeSidebar
+                            />
+                            <div class="p-2 px-4">
+                                <Button
+                                    :label="trans('View all')"
+                                    :icon="faExternalLink"
+                                    size="xs"
+                                    :loading="isLoadingSubDepartment"
+                                    @click="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
+                                    class="cursor-pointer"
+                                />
                             </div>
                         </div>
-                    </DisclosurePanel>
-                </Disclosure>
+                    </Transition>
 
-                <!-- Product Category SINGLE LINK -->
-                <div v-else class="px-2 py-2 borderBottomColorSameAsText">
-                    <LinkIris
-                        v-if="category?.url !== null"
-                        @success="() => closeSidebar()"
-                        :href="internalHref(category)"
-                        xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                        class="font-bold">
-                        {{ category.name }}
-                    </LinkIris>
+                    <!-- 3: Families: Bottom -->
+                    <div v-if="activeCustomSubIndex !== null && customFamilies?.length">
+                        <div v-for="(child, cIndex) in customFamilies" :key="cIndex" class="p-2 px-4">
+                            <LinkIris
+                                v-if="child.url !== null"
+                                :href="child.type === 'internal' ? internalHref(child) : child.url"
+                                class="hover:underline"
+                                @success="() => closeSidebar()"
+                                :target="getTarget(child)"
+                                :type="child.type"
+                            >
+                                {{ child.name }}
+                            </LinkIris>
+                            <span v-else>{{ child.name }}</span>
+                        </div>
+                    </div>
 
-                    <span v-else
-                        xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                        class="font-bold">{{ category.name }}</span>
+
+                    <!-- Collections: from Sub Department -->
+                    <template v-if="sortedSubDepartments?.[activeSubIndex]?.collections?.length">
+                        <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
+                            <h3 class="font-semibold">{{ trans("Collections") }}</h3>
+                        </div>
+                        <div class="">
+                            <div>
+                                <template v-for="(sub, sIndex) in sortedSubDepartments?.[activeSubIndex]?.collections" :key="sIndex">
+                                    <SidebarDesktopNavigation
+                                        :nav="sub"
+                                        :activeSubIndex
+                                        :closeSidebar
+                                        :internalHref
+                                    />
+                                </template>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </div>
 
-            <!-- Section: bottom menu -->
-            <div v-if="customMenusBottom && customMenusBottom.length > 0">
-                <!-- <hr class="my-4 border-gray-300"> -->
-                <div v-for="(customItem, customIndex) in customMenusBottom" :key="'custom-' + customIndex">
-                    <!-- Custom Menu WITH Sub-departments -->
-                    <Disclosure v-if="customItem.sub_departments && customItem.sub_departments.length > 0"
-                        v-slot="{ open }">
-                        <DisclosureButton class="w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
-                            <div class="flex justify-between items-center xtext-lg"
-                                xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }">
-                                <span>{{ customItem.name }}</span>
-                                <FontAwesomeIcon :icon="faChevronCircleDown" fixed-width
-                                    :class="{ 'rotate-180': open, 'transition-transform duration-300': true }" />
-                            </div>
-                        </DisclosureButton>
+            <!-- Column 2: Subdepartments -->
+            <div v-else-if="activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null"
+                :class="[(activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'border-r']">
+                <div @click="setActiveCategory(null), setActiveCustomCategory(null), setActiveCustomTopCategory(null)" class="">
+                    <FontAwesomeIcon icon="fal fa-chevron-left" class="text-xs" fixed-width aria-hidden="true" />
+                    <!-- Back to menu list -->
+                    {{ sortedProductCategories?.[activeIndex]?.name }}
+                    {{ customMenusTop?.[activeCustomTopIndex]?.name }}
+                    {{ customMenusBottom?.[activeCustomIndex]?.name }}
+                </div>
 
-                        <DisclosurePanel class="disclosure-panel">
-                            <div v-for="(subDept, subDeptIndex) in customItem.sub_departments"
-                                :key="subDeptIndex" class="mb-6">
-                                <LinkIris v-if="subDept?.url !== null" :href="internalHref(subDept)"
-                                    class="block text-base font-bold mb-2"
-                                    @success="() => closeSidebar()"
-                                    xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
-                                    {{ subDept.name }}
-                                </LinkIris>
+                <!-- Header -->
+                <div v-if="activeIndex !== null" class="flex items-center justify-between pt-4 pb-2 px-4">
+                    <h3 class="font-semibold">{{ trans("Sub-Departments") }}</h3>
+                </div>
+                <div class="overflow-y-auto">
+                    <!-- Section: Subdepartments (Top) -->
+                    <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
+                        <SidebarDesktopNavigation
+                            v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex"
+                            :nav="sub"
+                            :class="[
+                                activeCustomTopSubIndex === sIndex
+                                    ? `navActive`
+                                    : 'navInactive'
+                            ]"
+                            @click="changeActiveCustomTopSubIndex(sIndex)"
+                            :internalHref
+                            :activeSubIndex
+                            :closeSidebar
+                            isWithArrowRight
+                        />
+                    </div>
 
-                                <span v-else class="block text-base font-bold mb-2"
-                                    :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation?.properties) }">
-                                    {{ subDept.name }}
-                                </span>
-                                <div v-if="subDept.families" class="space-y-2 mt-2 ml-4 pl-4 border-gray-200">
-                                    <div v-for="(family, familyIndex) in subDept.families" :key="familyIndex">
-                                        <LinkIris 
-                                            v-if="family?.url !== null" :href="internalHref(family)" :target="getTarget(family)"
-                                            @success="() => closeSidebar()"
-                                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                            class="block text-sm relative hover:text-primary transition-all">
-                                            <span class="absolute left-0 -ml-4">–</span>
-                                            {{ family.name }}
-                                        </LinkIris>
-                                        <span v-else
-                                            :key="'span-' + familyIndex" v-if="family?.url === null"
-                                            :style="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.sub_navigation_link?.properties) }"
-                                            class="block text-sm relative">
-                                            <span class="absolute left-0 -ml-4">–</span>
-                                            {{ family.name }}
-                                        </span>
-                                    </div>
+                    <!-- Section: SubDepartments (Auto Product Categories) -->
+                    <div v-if="activeIndex !== null && sortedSubDepartments?.length">
+                        <template
+                            v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex">
+                            <SidebarDesktopNavigation
+                                :nav="sub"
+                                :class="[
+                                    activeSubIndex === sIndex
+                                        ? `navActive`
+                                        : sub?.families?.length
+                                            ? 'navInactive'
+                                            : ''
+                                ]"
+                                @click="sub?.families?.length ? changeActiveSubIndex(sIndex) : false"
+                                :internalHref
+                                :activeSubIndex
+                                :closeSidebar
+                                :isWithArrowRight="!!sub?.families?.length"
+                            />
+                        </template>
+                        <div class="p-2 px-4">
+                            <Button
+                                :label="trans('View all')"
+                                :icon="faExternalLink"
+                                size="xs"
+                                :loading="isLoadingProductCategory"
+                                @click="handleViewAllProductCategory(sortedProductCategories[activeIndex].url)"
+                            />
+                        </div>
+                    </div>
 
-                                </div>
-                            </div>
-                        </DisclosurePanel>
-                    </Disclosure>
-
-                    <!-- Custom Menu SINGLE LINK -->
-                    <div v-else class="px-2 py-2 borderBottomColorSameAsText">
-                        <LinkIris v-if="customItem?.url !== null" :href="internalHref(customItem)"
-                            :target="getTarget(customItem)"
-                            @success="() => closeSidebar()"
-                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                            class="font-bold">
-                            {{ customItem.name }}
-                        </LinkIris>
-
-                        <span v-else
-                            xstyle="{ ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType), margin: 0, padding: 0, ...getStyles(props.menu?.navigation_container?.properties) }"
-                            class="font-bold">{{ customItem.name }}</span>
+                    <!-- Section: Subdepartments (Bottom) -->
+                    <div v-if="activeCustomIndex !== null && customSubDepartments?.length">
+                        <SidebarDesktopNavigation
+                            v-for="(sub, sIndex) in customSubDepartments" :key="sIndex"
+                            :nav="sub"
+                            :class="[
+                                activeCustomSubIndex === sIndex
+                                    ? `navActive`
+                                    : 'navInactive'
+                            ]"
+                            @click="changeActiveCustomSubIndex(sIndex)"
+                            :internalHref
+                            :activeSubIndex
+                            :closeSidebar
+                            isWithArrowRight
+                        />
+                    </div>
+                    
+                    <!-- No subdepartments message -->
+                    <div v-if="(activeIndex !== null && !sortedSubDepartments?.length) || (activeCustomIndex !== null && !customSubDepartments?.length) || (activeCustomTopIndex !== null && !customTopSubDepartments?.length)"
+                        class="px-4 text-gray-400 italic">
+                        {{ trans("No subdepartments available") }}
                     </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- Section: List additional links -->
-        <div v-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 mb-8">
-            <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
-                :href="item?.url?.href ?? ''"
-                class="flex gap-x-2 items-center py-1"
-                :type="item.url?.type"
-                :target="item.url?.target"
-            >
-                <FontAwesomeIcon :icon="item.icon" class="text-xl" fixed-width aria-hidden="true" />
-                <div class="text-sm" v-html="item.text">
-                </div>
-            </LinkIris>
-        </div>
-
-        <!-- Switch Language -->
-        <div v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="borderTopColorSameAsText px-1 mb-1 flex justify-between items-center text-xs">
-            <div>{{ trans("Language") }}:</div>
-            <SwitchLanguage>
-                <template #default="{ isLoadingChangeLanguage }">
-                    <div class="underline text-xs py-2">
-                        {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.website_i18n.current_language?.code)?.name }}
-                        <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" :alt="layout.iris.website_i18n.current_language?.code" title='capitalize(countryName)'  />
+                <!-- Collections: from Department -->
+                <template v-if="sortedProductCategories?.[activeIndex]?.collections.length">
+                    <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
+                        <h3 class="font-semibold">{{ trans("Collections") }}</h3>
+                    </div>
+                    <div class="">
+                        <div>
+                            <template v-for="(sub, sIndex) in sortedProductCategories[activeIndex]?.collections" :key="sIndex">
+                                <SidebarDesktopNavigation
+                                    :nav="sub"
+                                    xclass="[
+                                        activeCustomSubIndex === sIndex
+                                            ? `navActive`
+                                            : 'navInactive'
+                                    ]"
+                                    :internalHref
+                                    :activeSubIndex
+                                    :closeSidebar
+                                />
+                            </template>
+                        </div>
                     </div>
                 </template>
-            </SwitchLanguage>
-        </div>
-
-        <div class="login-section pl-3 pr-5 py-4 borderTopColorSameAsText flex items-center">
-            <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="w-full" type="internal">
-                <Button
-                    :label="trans('Login')"
-                    full
-                    :icon="faSignIn"
-                />
-            </LinkIris>
-            <div v-else @click="onLogout()" class="w-full">
-                <Button
-                    type="negative"
-                    :label="trans('Logout')"
-                    full
-                    :icon="faSignOut"
-                />
             </div>
-        </div>
+
+            <!-- Section: Navigation links (Departments) -->
+            <div v-else class="flex flex-col h-full">
+                <div class="flex-1 overflow-y-auto pb-4 mb-4">
+                    <!-- Section: Custom Top -->
+                    <div v-if="customMenusTop?.length > 0">
+                        <div v-for="(customTopItem, customTopIndex) in customMenusTop" :key="'custom-top-' + customTopIndex" class="flex justify-between items-center w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
+                            <LinkIris v-if="customTopItem?.url !== null"
+                                :href="customTopItem.type === 'internal' ? internalHref(customTopItem) : customTopItem.url"
+                                :target="getTarget(customTopItem)"
+                                @success="() => closeSidebar()"
+                                class="font-bold">
+                                {{ customTopItem.name }}
+                            </LinkIris>
+                            <span v-else
+                                class="font-bold">
+                                {{ customTopItem.name }}
+                            </span>
+
+                            <div v-if="!!customTopItem.sub_departments?.length" @click="setActiveCustomTopCategory(customTopIndex)" class="text-sm">
+                                <FontAwesomeIcon :icon="faChevronRight" fixed-width  />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Section: Product Categories (auto) -->
+                    <div v-for="(category, index) in sortedProductCategories" :key="'product_categories' + index" class="flex justify-between items-center w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
+                        <LinkIris v-if="category?.url !== null"
+                            :href="internalHref(category)"
+                            :target="getTarget(category)"
+                            @success="() => closeSidebar()"
+                            class="font-bold">
+                            {{ category.name }}
+                        </LinkIris>
+                        <span v-else
+                            class="font-bold">
+                            {{ category.name }}
+                        </span>
+
+                        <div v-if="!!category.sub_departments?.length" @click="setActiveCategory(index)" class="text-sm">
+                            <FontAwesomeIcon :icon="faChevronRight" fixed-width  />
+                        </div>
+                    </div>
+
+                    
+                    <!-- Section: Custom Bottom -->
+                    <div v-for="(customBot, customIdxBot) in customMenusBottom" :key="'custom-bot' + customIdxBot" class="flex justify-between items-center w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
+                        <LinkIris v-if="customBot?.url !== null"
+                            :href="customBot.type === 'internal' ? internalHref(customBot) : customBot.url"
+                            :target="getTarget(customBot)"
+                            @success="() => closeSidebar()"
+                            class="font-bold">
+                            {{ customBot.name }}
+                        </LinkIris>
+                        <span v-else
+                            class="font-bold">
+                            {{ customBot.name }}
+                        </span>
+
+                        <div v-if="!!customBot.sub_departments?.length" @click="setActiveCustomCategory(customIdxBot)" class="text-sm">
+                            <FontAwesomeIcon :icon="faChevronRight" fixed-width  />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: List additional links -->
+                <div v-if="props?.fieldValue?.additional_items?.items_list?.length" class="flex flex-col gap-y-3 mb-8">
+                    <LinkIris v-for="item in props?.fieldValue?.additional_items?.items_list"
+                        :href="item?.url?.href ?? ''"
+                        class="flex gap-x-2 items-center py-1"
+                        :type="item.url?.type"
+                        :target="item.url?.target"
+                    >
+                        <FontAwesomeIcon :icon="item.icon" class="text-xl" fixed-width aria-hidden="true" />
+                        <div class="text-sm" v-html="item.text">
+                        </div>
+                    </LinkIris>
+                </div>
+
+                <!-- Switch Language -->
+                <div v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" class="borderTopColorSameAsText px-1 mb-1 flex justify-between items-center text-xs">
+                    <div>{{ trans("Language") }}:</div>
+                    <SwitchLanguage>
+                        <template #default="{ isLoadingChangeLanguage }">
+                            <div class="underline text-xs py-2">
+                                {{ Object.values(layout.iris.website_i18n?.language_options || {})?.find(language => language.code === layout.iris.website_i18n.current_language?.code)?.name }}
+                                <img class="inline pr-1 pl-1 h-[1em]" :src="`/flags/${layout.iris.website_i18n.current_language?.flag}`" :alt="layout.iris.website_i18n.current_language?.code" title='capitalize(countryName)'  />
+                            </div>
+                        </template>
+                    </SwitchLanguage>
+                </div>
+                
+                <!-- Login / Logout -->
+                <div class="login-section pl-3 pr-5 py-4 borderTopColorSameAsText flex items-center">
+                    <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="w-full" type="internal">
+                        <Button
+                            :label="trans('Login')"
+                            full
+                            :icon="faSignIn"
+                        />
+                    </LinkIris>
+                    <div v-else @click="onLogout()" class="w-full">
+                        <Button
+                            type="negative"
+                            :label="trans('Logout')"
+                            full
+                            :icon="faSignOut"
+                        />
+                    </div>
+                </div>
+            </div>
+        </Transition>
     </div>
 </template>
 
 <style scoped lang="scss">
-.menu-container-mobile {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    // background: #fff;
-}
+// .menu-container-mobile {
+//     display: flex;
+//     flex-direction: column;
+//     height: 100%;
+//     // background: #fff;
+// }
 
-.menu-content {
-    flex: 1;
-    overflow-y: auto;
-    padding-bottom: 1rem;
-}
+// .menu-content {
+//     flex: 1;
+//     overflow-y: auto;
+//     padding-bottom: 1rem;
+// }
 
 .login-section {
     // flex-shrink: 0;

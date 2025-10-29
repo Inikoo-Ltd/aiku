@@ -84,6 +84,13 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
 
         $oldLuigiIdentity = $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->website_id . ':' . $this->webpage_id;
 
+        $rrpPerUnit = '';
+        if ($this->rrp > 0) {
+            $margin = percentage(round((($this->rrp - $this->price) / $this->rrp) * 100, 1), 100);
+
+            $rrpPerUnit = round($this->rrp / $this->units, 2);
+        }
+
         return [
             'id'                   => $this->id,
             'image_id'             => $this->image_id,
@@ -94,6 +101,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'stock'                => $this->available_quantity,
             'price'                => $this->price,
             'rrp'                  => $this->rrp,
+            'rrp_per_unit'         => $rrpPerUnit,
             'state'                => $this->state,
             'status'               => $this->status,
             'created_at'           => $this->created_at,

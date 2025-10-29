@@ -478,18 +478,17 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                                     :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
                             </div>
                         </template>
-                        <div class="search-input w-full">
+                        <div class="w-full">
                             <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
                                 placeholder="Search products..." :clear="true" :isLoading="loadingInitial"
-                                :prefix="{ icon: faSearch, label: '' }">
+                                :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
                                 <template #prefix>
                                     <div class="pl-3 whitespace-nowrap text-gray-400">
-                                        <FontAwesomeIcon :icon='faSearch' class='search-input' fixed-width
+                                        <FontAwesomeIcon :icon='faSearch' class="icon-search" fixed-width
                                             aria-hidden='true' />
                                     </div>
                                 </template>
                             </PureInput>
-
                         </div>
 
                     </div>
@@ -597,27 +596,49 @@ aside {
 
 
 
-.sort-button {
-    color: v-bind('search_sort_class?.color || null') !important;
-    font-family: v-bind('search_sort_class?.fontFamily || null') !important;
-    font-size: v-bind('search_sort_class?.fontSize || null') !important;
+.sort-button{
+   color: v-bind('search_sort_class?.color || null') !important;
+   font-family: v-bind('search_sort_class?.fontFamily || null') !important;
+   font-size: v-bind('search_sort_class?.fontSize || null') !important;
+   font-style: v-bind('search_sort_class?.fontStyle || null') !important;
+}
+
+.icon-search{
+     color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
 }
 
 .search-input {
     color: v-bind('search_class?.color || null') !important;
     font-family: v-bind('search_class?.fontFamily || null') !important;
     font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
 
-    :deep(input) {
-        color: v-bind('search_class?.color || null') !important;
-        font-family: v-bind('search_class?.fontFamily || null') !important;
-        font-size: v-bind('search_class?.fontSize || null') !important;
-    }
+    border-top: v-bind('search_class?.borderTop || null') !important;
+    border-bottom: v-bind('search_class?.borderBottom || null') !important;
+    border-left: v-bind('search_class?.borderLeft || null') !important;
+    border-right: v-bind('search_class?.borderRight || null') !important;
 
-    :deep(input::placeholder) {
-        color: v-bind('placeholder_class?.color || null') !important;
-        font-family: v-bind('placeholder_class?.fontFamily || null') !important;
-        font-size: v-bind('placeholder_class?.fontSize || null') !important;
-    }
+    border-top-left-radius: v-bind('search_class?.borderTopLeftRadius || null') !important;
+    border-top-right-radius: v-bind('search_class?.borderTopRightRadius || null') !important;
+    border-bottom-left-radius: v-bind('search_class?.borderBottomLeftRadius || null') !important;
+    border-bottom-right-radius: v-bind('search_class?.borderBottomRightRadius || null') !important;
+
+  :deep(input) {
+    color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
+  }
+
+  :deep(input::placeholder) {
+    color: v-bind('placeholder_class?.color || "#999"') !important;
+    font-family: v-bind('placeholder_class?.fontFamily || "inherit"') !important;
+    font-size: v-bind('placeholder_class?.fontSize || null') !important;
+    font-style: v-bind('placeholder_class?.fontStyle || null') !important;
+  }
 }
+
 </style>

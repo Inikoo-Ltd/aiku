@@ -135,6 +135,7 @@ const emits = defineEmits<{
 }>()
 
 
+const screenType = inject("screenType", "desktop")
 
 </script>
 

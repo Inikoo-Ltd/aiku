@@ -87,7 +87,7 @@ onMounted(async () => {
 
 const shareUrl = encodeURIComponent(window.location.href)
 
-console.log(props.fieldValue)
+const screenType = inject("screenType", "desktop")
 </script>
 
 <template>

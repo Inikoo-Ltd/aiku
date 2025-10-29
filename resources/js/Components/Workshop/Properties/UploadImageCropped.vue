@@ -230,7 +230,7 @@ const formatRatioLabel = (ratio: number | null) => {
             <!-- Aspect Ratio Options -->
             <div v-if="aspectRatios.length > 1" class="flex gap-2 justify-center mb-2">
                 <Button v-for="ratio in aspectRatios" :key="ratio + selectedRatio" :label="formatRatioLabel(ratio)"
-                    :style="selectedRatio === ratio ? 'primary' : 'tertiary'" size="xs"
+                    :type="selectedRatio === ratio ? 'primary' : 'tertiary'" size="xs"
                     @click="selectedRatio = ratio" />
             </div>
 
