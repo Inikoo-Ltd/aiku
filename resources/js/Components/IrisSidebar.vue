@@ -11,6 +11,9 @@ import IrisSidebarMobile from './Iris/Layout/IrisSidebarMobile.vue'
 import { Image as ImageTS } from '@/types/Image'
 import Image from './Image.vue'
 import { trans } from 'laravel-vue-i18n'
+import { faSearch, faTimes } from "@fal"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faSearch, faTimes)
 
 const props = defineProps<{
     header: { logo?: { image: { source: string } } },
@@ -248,7 +251,7 @@ const onClickLuigi = () => {
                     </div>
                     
                     <!-- Section: input search -->
-                    <div class="mt-6 flex gap-x-4 items-center">
+                    <div class="md:hidden mt-6 flex gap-x-4 items-center">
                         <div @click="() => onClickLuigi()" class="flex-grow border border-gray-300/40 rounded-md px-2 py-1">
                             <FontAwesomeIcon icon="fal fa-search" class="" fixed-width aria-hidden="true" />
                             <span v-if="layout?.currentQuery?.q" class="ml-2 text-sm">{{layout?.currentQuery?.q}}</span>
