@@ -8,16 +8,19 @@
 
 namespace App\Actions\Ordering\Order;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderHandling;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateCreating;
 use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydrateOrders;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateOrders;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateOrders;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateCreating;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderHandling;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrders;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateCreating;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Ordering\Order;
 
 trait HasOrderHydrators
@@ -30,7 +33,7 @@ trait HasOrderHydrators
         OrganisationHydrateOrderHandling::dispatch($order->shop->organisation)->delay($this->hydratorsDelay);
 
         ShopHydrateOrders::dispatch($order->shop)->delay($this->hydratorsDelay);
-        ShopHydrateOrderHandling::dispatch($order->shop)->delay($this->hydratorsDelay);
+
 
         if ($order->master_shop_id) {
             MasterShopHydrateOrders::dispatch($order->master_shop_id)->delay($this->hydratorsDelay);
@@ -48,4 +51,14 @@ trait HasOrderHydrators
             CustomerSalesChannelsHydrateOrders::dispatch($order->customerSalesChannel);
         }
     }
+
+    public function orderHandlingHydrators(Order $order, OrderStateEnum $orderState): void
+    {
+        if ($orderState == OrderStateEnum::CREATING) {
+            GroupHydrateOrderStateCreating::dispatch($order->group_id);
+            OrganisationHydrateOrderStateCreating::dispatch($order->organisation_id);
+            ShopHydrateOrderStateCreating::dispatch($order->shop_id);
+        }
+    }
+
 }

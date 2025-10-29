@@ -6,67 +6,66 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\Order;
+namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
+use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
-use Lorisleiva\Actions\ActionRequest;
 
-class UpdateOrderStateToPacked extends OrgAction
+class FinaliseOrder extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
 
     /**
      * @throws \Illuminate\Validation\ValidationException
+     * @throws \Throwable
      */
-    public function handle(Order $order, bool $fromDeliveryNote = false): Order
+    public function handle(Order $order, $fromDeliveryNote = false): Order
     {
+        $oldState = $order->state;
+        GenerateInvoiceFromOrder::make()->action($order);
+
         $data = [
-            'state' => OrderStateEnum::PACKED
+            'state' => OrderStateEnum::FINALISED
         ];
 
-        if (in_array($order->state, [
-            OrderStateEnum::HANDLING,
-            OrderStateEnum::FINALISED,
-            OrderStateEnum::IN_WAREHOUSE,
-        ]) || $fromDeliveryNote) {
+        if (in_array($order->state, [OrderStateEnum::HANDLING, OrderStateEnum::PACKED]) || $fromDeliveryNote) {
             $order->transactions()->update([
-                'state' => TransactionStateEnum::PACKED,
+                'state' => TransactionStateEnum::FINALISED
             ]);
 
-            $data['packed_at']                  = now();
+            $data['finalised_at'] = now();
 
             $this->update($order, $data);
 
             $this->orderHydrators($order);
+            $this->orderHandlingHydrators($order, $oldState);
+            $this->orderHandlingHydrators($order, OrderStateEnum::FINALISED);
 
             return $order;
         }
 
-        throw ValidationException::withMessages(['status' => 'Error, order state is '.$order->state->value]);
+        throw ValidationException::withMessages(['status' => 'You can not change the status to finalized']);
     }
 
+
     /**
+     * @throws \Throwable
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function action(Order $order, bool $fromDeliveryNote): Order
+    public function action(Order $order, $fromDeliveryNote = false): Order
     {
         $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
+
         return $this->handle($order, $fromDeliveryNote);
     }
 
-    /**
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function asController(Order $order, ActionRequest $request): Order
-    {
-        $this->initialisationFromShop($order->shop, $request);
-        return $this->handle($order);
-    }
+
 }

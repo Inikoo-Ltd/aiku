@@ -6,8 +6,9 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\Order;
+namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -29,6 +30,7 @@ class SendOrderBackToBasket extends OrgAction
 
     public function handle(Order $order): Order
     {
+        $oldState = $order->state;
         $order->transactions()->update([
             'state'  => TransactionStateEnum::CREATING,
             'status' => TransactionStatusEnum::CREATING
@@ -39,6 +41,8 @@ class SendOrderBackToBasket extends OrgAction
             'status' => OrderStatusEnum::CREATING
         ]);
         $this->orderHydrators($order);
+        $this->orderHandlingHydrators($order, $oldState);
+        $this->orderHandlingHydrators($order, OrderStateEnum::CREATING);
 
         return $order;
     }

@@ -13,6 +13,7 @@ use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Ordering\Order;
 use Carbon\Carbon;
@@ -21,6 +22,7 @@ use Illuminate\Support\Arr;
 class UpdateOrderPaymentsStatus extends OrgAction
 {
     use WithHydrateCommand;
+    use HasOrderHydrators;
 
     public string $commandSignature = 'orders:set_payments {organisations?*} {--S|shop= shop slug} {--s|slug=}';
 
@@ -73,7 +75,10 @@ class UpdateOrderPaymentsStatus extends OrgAction
                 'pay_status'          => $payStatus,
             ]
         );
-
+        $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
+        if ($order->status == OrderStateEnum::SUBMITTED && Arr::has($changes, 'pay_status')) {
+            $this->orderHandlingHydrators($order, $order->state);
+        }
 
         return $order;
     }

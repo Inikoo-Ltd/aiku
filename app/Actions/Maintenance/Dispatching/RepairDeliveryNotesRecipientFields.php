@@ -8,7 +8,7 @@
 
 namespace App\Actions\Maintenance\Dispatching;
 
-use App\Actions\Ordering\Order\SendOrderToWarehouse;
+use App\Actions\Ordering\Order\UpdateState\SendOrderToWarehouse;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Ordering\Order;
