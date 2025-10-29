@@ -338,10 +338,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
                         </div>
                     </div>
 
-                    <div v-if="product.rrp_per_unit" class="text-xs xmt-1 text-right">
-                        <div>RRP: {{ locale.currencyFormat(currency?.code, product.rrp_per_unit || 0) }}</div>
-                        <div class="text-gray-400 xtext-base font-normal">
-                            ({{ locale.currencyFormat(currency?.code, (product.rrp_per_unit / product.units).toFixed(2)) }}/{{
+                    <div v-if="product.rrp" class="text-xs xmt-1 text-right">
+                        <div>RRP: {{ locale.currencyFormat(currency?.code,product.rrp.toFixed(2))}}</div>
+                        <div v-if="product.rrp_per_unit" class="text-gray-400 xtext-base font-normal">
+                            ({{ locale.currencyFormat(currency?.code,product.rrp_per_unit.toFixed(2)) }}/{{
                             product.unit }})
                         </div>
                     </div>
