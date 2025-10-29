@@ -242,28 +242,30 @@ const onUnselectBackInStock = (product: ProductResource) => {
             <component :is="product.url ? Link : 'div'" :href="product.url"
                 class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative">
                 <slot name="image" :product="product">
-                <Image :src="product?.web_images?.main?.gallery" alt="product image"
-                    :style="{ objectFit: 'contain' }" />
+                    <Image :src="product?.web_images?.main?.gallery" alt="product image"
+                        :style="{ objectFit: 'contain' }" />
                 </slot>
 
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
-                    <NewAddToCartButton v-if="product.stock > 0 && basketButton" :hasInBasket :product="product" :key="product" :addToBasketRoute="addToBasketRoute" :updateBasketQuantityRoute="updateBasketQuantityRoute" />
-                    <button
-                        v-else-if="layout?.app?.environment === 'local' && product.stock < 1"
+                    <NewAddToCartButton v-if="product.stock > 0 && basketButton" :hasInBasket :product="product"
+                        :key="product" :addToBasketRoute="addToBasketRoute"
+                        :updateBasketQuantityRoute="updateBasketQuantityRoute" />
+                    <button v-else-if="layout?.app?.environment === 'local' && product.stock < 1"
                         @click.prevent="()=> product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                        v-tooltip="product.is_back_in_stock ?  trans('You will be notified') :  trans('Remind me when back in stock')"
-                    >
-                        <LoadingIcon  v-if="isLoadingRemindBackInStock" />
-                        <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope" fixed-width :class="[product.is_back_in_stock  ? 'text-green-600' : 'text-gray-600']" />
+                        v-tooltip="product.is_back_in_stock ?  trans('You will be notified') :  trans('Remind me when back in stock')">
+                        <LoadingIcon v-if="isLoadingRemindBackInStock" />
+                        <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                            fixed-width :class="[product.is_back_in_stock  ? 'text-green-600' : 'text-gray-600']" />
                     </button>
                 </div>
             </component>
 
             <div class="px-3">
                 <!-- Title -->
-                <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1" type="internal">
+                <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
+                    type="internal">
                     <template #default>
                         {{ product.name }}
                     </template>
@@ -330,7 +332,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
                         <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
                                 product.price || 0) }}</span></div>
                         <div>
-                            <span class="text-sm text-gray-400 xtext-base font-normal">
+                            <span class="text-sm text-gray-400  font-normal">
                                 ({{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
                                 }}/{{
                                 product.unit }})
@@ -338,13 +340,16 @@ const onUnselectBackInStock = (product: ProductResource) => {
                         </div>
                     </div>
 
-                    <div v-if="product.rrp" class="text-xs xmt-1 text-right">
-                        <div>RRP: {{ locale.currencyFormat(currency?.code,product.rrp.toFixed(2))}}</div>
-                        <div v-if="product.rrp_per_unit" class="text-gray-400 xtext-base font-normal">
-                            ({{ locale.currencyFormat(currency?.code,product.rrp_per_unit.toFixed(2)) }}/{{
+                    <div v-if="product?.rrp" class="text-xs mt-1 text-right">
+                        <div>
+                            RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }}
+                        </div>
+                        <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
+                            ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} / {{
                             product.unit }})
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>
