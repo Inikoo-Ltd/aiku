@@ -13,6 +13,7 @@ export interface ProductResource {
     image?: {
         source: ImageTS
     }
+    rrp_per_unit :number
     rrp?: number
     unit: string
     stock: number
