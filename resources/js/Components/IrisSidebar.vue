@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faBars, faChevronCircleDown } from '@fal';
 import { getStyles } from "@/Composables/styles";
 import { isNull } from 'lodash-es';
-import SidebarDesktop from './Iris/Layout/SidebarDesktop.vue'
+import IrisSidebarDesktop from './Iris/Layout/IrisSidebarDesktop.vue'
 import IrisSidebarMobile from './Iris/Layout/IrisSidebarMobile.vue'
 import { Image as ImageTS } from '@/types/Image'
 import Image from './Image.vue'
@@ -263,13 +263,15 @@ const onClickLuigi = () => {
             <!-- Sidebar Menu: Mobile -->
             <IrisSidebarMobile
                 v-if="isMobile"
+                :containerStyle="props.sidebar?.data?.fieldValue?.container?.properties || props.menu?.container?.properties"
                 :productCategories
                 :customMenusTop
+                :customTopSubDepartments
                 :customMenusBottom
+                :customSubDepartments
                 :activeIndex
                 :activeCustomIndex
                 :activeCustomTopIndex
-                :getHref
                 :internalHref
                 :getTarget
                 :setActiveCategory
@@ -286,12 +288,12 @@ const onClickLuigi = () => {
                 :changeActiveSubIndex="(index) => activeSubIndex = index"
                 :changeActiveCustomSubIndex="(index) => activeCustomSubIndex = index"
                 :changeActiveCustomTopSubIndex="(index) => activeCustomTopSubIndex = index"
-                :containerStyle="props.sidebar?.data?.fieldValue?.container?.properties || props.menu?.container?.properties"
+                @closeMobileMenu="isOpenMenuMobile = false"
                 :fieldValue="props.sidebar?.data?.fieldValue"
             />
 
             <!-- Sidebar Menu: Desktop -->
-            <SidebarDesktop
+            <IrisSidebarDesktop
                 v-else
                 :containerStyle="props.sidebar?.data?.fieldValue?.container?.properties || props.menu?.container?.properties"
                 :productCategories
