@@ -26,7 +26,11 @@ class FulfillOrderToEbay extends OrgAction
 
     public function handle(Order $order): void
     {
-        $fulfillOrderId = Arr::get($order->data, 'orderId');
+        $fulfillOrderId = Arr::get($order->data, 'ebay_order.orderId');
+
+        if (! $fulfillOrderId) {
+            $fulfillOrderId = $order->platform_order_id;
+        }
 
         /** @var EbayUser $ebayUser */
         $ebayUser = $order->customerSalesChannel->user;
@@ -48,8 +52,7 @@ class FulfillOrderToEbay extends OrgAction
             'lineItems' => $lineItems,
             'shippedDate' => now()->timestamp,
             'tracking_number' => $shipment->tracking,
-            'carrier_code' => $shipment->shipper->name,
-            'tracking_number' => $shipment->tracking
+            'carrier_code' => $shipment->shipper->name
         ]);
     }
 }
