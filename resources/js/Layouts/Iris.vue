@@ -23,6 +23,7 @@ import { irisStyleVariables } from '@/Composables/Workshop'
 import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
+import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
@@ -142,15 +143,28 @@ console.log('handle', usePage().props)
                 :custom-sidebar="customSidebar"
             />
 
-            <Breadcrumbs v-if="usePage().props.breadcrumbs?.length" id="iris_breadcrumbs"
-                class="md:py-4 px-2 w-full mx-auto transition-all border-b-0 border-transparent hover:text-red-500"
-                :style="{
-                    ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-                }"
-                :breadcrumbs="usePage().props.breadcrumbs ?? []"
-                :navigation="usePage().props.navigation ?? []"
-                :layout="layout"
-            />
+            <div class="border-b border-gray-200 ">
+                <div
+                    class="transition-all border-b-0 border-transparent"
+                    :style="{
+                        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                        marginLeft: getStyles(layout?.app?.webpage_layout?.container?.properties, screenType)?.paddingLeft,
+                        marginRight: getStyles(layout?.app?.webpage_layout?.container?.properties, screenType)?.paddingRight,
+                        paddingLeft: '0',
+                        paddingRight: '0',
+                        paddingTop: '0',
+                        paddingBottom: '0',
+                    }"
+                >
+                    <BreadcrumbsIris
+                        v-if="usePage().props.breadcrumbs?.length"
+                        id="iris_breadcrumbs"
+                        :breadcrumbs="usePage().props.breadcrumbs ?? []"
+                        :navigation="usePage().props.navigation ?? []"
+                        :layout="layout"
+                    />
+                </div>
+            </div>
 
             <main>
                 <div>

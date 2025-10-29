@@ -81,18 +81,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="w-full flex flex-col items-center relative">
-    <!-- Shared Navigation Buttons -->
-    <div class="absolute inset-0 pointer-events-none z-50">
-      <div ref="prevEl"
-        class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl text-gray-800 cursor-pointer pointer-events-auto">
-        <FontAwesomeIcon :icon="faChevronCircleLeft" />
-      </div>
-      <div ref="nextEl"
-        class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl text-gray-800 cursor-pointer pointer-events-auto">
-        <FontAwesomeIcon :icon="faChevronCircleRight" />
-      </div>
-    </div>
+  <div class="w-full flex flex-col items-center relative isolate">
 
     <!-- Main Swiper -->
     <Swiper
@@ -105,6 +94,20 @@ onMounted(async () => {
       :thumbs="{ swiper: thumbsSwiper }"
       class="aspect-square w-full rounded-lg mb-4"
     >
+    
+      <!-- Shared Navigation Buttons -->
+      <div class="absolute inset-0 pointer-events-none z-50">
+        <div ref="prevEl"
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+          <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft" />
+        </div>
+
+        <div ref="nextEl"
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+          <FontAwesomeIcon fixed-width :icon="faChevronCircleRight" />
+        </div>
+      </div>
+
       <!-- Image Slides -->
       <SwiperSlide
         v-for="(image, index) in props.images"
