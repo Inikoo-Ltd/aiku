@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from 'vue'
+import { inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -198,6 +198,13 @@ const onUnselectBackInStock = (product: ProductResource) => {
     )
 }
 
+const profitMargin = computed(() => {
+  const price = props.product?.price
+  const rrp = props.product?.rrp
+  if (!price || !rrp) return 0
+  return Math.floor(((rrp - price) / rrp) * 100)
+})
+
 
 
 </script>
@@ -305,7 +312,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
                 <div v-if="product?.rrp" class="text-xs mt-1 text-right">
                         <div>
-                            RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }}
+                            RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} <span v-tooltip="trans('Profit margin')" class="text-green-700 font-medium">( {{ profitMargin }}% )</span>
                         </div>
                         <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
                             ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} / {{
