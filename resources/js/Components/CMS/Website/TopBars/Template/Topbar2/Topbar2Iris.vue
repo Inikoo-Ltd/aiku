@@ -73,6 +73,8 @@ const emits = defineEmits<{
     (e: 'setPanelActive', value: string | number): void
 }>()
 
+const screenType = inject("screenType", "desktop")
+
 </script>
 
 <template>

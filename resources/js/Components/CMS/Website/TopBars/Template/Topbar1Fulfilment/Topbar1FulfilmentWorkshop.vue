@@ -46,6 +46,7 @@ const isLoggedIn = inject('isPreviewLoggedIn', false)
 
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', {})
+const screenType = inject("screenType", "desktop")
 
 
 </script>
