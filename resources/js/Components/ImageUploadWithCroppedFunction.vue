@@ -217,7 +217,7 @@ onBeforeUnmount(() => {
 				<!-- Aspect ratio selector -->
 				<div v-if="aspectRatios.length > 1" class="flex gap-2 justify-center mb-2">
 					<Button v-for="ratio in aspectRatios" :key="ratio + selectedRatio" :label="formatRatioLabel(ratio)"
-						:variant="selectedRatio === ratio ? 'primary' : 'tertiary'" size="xs"
+						:type="selectedRatio === ratio ? 'primary' : 'tertiary'" size="xs"
 						@click="selectedRatio = ratio" />
 				</div>
 
