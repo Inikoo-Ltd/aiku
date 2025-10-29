@@ -308,12 +308,14 @@ watch(
   color: v-bind('buttonClass?.color || null') !important;
   font-family: v-bind('buttonClass?.fontFamily || null') !important;
   font-size: v-bind('buttonClass?.fontSize || null') !important;
+  font-style: v-bind('buttonClass?.fontStyle || null') !important;;
 
   &:hover {
     background: v-bind('buttonHoverClass?.background || null') !important;
     color: v-bind('buttonHoverClass?.color || null') !important;
     font-family: v-bind('buttonHoverClass?.fontFamily || null') !important;
     font-size: v-bind('buttonHoverClass?.fontSize || null') !important;
+    font-style: v-bind('buttonHoverClass?.fontStyle || null') !important;;
   }
 }
 </style>

@@ -17,6 +17,7 @@ interface TextProperty {
     color: string,
     fontFamily: String
     fontSize: Number | string
+    fontStyle : string
 }
 
 const emits = defineEmits<{
@@ -32,7 +33,7 @@ const model = defineModel<TextProperty | any>({
 
 
 const localModel = computed<TextProperty>({
-    get: () => model.value ?? { color: '#000000', fontFamily: 'Arial', fontSize: null },
+    get: () => model.value ?? { color: '#000000', fontFamily: 'Arial', fontSize: null , fontStyle : null },
     set: (newVal) => {
         if (model.value && JSON.stringify(model.value) !== JSON.stringify(newVal)) {
             model.value = newVal
@@ -41,6 +42,19 @@ const localModel = computed<TextProperty>({
 })
 
 const fontFamilies = [...useFontFamilyList];
+
+
+const fontStyleOptions = [
+	{ label: 'Normal', value: 'normal' },
+	{ label: 'Italic', value: 'italic' },
+	{ label: 'Bold', value: 'bold' },
+	{ label: 'Bold Italic', value: 'bold italic' },
+	{ label: 'Underline', value: 'underline' },
+	{ label: 'Line Through', value: 'line-through' },
+	{ label: 'Uppercase', value: 'uppercase' },
+	{ label: 'Lowercase', value: 'lowercase' },
+	{ label: 'Capitalize', value: 'capitalize' },
+]
 
 </script>
 
@@ -80,6 +94,31 @@ const fontFamilies = [...useFontFamilyList];
                     <PureMultiselect v-model="localModel.fontFamily"
                         @update:modelValue="(e) => (set(localModel, 'fontFamily', e), emits('update:modelValue', localModel))"
                         :options="fontFamilies">
+                        <template #option="{ option, isSelected, isPointed, search }">
+                            <span :style="{
+                                fontFamily: option.value
+                            }">
+                                {{ option.label }}
+                            </span>
+                        </template>
+                        <template #label="{ value }">
+                            <div class="multiselect-single-label" :style="{
+                                fontFamily: value.value
+                            }">
+                                {{ value.label }}
+                            </div>
+                        </template>
+                    </PureMultiselect>
+                </div>
+            </div>
+
+
+            <div class="px-3 items-center mb-2">
+                <div class="text-xs mb-2">{{ trans('Font Style') }}</div>
+                <div class="col-span-4">
+                    <PureMultiselect v-model="localModel.fontStyle"
+                        @update:modelValue="(e) => (set(localModel, 'fontStyle', e), emits('update:modelValue', localModel))"
+                        :options="fontStyleOptions">
                         <template #option="{ option, isSelected, isPointed, search }">
                             <span :style="{
                                 fontFamily: option.value

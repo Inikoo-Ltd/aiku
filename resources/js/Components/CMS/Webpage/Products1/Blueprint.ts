@@ -52,6 +52,11 @@ export default {
                     type: "textProperty",
                 },
                 {
+                    key: ['search','input','properties',"border"],
+                    label: "Border search",
+                    type: "border",
+                },
+                {
                     key: ['search','placeholder','properties',"text"],
                     label: "search placeholder",
                     type: "textProperty",

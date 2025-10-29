@@ -108,18 +108,20 @@ watch(
               </div>
             </template>
 
-            <div class="search-input w-full" >
-               <PureInput v-model="search" type="text" :placeholder="trans('Search products...')" :clear="true" :isLoading="false"
-                  :prefix="{ icon: faSearch, label: '' }" >
-                <template #prefix>
-                  <div  class="pl-3 whitespace-nowrap text-gray-400">
-                    <FontAwesomeIcon  :icon='faSearch' class='search-input' fixed-width aria-hidden='true' />
-                  </div>
-                </template>
-                
+            <div class=" w-full" >
+               <PureInput 
+                  v-model="search" 
+                  type="text" 
+                  :placeholder="trans('Search products...')" 
+                  :clear="true" :isLoading="false"
+                  :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
+                  <template #prefix>
+                    <div class="pl-3 whitespace-nowrap text-gray-400">
+                      <FontAwesomeIcon  :icon='faSearch' class="icon-search" fixed-width aria-hidden='true' />
+                    </div>
+                  </template>
                 </PureInput>
             </div>
-           
           </div>
 
           <div class="flex space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300 ">
@@ -184,23 +186,44 @@ aside {
    color: v-bind('search_sort_class?.color || null') !important;
    font-family: v-bind('search_sort_class?.fontFamily || null') !important;
    font-size: v-bind('search_sort_class?.fontSize || null') !important;
+   font-style: v-bind('search_sort_class?.fontStyle || null') !important;
+}
+
+.icon-search{
+    color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
 }
 
 .search-input {
-    color: v-bind('search_class?.color || "#333"') !important;
-    font-family: v-bind('search_class?.fontFamily || "inherit"') !important;
-    font-size: v-bind('search_class?.fontSize || "14px"') !important;
+    color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
+
+    border-top: v-bind('search_class?.borderTop || null') !important;
+    border-bottom: v-bind('search_class?.borderBottom || null') !important;
+    border-left: v-bind('search_class?.borderLeft || null') !important;
+    border-right: v-bind('search_class?.borderRight || null') !important;
+
+    border-top-left-radius: v-bind('search_class?.borderTopLeftRadius || null') !important;
+    border-top-right-radius: v-bind('search_class?.borderTopRightRadius || null') !important;
+    border-bottom-left-radius: v-bind('search_class?.borderBottomLeftRadius || null') !important;
+    border-bottom-right-radius: v-bind('search_class?.borderBottomRightRadius || null') !important;
 
   :deep(input) {
-    color: v-bind('search_class?.color || "#333"') !important;
-    font-family: v-bind('search_class?.fontFamily || "inherit"') !important;
-    font-size: v-bind('search_class?.fontSize || "14px"') !important;
+    color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
   }
 
   :deep(input::placeholder) {
     color: v-bind('placeholder_class?.color || "#999"') !important;
     font-family: v-bind('placeholder_class?.fontFamily || "inherit"') !important;
-    font-size: v-bind('placeholder_class?.fontSize || "14px"') !important;
+    font-size: v-bind('placeholder_class?.fontSize || null') !important;
+    font-style: v-bind('placeholder_class?.fontStyle || null') !important;
   }
 }
 

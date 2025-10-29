@@ -370,6 +370,7 @@ watch(
         color: v-bind('navHoverClass?.color || null') !important;
         font-family: v-bind('navHoverClass?.fontFamily || null') !important;
         font-size: v-bind('navHoverClass?.fontSize || null') !important;
+        font-style: v-bind('navHoverClass?.fontStyle || null') !important;;
     }
 }
 </style>
