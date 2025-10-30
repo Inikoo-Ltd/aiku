@@ -59,10 +59,7 @@ class ShowShop extends OrgAction
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                     ],
                     'shop_blocks' => [
-                        'interval_data' => json_decode(
-                            DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()
-                        ),
-                         'stats_box' => $shop->type->value === 'dropshipping' ? $this->getStatsBox($shop) : null,
+                        'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
                     ],
                 ],
             ],
