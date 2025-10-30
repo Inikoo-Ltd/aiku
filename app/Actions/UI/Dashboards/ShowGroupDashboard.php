@@ -75,7 +75,16 @@ class ShowGroupDashboard extends OrgAction
                         'label'       => __('Submitted Paid'),
                         'value'       => $group->orderHandlingStats->number_orders_state_submitted_paid,
                         'type'        => 'number',
-                        'icon_data'   => OrderPayStatusEnum::typeIcon()[OrderPayStatusEnum::PAID->value],
+                        'icon_data'   => [
+                            'tooltip' => __('Submitted Paid'),
+                            'icon'    => 'fal fa-check-circle',
+                            'class'   => 'text-green-600',
+                            'color'   => 'lime',
+                            'app'     => [
+                                'name' => 'check-circle',
+                                'type' => 'font-awesome-5'
+                            ]
+                        ],
                         'information' => [
                             'label' => $group->orderHandlingStats->{"orders_state_submitted_paid_amount$currency"},
                             'type'  => 'currency'
@@ -86,7 +95,17 @@ class ShowGroupDashboard extends OrgAction
                         'label'       => __('Submitted Unpaid'),
                         'value'       => $group->orderHandlingStats->number_orders_state_submitted_not_paid,
                         'type'        => 'number',
-                        'icon_data'   => OrderPayStatusEnum::typeIcon()[OrderPayStatusEnum::UNPAID->value],
+                        'icon_data'   =>
+                            [
+                                'tooltip' => __('Submitted Unpaid'),
+                                'icon'    => 'fal fa-circle',
+                                'class'   => 'text-gray-500',
+                                'color'   => 'gray',
+                                'app'     => [
+                                    'name' => 'circle',
+                                    'type' => 'font-awesome-5'
+                                ]
+                            ],
                         'information' => [
                             'label' => $group->orderHandlingStats->{"orders_state_submitted_not_paid_amount$currency"},
                             'type'  => 'currency'
@@ -104,7 +123,7 @@ class ShowGroupDashboard extends OrgAction
                         'value'       => $group->orderHandlingStats->number_orders_state_in_warehouse,
                         'type'        => 'number',
                         'icon_data'   => [
-                            'tooltip' => __('Waiting'),
+                            'tooltip' => __('Waiting to be picked'),
                             'icon'    => 'fal fa-snooze',
                         ],
                         'information' => [
@@ -125,7 +144,7 @@ class ShowGroupDashboard extends OrgAction
                     ],
                     [
                         'tab_slug'    => 'handling_blocked',
-                        'label'       => __('Blocked'),
+                        'label'       => __('Picking Blocked'),
                         'value'       => $group->orderHandlingStats->number_orders_state_handling_blocked,
                         'type'        => 'number',
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING_BLOCKED->value],
@@ -153,7 +172,7 @@ class ShowGroupDashboard extends OrgAction
 
                     [
                         'tab_slug'    => 'finalised',
-                        'label'       => __('Finalised'),
+                        'label'       => __('Invoiced'),
                         'value'       => $group->orderHandlingStats->number_orders_state_finalised,
                         'icon_data'   => [
                             'icon'    => 'fal fa-box-check',

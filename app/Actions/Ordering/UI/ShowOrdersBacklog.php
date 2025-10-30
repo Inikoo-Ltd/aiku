@@ -84,8 +84,18 @@ class ShowOrdersBacklog extends OrgAction
                         'label'       => __('Submitted Paid'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_submitted_paid,
                         'type'        => 'number',
-                        // 'icon'        => $icon,
-                        'icon_data'   => OrderPayStatusEnum::typeIcon()[OrderPayStatusEnum::PAID->value],
+
+
+                        'icon_data'   => [
+                            'tooltip' => __('Submitted Paid'),
+                            'icon'    => 'fal fa-check-circle',
+                            'class'   => 'text-green-600',
+                            'color'   => 'lime',
+                            'app'     => [
+                                'name' => 'check-circle',
+                                'type' => 'font-awesome-5'
+                            ]
+                        ],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_submitted_paid_amount$currency"},
                             'type'  => 'currency'
@@ -96,8 +106,17 @@ class ShowOrdersBacklog extends OrgAction
                         'label'       => __('Submitted Unpaid'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_submitted_not_paid,
                         'type'        => 'number',
-                        // 'icon'        => $icon,
-                        'icon_data'   => OrderPayStatusEnum::typeIcon()[OrderPayStatusEnum::UNPAID->value],
+                        'icon_data'   =>
+                            [
+                            'tooltip' => __('Submitted Unpaid'),
+                            'icon'    => 'fal fa-circle',
+                            'class'   => 'text-gray-500',
+                            'color'   => 'gray',
+                            'app'     => [
+                                'name' => 'circle',
+                                'type' => 'font-awesome-5'
+                            ]
+                        ],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_submitted_not_paid_amount$currency"},
                             'type'  => 'currency'
@@ -111,7 +130,7 @@ class ShowOrdersBacklog extends OrgAction
                 'tabs'          => [
                     [
                         'tab_slug'    => 'in_warehouse',
-                        'label'       => __('Waiting'),
+                        'label'       => __('Waiting to be picked'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_in_warehouse,
                         'type'        => 'number',
                         'icon_data'   => [
@@ -136,7 +155,7 @@ class ShowOrdersBacklog extends OrgAction
                     ],
                     [
                         'tab_slug'    => 'handling_blocked',
-                        'label'       => __('Blocked'),
+                        'label'       => __('Picking Blocked'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_handling_blocked,
                         'type'        => 'number',
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING_BLOCKED->value],
@@ -166,7 +185,7 @@ class ShowOrdersBacklog extends OrgAction
 
                     [
                         'tab_slug'    => 'finalised',
-                        'label'       => __('Finalised'),
+                        'label'       => __('Invoiced'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_finalised,
                         // 'icon'        => 'fal fa-box-check',
                         // 'iconClass'   => 'text-orange-500',
