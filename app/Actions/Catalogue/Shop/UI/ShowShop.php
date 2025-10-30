@@ -20,6 +20,7 @@ use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalShopInvoiceCategoriesSalesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -59,11 +60,29 @@ class ShowShop extends OrgAction
                     ],
                     'shop_blocks' => [
                         'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
-                        'stats_box'     => $shop->type->value === 'dropshipping' ? $this->getStatsBox($shop) : null,
-                        // Note: Experimental Data (Need to be checked)
-                        'table_header'  => $shop->type->value === 'dropshipping' ? json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true) : null,
-                        'table_body'    => $shop->type->value === 'dropshipping' ? json_decode(DashboardPlatformSalesResource::make($shop)->toJson(), true) : null
+//                        'stats_box'     => $shop->type->value === 'dropshipping' ? $this->getStatsBox($shop) : null
                     ],
+                    // Experimental
+                    'blocks' => [
+                        [
+                            'id'            => 'sales_table',
+                            'type'          => 'table',
+                            'current_tab'   => 'dropship',
+                            'tabs'          => [
+                                'dropship' => [
+                                    'title' => 'Dropship',
+                                    'icon'  => 'fal fa-store-alt'
+                                ]
+                            ],
+                            'tables'        => [
+                                'dropship' => [
+                                    'header' => $shop->type->value === 'dropshipping' ? json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true) : null,
+                                    'body'   => $shop->type->value === 'dropshipping' ? json_decode(DashboardPlatformSalesResource::collection($shop->platformSalesIntervals()->get())->toJson(), true) : null,
+                                    'totals' => $shop->type->value === 'dropshipping' ? json_decode(DashboardTotalPlatformSalesResource::make($shop->platformSalesIntervals()->get())->toJson(), true) : null
+                                ]
+                            ]
+                        ]
+                    ]
                 ],
             ],
         ];
