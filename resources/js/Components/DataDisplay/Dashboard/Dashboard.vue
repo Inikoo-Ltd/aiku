@@ -3,12 +3,24 @@ import DashboardSettings from "./DashboardSettings.vue"
 import DashboardTable from "./DashboardTable.vue"
 import DashboardWidget from "./DashboardWidget.vue"
 import { ref, provide } from "vue"
-import { faTriangle } from '@fal'
+import {
+    faBox,
+    faBoxesAlt,
+    faCheckCircle,
+    faCircle,
+    faHandsHelping,
+    faInventory,
+    faMapSigns,
+    faTriangle,
+    faWarehouse
+} from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { set } from 'lodash-es'
 import { Dashboard } from "@/types/Components/Dashboard"
 import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardShopWidget.vue";
-library.add(faTriangle)
+import TabsBox from "@/Components/Navigation/TabsBox.vue";
+import { useTabChange } from "@/Composables/tab-change";
+library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faTriangle)
 
 const props = defineProps<{
 	dashboard?: Dashboard
@@ -19,10 +31,16 @@ console.log(props.dashboard?.super_blocks?.[0]?.stats_box);
 const dashboardTabActive = ref('')
 provide("dashboardTabActive", dashboardTabActive)
 
+const currentTab = ref(props.dashboard?.super_blocks?.[0]?.tabs_box?.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 </script>
 
 <template>
 	<div>
+        <KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
+            <TabsBox :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
+        </KeepAlive>
+
         <div v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pt-4">
             <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
                 <div>
