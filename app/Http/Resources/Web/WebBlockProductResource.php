@@ -50,11 +50,13 @@ class WebBlockProductResource extends JsonResource
             'unit'              => $product->unit,
         ];
 
-        $margin = '';
-        $rrpPerUnit='';
+        $margin     = '';
+        $rrpPerUnit = '';
+        $profit     = '';
         if ($product->rrp > 0) {
             $margin     = percentage(round((($product->rrp - $product->price) / $this->rrp) * 100, 1), 100);
             $rrpPerUnit = round($product->rrp / $product->units, 2);
+            $profit     = round(($product->price - $product->rrp) / $product->units, 2);
         }
 
 
@@ -75,6 +77,7 @@ class WebBlockProductResource extends JsonResource
             'rrp'               => $product->rrp,
             'rrp_per_unit'      => $rrpPerUnit,
             'margin'            => $margin,
+            'profit'            => $profit,
             'price'             => $product->price,
             'status'            => $product->status,
             'state'             => $product->state,
