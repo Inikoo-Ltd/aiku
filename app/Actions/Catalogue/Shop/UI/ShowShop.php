@@ -20,6 +20,7 @@ use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
+use App\Http\Resources\Dashboards\DashboardTotalPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardTotalShopInvoiceCategoriesSalesResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -49,34 +50,57 @@ class ShowShop extends OrgAction
                 [
                     'id'        => 'shop_dashboard_tab',
                     'intervals' => [
-                        'options'           => $this->dashboardIntervalOption(),
-                        'value'             => Arr::get($userSettings, 'selected_interval', 'all'),
-                        'range_interval'    => DashboardIntervalFilters::run($saved_interval)
+                        'options'        => $this->dashboardIntervalOption(),
+                        'value'          => Arr::get($userSettings, 'selected_interval', 'all'),
+                        'range_interval' => DashboardIntervalFilters::run($saved_interval),
                     ],
                     'settings'  => [
                         'model_state_type'  => $this->dashboardModelStateTypeSettings($userSettings, 'left'),
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                     ],
                     'shop_blocks' => [
-                        'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
-                        'stats_box'     => $shop->type->value === 'dropshipping' ? $this->getStatsBox($shop) : null,
-                        // Note: Experimental Data (Need to be checked)
-                        'table_header'  => $shop->type->value === 'dropshipping' ? json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true) : null,
-                        'table_body'    => $shop->type->value === 'dropshipping' ? json_decode(DashboardPlatformSalesResource::make($shop)->toJson(), true) : null
+                        'interval_data' => json_decode(
+                            DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()
+                        ),
+                         'stats_box' => $shop->type->value === 'dropshipping' ? $this->getStatsBox($shop) : null,
                     ],
                 ],
             ],
         ];
 
-        return Inertia::render(
-            'Org/Catalogue/Shop',
-            [
-                'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
-                'dashboard' => $dashboard
-            ]
-        );
-    }
+        // Experimental
+        if ($shop->type->value === 'dropshipping') {
+            $dashboard['super_blocks'][0]['blocks'] = [
+                [
+                    'id'          => 'sales_table',
+                    'type'        => 'table',
+                    'current_tab' => 'dropship',
+                    'tabs'        => [
+                        'dropship' => [
+                            'title' => 'Dropship',
+                            'icon'  => 'fal fa-store-alt',
+                        ],
+                    ],
+                    'tables'      => [
+                        'dropship' => [
+                            'header' => json_decode(DashboardHeaderPlatformSalesResource::make($shop)->toJson(), true),
+                            'body'   => json_decode(DashboardPlatformSalesResource::collection(
+                                $shop->platformSalesIntervals()->get()
+                            )->toJson(), true),
+                            'totals' => json_decode(DashboardTotalPlatformSalesResource::make(
+                                $shop->platformSalesIntervals()->get()
+                            )->toJson(), true),
+                        ],
+                    ],
+                ],
+            ];
+        }
 
+        return Inertia::render('Org/Catalogue/Shop', [
+            'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
+            'dashboard'   => $dashboard,
+        ]);
+    }
 
     public function asController(Organisation $organisation, Shop $shop, ActionRequest $request): Response
     {

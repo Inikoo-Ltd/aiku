@@ -178,11 +178,11 @@ function roundDown2(num: number) {
                                 @change="emits('change', modelValue)" />
                         </td>
                         <td class="px-2 py-1 border-b border-gray-100 text-center">
-                            {{ locale.currencyFormat(item.product?.org_currency || currency, item.product?.org_cost) }}
+                            {{ locale.currencyFormat(item.product?.shop_currency || currency, item.product?.org_cost) }}
                         </td>
                         <td class="px-2 py-1 border-b w-48">
                             <InputNumber v-model="item.product.price" mode="currency"
-                                :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
+                                :currency="item?.product?.shop_currency ? item.product.shop_currency : item.currency"
                                 :step="0.25" :showButtons="true" inputClass="w-full text-xs"
                                 @input="emits('change', modelValue)" />
                             <small v-if="form?.errors[`shop_products.${item.id}.price`]"
@@ -206,14 +206,14 @@ function roundDown2(num: number) {
                                 <!-- Custom input -->
                                 <InputNumber v-if="item.product?.useCustomRrp" v-model="item.product.rrp"
                                     mode="currency"
-                                    :currency="item?.product?.org_currency ? item.product.org_currency : item.currency"
+                                    :currency="item?.product?.shop_currency ? item.product?.shop_currency : item?.grp_currency"
                                     :step="0.25" :showButtons="true" inputClass="w-full text-xs"
                                     @input="emits('change', modelValue)" />
 
                                 <!-- Auto calculation -->
                                 <span v-else class="text-gray-700 text-xs font-medium whitespace-nowrap">
                                     {{ locale.currencyFormat(
-                                        item?.product?.org_currency || item.currency,
+                                        item?.product?.shop_currency || item.currency,
                                         roundDown2(Number(item.product?.price) * 2.4)
                                     ) }}
                                 </span>

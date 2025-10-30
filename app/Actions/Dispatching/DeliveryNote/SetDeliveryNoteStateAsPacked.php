@@ -10,7 +10,7 @@ namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
-use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;

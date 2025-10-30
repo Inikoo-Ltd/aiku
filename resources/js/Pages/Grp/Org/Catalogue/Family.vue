@@ -107,12 +107,13 @@ const showDialog = ref(false);
 
         <template #afterTitle>
            <div class="whitespace-nowrap">
-            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
-                <FontAwesomeIcon
-                    :icon="faOctopusDeploy"
-                    color="#4B0082"
-                />
-            </Link>
+                <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master family'" :class="'opacity-70 hover:opacity-100'">
+                    <FontAwesomeIcon
+                        :icon="faOctopusDeploy"
+                        color="#4B0082"
+                        fixed-width
+                    />
+                </Link>
             </div>
         </template>
     </PageHeading>

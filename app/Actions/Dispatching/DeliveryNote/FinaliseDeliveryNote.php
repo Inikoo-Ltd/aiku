@@ -8,7 +8,7 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Ordering\Order\InvoiceOrderFromDeliveryNoteFinalisation;
+use App\Actions\Ordering\Order\UpdateState\InvoiceOrderFromDeliveryNoteFinalisation;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;

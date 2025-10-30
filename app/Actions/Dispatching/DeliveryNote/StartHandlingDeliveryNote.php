@@ -10,7 +10,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
-use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;

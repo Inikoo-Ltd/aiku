@@ -31,7 +31,7 @@ use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
-use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;

@@ -231,6 +231,7 @@ class StoreOrder extends OrgAction
         });
 
         $this->orderHydrators($order);
+        $this->orderHandlingHydrators($order, $order->status);
 
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 

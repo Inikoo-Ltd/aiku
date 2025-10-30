@@ -6,12 +6,14 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\Order;
+namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\Dispatching\DeliveryNote\CancelDeliveryNote;
+use App\Actions\Ordering\Order\AttachPaymentToOrder;
+use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -107,6 +109,8 @@ class CancelOrder extends OrgAction
         }
 
         $this->orderHydrators($order);
+        $this->orderHandlingHydrators($order, $oldState);
+        $this->orderHandlingHydrators($order, OrderStateEnum::CANCELLED);
 
         return $order;
     }
