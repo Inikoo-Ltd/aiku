@@ -215,7 +215,7 @@ provide('registrationWarning', registrationWarning)
 								:countriesAddressData
 								:polls
 								:form
-								:requiresPhoneNumber="false"
+								:requiresPhoneNumber="props.requiresPhoneNumber"
 							/>
 							
 							<!-- Opt in newsletter -->
