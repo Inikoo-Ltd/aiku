@@ -65,17 +65,19 @@ class StoreWooCommerceProduct extends RetinaAction
                 'manage_stock' => !is_null($product->available_quantity),
                 'stock_status' => Arr::get($product, 'stock_status', 'instock'),
                 'attributes' => Arr::get($product, 'attributes', []),
-                'sku' => $portfolio->sku . rand(00, 99), // avoiding duplicated sku
+                'sku' => $portfolio->sku,
                 'weight' => (string) ($product->gross_weight / 100),
                 'status' => $this->mapProductStateToWooCommerce($product->status->value)
             ];
 
-            $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
+            $availableSku = $wooCommerceUser->getWooCommerceProducts([
+                'sku' => $portfolio->sku
+            ]);
 
-            if (Arr::get($result, 'code') === 'product_invalid_sku') {
-                $wooCommerceProduct['sku'] = Arr::get($result, 'data.unique_sku') . '-' . rand(0, 99);
-
+            if (blank($availableSku)) {
                 $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
+            } else {
+                $result = Arr::get($availableSku, '0');
             }
 
             UpdatePortfolio::run($portfolio, [

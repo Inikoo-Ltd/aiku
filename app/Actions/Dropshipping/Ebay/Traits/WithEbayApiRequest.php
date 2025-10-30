@@ -248,11 +248,15 @@ trait WithEbayApiRequest
      */
     protected function getEbayConfig(): array
     {
+        $shopSlug = null;
+        if (isset($this->customer)) {
+            $shopSlug = $this->customer->shop?->slug;
+        }
 
         return [
             'client_id' => config('services.ebay.client_id'),
             'client_secret' => config('services.ebay.client_secret'),
-            'redirect_uri' => config('services.ebay.redirect_uri'),
+            'redirect_uri' => $shopSlug === 'dse' ? config('services.ebay.redirect_uri_es') : config('services.ebay.redirect_uri'),
             'sandbox' => config('services.ebay.sandbox'),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
             'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token')
