@@ -17,7 +17,8 @@ class DashboardPlatformSalesResource extends JsonResource
             [
                 'label' => [
                     'formatted_value' => $this->resource->platform->name ?? '',
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    'icon'            => $this->resource->platform->slug ?? '',
                 ]
             ],
             $this->getDashboardTableColumn($this, 'invoices'),
@@ -29,6 +30,17 @@ class DashboardPlatformSalesResource extends JsonResource
 
         if ($this->resource instanceof PlatformShopSalesIntervals) {
             $columns = array_merge($columns, $this->getDashboardTableColumn($this, 'sales'));
+            
+            $models = PlatformShopSalesIntervals::where('shop_id', $this->resource->shop_id)->get();
+            $totalSales = collect($this->sumIntervalValues($models, 'sales'))->sum();
+
+            $sales = collect($this->sumIntervalValues([$this->resource], 'sales'))->sum();
+            $percentage = $totalSales > 0 ? ($sales / $totalSales) * 100 : 0;
+
+            $columns['sales_percentage'] = [
+                'formatted_value' => number_format($percentage, 2) . '%',
+                'align' => 'right',
+            ];
         }
 
         return [

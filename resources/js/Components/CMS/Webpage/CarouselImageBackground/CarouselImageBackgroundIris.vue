@@ -72,8 +72,16 @@ const responsiveOptions = computed(() => {
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(fieldValue?.container?.properties, props.screenType)
     }">
-      <Carousel v-if="hasCards" :value="fieldValue.carousel_data.cards" :numVisible="slidesPerView"
-        :circular="isLooping" :autoplayInterval="0" :responsiveOptions="responsiveOptions" class="w-full">
+      <Carousel
+        v-if="hasCards"
+        :value="fieldValue.carousel_data.cards"
+        :numVisible="slidesPerView"
+        :circular="isLooping"
+        :autoplayInterval="0"
+        :responsiveOptions="responsiveOptions"
+        class="w-full"
+        :showNavigators="fieldValue?.carousel_data?.cards?.length > slidesPerView"
+      >
         <template #item="{ data }">
           <!-- WRAPPER: This adds gap safely -->
           <div class="px-1 md:px-1 lg:px-1">

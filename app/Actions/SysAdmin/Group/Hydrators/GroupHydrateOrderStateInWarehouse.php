@@ -22,13 +22,17 @@ class GroupHydrateOrderStateInWarehouse implements ShouldBeUnique
 
     public string $jobQueue = 'sales';
 
-    public function getJobUniqueId(Group $group): string
+    public function getJobUniqueId(int $groupID): string
     {
-        return $group->id;
+        return $groupID;
     }
 
-    public function handle(Group $group): void
+    public function handle(int $groupID): void
     {
+        $group = Group::find($groupID);
+        if (!$group) {
+            return;
+        }
         $stats = [
 
             'number_orders_state_in_warehouse'              => $group->orders()->where('state', OrderStateEnum::IN_WAREHOUSE)->count(),

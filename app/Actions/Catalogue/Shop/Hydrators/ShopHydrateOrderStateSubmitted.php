@@ -30,7 +30,7 @@ class ShopHydrateOrderStateSubmitted implements ShouldBeUnique
 
     public function handle(int $shopId): void
     {
-        $shop = Shop::find(13);
+        $shop = Shop::find($shopId);
         if (!$shop) {
             return;
         }
@@ -68,7 +68,7 @@ class ShopHydrateOrderStateSubmitted implements ShouldBeUnique
                 ->sum('grp_net_amount'),
 
         ];
-        dd($stats);
+
 
         $shop->orderHandlingStats()->update($stats);
     }

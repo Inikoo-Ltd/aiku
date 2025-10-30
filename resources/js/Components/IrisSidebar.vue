@@ -258,8 +258,8 @@ const onClickLuigi = () => {
                             <span v-else class="ml-2 text-sm italic opacity-60">{{ trans("I am looking for..") }}</span>
                         </div>
 
-                        <FontAwesomeIcon icon="fal fa-times" class="opacity-50 text-xl" fixed-width aria-hidden="true" />
                     </div>
+                    <FontAwesomeIcon icon="fal fa-times" class="absolute -right-12 top-12 opacityx-70 text-xl text-white pointer-events-none" fixed-width aria-hidden="true" />
                 </div>
             </template>
 

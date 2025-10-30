@@ -90,13 +90,21 @@ const imageSettings = {
     <div :data-refresh="refreshTrigger" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
-    }" @click.stop="
+    }" xclick.stop="
       () => {
         sendMessageToParent('activeBlock', indexBlock)
         sendMessageToParent('activeChildBlock', bKeys[0])
       }">
-      <Carousel v-if="hasCards" :value="modelValue.carousel_data.cards" :numVisible="slidesPerView"
-        :circular="isLooping" :autoplayInterval="0" :responsiveOptions="responsiveOptions" class="w-full">
+      <Carousel
+        v-if="hasCards"
+        :value="modelValue.carousel_data.cards"
+        :numVisible="slidesPerView"
+        :circular="isLooping"
+        :autoplayInterval="0"
+        :responsiveOptions="responsiveOptions"
+        class="w-full"
+        :showNavigators="modelValue?.carousel_data?.cards?.length > slidesPerView"
+      >
         <template #item="{ data, index }">
           <!-- WRAPPER: This adds gap safely -->
           <div class="px-1 md:px-1 lg:px-1">

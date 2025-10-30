@@ -17,6 +17,8 @@ use App\Actions\Traits\Dashboards\WithDashboardSettings;
 use App\Actions\Traits\WithDashboard;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\DateIntervals\DateIntervalEnum;
+use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Http\Resources\Dashboards\DashboardHeaderPlatformSalesResource;
 use App\Http\Resources\Dashboards\DashboardPlatformSalesResource;
@@ -45,6 +47,148 @@ class ShowShop extends OrgAction
 
         $saved_interval = DateIntervalEnum::tryFrom(Arr::get($userSettings, 'selected_interval', 'all')) ?? DateIntervalEnum::ALL;
 
+        $currency = '_grp_currency';
+
+        $tabsBox = [
+            [
+                'label'         => __('In Basket'),
+                'currency_code' => $shop->currency->code,
+                'tabs'          => [
+                    [
+                        'tab_slug'    => 'in_basket',
+                        'label'       => __('In basket'),
+                        'value'       => $shop->orderHandlingStats->number_orders_state_creating,
+                        'type'        => 'number',
+                        'icon_data'        => [
+                            'icon'    => 'fal fa-shopping-basket',
+                            'tooltip' => __('In Basket'),
+                        ],
+                        'information' => [
+                            'type'  => 'currency',
+                            'label' => $shop->orderHandlingStats->{"orders_state_creating_amount$currency"},
+                        ]
+                    ]
+                ]
+            ],
+            [
+                'label'         => __('Submitted'),
+                'currency_code' => $shop->currency->code,
+                'tabs'          => [
+                    [
+                        'tab_slug'    => 'submitted_paid',
+                        'label'       => __('Submitted Paid'),
+                        'value'       => $shop->orderHandlingStats->number_orders_state_submitted_paid,
+                        'type'        => 'number',
+                        'icon_data'   => OrderPayStatusEnum::typeIcon()[OrderPayStatusEnum::PAID->value],
+                        'information' => [
+                            'label' => $shop->orderHandlingStats->{"orders_state_submitted_paid_amount$currency"},
+                            'type'  => 'currency'
+                        ]
+                    ],
+                    [
+                        'tab_slug'    => 'submitted_unpaid',
+                        'label'       => __('Submitted Unpaid'),
+                        'value'       => $shop->orderHandlingStats->number_orders_state_submitted_not_paid,
+                        'type'        => 'number',
+                        'icon_data'   => OrderPayStatusEnum::typeIcon()[OrderPayStatusEnum::UNPAID->value],
+                        'information' => [
+                            'label' => $shop->orderHandlingStats->{"orders_state_submitted_not_paid_amount$currency"},
+                            'type'  => 'currency'
+                        ]
+                    ]
+                ]
+            ],
+            [
+                'label'         => __('Warehouse'),
+                'currency_code' => $shop->currency->code,
+                'tabs'          => [
+                    [
+                        'tab_slug'    => 'in_warehouse',
+                        'label'       => __('Waiting'),
+                        'value'       => $shop->orderHandlingStats->number_orders_state_in_warehouse,
+                        'type'        => 'number',
+                        'icon_data'   => [
+                            'tooltip' => __('Waiting'),
+                            'icon'    => 'fal fa-snooze',
+                        ],
+                        'information' => [
+                            'label' => $shop->orderHandlingStats->{"orders_state_in_warehouse_amount$currency"},
+                            'type'  => 'currency'
+                        ]
+                    ],
+                    [
+                        'tab_slug'    => 'handling',
+                        'label'       => __('Picking'),
+                        'value'       => $shop->orderHandlingStats->number_orders_state_handling,
+                        'type'        => 'number',
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING->value],
+                        'information' => [
+                            'label' => $shop->orderHandlingStats->{"orders_state_handling_amount$currency"},
+                            'type'  => 'currency',
+                        ]
+                    ],
+                    [
+                        'tab_slug'    => 'handling_blocked',
+                        'label'       => __('Blocked'),
+                        'value'       => $shop->orderHandlingStats->number_orders_state_handling_blocked,
+                        'type'        => 'number',
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING_BLOCKED->value],
+                        'information' => [
+                            'label' => $shop->orderHandlingStats->{"orders_state_handling_blocked_amount$currency"},
+                            'type'  => 'currency',
+                        ]
+                    ],
+                    [
+                        'tab_slug'    => 'packed',
+                        'label'       => __('Packed'),
+                        'value'       => $shop->orderHandlingStats->number_orders_state_packed,
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PACKED->value],
+                        'information' => [
+                            'label' => $shop->orderHandlingStats->{"orders_state_packed_amount$currency"},
+                            'type'  => 'currency'
+                        ]
+                    ],
+                ]
+            ],
+            [
+                'label'         => __('Waiting for dispatch'),
+                'currency_code' => $shop->currency->code,
+                'tabs'          => [
+
+                    [
+                        'tab_slug'    => 'finalised',
+                        'label'       => __('Finalised'),
+                        'value'       => $shop->orderHandlingStats->number_orders_state_finalised,
+                        'icon_data'   => [
+                            'icon'    => 'fal fa-box-check',
+                            'tooltip' => __('Finalised'),
+                        ],
+                        'information' => [
+                            'label' => $shop->orderHandlingStats->{"orders_state_finalised_amount$currency"},
+                            'type'  => 'currency'
+                        ]
+                    ],
+                ]
+            ],
+            [
+                'label'         => __('Dispatched Today'),
+                'currency_code' => $shop->currency->code,
+                'tabs'          => [
+                    [
+                        'tab_slug'    => 'dispatched_today',
+                        'label'       => __('Dispatched Today'),
+                        'value'       => $shop->orderHandlingStats->number_orders_dispatched_today,
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::DISPATCHED->value],
+                        'type'        => 'number',
+                        'information' => [
+                            'label' => $shop->orderHandlingStats->{"orders_dispatched_today_amount$currency"},
+                            'type'  => 'currency'
+                        ]
+                    ],
+                ]
+            ]
+        ];
+
         $dashboard = [
             'super_blocks' => [
                 [
@@ -59,10 +203,11 @@ class ShowShop extends OrgAction
                         'data_display_type' => $this->dashboardDataDisplayTypeSettings($userSettings),
                     ],
                     'shop_blocks' => [
-                        'interval_data' => json_decode(
-                            DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()
-                        ),
-                         'stats_box' => $shop->type->value === 'dropshipping' ? $this->getStatsBox($shop) : null,
+                        'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
+                    ],
+                    'tabs_box' => [
+                        'current'    => $this->tab,
+                        'navigation' => $tabsBox
                     ],
                 ],
             ],
@@ -78,7 +223,6 @@ class ShowShop extends OrgAction
                     'tabs'        => [
                         'dropship' => [
                             'title' => 'Dropship',
-                            'icon'  => 'fal fa-store-alt',
                         ],
                     ],
                     'tables'      => [

@@ -82,7 +82,7 @@ trait WithIrisProductsInWebpage
         });
     }
 
-    public function getBaseQuery(string $stockMode): QueryBuilder
+    public function getBaseQuery(string $stockMode, bool $topSeller = false): QueryBuilder
     {
         $customer = request()->user()?->customer;
         $queryBuilder = QueryBuilder::for(Product::class);
@@ -93,6 +93,10 @@ trait WithIrisProductsInWebpage
             $queryBuilder->where('products.available_quantity', '>', 0);
         } elseif ($stockMode == 'out_of_stock') {
             $queryBuilder->where('products.available_quantity', '<=', 0);
+        }
+        
+        if($topSeller) {
+            $queryBuilder->whereNotNull('products.top_seller');
         }
 
         $queryBuilder->join('model_has_trade_units', function ($join) {

@@ -9,9 +9,19 @@
 export interface ProductCategoryMenu {
     name: string
     url: string
+    collections: {
+        id: string
+        url: string
+        name: string
+    }[]
     sub_departments: {
         name: string
         url: string
+        collections: {
+            id: string
+            url: string
+            name: string
+        }[]
         families: {
             name: string
             url: string
@@ -70,6 +80,7 @@ export const menuCategoriesToMenuStructure = (categories: ProductCategoryMenu[])
                 target: "_self",
                 type: "internal",
             },
+            collections: department.collections,
             subnavs: department.sub_departments.length ? department.sub_departments.map((subDept) => {
                 return {
                     id: `menu_subdept_${subDept.name.toLowerCase().replace(/\s+/g, '_')}`,
@@ -80,6 +91,7 @@ export const menuCategoriesToMenuStructure = (categories: ProductCategoryMenu[])
                         target: "_self",
                         workshop: null
                     },
+                    collections: subDept.collections,
                     links: subDept.families.length ? subDept.families.map((family) => {
                         return {
                             id: `menu_family_${family.name.toLowerCase().replace(/\s+/g, '_')}`,

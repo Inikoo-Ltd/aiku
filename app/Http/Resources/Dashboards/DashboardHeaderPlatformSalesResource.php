@@ -37,7 +37,7 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
 
         $newChannelsColumns = [
             'new_channels' => [
-                'formatted_value'   => __('New Channels'),
+                'formatted_value'   => __('Channels'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
@@ -48,7 +48,7 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
 
         $newCustomersColumns = [
             'new_customers' => [
-                'formatted_value'   => __('New Customers'),
+                'formatted_value'   => __('Customers'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
@@ -59,7 +59,7 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
 
         $newPortfoliosColumns = [
             'new_portfolios' => [
-                'formatted_value'   => __('New Portfolios'),
+                'formatted_value'   => __('Portfolios'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
@@ -70,7 +70,7 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
 
         $newCustomerClientColumns = [
             'new_customer_client' => [
-                'formatted_value'   => __('New Customer Client'),
+                'formatted_value'   => __('Customer Client'),
                 'currency_type'     => 'always',
                 'data_display_type' => 'full',
                 'sortable'          => true,
@@ -100,7 +100,19 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
         );
 
         if ($model instanceof Shop) {
-            $columns = array_merge($columns, $salesColumns);
+            $columns = array_merge(
+                $columns,
+                $salesColumns,
+                [
+                    'sales_percentage' => [
+                        'formatted_value'   => '',
+                        'currency_type'     => 'always',
+                        'data_display_type' => 'full',
+                        'align'             => 'left',
+                        'scope'             => 'sales_percentage'
+                    ]
+                ]
+            );
         }
 
         return [

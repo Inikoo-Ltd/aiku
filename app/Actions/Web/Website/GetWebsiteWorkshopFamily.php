@@ -35,12 +35,17 @@ class GetWebsiteWorkshopFamily
 
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::LIST_PRODUCTS->value)->get();
         $products = IrisProductsInWebpageResource::collection(
-            GetIrisProductsInProductCategory::run(productCategory: $family, stockMode: 'all')
+            GetIrisProductsInProductCategory::run(productCategory: $family, stockMode: 'all', topSeller: false)
+        );
+       
+        $topSeller = IrisProductsInWebpageResource::collection(
+            GetIrisProductsInProductCategory::run(productCategory: $family, stockMode: 'all', topSeller: true)
         );
 
         return [
             'web_block_types' => WebBlockTypesResource::collection($webBlockTypes),
             'products' => $products,
+            'top_seller' => $topSeller,
             'family' =>  $family,
             'layout' => Arr::get($website->unpublishedFamilySnapshot, 'layout.family', []),
             'autosaveRoute' => [

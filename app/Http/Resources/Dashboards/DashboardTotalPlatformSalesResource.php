@@ -51,6 +51,11 @@ class DashboardTotalPlatformSalesResource extends JsonResource
                 $columns,
                 $this->getDashboardTableColumn($summedData, 'sales')
             );
+
+            $columns['sales_percentage'] = [
+                'formatted_value' => '100%',
+                'align' => 'right',
+            ];
         }
 
         return [

@@ -17,8 +17,9 @@ import { getStyles } from "@/Composables/styles";
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.vue';
 import { faTimes } from "@fal"
+import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add(faTimes)
+library.add(faTimes, faSearch)
 
 defineOptions({ layout: WebPreview })
 const props = defineProps<{
