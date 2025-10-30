@@ -36,7 +36,7 @@ class DashboardTotalPlatformSalesResource extends JsonResource
             $this->getDashboardTableColumn($summedData, 'new_customer_client'),
         );
 
-        if ($models[0] instanceof PlatformShopSalesIntervals) {
+        if ($models && $models[0] instanceof PlatformShopSalesIntervals) {
             $summedData = (object) array_merge(
                 (array) $summedData,
                 $this->sumIntervalValues($models, 'sales')
