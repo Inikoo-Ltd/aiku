@@ -115,8 +115,16 @@ const responsiveOptions = computed(() => {
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
     }">
-      <Carousel v-if="hasCards" :value="modelValue.carousel_data.cards" :numVisible="slidesPerView"
-        :circular="isLooping" :autoplayInterval="0" :responsiveOptions="responsiveOptions" class="w-full">
+      <Carousel
+        v-if="hasCards"
+        :value="modelValue.carousel_data.cards"
+        :numVisible="slidesPerView"
+        :circular="isLooping"
+        :autoplayInterval="0"
+        :responsiveOptions="responsiveOptions"
+        class="w-full"
+        :showNavigators="modelValue?.carousel_data?.cards?.length > slidesPerView"
+      >
         <template #item="{ data, index }">
           <div class="card flex flex-col h-full">
             <div class="flex flex-1 flex-col">
