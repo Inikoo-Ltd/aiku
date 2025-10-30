@@ -742,7 +742,10 @@ test('user status change', function (User $user) {
 })->depends('update user password');
 
 test('delete guest', function (User $user) {
-    $guest = DeleteGuest::make()->action($user->guests()->first());
+
+    /** @var Guest $guest */
+    $guest=$user->guests()->first();
+    $guest = DeleteGuest::make()->action($guest);;
     expect($guest->deleted_at)->toBeInstanceOf(Carbon::class);
 })->depends('update user password');
 
@@ -890,6 +893,7 @@ test('reindex search', function () {
 
 test('employee job position in another organisation', function () {
     $group = Group::where('slug', 'test')->first();
+    /** @var Organisation $org1 */
     $org1  = $group->organisations()->first();
 
 
