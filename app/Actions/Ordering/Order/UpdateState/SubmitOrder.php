@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\Order;
+namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Comms\Email\SendNewOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendNewOrderEmailToSubscribers;
@@ -14,6 +14,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTrafficSource;
 use App\Actions\Dropshipping\CustomerClient\Hydrators\CustomerClientHydrateBasket;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydrateOrders;
+use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -43,6 +44,9 @@ class SubmitOrder extends OrgAction
      */
     public function handle(Order $order): Order
     {
+
+        $oldState = $order->state;
+
         $modelData = [
             'state'  => OrderStateEnum::SUBMITTED,
             'status' => OrderStatusEnum::PROCESSING,
@@ -87,6 +91,9 @@ class SubmitOrder extends OrgAction
         }
 
         $this->orderHydrators($order);
+        $this->orderHandlingHydrators($order, $oldState);
+        $this->orderHandlingHydrators($order, OrderStateEnum::SUBMITTED);
+
         SendNewOrderEmailToSubscribers::dispatch($order->id);
         SendNewOrderEmailToCustomer::dispatch($order->id);
 

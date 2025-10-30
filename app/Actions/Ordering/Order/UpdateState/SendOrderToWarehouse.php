@@ -6,11 +6,13 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\Order;
+namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateDeliveryNoteItemsSalesType;
 use App\Actions\Dispatching\DeliveryNote\StoreDeliveryNote;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
+use App\Actions\Ordering\Order\HasOrderHydrators;
+use App\Actions\Ordering\Order\UpdateOrder;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\Ordering\WithOrderingEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
@@ -168,6 +170,7 @@ class SendOrderToWarehouse extends OrgAction
     public function prepareForValidation(): void
     {
         if (!$this->has('warehouse_id')) {
+            /** @var Warehouse $warehouse */
             $warehouse = $this->shop->organisation->warehouses()->first();
             $this->set('warehouse_id', $warehouse->id);
         }

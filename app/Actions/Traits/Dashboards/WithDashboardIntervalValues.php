@@ -148,5 +148,19 @@ trait WithDashboardIntervalValues
         ];
     }
 
+    private function sumIntervalValues($models, string $field): array
+    {
+        $sums = [];
+
+        foreach ($models as $model) {
+            foreach (\App\Enums\DateIntervals\DateIntervalEnum::cases() as $interval) {
+                $key = $field.'_'.$interval->value;
+                $sums[$key] = ($sums[$key] ?? 0) + ($model->{$key} ?? 0);
+            }
+        }
+
+        return $sums;
+    }
+
 
 }

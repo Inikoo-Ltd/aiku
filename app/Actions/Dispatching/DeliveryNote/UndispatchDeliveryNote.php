@@ -9,7 +9,7 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
-use App\Actions\Ordering\Order\RollbackDispatchedOrder;
+use App\Actions\Ordering\Order\UpdateState\RollbackDispatchedOrder;
 use App\Actions\OrgAction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;

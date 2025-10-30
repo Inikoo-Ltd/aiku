@@ -10,7 +10,7 @@
 namespace App\Actions\Api\Retina\Dropshipping\Order;
 
 use App\Actions\Api\Retina\Dropshipping\Resource\OrderApiResource;
-use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Retina\Dropshipping\Orders\PayOrderAsync;
 use App\Actions\RetinaApiAction;
 use App\Models\Ordering\Order;

@@ -332,6 +332,14 @@ function handleUrlChange(e: string | null) {
         </template>
         <template #cell(code)="{ item: collection }">
             <div class="flex items-center gap-2">
+                <Link
+                    :href="collection.url_master.name ? (route(collection.url_master.name, collection.url_master.parameters) as string) : '#'"
+                    v-tooltip="trans('Go to Master collections')"
+                    class="-mr-1.5"
+                    :class="[collection.master_collection_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                    <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
+                </Link>
+
                 <Link :href="collectionRoute(collection) as string" class="primaryLink">
                     {{ collection["code"] }}
                 </Link>

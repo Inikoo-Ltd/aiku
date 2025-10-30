@@ -3,9 +3,6 @@
 namespace App\Http\Resources\Dashboards;
 
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
-use App\Models\Catalogue\Shop;
-use App\Models\Dropshipping\Platform;
-use App\Models\Dropshipping\PlatformSalesIntervals;
 use App\Models\Dropshipping\PlatformShopSalesIntervals;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -16,22 +13,29 @@ class DashboardPlatformSalesResource extends JsonResource
     // Note: Experimental Data (Need to be checked)
     public function toArray($request): array
     {
-        /** @var Shop|Platform $model */
-        $model = $this->resource;
+        $columns = array_merge(
+            [
+                'label' => [
+                    'formatted_value' => $this->resource->platform->name ?? '',
+                    'align'           => 'left'
+                ]
+            ],
+            $this->getDashboardTableColumn($this, 'invoices'),
+            $this->getDashboardTableColumn($this, 'new_channels'),
+            $this->getDashboardTableColumn($this, 'new_customers'),
+            $this->getDashboardTableColumn($this, 'new_portfolios'),
+            $this->getDashboardTableColumn($this, 'new_customer_client'),
+        );
 
-        $platformsIntervals = [];
-
-        if ($model instanceof Shop) {
-            $platformsIntervals = PlatformShopSalesIntervals::where('shop_id', $model->id)->get();
-        }
-
-        if ($model instanceof Platform) {
-            $platformsIntervals = PlatformSalesIntervals::where('platform_id', $model->id)->get();
+        if ($this->resource instanceof PlatformShopSalesIntervals) {
+            $columns = array_merge($columns, $this->getDashboardTableColumn($this, 'sales'));
         }
 
         return [
-            'slug'      => $model->slug,
-            'columns'   => []
+            'slug'      => $this->resource->platform->slug ?? '',
+            'state'     => 'active',
+            'columns'   => $columns,
+            'colour'      => ''
         ];
     }
 }

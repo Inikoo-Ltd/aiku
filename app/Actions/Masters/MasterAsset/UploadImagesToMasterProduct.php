@@ -25,13 +25,13 @@ class UploadImagesToMasterProduct extends GrpAction
     {
         $medias = $this->uploadImages($model, $scope, $modelData);
         if ($updateDependants && $model->is_single_trade_unit) {
-            $this->updateDependants($model, $modelData, $medias, $scope);
+            $this->updateDependants($model, $medias, $scope);
         }
 
         return $medias;
     }
 
-    public function updateDependants(MasterAsset $seedMasterAsset, array $modelData, array $medias, string $scope): void
+    public function updateDependants(MasterAsset $seedMasterAsset, array $medias, string $scope): void
     {
         $tradeUnit = $seedMasterAsset->tradeUnits->first();
         foreach ($medias as $media) {

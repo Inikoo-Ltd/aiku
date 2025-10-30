@@ -18,6 +18,14 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoDepartment;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrdersDispatchedToday;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateCreating;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateFinalised;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateHandling;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateHandlingBlocked;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateInWarehouse;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePacked;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateSubmitted;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoFamily;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
@@ -34,7 +42,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDepartments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamilies;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderHandling;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePaymentAccounts;
@@ -91,7 +98,17 @@ class HydrateShops
         ShopHydrateRentals::run($shop);
         ShopHydrateCrmStats::run($shop);
         ShopHydrateAdjustments::run($shop);
-        ShopHydrateOrderHandling::run($shop);
+
+        ShopHydrateOrderStateCreating::run($shop->id);
+        ShopHydrateOrderStateSubmitted::run($shop->id);
+        ShopHydrateOrderStateInWarehouse::run($shop->id);
+        ShopHydrateOrderStateHandling::run($shop->id);
+        ShopHydrateOrderStateHandlingBlocked::run($shop->id);
+        ShopHydrateOrderStatePacked::run($shop->id);
+        ShopHydrateOrderStateFinalised::run($shop->id);
+        ShopHydrateOrdersDispatchedToday::run($shop->id);
+
+
         ShopHydrateDeletedInvoices::run($shop);
         ShopHydrateOrderIntervals::run($shop);
         ShopHydrateRegistrationIntervals::run($shop);

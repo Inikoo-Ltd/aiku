@@ -79,7 +79,7 @@ class IndexCollections extends OrgAction
 
         $queryBuilder = QueryBuilder::for(Collection::class);
         $queryBuilder->where('collections.shop_id', $shop->id);
-        $queryBuilder->leftjoin('collection_stats', 'collection_stats.collection_id', 'collections.id', );
+        $queryBuilder->leftjoin('collection_stats', 'collection_stats.collection_id', 'collections.id');
 
 
         $queryBuilder
@@ -122,6 +122,7 @@ class IndexCollections extends OrgAction
                 'collections.created_at',
                 'collections.updated_at',
                 'collections.slug',
+                'collections.master_collection_id',
                 'collection_stats.number_families',
                 'collection_stats.number_products',
                 'collection_stats.number_parents',
@@ -255,7 +256,7 @@ class IndexCollections extends OrgAction
                     ],
                     'iconRight'     => $iconRight,
                     'container'     => $container,
-                    'actionsx'       => $actions,
+                    'actionsx'      => $actions,
                     'subNavigation' => $subNavigation,
                 ],
                 'routes'         => $routes,

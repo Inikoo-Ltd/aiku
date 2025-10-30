@@ -6,8 +6,9 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\Order;
+namespace App\Actions\Ordering\Order\UpdateState;
 
+use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -16,7 +17,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
-class UpdateOrderStateToHandling extends OrgAction
+class UpdateOrderStateToPacked extends OrgAction
 {
     use WithActionUpdate;
     use HasOrderHydrators;
@@ -24,44 +25,44 @@ class UpdateOrderStateToHandling extends OrgAction
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(Order $order): Order
+    public function handle(Order $order, bool $fromDeliveryNote = false): Order
     {
+        $oldState = $order->state;
         $data = [
-            'state' => OrderStateEnum::HANDLING
+            'state' => OrderStateEnum::PACKED
         ];
 
         if (in_array($order->state, [
-            OrderStateEnum::SUBMITTED,
-            OrderStateEnum::IN_WAREHOUSE,
             OrderStateEnum::HANDLING,
-            OrderStateEnum::PACKED,
             OrderStateEnum::FINALISED,
-        ])) {
+            OrderStateEnum::IN_WAREHOUSE,
+        ]) || $fromDeliveryNote) {
             $order->transactions()->update([
-                'state' => TransactionStateEnum::HANDLING
+                'state' => TransactionStateEnum::PACKED,
             ]);
 
-            $data['handling_at'] = now();
+            $data['packed_at']                  = now();
 
             $this->update($order, $data);
 
             $this->orderHydrators($order);
+            $this->orderHandlingHydrators($order, $oldState);
+            $this->orderHandlingHydrators($order, OrderStateEnum::PACKED);
 
             return $order;
         }
 
-        throw ValidationException::withMessages(['status' => 'Can not change the status to handling (current status is '.$order->state->value.')']);
+        throw ValidationException::withMessages(['status' => 'Error, order state is '.$order->state->value]);
     }
 
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function action(Order $order): Order
+    public function action(Order $order, bool $fromDeliveryNote): Order
     {
         $this->asAction = true;
         $this->initialisationFromShop($order->shop, []);
-
-        return $this->handle($order);
+        return $this->handle($order, $fromDeliveryNote);
     }
 
     /**
@@ -70,7 +71,6 @@ class UpdateOrderStateToHandling extends OrgAction
     public function asController(Order $order, ActionRequest $request): Order
     {
         $this->initialisationFromShop($order->shop, $request);
-
         return $this->handle($order);
     }
 }

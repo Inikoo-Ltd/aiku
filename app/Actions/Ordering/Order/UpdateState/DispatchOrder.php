@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-namespace App\Actions\Ordering\Order;
+namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToCustomer;
 use App\Actions\Comms\Email\SendDispatchedOrderEmailToSubscribers;
@@ -14,6 +14,7 @@ use App\Actions\Dropshipping\Ebay\Orders\FulfillOrderToEbay;
 use App\Actions\Dropshipping\Magento\Orders\FulfillOrderToMagento;
 use App\Actions\Dropshipping\Shopify\Fulfilment\FulfillOrderToShopify;
 use App\Actions\Dropshipping\WooCommerce\Orders\FulfillOrderToWooCommerce;
+use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Ordering\Order\OrderStateEnum;
@@ -34,12 +35,13 @@ class DispatchOrder extends OrgAction
      */
     public function handle(Order $order): Order
     {
+        $oldState = $order->state;
         $data = [
             'state'         => OrderStateEnum::DISPATCHED,
             'dispatched_at' => now()
         ];
 
-        DB::transaction(function () use ($order, $data) {
+        $order=DB::transaction(function () use ($order, $data) {
             /** @var Transaction $transaction */
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
                 $transaction->update([
@@ -58,7 +60,7 @@ class DispatchOrder extends OrgAction
                 );
             }
 
-            $this->orderHydrators($order);
+
             $order->refresh();
 
 
@@ -72,7 +74,13 @@ class DispatchOrder extends OrgAction
                     default => null,
                 };
             }
+
+            return $order;
         });
+
+        $this->orderHydrators($order);
+        $this->orderHandlingHydrators($order, $oldState);
+        $this->orderHandlingHydrators($order, OrderStateEnum::DISPATCHED);
 
         SendDispatchedOrderEmailToSubscribers::dispatch($order);
         SendDispatchedOrderEmailToCustomer::dispatch($order);

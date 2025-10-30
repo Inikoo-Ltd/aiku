@@ -10,6 +10,7 @@
 
 namespace App\Http\Resources\Masters;
 
+use App\Traits\ParsesCollectionParentsData;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -31,6 +32,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class MasterCollectionsResource extends JsonResource
 {
+    use ParsesCollectionParentsData;
+
     public function toArray($request): array
     {
         return [
@@ -60,30 +63,4 @@ class MasterCollectionsResource extends JsonResource
         ];
     }
 
-
-    private function parseCollectionParentsData(string|null $parentsData): array
-    {
-        $parents = [];
-        if ($parentsData == '|||' || $parentsData === null) {
-            return $parents;
-        }
-
-
-        list($slugsData, $typesData, $codesData, $namesData) = explode('|', $parentsData);
-        $slugs = explode(',', $slugsData);
-        $types = explode(',', $typesData);
-        $codes = explode(',', $codesData);
-        $names = explode(',', $namesData);
-
-        foreach ($slugs as $key => $slug) {
-            $parents[] = [
-                'slug' => $slug,
-                'type' => $types[$key] ?? null,
-                'code' => $codes[$key] ?? null,
-                'name' => $names[$key] ?? null,
-            ];
-        }
-
-        return $parents;
-    }
 }

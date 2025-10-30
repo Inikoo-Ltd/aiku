@@ -27,6 +27,14 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrdersDispatchedToday;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateCreating;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateFinalised;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateHandling;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateHandlingBlocked;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateInWarehouse;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStatePacked;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateSubmitted;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSupplierProducts;
@@ -43,7 +51,6 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePayments;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateJobPositions;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderHandling;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
@@ -155,7 +162,16 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateTopUps::run($organisation);
             OrganisationHydrateCreditTransactions::run($organisation);
             OrganisationHydrateAdjustments::run($organisation);
-            OrganisationHydrateOrderHandling::run($organisation);
+
+            OrganisationHydrateOrderStateCreating::run($organisation->id);
+            OrganisationHydrateOrderStateSubmitted::run($organisation->id);
+            OrganisationHydrateOrderStateInWarehouse::run($organisation->id);
+            OrganisationHydrateOrderStateHandling::run($organisation->id);
+            OrganisationHydrateOrderStateHandlingBlocked::run($organisation->id);
+            OrganisationHydrateOrderStatePacked::run($organisation->id);
+            OrganisationHydrateOrderStateFinalised::run($organisation->id);
+            OrganisationHydrateOrdersDispatchedToday::run($organisation->id);
+
             OrganisationHydrateMailshots::run($organisation);
             OrganisationHydrateDeletedInvoices::run($organisation);
 

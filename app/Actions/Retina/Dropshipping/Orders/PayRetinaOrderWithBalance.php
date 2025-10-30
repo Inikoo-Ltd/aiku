@@ -12,7 +12,7 @@ namespace App\Actions\Retina\Dropshipping\Orders;
 use App\Actions\Accounting\CreditTransaction\StoreCreditTransaction;
 use App\Actions\Accounting\Payment\StorePayment;
 use App\Actions\Ordering\Order\AttachPaymentToOrder;
-use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\RetinaAction;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Accounting\Payment\PaymentStateEnum;

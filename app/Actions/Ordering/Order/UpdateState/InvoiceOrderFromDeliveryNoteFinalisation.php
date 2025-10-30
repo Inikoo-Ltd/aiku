@@ -7,23 +7,28 @@
  * copyright 2025
 */
 
-namespace App\Actions\Ordering\Order;
+namespace App\Actions\Ordering\Order\UpdateState;
 
 use App\Actions\OrgAction;
 use App\Models\Ordering\Order;
 
-class DispatchOrderFromDeliveryNote extends OrgAction
+class InvoiceOrderFromDeliveryNoteFinalisation extends OrgAction
 {
     /**
+     * @throws \Illuminate\Validation\ValidationException
      * @throws \Throwable
      */
     public function handle(Order $order): Order
     {
-        return DispatchOrder::make()->action($order);
+
+        return FinaliseOrder::make()->action($order, true);
+
+
     }
 
 
     /**
+     * @throws \Illuminate\Validation\ValidationException
      * @throws \Throwable
      */
     public function action(Order $order): Order

@@ -130,6 +130,15 @@ class ShowCollection extends OrgAction
             $iconRight = $collection->state->stateIcon()[$collection->state->value];
         }
 
+        $urlMaster = null;
+        if ($collection->master_collection_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_collection',
+                'parameters' => [
+                    $collection->master_collection_id
+                ]
+            ];
+        }
 
 
         return Inertia::render(
@@ -288,6 +297,7 @@ class ShowCollection extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => CollectionTabsEnum::navigation($collection)
                 ],
+                'url_master'    => $urlMaster,
 
                 CollectionTabsEnum::SHOWCASE->value => $this->tab == CollectionTabsEnum::SHOWCASE->value ?
                     fn () => GetCollectionShowcase::run($collection)

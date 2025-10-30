@@ -48,7 +48,7 @@ class UpdateOrder extends OrgAction
         $oldPlatform             = $order->platform;
         $oldShippingZoneSchemaId = $order->shipping_zone_schema_id;
         $oldShippingZoneId       = $order->shipping_zone_id;
-
+        $oldState = $order->state;
 
         $order         = $this->update($order, $modelData, ['data']);
         $changedFields = $order->getChanges();
@@ -115,6 +115,8 @@ class UpdateOrder extends OrgAction
 
             if (array_key_exists('state', $changedFields)) {
                 $this->orderHydrators($order);
+                $this->orderHandlingHydrators($order, $oldState);
+                $this->orderHandlingHydrators($order, $order->state);
             }
             if (array_key_exists('platform_id', $changedFields)) {
                 if ($order->platform) {
