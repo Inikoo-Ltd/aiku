@@ -34,12 +34,14 @@ provide("dashboardTabActive", dashboardTabActive)
                 <div>
                     {{ props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.registrations?.['1w'].formatted_value ?? 0 }}
                     <span>New Customers</span>
+                    <span class="ml-1 text-gray-500 text-sm italic">(1w)</span>
                 </div>
             </div>
             <div class="flex items-center gap-4 p-4 bg-gray-50 border shadow-sm rounded-lg">
                 <div>
                     {{ props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data?.orders?.['1w'].formatted_value ?? 0 }}
                     <span>Last Orders</span>
+                    <span class="ml-1 text-gray-500 text-sm italic">(1w)</span>
                 </div>
             </div>
         </div>
