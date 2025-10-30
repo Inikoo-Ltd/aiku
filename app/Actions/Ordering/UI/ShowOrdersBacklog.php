@@ -103,54 +103,63 @@ class ShowOrdersBacklog extends OrgAction
                 ]
             ],
             [
-                'label'         => __('Picking'),
+                'label'         => __('Warehouse'),
                 'currency_code' => $currencyCode,
                 'tabs'          => [
                     [
-                        'tab_slug'    => 'picking',
-                        'label'       => __('Picking'),
-                        'value'       => $parent->orderHandlingStats->number_orders_state_handling,
+                        'tab_slug'    => 'in_warehouse',
+                        'label'       => __('Waiting'),
+                        'value'       => $parent->orderHandlingStats->number_orders_state_in_warehouse,
                         'type'        => 'number',
-                        // 'icon'        => $icon,
-                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING->value],
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::IN_WAREHOUSE->value],
                         'information' => [
-                            'label' => $parent->orderHandlingStats->{"orders_state_handling_amount$currency"},
+                            'label' => $parent->orderHandlingStats->{"orders_state_in_warehouse_amount$currency"},
                             'type'  => 'currency'
                         ]
                     ],
                     [
-                        'tab_slug'    => 'blocked',
+                        'tab_slug'    => 'handling',
+                        'label'       => __('Piking'),
+                        'value'       => $parent->orderHandlingStats->number_orders_state_handling,
+                        'type'        => 'number',
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING_BLOCKED->value],
+                        'information' => [
+                            'label' => $parent->orderHandlingStats->{"orders_state_handling_amount$currency"},
+                            'type'  => 'currency',
+                        ]
+                    ],
+                    [
+                        'tab_slug'    => 'handling_blocked',
                         'label'       => __('Blocked'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_handling_blocked,
                         'type'        => 'number',
-                        // 'icon'        => $icon,
                         'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING_BLOCKED->value],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_handling_blocked_amount$currency"},
                             'type'  => 'currency',
                         ]
-                    ]
-                ]
-            ],
-            [
-                'label'         => __('Invoicing'),
-                'currency_code' => $currencyCode,
-                'tabs'          => [
+                    ],
                     [
                         'tab_slug'    => 'packed',
                         'label'       => __('Packed'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_packed,
                         'icon'        => 'fal fa-box',
-                        // 'indicator' => true,
                         'iconClass'   => 'text-teal-500',
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_packed_amount$currency"},
                             'type'  => 'currency'
                         ]
                     ],
+                ]
+            ],
+            [
+                'label'         => __('Waiting for dispatch'),
+                'currency_code' => $currencyCode,
+                'tabs'          => [
+
                     [
-                        'tab_slug'    => 'packed_done',
-                        'label'       => __('Packed Done'),
+                        'tab_slug'    => 'finalised',
+                        'label'       => __('Finalised'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_finalised,
                         'icon'        => 'fal fa-box-check',
                         'iconClass'   => 'text-orange-500',
@@ -162,7 +171,7 @@ class ShowOrdersBacklog extends OrgAction
                 ]
             ],
             [
-                'label'         => __('Today'),
+                'label'         => __('Dispatched Today'),
                 'currency_code' => $currencyCode,
                 'tabs'          => [
                     [
@@ -212,21 +221,26 @@ class ShowOrdersBacklog extends OrgAction
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value))
                     : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value))),
 
-                OrdersBacklogTabsEnum::PICKING->value => $this->tab == OrdersBacklogTabsEnum::PICKING->value ?
-                    fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PICKING->value, bucket: OrdersBacklogTabsEnum::PICKING->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PICKING->value, bucket: OrdersBacklogTabsEnum::PICKING->value))),
+                OrdersBacklogTabsEnum::IN_WAREHOUSE->value => $this->tab == OrdersBacklogTabsEnum::IN_WAREHOUSE->value ?
+                    fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_WAREHOUSE->value, bucket: OrdersBacklogTabsEnum::IN_WAREHOUSE->value))
+                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_WAREHOUSE->value, bucket: OrdersBacklogTabsEnum::IN_WAREHOUSE->value))),
 
-                OrdersBacklogTabsEnum::BLOCKED->value => $this->tab == OrdersBacklogTabsEnum::BLOCKED->value ?
-                    fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::BLOCKED->value, bucket: OrdersBacklogTabsEnum::BLOCKED->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::BLOCKED->value, bucket: OrdersBacklogTabsEnum::BLOCKED->value))),
+
+                OrdersBacklogTabsEnum::HANDLING->value => $this->tab == OrdersBacklogTabsEnum::HANDLING->value ?
+                    fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING->value, bucket: OrdersBacklogTabsEnum::HANDLING->value))
+                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING->value, bucket: OrdersBacklogTabsEnum::HANDLING->value))),
+
+                OrdersBacklogTabsEnum::HANDLING_BLOCKED->value => $this->tab == OrdersBacklogTabsEnum::HANDLING_BLOCKED->value ?
+                    fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value, bucket: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value))
+                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value, bucket: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value))),
 
                 OrdersBacklogTabsEnum::PACKED->value => $this->tab == OrdersBacklogTabsEnum::PACKED->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKED->value, bucket: OrdersBacklogTabsEnum::PACKED->value))
                     : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKED->value, bucket: OrdersBacklogTabsEnum::PACKED->value))),
 
-                OrdersBacklogTabsEnum::PACKED_DONE->value => $this->tab == OrdersBacklogTabsEnum::PACKED_DONE->value ?
-                    fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKED_DONE->value, bucket: OrdersBacklogTabsEnum::PACKED_DONE->value))
-                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKED_DONE->value, bucket: OrdersBacklogTabsEnum::PACKED_DONE->value))),
+                OrdersBacklogTabsEnum::FINALISED->value => $this->tab == OrdersBacklogTabsEnum::FINALISED->value ?
+                    fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::FINALISED->value, bucket: OrdersBacklogTabsEnum::FINALISED->value))
+                    : Inertia::lazy(fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::FINALISED->value, bucket: OrdersBacklogTabsEnum::FINALISED->value))),
 
                 OrdersBacklogTabsEnum::DISPATCHED_TODAY->value => $this->tab == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value ?
                     fn () => OrdersResource::collection(IndexOrders::run(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value))
@@ -236,10 +250,11 @@ class ShowOrdersBacklog extends OrgAction
         )->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_BASKET->value, bucket: OrdersBacklogTabsEnum::IN_BASKET->value))
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_PAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_PAID->value))
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value, bucket: OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value))
-            ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::PICKING->value, bucket: OrdersBacklogTabsEnum::PICKING->value))
-            ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::BLOCKED->value, bucket: OrdersBacklogTabsEnum::BLOCKED->value))
+            ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::IN_WAREHOUSE->value, bucket: OrdersBacklogTabsEnum::IN_WAREHOUSE->value))
+            ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING->value, bucket: OrdersBacklogTabsEnum::HANDLING->value))
+            ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value, bucket: OrdersBacklogTabsEnum::HANDLING_BLOCKED->value))
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKED->value, bucket: OrdersBacklogTabsEnum::PACKED->value))
-            ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::PACKED_DONE->value, bucket: OrdersBacklogTabsEnum::PACKED_DONE->value))
+            ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::FINALISED->value, bucket: OrdersBacklogTabsEnum::FINALISED->value))
             ->table(IndexOrders::make()->tableStructure(parent: $parent, prefix: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value, bucket: OrdersBacklogTabsEnum::DISPATCHED_TODAY->value));
     }
 

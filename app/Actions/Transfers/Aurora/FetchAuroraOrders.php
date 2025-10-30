@@ -34,7 +34,7 @@ class FetchAuroraOrders extends FetchAuroraAction
     use WithAuroraAttachments;
     use WithAuroraParsers;
 
-    public string $commandSignature = 'fetch:orders {organisations?*} {--S|shop= : Shop slug} {--s|source_id=} {--d|db_suffix=} {--w|with=* : Accepted values: transactions payments full} {--N|only_new : Fetch only new} {--d|db_suffix=} {--r|reset} {--B|basket : fetch updated orders in basket} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
+    public string $commandSignature = 'fetch:orders {organisations?*} {--S|shop= : Shop slug} {--s|source_id=} {--d|db_suffix=} {--w|with=* : Accepted values: transactions payments full} {--N|only_new : Fetch only new} {--only_cancelled : Fetch only cancelled}   {--d|db_suffix=} {--r|reset} {--B|basket : fetch updated orders in basket} {--T|only_orders_no_transactions : Fetch only orders with no transactions} {--D|days= : fetch last n days} {--O|order= : order asc|desc}';
 
     private bool $errorReported = false;
     private string $fingerPrint;
@@ -378,6 +378,9 @@ class FetchAuroraOrders extends FetchAuroraAction
             $query->whereNull('aiku_id');
         } elseif ($this->onlyOrdersNoTransactions) {
             $query->whereNull('aiku_all_id');
+        } elseif ($this->onlyCancelled) {
+            $query->where('Order State', 'Cancelled');
+            ;
         }
 
         if ($this->fromDays) {

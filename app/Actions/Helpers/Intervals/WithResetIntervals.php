@@ -14,6 +14,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrdersDispatchedToday;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateFinalised;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
@@ -30,16 +32,21 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrdersDispatchedToday;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateFinalised;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrdersDispatchedToday;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateFinalised;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
 use App\Enums\Accounting\InvoiceCategory\InvoiceCategoryStateEnum;
 use App\Enums\Catalogue\Shop\ShopStateEnum;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Goods\Stock\StockStateEnum;
 use App\Enums\Goods\StockFamily\StockFamilyStateEnum;
 use App\Enums\Inventory\OrgStock\OrgStockStateEnum;
@@ -66,6 +73,15 @@ trait WithResetIntervals
     protected function resetGroups(): void
     {
         foreach (Group::all() as $group) {
+
+            if (array_intersect($this->intervals, [
+                DateIntervalEnum::YESTERDAY,
+                DateIntervalEnum::TODAY
+            ])) {
+                GroupHydrateOrderStateFinalised::dispatch($group->id);
+                GroupHydrateOrdersDispatchedToday::dispatch($group->id);
+            }
+
             GroupHydrateSalesIntervals::dispatch(
                 group: $group,
                 intervals: $this->intervals,
@@ -104,6 +120,15 @@ trait WithResetIntervals
     protected function resetOrganisations(): void
     {
         foreach (Organisation::whereNot('type', OrganisationTypeEnum::AGENT)->get() as $organisation) {
+
+            if (array_intersect($this->intervals, [
+                DateIntervalEnum::YESTERDAY,
+                DateIntervalEnum::TODAY
+            ])) {
+                OrganisationHydrateOrderStateFinalised::dispatch($organisation->id);
+                OrganisationHydrateOrdersDispatchedToday::dispatch($organisation->id);
+            }
+
             OrganisationHydrateSalesIntervals::dispatch(
                 organisation: $organisation,
                 intervals: $this->intervals,
@@ -145,6 +170,7 @@ trait WithResetIntervals
     protected function resetMasterShops(): void
     {
         foreach (MasterShop::all() as $masterShop) {
+
             MasterShopHydrateSalesIntervals::dispatch(
                 masterShopID: $masterShop->id,
                 intervals: $this->intervals,
@@ -179,12 +205,22 @@ trait WithResetIntervals
 
     protected function resetShops(): void
     {
+        /** @var Shop $shop */
         foreach (
             Shop::whereIn('state', [
                 ShopStateEnum::OPEN,
                 ShopStateEnum::CLOSING_DOWN
             ])->get() as $shop
         ) {
+
+            if (array_intersect($this->intervals, [
+                DateIntervalEnum::YESTERDAY,
+                DateIntervalEnum::TODAY
+            ])) {
+                ShopHydrateOrderStateFinalised::dispatch($shop->id);
+                ShopHydrateOrdersDispatchedToday::dispatch($shop->id);
+            }
+
             ShopHydrateSalesIntervals::dispatch(
                 shop: $shop,
                 intervals: $this->intervals,

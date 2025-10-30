@@ -90,11 +90,11 @@ enum OrderStateEnum: string
             ],
             'handling_blocked' => [
                 'tooltip' => __('Handling Blocked'),
-                'icon'    => 'fal fa-hands-helping',
-                'class'   => 'text-gray-500',
+                'icon'    => 'fal fa-ban',
+                'class'   => 'text-red-500',
                 'color'   => 'slate',
                 'app'     => [
-                    'name' => 'times',
+                    'name' => 'ban',
                     'type' => 'font-awesome-5'
                 ]
             ],

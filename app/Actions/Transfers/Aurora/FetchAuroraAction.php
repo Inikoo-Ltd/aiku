@@ -142,6 +142,9 @@ class FetchAuroraAction extends FetchAction
 
         if ($command->getName() == 'fetch:orders') {
             $this->basket = $command->option('basket') ?? false;
+            $this->onlyCancelled = $command->option('only_cancelled') ?? false;
+
+
         }
 
         if ($command->getName() == 'fetch:histories' and $command->option('model')) {
