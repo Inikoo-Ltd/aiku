@@ -42,7 +42,12 @@ library.add(
 
 const props = withDefaults(
     defineProps<{
-        fieldValue: {};
+        fieldValue: {
+            custom_navigation_1_styling: {
+                index_of_navigation_to_apply: string  // "1, 2, 6, 7, 8"
+                properties: {}
+            }
+        };
         screenType: "mobile" | "tablet" | "desktop";
     }>(),
     {}
@@ -158,6 +163,16 @@ const internalHref = (url: string) => {
     return path
 }
 
+const compIndexStyling1 = computed(() => {
+    const xxx = props.fieldValue?.custom_navigation_1_styling?.index_of_navigation_to_apply
+    // Convert "1, 2, 4, 7, 8" to [1, 2, 4, 7, 8]
+    const vvvvv = typeof xxx === 'string'
+        ? xxx.split(',').map(s => Number(s.trim())).filter(n => !isNaN(n))
+        : [];
+
+    return vvvvv
+})
+
 </script>
 
 <template>
@@ -227,7 +242,7 @@ const internalHref = (url: string) => {
                         :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)"
                         :type="navigation?.link?.type"
-                        :style="getStyles(fieldValue?.custom_navigation_styling?.custom_top?.properties, screenType)"
+                        :style="compIndexStyling1?.includes(idxNavigation + 1) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href"
                         :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
@@ -249,7 +264,8 @@ const internalHref = (url: string) => {
                         :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)"
                         :type="navigation?.link?.type"
-                        :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
+                        xstyle="getStyles(fieldValue?.navigation_container?.properties, screenType)"
+                        :style="compIndexStyling1?.includes(idxNavigation + 1 + compCustomTopNavigation?.length) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href"
                         :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full py-2 px-6 flex items-center justify-center transition duration-200"
@@ -272,7 +288,8 @@ const internalHref = (url: string) => {
                         :is="navigation?.link?.href ? LinkIris : 'div'"
                         @mouseenter="() => onMouseEnterMenu(navigation)"
                         :type="navigation?.link?.type"
-                        :style="getStyles(fieldValue?.custom_navigation_styling?.custom_bottom?.properties, screenType)"
+                        xstyle="getStyles(fieldValue?.custom_navigation_styling?.custom_bottom?.properties, screenType)"
+                        :style="compIndexStyling1?.includes(idxNavigation + 1 + compCustomTopNavigation?.length + selectedMenu?.length) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href"
                         :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen

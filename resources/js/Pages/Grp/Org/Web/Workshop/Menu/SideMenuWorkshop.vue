@@ -27,7 +27,7 @@ import { notify } from "@kyvg/vue3-notification"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import Blueprint from "./Blueprint"
 import BlueprintForCustomTopAndBottomNavigation from "./BlueprintForCustomTopAndBottomNavigation"
-import { get, set } from "lodash"
+import { debounce, get, set } from "lodash"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import { trans } from "laravel-vue-i18n"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
@@ -55,7 +55,6 @@ const props = defineProps<{
 			fieldValue: Object
 		}
 	}
-	autosaveRoute: routeType
 	webBlockTypes: {
 		data: Array<any>
 	}
@@ -105,6 +104,9 @@ const autoSave = async (value) => {
  emits('auto-save',value)
 }
 
+const debAutoSave = debounce((data) => {
+	autoSave(data)
+}, 1000)
 
 </script>
 
@@ -132,7 +134,6 @@ const autoSave = async (value) => {
 				<div class="relative">
 					<SetMenuListWorkshop
 						:data="data"
-						:autosaveRoute="autosaveRoute"
 						@auto-save="() => autoSave(data)"
 					/>
 					<Transition name="slide-to-right">
@@ -149,7 +150,7 @@ const autoSave = async (value) => {
 				<SideEditor 
 					:modelValue="get(data, ['data', 'fieldValue'], null)" 
 					:blueprint="Blueprint.blueprint"
-					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e) , autoSave(data)}"
+					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e) , debAutoSave(data)}"
 				/>
 			</TabPanel>
 
@@ -157,9 +158,9 @@ const autoSave = async (value) => {
 			<TabPanel v-if="data">
 				<div class="relative">
 					<SideEditor
-						:modelValue="get(data, ['data', 'fieldValue', 'custom_navigation_styling'], null)"
+						:modelValue="get(data, ['data', 'fieldValue'], null)"
 						:blueprint="BlueprintForCustomTopAndBottomNavigation.blueprint"
-						@update:modelValue="(e) => { set(data, ['data', 'fieldValue', 'custom_navigation_styling'], e) , autoSave(data)}"
+						@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e) , debAutoSave(data)}"
 					/>
 					
 					<Transition name="slide-to-right">
