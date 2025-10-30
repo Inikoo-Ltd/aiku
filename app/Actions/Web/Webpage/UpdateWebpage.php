@@ -18,6 +18,7 @@ use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateChildWebpages;
 use App\Actions\Web\Webpage\Search\WebpageRecordSearch;
 use App\Actions\Web\Website\Hydrators\WebsiteHydrateWebpages;
+use App\Actions\Catalogue\Product\BreakProductInWebpagesCache;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageTypeEnum;
@@ -30,6 +31,7 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
+
 
 class UpdateWebpage extends OrgAction
 {
@@ -133,7 +135,7 @@ class UpdateWebpage extends OrgAction
             WebpageRecordSearch::dispatch($webpage);
         }
 
-
+        BreakProductInWebpagesCache::make()->breakCache($webpage);
         return $webpage;
     }
 
@@ -221,6 +223,7 @@ class UpdateWebpage extends OrgAction
 
     public function action(Webpage $webpage, array $modelData, int $hydratorsDelay = 0, $strict = true, bool $audit = true): Webpage
     {
+         dd('ssss');
         if (!$audit) {
             Webpage::disableAuditing();
         }
@@ -228,7 +231,9 @@ class UpdateWebpage extends OrgAction
         $this->hydratorsDelay = $hydratorsDelay;
         $this->asAction       = true;
         $this->webpage        = $webpage;
+       
 
+        
         $this->initialisation($webpage->organisation, $modelData);
 
         return $this->handle($webpage, $this->validatedData);
