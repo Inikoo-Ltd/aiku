@@ -118,11 +118,13 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
                             class="group tabular-nums relative cursor-pointer text-xl px-2 hover:underline"
                             xclass="tab.tab_slug === currentTab ? 'text-indigo-600' : 'text-gray-500'"
                         >
-                            <template v-if="tab.icon || tab.icon_data">
-                                <LoadingIcon v-if="tabLoading == tab.tab_slug" class="animate-spin text-xl" />
-                                <Icon v-else-if="tab.icon_data" :data="tab.icon_data" class='text-xl' />
-                                <FontAwesomeIcon v-else :icon='tab.icon' class='text-xl' fixed-width aria-hidden='true' />
-                            </template>
+                            <div class="mx-auto text-center">
+                                <template v-if="tab.icon || tab.icon_data">
+                                    <LoadingIcon v-if="tabLoading == tab.tab_slug" class="animate-spin text-xl" />
+                                    <Icon v-else-if="tab.icon_data" :data="tab.icon_data" class='text-xl' />
+                                    <FontAwesomeIcon v-else :icon='tab.icon' class='text-xl' fixed-width aria-hidden='true' />
+                                </template>
+                            </div>
                             
                             <div class="relative text-center">
                                 <span class="inline" :class="tabLoading == tab.tab_slug ? 'opacity-0' : 'opacity-80 group-hover:opacity-100'">

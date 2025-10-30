@@ -32,7 +32,7 @@ import {
     faTransporter,
     faRulerTriangle,
     faRulerCombined,
-    faAtom,
+    faAtom, faBan, faSnooze,
     faFileInvoice, faInboxIn,
     faPaperPlane,
     faDraftingCompass, faExternalLinkAlt,
@@ -51,7 +51,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
 
-library.add(faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
+library.add(faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faBan, faSnooze, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
 
 provide("layout", useLayoutStore())
 provide("locale", useLocaleStore())

@@ -64,7 +64,10 @@ class ShowOrdersBacklog extends OrgAction
                         'label'       => __('In basket'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_creating,
                         'type'        => 'number',
-                        'icon'        => 'fal fa-shopping-basket',
+                        'icon_data'        => [
+                            'icon'    => 'fal fa-shopping-basket',
+                            'tooltip' => __('In Basket'),
+                        ],
                         'information' => [
                             'type'  => 'currency',
                             'label' => $parent->orderHandlingStats->{"orders_state_creating_amount$currency"},
@@ -111,7 +114,10 @@ class ShowOrdersBacklog extends OrgAction
                         'label'       => __('Waiting'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_in_warehouse,
                         'type'        => 'number',
-                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::IN_WAREHOUSE->value],
+                        'icon_data'   => [
+                            'tooltip' => __('Waiting'),
+                            'icon'    => 'fal fa-snooze',
+                        ],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_in_warehouse_amount$currency"},
                             'type'  => 'currency'
@@ -119,10 +125,10 @@ class ShowOrdersBacklog extends OrgAction
                     ],
                     [
                         'tab_slug'    => 'handling',
-                        'label'       => __('Piking'),
+                        'label'       => __('Picking'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_handling,
                         'type'        => 'number',
-                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING_BLOCKED->value],
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::HANDLING->value],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_handling_amount$currency"},
                             'type'  => 'currency',
@@ -143,8 +149,9 @@ class ShowOrdersBacklog extends OrgAction
                         'tab_slug'    => 'packed',
                         'label'       => __('Packed'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_packed,
-                        'icon'        => 'fal fa-box',
-                        'iconClass'   => 'text-teal-500',
+                        // 'icon'        => OrderStateEnum::stateIcon()[OrderStateEnum::PACKED->value],
+                        // 'iconClass'   => 'text-teal-500',
+                        'icon_data'   => OrderStateEnum::stateIcon()[OrderStateEnum::PACKED->value],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_packed_amount$currency"},
                             'type'  => 'currency'
@@ -161,8 +168,12 @@ class ShowOrdersBacklog extends OrgAction
                         'tab_slug'    => 'finalised',
                         'label'       => __('Finalised'),
                         'value'       => $parent->orderHandlingStats->number_orders_state_finalised,
-                        'icon'        => 'fal fa-box-check',
-                        'iconClass'   => 'text-orange-500',
+                        // 'icon'        => 'fal fa-box-check',
+                        // 'iconClass'   => 'text-orange-500',
+                        'icon_data'   => [
+                            'icon'    => 'fal fa-box-check',
+                            'tooltip' => __('Finalised'),
+                        ],
                         'information' => [
                             'label' => $parent->orderHandlingStats->{"orders_state_finalised_amount$currency"},
                             'type'  => 'currency'
