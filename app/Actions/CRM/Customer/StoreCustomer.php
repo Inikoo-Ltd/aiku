@@ -57,12 +57,15 @@ class StoreCustomer extends OrgAction
     use WithNoStrictRules;
     use WithProcessContactNameComponents;
     use WithPrepareTaxNumberValidation;
+    
+    protected Shop $shop;
 
     /**
      * @throws \Throwable
      */
     public function handle(Shop $shop, array $modelData): Customer
     {
+        $this->shop = $shop;
         data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
 
         $contactAddressData = Arr::get($modelData, 'contact_address', []);
@@ -209,6 +212,8 @@ class StoreCustomer extends OrgAction
 
     public function rules(): array
     {
+        $requirePhoneNumber = Arr::get($this->shop->settings, 'registration.require_phone_number', false);
+
         $rules = [
             'reference'                => [
                 'sometimes',
@@ -237,7 +242,7 @@ class StoreCustomer extends OrgAction
                 ),
             ],
             'phone'                    => [
-                'nullable',
+                $requirePhoneNumber ? 'required' : 'nullable',
                 'string:32'
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],

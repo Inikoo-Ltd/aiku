@@ -19,6 +19,7 @@ use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 use Google\Service\Oauth2;
 use Illuminate\Validation\Validator;
+use Illuminate\Support\Arr;
 
 class ShowRetinaRegisterWithGoogle extends IrisAction
 {
@@ -37,6 +38,7 @@ class ShowRetinaRegisterWithGoogle extends IrisAction
             'Auth/RegistrationWithGoogle',
             [
                 'countriesAddressData' => GetAddressData::run(),
+                'requiresPhoneNumber' => Arr::get($this->shop->settings, 'registration.require_phone_number', false),
                 'polls'                => $pollsResource,
                 'registerRoute'        => [
                     'name'       => 'retina.register_from_google.store',
