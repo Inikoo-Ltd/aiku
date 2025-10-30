@@ -18,8 +18,8 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { set } from 'lodash-es'
 import { Dashboard } from "@/types/Components/Dashboard"
 import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardShopWidget.vue";
-import TabsBox from "@/Components/Navigation/TabsBox.vue";
 import { useTabChange } from "@/Composables/tab-change";
+import TabsBoxDisplay from "@/Components/Dashboards/TabsBoxDisplay.vue";
 library.add(faInventory, faWarehouse, faMapSigns, faBox, faBoxesAlt, faCircle, faCheckCircle, faHandsHelping, faTriangle)
 
 const props = defineProps<{
@@ -38,7 +38,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab);
 <template>
 	<div>
         <KeepAlive v-if="props.dashboard?.super_blocks?.[0]?.tabs_box">
-            <TabsBox :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" :current="currentTab" @update:tab="handleTabUpdate" />
+            <TabsBoxDisplay :tabs_box="props.dashboard?.super_blocks?.[0]?.tabs_box?.navigation" />
         </KeepAlive>
 
         <div v-if="props.dashboard?.super_blocks?.[0]?.shop_blocks?.interval_data" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 px-4 pt-4">
