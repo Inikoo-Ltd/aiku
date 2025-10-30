@@ -87,7 +87,7 @@ const isLoadingSubDepartment = ref(false)
 // Handle navigation with loading state
 const handleViewAllProductCategory = (url: string) => {
     isLoadingProductCategory.value = true
-    router.visit('/' + url, {
+    router.visit(url, {
         onFinish: () => {
             isLoadingProductCategory.value = false
             // Emit event to close mobile drawer
@@ -103,7 +103,7 @@ const handleViewAllProductCategory = (url: string) => {
 
 const handleViewAllSubDepartment = (url: string) => {
     isLoadingSubDepartment.value = true
-    router.visit('/' + url, {
+    router.visit(url, {
         onFinish: () => {
             isLoadingSubDepartment.value = false
             // Emit event to close mobile drawer

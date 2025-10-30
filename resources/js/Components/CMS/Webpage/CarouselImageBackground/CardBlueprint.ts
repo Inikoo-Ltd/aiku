@@ -32,6 +32,12 @@ export default {
 			type: "editorhtml",
 		},
 		{
+			name : 'Link',
+			key: ["link"],
+			label: "Link",
+			type: "link",
+		},
+		{
 			name: "Button",
 			key: ["button"],
 			editGlobalStyle: "button",

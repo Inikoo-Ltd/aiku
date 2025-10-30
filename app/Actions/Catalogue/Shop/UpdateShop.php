@@ -116,8 +116,8 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.registration.require_approval", Arr::pull($modelData, 'required_approval'));
         }
         
-        if (Arr::exists($modelData, 'required_phone_verification')) {
-            data_set($modelData, "settings.registration.require_phone_verification", Arr::pull($modelData, 'required_phone_verification'));
+        if (Arr::exists($modelData, 'required_phone_number')) {
+            data_set($modelData, "settings.registration.require_phone_number", Arr::pull($modelData, 'required_phone_number'));
         }
 
         if (Arr::exists($modelData, 'stand_alone_invoice_numbers')) {
@@ -244,7 +244,7 @@ class UpdateShop extends OrgAction
             'registration_number'          => ['sometimes', 'string'],
             'vat_number'                   => ['sometimes', 'string'],
             'required_approval'            => ['sometimes', 'boolean'],
-            'required_phone_verification'  => ['sometimes', 'boolean'],
+            'required_phone_number'        => ['sometimes', 'boolean'],
             'invoice_footer'               => ['sometimes', 'string', 'max:10000'],
             'cost_price_ratio'             => ['sometimes', 'numeric', 'min:0'],
             'price_rrp_ratio'              => ['sometimes', 'numeric', 'min:0'],
