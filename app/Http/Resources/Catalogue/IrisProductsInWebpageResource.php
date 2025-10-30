@@ -72,6 +72,7 @@ class IrisProductsInWebpageResource extends JsonResource
         }
 
 
+        $units= (int) $this->units;
         return [
             'id'             => $this->id,
             'image_id'       => $this->image_id,
