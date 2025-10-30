@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import ShopSalesVsRefunds from "@/Components/Shop/ShopSalesVsRefunds.vue";
+import ShopSales from "@/Components/Shop/ShopSales.vue";
 import StatsBoxIntervals from "@/Components/Stats/StatsBoxIntervals.vue";
+import ShopInvoices from "@/Components/Shop/ShopInvoices.vue";
 
 const props = defineProps<{
     interval: string
@@ -10,11 +11,8 @@ const props = defineProps<{
 
 <template>
     <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 p-4">
-        <ShopSalesVsRefunds :interval="interval" :data="data.interval_data" />
-        <StatsBoxIntervals
-            v-if="data.stats_box"
-            :stat="data.stats_box"
-            :interval="interval"
-        />
+        <ShopSales :interval="interval" :data="data.interval_data" />
+        <ShopInvoices :interval="interval" :data="data.interval_data" />
+<!--        <StatsBoxIntervals v-if="data.stats_box" :stat="data.stats_box" :interval="interval" />-->
     </div>
 </template>

@@ -3,7 +3,8 @@ import { inject } from "vue";
 import WidgetOrganisations from "./Widget/WidgetOrganisations.vue"
 import WidgetShops from "./Widget/WidgetShops.vue"
 import CustomerClv from "@/Components/CustomerCLV.vue";
-import SalesVsRefunds from "@/Components/DataDisplay/Dashboard/Widget/SalesVsRefunds.vue";
+import Sales from "@/Components/DataDisplay/Dashboard/Widget/Sales.vue";
+import Invoices from "@/Components/DataDisplay/Dashboard/Widget/Invoices.vue";
 
 const props = defineProps<{
 	intervals: {
@@ -34,8 +35,14 @@ const layout = inject('layout')
             :tableData="props.tableData"
             :intervals="props.intervals"
         />
-       <CustomerClv v-if="layout?.app?.environment === 'local'" />
-        <SalesVsRefunds
+<!--        <CustomerClv v-if="layout?.app?.environment === 'local'" />-->
+        <Sales
+            v-if="props.tableData?.tables?.invoice_categories"
+            :scope="props.tableData?.tables?.organisations ? 'group' : 'organisation'"
+            :tableData="props.tableData"
+            :intervals="props.intervals"
+        />
+        <Invoices
             v-if="props.tableData?.tables?.invoice_categories"
             :scope="props.tableData?.tables?.organisations ? 'group' : 'organisation'"
             :tableData="props.tableData"
