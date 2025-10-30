@@ -402,7 +402,7 @@ const onCopyDataCustomer = (field: string) => {
                         </div>
 
                         <div v-else-if="shipment.tracking" class="text-gray-400 text-base">
-                            {{ useTruncate(shipment.tracking, 18) }}
+                            {{ shipment.tracking }}
                         </div>
 
                         <div v-if="isDeleteShipment === shipment.id" class="px-1 absolute top-0 right-0">

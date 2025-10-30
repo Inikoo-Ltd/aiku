@@ -38,7 +38,7 @@ class ShopHydratePlatformSalesIntervalsNewCustomers implements ShouldBeUnique
                 stats: [],
                 queryBase: $queryBase,
                 statField: 'new_customers_',
-                dateField: 'customer_sales_channels.created_at',
+                dateField: 'customers.registered_at',
                 intervals: $intervals,
                 doPreviousPeriods: $doPreviousPeriods
             );
