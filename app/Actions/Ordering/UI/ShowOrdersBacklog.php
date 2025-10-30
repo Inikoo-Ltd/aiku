@@ -52,7 +52,7 @@ class ShowOrdersBacklog extends OrgAction
 
         $currencyCode = $parent->currency->code;
 
-        $icon = 'fal fa-tachometer-alt';
+
 
         $tabsBox = [
             [
