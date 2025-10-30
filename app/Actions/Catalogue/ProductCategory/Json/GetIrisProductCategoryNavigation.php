@@ -19,7 +19,7 @@ class GetIrisProductCategoryNavigation extends IrisAction
     public function handle(Website $website): array
     {
         $shop = $website->shop;
-        $domain = $website->domain;
+        // $domain = $website->domain;
         $data = [];
 
         $departments = DB::table('product_categories')
@@ -32,7 +32,8 @@ class GetIrisProductCategoryNavigation extends IrisAction
             ->get();
 
         foreach ($departments as $department) {
-            $departmentUrl = $domain . '/' . $department->url;
+            // $departmentUrl = $domain . '/' . $department->url;
+            $departmentUrl = '/' . $department->url;
 
             $collectionsRaw = DB::table('model_has_collections')
                 ->where('model_has_collections.model_id', $department->id)

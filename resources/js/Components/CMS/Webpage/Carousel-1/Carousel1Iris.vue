@@ -93,9 +93,15 @@ const responsiveOptions = computed(() => {
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(fieldValue?.container?.properties, props.screenType)
     }">
-      <Carousel v-show="hasCards" :value="fieldValue.carousel_data.cards" :numVisible="slidesPerView"
-        :circular="isLooping" :autoplayInterval="fieldValue?.carousel_data?.carousel_setting?.autoplay ? 5000 : 0"
-        :responsiveOptions="responsiveOptions" class="w-full">
+      <Carousel
+        v-show="hasCards"
+        :value="fieldValue.carousel_data.cards"
+        :numVisible="slidesPerView"
+        :circular="isLooping"
+        :autoplayInterval="fieldValue?.carousel_data?.carousel_setting?.autoplay ? 5000 : 0"
+        :responsiveOptions="responsiveOptions"
+        :showNavigators="fieldValue?.carousel_data?.cards?.length > slidesPerView"
+        class="w-full">
         <template #item="{ data, index }" :showNavigators="false" :showIndicators="false">
           <div class="card flex flex-col h-full">
             <component :is="getHref(data) ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"

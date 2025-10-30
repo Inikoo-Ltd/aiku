@@ -22,6 +22,7 @@ import { debounce, get } from "lodash-es";
 import { trans } from "laravel-vue-i18n";
 import LinkIris from "@/Components/Iris/LinkIris.vue";
 import { menuCategoriesToMenuStructure } from "@/Composables/Iris/useMenu"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 library.add(
     faChevronLeft,
@@ -126,13 +127,11 @@ const computedSelectedSidebarData = computed(() => {
     }
 
     const selectedProductCategories = compSelectedSidebar.value?.data?.fieldValue?.product_categories || compSelectedSidebar.value?.product_categories
+    // const selectedProductCategories = compSelectedSidebar.value?.product_categories
 
     const productCategoriesAuto = menuCategoriesToMenuStructure(selectedProductCategories) || []
 
-    return [
-        ...productCategoriesAuto,
-
-    ] 
+    return productCategoriesAuto
 })
 
 const selectedMenu = get(props, 'fieldValue.setting_on_sidebar.is_follow', false) ? computedSelectedSidebarData : props.fieldValue.navigation
@@ -147,6 +146,17 @@ watch(
   { deep: true }
 )
 
+const internalHref = (url: string) => {
+    // "https://www.aw-dropship.com/new",   -> /new
+    // "http://aw-dropship.com/new",   -> /new
+    // "www.aw-dropship.com/new",   -> /new
+    // "aw-dropship.com/new"   -> /new
+    if (!url) return '';
+
+    const path = url.replace(/^(https?:\/\/)?(www\.)?[^/]+/, "");
+    
+    return path
+}
 
 </script>
 
@@ -288,7 +298,7 @@ watch(
                     <div v-for="subnav in hoveredNavigation?.subnavs" :key="subnav.title" class="">
                         <component
                             :is="subnav?.link?.href ? LinkIris : 'div'"
-                            :href="subnav?.link?.href"
+                            :href="internalHref(subnav?.link?.href)"
                             :type="subnav?.link?.type" :target="subnav?.link?.target"
                             :canonical_url="subnav?.link?.canonical_url"
                             :style="{
@@ -299,14 +309,18 @@ watch(
                                 fontWeight: 600,
                                 ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
                             }"
-                            class="font-semibold text-gray-700 transition flex items-center gap-x-3"
+                            class="relative font-semibold text-gray-700 transition flex items-center gap-x-3"
                             @start="() => onClickSubnav(subnav)"
                             @finish="() => loadingItem = null"
                         >
-                            <span>{{ subnav.title }}</span>
+                            <div class="relative">
+                                {{ subnav.title }}
+                                <div class="top-1/2 -translate-y-1/2 absolute -left-6">
+                                    <LoadingIcon v-if="loadingItem === (subnav.id || subnav.label)" />
+                                    <FontAwesomeIcon v-else-if="subnav.icon" :icon="subnav.icon" fixed-width class="text-[10px] text-gray-400" />
+                                </div>
+                            </div>
                             <!-- Spinner / Icon -->
-                            <FontAwesomeIcon v-if="loadingItem === (subnav.id || subnav.label)" icon="fas fa-spinner" spin fixed-width class="text-[10px] text-orange-500" />
-                            <FontAwesomeIcon v-else-if="subnav.icon" :icon="subnav.icon" fixed-width class="text-[10px] text-gray-400" />
                         </component>
 
                         <div v-for="linkData in subnav?.links"
@@ -321,7 +335,7 @@ watch(
                                 ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
                             }"
                         >
-                            <LinkIris v-if="linkData.link?.href" class="" :href="linkData.link.href"
+                            <LinkIris v-if="linkData.link?.href" class="" :href="internalHref(linkData.link.href)"
                                 :canonical_url="linkData.link.canonical_url" :type="linkData.link.type">
                                 <template #default>
                                     <div class="py-1">{{ linkData.label }}</div>
@@ -331,35 +345,37 @@ watch(
                         </div>
 
                         <!-- Section: Sub Department - Collections -->
-                        <div v-for="linkData in subnav?.collections"
-                            :key="subnav.title"
-                            class="navigation"
-                            :style="{
-                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-                                margin: 0,
-                                background: 'transparent',
-                                padding: 0,
-                                fontWeight: 600,
-                                ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
-                            }"
-                        >
-                            <LinkIris
-                                class=""
-                                :href="linkData.url"
-                                type="internal"
+                        <template v-if="subnav?.collections?.length">
+                            <div v-for="linkData in subnav?.collections"
+                                :key="subnav.title"
+                                class="navigation"
+                                :style="{
+                                    ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                                    margin: 0,
+                                    background: 'transparent',
+                                    padding: 0,
+                                    fontWeight: 600,
+                                    ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
+                                }"
                             >
-                                <template #default>
-                                    <div class="py-1">
-                                        {{ linkData.name }}
-                                        <FontAwesomeIcon v-tooltip="trans('Collection')" icon="fal fa-album-collection" class="opacity-60" fixed-width aria-hidden="true" />
-                                    </div>
-                                </template>
-                            </LinkIris>
-                        </div>
+                                <LinkIris
+                                    class=""
+                                    :href="internalHref(linkData.url)"
+                                    type="internal"
+                                >
+                                    <template #default>
+                                        <div class="py-1">
+                                            {{ linkData.name }}
+                                            <FontAwesomeIcon v-tooltip="trans('Collection')" icon="fal fa-album-collection" class="opacity-60" fixed-width aria-hidden="true" />
+                                        </div>
+                                    </template>
+                                </LinkIris>
+                            </div>
+                        </template>
                     </div>
 
                     <!-- Section: Department - Collection -->
-                    <div class="">
+                    <div v-if="hoveredNavigation?.collections?.length" class="">
                         <div
                             ahref="/collection"
                             xtype="internal"
@@ -396,7 +412,7 @@ watch(
                         >
                             <LinkIris
                                 class=""
-                                :href="linkData.url"
+                                :href="internalHref(linkData.url)"
                                 type="internal">
                                 <template #default>
                                     <div class="py-1">
