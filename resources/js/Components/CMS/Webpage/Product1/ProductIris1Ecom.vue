@@ -26,6 +26,7 @@ import LinkIris from "@/Components/Iris/LinkIris.vue"
 import axios from "axios"
 import { ulid } from "ulid"
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
+import Product from "@/Pages/Grp/Org/Catalogue/Product.vue"
 
 library.add(faCube, faLink, faPlus, faMinus)
 
@@ -434,7 +435,7 @@ const closePopover = (close: any): void => {
                                 <span class="flex items-center gap-1 font-semibold text-xs"
                                     :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
                                     (
-                                    {{ profitMargin > 0 ? '+' + profitMargin : profitMargin }}%
+                                    {{ fieldValue.product.margin }}
                                     )
                                 </span>
                             </div>
@@ -468,7 +469,7 @@ const closePopover = (close: any): void => {
                                     <span>Margin:</span>
                                     <span
                                         :class="profitMargin > 0 ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'">
-                                        {{ profitMargin.toFixed(2) }}%
+                                        {{ fieldValue?.product?.margin  }}
                                     </span>
                                 </div>
 
@@ -476,13 +477,7 @@ const closePopover = (close: any): void => {
                                     <span>Total Profit:</span>
                                     <span
                                         :class="profitMargin > 0 ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'">
-                                        {{
-                                            locale.currencyFormat(
-                                                currency?.code,
-                                                ((fieldValue.product.rrp_per_unit - fieldValue.product.price) *
-                                                    fieldValue.product.units).toFixed(2)
-                                            )
-                                        }}
+                                        {{ locale.currencyFormat(currency?.code,fieldValue?.product?.profit ) }}
                                     </span>
                                 </div>
                             </div>
@@ -565,7 +560,7 @@ const closePopover = (close: any): void => {
                     <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
                     <span class="flex items-center gap-1" :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
                         (
-                        {{ profitMargin > 0 ? '+' + profitMargin : profitMargin }}%
+                        {{ fieldValue?.product?.margin }}
                         )
                     </span>
                 </div>
