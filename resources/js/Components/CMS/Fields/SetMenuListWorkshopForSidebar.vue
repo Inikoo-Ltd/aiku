@@ -235,7 +235,6 @@ const autoSave = async (event?) => {
         </div>
     </div>
 
-    <pre>{{ data?.data?.fieldValue?.navigation_bottom }}</pre>
     <!-- Bottom Navigation Area -->
     <div class="mb-4">
         <div class="text-base font-medium mb-2">{{ trans("Bottom Custom Menu") }}</div>

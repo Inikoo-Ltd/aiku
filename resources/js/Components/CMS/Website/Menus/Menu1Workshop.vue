@@ -14,7 +14,7 @@ import {
     faSpinner
 } from "@fas";
 import { faHeart } from "@far";
-import { faBars, faChevronLeft, faChevronRight as falChevronRight } from "@fal";
+import { faBars, faChevronLeft, faChevronRight as falChevronRight, faAlbumCollection } from "@fal";
 import { ref, inject, nextTick, onMounted, computed, watch } from "vue";
 import { getStyles } from "@/Composables/styles";
 import { layoutStructure } from "@/Composables/useLayoutStructure";
@@ -25,7 +25,7 @@ import { menuCategoriesToMenuStructure } from "@/Composables/Iris/useMenu"
 
 library.add(
     faChevronLeft,
-    falChevronRight,
+    falChevronRight, faAlbumCollection,
     faChevronRight,
     faSignOutAlt,
     faShoppingCart,
@@ -127,14 +127,10 @@ const computedSelectedSidebarData = computed(() => {
 
     const selectedProductCategories = compSelectedSidebar.value?.data?.fieldValue?.product_categories || compSelectedSidebar.value?.product_categories
 
-    // const customNavigationTop = compSelectedSidebar.value?.data?.fieldValue?.navigation || []
     const productCategoriesAuto = menuCategoriesToMenuStructure(selectedProductCategories) || []
-    // const customNavigationBottom = compSelectedSidebar.value?.data?.fieldValue?.navigation_bottom || []
 
     return [
-        // ...customNavigationTop,
         ...productCategoriesAuto,
-        // ...customNavigationBottom,
 
     ] 
 })
@@ -246,15 +242,16 @@ watch(
                         :style="getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href"
                         :canonical_url="navigation?.link?.canonical_url"
-                        class="group w-full py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
-                            ? 'navigation'
+                        class="group w-full py-2 px-6 flex items-center justify-center transition duration-200"
+                        :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
+                            ? 'navigation underline'
                             : navigation?.link?.href
                                 ? 'cursor-pointer  navigation'
                                 : ''">
                         <span class="text-center whitespace-nowrap">{{ navigation.label }}</span>
-                        <div>
+                        <div class="ml-2">
                             <FontAwesomeIcon v-if="getNavigationIcon(navigation)" :icon="getNavigationIcon(navigation)"
-                                :spin="loadingItem === (navigation.id || navigation.label)" class="ml-2 text-[8px]" />
+                                :spin="loadingItem === (navigation.id || navigation.label)" class="text-[8px] align-middle" />
                         </div>
                     </component>
                 </template>
@@ -331,6 +328,82 @@ watch(
                                 </template>
                             </LinkIris>
                             <div v-else class="py-1">{{ linkData.label }}</div>
+                        </div>
+
+                        <!-- Section: Sub Department - Collections -->
+                        <div v-for="linkData in subnav?.collections"
+                            :key="subnav.title"
+                            class="navigation"
+                            :style="{
+                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                                margin: 0,
+                                background: 'transparent',
+                                padding: 0,
+                                fontWeight: 600,
+                                ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
+                            }"
+                        >
+                            <LinkIris
+                                class=""
+                                :href="linkData.url"
+                                type="internal"
+                            >
+                                <template #default>
+                                    <div class="py-1">
+                                        {{ linkData.name }}
+                                        <FontAwesomeIcon v-tooltip="trans('Collection')" icon="fal fa-album-collection" class="opacity-60" fixed-width aria-hidden="true" />
+                                    </div>
+                                </template>
+                            </LinkIris>
+                        </div>
+                    </div>
+
+                    <!-- Section: Department - Collection -->
+                    <div class="">
+                        <div
+                            ahref="/collection"
+                            xtype="internal"
+                            xtarget="subnav?.link?.target"
+                            :style="{
+                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                                margin: 0,
+                                background: 'transparent',
+                                padding: 0,
+                                fontWeight: 600,
+                                ...getStyles(fieldValue?.sub_navigation?.properties, screenType)
+                            }"
+                            class="font-semibold text-gray-700 transition flex items-center gap-x-3"
+                            @start="() => onClickSubnav(subnav)"
+                            @finish="() => loadingItem = null"
+                        >
+                            <span>
+                                {{ trans('Collection') }}
+                                <FontAwesomeIcon v-tooltip="trans('Collection on :department', { department: hoveredNavigation.label })" icon="fal fa-album-collection" class="opacity-60" fixed-width aria-hidden="true" />
+                            </span>
+                        </div>
+
+                        <div v-for="linkData in hoveredNavigation.collections"
+                            :key="linkData.id"
+                            zclass="navigation"
+                            :style="{
+                                ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                                margin: 0,
+                                background: 'transparent',
+                                padding: 0,
+                                fontWeight: 600,
+                                ...getStyles(fieldValue?.sub_navigation_link?.properties, screenType)
+                            }"
+                        >
+                            <LinkIris
+                                class=""
+                                :href="linkData.url"
+                                type="internal">
+                                <template #default>
+                                    <div class="py-1">
+                                        {{ linkData.name }}
+                                    </div>
+                                </template>
+                            </LinkIris>
                         </div>
                     </div>
                 </div>

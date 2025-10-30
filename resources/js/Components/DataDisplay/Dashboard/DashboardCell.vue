@@ -4,6 +4,7 @@ import { faTriangle, faEquals } from "@fas"
 import { Link } from "@inertiajs/vue3"
 import { Intervals } from "@/types/Components/Dashboard"
 import { getDashboardDateRange } from "@/Composables/useDashboard"
+import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg";
 
 interface RouteTarget {
     name?: string
@@ -19,7 +20,8 @@ const props = defineProps<{
         delta_icon?: {
             change?: string
             state?: string
-        }
+        },
+        icon?: string
     }
     interval: Intervals
 }>()
@@ -68,15 +70,15 @@ const getIntervalStateColor = (state?: string) => {
 //             ...route_target?.parameters,
 //             [route_target?.key_date_filter]: dashboardDateRange
 //         }
-//     } 
-    
+//     }
+
 //     return route_target?.parameters
 // }
 </script>
 
 <template>
     <component
-        class="tabular-nums text-xs md:text-base"
+        class="flex gap-2 items-center tabular-nums text-xs md:text-base"
         :class="[
             cell?.route_target?.name ? 'cursor-pointer hover:underline' : '',
         ]"
@@ -86,6 +88,11 @@ const getIntervalStateColor = (state?: string) => {
             [cell?.route_target?.key_date_filter]: getDashboardDateRange(props.interval.value)
         } : cell?.route_target.parameters) : '#'"
     >
+        <span
+            v-if="cell.icon"
+            v-html="ChannelLogo(cell.icon)"
+            class="w-4 h-4"
+        />
         <span v-tooltip="`${cell?.tooltip ?? ''}`">{{ cell?.formatted_value }}</span>
         <FontAwesomeIcon
             v-if="cell?.delta_icon?.change"

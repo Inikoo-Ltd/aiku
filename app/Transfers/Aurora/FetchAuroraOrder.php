@@ -25,6 +25,7 @@ class FetchAuroraOrder extends FetchAurora
 {
     protected function parseModel(): void
     {
+
         $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Order Store Key'});
 
         if ($shop->type == ShopTypeEnum::FULFILMENT) {
@@ -66,6 +67,8 @@ class FetchAuroraOrder extends FetchAurora
             );
         }
 
+
+
         $this->parsedData["parent"] = $parent;
         if (!$parent) {
             $this->parsedData = null;
@@ -85,6 +88,7 @@ class FetchAuroraOrder extends FetchAurora
             "Approved" => OrderStateEnum::FINALISED,
             "Dispatched" => OrderStateEnum::DISPATCHED,
             "InBasket" => OrderStateEnum::CREATING,
+            "Cancelled" => OrderStateEnum::CANCELLED,
             default => OrderStateEnum::SUBMITTED,
         };
 
@@ -306,6 +310,7 @@ class FetchAuroraOrder extends FetchAurora
             $this->parsedData['order']["delivery_address"] = $collectionAddress;
             $this->parsedData['order']["shipping_engine"]  = OrderShippingEngineEnum::NO_APPLICABLE;
         }
+
     }
 
     protected function fetchData($id): object|null

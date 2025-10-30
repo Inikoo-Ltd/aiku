@@ -17,7 +17,8 @@ class DashboardPlatformSalesResource extends JsonResource
             [
                 'label' => [
                     'formatted_value' => $this->resource->platform->name ?? '',
-                    'align'           => 'left'
+                    'align'           => 'left',
+                    'icon'            => $this->resource->platform->slug ?? '',
                 ]
             ],
             $this->getDashboardTableColumn($this, 'invoices'),

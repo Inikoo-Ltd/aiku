@@ -112,13 +112,15 @@ class IndexOrders extends OrgAction
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value) {
             $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN]);
-        } elseif ($this->bucket == OrdersBacklogTabsEnum::PICKING->value) {
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::IN_WAREHOUSE->value) {
+            $query->where('orders.state', OrderStateEnum::IN_WAREHOUSE);
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::HANDLING->value) {
             $query->where('orders.state', OrderStateEnum::HANDLING);
-        } elseif ($this->bucket == OrdersBacklogTabsEnum::BLOCKED->value) {
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::HANDLING_BLOCKED->value) {
             $query->where('orders.state', OrderStateEnum::HANDLING_BLOCKED);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::PACKED->value) {
             $query->where('orders.state', OrderStateEnum::PACKED);
-        } elseif ($this->bucket == OrdersBacklogTabsEnum::PACKED_DONE->value) {
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::FINALISED->value) {
             $query->where('orders.state', OrderStateEnum::FINALISED);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value) {
             $query->whereDate('dispatched_at', Carbon::today());
