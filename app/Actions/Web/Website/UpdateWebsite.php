@@ -8,6 +8,7 @@
 
 namespace App\Actions\Web\Website;
 
+use App\Actions\Catalogue\Shop\UpdateShop;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\UI\WithFavicon;
@@ -40,6 +41,19 @@ class UpdateWebsite extends OrgAction
         $website = $this->processWebsiteFavicon($modelData, $website);
         data_forget($modelData, 'image');
         data_forget($modelData, 'favicon');
+
+        $shopUpdateData = [];
+        if (Arr::has($modelData, "marketing_opt_in_default")) {
+            data_set($shopUpdateData, "settings.registration.marketing_opt_in_default", Arr::pull($modelData, 'marketing_opt_in_default'));
+        }
+
+        if (Arr::has($modelData, "required_phone_number")) {
+            data_set($shopUpdateData, "settings.registration.require_phone_number", Arr::pull($modelData, 'required_phone_number'));
+        }
+        if (!empty($shopUpdateData)) {
+            $shop = $website->shop;
+            UpdateShop::run($shop, $shopUpdateData);
+        }
 
         if (Arr::has($modelData, "google_tag_id")) {
             data_set($modelData, "settings.google_tag_id", Arr::pull($modelData, "google_tag_id"));
@@ -102,7 +116,7 @@ class UpdateWebsite extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'domain'                => [
+            'domain'                   => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -128,7 +142,7 @@ class UpdateWebsite extends OrgAction
                     ]
                 )
             ],
-            'code'                  => [
+            'code'                     => [
                 'sometimes',
                 'required',
                 'ascii',
@@ -149,50 +163,51 @@ class UpdateWebsite extends OrgAction
                 ),
 
             ],
-            'name'                  => ['sometimes', 'required', 'string', 'max:255'],
-            'launched_at'           => ['sometimes', 'date'],
-            'state'                 => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
-            'status'                => ['sometimes', 'boolean'],
-            'google_tag_id'         => [
+            'name'                     => ['sometimes', 'required', 'string', 'max:255'],
+            'launched_at'              => ['sometimes', 'date'],
+            'state'                    => ['sometimes', Rule::enum(WebsiteStateEnum::class)],
+            'status'                   => ['sometimes', 'boolean'],
+            'google_tag_id'            => [
                 'sometimes',
                 'nullable',
                 'string',
                 'regex:/^GTM-[A-Z0-9]+$/'
             ],
-            'catalogue_template'    => ['sometimes', 'array'],
-            'luigisbox_tracker_id'  => [
+            'catalogue_template'       => ['sometimes', 'array'],
+            'luigisbox_tracker_id'     => [
                 'sometimes',
                 'string',
                 'nullable',
                 'regex:/^\d{6}-\d{6}$/'
             ],
-            'luigisbox_script_lbx'  => [
+            'luigisbox_script_lbx'     => [
                 'sometimes',
                 'nullable',
                 'string',
             ],
-            'luigisbox_lbx_code'    => [
+            'luigisbox_lbx_code'       => [
                 'sometimes',
                 'nullable',
                 'string',
                 'regex:/^LBX-\d{6}$/',
             ],
-            'luigisbox_private_key' => ['sometimes', 'nullable', 'string'],
-            'last_reindex_at'       => ['sometimes', 'nullable', 'string'],
-            'return_policy'         => ['sometimes', 'string'],
-            'image'                 => [
+            'luigisbox_private_key'    => ['sometimes', 'nullable', 'string'],
+            'last_reindex_at'          => ['sometimes', 'nullable', 'string'],
+            'return_policy'            => ['sometimes', 'string'],
+            'image'                    => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'favicon'               => [
+            'favicon'                  => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'script_website'        => [
+            'marketing_opt_in_default' => ['sometimes', 'boolean'],
+            'script_website'           => [
                 'sometimes',
                 'nullable',
                 'string',
