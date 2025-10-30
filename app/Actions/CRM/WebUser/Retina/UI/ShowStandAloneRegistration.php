@@ -18,6 +18,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Http\Resources\CRM\PollsResource;
 use App\Models\CRM\Poll;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 
 class ShowStandAloneRegistration extends IrisAction
 {
@@ -33,6 +34,7 @@ class ShowStandAloneRegistration extends IrisAction
             'Auth/StandAloneRegistration',
             [
                 'countriesAddressData' => GetAddressData::run(),
+                'requiresPhoneNumber' => Arr::get($this->shop->settings, 'registration.require_phone_number', false),
                 'polls' => $pollsResource,
                 'client' => $webUser,
                 'registerRoute' => [
