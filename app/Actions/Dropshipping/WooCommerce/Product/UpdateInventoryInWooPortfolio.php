@@ -29,15 +29,17 @@ class UpdateInventoryInWooPortfolio
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
-            $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
+            $portfoliosChunk = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
                 ->whereNotNull('platform_product_id')
-                ->get();
+                ->get()->chunk(100);
 
-            if ($customerSalesChannel->user) {
-                try {
-                    BulkUpdateWooPortfolio::dispatch($customerSalesChannel->user, $portfolios);
-                } catch (\Exception $e) {
-                    // Sentry::captureException($e);
+            foreach ($portfoliosChunk as $portfolioChunk) {
+                if ($customerSalesChannel->user) {
+                    try {
+                        BulkUpdateWooPortfolio::dispatch($customerSalesChannel->user, $portfolioChunk);
+                    } catch (\Exception $e) {
+                        // Sentry::captureException($e);
+                    }
                 }
             }
         }
