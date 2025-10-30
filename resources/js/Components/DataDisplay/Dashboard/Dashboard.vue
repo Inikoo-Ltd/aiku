@@ -8,7 +8,6 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { set } from 'lodash-es'
 import { Dashboard } from "@/types/Components/Dashboard"
 import DashboardShopWidget from "@/Components/DataDisplay/Dashboard/DashboardShopWidget.vue";
-import StatsBoxIntervals from "@/Components/Stats/StatsBoxIntervals.vue";
 library.add(faTriangle)
 
 const props = defineProps<{

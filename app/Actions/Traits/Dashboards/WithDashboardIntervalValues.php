@@ -25,12 +25,10 @@ trait WithDashboardIntervalValues
         return collect(DateIntervalEnum::cases())->mapWithKeys(function ($interval) use ($intervalsModel, $field, $dataType, $options, $routeTarget) {
             $rawValue = $intervalsModel->{$field.'_'.$interval->value} ?? 0;
 
-
             $data = [
                 'raw_value' => $rawValue,
                 'tooltip'   => '',
             ];
-
 
             switch ($dataType) {
                 case DashboardDataType::NUMBER_MINIFIED:
@@ -85,9 +83,7 @@ trait WithDashboardIntervalValues
     {
         $originalColumnFingerprint = $columnFingerprint;
 
-
         $dataType = DashboardDataType::NUMBER;
-
 
         if (str_ends_with($columnFingerprint, '_minified')) {
             $columnFingerprint = substr($columnFingerprint, 0, -strlen('_minified'));
@@ -99,43 +95,47 @@ trait WithDashboardIntervalValues
             $dataType = $dataType == DashboardDataType::NUMBER_MINIFIED ? DashboardDataType::CURRENCY_MINIFIED : DashboardDataType::CURRENCY;
         }
 
-
         $options = [];
-
 
         if (str_ends_with($columnFingerprint, '_shop_currency')) {
             $shopCurrencyCode = $intervalsModel->shopCurrencyCode;
-            if (!$shopCurrencyCode) {
+            if (!$shopCurrencyCode && $intervalsModel->shop) {
                 $shopCurrencyCode = $intervalsModel->shop->currency->code;
             }
-            $options['currency'] = $shopCurrencyCode;
+
+            $options['currency'] = $shopCurrencyCode ?? 'GBP';
             $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_shop_currency'));
         } elseif (str_ends_with($columnFingerprint, '_invoice_category_currency')) {
             $invoiceCategoryCurrencyCode = $intervalsModel->group_currency_code;
-            if (!$invoiceCategoryCurrencyCode) {
+            if (!$invoiceCategoryCurrencyCode && $intervalsModel->invoiceCategory) {
                 $invoiceCategoryCurrencyCode = $intervalsModel->invoiceCategory->currency->code;
             }
 
-            $options['currency'] = $invoiceCategoryCurrencyCode;
+            $options['currency'] = $invoiceCategoryCurrencyCode ?? 'GBP';
             $columnFingerprint   = substr($columnFingerprint, 0, -strlen('_invoice_category_currency'));
         } elseif (str_ends_with($columnFingerprint, '_org_currency')) {
             $organisationCurrencyCode = $intervalsModel->organisationCurrencyCode;
-            if (!$organisationCurrencyCode) {
+            if (!$organisationCurrencyCode && $intervalsModel->organisation) {
                 $organisationCurrencyCode = $intervalsModel->organisation->currency->code;
             }
-            $options['currency'] = $organisationCurrencyCode;
+
+            $options['currency'] = $organisationCurrencyCode ?? 'GBP';
         } elseif (str_ends_with($columnFingerprint, '_grp_currency')) {
             $groupCurrencyCode = $intervalsModel->group_currency_code;
-            if (!$groupCurrencyCode) {
+            if (!$groupCurrencyCode && $intervalsModel->group) {
                 $groupCurrencyCode = $intervalsModel->group->currency->code;
             }
 
-            $options['currency'] = $groupCurrencyCode;
+            $options['currency'] = $groupCurrencyCode ?? 'GBP';
         } elseif (str_ends_with($columnFingerprint, '_inverse')) {
             $options['inverse_delta'] = true;
             $columnFingerprint        = substr($columnFingerprint, 0, -strlen('_inverse'));
         }
 
+        if (in_array($columnFingerprint, ['sales'])) {
+            $dataType = DashboardDataType::CURRENCY;
+            $options['currency'] = $options['currency'] ?? 'GBP';
+        }
 
         return [
             $originalColumnFingerprint => $this->getIntervalValues(
@@ -161,6 +161,4 @@ trait WithDashboardIntervalValues
 
         return $sums;
     }
-
-
 }
