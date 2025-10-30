@@ -231,10 +231,10 @@ class EditShop extends OrgAction
                                     'label' => __('Require approval'),
                                     'value' => Arr::get($shop->settings, 'registration.require_approval', false),
                                 ],
-                                'required_phone_verification' => [
+                                'required_phone_number' => [
                                     'type'  => 'toggle',
-                                    'label' => __('Require phone verification'),
-                                    'value' => Arr::get($shop->settings, 'registration.require_phone_verification', false),
+                                    'label' => __('Require phone number'),
+                                    'value' => Arr::get($shop->settings, 'registration.require_phone_number', false),
                                 ],
                             ],
                         ],

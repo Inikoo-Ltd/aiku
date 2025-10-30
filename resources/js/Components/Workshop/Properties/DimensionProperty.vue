@@ -63,7 +63,7 @@ const customWidthEnabled = ref(false)
           :modelValue="get(model, 'height.value', 0)"
           @update:modelValue="newVal => (set(model, 'height.value', newVal), emits('update:modelValue', {...model}))"
           class="col-span-7"
-          :max="300"
+          :max="600"
         />
          <PureInputNumber
           :modelValue="get(model, 'height.value', 0)"
@@ -130,7 +130,7 @@ const customWidthEnabled = ref(false)
           :modelValue="get(model, 'width.value', 0)"
           @update:modelValue="newVal => (set(model, 'width.value', newVal), emits('update:modelValue', {...model}))"
           class="col-span-7"
-          :max="300"
+          :max="600"
         />
         <PureInputNumber
           :modelValue="get(model, 'width.value', 0)"

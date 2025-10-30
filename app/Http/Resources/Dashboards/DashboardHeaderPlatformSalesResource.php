@@ -100,7 +100,19 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
         );
 
         if ($model instanceof Shop) {
-            $columns = array_merge($columns, $salesColumns);
+            $columns = array_merge(
+                $columns,
+                $salesColumns,
+                [
+                    'sales_percentage' => [
+                        'formatted_value'   => '',
+                        'currency_type'     => 'always',
+                        'data_display_type' => 'full',
+                        'align'             => 'left',
+                        'scope'             => 'sales_percentage'
+                    ]
+                ]
+            );
         }
 
         return [
