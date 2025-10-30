@@ -78,7 +78,6 @@ class ShowShop extends OrgAction
                     'tabs'        => [
                         'dropship' => [
                             'title' => 'Dropship',
-                            'icon'  => 'fal fa-store-alt',
                         ],
                     ],
                     'tables'      => [
