@@ -67,21 +67,13 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
           borderColor: box.tabs.some(tab => tab.tab_slug === props.current) ? layoutStore.app.theme[4] : 'inherit'
         }"
             >
-                <!-- Title -->
-                <div class="text-center mb-2 text-xs">
-                    <FontAwesomeIcon v-if="box.icon" :icon="box.icon" fixed-width aria-hidden="true" />
-                    {{ box.label }}
-                </div>
-
                 <div class="flex gap-x-4">
                     <div
                         v-for="tab in box.tabs"
                         :key="tab.tab_slug"
                         class="w-full flex flex-col items-center"
                     >
-                        <div
-                            class="group tabular-nums relative text-xl px-2 cursor-default"
-                        >
+                        <div class="group flex items-center gap-1 tabular-nums relative text-xl px-2 mb-1 cursor-default">
                             <div class="mx-auto text-center">
                                 <template v-if="tab.icon || tab.icon_data">
                                     <Icon v-if="tab.icon_data" :data="tab.icon_data" class="text-xl" />

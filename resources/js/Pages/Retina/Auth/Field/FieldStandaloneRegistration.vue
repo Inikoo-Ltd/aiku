@@ -20,6 +20,7 @@ const props = defineProps<{
     countriesAddressData: {}
     polls: []
     form: {}
+    requiresPhoneNumber: boolean,
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -107,7 +108,7 @@ const toggleInterest = (interestValue: string) => {
             for="phone-number"
             class="capitalize block text-sm font-medium text-gray-700"
         >
-            <FontAwesomeIcon icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="props.requiresPhoneNumber" icon="fas fa-asterisk" class="text-red-500 text-xxs" fixed-width aria-hidden="true" />
             {{ trans("Phone Number") }}
         </label>
         <div class="mt-2">
@@ -122,7 +123,7 @@ const toggleInterest = (interestValue: string) => {
                     id="phone-number"
                     name="phone"
                     class="w-full"
-                    required />
+                    :required="props.requiresPhoneNumber" />
             </IconField>
             <p v-if="form.errors.phone" class="text-sm text-red-600 mt-1">
                 {{ form.errors.phone }}
