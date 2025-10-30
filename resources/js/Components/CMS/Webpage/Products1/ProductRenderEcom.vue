@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Image from '@/Components/Image.vue'
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref } from 'vue'
+import { inject, ref, computed } from 'vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -20,7 +20,8 @@ import NewAddToCartButton from './NewAddToCartButton.vue' // Import button baru
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { routeType } from '@/types/route'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
-import { useIrisLayoutStore } from "@/Stores/irisLayout"
+import BestsellerBadge from '@/Components/CMS/Webpage/Products1/BestsellerBadge.vue'
+
 library.add(faStarHalfAlt, faQuestionCircle)
 
 const layout = inject('layout', retinaLayoutStructure)
@@ -38,6 +39,7 @@ const props = withDefaults(defineProps<{
     detachBackInStockRoute?: routeType
     addToBasketRoute?: routeType
     updateBasketQuantityRoute?: routeType
+    bestSeller:any
 
 }>(), {
     basketButton: true,
@@ -51,21 +53,21 @@ const props = withDefaults(defineProps<{
         name: 'iris.models.favourites.store',
     },
     dettachToFavouriteRoute: {
-        name: 'iris.models.favourites.delete', 
+        name: 'iris.models.favourites.delete',
     },
     attachBackInStockRoute: {
-        name: 'iris.models.remind_back_in_stock.store', 
+        name: 'iris.models.remind_back_in_stock.store',
     },
     detachBackInStockRoute: {
-        name: 'iris.models.remind_back_in_stock.delete', 
+        name: 'iris.models.remind_back_in_stock.delete',
     },
 })
 
 const emits = defineEmits<{
-  (e: 'afterOnAddFavourite', value: any[]): void
-  (e: 'afterOnUnselectFavourite', value: any[]): void
-  (e: 'afterOnAddBackInStock', value: any[]): void
-  (e: 'afterOnUnselectBackInStock', value: any[]): void
+    (e: 'afterOnAddFavourite', value: any[]): void
+    (e: 'afterOnUnselectFavourite', value: any[]): void
+    (e: 'afterOnAddBackInStock', value: any[]): void
+    (e: 'afterOnUnselectBackInStock', value: any[]): void
 }>()
 
 
@@ -219,6 +221,16 @@ const onUnselectBackInStock = (product: ProductResource) => {
 }
 
 
+const profitMargin = computed(() => {
+    const price = props.product?.price
+    const rrp = props.product?.rrp
+    if (!price || !rrp) return 0
+    return Math.floor(((rrp - price) / rrp) * 100)
+})
+
+
+
+
 </script>
 
 <template>
@@ -226,7 +238,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
         <div class=" text-gray-800 isolate">
-            <div v-if="product?.top_seller"
+            <!-- <div v-if="product?.top_seller"
                 class="z-10 absolute top-2 left-2 border text-xs font-bold px-2 py-0.5 rounded" :class="{
                     'text-[#FFD700] bg-[#584b015] border-[#FFD700]': product.top_seller == 1, // Gold
                     'text-[#C0C0C0] bg-[#C0C0C033] border-[#C0C0C0]': product.top_seller === 2, // Silver
@@ -235,7 +247,8 @@ const onUnselectBackInStock = (product: ProductResource) => {
                 <FontAwesomeIcon :icon="faMedal" class=" mr-0 md:mr-2" fixed-width s />
 
                 <span class="hidden md:inline">{{ trans("BESTSELLER") }}</span>
-            </div>
+            </div> -->
+            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
 
 
             <!-- Product Image -->
@@ -252,12 +265,12 @@ const onUnselectBackInStock = (product: ProductResource) => {
                         :key="product" :addToBasketRoute="addToBasketRoute"
                         :updateBasketQuantityRoute="updateBasketQuantityRoute" />
                     <button v-else-if="layout?.app?.environment === 'local' && product.stock < 1"
-                        @click.prevent="()=> product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
+                        @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                        v-tooltip="product.is_back_in_stock ?  trans('You will be notified') :  trans('Remind me when back in stock')">
+                        v-tooltip="product.is_back_in_stock ? trans('You will be notified') : trans('Remind me when back in stock')">
                         <LoadingIcon v-if="isLoadingRemindBackInStock" />
                         <FontAwesomeIcon v-else :icon="product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                            fixed-width :class="[product.is_back_in_stock  ? 'text-green-600' : 'text-gray-600']" />
+                            fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
                     </button>
                 </div>
             </component>
@@ -330,23 +343,27 @@ const onUnselectBackInStock = (product: ProductResource) => {
                     class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
                     <div class="">
                         <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
-                                product.price || 0) }}</span></div>
+                            product.price || 0) }}</span></div>
                         <div>
                             <span class="text-sm text-gray-400  font-normal">
                                 ({{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
                                 }}/{{
-                                product.unit }})
+                                    product.unit }})
                             </span>
                         </div>
                     </div>
 
                     <div v-if="product?.rrp" class="text-xs mt-1 text-right">
                         <div>
-                            RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }}
-                        </div>
-                        <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
-                            ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} / {{
-                            product.unit }})
+                            RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} <span
+                                v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ profitMargin
+                                    > 0 ? '+' +
+                                profitMargin : profitMargin }}% )</span>
+                            <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
+                                ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} /
+                                {{
+                                    product.unit }})
+                            </div>
                         </div>
                     </div>
 

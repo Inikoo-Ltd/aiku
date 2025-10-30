@@ -543,7 +543,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border p-3 relative rounded bg-white">
-                            <ProductRender :product="product" :key="index"
+                            <ProductRender :product="product" :key="index" :bestSeller="fieldValue.bestseller"
                                 :productHasPortfolio="productHasPortfolio.list[product.id]" />
                         </div>
                     </template>

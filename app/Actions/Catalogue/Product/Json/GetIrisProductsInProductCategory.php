@@ -19,10 +19,10 @@ class GetIrisProductsInProductCategory extends IrisAction
 {
     use WithIrisProductsInWebpage;
 
-    public function handle(ProductCategory $productCategory, $stockMode = 'all'): LengthAwarePaginator
+    public function handle(ProductCategory $productCategory, $stockMode = 'all', bool $topSeller = false): LengthAwarePaginator
     {
         $customer     = request()->user()?->customer;
-        $queryBuilder = $this->getBaseQuery($stockMode);
+        $queryBuilder = $this->getBaseQuery($stockMode, $topSeller);
 
         $queryBuilder->select($this->getSelect());
         $perPage = null;

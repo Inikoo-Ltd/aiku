@@ -232,6 +232,28 @@ const profitMargin = computed(() => {
 })
 
 
+const popoverHover = ref(false)
+const popoverTimeout = ref()
+
+const hoverPopover = (e: any, open: boolean): void => {
+    popoverHover.value = true
+    if (!open) {
+        e.target.parentNode.click()
+    }
+}
+
+const closePopover = (close: any): void => {
+    popoverHover.value = false
+    if (popoverTimeout.value) clearTimeout(popoverTimeout.value)
+    popoverTimeout.value = setTimeout(() => {
+        if (!popoverHover.value) {
+            close()
+        }
+    }, 100)
+}
+
+
+
 
 </script>
 
@@ -330,9 +352,10 @@ const profitMargin = computed(() => {
                             )
                         </span>
                     </div> -->
-                    <Popover>
+                    <Popover v-slot="{ open, close }">
                         <PopoverButton>
-                            <div v-if="fieldValue.product.rrp_per_unit"
+                            <div v-if="fieldValue.product.rrp_per_unit" @mouseover="(e) => hoverPopover(e, open)"
+                                @mouseleave="closePopover(close)"
                                 class="flex items-center gap-2 text-sm font-medium text-gray-600 text-right text-gray-500">
                                 <span class="whitespace-nowrap">RRP:</span>
                                 <span class="text-sm font-normal">

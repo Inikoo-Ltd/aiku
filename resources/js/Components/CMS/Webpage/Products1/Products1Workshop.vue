@@ -150,7 +150,10 @@ watch(
           <div v-for="product in dummyProducts" :key="product.id"
             :style="getStyles(modelValue?.card_product?.properties, screenType)"
             class="border p-3 relative rounded  bg-white">
-            <ProductRender :product="product" />
+            <ProductRender 
+              :product="product" 
+              :bestSeller="modelValue.bestseller"
+            />
           </div>
         </div>
       </main>

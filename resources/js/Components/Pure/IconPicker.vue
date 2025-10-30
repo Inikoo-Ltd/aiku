@@ -24,7 +24,8 @@ import {
   faGlobe,
   faPercent,
   faPoundSign,
-  faClock
+  faClock,
+  faMedal,
 } from "@far";
 import { faLambda } from "@fad";
 
