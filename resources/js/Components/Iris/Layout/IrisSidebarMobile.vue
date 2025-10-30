@@ -151,9 +151,9 @@ const handleViewAllSubDepartment = (url: string) => {
                 </div>
 
                 <!-- Header -->
-                <div  v-if="activeSubIndex !== null" class="flex items-center justify-between pt-4 pb-2 px-4">
+                <!-- <div  v-if="activeSubIndex !== null" class="flex items-center justify-between pt-4 pb-2 px-4">
                     <h3 class="font-semibold">{{ trans("Families") }}</h3>
-                </div>
+                </div> -->
 
                 <div class="overflow-y-auto">
                     <!-- 3: Families: Top -->
@@ -190,6 +190,16 @@ const handleViewAllSubDepartment = (url: string) => {
                                 :activeSubIndex
                                 :closeSidebar
                             />
+
+                            <template v-for="(sub, sIndex) in sortedSubDepartments?.[activeSubIndex]?.collections" :key="sIndex">
+                                <SidebarDesktopNavigation
+                                    :nav="sub"
+                                    :activeSubIndex
+                                    :closeSidebar
+                                    :internalHref
+                                />
+                            </template>
+
                             <div class="p-2 px-4">
                                 <Button
                                     :label="trans('View all')"
@@ -222,23 +232,16 @@ const handleViewAllSubDepartment = (url: string) => {
 
 
                     <!-- Collections: from Sub Department -->
-                    <template v-if="sortedSubDepartments?.[activeSubIndex]?.collections?.length">
+                    <!-- <template v-if="sortedSubDepartments?.[activeSubIndex]?.collections?.length">
                         <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
                             <h3 class="font-semibold">{{ trans("Collections") }}</h3>
                         </div>
                         <div class="">
                             <div>
-                                <template v-for="(sub, sIndex) in sortedSubDepartments?.[activeSubIndex]?.collections" :key="sIndex">
-                                    <SidebarDesktopNavigation
-                                        :nav="sub"
-                                        :activeSubIndex
-                                        :closeSidebar
-                                        :internalHref
-                                    />
-                                </template>
+                                
                             </div>
                         </div>
-                    </template>
+                    </template> -->
                 </div>
             </div>
 
@@ -254,9 +257,9 @@ const handleViewAllSubDepartment = (url: string) => {
                 </div>
 
                 <!-- Header -->
-                <div v-if="activeIndex !== null" class="flex items-center justify-between pt-4 pb-2 px-4">
+                <!-- <div v-if="activeIndex !== null" class="flex items-center justify-between pt-4 pb-2 px-4">
                     <h3 class="font-semibold">{{ trans("Sub-Departments") }}</h3>
-                </div>
+                </div> -->
                 <div class="overflow-y-auto">
                     <!-- Section: Subdepartments (Top) -->
                     <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
@@ -296,6 +299,22 @@ const handleViewAllSubDepartment = (url: string) => {
                                 :isWithArrowRight="!!sub?.families?.length"
                             />
                         </template>
+
+                        <!-- Collections (from Department) -->
+                        <template v-for="(sub, sIndex) in sortedProductCategories[activeIndex]?.collections" :key="sIndex">
+                            <SidebarDesktopNavigation
+                                :nav="sub"
+                                xclass="[
+                                    activeCustomSubIndex === sIndex
+                                        ? `navActive`
+                                        : 'navInactive'
+                                ]"
+                                :internalHref
+                                :activeSubIndex
+                                :closeSidebar
+                            />
+                        </template>
+
                         <div class="p-2 px-4">
                             <Button
                                 :label="trans('View all')"
@@ -324,6 +343,7 @@ const handleViewAllSubDepartment = (url: string) => {
                             isWithArrowRight
                         />
                     </div>
+
                     
                     <!-- No subdepartments message -->
                     <div v-if="(activeIndex !== null && !sortedSubDepartments?.length) || (activeCustomIndex !== null && !customSubDepartments?.length) || (activeCustomTopIndex !== null && !customTopSubDepartments?.length)"
@@ -333,28 +353,14 @@ const handleViewAllSubDepartment = (url: string) => {
                 </div>
 
                 <!-- Collections: from Department -->
-                <template v-if="sortedProductCategories?.[activeIndex]?.collections.length">
+                <!-- <template v-if="sortedProductCategories?.[activeIndex]?.collections.length">
                     <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
                         <h3 class="font-semibold">{{ trans("Collections") }}</h3>
                     </div>
                     <div class="">
-                        <div>
-                            <template v-for="(sub, sIndex) in sortedProductCategories[activeIndex]?.collections" :key="sIndex">
-                                <SidebarDesktopNavigation
-                                    :nav="sub"
-                                    xclass="[
-                                        activeCustomSubIndex === sIndex
-                                            ? `navActive`
-                                            : 'navInactive'
-                                    ]"
-                                    :internalHref
-                                    :activeSubIndex
-                                    :closeSidebar
-                                />
-                            </template>
-                        </div>
+                        
                     </div>
-                </template>
+                </template> -->
             </div>
 
             <!-- Section: Navigation links (Departments) -->
