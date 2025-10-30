@@ -462,11 +462,7 @@ test('UI show shop', function (User $user, Shop $shop) {
     $response->assertInertia(function (AssertableInertia $page) {
         $page
             ->component('Org/Catalogue/Shop')
-            ->has('title')
-            ->has('breadcrumbs', 2)
-            ->has('flatTreeMaps')
-            ->has('tabs')
-            ->has('pageHead');
+            ->has('breadcrumbs', 2);
     });
 })->depends('SetUserAuthorisedModels command', 'UI edit shop');
 

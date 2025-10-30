@@ -70,13 +70,24 @@ trait WithResetIntervals
     protected array $intervals = [];
     protected array $doPreviousPeriods = [];
 
+    private function intervalValues(): array
+    {
+        return array_map(static function ($interval) {
+
+            if ($interval instanceof DateIntervalEnum) {
+                return $interval->value;
+            }
+            return $interval;
+        }, $this->intervals);
+    }
+
     protected function resetGroups(): void
     {
         foreach (Group::all() as $group) {
 
-            if (array_intersect($this->intervals, [
-                DateIntervalEnum::YESTERDAY,
-                DateIntervalEnum::TODAY
+            if (array_intersect($this->intervalValues(), [
+                DateIntervalEnum::YESTERDAY->value,
+                DateIntervalEnum::TODAY->value
             ])) {
                 GroupHydrateOrderStateFinalised::dispatch($group->id);
                 GroupHydrateOrdersDispatchedToday::dispatch($group->id);
@@ -119,11 +130,12 @@ trait WithResetIntervals
 
     protected function resetOrganisations(): void
     {
+        /** @var Organisation $organisation */
         foreach (Organisation::whereNot('type', OrganisationTypeEnum::AGENT)->get() as $organisation) {
 
-            if (array_intersect($this->intervals, [
-                DateIntervalEnum::YESTERDAY,
-                DateIntervalEnum::TODAY
+            if (array_intersect($this->intervalValues(), [
+                DateIntervalEnum::YESTERDAY->value,
+                DateIntervalEnum::TODAY->value
             ])) {
                 OrganisationHydrateOrderStateFinalised::dispatch($organisation->id);
                 OrganisationHydrateOrdersDispatchedToday::dispatch($organisation->id);
@@ -213,9 +225,9 @@ trait WithResetIntervals
             ])->get() as $shop
         ) {
 
-            if (array_intersect($this->intervals, [
-                DateIntervalEnum::YESTERDAY,
-                DateIntervalEnum::TODAY
+            if (array_intersect($this->intervalValues(), [
+                DateIntervalEnum::YESTERDAY->value,
+                DateIntervalEnum::TODAY->value
             ])) {
                 ShopHydrateOrderStateFinalised::dispatch($shop->id);
                 ShopHydrateOrdersDispatchedToday::dispatch($shop->id);
