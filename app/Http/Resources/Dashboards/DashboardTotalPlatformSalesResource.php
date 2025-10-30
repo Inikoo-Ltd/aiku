@@ -5,6 +5,7 @@ namespace App\Http\Resources\Dashboards;
 use App\Actions\Traits\Dashboards\WithDashboardIntervalValues;
 use App\Models\Dropshipping\PlatformShopSalesIntervals;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Collection;
 
 class DashboardTotalPlatformSalesResource extends JsonResource
 {
@@ -36,7 +37,11 @@ class DashboardTotalPlatformSalesResource extends JsonResource
             $this->getDashboardTableColumn($summedData, 'new_customer_client'),
         );
 
-        if ($models[0] instanceof PlatformShopSalesIntervals) {
+        $firstModel = $models instanceof Collection
+            ? $models->first()
+            : (is_array($models) && !empty($models) ? reset($models) : null);
+
+        if ($firstModel instanceof PlatformShopSalesIntervals) {
             $summedData = (object) array_merge(
                 (array) $summedData,
                 $this->sumIntervalValues($models, 'sales')
@@ -50,7 +55,7 @@ class DashboardTotalPlatformSalesResource extends JsonResource
 
         return [
             'slug'    => 'totals',
-            'columns' => $columns
+            'columns' => $columns,
         ];
     }
 }
