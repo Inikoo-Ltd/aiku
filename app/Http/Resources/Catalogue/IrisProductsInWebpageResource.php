@@ -70,6 +70,7 @@ class IrisProductsInWebpageResource extends JsonResource
         }
 
 
+        $units= (int) $this->units;
         return [
             'id'             => $this->id,
             'image_id'       => $this->image_id,
@@ -87,7 +88,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'status'         => $this->status,
             'created_at'     => $this->created_at,
             'updated_at'     => $this->updated_at,
-            'units'          => $this->units,
+            'units'          => $units,
             'unit'           => $this->unit,
             'url'            => $url,
             'top_seller'     => $this->top_seller,
