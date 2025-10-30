@@ -47,7 +47,7 @@ class OrganisationHydrateOrderStateSubmitted implements ShouldBeUnique
                 ->count(),
             'orders_state_submitted_paid_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])
-                ->sum('grp_org_amount'),
+                ->sum('org_net_amount'),
 
             'orders_state_submitted_paid_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::SUBMITTED)
                 ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED])

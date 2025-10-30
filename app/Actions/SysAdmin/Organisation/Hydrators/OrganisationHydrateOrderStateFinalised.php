@@ -38,12 +38,12 @@ class OrganisationHydrateOrderStateFinalised implements ShouldBeUnique
 
 
             'number_orders_state_finalised'              => $organisation->orders()->where('state', OrderStateEnum::FINALISED)->count(),
-            'orders_state_finalised_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::FINALISED)->sum('grp_org_amount'),
+            'orders_state_finalised_amount_org_currency' => $organisation->orders()->where('state', OrderStateEnum::FINALISED)->sum('org_net_amount'),
             'orders_state_finalised_amount_grp_currency' => $organisation->orders()->where('state', OrderStateEnum::FINALISED)->sum('grp_net_amount'),
 
 
             'number_orders_finalised_today'              => $organisation->orders()->whereDate('finalised_at', Carbon::today())->count(),
-            'orders_finalised_today_amount_org_currency' => $organisation->orders()->whereDate('finalised_at', Carbon::today())->sum('grp_org_amount'),
+            'orders_finalised_today_amount_org_currency' => $organisation->orders()->whereDate('finalised_at', Carbon::today())->sum('org_net_amount'),
             'orders_finalised_today_amount_grp_currency' => $organisation->orders()->whereDate('finalised_at', Carbon::today())->sum('grp_net_amount'),
 
 

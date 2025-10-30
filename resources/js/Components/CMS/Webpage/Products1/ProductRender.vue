@@ -9,13 +9,13 @@ import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faHeart } from '@far'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCircle, faStar, faHeart as fasHeart, faEllipsisV, faMedal } from '@fas'
+import { faCircle, faHeart as fasHeart, faMedal } from '@fas'
 import { Image as ImageTS } from '@/types/Image'
 import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
-import { getStyles } from "@/Composables/styles";
 import { faEnvelope } from '@fal'
-import { faArrowTrendDown, faArrowTrendUp, faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
+import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
+import BestsellerBadge from '@/Components/CMS/Webpage/Products1/BestsellerBadge.vue'
 
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -51,7 +51,7 @@ interface ProductResource {
 const props = defineProps<{
     product: ProductResource
     productHasPortfolio: Array<Number>
-    style?: Object | null
+    bestSeller:any
     currency?: {
         code: string
         name: string
@@ -199,10 +199,10 @@ const onUnselectBackInStock = (product: ProductResource) => {
 }
 
 const profitMargin = computed(() => {
-  const price = props.product?.price
-  const rrp = props.product?.rrp
-  if (!price || !rrp) return 0
-  return Math.floor(((rrp - price) / rrp) * 100)
+    const price = props.product?.price
+    const rrp = props.product?.rrp
+    if (!price || !rrp) return 0
+    return Math.floor(((rrp - price) / rrp) * 100)
 })
 
 
@@ -213,7 +213,7 @@ const profitMargin = computed(() => {
     <div class="relative flex flex-col justify-between h-full">
         <!-- Top Section -->
         <div>
-            <div v-if="product?.top_seller"
+            <!-- <div v-if="product?.top_seller"
                 class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
                 <FontAwesomeIcon :icon="faMedal" class="w-3.5 h-3.5 mr-0 md:mr-2" :class="{
 
@@ -223,8 +223,9 @@ const profitMargin = computed(() => {
                 }" />
 
                 <span class="hidden md:inline">BESTSELLER</span>
-            </div>
+            </div> -->
 
+            <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
             <!-- Favorite Icon -->
             <template v-if="layout?.retina?.type != 'dropshipping' && layout?.iris?.is_logged_in">
 
@@ -311,14 +312,17 @@ const profitMargin = computed(() => {
                 </div>
 
                 <div v-if="product?.rrp" class="text-xs mt-1 text-right">
-                        <div>
-                            RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} <span v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ profitMargin > 0 ? '+' + profitMargin : profitMargin }}% )</span>
-                            <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
+                    <div>
+                        RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} <span
+                            v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ profitMargin > 0
+                                ? '+' +
+                            profitMargin : profitMargin }}% )</span>
+                        <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
                             ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} / {{
-                            product.unit }})
-                        </div>
+                                product.unit }})
                         </div>
                     </div>
+                </div>
             </div>
         </div>
 
