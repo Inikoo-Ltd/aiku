@@ -46,21 +46,16 @@ class ShowPlatform extends OrgAction
 
     public function htmlResponse(Platform $platform, ActionRequest $request): Response
     {
-
-
         $shop = $this->parent;
 
         return Inertia::render(
             'Org/Shop/CRM/Platform',
             [
-                'title'       => __('platform'),
-                'breadcrumbs' => $this->getBreadcrumbs(
-                    $request->route()->getName(),
-                    $request->route()->originalParameters()
-                ),
+                'title'       => __('Platform'),
+                'breadcrumbs' => $this->getBreadcrumbs($request->route()->getName(), $request->route()->originalParameters()),
                 'pageHead'    => [
                     'title' => $platform->name,
-                    'model' => __('platform'),
+                    'model' => __('Platform'),
                     'icon'  =>
                         [
                             'icon'  => ['fal', 'fa-code-branch'],
@@ -71,19 +66,18 @@ class ShowPlatform extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => PlatformTabsEnum::navigation()
                 ],
-
-                PlatformTabsEnum::CHANNELS->value => $this->tab == PlatformTabsEnum::CHANNELS->value ?
-                    fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $shop, prefix: PlatformTabsEnum::CHANNELS->value))
-                    : Inertia::lazy(fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $shop, prefix: PlatformTabsEnum::CHANNELS->value))),
-
-                PlatformTabsEnum::PRODUCTS->value => $this->tab == PlatformTabsEnum::PRODUCTS->value ?
-                    fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($shop, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))
-                    : Inertia::lazy(fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($shop, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))),
-
+                PlatformTabsEnum::CHANNELS->value =>
+                    $this->tab == PlatformTabsEnum::CHANNELS->value
+                        ? fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $shop, prefix: PlatformTabsEnum::CHANNELS->value))
+                        : Inertia::lazy(fn () => CustomerSalesChannelsResource::collection(IndexCustomerSalesChannels::run(parent: $platform, shop: $shop, prefix: PlatformTabsEnum::CHANNELS->value))),
+                PlatformTabsEnum::PRODUCTS->value =>
+                    $this->tab == PlatformTabsEnum::PRODUCTS->value
+                        ? fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($shop, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))
+                        : Inertia::lazy(fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($shop, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))),
             ]
         )->table(
             IndexCustomerSalesChannels::make()->tableStructure(
-                parent:$platform,
+                parent: $platform,
                 prefix: PlatformTabsEnum::CHANNELS->value,
             )
         )->table(
@@ -97,7 +91,6 @@ class ShowPlatform extends OrgAction
     {
         $headCrumb = function (Platform $platform, array $routeParameters, $suffix) {
             return [
-
                 [
                     'type'           => 'modelWithIndex',
                     'modelWithIndex' => [
@@ -107,13 +100,11 @@ class ShowPlatform extends OrgAction
                         ],
                         'model' => [
                             'route' => $routeParameters['model'],
-                            'label' => $platform->slug,
+                            'label' => $platform->name,
                         ],
                     ],
-                    'suffix'         => $suffix,
-
+                    'suffix' => $suffix,
                 ],
-
             ];
         };
 
