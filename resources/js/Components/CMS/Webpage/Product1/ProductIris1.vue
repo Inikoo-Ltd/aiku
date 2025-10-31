@@ -344,8 +344,7 @@ const closePopover = (close: any): void => {
                                             {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp || 0) }}
                                         </span>
                                         <span class="text-sm text-gray-500">/ {{ fieldValue.product.unit }}</span>
-                                        <span class="text-xs font-medium text-gray-400">{{ trans('(excl. tax)')
-                                            }}</span>
+                                        <span class="text-xs font-medium text-gray-400">{{ trans('(exclude tax)')}}</span>
                                     </div>
                                 </div>
 
@@ -386,9 +385,8 @@ const closePopover = (close: any): void => {
                                             {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp) }}
                                         </span>
                                         <span v-if="fieldValue.product.units != 1"
-                                            class="text-xs text-gray-500 border-l border-gray-300 pl-3 min-w-[90px] text-end leading-none">
-                                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp_per_unit) }}
-                                            / {{ fieldValue.product.unit }}
+                                            class="text-xs text-gray-500 border-gray-300 pl-3 min-w-[90px] text-start leading-none">
+                                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp_per_unit.toFixed(2)) }} / {{ fieldValue.product.unit }}
                                         </span>
                                     </div>
                                 </div>
@@ -401,9 +399,8 @@ const closePopover = (close: any): void => {
                                             {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
                                         </span>
                                         <span v-if="fieldValue.product.units != 1"
-                                            class="text-xs text-gray-500 border-l border-gray-300 pl-3 min-w-[90px] text-end leading-none">
-                                            {{ locale.currencyFormat(currency?.code, (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}
-                                            / {{ fieldValue.product.unit }}
+                                            class="text-xs text-gray-500 border-gray-300 pl-3 min-w-[90px] text-start leading-none">
+                                            {{ locale.currencyFormat(currency?.code, (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }} / {{ fieldValue.product.unit }}
                                         </span>
                                     </div>
                                 </div>
@@ -417,13 +414,11 @@ const closePopover = (close: any): void => {
                                             {{ locale.currencyFormat(currency?.code, fieldValue.product.profit) }}
                                         </span>
                                         <span v-if="fieldValue.product.units != 1"
-                                            class="text-xs  border-l border-gray-300 pl-3 min-w-[90px] text-end leading-none">
-                                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp_per_unit - (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}
-                                            / {{ fieldValue.product.unit }}
+                                            class="text-xs  border-gray-300 pl-3 min-w-[90px] text-start leading-none">
+                                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp_per_unit - (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/ {{ fieldValue.product.unit }}
                                         </span>
                                     </div>
                                 </div>
-
                             </div>
 
 
