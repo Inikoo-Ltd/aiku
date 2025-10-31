@@ -116,7 +116,7 @@ watch(() => props.breadcrumbs?.length, async () => {
         <TransitionGroup name="list-to-down" tag="ol" class="w-full mx-auto flex">
             <li v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx"
                 class="hidden first:flex last:flex md:flex items-center"
-                :class="breadcrumbIdx === 0 ? 'sticky left-0 bg-white z-10 pr-2' : ''"
+                :class="breadcrumbIdx === 0 ? 'sticky left-0 xbg-white z-10 pr-2' : ''"
             >
                 <div class="flex items-center">
                     <!-- Shorter Breadcrumb on Mobile size -->

@@ -43,6 +43,7 @@ import { faListUl, faEye } from "@far"
 
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import { trans } from "laravel-vue-i18n"
+import BreadcrumbsIris from "@/Components/Navigation/BreadcrumbsIris.vue"
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
 const layout = useLayoutStore()
@@ -107,7 +108,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 			<!-- sidebar + main content -->
 			<main
-				class="flex flex-col md:flex-row gap-x-2 xmax-w-5xl lg:max-w-7xl w-full lg:mx-auto my-10 px-3 md:px-8 xl:px-0 transition-all">
+				class="flex flex-col md:flex-row gap-x-2 xmax-w-5xl lg:max-w-7xl w-full lg:mx-auto my-2 md:my-10 px-3 md:px-8 xl:px-0 transition-all">
 				<RetinaDsLeftSidebar
 					v-if="layout.user"
 					:class="[
@@ -120,8 +121,8 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 				<!-- RetinaLayoutDS -->
 				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
-					<div class="flex justify-between items-end absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
-						<Breadcrumbs
+					<div class="flex flex-col md:flex-row md:justify-between md:items-end md:absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
+						<BreadcrumbsIris
 							class=""
 							:breadcrumbs="usePage().props.breadcrumbs ?? []"
 							:navigation="usePage().props.navigation ?? []"
@@ -132,7 +133,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 						<Link
 							v-if="layout.iris?.is_logged_in"
 							:href="route('retina.top_up.dashboard')"
-							class="bg-pink-100 border border-pink-300 px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
+							class="place-self-end bg-pink-100 border border-pink-300 text-sm px-3 md:px-4 md:py-0.5 rounded-full w-fit flex items-center gap-x-2 xtext-indigo-600"
 						>
 							<!-- <FontAwesomeIcon icon="fal fa-money-bill-wave " class="" fixed-width aria-hidden="true" /> -->
 							{{ trans("My balance") }}:
