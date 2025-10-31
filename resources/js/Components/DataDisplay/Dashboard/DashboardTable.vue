@@ -24,7 +24,7 @@ interface Column {
 	tooltip: string
 	sortable?: boolean
 	align?: string
-} 
+}
 
 interface Header {
 	slug: string
@@ -51,7 +51,7 @@ interface Tables {
 					formatted_value: string  // "€0.00"
 					raw_value: string  // "0.00"
 					tooltip: string
-				} 
+				}
 			}
 		}
 	}[]
@@ -166,7 +166,7 @@ const updateTab = (value: string) => {
 						{{ trans("No data available.") }}
 					</div>
 				</template>
-				
+
 				<!-- Column (looping) -->
 				<template
 					v-for="(columnHeader, colSlug, colIndex) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
@@ -190,7 +190,7 @@ const updateTab = (value: string) => {
 								<FontAwesomeIcon v-if="columnHeader.iconRight" :icon="columnHeader.iconRight" class="" fixed-width aria-hidden="true" />
 							</div>
 						</template>
-						
+
 						<template #body="{ data: dataBody }">
 							<div class="px-2 flex relative" :class="[ columnHeader.align === 'left' ? '' : 'justify-end text-right', ]" >
 								<DashboardCell
@@ -201,34 +201,38 @@ const updateTab = (value: string) => {
 						</template>
 					</Column>
 				</template>
-			
-				<!-- Row: Total (footer) -->
-				<ColumnGroup type="footer">
-					<Row>
-						<template
-							v-for="(column, colSlug) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
-							:key="colSlug"
-						>
-							<Column
-								v-if="showDashboardColumn(column)"
-							>
-								<template #footer>
-									<div class="px-2 flex relative"
-										:class="props.tableData.tables?.[props.tableData?.current_tab]?.header?.columns?.[colSlug]?.align === 'left' ? '' : 'justify-end text-right'"
-									>
-										<DashboardCell
-											:interval="intervals"
-											:cell="
-												props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]?.[intervals.value]
-												?? props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]
-											"
-										/>
-									</div>
-								</template>
-							</Column>
-						</template>
-					</Row>
-				</ColumnGroup>
+
+                <!-- Row: Total (footer) -->
+                <ColumnGroup
+                    v-if="compTableBody && compTableBody.length > 0"
+                    type="footer"
+                >
+                    <Row>
+                        <template
+                            v-for="(column, colSlug) in props.tableData?.tables?.[props.tableData?.current_tab]?.header?.columns"
+                            :key="colSlug"
+                        >
+                            <Column v-if="showDashboardColumn(column)">
+                                <template #footer>
+                                    <div
+                                        class="px-2 flex relative"
+                                        :class="props.tableData.tables?.[props.tableData?.current_tab]?.header?.columns?.[colSlug]?.align === 'left'
+							? ''
+							: 'justify-end text-right'"
+                                    >
+                                        <DashboardCell
+                                            :interval="intervals"
+                                            :cell="
+								props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]?.[intervals.value]
+								?? props.tableData?.tables?.[props.tableData?.current_tab]?.totals?.columns?.[colSlug]
+							"
+                                        />
+                                    </div>
+                                </template>
+                            </Column>
+                        </template>
+                    </Row>
+                </ColumnGroup>
 			</DataTable>
 
 			<div v-if="isLoadingOnTable" class="z-10 absolute inset-0 bg-white/50 flex justify-center items-center text-5xl">
