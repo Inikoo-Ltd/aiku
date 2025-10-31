@@ -35,6 +35,7 @@ use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Enums\Helpers\TimeSeries\TimeSeriesFrequencyEnum;
 use App\Enums\SysAdmin\Authorisation\RolesEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\Platform;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
@@ -138,6 +139,11 @@ class StoreShop extends OrgAction
 
             if ($shop->type === ShopTypeEnum::DROPSHIPPING || $shop->type === ShopTypeEnum::FULFILMENT) {
                 $shop->dropshippingStats()->create();
+
+                foreach (Platform::all() as $platform) {
+                    //todo  @steven you do it
+                }
+
             }
 
             $shop->serialReferences()->create(
