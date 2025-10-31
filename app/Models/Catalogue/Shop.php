@@ -723,8 +723,8 @@ class Shop extends Model implements HasMedia, Auditable
         );
     }
 
-    public function platformSalesIntervals(): HasOne
+    public function platformSalesIntervals(): HasMany
     {
-        return $this->hasOne(PlatformShopSalesIntervals::class);
+        return $this->hasMany(PlatformShopSalesIntervals::class);
     }
 }
