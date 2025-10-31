@@ -80,7 +80,16 @@ class ShowOrganisationDashboard extends OrgAction
                         'label'       => __('Submitted Paid'),
                         'value'       => $organisation->orderHandlingStats->number_orders_state_submitted_paid,
                         'type'        => 'number',
-                        'icon_data'   => OrderPayStatusEnum::typeIcon()[OrderPayStatusEnum::PAID->value],
+                        'icon_data'   => [
+                            'tooltip' => __('Submitted Paid'),
+                            'icon'    => 'fal fa-check-circle',
+                            'class'   => 'text-green-600',
+                            'color'   => 'lime',
+                            'app'     => [
+                                'name' => 'check-circle',
+                                'type' => 'font-awesome-5'
+                            ]
+                        ],
                         'information' => [
                             'label' => $organisation->orderHandlingStats->{"orders_state_submitted_paid_amount$currency"},
                             'type'  => 'currency'
@@ -91,7 +100,17 @@ class ShowOrganisationDashboard extends OrgAction
                         'label'       => __('Submitted Unpaid'),
                         'value'       => $organisation->orderHandlingStats->number_orders_state_submitted_not_paid,
                         'type'        => 'number',
-                        'icon_data'   => OrderPayStatusEnum::typeIcon()[OrderPayStatusEnum::UNPAID->value],
+                        'icon_data'   =>
+                            [
+                                'tooltip' => __('Submitted Unpaid'),
+                                'icon'    => 'fal fa-circle',
+                                'class'   => 'text-gray-500',
+                                'color'   => 'gray',
+                                'app'     => [
+                                    'name' => 'circle',
+                                    'type' => 'font-awesome-5'
+                                ]
+                            ],
                         'information' => [
                             'label' => $organisation->orderHandlingStats->{"orders_state_submitted_not_paid_amount$currency"},
                             'type'  => 'currency'

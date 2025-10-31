@@ -55,7 +55,7 @@ const props = defineProps<{
     blockData?: Object
     screenType: "mobile" | "tablet" | "desktop"
 }>();
-console.log('llll', props)
+
 const categoryId = props.fieldValue.model_id
 const layout = inject("layout", retinaLayoutStructure);
 const products = ref<any[]>(

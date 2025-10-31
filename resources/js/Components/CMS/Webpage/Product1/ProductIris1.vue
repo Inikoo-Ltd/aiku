@@ -352,8 +352,8 @@ const closePopover = (close: any): void => {
                             )
                         </span>
                     </div> -->
-                    <Popover v-slot="{ open, close }">
-                        <PopoverButton>
+                    <!-- <Popover v-slot="{ open, close }">
+                        <PopoverButton> -->
                             <div v-if="fieldValue.product.rrp_per_unit" @mouseover="(e) => hoverPopover(e, open)"
                                 @mouseleave="closePopover(close)"
                                 class="flex items-center gap-2 text-sm font-medium text-gray-600 text-right text-gray-500">
@@ -362,14 +362,14 @@ const closePopover = (close: any): void => {
                                     {{ locale.currencyFormat(currency?.code, (fieldValue.product.rrp_per_unit /
                                     fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit }}
                                 </span>
-                                <span class="flex items-center gap-1 font-semibold text-xs"
+                                <!-- <span class="flex items-center gap-1 font-semibold text-xs"
                                     :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
                                     (
-                                    {{ profitMargin > 0 ? '+' + profitMargin : profitMargin }}%
+                                    {{ fieldValue?.product?.margin }}
                                     )
-                                </span>
+                                </span> -->
                             </div>
-                        </PopoverButton>
+                        <!-- </PopoverButton>
 
                         <PopoverPanel
                             class="absolute z-10 bg-white border border-gray-200 rounded-lg p-4 shadow-lg w-64">
@@ -399,7 +399,7 @@ const closePopover = (close: any): void => {
                                     <span>Margin:</span>
                                     <span
                                         :class="profitMargin > 0 ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'">
-                                        {{ profitMargin.toFixed(2) }}%
+                                        {{ fieldValue?.product?.margin }}
                                     </span>
                                 </div>
 
@@ -407,18 +407,12 @@ const closePopover = (close: any): void => {
                                     <span>Total Profit:</span>
                                     <span
                                         :class="profitMargin > 0 ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'">
-                                        {{
-                                        locale.currencyFormat(
-                                        currency?.code,
-                                        ((fieldValue.product.rrp_per_unit - fieldValue.product.price) *
-                                        fieldValue.product.units).toFixed(2)
-                                        )
-                                        }}
+                                        {{ locale.currencyFormat(currency?.code,fieldValue?.product?.profit ) }}
                                     </span>
                                 </div>
                             </div>
-                        </PopoverPanel>
-                    </Popover>
+                        </PopoverPanel> -->
+                    <!-- </Popover> -->
                 </div>
 
 
@@ -493,7 +487,7 @@ const closePopover = (close: any): void => {
                     <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
                     <span class="flex items-center gap-1" :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
                         (
-                        {{ profitMargin > 0 ? '+' + profitMargin : profitMargin }}%
+                        {{ fieldValue?.product?.margin }}
                         )
                     </span>
                 </div>

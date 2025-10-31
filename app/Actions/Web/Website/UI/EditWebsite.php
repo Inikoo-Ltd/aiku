@@ -166,7 +166,7 @@ class EditWebsite extends OrgAction
 
         if (in_array($website->type, [WebsiteTypeEnum::B2B, WebsiteTypeEnum::DROPSHIPPING])) {
             $blueprints[] = [
-                'label'  => __('Registrations'),
+                'label'  => __('Registration'),
                 'icon'   => 'fa-light fa-id-card',
                 'fields' => [
 
@@ -180,7 +180,7 @@ class EditWebsite extends OrgAction
                     'web_registrations'  => [
                         'hidden'   => true,
                         'type'     => 'webRegistrations',
-                        'label'    => __('Web Registration'),
+                        'label'    => __('Registration'),
                         'value'    => [
                             [
                                 'key'      => 'telephone',
@@ -282,7 +282,14 @@ class EditWebsite extends OrgAction
                                 'required' => false,
                             ],
                         ]
-                    ]
+                    ],
+                    'marketing_opt_in_default' => [
+                        'type'  => 'toggle',
+                        'label' => __('Marketing opt-in set as checked'),
+                        'value' => Arr::get($website->shop->settings, 'registration.marketing_opt_in_default', false),
+                    ],
+
+
                 ]
             ];
             $blueprints[] = [

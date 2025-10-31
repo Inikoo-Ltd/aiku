@@ -89,7 +89,7 @@ const getIntervalStateColor = (state?: string) => {
         } : cell?.route_target.parameters) : '#'"
     >
         <span
-            v-if="cell.icon"
+            v-if="cell?.icon"
             v-html="ChannelLogo(cell.icon)"
             class="w-4 h-4"
         />

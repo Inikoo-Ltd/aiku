@@ -167,7 +167,7 @@ console.log('sss',layout)
 
 <template>
     <div class="block md:hidden p-3">
-        <div class="grid grid-cols-6 items-center justify-between">
+        <div class="grid grid-cols-3 items-center justify-between">
             <!-- Section: Hamburger & Search -->
             <div class="flex items-center gap-x-2 w-fit">
                 <!-- Hamburger Sidebar -->
@@ -183,7 +183,7 @@ console.log('sss',layout)
             </div>
 
             <!-- Section: Logo -->
-            <div class="col-span-3 flex justify-end items-center w-full" :class="!isLoggedIn ?  layout.retina?.type == 'b2b' ? 'justify-end' :'justify-center' : 'justify-end'">
+            <div class="xcol-span-2 flex justify-end items-center w-full" :class="!isLoggedIn ?  layout.retina?.type == 'b2b' ? 'justify-end' :'justify-center' : 'justify-end'">
                 <component :is="LinkIris" :href="'/'" class="block h-fit max-h-[50px] w-full max-w-32">
                     <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" alt="logo"
                         class="w-full h-auto object-contain" />
@@ -191,7 +191,7 @@ console.log('sss',layout)
             </div>
 
             <!-- Section: Profile -->
-            <div class="col-span-2 flex items-center justify-end gap-x-2 w-full mr-3">
+            <div class="xcol-span-2 flex items-center justify-end gap-x-2 w-full mr-3">
                 <!-- Not Logged In -->
                 <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="px-1">
                     <FontAwesomeIcon icon="fal fa-sign-in" fixed-width aria-hidden="true"

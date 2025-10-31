@@ -3,7 +3,7 @@ import { inject } from "vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faInfoCircle, faPallet, faCircle } from '@fas'
 import { faSpinnerThird } from '@fad'
-import { faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream } from '@fal'
+import { faAppleCrate,faRoad, faClock, faDatabase, faNetworkWired, faEye, faThLarge ,faTachometerAltFast, faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
@@ -12,7 +12,7 @@ import Icon from "../Icon.vue"
 library.add(
     faInfoCircle, faRoad, faClock, faDatabase, faPallet, faCircle,
     faNetworkWired, faSpinnerThird, faEye, faThLarge, faTachometerAltFast,
-    faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream
+    faMoneyBillWave, faHeart, faShoppingCart, faCameraRetro, faStream,faAppleCrate
 )
 
 const layoutStore = inject('layout', layoutStructure)
@@ -55,7 +55,7 @@ const renderLabelBasedOnType = (label?: string | number, type?: string, options?
 
 <template>
     <div>
-        <!-- Desktop -->
+        <!-- TabsBoxDisplay -->
         <div class="hidden px-6 md:flex gap-x-6 my-2">
             <div
                 v-for="box in tabs_box"

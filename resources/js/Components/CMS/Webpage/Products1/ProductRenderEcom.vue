@@ -356,9 +356,7 @@ const profitMargin = computed(() => {
                     <div v-if="product?.rrp" class="text-xs mt-1 text-right">
                         <div>
                             RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} <span
-                                v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ profitMargin
-                                    > 0 ? '+' +
-                                profitMargin : profitMargin }}% )</span>
+                                v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ product?.margin }} )</span>
                             <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
                                 ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} /
                                 {{

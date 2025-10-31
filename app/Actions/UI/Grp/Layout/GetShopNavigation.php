@@ -431,7 +431,7 @@ class GetShopNavigation
                 "label"   => __("Orders"),
                 "icon"    => ["fal", "fa-shopping-cart"],
                 "route"   => [
-                    "name"       => "grp.org.shops.show.ordering.orders.index",
+                    "name"       => "grp.org.shops.show.ordering.backlog",
                     "parameters" => [$shop->organisation->slug, $shop->slug],
                 ],
                 "topMenu" => [

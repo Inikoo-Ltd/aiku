@@ -16,6 +16,7 @@ import { faEnvelope } from '@fal'
 import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products1/BestsellerBadge.vue'
+import Products from '@/Pages/Retina/Dropshipping/Products.vue'
 
 const layout = inject('layout', retinaLayoutStructure)
 
@@ -51,7 +52,7 @@ interface ProductResource {
 const props = defineProps<{
     product: ProductResource
     productHasPortfolio: Array<Number>
-    bestSeller:any
+    bestSeller: any
     currency?: {
         code: string
         name: string
@@ -256,7 +257,7 @@ const profitMargin = computed(() => {
             <LinkIris v-if="product.url" :href="product.url" type="internal"
                 class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 <template #default>
-                    {{ product.name }}
+                   <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>   {{ product.name }}
                 </template>
             </LinkIris>
 
@@ -270,20 +271,18 @@ const profitMargin = computed(() => {
                 <span v-if="product.rpp">
                     RRP: {{ locale.currencyFormat((currency.code, product.rpp || 0)) }}/ {{ product.unit }}
                 </span>
-            </div>
 
-            <!-- Rating and Stock A -->
-            <div class="flex justify-between items-center text-xs mb-2">
-                <!-- Stock indicator -->
-                <div v-if="layout?.iris?.is_logged_in"
-                    class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
-                    :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
-                    <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
-                    <span>({{ product.stock > 0 ? product.stock : 0 }} {{ trans('available') }})</span>
-                </div>
+                <div class="flex justify-between items-center text-xs mb-2">
+                    <!-- Stock indicator -->
+                    <div v-if="layout?.iris?.is_logged_in"
+                        class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
+                        :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
+                        <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
+                        <span>{{ product.stock > 0 ? product.stock : 0 }} {{ trans('available') }}</span>
+                    </div>
 
-                <!-- Notify button as tag -->
-                <button v-if="product.stock == 0 && layout?.app?.environment === 'local'" type="button"
+                    <!-- Notify button as tag -->
+                    <!-- <button v-if="product.stock == 0 && layout?.app?.environment === 'local'" type="button"
                     @click.prevent="() => product?.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                     v-tooltip="'Will notify you when product is in stock'"
                     class="flex items-center gap-1 px-2 rounded-full border text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition text-xs">
@@ -291,13 +290,55 @@ const profitMargin = computed(() => {
                     <FontAwesomeIcon v-else :icon="product?.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
                         fixed-width :class="[product?.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
                     <span>{{ trans('Notify me') }}</span>
-                </button>
+                </button> -->
+                </div>
+            </div>
 
+            <!-- Price Card -->
+            <div v-if="layout?.iris?.is_logged_in"
+                class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
+                <!-- Retail Price (Excl. Tax) -->
+                <div class="flex items-center justify-between">
+                    <span class="font-medium text-base">
+                        {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
+                        <span class="text-sm"> {{ product.unit }}</span>
+                        <span class="text-xs ml-3 font-medium">
+                            {{ trans('retail (excl. tax)') }}
+                        </span>
+                    </span>
+                </div>
+
+                <!-- Selling Price & Profit -->
+                <div class="flex items-center justify-between">
+                    <span class="text-xs flex items-center text-gray-500 font-medium">
+                         {{ trans('Profit') }} : {{ locale.currencyFormat(currency?.code, product?.profit || 0) }}
+
+                        <span v-if="profitMargin > 0" v-tooltip="trans('Profit margin')"
+                            class="ml-1">
+                            ({{ profitMargin }}%)  
+                        </span>
+
+                        <span v-else v-tooltip="trans('Profit margin')" class="text-gray-500 font-semibold ml-1 text-sm">
+                          ({{ profitMargin }}%) 
+                        </span>
+                    </span>
+                </div>
+            </div>
+
+            <div v-if="layout?.iris?.is_logged_in"
+                class=" p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
+                <!-- Retail Price (Excl. Tax) -->
+                  <div class="">
+                    <div>{{ trans('Price') }}: <span class="font-semibold"> {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
+                            }}<span class="text-xs text-gray-600"> / {{product.unit }}</span></span></div>
+                    
+                </div>
             </div>
 
 
-            <!-- Prices -->
-            <div v-if="layout?.iris?.is_logged_in"
+
+            <!-- old Prices -->
+            <!-- <div v-if="layout?.iris?.is_logged_in"
                 class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
                 <div class="">
                     <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
@@ -313,17 +354,16 @@ const profitMargin = computed(() => {
 
                 <div v-if="product?.rrp" class="text-xs mt-1 text-right">
                     <div>
-                        RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} <span
-                            v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ profitMargin > 0
-                                ? '+' +
-                            profitMargin : profitMargin }}% )</span>
+                        RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} 
+                        <span
+                            v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ product?.margin }} )</span>
                         <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
                             ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} / {{
                                 product.unit }})
                         </div>
                     </div>
                 </div>
-            </div>
+            </div> -->
         </div>
 
 
