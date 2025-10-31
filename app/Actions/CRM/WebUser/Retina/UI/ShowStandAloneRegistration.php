@@ -37,6 +37,7 @@ class ShowStandAloneRegistration extends IrisAction
                 'requiresPhoneNumber' => Arr::get($this->shop->settings, 'registration.require_phone_number', false),
                 'polls' => $pollsResource,
                 'client' => $webUser,
+                'registration_settings' => Arr::get($this->shop->settings, 'registration', []),
                 'registerRoute' => [
                     'name' => 'retina.register_from_standalone.store',
                     'method' => 'POST'

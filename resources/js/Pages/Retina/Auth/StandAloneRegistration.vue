@@ -35,6 +35,10 @@ const props = defineProps<{
 		contact_name: string
 
 	}
+	registration_settings: {
+		marketing_opt_in_label: string
+		marketing_opt_in_default: boolean
+	}
 }>()
 
 
@@ -55,7 +59,7 @@ const form = useForm({
 	password_confirmation: "",
 	contact_address: {},
 	poll_replies: initialPollReplies,
-	is_opt_in: false,
+	is_opt_in: props.registration_settings.marketing_opt_in_default,
 	interest: [],
     tax_number: ''
 
@@ -219,10 +223,10 @@ provide('registrationWarning', registrationWarning)
 							/>
 							
 							<!-- Opt in newsletter -->
-							<div class="flex items-center gap-2 sm:col-span-6">
-								<Checkbox v-model="form.is_opt_in" inputId="opt_in_newsletter" name="opt_in_newsletter" binary />
+							<div class="flex xitems-center gap-2 sm:col-span-6">
+								<Checkbox v-model="form.is_opt_in" inputId="opt_in_newsletter" name="opt_in_newsletter" binary class="mt-0.5" />
 								<label for="opt_in_newsletter">
-									{{ trans("Opt in to our newsletter for updates and offers.") }}
+									{{ registration_settings?.marketing_opt_in_label ?? trans("Opt in to our newsletter for updates and offers.") }}
 								</label>
 							</div>
 						</div>

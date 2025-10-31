@@ -120,6 +120,10 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.registration.require_phone_number", Arr::pull($modelData, 'required_phone_number'));
         }
 
+        if (Arr::exists($modelData, 'marketing_opt_in_label')) {
+            data_set($modelData, "settings.registration.marketing_opt_in_label", Arr::pull($modelData, 'marketing_opt_in_label'));
+        }
+
         if (Arr::exists($modelData, 'marketing_opt_in_default')) {
             data_set($modelData, "settings.registration.marketing_opt_in_default", Arr::pull($modelData, 'marketing_opt_in_default'));
         }
@@ -250,6 +254,7 @@ class UpdateShop extends OrgAction
             'required_approval'            => ['sometimes', 'boolean'],
             'required_phone_number'        => ['sometimes', 'boolean'],
             'marketing_opt_in_default'     => ['sometimes', 'boolean'],
+            'marketing_opt_in_label'       => ['sometimes', 'string'],
             'invoice_footer'               => ['sometimes', 'string', 'max:10000'],
             'cost_price_ratio'             => ['sometimes', 'numeric', 'min:0'],
             'price_rrp_ratio'              => ['sometimes', 'numeric', 'min:0'],

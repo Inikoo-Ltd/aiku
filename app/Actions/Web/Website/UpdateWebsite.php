@@ -43,6 +43,10 @@ class UpdateWebsite extends OrgAction
         data_forget($modelData, 'favicon');
 
         $shopUpdateData = [];
+        if (Arr::has($modelData, "marketing_opt_in_label")) {
+            data_set($shopUpdateData, "settings.registration.marketing_opt_in_label", Arr::pull($modelData, 'marketing_opt_in_label'));
+        }
+
         if (Arr::has($modelData, "marketing_opt_in_default")) {
             data_set($shopUpdateData, "settings.registration.marketing_opt_in_default", Arr::pull($modelData, 'marketing_opt_in_default'));
         }
@@ -206,6 +210,7 @@ class UpdateWebsite extends OrgAction
                 File::image()
                     ->max(12 * 1024)
             ],
+            'marketing_opt_in_label'   => ['sometimes', 'string'],
             'marketing_opt_in_default' => ['sometimes', 'boolean'],
             'script_website'           => [
                 'sometimes',
