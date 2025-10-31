@@ -280,66 +280,85 @@ const profitMargin = computed(() => {
                 <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
                     type="internal">
                     <template #default>
-                        {{ product.name }}
+                          <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
                     </template>
                 </LinkIris>
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
-                    {{ product.name }}
+                     <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
                 </div>
 
-                <!-- SKU and RRP -->
-                <div class="flex gap-x-2">
-                    <div class="w-full">
-                        <div class="flex justify-between text-xs text-gray-600 mb-1">
-                            <span>{{ product?.code }}</span>
-                            <!-- <span v-if="product.rrp">
-                                RRP: {{ locale.currencyFormat(currency.code,product.rrp) }}/ {{ product.unit }}
-                            </span> -->
-                        </div>
+            <!-- Price Card -->
+                 <div class="flex justify-between text-xs text-gray-600 mb-1">
+                <span>{{ product?.code }}</span>
+                <span v-if="product.rpp">
+                    RRP: {{ locale.currencyFormat((currency.code, product.rpp || 0)) }}/ {{ product.unit }}
+                </span>
 
-                        <!-- Rating and Stock C-->
-                        <div class="flex justify-between items-center text-xs mb-2">
-                            <div v-if="layout?.iris?.is_logged_in">
-                                <div v-if="product.stock > 0" class="flex items-center gap-1"
-                                    :class="product.stock > 0 ? 'text-green-600' : 'text-red-600'">
-                                    <FontAwesomeIcon :icon="faCircle" class="text-[8px]"
-                                        :class="product.stock > 0 ? 'animate-pulse' : ''" />
-                                    <span>({{ product.stock > 0 ? product.stock : 0 }} {{ trans('available') }})</span>
-                                </div>
-                                <div v-else
-                                    class="bg-red-500/20 px-2 xpy-1 rounded text-xs text-red-500 border border-red-500/50">
-                                    {{ trans("Out of stock") }}
-                                </div>
-                            </div>
-                            <div class="flex items-center space-x-[1px] text-gray-500">
-                            </div>
-                        </div>
+                <div class="flex justify-between items-center text-xs mb-2">
+                    <!-- Stock indicator -->
+                    <div v-if="layout?.iris?.is_logged_in"
+                         class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
+                         :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
+                        <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
+                        <span>{{ product.stock > 0 ? product.stock : 0 }} {{ trans("available") }}</span>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Favorite Icon -->
-                    <div v-if="layout?.iris?.is_logged_in" class="flex items-center">
+            <!-- Price Card -->
+            <div v-if="layout?.iris?.is_logged_in"
+                 class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
+                <div class="flex items-center justify-between">
+                    <span class="font-medium text-base">
+                        {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
+                        <span class="text-sm"> {{ product.unit }}</span>
+                        <span class="text-xs ml-2 font-medium">
+                            {{ trans("retail (excl. tax)") }}
+                        </span>
+                    </span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-xs flex items-center text-gray-500 font-medium">
+                         {{ trans("Profit") }} : {{ locale.currencyFormat(currency?.code, product?.profit || 0) }}
 
-                        <div v-if="isLoadingFavourite" class="xabsolute top-2 right-2 text-gray-500 text-xl px-2 -mr-2">
-                            <LoadingIcon />
+                        <span v-if="profitMargin > 0" v-tooltip="trans('Profit margin')"
+                              class="ml-1">
+                            ({{ profitMargin }}%)  
+                        </span>
+
+                        <span v-else v-tooltip="trans('Profit margin')" class="text-gray-500 font-semibold ml-1 text-sm">
+                          ({{ profitMargin }}%) 
+                        </span>
+                    </span>
+                </div>
+            </div>
+
+            <div v-if="layout?.iris?.is_logged_in"
+                 class="p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
+                <div v-if="product.units==1" class="flex justify-between">
+                    <div>
+                        {{ trans("Price") }}:
+                        <span class="font-semibold">
+                            {{ locale.currencyFormat(currency?.code, product.price) }}
+                            <span class="text-xs text-gray-600"> / {{ product.unit }}</span>
+                        </span>
+                    </div>
+                </div>
+                <div v-else>
+                    <div class="flex justify-between">
+                        <div> 
+                            {{ trans("Price") }}:
+                            <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
                         </div>
-                        <div v-else
-                            @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
-                            class="cursor-pointer xabsolute top-2 right-2 group text-xl px-2 -mr-2">
-
-                            <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
-                                class="text-pink-500" />
-                            <div v-else class="relative" v-tooltip="trans('Add To Favourite')">
-                                <!-- <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
-                                    fixed-width /> -->
-                                <FontAwesomeIcon :icon="faHeart" class="inline text-pink-300" fixed-width />
-                            </div>
-
+                        <div>
+                              <span class="text-xs price_per_unit">(<span > {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2)) }}
+                              <span class=" text-gray-600"> / {{ product.unit }}</span></span>)</span>
                         </div>
                     </div>
                 </div>
-
-
-                <div v-if="layout?.iris?.is_logged_in"
+            </div>
+                <!-- old price -->
+                <!-- <div v-if="layout?.iris?.is_logged_in"
                     class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
                     <div class="">
                         <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
@@ -364,8 +383,7 @@ const profitMargin = computed(() => {
                             </div>
                         </div>
                     </div>
-
-                </div>
+                </div> -->
             </div>
         </div>
 

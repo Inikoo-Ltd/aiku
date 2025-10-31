@@ -285,9 +285,13 @@ defineExpose({
 
       <!-- Column: Code -->
       <template #cell(asset_code)="{ item }">
-        <Link :href="productRoute(item)" class="primaryLink">
-        {{ item.asset_code }}
+        <Link v-if="productRoute(item)" :href="productRoute(item)" class="primaryLink">
+          {{ item.asset_code }}
         </Link>
+
+        <div v-else>
+          {{ item.asset_code }}
+        </div>
       </template>
 
       <!-- Column: Name / Stock -->

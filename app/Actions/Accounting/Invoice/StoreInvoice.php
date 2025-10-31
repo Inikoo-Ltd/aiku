@@ -218,6 +218,7 @@ class StoreInvoice extends OrgAction
             MatchCustomerProspects::dispatch($invoice->customer);
         }
 
+
         return $invoice;
     }
 

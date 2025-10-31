@@ -1,24 +1,21 @@
 <script setup lang="ts">
-import Image from '@/Components/Image.vue'
+import Image from "@/Components/Image.vue"
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, ref, computed } from 'vue'
-import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { Link, router } from '@inertiajs/vue3'
-import { notify } from '@kyvg/vue3-notification'
-import { trans } from 'laravel-vue-i18n'
-import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { faHeart } from '@far'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCircle, faHeart as fasHeart, faMedal } from '@fas'
-import { Image as ImageTS } from '@/types/Image'
-import ButtonAddPortfolio from '@/Components/Iris/Products/ButtonAddPortfolio.vue'
-import { faEnvelope } from '@fal'
-import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
-import LinkIris from '@/Components/Iris/LinkIris.vue'
-import BestsellerBadge from '@/Components/CMS/Webpage/Products1/BestsellerBadge.vue'
-import Products from '@/Pages/Retina/Dropshipping/Products.vue'
+import { inject, ref, computed } from "vue"
+import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
+import { Link, router } from "@inertiajs/vue3"
+import { notify } from "@kyvg/vue3-notification"
+import { trans } from "laravel-vue-i18n"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import { faHeart } from "@far"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faCircle, faHeart as fasHeart, faMedal } from "@fas"
+import { Image as ImageTS } from "@/types/Image"
+import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
+import BestsellerBadge from "@/Components/CMS/Webpage/Products1/BestsellerBadge.vue"
 
-const layout = inject('layout', retinaLayoutStructure)
+const layout = inject("layout", retinaLayoutStructure)
 
 const locale = useLocaleStore()
 
@@ -69,7 +66,7 @@ const onAddFavourite = (product: ProductResource) => {
 
     // Section: Submit
     router.post(
-        route('iris.models.favourites.store', {
+        route("iris.models.favourites.store", {
             product: product.id
         }),
         {
@@ -93,7 +90,7 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-            },
+            }
         }
     )
 }
@@ -101,7 +98,7 @@ const onUnselectFavourite = (product: ProductResource) => {
 
     // Section: Submit
     router.delete(
-        route('iris.models.favourites.delete', {
+        route("iris.models.favourites.delete", {
             product: product.id
         }),
         {
@@ -127,7 +124,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-            },
+            }
         }
     )
 }
@@ -136,7 +133,7 @@ const onAddBackInStock = (product: ProductResource) => {
 
     // Section: Submit
     router.post(
-        route('iris.models.remind_back_in_stock.store', {
+        route("iris.models.remind_back_in_stock.store", {
             product: product.id
         }),
         {
@@ -144,7 +141,7 @@ const onAddBackInStock = (product: ProductResource) => {
         },
         {
             preserveScroll: true,
-            only: ['iris'],
+            only: ["iris"],
             preserveState: true,
             onStart: () => {
                 isLoadingRemindBackInStock.value = true
@@ -161,19 +158,19 @@ const onAddBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
-            },
+            }
         }
     )
 }
 const onUnselectBackInStock = (product: ProductResource) => {
     router.delete(
-        route('iris.models.remind_back_in_stock.delete', {
+        route("iris.models.remind_back_in_stock.delete", {
             backInStockReminder: product.id
         }),
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ["iris"],
             onStart: () => {
                 isLoadingRemindBackInStock.value = true
             },
@@ -194,7 +191,7 @@ const onUnselectBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-            },
+            }
         }
     )
 }
@@ -205,7 +202,6 @@ const profitMargin = computed(() => {
     if (!price || !rrp) return 0
     return Math.floor(((rrp - price) / rrp) * 100)
 })
-
 
 
 </script>
@@ -234,7 +230,7 @@ const profitMargin = computed(() => {
                     <LoadingIcon />
                 </div>
                 <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
-                    class="cursor-pointer absolute top-2 right-2 group text-xl ">
+                     class="cursor-pointer absolute top-2 right-2 group text-xl ">
 
                     <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
                     <div v-else class="relative">
@@ -247,22 +243,21 @@ const profitMargin = computed(() => {
 
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
-                class="block w-full mb-1 rounded sm:h-[305px] h-[180px]">
+                       class="block w-full mb-1 rounded sm:h-[305px] h-[180px]">
                 <Image :src="product?.web_images?.main?.gallery" alt="product image"
-                    :style="{ objectFit: 'contain' }" />
+                       :style="{ objectFit: 'contain' }" />
             </component>
 
             <!-- Title -->
 
-            <LinkIris v-if="product.url" :href="product.url" type="internal"
-                class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+            <LinkIris v-if="product.url" :href="product.url" type="internal" class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 <template #default>
-                   <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span>   {{ product.name }}
+                    <span  class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
                 </template>
             </LinkIris>
 
             <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-                {{ product.name }}
+                <span class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
             </div>
 
             <!-- SKU and RRP -->
@@ -275,10 +270,10 @@ const profitMargin = computed(() => {
                 <div class="flex justify-between items-center text-xs mb-2">
                     <!-- Stock indicator -->
                     <div v-if="layout?.iris?.is_logged_in"
-                        class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
-                        :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
+                         class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
+                         :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
                         <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
-                        <span>{{ product.stock > 0 ? product.stock : 0 }} {{ trans('available') }}</span>
+                        <span>{{ product.stock > 0 ? product.stock : 0 }} {{ trans("available") }}</span>
                     </div>
 
                     <!-- Notify button as tag -->
@@ -296,22 +291,22 @@ const profitMargin = computed(() => {
 
             <!-- Price Card -->
             <div v-if="layout?.iris?.is_logged_in"
-                class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
+                 class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
                 <div class="flex items-center justify-between">
                     <span class="font-medium text-base">
                         {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
                         <span class="text-sm"> {{ product.unit }}</span>
-                        <span class="text-xs ml-3 font-medium">
-                            {{ trans('retail (excl. tax)') }}
+                        <span class="text-xs ml-2 font-medium">
+                            {{ trans("retail (excl. tax)") }}
                         </span>
                     </span>
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-xs flex items-center text-gray-500 font-medium">
-                         {{ trans('Profit') }} : {{ locale.currencyFormat(currency?.code, product?.profit || 0) }}
+                         {{ trans("Profit") }} : {{ locale.currencyFormat(currency?.code, product?.profit || 0) }}
 
                         <span v-if="profitMargin > 0" v-tooltip="trans('Profit margin')"
-                            class="ml-1">
+                              class="ml-1">
                             ({{ profitMargin }}%)  
                         </span>
 
@@ -323,14 +318,29 @@ const profitMargin = computed(() => {
             </div>
 
             <div v-if="layout?.iris?.is_logged_in"
-                class=" p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
-                  <div class="">
-                    <div>{{ trans('Price') }}: <span class="font-semibold"> {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
-                            }}<span class="text-xs text-gray-600"> / {{product.unit }}</span></span></div>
-                    
+                 class="p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
+                <div v-if="product.units==1" class="flex justify-between">
+                    <div>
+                        {{ trans("Price") }}:
+                        <span class="font-semibold">
+                            {{ locale.currencyFormat(currency?.code, product.price) }}
+                            <span class="text-xs text-gray-600"> / {{ product.unit }}</span>
+                        </span>
+                    </div>
+                </div>
+                <div v-else>
+                    <div class="flex justify-between">
+                        <div> 
+                            {{ trans("Price") }}:
+                            <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
+                        </div>
+                        <div>
+                              <span class="text-xs price_per_unit">(<span > {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2)) }}
+                              <span class=" text-gray-600"> / {{ product.unit }}</span></span>)</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-
 
 
             <!-- old Prices -->
@@ -350,7 +360,7 @@ const profitMargin = computed(() => {
 
                 <div v-if="product?.rrp" class="text-xs mt-1 text-right">
                     <div>
-                        RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} 
+                        RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }}
                         <span
                             v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ product?.margin }} )</span>
                         <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
