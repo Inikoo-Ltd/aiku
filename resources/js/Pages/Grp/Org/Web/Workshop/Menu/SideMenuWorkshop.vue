@@ -83,12 +83,12 @@ const tabs = computed(() => {
 		{ label: 'Styling (for custom navigation)', icon: faPaintBrush, tooltip: trans('Styling (custom navigation)') },
 	]
 
-	if (isFollowSidebar) {
+	// if (isFollowSidebar) {
 		return tabsList
-	} else {
+	// } else {
 		// Remove last tab if not following sidebar
-		return tabsList.slice(0, -1)
-	}
+		// return tabsList.slice(0, -1)
+	// }
 })
 const computedTabs = computed(() => {
 	return props.data
@@ -163,12 +163,12 @@ const debAutoSave = debounce((data) => {
 						@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e) , debAutoSave(data)}"
 					/>
 					
-					<Transition name="slide-to-right">
+					<!-- <Transition name="slide-to-right">
 						<div v-if="!get(data, ['data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], false)" class="rounded text-yellow-500 bg-gray-500/80 absolute inset-0 w-full h-full top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center">
 							<FontAwesomeIcon icon="fal fa-eye-slash" class="text-5xl" fixed-width aria-hidden="true" />
 							{{ trans("Will not showing due the data not follow Sidebar") }}
 						</div>
-					</Transition>
+					</Transition> -->
 				</div>
 			</TabPanel>
 		</TabPanels>

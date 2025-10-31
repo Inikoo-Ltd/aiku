@@ -265,7 +265,7 @@ const compIndexStyling1 = computed(() => {
                         @mouseenter="() => onMouseEnterMenu(navigation)"
                         :type="navigation?.link?.type"
                         xstyle="getStyles(fieldValue?.navigation_container?.properties, screenType)"
-                        :style="compIndexStyling1?.includes(idxNavigation + 1 + compCustomTopNavigation?.length) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
+                        :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href"
                         :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full py-2 px-6 flex items-center justify-center transition duration-200"
@@ -289,7 +289,7 @@ const compIndexStyling1 = computed(() => {
                         @mouseenter="() => onMouseEnterMenu(navigation)"
                         :type="navigation?.link?.type"
                         xstyle="getStyles(fieldValue?.custom_navigation_styling?.custom_bottom?.properties, screenType)"
-                        :style="compIndexStyling1?.includes(idxNavigation + 1 + compCustomTopNavigation?.length + selectedMenu?.length) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
+                        :style="compIndexStyling1?.includes(idxNavigation + 1 + (compCustomTopNavigation?.length ?? 0) + (selectedMenu?.length ?? 0)) ? getStyles(fieldValue?.custom_navigation_1_styling?.properties, screenType): getStyles(fieldValue?.navigation_container?.properties, screenType)"
                         :href="navigation?.link?.href"
                         :canonical_url="navigation?.link?.canonical_url"
                         class="group w-full  py-2 px-6 flex items-center justify-center transition duration-200" :class="hoveredNavigation?.id === navigation.id && isCollapsedOpen
