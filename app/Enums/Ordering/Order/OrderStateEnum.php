@@ -80,7 +80,7 @@ enum OrderStateEnum: string
             ],
             'handling'         => [
                 'tooltip' => __('Handling'),
-                'icon'    => 'fal fa-hands-helping',
+                'icon'    => 'fal fa-apple-crate',
                 'class'   => 'text-gray-500',
                 'color'   => 'slate',
                 'app'     => [
