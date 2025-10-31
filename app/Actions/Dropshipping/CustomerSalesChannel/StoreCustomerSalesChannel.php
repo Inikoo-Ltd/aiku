@@ -34,6 +34,8 @@ class StoreCustomerSalesChannel extends OrgAction
         $modelData['organisation_id']   = $customer->organisation_id;
         $modelData['shop_id']           = $customer->shop_id;
         $modelData['platform_id']       = $platform->id;
+
+        /** @var CustomerSalesChannel $customerSalesChannel */
         $customerSalesChannel           = $customer->customerSalesChannels()->create($modelData);
 
         PlatformHydrateCustomers::dispatch($platform)->delay($this->hydratorsDelay);
