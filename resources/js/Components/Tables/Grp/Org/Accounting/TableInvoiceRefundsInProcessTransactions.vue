@@ -39,7 +39,7 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: For
     let tempValue = toRaw(amount.refund_amount)
     router[routeRefund.method || 'post'](
         route(
-            routeRefund.name, 
+            routeRefund.name,
             routeRefund.parameters
         ),
         {
@@ -52,7 +52,7 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: For
             },
             onSuccess: () => {
                 amount.defaults()
-                amount.reset();             
+                amount.reset();
             },
             onFinish: () => {
                 amount.processing = false
@@ -159,7 +159,7 @@ defineExpose({
                             type="secondary"
                             :xtype="get(proxyItem, 'refund_type', null) == 'full' ? 'black' : 'secondary'"
                         />
-                        
+
                         <Button
                             v-if="!get(proxyItem, ['refund_net_amount'], 0)"
                             @click="() => get(proxyItem, 'refund_type', null) == 'partial' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'partial')"
@@ -198,7 +198,7 @@ defineExpose({
                                         <FontAwesomeIcon icon="fal fa-plus" aria-hidden="true" />
                                     </template>
                                 </InputNumber>
-                    
+
                                 <p v-if="get(proxyItem, ['new_refund_amount'], null) > item.net_amount" class="italic text-red-500 text-xs mt-1">
                                     {{ trans('Refund amount should not over the net amount') }}
                                 </p>
@@ -226,21 +226,21 @@ defineExpose({
                                 type="tertiary"
                                 :xtype="get(proxyItem, 'refund_type', null) == 'full' ? 'black' : 'secondary'"
                             />
-                        </div>   
+                        </div>
                         </div> -->
-                
+
                         <div class="flex items-center gap-3 w-fit">
-                            <ActionCell 
+                            <ActionCell
                                 v-if="Number(item.total_last_refund) < Number(item.net_amount)"
                                 :ref="(e) => _formCell[item.rowIndex] = e"
                                 :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
-                                :max="item.max_refundable_amount" 
+                                :max="item.max_refundable_amount"
                                 @input="(e) => set(proxyItem, ['new_refund_amount'], e.value)"
-                                @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)" 
-                                :min="0" 
+                                @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)"
+                                :min="0"
                                 placeholder="0"
-                                mode="currency" 
-                                :currency="item.currency_code" 
+                                mode="currency"
+                                :currency="item.currency_code"
                                 :step="item.original_item_net_price"
                                 @refund="(form) => onClickQuantity(item.refund_route, item.rowIndex, form)"
                             />
