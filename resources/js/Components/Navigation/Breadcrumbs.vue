@@ -82,7 +82,7 @@ const isLoading = ref<string | boolean>(false)
 </script>
 
 <template>
-    <nav class="relative xxxoverflow-y-hidden flex text-gray-600 h-8 xl:h-8 border-b border-gray-200 text-xs md:text-sm" aria-label="Breadcrumb">
+    <nav class="isolate relative xxxoverflow-y-hidden flex text-gray-600 h-8 xl:h-8 border-b border-gray-200 text-xs md:text-sm" aria-label="Breadcrumb">
         <!-- Breadcrumb -->
         <TransitionGroup name="list-to-down" tag="ol" class="w-full mx-auto md:px-4 flex">
             <li v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx"

@@ -13,6 +13,7 @@ use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydratePortfolios;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Ebay\Product\CheckEbayPortfolio;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewPortfolios;
 use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolio;
 use App\Actions\Dropshipping\WooCommerce\Product\CheckWooPortfolio;
 use App\Actions\OrgAction;
@@ -104,6 +105,10 @@ class StorePortfolio extends OrgAction
         CustomerHydratePortfolios::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
         CustomerSalesChannelsHydratePortfolios::run($customerSalesChannel);
         ShopPlatformStatsHydratePortfolios::dispatch($portfolio->shop, $portfolio->platform)->delay($this->hydratorsDelay);
+
+        if ($portfolio->shop && $portfolio->platform->id) {
+            ShopHydratePlatformSalesIntervalsNewPortfolios::dispatch($portfolio->shop, $portfolio->platform->id)->delay($this->hydratorsDelay);
+        }
 
         return $portfolio;
     }
