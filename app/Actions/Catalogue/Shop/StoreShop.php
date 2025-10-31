@@ -136,12 +136,11 @@ class StoreShop extends OrgAction
                 $shop->timeSeries()->create(['frequency' => $frequency]);
             }
 
-
-            if ($shop->type === ShopTypeEnum::DROPSHIPPING || $shop->type === ShopTypeEnum::FULFILMENT) {
+            if ($shop->type === ShopTypeEnum::DROPSHIPPING) {
                 $shop->dropshippingStats()->create();
 
                 foreach (Platform::all() as $platform) {
-                    //todo  @steven you do it
+                    $shop->platformSalesIntervals()->create(['platform_id' => $platform->id]);
                 }
 
             }

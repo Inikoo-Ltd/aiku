@@ -8,19 +8,22 @@
 
 namespace App\Actions\Maintenance\Catalogue;
 
+use App\Actions\OrgAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\Platform;
 use Illuminate\Console\Command;
 
-class RepairShopPlatformsSalesIntervals
+class RepairShopPlatformsSalesIntervals extends OrgAction
 {
-    public string $commandSignature = 'repair:shop_platforms_sales_intervals ';
+    public string $commandSignature = 'repair:shop_platform_sales_intervals';
 
     public function asCommand(Command $command): void
     {
-        foreach (Shop::whereIn('type', [ShopTypeEnum::DROPSHIPPING, ShopTypeEnum::FULFILMENT]) as $shop) {
-            // todo create the PlatofrmSales....
+        foreach (Shop::where('type', ShopTypeEnum::DROPSHIPPING)->get() as $shop) {
+            foreach (Platform::all() as $platform) {
+                $shop->platformSalesIntervals()->create(['platform_id' => $platform->id]);
+            }
         }
     }
-
 }
