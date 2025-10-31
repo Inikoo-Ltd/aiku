@@ -5,7 +5,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, onMounted, computed } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import { useLocaleStore } from '@/Stores/locale'
+import { useLocaleStore } from "@/Stores/locale"
 import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
@@ -13,12 +13,13 @@ import { notify } from "@kyvg/vue3-notification"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
-import { Image as ImageTS } from '@/types/Image'
+import { Image as ImageTS } from "@/types/Image"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import axios from "axios"
-import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
+import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
+import product from "@/Pages/Retina/Dropshipping/Product/Product.vue"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -47,11 +48,10 @@ const props = withDefaults(defineProps<{
     fieldValue: any
     webpageData?: any
     blockData?: object
-    screenType: 'mobile' | 'tablet' | 'desktop'
-}>(), {
-})
+    screenType: "mobile" | "tablet" | "desktop"
+}>(), {})
 
-const layout = inject('layout', {})
+const layout = inject("layout", {})
 const currency = layout?.iris?.currency
 const locale = useLocaleStore()
 const isFavorite = ref(false)
@@ -69,7 +69,7 @@ function formatNumber(value: Number) {
 const isLoadingFavourite = ref(false)
 const onAddFavourite = (product: ProductResource) => {
     router.post(
-        route('iris.models.favourites.store', {
+        route("iris.models.favourites.store", {
             product: product.id
         }),
         {
@@ -82,7 +82,7 @@ const onAddFavourite = (product: ProductResource) => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, 'is_favourite', true)
+                set(props.fieldValue.product, "is_favourite", true)
             },
             onError: errors => {
                 notify({
@@ -93,13 +93,13 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-            },
+            }
         }
     )
 }
 const onUnselectFavourite = (product: ProductResource) => {
     router.delete(
-        route('iris.models.favourites.delete', {
+        route("iris.models.favourites.delete", {
             product: product.id
         }),
         {
@@ -109,7 +109,7 @@ const onUnselectFavourite = (product: ProductResource) => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, 'is_favourite', false)
+                set(props.fieldValue.product, "is_favourite", false)
             },
             onError: errors => {
                 notify({
@@ -120,7 +120,7 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-            },
+            }
         }
     )
 }
@@ -133,25 +133,25 @@ const fetchProductExistInChannel = async () => {
     try {
         const response = await axios.get(
             route(
-                'iris.json.customer.product.channel_ids.index',
+                "iris.json.customer.product.channel_ids.index",
                 {
                     customer: layout.iris?.customer?.id,
-                    product: props.fieldValue.product.id,
+                    product: props.fieldValue.product.id
                 }
             )
         )
 
         if (response.status !== 200) {
-            throw new Error('Failed to fetch product existence in channel')
+            throw new Error("Failed to fetch product existence in channel")
         }
 
         // console.log('Product exist in channel response:', response.data)
         productExistenceInChannels.value = response.data || []
     } catch (error: any) {
         notify({
-            title: trans('Something went wrong'),
+            title: trans("Something went wrong"),
             text: error.message,
-            type: 'error'
+            type: "error"
         })
     } finally {
         isLoadingFetchExistenceChannels.value = false
@@ -174,7 +174,7 @@ onMounted(() => {
             ecommerce: {
                 items: [
                     {
-                        item_id: props.fieldValue?.product?.luigi_identity,
+                        item_id: props.fieldValue?.product?.luigi_identity
                     }
                 ]
             }
@@ -192,14 +192,13 @@ const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldVa
         .map(item => ({
             label: item.label,
             column: item.column_in_db,
-            images: item.images,
+            images: item.images
         }))
 )
 
 const videoSetup = ref(
     props.fieldValue.product.images.find(item => item.type === "video") || null
 )
-
 
 
 const validImages = computed(() => {
@@ -253,8 +252,6 @@ const closePopover = (close: any): void => {
 }
 
 
-
-
 </script>
 
 <template>
@@ -269,11 +266,11 @@ const closePopover = (close: any): void => {
                 </div>
                 <div class="flex gap-x-10 text-gray-400 mb-6 mt-4" v-if="fieldValue?.product?.tags?.length">
                     <div class="flex items-center gap-1 text-xs" v-for="(tag, index) in fieldValue.product.tags"
-                        :key="index">
+                         :key="index">
                         <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                         <div v-else class="aspect-square w-full h-[15px]">
                             <Image :src="tag?.image" :alt="`Thumbnail tag ${index}`"
-                                class="w-full h-full object-cover" />
+                                   class="w-full h-full object-cover" />
                         </div>
                         <span>{{ tag.name }}</span>
                     </div>
@@ -289,14 +286,14 @@ const closePopover = (close: any): void => {
                             <div class="flex items-center gap-[1px]"></div>
                         </div>
                         <div v-if="layout?.iris?.is_logged_in"
-                            class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+                             class="flex items-center gap-2 text-sm text-gray-600 mb-4">
                             <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
-                                :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+                                             :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
                                 {{
-                                fieldValue.product.stock > 0
-                                ? trans('In stock') + ` (${fieldValue.product.stock} ` + trans('available') + `)`
-                                : trans('Out Of Stock')
+                                    fieldValue.product.stock > 0
+                                        ? trans("In stock") + ` (${fieldValue.product.stock} ` + trans("available") + `)`
+                                        : trans("Out Of Stock")
                                 }}
                             </span>
                         </div>
@@ -308,118 +305,177 @@ const closePopover = (close: any): void => {
                                 <LoadingIcon />
                             </div>
                             <div v-else
-                                @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
-                                class="cursor-pointer top-2 right-2 group text-2xl ">
+                                 @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
+                                 class="cursor-pointer top-2 right-2 group text-2xl ">
                                 <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="fasHeart" fixed-width
-                                    class="text-pink-500" />
+                                                 class="text-pink-500" />
                                 <span v-else class="">
                                     <FontAwesomeIcon :icon="fasHeart" fixed-width
-                                        class="hidden group-hover:inline text-pink-400" />
+                                                     class="hidden group-hover:inline text-pink-400" />
                                     <FontAwesomeIcon :icon="faHeart" fixed-width
-                                        class="inline group-hover:hidden text-pink-300" />
+                                                     class="inline group-hover:hidden text-pink-300" />
                                 </span>
                             </div>
                         </template>
                     </div>
                 </div>
                 <div v-if="layout?.iris?.is_logged_in" class="flex flex-wrap justify-between items-end  pb-2">
+
+                    <br>----------------
+                    <div class="pricing">
+
+
+                        <div
+                            class="retail_pricing_and_profit border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
+                            <div class="flex items-center justify-between">
+                    <span class="font-medium text-base">
+                        {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp || 0) }} /
+                        <span class="text-sm"> {{ fieldValue.product.unit }}</span>
+                        <span class="text-xs ml-3 font-medium">
+                            {{ trans("retail (excl. tax)") }}
+                        </span>
+                    </span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                    <span class="text-xs flex items-center text-gray-500 font-medium">
+                         {{ trans("Profit") }} : {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit || 0) }}
+
+                        <span v-if="profitMargin > 0" v-tooltip="trans('Profit margin')"
+                              class="ml-1">
+                            ({{ profitMargin }}%)
+                        </span>
+
+                        <span v-else v-tooltip="trans('Profit margin')" class="text-gray-500 font-semibold ml-1 text-sm">
+                          ({{ profitMargin }}%)
+                        </span>
+                    </span>
+                            </div>
+                        </div>
+
+                        <div class="price">
+
+                            <div v-if="fieldValue.product.units==1">
+                                <div>
+                                    {{ trans("Price") }}:
+                                    <span class="font-semibold">
+                            {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
+                            <span class="text-xs text-gray-600"> / {{ fieldValue.product.unit }}</span>
+                        </span>
+                                </div>
+                            </div>
+                            <div v-else>
+                                <div>
+                                    {{ trans("Price") }}:
+                                    <span class="font-semibold"> {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}</span>
+                                    <span class="text-xs price_per_unit">(<span > {{ locale.currencyFormat(currency?.code, (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}<span class=" text-gray-600"> / {{ fieldValue.product.unit }}</span></span>)</span>
+
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <br>----------------
+
                     <!-- Product Price -->
                     <div class="font-bold text-2xl text-gray-900 leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
                         <span class="text-gray-500 text-sm font-normal ml-1">
                             ({{ locale.currencyFormat(currency?.code,
                             (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/{{
-                            fieldValue.product.unit }})
+                                fieldValue.product.unit }})
                         </span>
                     </div>
 
                     <!-- RRP + Profit Margin -->
-                    <!--                     <div v-if="fieldValue.product.rrp_per_unit"
-                        class="flex items-center gap-2 text-sm font-medium text-gray-600  text-right text-gray-500">
+
+
+                    <div v-if="fieldValue.product.rrp_per_unit"
+                         class="flex items-center gap-2 text-sm font-medium text-gray-600  text-right text-gray-500">
                         <span class="whitespace-nowrap">RRP:</span>
                         <span class="text-sm font-normal">
                             {{ locale.currencyFormat(currency?.code,
                             (fieldValue.product.rrp_per_unit / fieldValue.product.units).toFixed(2)) }}/{{
-                            fieldValue.product.unit }}
+                                fieldValue.product.unit }}
                         </span>
                         <span class="flex items-center gap-1 font-semibold text-xs"
-                            :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
+                              :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
                             (
                             <FontAwesomeIcon
                                 :icon="profitMargin > 0 ? 'fa-solid fa-arrow-trend-up' : 'fa-solid fa-arrow-trend-down'"
                                 class="text-[10px]" />
-                            {{ profitMargin > 0 ? '+' + profitMargin : profitMargin }}%
+                            {{ profitMargin > 0 ? "+" + profitMargin : profitMargin }}%
                             )
                         </span>
-                    </div> -->
-                    <!-- <Popover v-slot="{ open, close }">
-                        <PopoverButton> -->
+                    </div>
+                    <Popover v-slot="{ open, close }">
+                        <PopoverButton>
                             <div v-if="fieldValue.product.rrp_per_unit" @mouseover="(e) => hoverPopover(e, open)"
-                                @mouseleave="closePopover(close)"
-                                class="flex items-center gap-2 text-sm font-medium text-gray-600 text-right text-gray-500">
+                                 @mouseleave="closePopover(close)"
+                                 class="flex items-center gap-2 text-sm font-medium text-gray-600 text-right text-gray-500">
                                 <span class="whitespace-nowrap">RRP:</span>
                                 <span class="text-sm font-normal">
                                     {{ locale.currencyFormat(currency?.code, (fieldValue.product.rrp_per_unit /
                                     fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit }}
                                 </span>
-                                <!-- <span class="flex items-center gap-1 font-semibold text-xs"
-                                    :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
+                                <span class="flex items-center gap-1 font-semibold text-xs"
+                                      :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
                                     (
                                     {{ fieldValue?.product?.margin }}
                                     )
-                                </span> -->
+                                </span>
                             </div>
-                        <!-- </PopoverButton>
+                        </PopoverButton>
 
                         <PopoverPanel
                             class="absolute z-10 bg-white border border-gray-200 rounded-lg p-4 shadow-lg w-64">
                             <div class="text-xs text-gray-700 leading-snug space-y-2">
-                                <div class="font-semibold text-gray-800">Profit Margin Breakdown</div>
+                                <div class="font-semibold text-gray-800">{{trans('Profit Margin Breakdown')}}</div>
+
 
                                 <div class="flex justify-between">
-                                    <span>Price:</span>
-                                    <span class="font-medium">{{ locale.currencyFormat(currency?.code,
-                                        fieldValue.product.price)
-                                        }}</span>
-                                </div>
-
-                                <div class="flex justify-between">
-                                    <span>RRP:</span>
+                                    <span>{{trans('Retail price')}}</span>
                                     <span class="font-medium">{{ locale.currencyFormat(currency?.code,
                                         fieldValue.product.rrp_per_unit)
                                         }}</span>
                                 </div>
 
-                                <div class="flex justify-between">
-                                    <span>Units:</span>
-                                    <span class="font-medium">{{ Math.round(fieldValue?.product?.units) }}</span>
+                                <div class="flex justify-between">please provide price per unit
+                                    <span>{{trans('Cost price')}}:</span>
+                                    <span class="font-medium">{{ locale.currencyFormat(currency?.code,
+                                        fieldValue.product.price)
+                                        }}</span>
                                 </div>
 
-                                <div class="flex justify-between items-center">
-                                    <span>Margin:</span>
-                                    <span
-                                        :class="profitMargin > 0 ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'">
-                                        {{ fieldValue?.product?.margin }}
-                                    </span>
+                                <div class="flex justify-between">please provide profit per unitbold border on top
+                                    <span>{{trans('Profit')}}:</span>
+                                    <span class="font-medium">{{ locale.currencyFormat(currency?.code,
+                                        fieldValue.product.profit)
+                                        }}</span>
                                 </div>
 
-                                <div class="flex justify-between items-center border-t border-gray-200 pt-2">
-                                    <span>Total Profit:</span>
-                                    <span
-                                        :class="profitMargin > 0 ? 'text-green-600 font-semibold' : 'text-red-500 font-semibold'">
-                                        {{ locale.currencyFormat(currency?.code,fieldValue?.product?.profit ) }}
-                                    </span>
+
+                                <div class="notes">
+                                    {{trans('All prices are per unit and exclude tax.')}}
                                 </div>
+
+
+
+
+
                             </div>
-                        </PopoverPanel> -->
-                    <!-- </Popover> -->
+                        </PopoverPanel>
+                    </Popover>
                 </div>
 
 
                 <!-- Section: Button existence on all channels -->
                 <div class="relative flex gap-2 mb-6">
                     <ButtonAddPortfolio :product="fieldValue.product"
-                        :productHasPortfolio="productExistenceInChannels" />
+                                        :productHasPortfolio="productExistenceInChannels" />
 
                     <!-- Skeleton loading -->
                     <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
@@ -429,25 +485,24 @@ const closePopover = (close: any): void => {
                 </div>
 
 
-
                 <!-- <div class="text-sm font-medium text-gray-800" :style="getStyles(fieldValue?.description?.description_title, screenType)">
                     <div>{{ fieldValue.product.description_title }}</div>
                 </div> -->
 
                 <div class="text-xs font-medium text-gray-800"
-                    :style="getStyles(fieldValue?.description?.description_content, screenType)">
+                     :style="getStyles(fieldValue?.description?.description_content, screenType)">
                     <div v-html="fieldValue.product.description"></div>
                 </div>
                 <div v-if="fieldValue.setting?.information" class="my-4 space-y-2">
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
-                        :informations="fieldValue?.information" :styleData="fieldValue?.information_style" />
+                                            :informations="fieldValue?.information" :styleData="fieldValue?.information_style" />
                     <div v-if="fieldValue?.paymentData?.length > 0"
-                        class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2"
-                        :style="getStyles(fieldValue?.information_style?.title)">
+                         class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2"
+                         :style="getStyles(fieldValue?.information_style?.title)">
                         Secure Payments:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
-                                :src="logo.image" :alt="logo.code" class="h-4 px-1" />
+                                 :src="logo.image" :alt="logo.code" class="h-4 px-1" />
                         </div>
                     </div>
                 </div>
@@ -455,18 +510,18 @@ const closePopover = (close: any): void => {
         </div>
 
         <div class="text-xs font-normal text-gray-700 my-6"
-            :style="getStyles(fieldValue?.description?.description_extra, screenType)">
+             :style="getStyles(fieldValue?.description?.description_extra, screenType)">
             <div ref="contentRef"
-                class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
-                :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
+                 class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
+                 :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
 
             <button v-if="showButton" @click="toggleExpanded"
-                class="mt-1 text-gray-900 text-xs underline focus:outline-none">
-                {{ expanded ? 'Show Less' : 'Read More' }}
+                    class="mt-1 text-gray-900 text-xs underline focus:outline-none">
+                {{ expanded ? "Show Less" : "Read More" }}
             </button>
         </div>
         <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
-            :styleData="fieldValue?.information_style" />
+                             :styleData="fieldValue?.information_style" />
     </div>
 
     <!-- Mobile Layout -->
@@ -483,7 +538,7 @@ const closePopover = (close: any): void => {
                     </span>
                 </div>
                 <div v-if="fieldValue.product.rrp"
-                    class="flex items-center gap-2 text-xs text-gray-400 font-semibold mt-1">
+                     class="flex items-center gap-2 text-xs text-gray-400 font-semibold mt-1">
                     <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
                     <span class="flex items-center gap-1" :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
                         (
@@ -497,15 +552,15 @@ const closePopover = (close: any): void => {
             <!-- Favorite Icon -->
             <div v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in" class="mt-1">
                 <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer transition-colors duration-300"
-                    :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
-                    @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
+                                 :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
+                                 @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
             </div>
         </div>
 
 
         <div class="flex flex-wrap gap-2 mt-4" v-if="fieldValue?.product?.tags?.length">
             <div class="text-xs flex items-center gap-1 text-gray-500" v-for="(tag, index) in fieldValue.product.tags"
-                :key="index">
+                 :key="index">
                 <FontAwesomeIcon v-if="!tag.image" :icon="faDotCircle" class="text-sm" />
                 <div v-else class="aspect-square w-full h-[15px]">
 
@@ -524,11 +579,11 @@ const closePopover = (close: any): void => {
 
         <div class="mt-4">
             <InformationSideProduct v-if="fieldValue?.information?.length > 0" :informations="fieldValue?.information"
-                :styleData="fieldValue?.information_style" />
+                                    :styleData="fieldValue?.information_style" />
             <div class="text-sm font-semibold mb-2">Secure Payments:</div>
             <div class="flex flex-wrap gap-4">
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
-                    :alt="logo.code" class="h-4 px-1" />
+                     :alt="logo.code" class="h-4 px-1" />
             </div>
 
         </div>
@@ -538,7 +593,7 @@ const closePopover = (close: any): void => {
         </div>
 
         <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
-            :styleData="fieldValue?.information_style" />
+                             :styleData="fieldValue?.information_style" />
     </div>
 
 </template>
