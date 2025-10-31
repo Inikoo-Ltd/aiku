@@ -6,7 +6,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { ref, toRaw } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import InputNumber from 'primevue/inputnumber'
@@ -106,6 +106,17 @@ defineExpose({
 })
 
 
+const productRoute = (item) => {
+    if (route().current() === 'grp.org.shops.show.ordering.orders.show.invoices.show.refunds.show') {
+        return route('grp.org.shops.show.catalogue.products.current_products.show', {
+            organisation: route().params.organisation,
+            shop: route().params.shop,
+            product: item.slug
+        })
+    }
+
+    return ''
+}
 </script>
 
 <template>
@@ -134,6 +145,22 @@ defineExpose({
                     </button>
                 </div>
             </template>
+
+            <template #cell(code)="{ item }">
+                <Link v-if="productRoute(item)" :href="productRoute(item)" class="whitespace-normal primaryLink">
+                    {{ item.code }}
+                </Link>
+                <div v-else class="whitespace-normal">
+                    {{ item.code }}
+                </div>
+            </template>
+
+            <template #cell(description)="{ item }">
+                <div class="whitespace-normal">
+                    {{item.name}}
+                </div>
+            </template>
+
             <!-- <template #cell(prev_refund)="{ item }">
                 <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
                     <Tag v-if="Number(item.total_last_refund)" v-tooltip="trans('Total previous refund')" :label="locale.currencyFormat(item.currency_code, item.total_last_refund)" noHoverColor :theme="2" size="sm" />
