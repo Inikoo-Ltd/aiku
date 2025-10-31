@@ -69,9 +69,10 @@ const imageSettings = {
       </div>
 
       <!-- Text + button overlay -->
+    
       <div
         :style="getStyles(modelValue.container.properties?.block, screenType)"
-        class="relative z-10 w-full bg-white bg-opacity-80 p-6 backdrop-blur-sm sm:flex sm:flex-col sm:items-start lg:w-96 rounded-lg shadow-md"
+        class="relative z-10 w-full bg-white  p-6 backdrop-blur-sm sm:flex sm:flex-col sm:items-start lg:w-96 rounded-lg shadow-md"
         @click="() => {
           sendMessageToParent('activeBlock', indexBlock)
           sendMessageToParent('activeChildBlock', bKeys[1])
