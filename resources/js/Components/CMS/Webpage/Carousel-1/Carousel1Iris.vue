@@ -61,7 +61,7 @@ const selectedAspectRatio = computed(() => {
   return 16 / 9
 })
 
-const getHref = (data: any) => data?.link?.href
+const getHref = (data: any) => data.link.href ? data?.link?.href : null
 
 
 
@@ -104,7 +104,7 @@ const responsiveOptions = computed(() => {
         class="w-full">
         <template #item="{ data, index }" :showNavigators="false" :showIndicators="false">
           <div class="card flex flex-col h-full">
-            <component :is="getHref(data) ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
+            <component :is="data?.link?.href != '/' ? LinkIris : 'div'" :canonical_url="data?.link?.canonical_url"
               :href="data?.link?.href" :target="data?.link?.target" class="flex flex-1 flex-col" :type="data?.link?.type">
               <!-- Image Container -->
               <div class="flex justify-center overflow-visible"

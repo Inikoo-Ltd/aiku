@@ -37,78 +37,56 @@ const imageSettings = {
 </script>
 
 <template>
-  <div id="cta3">
-    <div
-      class="relative grid rounded-lg  shadow-lg"
-      :style="{
+  <div id="cta-image-background">
+    <div class="relative grid rounded-lg shadow-lg" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(modelValue.container?.properties, screenType)
-      }"
-    >
+      }">
       <!-- Image section -->
-      <div
-        class="absolute inset-0 z-0 cursor-pointer transition-transform duration-300 hover:scale-105"
-        :style="{
+      <div class="absolute inset-0 z-0 cursor-pointer transition-transform duration-300 hover:scale-105" :style="{
           ...getStyles(modelValue.image.properties, screenType),
           aspectRatio: imageSettings.aspectRatio
-        }"
-		    @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)"
-        @click="() => {
+        }" @dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)" @click="() => {
           sendMessageToParent('activeBlock', indexBlock)
           sendMessageToParent('activeChildBlock', bKeys[0])
-        }"
-      >
-        <Image
-          :src="modelValue?.image?.source
+        }">
+        <Image :src="modelValue?.image?.source
             ? modelValue.image.source
             : { original: 'https://flowbite.s3.amazonaws.com/blocks/marketing-ui/content/content-gallery-3.png' }"
-          :alt="modelValue?.image?.alt ?? 'CTA Image'"
-          imageCover
-          class="rounded-lg object-cover w-full h-full"
-        />
+          :alt="modelValue?.image?.alt ?? 'CTA Image'" imageCover class="rounded-lg object-cover w-full h-full" />
       </div>
 
       <!-- Text + button overlay -->
-    
-      <div
-        :style="getStyles(modelValue.container.properties?.block, screenType)"
-        class="relative z-10 w-full bg-white  p-6 backdrop-blur-sm sm:flex sm:flex-col sm:items-start lg:w-96 rounded-lg shadow-md"
-        @click="() => {
+
+      <div :style="getStyles(modelValue.container.properties?.block, screenType)"
+        class="relative z-10 w-full p-6 sm:flex sm:flex-col sm:items-start lg:w-96" @click="() => {
           sendMessageToParent('activeBlock', indexBlock)
           sendMessageToParent('activeChildBlock', bKeys[1])
-        }"
-      >
+        }">
         <div class="text-center lg:text-left text-gray-700 pr-3 mb-4 w-full">
-          <Editor
-            v-if="modelValue?.text"
-            v-model="modelValue.text"
-            @update:modelValue="() => emits('autoSave')"
-            @focus="() => {
+          <Editor v-if="modelValue?.text" v-model="modelValue.text" @update:modelValue="() => emits('autoSave')" @focus="() => {
               sendMessageToParent('activeBlock', indexBlock)
               sendMessageToParent('activeChildBlock', bKeys[1])
-            }"
-            :uploadImageRoute="{
+            }" :uploadImageRoute="{
               name: webpageData.images_upload_route.name,
               parameters: {
                 ...webpageData.images_upload_route.parameters,
                 modelHasWebBlocks: blockData?.id
               },
-            }"
-            :cropOptions="{ aspectRatio: imageRatio }"
-          />
+            }" :cropOptions="{ aspectRatio: imageRatio }" />
         </div>
 
-        <Button
-          :injectStyle="{
+        <div v-if="modelValue?.button?.show" class="flex w-full"  :style="getStyles(modelValue.button?.box?.container?.properties, screenType)">
+          <Button :injectStyle="{
             ...getStyles(modelValue?.button?.container?.properties, screenType),
             width: 'fit-content !important'
-          }"
-          :label="modelValue?.button?.text"
-          @click.stop="() => {
+          }" :label="modelValue?.button?.text" @click.stop="() => {
             sendMessageToParent('activeBlock', indexBlock)
             sendMessageToParent('activeChildBlock', bKeys[2])
-          }"
-        />
+          }" />
+
+        </div>
+
       </div>
     </div>
   </div>

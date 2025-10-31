@@ -38,7 +38,10 @@ class RepairMismatchSkuWooCommerce
             }
         }
 
-        $wooCommerceUser->batchUpdateWooCommerceProducts($collected);
+        if (! blank($collected)) {
+            $wooCommerceUser->batchUpdateWooCommerceProducts($collected);
+            echo '🤘🏻 Success to update SKU \n';
+        }
     }
 
     public function getCommandSignature(): string
