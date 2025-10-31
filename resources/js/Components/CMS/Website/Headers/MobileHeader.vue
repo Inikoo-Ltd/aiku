@@ -38,6 +38,7 @@ import { computed } from 'vue'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
+import { trans } from 'laravel-vue-i18n'
 
 // Add icons to the library
 library.add(
@@ -206,6 +207,18 @@ console.log('sss',layout)
                                 :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
                         </LinkIris>
                     </OverlayBadge>
+
+                    <LinkIris v-else href="/app/dashboard" class="px-1">
+                        <img
+                            src="/art/dashboard.png"
+                            :style="{
+                                ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
+                                height: '1.05em',
+                                verticalAlign: 'middle'
+                            }"
+                            :alt="trans('Dashboard icon')"
+                        />
+                    </LinkIris>
 
                     <LinkIris href="/app/profile" class="px-1">
                         <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon || 'fal fa-user-circle'" fixed-width

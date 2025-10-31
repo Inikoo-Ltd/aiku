@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\CustomerClient;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomerClients;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomerClient;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomerClients;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomerClients;
@@ -30,6 +31,10 @@ class DeleteCustomerClient extends OrgAction
         ShopHydrateCustomerClients::dispatch($customerClient->shop);
         OrganisationHydrateCustomerClients::dispatch($customerClient->organisation);
         GroupHydrateCustomerClients::dispatch($customerClient->group);
+
+        if ($customerClient->shop && $customerClient->platform->id) {
+            ShopHydratePlatformSalesIntervalsNewCustomerClient::dispatch($customerClient->shop, $customerClient->platform->id)->delay($this->hydratorsDelay);
+        }
 
         return $customerClient;
     }

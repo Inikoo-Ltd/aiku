@@ -193,7 +193,7 @@ const compIndexStyling1 = computed(() => {
                 <div @click="() => { isOpenMenuMobile = true }"
                     class="flex items-center gap-x-2 h-fit px-5 py-1 text-sm rounded-full hover:bg-gray-400/20 w-fit cursor-pointer whitespace-nowrap"
                     :style="{
-                        border: `solid 1px ${fieldValue?.navigation_container?.properties?.text?.color}`,
+                        border: `solid 1px ${fieldValue?.navigation_container?.properties?.text?.color || 'currentColor'}`,
                         color: fieldValue?.navigation_container?.properties?.text?.color
                     }"
                 >

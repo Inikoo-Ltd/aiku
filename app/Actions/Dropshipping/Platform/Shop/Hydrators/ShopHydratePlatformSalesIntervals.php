@@ -35,13 +35,13 @@ class ShopHydratePlatformSalesIntervals implements ShouldBeUnique
 
     public function handle(Shop $shop): void
     {
-        ShopHydratePlatformSalesIntervalsInvoices::run($shop);
-        ShopHydratePlatformSalesIntervalsNewChannels::run($shop);
-        ShopHydratePlatformSalesIntervalsNewCustomers::run($shop);
-        ShopHydratePlatformSalesIntervalsNewPortfolios::run($shop);
-        ShopHydratePlatformSalesIntervalsNewCustomerClient::run($shop);
-        ShopHydratePlatformSalesIntervalsSales::run($shop);
-        ShopHydratePlatformSalesIntervalsSalesOrgCurrency::run($shop);
-        ShopHydratePlatformSalesIntervalsSalesGrpCurrency::run($shop);
+        ShopHydrateAllPlatformsSalesIntervalsInvoices::run($shop);
+        ShopHydrateAllPlatformsSalesIntervalsNewChannels::run($shop);
+        ShopHydrateAllPlatformsSalesIntervalsNewCustomers::run($shop);
+        ShopHydrateAllPlatformsSalesIntervalsNewPortfolios::run($shop);
+        ShopHydrateAllPlatformsSalesIntervalsNewCustomerClient::run($shop);
+        ShopHydrateAllPlatformsSalesIntervalsSales::run($shop);
+        ShopHydrateAllPlatformsSalesIntervalsSalesOrgCurrency::run($shop);
+        ShopHydrateAllPlatformsSalesIntervalsSalesGrpCurrency::run($shop);
     }
 }
