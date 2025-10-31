@@ -12,6 +12,8 @@ use App\Actions\Dropshipping\Amazon\DeleteAmazonUser;
 use App\Actions\Dropshipping\CustomerClient\DeleteCustomerClient;
 use App\Actions\Dropshipping\Ebay\DeleteEbayUser;
 use App\Actions\Dropshipping\Magento\DeleteMagentoUser;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewChannels;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomers;
 use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\WooCommerce\DeleteWooCommerceUser;
@@ -58,7 +60,14 @@ class DeleteCustomerSalesChannel extends OrgAction
                 DeletePortfolio::run($portfolio);
             }
 
-            return $customerSalesChannel->delete();
+            $result = $customerSalesChannel->delete();
+
+            if ($customerSalesChannel->shop && $customerSalesChannel->platform->id) {
+                ShopHydratePlatformSalesIntervalsNewChannels::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay($this->hydratorsDelay);
+                ShopHydratePlatformSalesIntervalsNewCustomers::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay($this->hydratorsDelay);
+            }
+
+            return $result;
         }
     }
 
