@@ -111,6 +111,8 @@ onMounted(async () => {
 const registrationWarning = ref({})
 provide('registrationWarning', registrationWarning)
 
+const is_agree_tnc = ref(false)
+const is_error_tnc = ref(false)
 </script>
 
 <template>
@@ -229,6 +231,16 @@ provide('registrationWarning', registrationWarning)
 									{{ registration_settings?.marketing_opt_in_label ?? trans("Opt in to our newsletter for updates and offers.") }}
 								</label>
 							</div>
+							
+							<!-- Opt in newsletter -->
+							<div class="flex xitems-center gap-2 sm:col-span-6" :class="is_error_tnc ? 'errorShake' : ''">
+								<Checkbox v-model="is_agree_tnc" @update:model-value="() => is_error_tnc = false" inputId="is_agree_tnc" name="is_agree_tnc" binary class="mt-0.5" />
+								<label for="is_agree_tnc">
+									<a href="/terms-and-conditions" target="_blank" class="underline">
+										{{ trans("I agree with the terms and conditions") }}
+									</a>
+								</label>
+							</div>
 						</div>
 					</div>
 
@@ -267,16 +279,19 @@ provide('registrationWarning', registrationWarning)
 							</ul>
 						</div>
 
-						<div class="flex justify-end">
+						<div class="relative flex justify-end">
 							<button
 								type="submit"
 								:disabled="isLoading"
-								class="w-full inline-flex justify-center items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+								class="w-full inline-flex justify-center items-center px-6 bg-black disabled:opacity-70 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
 								<span v-if="isLoading" class="loader mr-2">
 									<LoadingIcon />
 								</span>
 								{{ trans("Register") }}
 							</button>
+							<div @click="() => !is_agree_tnc ? is_error_tnc = true : submit()" class="absolute inset-0 cursor-pointer">
+
+							</div>
 						</div>
 					</div>
 				</form>

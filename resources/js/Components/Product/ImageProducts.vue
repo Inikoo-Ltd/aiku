@@ -11,17 +11,16 @@ import {
   faChevronCircleRight,
   faTimesCircle
 } from '@fal'
+import { faVideo } from '@fas'
 import { ulid } from 'ulid'
 import Image from '@/Components/Image.vue'
-import { faVideo } from '@fas'
+import Dialog from 'primevue/dialog'
 
 const props = defineProps<{
   images: { source: string; thumbnail: string }[]
   video?: string
   breakpoints?: {
-    [key: number]: {
-      slidesPerView: number
-    }
+    [key: number]: { slidesPerView: number }
   }
 }>()
 
@@ -69,9 +68,7 @@ onMounted(async () => {
   }
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' || e.key === 'Esc') {
-      closeImageModal()
-    }
+    if (e.key === 'Escape' || e.key === 'Esc') closeImageModal()
     if (showModal.value && !showVideoModal.value) {
       if (e.key === 'ArrowLeft') onPrevNavigation()
       if (e.key === 'ArrowRight') onRightNavigation()
@@ -82,7 +79,6 @@ onMounted(async () => {
 
 <template>
   <div class="w-full flex flex-col items-center relative isolate">
-
     <!-- Main Swiper -->
     <Swiper
       :key="keySwiperMain"
@@ -94,16 +90,18 @@ onMounted(async () => {
       :thumbs="{ swiper: thumbsSwiper }"
       class="aspect-square w-full rounded-lg mb-4"
     >
-    
       <!-- Shared Navigation Buttons -->
       <div class="absolute inset-0 pointer-events-none z-50">
-        <div ref="prevEl"
-          class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+        <div
+          ref="prevEl"
+          class="absolute left-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto"
+        >
           <FontAwesomeIcon fixed-width :icon="faChevronCircleLeft" />
         </div>
-
-        <div ref="nextEl"
-          class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto">
+        <div
+          ref="nextEl"
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-3xl cursor-pointer opacity-50 hover:opacity-100 pointer-events-auto"
+        >
           <FontAwesomeIcon fixed-width :icon="faChevronCircleRight" />
         </div>
       </div>
@@ -156,7 +154,6 @@ onMounted(async () => {
       :breakpoints="breakpoints ?? { 0: { slidesPerView: 3 }, 640: { slidesPerView: 6 } }"
       class="w-full"
     >
-      <!-- Image thumbnails -->
       <SwiperSlide
         v-for="(image, index) in props.images"
         :key="`thumb-${index}`"
@@ -181,21 +178,35 @@ onMounted(async () => {
       </SwiperSlide>
     </Swiper>
 
-    <!-- Modal Viewer -->
-    <div v-if="showModal" class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center" @click.self="closeImageModal">
-      <div class="relative w-full max-w-5xl px-4 py-6">
+    <!-- PrimeVue Dialog (Replaces Custom Modal) -->
+    <Dialog
+      v-model:visible="showModal"
+      modal
+      dismissable-mask
+      :closable="false"
+      class="w-full max-w-3xl !bg-transparent !shadow-none border-0"
+    >
+      <div class="relative w-full flex flex-col items-center justify-center">
         <!-- Close Button -->
-        <button class="absolute top-0 right-4 text-white text-3xl z-50" @click="closeImageModal" aria-label="Close image viewer">
+        <!-- <button
+          class="absolute top-0 right-4 text-white text-3xl z-50"
+          @click="closeImageModal"
+          aria-label="Close image viewer"
+        >
           <FontAwesomeIcon :icon="faTimesCircle" />
-        </button>
+        </button> -->
 
-        <!-- If image -->
+        <!-- Image Viewer -->
         <div v-if="!showVideoModal" class="block w-full h-[80vh] mb-1 rounded">
-          <Image :src="props.images[selectedIndex]?.source" :alt="`Image ${selectedIndex + 1}`"
-            :style="{ objectFit: 'contain' }" :imageCover="true" />
+          <Image
+            :src="props.images[selectedIndex]?.source"
+            :alt="`Image ${selectedIndex + 1}`"
+            :style="{ objectFit: 'contain' }"
+            :imageCover="true"
+          />
         </div>
 
-        <!-- If video -->
+        <!-- Video Viewer -->
         <div v-else class="w-full aspect-video flex items-center justify-center">
           <iframe
             class="w-full h-full rounded-lg"
@@ -208,15 +219,21 @@ onMounted(async () => {
 
         <!-- Navigation (for image only) -->
         <template v-if="!showVideoModal">
-          <button class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40" @click="onPrevNavigation">
+          <button
+            class="absolute left-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
+            @click="onPrevNavigation"
+          >
             <FontAwesomeIcon :icon="faChevronCircleLeft" />
           </button>
-          <button class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40" @click="onRightNavigation">
+          <button
+            class="absolute right-4 top-1/2 -translate-y-1/2 text-white text-4xl z-40"
+            @click="onRightNavigation"
+          >
             <FontAwesomeIcon :icon="faChevronCircleRight" />
           </button>
         </template>
       </div>
-    </div>
+    </Dialog>
   </div>
 </template>
 
@@ -227,5 +244,15 @@ onMounted(async () => {
 
 button {
   outline: none;
+}
+
+:deep(.p-dialog-mask) {
+  background-color: rgba(0, 0, 0, 0.9) !important;
+}
+
+:deep(.p-dialog) {
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
 }
 </style>
