@@ -16,32 +16,22 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class ShopHydratePlatformSalesIntervalsInvoices implements ShouldBeUnique
 {
     use AsAction;
-    use WithIntervalsAggregators;
     use WithIntervalUniqueJob;
+    use WithIntervalsAggregators;
 
     public function getJobUniqueId(int $shopId, int $platformId, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
         return $this->getUniqueJobWithIntervalFromId($shopId.'-'.$platformId, $intervals, $doPreviousPeriods);
     }
 
-
-
     public function handle(int $shopId, int $platformId, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-
         $shop = Shop::find($shopId);
-        if (!$shop) {
-            return;
-        }
-        if ($shop->type != ShopTypeEnum::DROPSHIPPING) {
-            return;
-        }
-
         $platform = Platform::find($platformId);
-        if (!$platform) {
+
+        if (!$shop || !$platform || $shop->type != ShopTypeEnum::DROPSHIPPING) {
             return;
         }
-
 
         $queryBase = Invoice::where('in_process', false)
             ->where('platform_id', $platform->id)
@@ -57,13 +47,7 @@ class ShopHydratePlatformSalesIntervalsInvoices implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-
         $platformShopSalesIntervals = PlatformShopSalesIntervals::where('platform_id', $platformId)->where('shop_id', $shop->id)->first();
         $platformShopSalesIntervals?->update($stats);
-
-
     }
-
-
-
 }
