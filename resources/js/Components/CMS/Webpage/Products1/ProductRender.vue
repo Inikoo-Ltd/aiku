@@ -297,7 +297,6 @@ const profitMargin = computed(() => {
             <!-- Price Card -->
             <div v-if="layout?.iris?.is_logged_in"
                 class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
-                <!-- Retail Price (Excl. Tax) -->
                 <div class="flex items-center justify-between">
                     <span class="font-medium text-base">
                         {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
@@ -307,8 +306,6 @@ const profitMargin = computed(() => {
                         </span>
                     </span>
                 </div>
-
-                <!-- Selling Price & Profit -->
                 <div class="flex items-center justify-between">
                     <span class="text-xs flex items-center text-gray-500 font-medium">
                          {{ trans('Profit') }} : {{ locale.currencyFormat(currency?.code, product?.profit || 0) }}
@@ -327,7 +324,6 @@ const profitMargin = computed(() => {
 
             <div v-if="layout?.iris?.is_logged_in"
                 class=" p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
-                <!-- Retail Price (Excl. Tax) -->
                   <div class="">
                     <div>{{ trans('Price') }}: <span class="font-semibold"> {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
                             }}<span class="text-xs text-gray-600"> / {{product.unit }}</span></span></div>
