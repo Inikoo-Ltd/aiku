@@ -63,10 +63,6 @@ class CustomerSalesChannelsResource extends JsonResource
             'customer_company_name'   => $this->customer_company_name ?? $this->customer_contact_name,
             'customer_slug'           => $this->customer_slug,
             'customer_id'             => $this->customer_id,
-
-
         ];
     }
-
-
 }
