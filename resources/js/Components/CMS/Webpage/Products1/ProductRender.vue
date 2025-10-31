@@ -250,10 +250,9 @@ const profitMargin = computed(() => {
 
             <!-- Title -->
 
-            <LinkIris v-if="product.url" :href="product.url" type="internal"
-                      class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+            <LinkIris v-if="product.url" :href="product.url" type="internal" class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 <template #default>
-                    <span  class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
+                    <span class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
                 </template>
             </LinkIris>
 
@@ -319,8 +318,8 @@ const profitMargin = computed(() => {
             </div>
 
             <div v-if="layout?.iris?.is_logged_in"
-                 class=" p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
-                <div v-if="product.units==1">
+                 class="p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
+                <div v-if="product.units==1" class="flex justify-between">
                     <div>
                         {{ trans("Price") }}:
                         <span class="font-semibold">
@@ -330,14 +329,17 @@ const profitMargin = computed(() => {
                     </div>
                 </div>
                 <div v-else>
-                    <div>
-                        {{ trans("Price") }}:
-                        <span class="font-semibold"> {{ locale.currencyFormat(currency?.code, product.price) }}</span>
-                        <span class="text-xs price_per_unit">(<span > {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2)) }}<span class=" text-gray-600"> / {{ product.unit }}</span></span>)</span>
-
+                    <div class="flex justify-between">
+                        <div> 
+                            {{ trans("Price") }}:
+                            <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
+                        </div>
+                        <div>
+                              <span class="text-xs price_per_unit">(<span > {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2)) }}
+                              <span class=" text-gray-600"> / {{ product.unit }}</span></span>)</span>
+                        </div>
                     </div>
                 </div>
-
             </div>
 
 
