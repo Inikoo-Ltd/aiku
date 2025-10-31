@@ -9,7 +9,7 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateAllPlatformsSalesIntervalsInvoices implements ShouldBeUnique
+class ShopHydrateAllPlatformsSalesIntervalsSalesGrpCurrency implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
@@ -31,7 +31,7 @@ class ShopHydrateAllPlatformsSalesIntervalsInvoices implements ShouldBeUnique
         }
 
         foreach ($platformIds as $platformId) {
-            ShopHydratePlatformSalesIntervalsInvoices::run($shop->id, $platformId, $intervals, $doPreviousPeriods);
+            ShopHydratePlatformSalesIntervalsSalesGrpCurrency::run($shop, $platformId, $intervals, $doPreviousPeriods);
         }
     }
 }

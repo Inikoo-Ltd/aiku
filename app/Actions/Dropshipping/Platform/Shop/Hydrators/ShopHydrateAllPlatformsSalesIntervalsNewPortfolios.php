@@ -4,12 +4,13 @@ namespace App\Actions\Dropshipping\Platform\Shop\Hydrators;
 
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Models\Accounting\Invoice;
+use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
+use App\Models\Dropshipping\Portfolio;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class ShopHydrateAllPlatformsSalesIntervalsInvoices implements ShouldBeUnique
+class ShopHydrateAllPlatformsSalesIntervalsNewPortfolios implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
@@ -20,7 +21,11 @@ class ShopHydrateAllPlatformsSalesIntervalsInvoices implements ShouldBeUnique
             return;
         }
 
-        $platformIds = Invoice::where('shop_id', $shop->id)
+        $platformIds = Portfolio
+            ::where('item_type', class_basename(Product::class))
+            ->whereHas('item', function ($query) use ($shop) {
+                $query->where('shop_id', $shop->id);
+            })
             ->select('platform_id')
             ->distinct()
             ->pluck('platform_id')
@@ -31,7 +36,7 @@ class ShopHydrateAllPlatformsSalesIntervalsInvoices implements ShouldBeUnique
         }
 
         foreach ($platformIds as $platformId) {
-            ShopHydratePlatformSalesIntervalsInvoices::run($shop->id, $platformId, $intervals, $doPreviousPeriods);
+            ShopHydratePlatformSalesIntervalsNewPortfolios::run($shop, $platformId, $intervals, $doPreviousPeriods);
         }
     }
 }
