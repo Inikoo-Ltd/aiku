@@ -57,6 +57,7 @@ import LuigiLastSeen1Workshop from '@/Components/CMS/Webpage/LuigiLastSeen1/Luig
 import LuigiItemAlternatives1Workshop from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Workshop.vue'
 
 import RecommendationCustomerRecentlyBought1Workshop from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Workshop.vue'
+import CtaImageBackroundWorkshop from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'
 
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -104,6 +105,7 @@ export const getComponent = (componentName: string) => {
         'luigi-item-alternatives-1' : LuigiItemAlternatives1Workshop,
         'recommendation-customer-recently-bought-1': RecommendationCustomerRecentlyBought1Workshop,
 
+        "cta-image-background" : CtaImageBackroundWorkshop,
         'banner': WowsbarBanner,
         "bento-grid-1": BentoGrid,
         "bricks": Gallery,

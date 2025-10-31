@@ -59,6 +59,7 @@ import LuigiLastSeen1Iris from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLas
 import LuigiItemAlternatives1Iris from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Iris.vue'
 
 import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
+import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
 
 
 const components = (shop_type?: string): Record<string, Component> => {
@@ -112,6 +113,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         'recommendation-customer-recently-bought-1': RecommendationCustomerRecentlyBought1Iris,
 
 
+        "cta-image-background" : CtaImageBackroundIris,
         'banner': WowsbarBannerIris,
         'bento-grid-1': BentoGridIris,
         'bricks': GalleryIris,

@@ -41,6 +41,7 @@ import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
 import CtaCarousel from '@/Components/CMS/Webpage/CarouselCta/Blueprint'
 import CarouselImageBackgroundIrisBlueprint from "@/Components/CMS/Webpage/CarouselImageBackground/Blueprint"
 import BluprintBestseller from "@/Components/CMS/Webpage/Products1/BluprintBestseller"
+import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/Blueprint"
 
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
@@ -48,6 +49,7 @@ import { blueprint as LuigiTrends1Blueprint  } from "@/Components/CMS/Webpage/Lu
 import { blueprint as LuigiLastSeen1  } from "@/Components/CMS/Webpage/LuigiLastSeen1/Blueprint"
 import { blueprint as LuigiItemAlternatives1  } from "@/Components/CMS/Webpage/LuigiItemAlternatives1/Blueprint"
 import { blueprint as RecommendersCustomerRecentlyBought  } from "@/Components/CMS/Webpage/RecomendationRecentlyBought1/Blueprint"
+
 
 
 export const getBlueprint = (componentName: string, data?: object) => {
@@ -105,6 +107,7 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"cta1": CTABlueprint.blueprint,
 		"cta2": CTA2Blueprint.blueprint,
 		"cta3": CTA3Blueprint.blueprint,
+		"cta-image-background" : CtaImageBackroundIris.blueprint,
 		"text-column": TextColumn.blueprint,
 		"iframe": IframeBlueprint.blueprint,
 		"images": ImageBlueprint.blueprint,
