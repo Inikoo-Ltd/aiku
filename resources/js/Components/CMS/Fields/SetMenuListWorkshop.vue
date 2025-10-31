@@ -22,7 +22,6 @@ const props = defineProps<{
             }
         }
     }
-    autosaveRoute: routeType
 }>()
 
 const emits = defineEmits<{

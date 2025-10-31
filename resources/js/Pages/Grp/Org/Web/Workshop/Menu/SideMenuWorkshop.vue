@@ -27,7 +27,7 @@ import { notify } from "@kyvg/vue3-notification"
 import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 import Blueprint from "./Blueprint"
 import BlueprintForCustomTopAndBottomNavigation from "./BlueprintForCustomTopAndBottomNavigation"
-import { get, set } from "lodash"
+import { debounce, get, set } from "lodash"
 import Toggle from "@/Components/Pure/Toggle.vue"
 import { trans } from "laravel-vue-i18n"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
@@ -55,7 +55,6 @@ const props = defineProps<{
 			fieldValue: Object
 		}
 	}
-	autosaveRoute: routeType
 	webBlockTypes: {
 		data: Array<any>
 	}
@@ -84,12 +83,12 @@ const tabs = computed(() => {
 		{ label: 'Styling (for custom navigation)', icon: faPaintBrush, tooltip: trans('Styling (custom navigation)') },
 	]
 
-	if (isFollowSidebar) {
+	// if (isFollowSidebar) {
 		return tabsList
-	} else {
+	// } else {
 		// Remove last tab if not following sidebar
-		return tabsList.slice(0, -1)
-	}
+		// return tabsList.slice(0, -1)
+	// }
 })
 const computedTabs = computed(() => {
 	return props.data
@@ -105,6 +104,9 @@ const autoSave = async (value) => {
  emits('auto-save',value)
 }
 
+const debAutoSave = debounce((data) => {
+	autoSave(data)
+}, 1000)
 
 </script>
 
@@ -132,7 +134,6 @@ const autoSave = async (value) => {
 				<div class="relative">
 					<SetMenuListWorkshop
 						:data="data"
-						:autosaveRoute="autosaveRoute"
 						@auto-save="() => autoSave(data)"
 					/>
 					<Transition name="slide-to-right">
@@ -149,7 +150,7 @@ const autoSave = async (value) => {
 				<SideEditor 
 					:modelValue="get(data, ['data', 'fieldValue'], null)" 
 					:blueprint="Blueprint.blueprint"
-					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e) , autoSave(data)}"
+					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e) , debAutoSave(data)}"
 				/>
 			</TabPanel>
 
@@ -157,17 +158,17 @@ const autoSave = async (value) => {
 			<TabPanel v-if="data">
 				<div class="relative">
 					<SideEditor
-						:modelValue="get(data, ['data', 'fieldValue', 'custom_navigation_styling'], null)"
+						:modelValue="get(data, ['data', 'fieldValue'], null)"
 						:blueprint="BlueprintForCustomTopAndBottomNavigation.blueprint"
-						@update:modelValue="(e) => { set(data, ['data', 'fieldValue', 'custom_navigation_styling'], e) , autoSave(data)}"
+						@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e) , debAutoSave(data)}"
 					/>
 					
-					<Transition name="slide-to-right">
+					<!-- <Transition name="slide-to-right">
 						<div v-if="!get(data, ['data', 'fieldValue', 'setting_on_sidebar', 'is_follow'], false)" class="rounded text-yellow-500 bg-gray-500/80 absolute inset-0 w-full h-full top-1/2 -translate-y-1/2 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center text-center">
 							<FontAwesomeIcon icon="fal fa-eye-slash" class="text-5xl" fixed-width aria-hidden="true" />
 							{{ trans("Will not showing due the data not follow Sidebar") }}
 						</div>
-					</Transition>
+					</Transition> -->
 				</div>
 			</TabPanel>
 		</TabPanels>
