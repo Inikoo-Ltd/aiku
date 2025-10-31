@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import {Head, router, useForm, usePage} from "@inertiajs/vue3"
 import {notify} from "@kyvg/vue3-notification"
-import {ref, reactive, onBeforeMount, watch, onBeforeUnmount, computed} from "vue"
+import {ref, reactive, onBeforeMount, watch, onBeforeUnmount, computed, inject} from "vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
 import {capitalize} from "@/Composables/capitalize"
 import {library} from "@fortawesome/fontawesome-svg-core"
@@ -26,6 +26,9 @@ import {faUser, faUserFriends} from '@fal'
 import {faRocketLaunch} from '@far'
 import {faAsterisk} from '@fas'
 import {faSpinnerThird} from '@fad'
+import { trans } from "laravel-vue-i18n"
+import Button from "@/Components/Elements/Buttons/Button.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(faAsterisk, faRocketLaunch, faUser, faUserFriends, faSpinnerThird);
 
@@ -43,6 +46,8 @@ const props = defineProps<{
         uploaded_images : routeType
     }
 }>()
+
+const layout = inject('layout', layoutStructure)
 console.log('props',props)
 
 const user = ref(usePage().props.auth.user)
@@ -53,6 +58,7 @@ const isSetData = ref(false)
 
 
 const routeExit = props.pageHead.actions.find((item) => item.style == "exit")
+console.log('cocom', props.banner?.compiled_layout)
 const data = reactive(cloneDeep(props.banner?.compiled_layout))
 let timeoutId: any
 
@@ -117,7 +123,38 @@ const handleKeyDown = () => {
 }
 
 
-
+const isLoadingSave = ref(false)
+const saveBanner = () => {
+    // Section: Submit
+    router.patch(
+        route(props.autoSaveRoute.name, props.autoSaveRoute.parameters),
+        data,
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingSave.value = true
+            },
+            onSuccess: () => {
+                // notify({
+                //     title: trans("Success"),
+                //     text: trans("Successfully submit the data"),
+                //     type: "success"
+                // })
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to save banner"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSave.value = false
+            },
+        }
+    )
+}
 
 const autoSave = debounce(() => {
     const form = useForm(data);
@@ -170,6 +207,16 @@ onBeforeUnmount(() => {
 <template>
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
+        <template v-if="layout.app.environment === 'local'" #afterTitle2>
+            <Button
+                @click="() => saveBanner()"
+                type="tertiary"
+                :label="trans('Save')"
+                icon="fas fa-save"
+                :loading="isLoadingSave"
+            />
+        </template>
+
         <template #other="{ dataPageHead: head }">
             <Publish
                 v-if="data.components?.length > 0"
