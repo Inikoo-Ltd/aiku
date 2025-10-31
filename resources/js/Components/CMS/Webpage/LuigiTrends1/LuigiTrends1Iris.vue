@@ -137,7 +137,7 @@ onMounted(() => {
                         <SwiperSlide
                             v-for="(product, index) in listProducts"
                             :key="index"
-                            class="w-full cursor-grab relative !grid h-full min-h-full"
+                            class="w-full cursor-grab relative !grid h-full min-h-full py-0.5"
                         >
                             <RecommendationSlideIris
                                 :product
