@@ -1122,7 +1122,7 @@ onMounted(() => {
 }
 
 :deep(.editor-class a) {
-    @apply hover:underline font-semibold cursor-pointer;
+    @apply hover:underline cursor-pointer;
 }
 
 :deep(.editor-class hr) {
