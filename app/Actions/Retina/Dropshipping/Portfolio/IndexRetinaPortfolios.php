@@ -264,6 +264,12 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
+                    'bulk_unlink'               => [
+                        'name' => 'retina.models.dropshipping.bulk.unlink',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
                     'batch_all'                 => $bulkAllRoute,
                     'fetch_products'            => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [

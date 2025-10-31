@@ -12,6 +12,7 @@ use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UnlinkAndDeleteBulkRetinaPortfolio extends RetinaAction
@@ -23,11 +24,13 @@ class UnlinkAndDeleteBulkRetinaPortfolio extends RetinaAction
 
     public function handle(array $modelData): void
     {
-        foreach ($modelData as $portfolioId) {
+        foreach (Arr::get($modelData, 'portfolios', []) as $portfolioId) {
             $portfolio = Portfolio::find($portfolioId);
 
-            UnlinkRetinaPortfolio::run($portfolio);
-            DeleteRetinaPortfolio::run($portfolio);
+            if ($portfolio) {
+                UnlinkRetinaPortfolio::run($portfolio);
+                DeleteRetinaPortfolio::run($portfolio);
+            }
         }
     }
 

@@ -297,7 +297,7 @@ Route::delete('{token}/access-token', DeleteCustomerAccessToken::class)->name('a
 
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
-    Route::delete('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink');
+    Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink');
 
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
 

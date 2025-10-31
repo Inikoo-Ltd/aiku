@@ -425,8 +425,7 @@ onMounted(() => {
 
     <Table :resource="data" :name="tab" class="mt-5" isCheckBox @onChecked="(item) => onChangeCheked(true, item)"
            @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'
-           :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table"
-           :disabledCheckbox="(item)=>onDisableCheckbox(item)" :isParentLoading="!!isLoadingTable">
+           :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table">
 
         <template #header-checkbox="data">
             <div></div>
