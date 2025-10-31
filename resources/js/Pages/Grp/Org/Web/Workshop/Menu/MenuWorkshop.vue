@@ -204,8 +204,12 @@ const autoSave = async (value: any) => {
 			</div>
 
 			<!-- Side workshop -->
-			<SideMenuWorkshop :data="data?.menu" :webBlockTypes="webBlockTypes" @auto-save="autoSave"
-				@sendToIframe="sendToIframe" />
+			<SideMenuWorkshop
+				:data="data?.menu"
+				:webBlockTypes="webBlockTypes"
+				@auto-save="autoSave"
+				@sendToIframe="sendToIframe"
+			/>
 		</div>
 
 		<!-- PREVIEW SECTION -->
