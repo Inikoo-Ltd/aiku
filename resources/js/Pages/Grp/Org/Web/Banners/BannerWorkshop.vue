@@ -29,6 +29,7 @@ import {faSpinnerThird} from '@fad'
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import ConditionIcon from "@/Components/Utils/ConditionIcon.vue"
 
 library.add(faAsterisk, faRocketLaunch, faUser, faUserFriends, faSpinnerThird);
 
@@ -123,7 +124,17 @@ const handleKeyDown = () => {
 }
 
 
-const isLoadingSave = ref(false)
+const status = ref<null | 'loading' | 'success' | 'error'>(null)
+let statusTimeout: ReturnType<typeof setTimeout> | null = null
+const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
+    status.value = newStatus
+    if (statusTimeout) clearTimeout(statusTimeout)
+    if (newStatus === 'success' || newStatus === 'error') {
+        statusTimeout = setTimeout(() => {
+            status.value = null
+        }, 3000)
+    }
+}
 const saveBanner = () => {
     // Section: Submit
     router.patch(
@@ -132,10 +143,13 @@ const saveBanner = () => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
-                isLoadingSave.value = true
+            onStart: () => {
+                autoSave.cancel()
+                // isLoadingSave.value = true
+                setStatus('loading')
             },
             onSuccess: () => {
+                setStatus('success')
                 // notify({
                 //     title: trans("Success"),
                 //     text: trans("Successfully submit the data"),
@@ -143,14 +157,16 @@ const saveBanner = () => {
                 // })
             },
             onError: errors => {
+                console.log('errors on save banner', errors)
+                setStatus('error')
                 notify({
                     title: trans("Something went wrong"),
-                    text: trans("Failed to save banner"),
+                    text: trans("Failed to save banner. Try again or contact support."),
                     type: "error"
                 })
             },
             onFinish: () => {
-                isLoadingSave.value = false
+                // isLoadingSave.value = false
             },
         }
     )
@@ -208,12 +224,15 @@ onBeforeUnmount(() => {
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
         <template v-if="layout.app.environment === 'local'" #afterTitle2>
+            <ConditionIcon v-if="status" :state="status" class="text-xl" />
             <Button
+                v-else
                 @click="() => saveBanner()"
                 type="tertiary"
                 :label="trans('Save')"
                 icon="fas fa-save"
-                :loading="isLoadingSave"
+                size="sm"
+                :loading="status === 'loading'"
             />
         </template>
 
