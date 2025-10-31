@@ -75,6 +75,7 @@ const props = defineProps<{
         duplicate: routeType
         addPortfolioRoute: routeType
         bulk_upload: routeType
+        bulk_unlink: routeType
         itemRoute: routeType
         updatePortfolioRoute: routeType
         batchDeletePortfolioRoute: routeType
@@ -308,6 +309,7 @@ const submitPortfolioAction = async (action: any) => {
             params: method === "get" ? data : undefined
         })
 
+        debReloadPage()
         onSuccessEditCheckmark(action.label)
     } catch (error: any) {
         onFailedEditCheckmark(error)
@@ -428,6 +430,21 @@ const key = ulid()
                               parameters: { customerSalesChannel: customer_sales_channel.id },
                               method: 'post',
                           })" size="xs" /> -->
+
+                    <Button
+                        v-if="selectedProducts.length > 0"
+                        v-tooltip="trans('Unlink & Delete Product :platform', { platform: props.platform_data?.name })"
+                        :type="'delete'"
+                        :label="trans('Unlink & Delete Product (:count)', { count: selectedProducts?.length })"
+                        :loading="loadingAction.includes('bulk-unlink')"
+                        @click="() => submitPortfolioAction({
+                            label : 'bulk-unlink',
+                            name : props.routes.bulk_unlink.name,
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'post',
+                        })"
+                        size="xs"
+                    />
 
                     <Button
                         v-if="selectedProducts.length > 0"
