@@ -43,7 +43,7 @@ const layout: any = inject("layout", {})
 				</div>
 
 
-				<div class="flex w-full" :style="getStyles(fieldValue.button?.box?.container?.properties, screenType)">
+				<div v-if="fieldValue?.button?.show" class="flex w-full" :style="getStyles(fieldValue.button?.box?.container?.properties, screenType)">
 					<LinkIris typeof="button" :href="fieldValue?.button?.link?.href"
 						:canonical_url="fieldValue?.button?.link?.canonical_url" :target="fieldValue?.button?.link?.target"
 						:type="fieldValue?.button?.link?.type" >

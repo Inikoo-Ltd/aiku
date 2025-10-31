@@ -76,7 +76,7 @@ const imageSettings = {
             }" :cropOptions="{ aspectRatio: imageRatio }" />
         </div>
 
-        <div class="flex w-full" :style="getStyles(modelValue.button?.box?.container?.properties, screenType)">
+        <div v-if="modelValue?.button?.show" class="flex w-full"  :style="getStyles(modelValue.button?.box?.container?.properties, screenType)">
           <Button :injectStyle="{
             ...getStyles(modelValue?.button?.container?.properties, screenType),
             width: 'fit-content !important'

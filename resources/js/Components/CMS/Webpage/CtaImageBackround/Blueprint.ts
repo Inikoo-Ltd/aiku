@@ -61,6 +61,12 @@ export default {
 					type: "background",
 				},
 				{
+					key: ['show'],
+                    label : "Show button",
+                    type: "switch",
+                    useIn : ["desktop", "tablet", "mobile"],
+				},
+				{
 					key: ['box',"container", "properties","justifyContent"],
                     label : "Justify Content",
                     type: "justify-content",
