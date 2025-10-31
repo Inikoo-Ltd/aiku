@@ -153,7 +153,7 @@ const borderWidth = computed(() => {
         <div class="flex flex-col justify-between gap-y-10" :class="[(activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null) && 'border-r']">
             <div class="overflow-y-auto">
                 <!-- Sidebar: Top navigation -->
-                <div v-if="customMenusTop && customMenusTop.length > 0">
+                <div v-if="customMenusTop && customMenusTop.length > 0" class="borderBottomColorSameAsText">
                     <SidebarDesktopNavigation
                         v-for="(sub, sIndex) in customMenusTop" :key="sIndex"
                         :nav="sub"
@@ -168,7 +168,7 @@ const borderWidth = computed(() => {
                         :closeSidebar
                         :isWithArrowRight="sub.sub_departments && sub.sub_departments.length > 0"
                     />
-                    <hr class="borderBottomColorSameAsText">
+                    <!-- <hr class="borderBottomColorSameAsText"> -->
                 </div>
                 
                 <!-- Section: Auto Product Categories List -->
