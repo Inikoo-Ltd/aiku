@@ -13,6 +13,10 @@ class RepairPlatformSalesIntervals extends OrgAction
     public function asCommand(Command $command): void
     {
         foreach (Platform::all() as $platform) {
+            if ($platform->salesIntervals) {
+                continue;
+            }
+
             $platform->salesIntervals()->create();
         }
     }

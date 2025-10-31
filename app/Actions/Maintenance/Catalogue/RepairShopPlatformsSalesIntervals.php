@@ -22,7 +22,7 @@ class RepairShopPlatformsSalesIntervals extends OrgAction
     {
         foreach (Shop::where('type', ShopTypeEnum::DROPSHIPPING)->get() as $shop) {
             foreach (Platform::all() as $platform) {
-                $shop->platformSalesIntervals()->create(['platform_id' => $platform->id]);
+                $shop->platformSalesIntervals()->updateOrCreate(['platform_id' => $platform->id], ['platform_id' => $platform->id]);
             }
         }
     }
