@@ -28,6 +28,7 @@ const deletingId = ref<number | null>(null)
 
 function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
     const current = route().current()
+
     if (current === "grp.org.shops.show.crm.platforms.show") {
         return route(
             "grp.org.shops.show.crm.platforms.show.customer_sales_channels.show",
@@ -39,6 +40,7 @@ function customerSalesChannelRoute(customerSalesChannel: CustomerSalesChannel) {
             ]
         )
     }
+
     return route(
         "grp.org.shops.show.crm.customers.show.customer_sales_channels.show",
         [
@@ -64,6 +66,7 @@ function customerRoute(customerSalesChannel: CustomerSalesChannel) {
 
 function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
     const current = route().current()
+
     if (current === "grp.org.shops.show.crm.platforms.show") {
         return route(
             "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
@@ -75,6 +78,7 @@ function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
             ]
         )
     }
+
     return route(
         "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.portfolios.index",
         [
@@ -88,9 +92,11 @@ function portfoliosRoute(customerSalesChannel: CustomerSalesChannel) {
 
 function clientsRoute(customerSalesChannel: CustomerSalesChannel) {
     const current = route().current()
+
     if (current === "grp.org.shops.show.crm.platforms.show") {
         return ""
     }
+
     return route(
         "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.customer_clients.index",
         [
@@ -104,9 +110,11 @@ function clientsRoute(customerSalesChannel: CustomerSalesChannel) {
 
 function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
     const current = route().current()
+
     if (current === "grp.org.shops.show.crm.platforms.show") {
         return ""
     }
+
     return route(
         "grp.org.shops.show.crm.customers.show.customer_sales_channels.show.orders.index",
         [
@@ -117,7 +125,6 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
         ]
     )
 }
-
 
 function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesChannel) {
     confirm.require({
@@ -131,69 +138,62 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         accept: () => {
             deletingId.value = customerSalesChannel.id
 
-            router.delete(route("grp.models.customer_sales_channel.delete", {
-                customerSalesChannel: customerSalesChannel.id
-            }), {
-                preserveScroll: true,
-                onFinish: () => {
-                    deletingId.value = null
-                },
-                onError: (errors) => {
-                    console.error("Delete failed:", errors)
-                    notify({
-                        title: "Failed to Delete",
-                        text: "error",
-                        type: "error"
-                    })
+            router.delete(
+                route("grp.models.customer_sales_channel.delete", {
+                    customerSalesChannel: customerSalesChannel.id
+                    }
+                ), {
+                    preserveScroll: true,
+                    onFinish: () => {
+                        deletingId.value = null
+                    },
+                    onError: (errors) => {
+                        console.error("Delete failed:", errors)
+                        notify({
+                            title: "Failed to Delete",
+                            text: "error",
+                            type: "error"
+                        })
+                    }
                 }
-            })
+            )
         }
     })
 }
-
 </script>
-
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
         <template #cell(name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
-                <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image"
-                     :alt="customerSalesChannel.platform_name" class="w-6 h-6"/>
-                <Link :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">
-                    {{ customerSalesChannel.name || customerSalesChannel.reference }}
-                </Link>
+                <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name" class="w-6 h-6"/>
+<!--                <Link :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">-->
+<!--                    {{ customerSalesChannel.name || customerSalesChannel.reference }}-->
+<!--                </Link>-->
+                <span>{{ customerSalesChannel.name || customerSalesChannel.reference }}</span>
             </div>
         </template>
         <template #cell(customer_company_name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
-                <Link :href="(customerRoute(customerSalesChannel) as string)" class="primaryLink">
-                    {{ customerSalesChannel.customer_company_name }}
-                </Link>
+<!--                <Link :href="(customerRoute(customerSalesChannel) as string)" class="primaryLink">-->
+<!--                    {{ customerSalesChannel.customer_company_name }}-->
+<!--                </Link>-->
+                <span>{{ customerSalesChannel.customer_company_name }}</span>
             </div>
         </template>
 
         <template #cell(platform_status)="{ item }">
-
             <template v-if="item.status==='open'">
                 <template v-if="item.platform_code=='manual'">
-                    <FontAwesomeIcon v-tooltip="trans('Web/Api channel active')" icon="fal fa-check"
-                                     class="text-green-500" fixed-width aria-hidden="true"/>
-
+                    <FontAwesomeIcon v-tooltip="trans('Web/Api channel active')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
                 </template>
                 <template v-else>
-                    <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="trans('App installed ok')"
-                                     icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true"/>
-                    <FontAwesomeIcon v-else v-tooltip="trans('Broken channel delete it and create new one')"
-                                     icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true"/>
-                    <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')"
-                                     icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true"/>
-                    <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times"
-                                     class="text-red-500" fixed-width aria-hidden="true"/>
-                    <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')"
-                                     icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true"/>
-                    <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times"
-                                     class="text-red-500" fixed-width aria-hidden="true"/>
+                    <FontAwesomeIcon v-if="item.can_connect_to_platform" v-tooltip="trans('App installed ok')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="trans('Broken channel delete it and create new one')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="item.exist_in_platform" v-tooltip="trans('Exist in platform')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="trans('Exist in platform')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-if="item.platform_status" v-tooltip="trans('Platform status')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-else v-tooltip="trans('Platform status')" icon="fal fa-times" class="text-red-500" fixed-width aria-hidden="true" />
                 </template>
             </template>
             <template v-else>
@@ -202,50 +202,58 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         </template>
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
-
-            <Link :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
-
+<!--            <Link href="/" class="secondaryLink">-->
+<!--                <span v-if="customerSalesChannel.platform_type=='manual'">-->
+<!--                       {{ customerSalesChannel.number_portfolios }}-->
+<!--                </span>-->
+<!--                <template v-else>-->
+<!--                    <span v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0">-->
+<!--                        {{ customerSalesChannel.number_portfolios }}-->
+<!--                    </span>-->
+<!--                    <span v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios" class="text-red-500">-->
+<!--                        {{ customerSalesChannel.number_portfolio_broken }}-->
+<!--                    </span>-->
+<!--                    <span v-else>-->
+<!--                        <span class="text-red-500">{{ customerSalesChannel.number_portfolio_broken }}</span>/{{ customerSalesChannel.number_portfolios }}-->
+<!--                    </span>-->
+<!--                </template>-->
+<!--            </Link>-->
+            <div>
                 <span v-if="customerSalesChannel.platform_type=='manual'">
                        {{ customerSalesChannel.number_portfolios }}
                 </span>
                 <template v-else>
-                      <span
-                          v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0"
-                      >
-                    {{ customerSalesChannel.number_portfolios }}
-                </span>
-                    <span
-                        v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios"
-                        class="text-red-500">
-                    {{ customerSalesChannel.number_portfolio_broken }}
-                </span>
+                    <span v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0">
+                        {{ customerSalesChannel.number_portfolios }}
+                    </span>
+                    <span v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios" class="text-red-500">
+                        {{ customerSalesChannel.number_portfolio_broken }}
+                    </span>
                     <span v-else>
-                    <span class="text-red-500">{{
-                            customerSalesChannel.number_portfolio_broken
-                        }}</span>/{{ customerSalesChannel.number_portfolios }}
-                </span>
+                        <span class="text-red-500">{{ customerSalesChannel.number_portfolio_broken }}</span>/{{ customerSalesChannel.number_portfolios }}
+                    </span>
                 </template>
-
-            </Link>
+            </div>
         </template>
 
         <template #cell(number_clients)="{ item: customerSalesChannel }">
-            <Link :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">
-                {{ customerSalesChannel.number_clients }}
-            </Link>
+<!--            <Link :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">-->
+<!--                {{ customerSalesChannel.number_clients }}-->
+<!--            </Link>-->
+            <span>{{ customerSalesChannel.number_clients }}</span>
         </template>
 
         <template #cell(number_orders)="{ item: customerSalesChannel }">
-            <Link :href="(ordersRoute(customerSalesChannel) as string)" class="secondaryLink">
-                {{ customerSalesChannel.number_orders }}
-            </Link>
+<!--            <Link :href="(ordersRoute(customerSalesChannel) as string)" class="secondaryLink">-->
+<!--                {{ customerSalesChannel.number_orders }}-->
+<!--            </Link>-->
+            <span>{{ customerSalesChannel.number_orders }}</span>
         </template>
 
         <template #cell(action)="{ item }">
-
             <div v-if="item.status=='open'" class="space-y-1">
                 <ModalConfirmationDelete
-                    v-if=" item.can_connect_to_platform &&  !item.platform_status"
+                    v-if="item.can_connect_to_platform && !item.platform_status"
                     :routeDelete="{
                         name: 'grp.models.customer_sales_channel.delete',
                         parameters: {
@@ -255,17 +263,14 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                     }"
                 >
                     <template #default="{ isOpenModal, changeModel }">
-                        <Button @click.stop="changeModel" label="Reset channel" type="negative" icon="fal fa-undo-alt">
-                        </Button>
+                        <Button @click.stop="changeModel" label="Reset channel" type="negative" icon="fal fa-undo-alt"></Button>
                     </template>
                 </ModalConfirmationDelete>
 
-                <Button type="negative" :label="trans('Delete')" :icon="faTrashAlt"
-                        @click="(event) => confirmDelete(event, item)"/>
+                <Button type="negative" :label="trans('Delete')" :icon="faTrashAlt" @click="(event) => confirmDelete(event, item)" />
             </div>
         </template>
     </Table>
-
 
     <ConfirmPopup>
         <template #icon>

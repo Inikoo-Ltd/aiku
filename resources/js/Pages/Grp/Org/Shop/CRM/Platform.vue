@@ -18,20 +18,7 @@ import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
 import TableCustomerSalesChannels from '@/Components/Tables/Grp/Org/CRM/TableCustomerSalesChannels.vue'
 
-library.add(
-  faFolder,
-  faCube,
-  faStream,
-  faMoneyBillWave,
-  faShoppingCart,
-  faUsers,
-  faBullhorn,
-  faProjectDiagram,
-  faBox,
-  faCameraRetro,
-  faRoad
-)
-
+library.add(faFolder, faCube, faStream, faMoneyBillWave, faShoppingCart, faUsers, faBullhorn, faProjectDiagram, faBox, faCameraRetro, faRoad)
 
 const props = defineProps<{
   title: string
@@ -56,7 +43,6 @@ const component = computed(() => {
 
   return components[currentTab.value]
 })
-
 </script>
 
 <template>
