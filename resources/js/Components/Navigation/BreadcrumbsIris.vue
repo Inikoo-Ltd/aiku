@@ -109,7 +109,7 @@ watch(() => props.breadcrumbs?.length, async () => {
 <template>
     <nav
         ref="scrollerRef"
-        class="scrollbar-hide relative md:overflow-y-hidden flex h-6 xl:h-8 text-xs md:text-sm transition-all"
+        class="isolate scrollbar-hide relative md:overflow-y-hidden flex h-6 xl:h-8 text-xs md:text-sm transition-all"
         aria-label="Breadcrumb"
     >
         <!-- Breadcrumb -->
