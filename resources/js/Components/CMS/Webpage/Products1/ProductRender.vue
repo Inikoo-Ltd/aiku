@@ -252,12 +252,12 @@ const profitMargin = computed(() => {
 
             <LinkIris v-if="product.url" :href="product.url" type="internal" class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 <template #default>
-                    <span class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
+                    <span  class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
                 </template>
             </LinkIris>
 
             <div v-else class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
-                {{ product.name }}
+                <span class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
             </div>
 
             <!-- SKU and RRP -->
@@ -296,7 +296,7 @@ const profitMargin = computed(() => {
                     <span class="font-medium text-base">
                         {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
                         <span class="text-sm"> {{ product.unit }}</span>
-                        <span class="text-xs ml-3 font-medium">
+                        <span class="text-xs ml-2 font-medium">
                             {{ trans("retail (excl. tax)") }}
                         </span>
                     </span>
