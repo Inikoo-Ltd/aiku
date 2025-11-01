@@ -30,12 +30,15 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateSalesIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoiceIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSalesIntervals;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Accounting\Invoice;
 
 trait WithRunInvoiceHydrators
 {
     public function runInvoiceHydrators(Invoice $invoice): void
     {
+        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+
         ShopHydrateInvoices::dispatch($invoice->shop)->delay($this->hydratorsDelay);
         OrganisationHydrateInvoices::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
         GroupHydrateInvoices::dispatch($invoice->group)->delay($this->hydratorsDelay);
@@ -43,22 +46,22 @@ trait WithRunInvoiceHydrators
 
         if ($invoice->invoiceCategory) {
             InvoiceCategoryHydrateInvoices::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-            InvoiceCategoryHydrateSalesIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
-            InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory)->delay($this->hydratorsDelay);
+            InvoiceCategoryHydrateSalesIntervals::dispatch($invoice->invoiceCategory, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+            InvoiceCategoryHydrateOrderingIntervals::dispatch($invoice->invoiceCategory, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         }
 
-        ShopHydrateSalesIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-        OrganisationHydrateSalesIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
-        GroupHydrateSalesIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
+        ShopHydrateSalesIntervals::dispatch($invoice->shop, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        OrganisationHydrateSalesIntervals::dispatch($invoice->organisation, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        GroupHydrateSalesIntervals::dispatch($invoice->group, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
 
         if ($invoice->master_shop_id) {
-            MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
-            MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id)->delay($this->hydratorsDelay);
+            MasterShopHydrateSalesIntervals::dispatch($invoice->master_shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+            MasterShopHydrateInvoiceIntervals::dispatch($invoice->master_shop_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         }
 
-        ShopHydrateInvoiceIntervals::dispatch($invoice->shop)->delay($this->hydratorsDelay);
-        OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation)->delay($this->hydratorsDelay);
-        GroupHydrateInvoiceIntervals::dispatch($invoice->group)->delay($this->hydratorsDelay);
+        ShopHydrateInvoiceIntervals::dispatch($invoice->shop, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        OrganisationHydrateInvoiceIntervals::dispatch($invoice->organisation, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+        GroupHydrateInvoiceIntervals::dispatch($invoice->group, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
 
         if ($invoice->shipping_zone_id) {
             ShippingZoneHydrateUsageInInvoices::dispatch($invoice->shipping_zone_id)->delay($this->hydratorsDelay);
@@ -72,10 +75,10 @@ trait WithRunInvoiceHydrators
         InvoiceRecordSearch::dispatch($invoice);
 
         if ($invoice->platform_id) {
-            ShopHydratePlatformSalesIntervalsInvoices::dispatch($invoice->shop_id, $invoice->platform_id)->delay($this->hydratorsDelay);
-            ShopHydratePlatformSalesIntervalsSales::dispatch($invoice->shop, $invoice->platform_id)->delay($this->hydratorsDelay);
-            ShopHydratePlatformSalesIntervalsSalesOrgCurrency::dispatch($invoice->shop, $invoice->platform_id)->delay($this->hydratorsDelay);
-            ShopHydratePlatformSalesIntervalsSalesGrpCurrency::dispatch($invoice->shop, $invoice->platform_id)->delay($this->hydratorsDelay);
+            ShopHydratePlatformSalesIntervalsInvoices::dispatch($invoice->shop_id, $invoice->platform_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+            ShopHydratePlatformSalesIntervalsSales::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+            ShopHydratePlatformSalesIntervalsSalesOrgCurrency::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
+            ShopHydratePlatformSalesIntervalsSalesGrpCurrency::dispatch($invoice->shop, $invoice->platform_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
         }
     }
 }
