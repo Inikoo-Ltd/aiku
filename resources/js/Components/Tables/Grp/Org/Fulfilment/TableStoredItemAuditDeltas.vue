@@ -34,7 +34,7 @@ const locale = inject('locale', aikuLocaleStructure)
                 {{ storedItemAudit.pallet_customer_reference }}
             </div>
             <div v-else class="text-gray-400 italic text-xs">
-                {{ trans('No pallet customer\'s reference') }}
+                {{ trans(`No pallet customer's reference`) }}
             </div>
         </template>
 

@@ -295,7 +295,7 @@ const getQuestionTooltip = (locationId: number) => {
                             <!-- Note Icon with Popover -->
                             <div class="relative">
                                 <div @click="(event) => toggleNotePopover(loc.id, event)"
-                                    v-tooltip="trans('Add part\'s location note')"
+                                    v-tooltip="trans(`Add part's location note`)"
                                     class="cursor-pointer transition-colors duration-200" :class="{
                                         'text-orange-600': hasNote(loc.id),
                                         'text-gray-400 hover:text-gray-700': !hasNote(loc.id)

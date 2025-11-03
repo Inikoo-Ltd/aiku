@@ -282,7 +282,7 @@
                   @update:modelValue="() => errorNewStoredItemName = ''"
                   :class="errorNewStoredItemName ? 'errorShake' : ''"
                   class="col-span-2"
-                  :placeholder="trans('Customer\'s SKU name')"
+                  :placeholder="trans(`Customer's SKU name`)"
               />
           </div>
           <p v-if="errorNewStoredItemName" class="mt-2 text-sm text-red-500">
