@@ -477,23 +477,7 @@ const closePopover = (close: any): void => {
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
             <div v-if="layout?.iris?.is_logged_in">
-                <div class="text-lg font-semibold">
-                    {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-                    <span class="text-sm text-gray-400 xtext-base font-normal">
-                        ({{ locale.currencyFormat(currency?.code,
-                            (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit
-                        }})
-                    </span>
-                </div>
-                <div v-if="fieldValue.product.rrp"
-                    class="flex items-center gap-2 text-xs text-gray-400 font-semibold mt-1">
-                    <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
-                    <span class="flex items-center gap-1" :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">
-                        (
-                        {{ fieldValue?.product?.margin }}
-                        )
-                    </span>
-                </div>
+               <ProductPrices :field-value="fieldValue" />
             </div>
 
             <!-- Favorite Icon -->

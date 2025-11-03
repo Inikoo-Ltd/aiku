@@ -364,29 +364,8 @@ const closePopover = (close: any): void => {
         <h2 class="text-xl font-bold mb-2">{{ fieldValue.product.name }}</h2>
         <ImageProducts :images="validImages" :video="videoSetup?.url ?? videoSetup?.video_url" />
 
-        <div class="flex justify-between items-start gap-4 mt-4">
-            <div v-if="layout?.iris?.is_logged_in">
-                <div class="text-lg font-semibold">
-                    {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-                    <span class="text-xs text-gray-500 ml-1">({{ formatNumber(fieldValue.product.units) }}/{{
-                        fieldValue.product.unit }})</span>
-                </div>
-
-                <div v-if="fieldValue.product.rrp"
-                    class="flex items-center gap-2 text-xs text-gray-400 font-semibold mt-1">
-                    <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
-                    <span class="flex items-center gap-1"
-                        :class="profitMargin > 0 ? 'text-green-600' : 'text-red-500'">({{
-                            profitMargin }}%)</span>
-                </div>
-            </div>
-
-            <!-- Favorite Icon -->
-            <div v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in" class="mt-1">
-                <FontAwesomeIcon :icon="['fas', 'heart']" class="text-xl cursor-pointer transition-colors duration-300"
-                    :class="{ 'text-red-500': fieldValue.product.is_favourite, 'text-gray-400 hover:text-red-500': !fieldValue.product.is_favourite }"
-                    @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
-            </div>
+        <div class="items-start gap-4 mt-4">
+            <ProductPrices :field-value="fieldValue" />
         </div>
 
         <div class="flex flex-wrap gap-2 mt-4" v-if="fieldValue?.product?.tags?.length">

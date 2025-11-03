@@ -43,7 +43,7 @@ watch(
 </script>
 
 <template>
-    <div class="absolute top-2 left-2 border border-black text-xs font-bold px-2 py-0.5 rounded" :class="{
+    <div class="absolute top-2 left-2 border border-black text-xs font-bold px-2 py-0.5 rounded z-10" :class="{
         'best-seller-1-container': props.topSeller === 1,
         'best-seller-2-container': props.topSeller === 2,
         'best-seller-3-container': props.topSeller === 3
