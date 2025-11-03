@@ -20,6 +20,8 @@ import { getStyles } from "@/Composables/styles"
 import axios from "axios"
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import product from "@/Pages/Retina/Dropshipping/Product/Product.vue"
+import ProductPrices from "./ProductPrices.vue"
+import { faCircleArrowDown } from "@fortawesome/free-solid-svg-icons"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 
@@ -295,7 +297,7 @@ const closePopover = (close: any): void => {
 
                         <div v-if="layout?.iris?.is_logged_in"
                             class="flex items-center gap-2 text-sm text-gray-600 mb-4">
-                            <FontAwesomeIcon :icon="['fas', 'circle']" class="text-[10px]"
+                            <FontAwesomeIcon :icon="faCircle" class="text-[10px]"
                                 :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
                                 {{
@@ -306,160 +308,10 @@ const closePopover = (close: any): void => {
                             </span>
                         </div>
                     </div>
-
-                    <div class="h-full flex items-start">
-                        <!-- Favorite Icon -->
-                        <template v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in">
-                            <div v-if="isLoadingFavourite" class="top-2 right-2 text-gray-500 text-2xl">
-                                <LoadingIcon />
-                            </div>
-                            <div v-else
-                                @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
-                                class="cursor-pointer top-2 right-2 group text-2xl ">
-                                <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="['fas', 'heart']"
-                                    fixed-width class="text-pink-500" />
-                                <span v-else class="">
-                                    <FontAwesomeIcon :icon="['far', 'heart']" fixed-width
-                                        class="hidden group-hover:inline text-pink-400" />
-                                    <FontAwesomeIcon :icon="['fas', 'heart']" fixed-width
-                                        class="inline group-hover:hidden text-pink-300" />
-                                </span>
-                            </div>
-                        </template>
-                    </div>
                 </div>
 
                 <!-- Price + Profit popover -->
-                <Popover v-slot="{ open, close }">
-                    <PopoverButton style="width: 100%;">
-                        <div v-if="layout?.iris?.is_logged_in"
-                            class="border-y border-gray-200 p-1 mb-2 text-gray-800 tabular-nums">
-                            <div class="grid grid-cols-2 gap-4 items-start" @mouseover="(e) => hoverPopover(e, open)"
-                                @mouseleave="closePopover(close)">
-                                <!-- Retail -->
-                                <div class="flex flex-col text-left">
-                                    <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Retail') }}</span>
-                                    <div class="flex flex-wrap items-baseline gap-1">
-                                        <span class="text-base font-semibold">
-                                            {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp || 0) }}
-                                        </span>
-                                        <span class="text-sm text-gray-500">/ {{ fieldValue.product.unit }}</span>
-                                        <span class="text-xs font-medium text-gray-400">{{ trans('(exclude tax)')}}</span>
-                                    </div>
-                                </div>
-
-                                <!-- Profit -->
-                                <div class="flex flex-col items-end text-right">
-                                    <div>
-                                        <span class="text-sm font-medium text-gray-600 mb-1 flex justify-start">{{
-                                            trans('Profit') }}</span>
-                                        <div class="flex flex-wrap items-baseline justify-end gap-1">
-                                            <span class="text-base font-semibold text-gray-700">
-                                                {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit ||
-                                                    0) }}
-                                            </span>
-                                            <span v-tooltip="trans('Profit margin')" class="text-sm font-semibold">
-                                                ({{ profitMargin }}%)
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </PopoverButton>
-
-                    <PopoverPanel
-                        class="absolute z-10 bg-white border border-gray-200 rounded-lg p-4 shadow-lgv w-[30rem]">
-                        <!-- Title -->
-                        <div class="text-sm font-semibold text-gray-900 border-gray-300 pb-2">
-                            {{ trans('Profit Margin Breakdown') }}
-                        </div>
-
-                        <div class="p-5 bg-gray-50 rounded-md shadow-sm border border-gray-200 text-gray-800 space-y-2">
-
-                                <!-- Retail Price -->
-                                <div class="flex justify-between items-center text-sm">
-                                    <span class="text-gray-700">{{ trans('Retail Price') }}</span>
-                                    <div class="flex items-center gap-4 text-right">
-                                        <span class="font-semibold text-gray-900 min-w-[90px] text-end">
-                                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp) }}
-                                        </span>
-                                        <span v-if="fieldValue.product.units != 1"
-                                            class="text-xs text-gray-500 border-gray-300 pl-3 min-w-[90px] text-start leading-none">
-                                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp_per_unit.toFixed(2)) }} / {{ fieldValue.product.unit }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <!-- Cost Price -->
-                                <div class="flex justify-between items-center text-sm">
-                                    <span class="text-gray-700">{{ trans('Cost Price') }}</span>
-                                    <div class="flex items-center gap-4 text-right">
-                                        <span class="font-semibold text-gray-900 min-w-[90px] text-end">
-                                            {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
-                                        </span>
-                                        <span v-if="fieldValue.product.units != 1"
-                                            class="text-xs text-gray-500 border-gray-300 pl-3 min-w-[90px] text-start leading-none">
-                                            {{ locale.currencyFormat(currency?.code, (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }} / {{ fieldValue.product.unit }}
-                                        </span>
-                                    </div>
-                                </div>
-
-                                <!-- Profit -->
-                                <div
-                                    class="flex justify-between items-center text-sm border-t border-gray-300 pt-2 mt-2">
-                                    <span class="font-semibold text-gray-800">{{ trans('Profit') }}</span>
-                                    <div class="flex items-center gap-4 text-right">
-                                        <span class="font-bold  min-w-[90px] text-end">
-                                            {{ locale.currencyFormat(currency?.code, fieldValue.product.profit) }}
-                                        </span>
-                                        <span v-if="fieldValue.product.units != 1"
-                                            class="text-xs  border-gray-300 pl-3 min-w-[90px] text-start leading-none">
-                                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp_per_unit - (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/ {{ fieldValue.product.unit }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-
-
-                        <!-- Notes -->
-                        <div class="text-xs text-gray-500 border-dashed border-gray-300 pt-2 mt-1 italic">
-                            {{ trans('All prices are calculated per unit and exclude tax.') }}
-                        </div>
-                    </PopoverPanel>
-                </Popover>
-
-                <!-- Price block -->
-                <div v-if="layout?.iris?.is_logged_in"
-                    class="p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
-                    <div v-if="fieldValue.product.units === 1" class="flex justify-between">
-                        <div>
-                            {{ trans("Price") }}:
-                            <span class="font-semibold">
-                                {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
-                                <span class="text-xs text-gray-600"> / {{ fieldValue.product.unit }}</span>
-                            </span>
-                        </div>
-                    </div>
-                    <div v-else>
-                        <div class="flex justify-between">
-                            <div>
-                                {{ trans("Price") }}:
-                                <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
-                                    fieldValue.product.price) }}</span>
-                            </div>
-                            <div>
-                                <span class="text-xs price_per_unit">
-                                    (<span>
-                                        {{ locale.currencyFormat(currency?.code, Number((fieldValue.product.price
-                                            / fieldValue.product.units).toFixed(2) || 0).toFixed(2)) }}
-                                        <span class="text-gray-600"> / {{ fieldValue.product.unit }}</span>
-                                    </span>)
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <ProductPrices :field-value="fieldValue" />
 
                 <!-- Button existence on all channels -->
                 <div class="relative flex gap-2 mb-6">

@@ -21,6 +21,7 @@ import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
 import { routeType } from '@/types/route'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import BestsellerBadge from '@/Components/CMS/Webpage/Products1/BestsellerBadge.vue'
+import Prices from './Prices.vue'
 
 library.add(faStarHalfAlt, faQuestionCircle)
 
@@ -306,84 +307,8 @@ const profitMargin = computed(() => {
             </div>
 
             <!-- Price Card -->
-            <div v-if="layout?.iris?.is_logged_in"
-                 class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
-                <div class="flex items-center justify-between">
-                    <span class="font-medium text-base">
-                        {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
-                        <span class="text-sm"> {{ product.unit }}</span>
-                        <span class="text-xs ml-2 font-medium">
-                            {{ trans("retail (excl. tax)") }}
-                        </span>
-                    </span>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-xs flex items-center text-gray-500 font-medium">
-                         {{ trans("Profit") }} : {{ locale.currencyFormat(currency?.code, product?.profit || 0) }}
-
-                        <span v-if="profitMargin > 0" v-tooltip="trans('Profit margin')"
-                              class="ml-1">
-                            ({{ profitMargin }}%)  
-                        </span>
-
-                        <span v-else v-tooltip="trans('Profit margin')" class="text-gray-500 font-semibold ml-1 text-sm">
-                          ({{ profitMargin }}%) 
-                        </span>
-                    </span>
-                </div>
-            </div>
-
-            <div v-if="layout?.iris?.is_logged_in"
-                 class="p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
-                <div v-if="product.units==1" class="flex justify-between">
-                    <div>
-                        {{ trans("Price") }}:
-                        <span class="font-semibold">
-                            {{ locale.currencyFormat(currency?.code, product.price) }}
-                            <span class="text-xs text-gray-600"> / {{ product.unit }}</span>
-                        </span>
-                    </div>
-                </div>
-                <div v-else>
-                    <div class="flex justify-between">
-                        <div> 
-                            {{ trans("Price") }}:
-                            <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
-                        </div>
-                        <div>
-                              <span class="text-xs price_per_unit">(<span > {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2)) }}
-                              <span class=" text-gray-600"> / {{ product.unit }}</span></span>)</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-                <!-- old price -->
-                <!-- <div v-if="layout?.iris?.is_logged_in"
-                    class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
-                    <div class="">
-                        <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
-                            product.price || 0) }}</span></div>
-                        <div>
-                            <span class="text-sm text-gray-400  font-normal">
-                                ({{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
-                                }}/{{
-                                    product.unit }})
-                            </span>
-                        </div>
-                    </div>
-
-                    <div v-if="product?.rrp" class="text-xs mt-1 text-right">
-                        <div>
-                            RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} <span
-                                v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ product?.margin }} )</span>
-                            <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
-                                ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} /
-                                {{
-                                    product.unit }})
-                            </div>
-                        </div>
-                    </div>
-                </div> -->
+             <Prices :product="product" :currency="currency" />
+            
             </div>
         </div>
 
