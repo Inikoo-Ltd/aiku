@@ -10,10 +10,8 @@ namespace App\Actions\CRM\Customer\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithHydrateDeliveryNotes;
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\CRM\Customer;
-use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -23,42 +21,22 @@ class CustomerHydrateDeliveryNotes implements ShouldBeUnique
     use WithEnumStats;
     use WithHydrateDeliveryNotes;
 
-    public function getJobUniqueId(Customer $customer): string
+    public function getJobUniqueId(int $customerId, DeliveryNoteTypeEnum $type): string
     {
-        return $customer->id;
+        return $customerId.'-'.$type->value;
     }
 
-    public function handle(Customer $customer): void
+    public function handle(int $customerId, DeliveryNoteTypeEnum $type): void
     {
-
-        $stats = $this->getDeliveryNotesStats($customer);
-
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'delivery_notes',
-                field: 'type',
-                enum: DeliveryNoteTypeEnum::class,
-                models: DeliveryNote::class,
-                where: function ($q) use ($customer) {
-                    $q->where('customer_id', $customer->id);
-                }
-            )
-        );
-
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'delivery_notes',
-                field: 'state',
-                enum: DeliveryNoteStateEnum::class,
-                models: DeliveryNote::class,
-                where: function ($q) use ($customer) {
-                    $q->where('customer_id', $customer->id);
-                }
-            )
-        );
-
+        $customer = Customer::find($customerId);
+        if (!$customer) {
+            return;
+        }
+        if ($type == DeliveryNoteTypeEnum::ORDER) {
+            $stats = $this->getStoreDeliveryNotesStats($customer);
+        } else {
+            $stats = $this->getStoreReplacementsStats($customer);
+        }
 
         $customer->stats()->update($stats);
     }

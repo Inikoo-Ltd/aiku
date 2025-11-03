@@ -200,16 +200,16 @@ class ShowMasterFamily extends GrpAction
                 'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
 
                 MasterFamilyTabsEnum::SHOWCASE->value => $this->tab == MasterFamilyTabsEnum::SHOWCASE->value ?
-                    fn() => GetMasterProductCategoryShowcase::run($masterFamily)
-                    : Inertia::lazy(fn() => GetMasterProductCategoryShowcase::run($masterFamily)),
+                    fn () => GetMasterProductCategoryShowcase::run($masterFamily)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterFamily)),
 
                 MasterFamilyTabsEnum::FAMILIES->value => $this->tab == MasterFamilyTabsEnum::FAMILIES->value ?
-                    fn() => FamiliesResource::collection(IndexFamilies::run($masterFamily))
-                    : Inertia::lazy(fn() => FamiliesResource::collection(IndexFamilies::run($masterFamily))),
+                    fn () => FamiliesResource::collection(IndexFamilies::run($masterFamily))
+                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($masterFamily))),
 
                 MasterFamilyTabsEnum::IMAGES->value => $this->tab == MasterFamilyTabsEnum::IMAGES->value ?
-                    fn() => GetMasterProductCategoryImages::run($masterFamily)
-                    : Inertia::lazy(fn() => GetMasterProductCategoryImages::run($masterFamily)),
+                    fn () => GetMasterProductCategoryImages::run($masterFamily)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterFamily)),
 
                 // FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))

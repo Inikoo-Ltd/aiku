@@ -11,7 +11,8 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
 {
     use WithDashboardIntervalValues;
 
-    public function toArray($request): array {
+    public function toArray($request): array
+    {
         /** @var Shop|Platform $model */
         $model = $this->resource;
 

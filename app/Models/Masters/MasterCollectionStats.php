@@ -32,6 +32,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_indirect_current_master_products
  * @property int $number_master_collections
  * @property int $number_current_master_collections
+ * @property int $number_parents
+ * @property int $number_current_collections
  * @property-read \App\Models\Masters\MasterCollection $masterCollection
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionStats newQuery()

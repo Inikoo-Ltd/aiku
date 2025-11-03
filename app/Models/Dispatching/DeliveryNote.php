@@ -8,6 +8,7 @@
 
 namespace App\Models\Dispatching;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -94,9 +95,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property string|null $source_id
- * @property bool $is_vip Indicate if delivery note is for a VIP customer
- * @property int|null $as_organisation_id Indicate if delivery note is for an organisation in this group
- * @property int|null $as_employee_id Indicate if delivery note is for an employee
+ * @property bool $is_vip Indicate if the delivery note is for a VIP customer
+ * @property int|null $as_organisation_id Indicate if the delivery note is for an organisation in this group
+ * @property int|null $as_employee_id Indicate if the delivery note is for an employee
  * @property int $estimated_weight grams
  * @property int $effective_weight Used for UI tables (e.g. sorting), effective_weight=estimated_weight if weight is null, grams
  * @property array<array-key, mixed>|null $parcels
@@ -136,6 +137,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $shipping_zone_schema_id
  * @property int|null $shipping_zone_id
  * @property bool|null $has_insurance
+ * @property ShopTypeEnum|null $shop_type
  * @property-read Address|null $address
  * @property-read Collection<int, Address> $addresses
  * @property-read Collection<int, \App\Models\Helpers\Audit> $audits
@@ -180,11 +182,11 @@ class DeliveryNote extends Model implements Auditable
     use HasHistory;
 
     protected $casts = [
-        'data'  => 'array',
-        'parcels'  => 'array',
-        'state' => DeliveryNoteStateEnum::class,
-        'type'  => DeliveryNoteTypeEnum::class,
-
+        'data'               => 'array',
+        'parcels'            => 'array',
+        'state'              => DeliveryNoteStateEnum::class,
+        'type'               => DeliveryNoteTypeEnum::class,
+        'shop_type'          => ShopTypeEnum::class,
         'date'               => 'datetime',
         'order_submitted_at' => 'datetime',
         'assigned_at'        => 'datetime',
@@ -199,7 +201,7 @@ class DeliveryNote extends Model implements Auditable
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'    => '{}',
         'parcels' => '{}',
     ];
 

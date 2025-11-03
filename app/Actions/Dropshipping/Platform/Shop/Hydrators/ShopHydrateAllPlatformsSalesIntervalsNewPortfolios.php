@@ -21,8 +21,7 @@ class ShopHydrateAllPlatformsSalesIntervalsNewPortfolios implements ShouldBeUniq
             return;
         }
 
-        $platformIds = Portfolio
-            ::where('item_type', class_basename(Product::class))
+        $platformIds = Portfolio::where('item_type', class_basename(Product::class))
             ->whereHas('item', function ($query) use ($shop) {
                 $query->where('shop_id', $shop->id);
             })

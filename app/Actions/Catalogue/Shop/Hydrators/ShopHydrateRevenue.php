@@ -14,7 +14,7 @@ class ShopHydrateRevenue implements ShouldBeUnique
 
     public string $commandSignature = 'hydrate:shop-revenue {shop}';
 
-    public function getJobUniqueId(int $shopId): string
+    public function getJobUniqueId(int $shopId): int
     {
         return $shopId;
     }

@@ -8,12 +8,8 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 class DeleteDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
     /**
      * @throws \Throwable
@@ -38,13 +35,9 @@ class DeleteDeliveryNote extends OrgAction
 
             return $deliveryNote;
         });
-        CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer);
-        ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop);
-        OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation);
-        GroupHydrateDeliveryNotes::dispatch($deliveryNote->group);
 
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
+        $this->storeDeliveryNoteHydrators($deliveryNote);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
 
         return $deliveryNote;
     }

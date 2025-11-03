@@ -8,9 +8,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -21,12 +21,14 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateDeliveryNoteStateToUnassigned extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
     /**
      * @throws \Throwable
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        $oldState = $deliveryNote->state;
         data_set($modelData, 'queued_at', null);
         data_set($modelData, 'state', DeliveryNoteStateEnum::UNASSIGNED->value);
         data_set($modelData, 'picker_user_id', null);
@@ -44,8 +46,8 @@ class UpdateDeliveryNoteStateToUnassigned extends OrgAction
             return $deliveryNote;
         });
 
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::UNASSIGNED);
 
         return $deliveryNote;
     }

@@ -35,12 +35,11 @@ use Spatie\Sluggable\SlugOptions;
  * @property OfferAllowanceStateEnum $state
  * @property bool $status
  * @property string $slug
- * @property string $code
  * @property array<array-key, mixed> $data
  * @property string|null $trigger_scope
  * @property string|null $trigger_type
  * @property string|null $trigger_id
- * @property OfferAllowanceTargetType|null $target_type
+ * @property string|null $target_filter
  * @property bool $is_discretionary
  * @property bool $is_locked
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -56,6 +55,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property OfferAllowanceType|null $type
  * @property int|null $target_id
  * @property array<array-key, mixed>|null $target_data For complex target policies
+ * @property OfferAllowanceTargetFilter|null $target_type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
