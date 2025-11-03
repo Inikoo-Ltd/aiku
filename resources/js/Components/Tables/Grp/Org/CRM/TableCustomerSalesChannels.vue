@@ -167,18 +167,18 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         <template #cell(name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
                 <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name" class="w-6 h-6"/>
-<!--                <Link :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">-->
-<!--                    {{ customerSalesChannel.name || customerSalesChannel.reference }}-->
-<!--                </Link>-->
-                <span>{{ customerSalesChannel.name || customerSalesChannel.reference }}</span>
+                <Link :href="(customerSalesChannelRoute(customerSalesChannel) as string)" class="primaryLink">
+                    {{ customerSalesChannel.name || customerSalesChannel.reference }}
+                </Link>
+<!--                <span>{{ customerSalesChannel.name || customerSalesChannel.reference }}</span>-->
             </div>
         </template>
         <template #cell(customer_company_name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2">
-<!--                <Link :href="(customerRoute(customerSalesChannel) as string)" class="primaryLink">-->
-<!--                    {{ customerSalesChannel.customer_company_name }}-->
-<!--                </Link>-->
-                <span>{{ customerSalesChannel.customer_company_name }}</span>
+                <Link :href="(customerRoute(customerSalesChannel) as string)" class="primaryLink">
+                    {{ customerSalesChannel.customer_company_name }}
+                </Link>
+<!--                <span>{{ customerSalesChannel.customer_company_name }}</span>-->
             </div>
         </template>
 
@@ -202,23 +202,7 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
         </template>
 
         <template #cell(number_portfolios)="{ item: customerSalesChannel }">
-<!--            <Link href="/" class="secondaryLink">-->
-<!--                <span v-if="customerSalesChannel.platform_type=='manual'">-->
-<!--                       {{ customerSalesChannel.number_portfolios }}-->
-<!--                </span>-->
-<!--                <template v-else>-->
-<!--                    <span v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0">-->
-<!--                        {{ customerSalesChannel.number_portfolios }}-->
-<!--                    </span>-->
-<!--                    <span v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios" class="text-red-500">-->
-<!--                        {{ customerSalesChannel.number_portfolio_broken }}-->
-<!--                    </span>-->
-<!--                    <span v-else>-->
-<!--                        <span class="text-red-500">{{ customerSalesChannel.number_portfolio_broken }}</span>/{{ customerSalesChannel.number_portfolios }}-->
-<!--                    </span>-->
-<!--                </template>-->
-<!--            </Link>-->
-            <div>
+            <Link :href="(portfoliosRoute(customerSalesChannel) as string)" class="secondaryLink">
                 <span v-if="customerSalesChannel.platform_type=='manual'">
                        {{ customerSalesChannel.number_portfolios }}
                 </span>
@@ -233,21 +217,37 @@ function confirmDelete(event: MouseEvent, customerSalesChannel: CustomerSalesCha
                         <span class="text-red-500">{{ customerSalesChannel.number_portfolio_broken }}</span>/{{ customerSalesChannel.number_portfolios }}
                     </span>
                 </template>
-            </div>
+            </Link>
+<!--            <div>-->
+<!--                <span v-if="customerSalesChannel.platform_type=='manual'">-->
+<!--                       {{ customerSalesChannel.number_portfolios }}-->
+<!--                </span>-->
+<!--                <template v-else>-->
+<!--                    <span v-if="customerSalesChannel.number_portfolio_broken === 0 && customerSalesChannel.number_portfolios === 0">-->
+<!--                        {{ customerSalesChannel.number_portfolios }}-->
+<!--                    </span>-->
+<!--                    <span v-else-if="customerSalesChannel.number_portfolio_broken === customerSalesChannel.number_portfolios" class="text-red-500">-->
+<!--                        {{ customerSalesChannel.number_portfolio_broken }}-->
+<!--                    </span>-->
+<!--                    <span v-else>-->
+<!--                        <span class="text-red-500">{{ customerSalesChannel.number_portfolio_broken }}</span>/{{ customerSalesChannel.number_portfolios }}-->
+<!--                    </span>-->
+<!--                </template>-->
+<!--            </div>-->
         </template>
 
         <template #cell(number_clients)="{ item: customerSalesChannel }">
-<!--            <Link :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">-->
-<!--                {{ customerSalesChannel.number_clients }}-->
-<!--            </Link>-->
-            <span>{{ customerSalesChannel.number_clients }}</span>
+            <Link :href="(clientsRoute(customerSalesChannel) as string)" class="secondaryLink">
+                {{ customerSalesChannel.number_clients }}
+            </Link>
+<!--            <span>{{ customerSalesChannel.number_clients }}</span>-->
         </template>
 
         <template #cell(number_orders)="{ item: customerSalesChannel }">
-<!--            <Link :href="(ordersRoute(customerSalesChannel) as string)" class="secondaryLink">-->
-<!--                {{ customerSalesChannel.number_orders }}-->
-<!--            </Link>-->
-            <span>{{ customerSalesChannel.number_orders }}</span>
+            <Link :href="(ordersRoute(customerSalesChannel) as string)" class="secondaryLink">
+                {{ customerSalesChannel.number_orders }}
+            </Link>
+<!--            <span>{{ customerSalesChannel.number_orders }}</span>-->
         </template>
 
         <template #cell(action)="{ item }">
