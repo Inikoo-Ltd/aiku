@@ -139,12 +139,15 @@ class StoreEbayProduct extends RetinaAction
             $brand = $product->getBrand();
 
             $aspects = [
-                'aspects' => $product->barcode ? [
-                    'EAN' => [$product->barcode],
+                'aspects' => [
                     'Type' => ['Other'],
                     'Brand' => [$brand?->name ?? $product->shop?->name]
-                ] : []
+                ]
             ];
+
+            if ($product->barcode) {
+                $aspects['aspects']['EAN'] = [$product->barcode];
+            }
 
             if (!blank($productAttributes)) {
                 $aspects['aspects'] = array_merge($aspects['aspects'], $productAttributes);
