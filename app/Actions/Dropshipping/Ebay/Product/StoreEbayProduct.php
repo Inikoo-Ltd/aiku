@@ -116,11 +116,11 @@ class StoreEbayProduct extends RetinaAction
                 $descriptions = $portfolio->item->name;
             }
 
-            $categories = $ebayUser->getCategorySuggestions($product->family->name);
-            $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
+            $categories = $ebayUser->getCategorySuggestions($product->department->name);
 
+            $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
             if (! $categoryId) {
-                $categories = $ebayUser->searchAvailableProducts($product->family->name);
+                $categories = $ebayUser->searchAvailableProducts($product->department->name);
 
                 if ($handleError($categories)) {
                     return;
@@ -129,12 +129,21 @@ class StoreEbayProduct extends RetinaAction
                 $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
             }
 
+            if ($handleError($categories)) {
+                return;
+            }
+
             $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);
             $productAttributes = $ebayUser->extractProductAttributes($product, $categoryAspects);
+
+            $brand = $product->getBrand();
+
             $aspects = [
-                'aspects' => [
+                'aspects' => $product->barcode ? [
                     'EAN' => [$product->barcode],
-                ]
+                    'Type' => ['Other'],
+                    'Brand' => [$brand?->name ?? $product->shop?->name]
+                ] : []
             ];
 
             if (!blank($productAttributes)) {
@@ -159,19 +168,17 @@ class StoreEbayProduct extends RetinaAction
                 ]
             ];
 
-            $productResult = $ebayUser->storeProduct($inventoryItem);
-
-            if ($handleError($productResult)) {
-                return;
-            }
-
-            if ($handleError($categories)) {
-                return;
-            }
-
             $offerExist = $ebayUser->getOffers([
                 'sku' => Arr::get($inventoryItem, 'sku')
             ]);
+
+            if (Arr::get($offerExist, 'offers.0.status', '') !== "PUBLISHED") {
+                $productResult = $ebayUser->storeProduct($inventoryItem);
+
+                if ($handleError($productResult)) {
+                    return;
+                }
+            }
 
             if (Arr::get($offerExist, 'offers.0')) {
                 $offer = Arr::get($offerExist, 'offers.0');
