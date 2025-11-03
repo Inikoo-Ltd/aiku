@@ -31,10 +31,11 @@ class GetSerialReference
 
         $serial = DB::transaction(function () use ($serialReference) {
             $res = DB::table('serial_references')->select('serial')
-                ->where('id', $serialReference->id)->first();
+                ->where('id', $serialReference->id)
+                ->lockForUpdate()
+                ->first();
 
             $serial = (int)$res->serial + 1;
-
 
             DB::table('serial_references')
                 ->where('id', $serialReference->id)
