@@ -87,7 +87,7 @@ const closePopover = (close: any): void => {
             </div>
         </PopoverButton>
 
-        <PopoverPanel class="absolute z-10 bg-white border border-gray-200 rounded-lg p-4 shadow-lgv w-[30rem]">
+        <PopoverPanel class="absolute z-10 bg-white border border-gray-200 rounded-lg p-4 shadow-lgv md:w-[30rem]">
             <!-- Title -->
             <div class="text-sm font-semibold text-gray-900 border-gray-300 pb-2">
                 {{ trans('Profit Margin Breakdown') }}
@@ -134,9 +134,7 @@ const closePopover = (close: any): void => {
                         </span>
                         <span v-if="fieldValue.product.units != 1"
                             class="text-xs  border-gray-300 pl-3 min-w-[90px] text-start leading-none">
-                            {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp_per_unit -
-                                (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/ {{
-                                fieldValue.product.unit }}
+                            {{ locale.currencyFormat(currency?.code, (fieldValue.product.rrp_per_unit - (fieldValue.product.price / fieldValue.product.units)).toFixed(2)) }}/ {{fieldValue.product.unit }}
                         </span>
                     </div>
                 </div>
