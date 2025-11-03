@@ -90,7 +90,7 @@ class IndexCustomerSalesChannels extends OrgAction
             }, 'total_amount');
 
         return $queryBuilder->defaultSort('customer_sales_channels.reference')
-            ->allowedSorts(['reference', 'name', 'number_clients', 'number_portfolios', 'number_orders', 'total_amount', 'platform_status'])
+            ->allowedSorts(['reference', 'name', 'number_clients', 'number_portfolios', 'number_orders', 'total_amount', 'platform_status', 'customer_company_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
