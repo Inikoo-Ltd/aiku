@@ -11,7 +11,7 @@ namespace App\Actions\Web\Announcement\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
-use App\Http\Resources\Web\BannerResource;
+use App\Http\Resources\Web\AnnouncementResource;
 use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -82,7 +82,7 @@ class ShowAnnouncementWorkshop extends OrgAction
                         ],
                     ],
                 ],
-                'banner'            => BannerResource::make($announcement)->getArray(),
+                'banner'            => AnnouncementResource::make($announcement)->getArray(),
                 'website' => [
                     'name' => $announcement->website->name,
                     'url' => $announcement->website->getUrl(),
@@ -192,6 +192,14 @@ class ShowAnnouncementWorkshop extends OrgAction
                     //     'name' => 'grp.gallery.uploaded-images.banner.index'
                     // ]
                 ],
+                'is_announcement_dirty'       => $announcement->is_dirty,
+                'is_announcement_started'     => $this->isAnnouncementStarted($announcement),
+                'is_announcement_closed'      => $this->isAnnouncementClosed($announcement),
+                'portfolio_website'           => $announcement->portfolioWebsite,
+                'announcement_data'           => $announcement->toArray(),
+                'is_announcement_published'   => $announcement->unpublishedSnapshot->state === SnapshotStateEnum::LIVE,  // TODO
+                'is_announcement_active'      => $announcement->status,
+                'last_published_date'         => $announcement->ready_at,
             ]
         );
     }
