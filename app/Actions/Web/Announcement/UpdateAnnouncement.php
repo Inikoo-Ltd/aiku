@@ -11,6 +11,7 @@ namespace App\Actions\Web\Announcement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Announcement;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
@@ -48,11 +49,7 @@ class UpdateAnnouncement extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->get('customerUser')->hasPermissionTo("portfolio.banners.edit");
+        return true;
     }
 
     public function rules(): array
@@ -65,12 +62,12 @@ class UpdateAnnouncement extends OrgAction
         ];
     }
 
-    public function asController(Website $website, Announcement $announcement, ActionRequest $request): void
+    public function asController(Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): void
     {
         $this->scope    = 'website';
         $this->parent   = $website;
         $this->initialisation($website->organisation, $request);
 
-        $this->handle($announcement, $request->validated());
+        $this->handle($announcement, $this->validatedData);
     }
 }
