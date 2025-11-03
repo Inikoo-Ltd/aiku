@@ -56,8 +56,37 @@ const fieldSideEditor = [
         },
         replaceForm: [
             {
-                key: ['container_properties'],
-                type: "properties"
+                key: ["container_properties","background"],
+                label : "Background",
+                type: "background",
+            },
+            {
+                key: ["container_properties","text"],
+                type: "textProperty",
+            },
+            {
+                key: ["container_properties","margin"],
+                label : "Margin",
+                type: "margin",
+                useIn : ["desktop", "tablet", "mobile"],
+            },
+            {
+                key: ["container_properties","padding"],
+                label : "Padding",
+                type: "padding",
+                useIn : ["desktop", "tablet", "mobile"],
+            },
+            {
+                key: ["container_properties","border"],
+                label : "Border",
+                type: "border",
+                useIn : ["desktop", "tablet", "mobile"],
+            },
+            {
+                key: ["container_properties","dimension"],
+                label:"Dimension",
+                type: "dimension",
+                useIn : ["desktop", "tablet", "mobile"],
             },
         ]
     },
@@ -69,7 +98,7 @@ const fieldSideEditor = [
         },
         replaceForm: [
             {
-                key: ['fields', 'text_1'],
+                key: ['fields', 'text_1', 'text'],
                 type: "editorhtml",
                 props_data: {
                     toogle: [
