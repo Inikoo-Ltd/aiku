@@ -17,6 +17,7 @@ import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
 import TableCustomerSalesChannels from '@/Components/Tables/Grp/Org/CRM/TableCustomerSalesChannels.vue'
+import TableInvoices from '@/Components/Tables/Grp/Org/CRM/TableInvoices.vue'
 
 library.add(faFolder, faCube, faStream, faMoneyBillWave, faShoppingCart, faUsers, faBullhorn, faProjectDiagram, faBox, faCameraRetro, faRoad)
 
@@ -25,6 +26,7 @@ const props = defineProps<{
   pageHead: PageHeadingTypes,
   channels: {},
   products: {},
+  showcase: {},
   tabs: {
       current: string
       navigation: {}
@@ -37,6 +39,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
   const components: {[key: string]: Component} = {
+    showcase: TableInvoices,
     products: TablePortfolios,
     channels: TableCustomerSalesChannels
   }

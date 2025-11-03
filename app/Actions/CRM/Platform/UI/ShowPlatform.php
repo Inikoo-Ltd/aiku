@@ -11,11 +11,13 @@ namespace App\Actions\CRM\Platform\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\IndexCustomerSalesChannels;
+use App\Actions\Dropshipping\Invoices\UI\IndexInvoices;
 use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\UI\CRM\PlatformTabsEnum;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Http\Resources\CRM\InvoicesResource;
 use App\Http\Resources\CRM\PortfoliosResource;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
@@ -74,6 +76,10 @@ class ShowPlatform extends OrgAction
                     $this->tab == PlatformTabsEnum::PRODUCTS->value
                         ? fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($shop, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))
                         : Inertia::lazy(fn () => PortfoliosResource::collection(IndexPortfoliosInPlatform::run($shop, $platform, prefix: PlatformTabsEnum::PRODUCTS->value))),
+                PlatformTabsEnum::SHOWCASE->value =>
+                    $this->tab == PlatformTabsEnum::SHOWCASE->value
+                        ? fn () => InvoicesResource::collection(IndexInvoices::run($shop, $platform, prefix: PlatformTabsEnum::SHOWCASE->value))
+                        : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run($shop, $platform, prefix: PlatformTabsEnum::SHOWCASE->value)))
             ]
         )->table(
             IndexCustomerSalesChannels::make()->tableStructure(
@@ -83,6 +89,10 @@ class ShowPlatform extends OrgAction
         )->table(
             IndexPortfoliosInPlatform::make()->tableStructure(
                 prefix: PlatformTabsEnum::PRODUCTS->value,
+            )
+        )->table(
+            IndexInvoices::make()->tableStructure(
+                prefix: PlatformTabsEnum::SHOWCASE->value,
             )
         );
     }

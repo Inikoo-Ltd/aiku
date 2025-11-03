@@ -21,6 +21,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import RecommendationSlideIris from "@/Components/Iris/Recommendations/RecommendationSlideIris.vue"
 import { ProductHit } from "@/types/Luigi/LuigiTypes"
 import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector"
+import { trans } from "laravel-vue-i18n"
 // import ProductRenderEcom from "../Products1/ProductRenderEcom.vue"
 library.add(faChevronLeft, faChevronRight)
 
@@ -113,7 +114,10 @@ onMounted(() => {
             <!-- Title -->
             <div class="px-3 py-6 pb-2">
                 <div class="text-3xl font-semibold">
-                    <div v-html="fieldValue.title"></div>
+                    <!-- <div v-html="fieldValue.title"></div> -->
+                    <div>
+                        <p style="text-align: center">{{ trans("Trending") }}</p>
+                    </div>
                 </div>
             </div>
             
