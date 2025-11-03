@@ -94,7 +94,7 @@ class EditCharge extends OrgAction
                                 ],
                                 'description' => [
                                     'type'  => 'textarea',
-                                    'information'   => __('This will show in customer\'s Dropshipping Basket as a tooltip'),
+                                    'information'   => __("This will show in customer's Dropshipping Basket as a tooltip"),
                                     'label' => __('description'),
                                     'value' => $charge->description
                                 ],

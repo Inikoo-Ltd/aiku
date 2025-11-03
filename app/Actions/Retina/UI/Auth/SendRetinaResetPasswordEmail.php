@@ -54,7 +54,7 @@ class SendRetinaResetPasswordEmail extends RetinaAction
     public function getValidationMessages(): array
     {
         return [
-            'email.exists' => __('We can\'t find a user with that email address.'),
+            'email.exists' => __("We can't find a user with that email address."),
         ];
     }
 

@@ -79,15 +79,15 @@ class UpdateFulfilmentCustomer extends OrgAction
         data_forget($modelData, 'size_and_weight');
 
         if ($fulfilmentCustomer->number_pallets > 0 && Arr::exists($modelData, 'pallets_storage')) {
-            throw ValidationException::withMessages(['message' => __('You can\'t unselect because you already have pallets.')]);
+            throw ValidationException::withMessages(['message' => __("You can't unselect because you already have pallets.")]);
         }
 
         if ($fulfilmentCustomer->number_spaces > 0 && Arr::exists($modelData, 'space_rental')) {
-            throw ValidationException::withMessages(['message' => __('You can\'t unselect because you already have spaces.')]);
+            throw ValidationException::withMessages(['message' => __("You can't unselect because you already have spaces.")]);
         }
 
         if ($fulfilmentCustomer->customer->shopifyUser && Arr::exists($modelData, 'dropshipping')) {
-            throw ValidationException::withMessages(['message' => __('You can\'t unselect because you already have platform accounts.')]);
+            throw ValidationException::withMessages(['message' => __("You can't unselect because you already have platform accounts.")]);
         }
 
 

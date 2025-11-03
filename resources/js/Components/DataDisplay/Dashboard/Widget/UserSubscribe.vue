@@ -369,7 +369,7 @@ const confirmDeleteWidgetItem = (event: Event, item: any, index: number) => {
 						</PureMultiselectInfiniteScroll>
 					</div>
 				
-					<!-- Delete icon beside the user input -->
+					<!-- Delete icon beside the user input x -->
 					<FontAwesomeIcon
 						:icon="faTrashAlt"
 						class="text-red-500 cursor-pointer ml-2"

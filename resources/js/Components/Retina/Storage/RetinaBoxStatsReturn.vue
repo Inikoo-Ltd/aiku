@@ -306,7 +306,7 @@ const disableBeforeToday = (date: Date) => {
       <div class="flex flex-col w-full gap-y-2 mb-1">
         <!-- Top Row: Icon dan Switch -->
         <dl class="flex items-center gap-x-2">
-          <dt v-tooltip="trans('Pallet Return\'s address')" class="flex-none">
+          <dt v-tooltip="trans(`Pallet Return's address`)" class="flex-none">
             <span class="sr-only">Delivery address</span>
             <FontAwesomeIcon icon="fal fa-map-marker-alt" size="xs" class="text-gray-400" fixed-width aria-hidden="true" />
           </dt>

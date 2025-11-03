@@ -183,7 +183,7 @@ onMounted(() => {
 
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans('Customer\'s SKU')" icon='fal fa-narwhal' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKU`)" icon='fal fa-narwhal' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
                             <span>{{ trans("Audited") }}</span>
                         </dt>
                         
@@ -196,7 +196,7 @@ onMounted(() => {
 
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans('Customer\'s SKU')" icon='fal fa-plus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKU`)" icon='fal fa-plus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
                             <span>{{ trans("Audited (with additions)") }}</span>
                         </dt>
                         
@@ -210,7 +210,7 @@ onMounted(() => {
                     <!-- Audited (with subtractions) -->
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans('Customer\'s SKU')" icon='fal fa-minus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKU`)" icon='fal fa-minus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
                             <span>{{ trans("Audited (with subtractions)") }}</span>
                         </dt>
                         
@@ -224,7 +224,7 @@ onMounted(() => {
                     <!-- Audit with stock checked -->
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans('Customer\'s SKU')" icon='fal fa-check' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKU`)" icon='fal fa-check' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
                             <span>{{ trans("Audited (with stock checked)") }}</span>
                         </dt>
                         
@@ -238,7 +238,7 @@ onMounted(() => {
                     <!-- Associated -->
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans('Customer\'s SKU')" icon='fal fa-link' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKU`)" icon='fal fa-link' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
                             <span>{{ trans("Associated") }}</span>
                         </dt>
                         
@@ -252,7 +252,7 @@ onMounted(() => {
                     <!-- Created -->
                     <div class="grid grid-cols-7 gap-x-4 items-center justify-between">
                         <dt class="col-span-5 flex items-center gap-x-1.5">
-                            <FontAwesomeIcon v-tooltip="trans('Customer\'s SKU')" icon='fal fa-layer-plus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
+                            <FontAwesomeIcon v-tooltip="trans(`Customer's SKU`)" icon='fal fa-layer-plus' class='text-gray-400 text-sm' fixed-width aria-hidden='true' />
                             <span>{{ trans("Created") }}</span>
                         </dt>
                         
