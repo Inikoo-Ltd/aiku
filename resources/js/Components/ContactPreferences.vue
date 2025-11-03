@@ -111,7 +111,7 @@ const undoDontContact = async () => {
             type: 'success'
         })
         
-        console.log('Undo don\'t contact me - restored to normal view')
+        console.log('Undo do not  contact me - restored to normal view')
     } catch (error) {
         console.error('Failed to undo dont contact me:', error)
         

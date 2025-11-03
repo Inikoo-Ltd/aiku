@@ -39,7 +39,7 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
     {
         $accessToken = $this->getAccessToken($webpage->website);
         if (count($accessToken) < 2) {
-            Log::error('Luigi\'s Box access token is not configured properly');
+            Log::error("Luigi's Box access token is not configured properly");
 
             return;
         }

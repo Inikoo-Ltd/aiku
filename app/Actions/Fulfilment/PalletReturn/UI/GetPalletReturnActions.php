@@ -79,7 +79,7 @@ class GetPalletReturnActions
         } else {
             $isDisabled = false;
             if ($palletReturn->pallets()->count() < 1) {
-                $tooltipSubmit = __('Select Customer\'s SKU before submit');
+                $tooltipSubmit = __("Select Customer's SKU before submit");
                 $isDisabled    = true;
             } else {
                 $tooltipSubmit = __('Submit');

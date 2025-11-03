@@ -190,7 +190,7 @@
     <thead>
     <tr>
         <td style="width:20%; text-align:left">{{ __('Reference') }}</td>
-        <td style="width:50%; text-align:left">{{ __('Pallet Reference (Customer\'s)') }}</td>
+        <td style="width:50%; text-align:left">{{ __("Pallet Reference (Customer's)") }}</td>
         <td style="text-align:right">{{ __('Notes') }}</td>
     </tr>
     </thead>

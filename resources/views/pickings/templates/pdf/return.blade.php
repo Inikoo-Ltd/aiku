@@ -157,7 +157,7 @@
                 @if($return->type === \App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum::PALLET)
                     {{ __('Return (Whole Pallets)') }}
                 @else
-                    {{ __('Return (Customer\'s SKU)') }}
+                    {{ __("Return (Customer's SKU)") }}
                 @endif
             </h1>
         </td>
@@ -223,7 +223,7 @@
         <thead>
         <tr>
             <td style="width:20%; text-align:left">{{ __('Reference') }}</td>
-            <td style="width:50%; text-align:left">{{ __('Pallet Reference (Customer\'s)') }}</td>
+            <td style="width:50%; text-align:left">{{ __("Pallet Reference (Customer's)") }}</td>
             <td style="text-align:right">{{ __('Notes') }}</td>
         </tr>
         </thead>
@@ -240,7 +240,7 @@
         </tbody>
     </table>
 @else
-    <p>{{ __('Customer\'s SKU') }}</p>
+    <p>{{ __("Customer's SKU") }}</p>
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
         <thead>
         <tr>
