@@ -46,6 +46,7 @@ import MinMaxPrice from '@/Components/Workshop/Properties/MinMaxPrice.vue'
 import VideoSettings from '@/Components/Workshop/Properties/VideoSettings.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import SelectProducts from '@/Components/Workshop/Properties/SelectProducts.vue'
+import Countdown from '@/Components/CMS/Fields/Countdown.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -91,7 +92,8 @@ export const getComponent = (componentName: string) => {
         'min_max_price' : MinMaxPrice, 
         'video-settings' : VideoSettings,
         'selectquery' : PureMultiselectInfiniteScroll,
-        'select_product' : SelectProducts
+        'select_product' : SelectProducts,
+        'countdown': Countdown
     }
     return components[componentName] ?? NotFoundComponents
 }
