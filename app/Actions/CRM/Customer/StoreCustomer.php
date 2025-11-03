@@ -57,7 +57,7 @@ class StoreCustomer extends OrgAction
     use WithNoStrictRules;
     use WithProcessContactNameComponents;
     use WithPrepareTaxNumberValidation;
-    
+
     protected Shop $shop;
 
     /**

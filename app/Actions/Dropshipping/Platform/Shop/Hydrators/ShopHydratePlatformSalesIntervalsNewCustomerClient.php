@@ -31,8 +31,7 @@ class ShopHydratePlatformSalesIntervalsNewCustomerClient implements ShouldBeUniq
             return;
         }
 
-        $queryBase = CustomerClient
-            ::where('platform_id', $platformId)
+        $queryBase = CustomerClient::where('platform_id', $platformId)
             ->whereHas('customer', function ($query) use ($shop) {
                 $query->where('shop_id', $shop->id);
             })

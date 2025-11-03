@@ -32,8 +32,7 @@ class ShopHydratePlatformSalesIntervalsNewChannels implements ShouldBeUnique
             return;
         }
 
-        $queryBase = CustomerSalesChannel
-            ::where('platform_id', $platformId)
+        $queryBase = CustomerSalesChannel::where('platform_id', $platformId)
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->whereHas('customer', function ($query) use ($shop) {
                 $query->where('shop_id', $shop->id);

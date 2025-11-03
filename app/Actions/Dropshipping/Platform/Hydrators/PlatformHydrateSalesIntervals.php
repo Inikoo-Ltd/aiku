@@ -46,8 +46,7 @@ class PlatformHydrateSalesIntervals implements ShouldBeUnique
     {
         $stats = [];
 
-        $invoiceQueryBase = Invoice
-            ::where('in_process', false)
+        $invoiceQueryBase = Invoice::where('in_process', false)
             ->where('platform_id', $platform->id)
             ->where('type', InvoiceTypeEnum::INVOICE)
             ->selectRaw('count(*) as  sum_aggregate');
@@ -60,8 +59,7 @@ class PlatformHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $newChannelsQueryBase = CustomerSalesChannel
-            ::where('platform_id', $platform->id)
+        $newChannelsQueryBase = CustomerSalesChannel::where('platform_id', $platform->id)
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->selectRaw('count(*) as  sum_aggregate');
 
@@ -74,8 +72,7 @@ class PlatformHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $newCustomersQueryBase = CustomerSalesChannel
-            ::leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
+        $newCustomersQueryBase = CustomerSalesChannel::leftJoin('customers', 'customer_sales_channels.customer_id', '=', 'customers.id')
             ->where('platform_id', $platform->id)
             ->selectRaw('count(distinct customer_sales_channels.customer_id) as sum_aggregate');
 
@@ -88,8 +85,7 @@ class PlatformHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $newPortfoliosQueryBase = Portfolio
-            ::where('item_type', class_basename(Product::class))
+        $newPortfoliosQueryBase = Portfolio::where('item_type', class_basename(Product::class))
             ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
             ->where('platform_id', $platform->id)
             ->selectRaw('count(distinct portfolios.item_id) as sum_aggregate');
@@ -103,8 +99,7 @@ class PlatformHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $newCustomerClientQueryBase = CustomerClient
-            ::where('platform_id', $platform->id)
+        $newCustomerClientQueryBase = CustomerClient::where('platform_id', $platform->id)
             ->selectRaw('count(*) as sum_aggregate');
 
         $stats = $this->getIntervalsData(
@@ -116,8 +111,7 @@ class PlatformHydrateSalesIntervals implements ShouldBeUnique
             doPreviousPeriods: $doPreviousPeriods
         );
 
-        $salesGrpCurrencyQueryBase = Invoice
-            ::where('in_process', false)
+        $salesGrpCurrencyQueryBase = Invoice::where('in_process', false)
             ->where('platform_id', $platform->id)
             ->selectRaw('sum(grp_net_amount) as  sum_aggregate');
 

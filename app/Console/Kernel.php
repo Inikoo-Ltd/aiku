@@ -72,8 +72,8 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')
             ->withoutOverlapping()->sentryMonitor(
-            monitorSlug: 'FetchOrdersInBasket',
-        );
+                monitorSlug: 'FetchOrdersInBasket',
+            );
 
         $schedule->command('fetch:stock_locations aw')->dailyAt('2:30')
             ->timezone('UTC')->withoutOverlapping()->sentryMonitor(

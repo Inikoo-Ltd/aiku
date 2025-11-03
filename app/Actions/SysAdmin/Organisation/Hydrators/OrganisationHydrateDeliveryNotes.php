@@ -10,9 +10,7 @@ namespace App\Actions\SysAdmin\Organisation\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithHydrateDeliveryNotes;
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -23,40 +21,25 @@ class OrganisationHydrateDeliveryNotes implements ShouldBeUnique
     use WithEnumStats;
     use WithHydrateDeliveryNotes;
 
-    public function getJobUniqueId(Organisation $organisation): string
+    public function getJobUniqueId($organisationId, DeliveryNoteTypeEnum $type): string
     {
-        return $organisation->id;
+        return $organisationId.'-'.$type->value;
     }
 
-    public function handle(Organisation $organisation): void
+    public function handle($organisationId, DeliveryNoteTypeEnum $type): void
     {
 
-        $stats = [];
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'delivery_notes',
-                field: 'type',
-                enum: DeliveryNoteTypeEnum::class,
-                models: DeliveryNote::class,
-                where: function ($q) use ($organisation) {
-                    $q->where('organisation_id', $organisation->id);
-                }
-            )
-        );
+        $organisation = Organisation::find($organisationId);
+        if (!$organisation) {
+            return;
+        }
 
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'delivery_notes',
-                field: 'state',
-                enum: DeliveryNoteStateEnum::class,
-                models: DeliveryNote::class,
-                where: function ($q) use ($organisation) {
-                    $q->where('organisation_id', $organisation->id);
-                }
-            )
-        );
+        if ($type == DeliveryNoteTypeEnum::ORDER) {
+            $stats = $this->getStoreDeliveryNotesStats($organisation);
+        } else {
+            $stats = $this->getStoreReplacementsStats($organisation);
+        }
+
 
         $organisation->orderingStats()->update($stats);
     }

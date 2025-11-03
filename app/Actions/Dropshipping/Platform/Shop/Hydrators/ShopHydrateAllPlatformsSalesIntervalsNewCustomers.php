@@ -21,8 +21,8 @@ class ShopHydrateAllPlatformsSalesIntervalsNewCustomers implements ShouldBeUniqu
         }
 
         $platformIds = CustomerSalesChannel::whereHas('customer', function ($query) use ($shop) {
-                $query->where('shop_id', $shop->id);
-            })
+            $query->where('shop_id', $shop->id);
+        })
             ->select('platform_id')
             ->distinct()
             ->pluck('platform_id')

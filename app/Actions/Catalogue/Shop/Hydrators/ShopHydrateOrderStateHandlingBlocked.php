@@ -22,7 +22,7 @@ class ShopHydrateOrderStateHandlingBlocked implements ShouldBeUnique
 
     public string $jobQueue = 'sales';
 
-    public function getJobUniqueId(int $shopId): string
+    public function getJobUniqueId(int $shopId): int
     {
         return $shopId;
     }

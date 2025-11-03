@@ -94,8 +94,8 @@ trait WithIrisProductsInWebpage
         } elseif ($stockMode == 'out_of_stock') {
             $queryBuilder->where('products.available_quantity', '<=', 0);
         }
-        
-        if($topSeller) {
+
+        if ($topSeller) {
             $queryBuilder->whereNotNull('products.top_seller');
         }
 

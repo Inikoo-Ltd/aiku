@@ -8,13 +8,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
@@ -39,6 +35,7 @@ class StoreDeliveryNote extends OrgAction
     use WithAttributes;
     use WithFixedAddressActions;
     use WithModelAddressActions;
+    use HasDeliveryNoteHydrators;
 
     /**
      * @throws \Throwable
@@ -60,6 +57,7 @@ class StoreDeliveryNote extends OrgAction
         data_set($modelData, 'group_id', $order->group_id);
         data_set($modelData, 'organisation_id', $order->organisation_id);
         data_set($modelData, 'collection_address_id', $order->collection_address_id);
+        data_set($modelData, 'shop_type', $order->shop->type);
 
 
         data_set($modelData, 'customer_notes', $order->customer_notes);
@@ -112,13 +110,8 @@ class StoreDeliveryNote extends OrgAction
         $deliveryNote->refresh();
 
         DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
-        GroupHydrateDeliveryNotes::dispatch($deliveryNote->group)->delay($this->hydratorsDelay);
-        OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation)->delay($this->hydratorsDelay);
-        ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop)->delay($this->hydratorsDelay);
-        CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer)->delay($this->hydratorsDelay);
-
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
+        $this->storeDeliveryNoteHydrators($deliveryNote);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
 
         return $deliveryNote;
     }

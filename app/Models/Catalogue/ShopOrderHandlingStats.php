@@ -142,6 +142,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_packings_done_today
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_delivery_notes_state_unassigned
+ * @property int $number_delivery_notes_state_dispatched
+ * @property int $number_delivery_notes_state_cancelled
+ * @property string $weight_delivery_notes_state_unassigned
+ * @property string $weight_delivery_notes_state_dispatched
+ * @property string $weight_delivery_notes_state_cancelled
+ * @property int $number_items_delivery_notes_state_unassigned
+ * @property int $number_items_delivery_notes_state_dispatched
+ * @property int $number_items_delivery_notes_state_cancelled
  * @property-read \App\Models\Catalogue\Shop $shop
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderHandlingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ShopOrderHandlingStats newQuery()
