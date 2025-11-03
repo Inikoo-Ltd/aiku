@@ -13,6 +13,7 @@ import { debounce } from 'lodash-es'
 import axios from 'axios'
 import ProductSpecDocumentation from './ProductSpec&Documentation.vue'
 import { getStyles } from "@/Composables/styles"
+import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
     product: {
@@ -166,7 +167,7 @@ const openDisclosureId = ref<number | null>(null)
                 <div class="relative hover:bg-gray-50 rounded transition">
                     <div @click="openDisclosureId = openDisclosureId === 'spec-1' ? null : 'spec-1'" :style="getStyles(styleData?.title)"
                         class="w-full sm:w-7/12 mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer">
-                        <div class="text-base font-semibold">Product Specifications & Documentations</div>
+                        <div class="text-base font-semibold">{{ trans("Product Specifications & Documentations") }}</div>
                         <FontAwesomeIcon :icon="faChevronDown"
                             class="text-sm text-gray-500 transform transition-transform duration-200"
                             :class="{ 'rotate-180': openDisclosureId === 'spec-1' }" />

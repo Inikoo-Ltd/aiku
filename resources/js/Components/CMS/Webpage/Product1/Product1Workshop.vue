@@ -17,6 +17,7 @@ import Image from "@/Components/Image.vue"
 import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vue"
 import { getStyles } from "@/Composables/styles"
 import { isArray } from "lodash-es"
+import ProductPrices from "./ProductPrices.vue"
 
 library.add(faCube, faLink, faFileDownload)
 
@@ -227,7 +228,9 @@ const toggleExpanded = () => {
                         </template>
                     </div>
                 </div>
-                <div v-if="layout.iris?.is_logged_in" class="flex items-end pb-3 mb-3">
+
+                <ProductPrices :field-value="modelValue" />
+                <!-- <div v-if="layout.iris?.is_logged_in" class="flex items-end pb-3 mb-3">
                     <div class="text-gray-900 font-semibold text-3xl leading-none flex-grow min-w-0">
                         {{ locale.currencyFormat(currency?.code, modelValue.product.price || 0) }}
                         <span class="text-sm text-gray-900 ml-2 whitespace-nowrap">({{
@@ -239,7 +242,7 @@ const toggleExpanded = () => {
                         <span>RRP: {{ locale.currencyFormat(currency?.code, modelValue.product.rrp || 0) }}</span>
                         <span>/{{ modelValue.product.unit }}</span>
                     </div>
-                </div>
+                </div> -->
                 <div class="flex gap-2 mb-6">
                     <ButtonAddPortfolio :product="modelValue.product" />
                 </div>
@@ -271,7 +274,7 @@ const toggleExpanded = () => {
                         :informations="modelValue?.information"  :styleData="modelValue.information_style"/>
                     <div v-if="modelValue?.paymentData?.length > 0"
                         class="items-center gap-3 border-gray-400 font-bold text-gray-800 py-2" :style="getStyles(modelValue?.information_style?.title)">
-                        Secure Payments:
+                        {{ trans("Secure Payments") }}:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in modelValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
                                 :src="logo.image" :alt="logo.code" class="h-4 px-1" />
@@ -289,7 +292,7 @@ const toggleExpanded = () => {
 
              <button v-if="showButton" @click="toggleExpanded"
                 class="mt-1 text-gray-900 text-xs underline focus:outline-none">
-                {{ expanded ? 'Show Less' : 'Read More' }}
+                {{ expanded ? trans("Show Less") : trans("Read More") }}
             </button>
         </div>
 

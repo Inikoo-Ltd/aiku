@@ -127,7 +127,7 @@ watch(filterBlock, () => {
         <div v-if="data?.layout?.web_blocks?.length">
           <TransitionGroup tag="div" name="list" class="relative"> 
             <template v-for="(block, idx) in data.layout.web_blocks" :key="block.id">
-              <section v-show="showWebpage(block)" :data-block-id="idx" class="w-full min-h-[50px] relative"
+              <section v-show="showWebpage(block)" :data-block-id="idx" class="w-full min-h-[10px] relative"
                 :class="{ 'border-4 active-block': activeBlock === idx }"
                 :style="activeBlock === idx ? { borderColor: layout?.app?.theme?.[0] } : {}"
                 @click="() => sendMessageToParent('activeBlock', idx)">

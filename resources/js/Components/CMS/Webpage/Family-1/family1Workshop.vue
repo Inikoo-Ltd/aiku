@@ -10,6 +10,7 @@ import { notify } from '@kyvg/vue3-notification'
 import EditorV2 from "@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import { getStyles } from "@/Composables/styles"
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -107,7 +108,7 @@ watch(descriptionTitle, (val) => {
         </transition>
         <button @click="toggleShowExtra"
           class="text-sm text-gray-800 font-semibold hover:underline focus:outline-none transition-colors">
-          {{ showExtra ? 'show less' : 'Read More' }}
+          {{ showExtra ? trans("Show Less") : trans("Read More") }}
         </button>
       </div>
     </div>
