@@ -174,7 +174,7 @@ watch(filterBlock, () => {
 
 <style lang="scss">
 .trapezoid-button {
-  @apply absolute z-[99] top-[-37px] left-1/2 px-5 py-1 text-white text-xs font-bold transition;
+  @apply absolute z-[90] top-[-37px] left-1/2 px-5 py-1 text-white text-xs font-bold transition;
   transform: translateX(-50%);
   background-color: v-bind('layout?.app?.theme[0]') !important;
   clip-path: polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%);
