@@ -80,21 +80,33 @@ const getRoutes = () => {
     if (props.fieldValue.model_type === "ProductCategory") {
         return {
             iris: {
-                route_products: `json/product-category/${props.fieldValue.model_id}/products`,
-                route_out_of_stock_products: `json/product-category/${props.fieldValue.model_id}/out-of-stock-products`
+                route_products: {
+                    name: "iris.json.product_category.in_stock_products.index",
+                    parameters: { productCategory: props.fieldValue.model_id }
+                },
+                route_out_of_stock_products: {
+                    name: "iris.json.product_category.out_of_stock_products.index",
+                    parameters: { productCategory: props.fieldValue.model_id }
+                }
             }
-        }
+        };
     } else if (props.fieldValue.model_type === "Collection") {
         return {
             iris: {
-                route_products: `json/collection/${props.fieldValue.model_id}/products`,
-                route_out_of_stock_products: `json/collection/${props.fieldValue.model_id}/out-of-stock-products`
+                route_products: {
+                    name: "iris.json.collection.in_stock_products.index",
+                    parameters: { collection: props.fieldValue.model_id }
+                },
+                route_out_of_stock_products: {
+                    name: "iris.json.collection.out_of_stock_products.index",
+                    parameters: { collection: props.fieldValue.model_id }
+                }
             }
-        }
+        };
     }
 
-    return { iris: { route_products: null, route_out_of_stock_products: null } }
-}
+    return { iris: { route_products: null, route_out_of_stock_products: null } };
+};
 
 function buildFilters(): Record<string, any> {
     const filters: Record<string, any> = {}
@@ -142,55 +154,55 @@ function buildFilters(): Record<string, any> {
 
 const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = false) => {
     if (isLoadMore) {
-        isLoadingMore.value = true
+        isLoadingMore.value = true;
     } else {
-        isLoadingInitial.value = true
+        isLoadingInitial.value = true;
     }
 
-    const filters = buildFilters()
-    console.log("Filters used in API call:", filters)
-    const routes = getRoutes()
-    const useOutOfStock = isFetchingOutOfStock.value
+    const filters = buildFilters();
+    console.log("Filters used in API call:", filters);
+    const routes = getRoutes();
+    const useOutOfStock = isFetchingOutOfStock.value;
 
     const currentRoute = useOutOfStock
         ? routes.iris.route_out_of_stock_products
-        : routes.iris.route_products
+        : routes.iris.route_products;
 
     try {
-        const sortByParameter = orderBy.value ? `&sort=${orderBy.value}` : ''
+        const response = await axios.get(route(currentRoute.name, {
+            ...currentRoute.parameters,
+            ...filters,
+            "filter[global]": q.value,
+            sort: orderBy.value,
+            index_perPage: 25,
+            page: page.value
+        }));
 
-        const fetchParameter = `?filter[global]=${q.value}${sortByParameter}&index_perPage=25&page=${page.value}`
-        const fetchUrl = `/${currentRoute}${fetchParameter}`
-        console.log('ewqewq', fetchUrl)
-        const response = await axios.get(fetchUrl)
+        const data = response.data;
 
-        const data = response.data
-
-        lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1
-        totalProducts.value = data?.meta?.total ?? data?.total ?? 0
+        lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1;
+        totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
 
         if (isLoadMore) {
-            products.value = [...products.value, ...(data?.data ?? [])]
+            products.value = [...products.value, ...(data?.data ?? [])];
         } else {
-            products.value = data?.data ?? []
+            products.value = data?.data ?? [];
         }
 
         if (!ignoreOutOfStockFallback && !useOutOfStock && page.value >= lastPage.value) {
-            isFetchingOutOfStock.value = true
-            page.value = 1
-            await fetchProducts(true, true)
+            isFetchingOutOfStock.value = true;
+            page.value = 1;
+            await fetchProducts(true, true);
         }
 
     } catch (error) {
-        console.error('Failed to load products', error)
-        Sentry?.captureException(error);
-        // notify({ title: "Error", text: "Failed to load products.", type: "error" })
+        console.log(error);
+        notify({ title: "Error", text: "Failed to load products.", type: "error" });
     } finally {
-        isLoadingInitial.value = false
-        isLoadingMore.value = false
+        isLoadingInitial.value = false;
+        isLoadingMore.value = false;
     }
-}
-
+};
 
 const debFetchProducts = debounce(fetchProducts, 300)
 
