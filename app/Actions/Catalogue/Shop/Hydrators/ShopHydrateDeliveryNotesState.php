@@ -34,6 +34,11 @@ class ShopHydrateDeliveryNotesState implements ShouldBeUnique
         }
 
         $stats = $this->getDeliveryStateNotesStats($state, $shop);
+        if ($state == DeliveryNoteStateEnum::DISPATCHED) {
+            $stats2 = $this->getDispatchedDeliveryNotesStats($shop);
+            $stats2 = array_merge($stats2, $this->getDispatchedReplacementsStats($shop));
+            $shop->orderingStats()->update($stats2);
+        }
         $shop->orderHandlingStats()->update($stats);
     }
 

@@ -34,6 +34,11 @@ class OrganisationHydrateDeliveryNotesState implements ShouldBeUnique
         }
 
         $stats = $this->getDeliveryStateNotesStats($state, $organisation);
+        if ($state == DeliveryNoteStateEnum::DISPATCHED) {
+            $stats2 = $this->getDispatchedDeliveryNotesStats($organisation);
+            $stats2 = array_merge($stats2, $this->getDispatchedReplacementsStats($organisation));
+            $organisation->orderingStats()->update($stats2);
+        }
         $organisation->orderHandlingStats()->update($stats);
     }
 
