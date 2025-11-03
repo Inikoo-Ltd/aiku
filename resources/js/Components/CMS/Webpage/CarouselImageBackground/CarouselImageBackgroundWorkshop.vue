@@ -51,6 +51,7 @@ watch(
   { deep: true }
 )
 
+
 watch(
   () => props.modelValue?.carousel_data?.card_container,
   async () => {
@@ -69,6 +70,16 @@ const responsiveOptions = computed(() => {
   ]
 })
 
+watch(
+  () => props.screenType,
+  async () => {
+    cardStyle.value = getStyles(props.modelValue?.carousel_data?.card_container?.properties, props.screenType, false)
+    await refreshCarousel(200)
+  },
+  { deep: true }
+)
+
+
 const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 
@@ -85,6 +96,7 @@ const imageSettings = {
 </script>
 
 <template>
+  {{  }}
   <div id="carousel-background-image" class="relative w-full">
     <!-- Carousel -->
     <div :data-refresh="refreshTrigger" :style="{
