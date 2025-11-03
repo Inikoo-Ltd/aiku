@@ -6,6 +6,7 @@ import { faAlbumCollection } from "@fal";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { routeType } from "@/types/route";
 import Image from "@/Components/Image.vue";
+import { trans } from "laravel-vue-i18n"
 
 library.add(faAlbumCollection, faImage, faCheck, faTimesCircle);
 
@@ -131,7 +132,7 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle); */
           @click="showExtra = !showExtra"
           class="text-blue-500 text-xs font-medium hover:underline focus:outline-none"
         >
-          {{ showExtra ? "Read less" : "Read more" }}
+          {{ showExtra ? trans("Show Less") : trans("Read More") }}
         </button>
       </div>
     </div>

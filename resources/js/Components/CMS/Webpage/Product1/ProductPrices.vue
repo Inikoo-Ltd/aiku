@@ -63,7 +63,7 @@ const closePopover = (close: any): void => {
                                 {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp || 0) }}
                             </span>
                             <span class="text-sm text-gray-500">/ {{ fieldValue.product.unit }}</span>
-                            <span class="text-xs font-medium text-gray-400">{{ trans('(exclude tax)') }}</span>
+                            <span class="text-xs font-medium text-gray-400">({{ trans('exclude tax') }})</span>
                         </div>
                     </div>
 
