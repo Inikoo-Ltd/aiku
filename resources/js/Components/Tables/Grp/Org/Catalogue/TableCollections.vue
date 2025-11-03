@@ -28,7 +28,7 @@ import SelectQuery from "@/Components/SelectQuery.vue"
 
 library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree)
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
     routes: {
@@ -263,6 +263,13 @@ const SetOffline = () => {
     )
 }
 
+const getRouteCollection = (url_master: any) => {
+    if(url_master && url_master.name){
+        return String(route(url_master.name, url_master.parameters));
+    }
+    return '#'
+}
+
 
 const SetOnline = () => {
     if (!selectedCollection.value) return
@@ -333,7 +340,7 @@ function handleUrlChange(e: string | null) {
         <template #cell(code)="{ item: collection }">
             <div class="flex items-center gap-2">
                 <Link
-                    :href="collection.url_master.name ? (route(collection.url_master.name, collection.url_master.parameters) as string) : '#'"
+                    :href="getRouteCollection(collection.url_master)"
                     v-tooltip="trans('Go to Master collections')"
                     class="-mr-1.5"
                     :class="[collection.master_collection_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
