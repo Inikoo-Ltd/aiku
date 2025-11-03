@@ -352,7 +352,7 @@ const closePopover = (close: any): void => {
                         </h1>
 
                         <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
-                            <div>Product code: {{ fieldValue.product.code }}</div>
+                            <div>{{ trans("Product code") }}: {{ fieldValue.product.code }}</div>
                             <!-- <div class="flex items-center gap-[1px]">
                             </div> -->
                         </div>
@@ -426,8 +426,9 @@ const closePopover = (close: any): void => {
                                             {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp || 0) }}
                                         </span>
                                         <span class="text-sm text-gray-500">/ {{ fieldValue.product.unit }}</span>
-                                        <span class="text-xs font-medium text-gray-400">{{ trans('(exclude tax)')
-                                            }}</span>
+                                        <span class="text-xs font-medium text-gray-400">
+                                            ({{ trans('exclude tax') }})
+                                        </span>
                                     </div>
                                 </div>
 
@@ -579,7 +580,7 @@ const closePopover = (close: any): void => {
                     <div v-if="fieldValue?.paymentData?.length > 0"
                         class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2"
                         :style="getStyles(fieldValue?.information_style?.title)">
-                        Secure Payments:
+                        {{ trans("Secure Payments") }}:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
                                 :src="logo.image" :alt="logo.code" class="h-4 px-1" />
@@ -596,7 +597,7 @@ const closePopover = (close: any): void => {
                 :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
 
             <button v-if="showButton" @click="toggleExpanded" class="mt-1 text-xs underline focus:outline-none">
-                {{ expanded ? "Show Less" : "Read More" }}
+                {{ expanded ? trans("Show Less") : trans("Read More") }}
             </button>
         </div>
         <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
