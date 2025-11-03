@@ -10,6 +10,7 @@
 namespace App\Actions\CRM\Platform\UI;
 
 use App\Actions\Catalogue\Shop\UI\ShowShop;
+use App\Actions\Dropshipping\Customers\UI\IndexCustomers;
 use App\Actions\Dropshipping\CustomerSalesChannel\UI\IndexCustomerSalesChannels;
 use App\Actions\Dropshipping\Invoices\UI\IndexInvoices;
 use App\Actions\Dropshipping\Portfolio\UI\IndexPortfoliosInPlatform;
@@ -17,6 +18,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\UI\CRM\PlatformTabsEnum;
 use App\Http\Resources\CRM\CustomerSalesChannelsResource;
+use App\Http\Resources\CRM\CustomersResource;
 use App\Http\Resources\CRM\InvoicesResource;
 use App\Http\Resources\CRM\PortfoliosResource;
 use App\Models\Catalogue\Shop;
@@ -79,7 +81,11 @@ class ShowPlatform extends OrgAction
                 PlatformTabsEnum::SHOWCASE->value =>
                     $this->tab == PlatformTabsEnum::SHOWCASE->value
                         ? fn () => InvoicesResource::collection(IndexInvoices::run($shop, $platform, prefix: PlatformTabsEnum::SHOWCASE->value))
-                        : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run($shop, $platform, prefix: PlatformTabsEnum::SHOWCASE->value)))
+                        : Inertia::lazy(fn () => InvoicesResource::collection(IndexInvoices::run($shop, $platform, prefix: PlatformTabsEnum::SHOWCASE->value))),
+                PlatformTabsEnum::CUSTOMERS->value =>
+                    $this->tab == PlatformTabsEnum::CUSTOMERS->value
+                        ? fn () => CustomersResource::collection(IndexCustomers::run($shop, $platform, prefix: PlatformTabsEnum::CUSTOMERS->value))
+                        : Inertia::lazy(fn () => IndexCustomers::run($shop, $platform, prefix: PlatformTabsEnum::CUSTOMERS->value))
             ]
         )->table(
             IndexCustomerSalesChannels::make()->tableStructure(
@@ -93,6 +99,10 @@ class ShowPlatform extends OrgAction
         )->table(
             IndexInvoices::make()->tableStructure(
                 prefix: PlatformTabsEnum::SHOWCASE->value,
+            )
+        )->table(
+            IndexCustomers::make()->tableStructure(
+                prefix: PlatformTabsEnum::CUSTOMERS->value,
             )
         );
     }
