@@ -3,6 +3,12 @@ import { trans } from "laravel-vue-i18n"
 export default {
 	blueprint: [
 		{
+			label: "Responsive Visibility",
+			key: ["container", "properties", "visibility"],
+			type: "visibility",
+			useIn: ["desktop", "tablet", "mobile"],
+		},
+		{
 			name: "Image",
 			key: ["image"],
 			replaceForm: [

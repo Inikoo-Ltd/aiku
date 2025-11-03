@@ -46,7 +46,7 @@ console.log(props.blogs)
 
                         <div class="mt-auto">
                             <a :href="post.href" class="inline-flex items-center text-sm font-medium text-blue-600">
-                                Read more →
+                                {{ trans("Read more") }} →
                             </a>
                         </div>
                     </div>

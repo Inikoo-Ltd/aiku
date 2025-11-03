@@ -1,3 +1,4 @@
+import { visibility } from 'html2canvas/dist/types/css/property-descriptors/visibility';
 import { computed } from 'vue'
 
 export const getBoxShadowFromParts = (shadowObj: any, color: string) => {
@@ -268,6 +269,7 @@ export const resolveResponsiveValue = (
 					? `${getVal(properties.gap, ["value"])}${properties.gap.unit}`
 					: null,
 
+			display: getVal(properties?.visibility) == 'hidden' ? 'none' : null,
 			justifyContent: getVal(properties.justifyContent),
 			boxShadow: getBoxShadowFromParts(properties?.shadow, properties?.shadowColor),
 		}

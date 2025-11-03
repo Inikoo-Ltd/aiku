@@ -172,9 +172,9 @@ const borderWidth = computed(() => {
                 </div>
                 
                 <!-- Section: Auto Product Categories List -->
-                <div class="flex items-center justify-between px-2 py-4 borderBottomColorSameAsText">
+                <!-- <div class="flex items-center justify-between px-2 py-4 borderBottomColorSameAsText">
                     <h3 class="font-semibold">{{ trans("Departments") }}</h3>
-                </div>
+                </div> -->
                 <SidebarDesktopNavigation
                     v-for="(sub, sIndex) in sortedProductCategories" :key="sIndex"
                     :nav="sub"
@@ -193,7 +193,7 @@ const borderWidth = computed(() => {
                 />
                 
                 <!-- Section: Bottom navigation -->
-                <div v-if="customMenusBottom && customMenusBottom.length > 0" class="mt-4 borderTopColorSameAsText">
+                <div v-if="customMenusBottom && customMenusBottom.length > 0" class="borderTopColorSameAsText">
                     <SidebarDesktopNavigation
                         v-for="(sub, sIndex) in customMenusBottom" :key="sIndex"
                         :nav="sub"
@@ -232,9 +232,9 @@ const borderWidth = computed(() => {
         <div v-if="activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null"
             :class="[(activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'border-r']">
             <!-- Header -->
-            <div v-if="activeIndex !== null" class="flex items-center justify-between py-4 px-4">
+            <!-- <div v-if="activeIndex !== null" class="flex items-center justify-between py-4 px-4">
                 <h3 class="font-semibold">{{ trans("Sub-Departments") }}</h3>
-            </div>
+            </div> -->
 
             <div class="overflow-y-auto">
                 <!-- Section: Subdepartments (Top) -->
@@ -256,8 +256,9 @@ const borderWidth = computed(() => {
                 </div>
 
                 <!-- Section: SubDepartments (Auto Product Categories) -->
-                <div v-if="activeIndex !== null && sortedSubDepartments?.length">
+                <div v-if="activeIndex !== null">
                     <template
+                        v-if="sortedSubDepartments?.length"
                         v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex">
                         <SidebarDesktopNavigation
                             :nav="sub"
@@ -276,10 +277,35 @@ const borderWidth = computed(() => {
                         />
                     </template>
 
+                    <!-- Collections: from Department -->
+                    <template v-if="sortedProductCategories?.[activeIndex]?.collections.length">
+                        <!-- <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
+                            <h3 class="font-semibold">{{ trans("Collections") }}</h3>
+                        </div> -->
+                        <div class="">
+                            <div>
+                                <template v-for="(sub, sIndex) in sortedProductCategories[activeIndex]?.collections" :key="sIndex">
+                                    <SidebarDesktopNavigation
+                                        :nav="sub"
+                                        xclass="[
+                                            activeCustomSubIndex === sIndex
+                                                ? `navActive`
+                                                : 'navInactive'
+                                        ]"
+                                        :internalHref
+                                        :activeSubIndex
+                                        :closeSidebar
+                                    />
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+
                     <div class="p-2 px-4">
                         <Button 
                             :label="trans('View all')" 
                             :icon="faExternalLink"
+                            full
                             size="xs"
                             :loading="isLoadingProductCategory"
                             @click="handleViewAllProductCategory(sortedProductCategories[activeIndex].url)"
@@ -312,37 +338,14 @@ const borderWidth = computed(() => {
                 </div>
             </div>
 
-            <!-- Collections: from Department -->
-            <template v-if="sortedProductCategories?.[activeIndex]?.collections.length">
-                <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
-                    <h3 class="font-semibold">{{ trans("Collections") }}</h3>
-                </div>
-                <div class="">
-                    <div>
-                        <template v-for="(sub, sIndex) in sortedProductCategories[activeIndex]?.collections" :key="sIndex">
-                            <SidebarDesktopNavigation
-                                :nav="sub"
-                                xclass="[
-                                    activeCustomSubIndex === sIndex
-                                        ? `navActive`
-                                        : 'navInactive'
-                                ]"
-                                :internalHref
-                                :activeSubIndex
-                                :closeSidebar
-                            />
-                        </template>
-                    </div>
-                </div>
-            </template>
         </div>
 
         <!-- Column 3: Families -->
         <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null">
             <!-- Header -->
-            <div  v-if="activeSubIndex !== null" class="flex items-center justify-between p-4">
+            <!-- <div  v-if="activeSubIndex !== null" class="flex items-center justify-between p-4">
                 <h3 class="font-semibold">{{ trans("Families") }}</h3>
-            </div>
+            </div> -->
 
             <div class="overflow-y-auto">
                 <!-- Families: Top -->
@@ -365,8 +368,9 @@ const borderWidth = computed(() => {
 
                 <!-- Families: Product Categories -->
                 <Transition name="slide-to-right">
-                    <div v-if="activeSubIndex !== null && sortedFamilies.length">
+                    <div v-if="activeSubIndex !== null">
                         <SidebarDesktopNavigation
+                            v-if="sortedFamilies.length"
                             v-for="(sub, sIndex) in sortedFamilies" :key="sIndex"
                             :nav="sub"
                             :class="[
@@ -379,11 +383,32 @@ const borderWidth = computed(() => {
                             :activeSubIndex
                             :closeSidebar
                         />
+                        
+                        <!-- Collections: from Sub Department -->
+                        <template v-if="sortedSubDepartments?.[activeSubIndex]?.collections?.length">
+                            <!-- <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
+                                <h3 class="font-semibold">{{ trans("Collections") }}</h3>
+                            </div> -->
+                            <div class="">
+                                <div>
+                                    <template v-for="(sub, sIndex) in sortedSubDepartments?.[activeSubIndex]?.collections" :key="sIndex">
+                                        <SidebarDesktopNavigation
+                                            :nav="sub"
+                                            :activeSubIndex
+                                            :closeSidebar
+                                            :internalHref
+                                        />
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+
                         <div class="p-2 px-4">
                             <Button
                                 :label="trans('View all')"
                                 :icon="faExternalLink"
                                 size="xs"
+                                full
                                 :loading="isLoadingSubDepartment"
                                 @click="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
                                 class="cursor-pointer"
@@ -410,24 +435,6 @@ const borderWidth = computed(() => {
                 </div>
 
 
-                <!-- Collections: from Sub Department -->
-                <template v-if="sortedSubDepartments?.[activeSubIndex]?.collections?.length">
-                    <div v-if="activeIndex !== null" class="borderTopColorSameAsText flex items-center justify-between mt-2 pt-4 pb-2 px-4">
-                        <h3 class="font-semibold">{{ trans("Collections") }}</h3>
-                    </div>
-                    <div class="">
-                        <div>
-                            <template v-for="(sub, sIndex) in sortedSubDepartments?.[activeSubIndex]?.collections" :key="sIndex">
-                                <SidebarDesktopNavigation
-                                    :nav="sub"
-                                    :activeSubIndex
-                                    :closeSidebar
-                                    :internalHref
-                                />
-                            </template>
-                        </div>
-                    </div>
-                </template>
             </div>
         </div>
     </div>

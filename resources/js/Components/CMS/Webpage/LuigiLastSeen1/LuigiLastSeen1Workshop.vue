@@ -55,7 +55,8 @@ onMounted(()=> {
     }">
         <!-- Title -->
         <div class="px-4 py-6 pb-2 text-3xl font-semibold">
-            <EditorV2
+            <p style="text-align: center">{{ trans("Last seen") }}</p>
+            <!-- <EditorV2
                 v-model="modelValue.title"
                 @focus="() => {
                     sendMessageToParent('activeBlock', indexBlock)
@@ -64,7 +65,7 @@ onMounted(()=> {
                     name: webpageData.images_upload_route.name,
                     parameters: { modelHasWebBlocks: blockData?.id }
                 }"
-            />
+            /> -->
         </div>
 
         <div class="py-4">
