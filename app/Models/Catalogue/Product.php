@@ -176,6 +176,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $backImage
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read Media|null $bottomImage
+ * @property-read LaravelCollection<int, Brand> $brands
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
@@ -206,6 +207,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
+ * @property-read LaravelCollection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
  * @property-read Media|null $topImage
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits

@@ -9,7 +9,6 @@
 namespace App\Actions\Dispatching\DeliveryNote;
 
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dispatching\DeliveryNote;
 use Lorisleiva\Actions\ActionRequest;
@@ -24,11 +23,7 @@ class UpdateDeliveryNoteStateToPicked extends OrgAction
     {
         data_set($modelData, 'picked_at', now());
 
-        $deliveryNote = $this->update($deliveryNote, $modelData);
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
-
-        return $deliveryNote;
+        return $this->update($deliveryNote, $modelData);
     }
 
 

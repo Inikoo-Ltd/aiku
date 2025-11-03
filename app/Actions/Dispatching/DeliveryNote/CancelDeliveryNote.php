@@ -9,12 +9,12 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\Dispatching\Picking\StoreNotPickPicking;
 use App\Actions\Dispatching\Picking\StorePicking;
 use App\Actions\Ordering\Order\UpdateState\RollbackOrderAfterDeliveryNoteCancellation;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -31,10 +31,12 @@ use Lorisleiva\Actions\ActionRequest;
 class CancelDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
 
     public function handle(DeliveryNote $deliveryNote, $modifyOrder = true): DeliveryNote
     {
+        $oldState     = $deliveryNote->state;
         $cancelledRef = $deliveryNote->reference.'-CANCELLED';
 
         $cancelledCount = DB::table('delivery_notes')
@@ -101,9 +103,9 @@ class CancelDeliveryNote extends OrgAction
             RollbackOrderAfterDeliveryNoteCancellation::make()->action($order);
         }
 
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::CANCELLED);
 
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
 
         return $deliveryNote;
     }
@@ -155,7 +157,7 @@ class CancelDeliveryNote extends OrgAction
         $this->initialisationFromShop($deliveryNote->shop, []);
         $this->handle($deliveryNote, $modifyOrder);
 
-        $command->info("Cancelled delivery note {$deliveryNote->reference}");
+        $command->info("Cancelled delivery note $deliveryNote->reference");
 
         return 0;
     }

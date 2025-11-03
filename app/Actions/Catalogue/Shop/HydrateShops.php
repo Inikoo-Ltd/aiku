@@ -14,6 +14,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBrands;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotesState;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoDepartment;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
@@ -58,6 +59,8 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVariants;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateWebUsers;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Shop;
 
 class HydrateShops
@@ -79,7 +82,8 @@ class HydrateShops
         ShopHydrateCustomerInvoices::run($shop);
         ShopHydrateOrders::run($shop);
         ShopHydratePurges::run($shop);
-        ShopHydrateDeliveryNotes::run($shop);
+        ShopHydrateDeliveryNotes::run($shop->id, DeliveryNoteTypeEnum::ORDER);
+        ShopHydrateDeliveryNotes::run($shop->id, DeliveryNoteTypeEnum::REPLACEMENT);
         ShopHydrateDepartments::run($shop);
         ShopHydrateFamilies::run($shop);
         ShopHydrateInvoices::run($shop);
@@ -125,6 +129,11 @@ class HydrateShops
         ShopHydrateProspects::run($shop);
         ShopHydrateTags::run($shop);
         ShopHydrateBrands::run($shop);
+
+        foreach (DeliveryNoteStateEnum::cases() as $case) {
+            ShopHydrateDeliveryNotesState::run($shop->id, $case);
+        }
+
     }
 
 }

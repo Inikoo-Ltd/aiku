@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faBox, faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart, faStream, faUsers } from '@fal'
+import { faBox, faBullhorn, faCameraRetro, faChessBoard, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart, faStream, faUsers } from '@fal'
 import PageHeading from '@/Components/Headings/PageHeading.vue'
 import { useTabChange } from "@/Composables/tab-change"
 import { computed, ref } from "vue"
@@ -17,14 +17,18 @@ import { capitalize } from "@/Composables/capitalize"
 import { PageHeading as PageHeadingTypes } from '@/types/PageHeading'
 import TablePortfolios from '@/Components/Tables/Grp/Org/CRM/TablePortfolios.vue'
 import TableCustomerSalesChannels from '@/Components/Tables/Grp/Org/CRM/TableCustomerSalesChannels.vue'
+import TableInvoices from '@/Components/Tables/Grp/Org/CRM/TableInvoices.vue'
+import PlatformTableCustomers from "@/Components/Tables/Grp/Org/CRM/PlatformTableCustomers.vue";
 
-library.add(faFolder, faCube, faStream, faMoneyBillWave, faShoppingCart, faUsers, faBullhorn, faProjectDiagram, faBox, faCameraRetro, faRoad)
+library.add(faFolder, faCube, faStream, faMoneyBillWave, faShoppingCart, faUsers, faBullhorn, faProjectDiagram, faBox, faCameraRetro, faRoad, faChessBoard)
 
 const props = defineProps<{
   title: string
   pageHead: PageHeadingTypes,
   channels: {},
   products: {},
+  showcase: {},
+  customers: {},
   tabs: {
       current: string
       navigation: {}
@@ -37,8 +41,10 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const component = computed(() => {
   const components: {[key: string]: Component} = {
+    showcase: TableInvoices,
     products: TablePortfolios,
-    channels: TableCustomerSalesChannels
+    channels: TableCustomerSalesChannels,
+    customers: PlatformTableCustomers
   }
 
   return components[currentTab.value]

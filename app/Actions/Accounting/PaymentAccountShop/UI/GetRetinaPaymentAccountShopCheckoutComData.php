@@ -34,12 +34,12 @@ class GetRetinaPaymentAccountShopCheckoutComData
 
         $paymentSessionClient = $checkoutApi->getPaymentSessionsClient();
 
-        $paymentAmounts = $this->calculatePaymentWithBalance(
+        $amountsTpBePaidDifferentPaymentAccounts = $this->calculatePaymentWithBalance(
             $order->total_amount,
             $order->customer->balance
         );
 
-        $toPayByOther = $paymentAmounts['by_other'];
+        $toPayByOther = $amountsTpBePaidDifferentPaymentAccounts['by_other'];
 
 
         $toPayByOther = (int)round((float)$toPayByOther * 100);

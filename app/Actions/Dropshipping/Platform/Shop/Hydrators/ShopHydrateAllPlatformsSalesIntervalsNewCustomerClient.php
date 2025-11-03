@@ -20,10 +20,9 @@ class ShopHydrateAllPlatformsSalesIntervalsNewCustomerClient implements ShouldBe
             return;
         }
 
-        $platformIds = CustomerClient
-            ::whereHas('customer', function ($query) use ($shop) {
-                $query->where('shop_id', $shop->id);
-            })
+        $platformIds = CustomerClient::whereHas('customer', function ($query) use ($shop) {
+            $query->where('shop_id', $shop->id);
+        })
             ->select('platform_id')
             ->distinct()
             ->pluck('platform_id')

@@ -8,19 +8,16 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\Dispatching\DeliveryNoteItem\StoreDeliveryNoteItem;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Actions\Traits\WithModelAddressActions;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +32,7 @@ class StoreReplacementDeliveryNote extends OrgAction
     use WithAttributes;
     use WithFixedAddressActions;
     use WithModelAddressActions;
+    use HasDeliveryNoteHydrators;
 
     private Order $order;
 
@@ -56,9 +54,9 @@ class StoreReplacementDeliveryNote extends OrgAction
         data_set($modelData, 'group_id', $order->group_id);
         data_set($modelData, 'organisation_id', $order->organisation_id);
         data_set($modelData, 'type', DeliveryNoteTypeEnum::REPLACEMENT);
+        data_set($modelData, 'shop_type', $order->shop->type);
 
-
-        $items   = Arr::pull($modelData, 'delivery_note_items');
+        $items = Arr::pull($modelData, 'delivery_note_items');
 
         $deliveryNote = DB::transaction(function () use ($order, $modelData, $deliveryAddress, $items) {
             /** @var DeliveryNote $replacement */
@@ -87,7 +85,6 @@ class StoreReplacementDeliveryNote extends OrgAction
             foreach ($items as $itemData) {
                 $deliveryNoteItems = DeliveryNoteItem::where('id', $itemData['id'])->first();
                 if ($deliveryNoteItems && $itemData['quantity'] > 0) {
-
                     $deliveryNoteItemData = [
                         'org_stock_id'      => $deliveryNoteItems->org_stock_id,
                         'transaction_id'    => $deliveryNoteItems->transaction_id,
@@ -96,24 +93,15 @@ class StoreReplacementDeliveryNote extends OrgAction
 
                     StoreDeliveryNoteItem::make()->action($replacement, $deliveryNoteItemData);
                 }
-
-
             }
-
 
 
             return $replacement;
         });
         $deliveryNote->refresh();
-
         DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
-        GroupHydrateDeliveryNotes::dispatch($deliveryNote->group)->delay($this->hydratorsDelay);
-        OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation)->delay($this->hydratorsDelay);
-        ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop)->delay($this->hydratorsDelay);
-        CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer)->delay($this->hydratorsDelay);
-
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
+        $this->storeDeliveryNoteHydrators($deliveryNote);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
 
         return $deliveryNote;
     }
@@ -166,6 +154,7 @@ class StoreReplacementDeliveryNote extends OrgAction
     public function prepareForValidation(ActionRequest $request): void
     {
         if (!$this->has('warehouse_id')) {
+            /** @var Warehouse $warehouse */
             $warehouse = $this->shop->organisation->warehouses()->first();
             $this->set('warehouse_id', $warehouse->id);
         }

@@ -21,6 +21,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCreditTransactions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomerBalances;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotesState;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDepartments;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDispatchedEmails;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmailAddresses;
@@ -109,6 +110,8 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUserRequests;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUsers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\SysAdmin\Group;
 
 class HydrateGroup extends HydrateModel
@@ -218,7 +221,14 @@ class HydrateGroup extends HydrateModel
 
         GroupHydrateOrders::run($group);
         GroupHydratePurges::run($group);
-        GroupHydrateDeliveryNotes::run($group);
+        GroupHydrateDeliveryNotes::run($group->id, DeliveryNoteTypeEnum::ORDER);
+        GroupHydrateDeliveryNotes::run($group->id, DeliveryNoteTypeEnum::REPLACEMENT);
+
+        foreach (DeliveryNoteStateEnum::cases() as $case) {
+            GroupHydrateDeliveryNotesState::run($group->id, $case);
+        }
+
+
         GroupHydrateAdjustments::run($group);
         GroupHydrateWebUsers::run($group);
         GroupHydrateDeletedInvoices::run($group);
@@ -234,7 +244,6 @@ class HydrateGroup extends HydrateModel
 
         GroupHydrateMasterFamiliesWithNoDepartment::run($group);
         GroupHydrateInvoiceCategories::dispatch($group);
-
     }
 
 }

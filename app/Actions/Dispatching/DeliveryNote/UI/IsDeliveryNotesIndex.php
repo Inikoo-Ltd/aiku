@@ -50,7 +50,7 @@ trait IsDeliveryNotesIndex
         $query->leftjoin('shops', 'delivery_notes.shop_id', '=', 'shops.id');
 
         if ($shopType != 'all') {
-            $query->where('shops.type', $shopType);
+            $query->where('delivery_notes.shop_type', $shopType);
         }
 
         if ($bucket == 'unassigned') {
@@ -127,7 +127,6 @@ trait IsDeliveryNotesIndex
                 'delivery_notes.weight',
                 'delivery_notes.effective_weight',
                 'delivery_notes.estimated_weight',
-                'shops.slug as shop_slug',
                 'customers.slug as customer_slug',
                 'customers.name as customer_name',
                 'shops.name as shop_name',

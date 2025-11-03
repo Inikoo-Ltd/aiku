@@ -41,7 +41,7 @@ class DispatchOrder extends OrgAction
             'dispatched_at' => now()
         ];
 
-        $order=DB::transaction(function () use ($order, $data) {
+        $order = DB::transaction(function () use ($order, $data) {
             /** @var Transaction $transaction */
             foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
                 $transaction->update([

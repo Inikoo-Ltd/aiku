@@ -63,7 +63,7 @@ class IrisProductsInWebpageResource extends JsonResource
         $margin     = '';
         $rrpPerUnit = '';
         $profit     = '';
-        $units= (int) $this->units;
+        $units = (int) $this->units;
         if ($this->rrp > 0) {
             $margin     = percentage(round((($this->rrp - $this->price) / $this->rrp) * 100, 1), 100);
             $rrpPerUnit = round($this->rrp / $this->units, 2);
@@ -72,7 +72,7 @@ class IrisProductsInWebpageResource extends JsonResource
         }
 
 
-        $units= (int) $this->units;
+        $units = (int) $this->units;
         return [
             'id'             => $this->id,
             'image_id'       => $this->image_id,

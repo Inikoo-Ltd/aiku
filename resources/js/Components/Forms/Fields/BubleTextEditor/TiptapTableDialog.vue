@@ -1,25 +1,30 @@
 <script setup lang="ts">
-import { ref } from "vue"
-import Dialog from "./Dialog.vue"
-import PureInput from "@/Components/Pure/PureInput.vue";
-import { Switch, SwitchLabel, SwitchGroup } from "@headlessui/vue"
+import { ref, computed } from "vue"
+import Dialog from "primevue/dialog"
+import InputNumber from "primevue/inputnumber"
+import InputSwitch from "primevue/inputswitch"
+import Button from "primevue/button"
 
-defineProps<{
+const props = defineProps<{
   show: boolean
 }>()
 
 const emit = defineEmits<{
   (e: "close"): void
-  (e: "insert", table): void
+  (e: "insert", table: { rows: number; columns: number; withHeader: boolean }): void
 }>()
+
+// reactive bridge for v-model:visible
+const visible = computed({
+  get: () => props.show,
+  set: (val) => {
+    if (!val) emit("close")
+  },
+})
 
 const inputColumnsRef = ref<number>(3)
 const inputRowsRef = ref<number>(3)
 const inputWithHeaderRef = ref<boolean>(true)
-
-function closeDialog() {
-  emit("close")
-}
 
 function onSubmit() {
   emit("insert", {
@@ -27,72 +32,64 @@ function onSubmit() {
     columns: inputColumnsRef.value,
     withHeader: inputWithHeaderRef.value,
   })
-  closeDialog()
+  emit("close")
 }
 </script>
 
 <template>
-    <Dialog title="Create Tabel" :show="show" @close="closeDialog">
-      <form @submit.prevent="onSubmit">
-        <div class="flex flex-col space-y-5">
-          <div class="flex flex-row space-x-5">
-            <div class="w-full flex-1">
-              <Label for="input-table-columns">column</Label>
-              <PureInput
-                v-model="inputColumnsRef"
-                id="input-table-columns"
-                required
-                type="number"
-                min="1"
-                class="w-full"
-              />
-            </div>
-            <div class="w-full flex-1">
-              <Label for="input-table-rows">Rows</Label>
-              <PureInput
-                v-model="inputRowsRef"
-                id="input-table-rows"
-                required
-                type="number"
-                min="1"
-                class="w-full"
-              />
-            </div>
-          </div>
-          <SwitchGroup>
-            <div class="flex flex-row items-center space-x-3">
-              <Switch
-                v-model="inputWithHeaderRef"
-                :class="inputWithHeaderRef ? 'bg-blue-600' : 'bg-gray-200'"
-                class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-              >
-                <span
-                  :class="inputWithHeaderRef ? 'translate-x-6' : 'translate-x-1'"
-                  class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform"
-                />
-              </Switch>
-              <SwitchLabel class="select-none text-sm text-gray-600"
-                >Table Header</SwitchLabel
-              >
-            </div>
-          </SwitchGroup>
-          <div class="flex flex-row justify-end space-x-3">
-            <button
-              type="button"
-              class="rounded-md px-4 py-3 text-sm font-medium text-gray-600 hover:bg-gray-100"
-              @click="closeDialog"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              class="rounded-md bg-blue-700 px-4 py-3 text-sm font-medium text-white hover:bg-opacity-80"
-            >
-              Create
-            </button>
-          </div>
+  <Dialog
+    header="Create Table"
+    v-model:visible="visible"
+    modal
+    :closable="false"
+    style="width: 450px"
+    class="p-fluid"
+  >
+    <form @submit.prevent="onSubmit" class="space-y-5">
+      <div class="flex flex-row gap-4">
+        <div class="flex-1">
+          <Label for="input-table-columns">Columns</Label>
+          <InputNumber
+            id="input-table-columns"
+            v-model="inputColumnsRef"
+            inputClass="w-full"
+            :min="1"
+            showButtons
+          />
         </div>
-      </form>
-    </Dialog>
-  </template>
-  
+
+        <div class="flex-1">
+          <Label for="input-table-rows">Rows</Label>
+          <InputNumber
+            id="input-table-rows"
+            v-model="inputRowsRef"
+            inputClass="w-full"
+            :min="1"
+            showButtons
+          />
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <InputSwitch v-model="inputWithHeaderRef" inputId="with-header" />
+        <Label for="with-header" class="text-sm text-gray-700 select-none">
+          Table Header
+        </Label>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-3">
+        <Button
+          label="Cancel"
+          text
+          severity="secondary"
+          @click="emit('close')"
+        />
+        <Button
+          label="Create"
+          icon="pi pi-check"
+          type="submit"
+        />
+      </div>
+    </form>
+  </Dialog>
+</template>
