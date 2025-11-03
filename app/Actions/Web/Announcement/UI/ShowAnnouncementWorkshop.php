@@ -10,7 +10,8 @@ namespace App\Actions\Web\Announcement\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
-use App\Http\Resources\Web\BannerResource;
+use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
+use App\Http\Resources\Web\AnnouncementResource;
 use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -81,37 +82,117 @@ class ShowAnnouncementWorkshop extends OrgAction
                         ],
                     ],
                 ],
-                'banner'            => BannerResource::make($announcement)->getArray(),
-                'autoSaveRoute'     => [
-                    // 'name'       => 'grp.models.banner.layout.update',
-                    // 'parameters' => [
-                    //     'banner'  => $announcement->id
-                    // ]
-                ],
-                'publishRoute'      => [
-                    // 'name'       => 'grp.models.banner.publish',
-                    // 'parameters' => [
-                    //     'banner' => $announcement->id
-                    // ]
-                ],
-                'imagesUploadRoute' => [
-                    // 'name'       => 'grp.models.banner.images.store',
-                    // 'parameters' => [
-                    //     'banner' => $announcement->id
-                    // ]
-                ],
-                'galleryRoute'      => [
-                    // 'stock_images'    => [
-                    //     'name' => "grp.gallery.stock-images.banner.$announcement->type.index"
+                'announcement'            => AnnouncementResource::make($announcement)->getArray(),
+                'routes_list' => [
+                    // 'publish_route' => [
+                    //     'name'       => 'customer.models.portfolio-website.announcement.publish',
+                    //     'parameters' => [
+                    //         'portfolioWebsite' => $announcement->portfolio_website_id,
+                    //         'announcement'     => $announcement->id
+                    //     ],
+                    //     'method'    => 'patch'
                     // ],
-                    // 'uploaded_images' => [
-                    //     'name' => 'grp.gallery.uploaded-images.banner.index'
+                    // 'update_route' => [
+                    //     'name'       => 'customer.models.portfolio-website.announcement.update',
+                    //     'parameters' => [
+                    //         'portfolioWebsite' => $announcement->portfolio_website_id,
+                    //         'announcement'     => $announcement->id
+                    //     ],
+                    //     'method'    => 'patch'
+                    // ],
+                    // 'reset_route' => [
+                    //     'name'       => 'customer.models.portfolio-website.announcement.reset',
+                    //     'parameters' => [
+                    //         'portfolioWebsite' => $announcement->portfolio_website_id,
+                    //         'announcement'     => $announcement->id
+                    //     ]
+                    // ],
+                    // 'close_route' => [
+                    //     'name'       => 'customer.models.portfolio-website.announcement.close',
+                    //     'parameters' => [
+                    //         'portfolioWebsite' => $announcement->portfolio_website_id,
+                    //         'announcement'     => $announcement->id
+                    //     ],
+                    //     'method'    => 'patch'
+                    // ],
+                    // 'start_route' => [
+                    //     'name'       => 'customer.models.portfolio-website.announcement.start',
+                    //     'parameters' => [
+                    //         'portfolioWebsite' => $announcement->portfolio_website_id,
+                    //         'announcement'     => $announcement->id
+                    //     ],
+                    //     'method'    => 'patch'
+                    // ],
+                    // 'activated_route'     => [
+                    //     'name'          => 'customer.models.portfolio-website.announcement.toggle',
+                    //     'parameters'    => [
+                    //         'portfolioWebsite' => $announcement->portfolio_website_id,
+                    //         'announcement'     => $announcement->id
+                    //     ],
+                    //     'method'    => 'patch'
+                    // ],
+                    // 'upload_image_route'     => [
+                    //     'name'          => 'customer.models.portfolio-website.announcement.upload-images.store',
+                    //     'parameters'    => [
+                    //         'portfolioWebsite' => $announcement->portfolio_website_id
+                    //     ],
+                    //     'method'    => 'post'
+                    // ],
+                    // 'delete_announcement_route'     => [
+                    //     'name'          => 'customer.models.portfolio-website.announcement.delete',
+                    //     'parameters'    => [
+                    //         'portfolioWebsite' => $announcement->portfolio_website_id
+                    //     ],
+                    //     'method'    => 'delete'
                     // ]
                 ],
+                'is_announcement_dirty'       => $announcement->is_dirty,
+                'is_announcement_started'     => $this->isAnnouncementStarted($announcement),
+                'is_announcement_closed'      => $this->isAnnouncementClosed($announcement),
+                'portfolio_website'           => $announcement->portfolioWebsite,
+                'announcement_data'           => $announcement->toArray(),
+                'is_announcement_published'   => $announcement->unpublishedSnapshot->state === SnapshotStateEnum::LIVE,  // TODO
+                'is_announcement_active'      => $announcement->status,
+                'last_published_date'         => $announcement->ready_at,
             ]
         );
     }
 
+    /**
+     * Determine if the announcement has started.
+     */
+    public function isAnnouncementStarted($announcement): bool
+    {
+        if (! $announcement->live_at) {
+            return false;
+        }
+
+        if (!$announcement->schedule_finish_at) {
+            return true;
+        }
+
+        if ($announcement->live_at->lessThan(now()) && !$announcement->schedule_at) {
+            return true;
+        }
+
+        return $announcement->live_at->lessThan(now()) || now()->between($announcement->schedule_finish_at, $announcement->schedule_at);
+    }
+
+    /**
+     * Determine if the announcement is closed.
+     */
+    public function isAnnouncementClosed($announcement): bool
+    {
+        if (! $announcement->live_at) {
+            return true;
+        }
+
+        if (!$announcement->closed_at) {
+            return false;
+        }
+
+        return !$announcement->live_at->lessThan(now()) || now()->isAfter($announcement->closed_at);
+    }
 
     public function getBreadcrumbs(string $routeName, array $routeParameters): array
     {

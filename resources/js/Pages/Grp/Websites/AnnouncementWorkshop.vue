@@ -269,13 +269,13 @@ provide('openFieldWorkshop', openFieldWorkshop)
 // Delivery url
 const getDeliveryUrlXx = () => {
     console.log('envi', usePage().props.environment)
-    if (usePage().props.environment === 'local') {
-        return `http://delivery.wowsbar.test/announcement?logged_in=true&domain=${new URL(props.portfolio_website.url).hostname}`
-    } else if (usePage().props.environment === 'staging') {
-        return `https://delivery-staging.wowsbar.com/announcement?logged_in=true&domain=${new URL(props.portfolio_website.url).hostname}`
-    } else if (usePage().props.environment === 'production') {
-        return `https://delivery.wowsbar.com/announcement?logged_in=true&domain=${new URL(props.portfolio_website.url).hostname}`
-    }
+    // if (usePage().props.environment === 'local') {
+    //     return `http://delivery.wowsbar.test/announcement?logged_in=true&domain=${new URL(props.portfolio_website?.url || '').hostname}`
+    // } else if (usePage().props.environment === 'staging') {
+    //     return `https://delivery-staging.wowsbar.com/announcement?logged_in=true&domain=${new URL(props.portfolio_website?.url || '').hostname}`
+    // } else if (usePage().props.environment === 'production') {
+    //     return `https://delivery.wowsbar.com/announcement?logged_in=true&domain=${new URL(props.portfolio_website?.url || '').hostname}`
+    // }
 
     return '#'
 }
@@ -430,7 +430,7 @@ const onSectionSetting = () => {
 
                     <a :href="deliveryUrl"
                         target="_blank" class="py-1 px-2 cursor-pointer" title="Desktop view" v-tooltip="'Preview'">
-                        What will showed in <span class="font-semibold">{{ portfolio_website.name }}</span>?
+                        What will showed in <span class="font-semibold">{{ portfolio_website?.name }}</span>?
                         <FontAwesomeIcon icon='fal fa-external-link' aria-hidden='true' />
                     </a>
                 </div>
@@ -477,7 +477,7 @@ const onSectionSetting = () => {
         <div class="max-w-4xl mx-auto px-4 relative pt-4 pb-2 transition-all duration-500" :class="sectionClass">
             <!-- Section: Target -->
             <AnnouncementSettings
-                :domain="portfolio_website.url"
+                :domain="portfolio_website?.url"
                 :onPublish
                 :isLoadingPublish
             />

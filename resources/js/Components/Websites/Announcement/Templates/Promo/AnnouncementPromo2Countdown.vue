@@ -431,7 +431,7 @@ defineExpose({
         :style="getStyles(announcementData?.container_properties)"
     >
         <div class="col-span-3 grid grid-cols-1 md:grid-cols-3 justify-center gap-y-2 items-center">
-            <div v-if="announcementData?.fields.text_1.text" @click="() => (onClickOpenFieldWorkshop(1))" class="announcement-component-editable text-center md:text-left" v-html="announcementData?.fields.text_1.text" :style="getStyles(announcementData?.fields?.text_1.block_properties)">
+            <div v-if="announcementData?.fields?.text_1?.text" @click="() => (onClickOpenFieldWorkshop(1))" class="announcement-component-editable text-center md:text-left" v-html="announcementData?.fields.text_1.text" :style="getStyles(announcementData?.fields?.text_1.block_properties)">
             
             </div>
             
