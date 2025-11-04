@@ -18,4 +18,14 @@ enum TagScopeEnum: string
 
     case PRODUCT_PROPERTY       = 'product_property';
     case OTHER                  = 'other';
+
+    /**
+     * Get a human-readable version of the enum value.
+     *
+     * @return string
+     */
+    public function pretty(): string
+    {
+        return ucwords(str_replace('_', ' ', $this->value));
+    }
 }
