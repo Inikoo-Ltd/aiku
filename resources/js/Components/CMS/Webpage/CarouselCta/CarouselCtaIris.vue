@@ -50,8 +50,8 @@ const layout: any = inject("layout", {})
           <div :style="{
             ...getStyles(data.container?.properties, screenType),
           }">
-            <div class="grid grid-cols-1 md:grid-cols-2 w-full  min-h-[250px] md:min-h-[400px]">
-              <div class="relative w-full cursor-pointer overflow-hidden"
+            <div class="grid grid-cols-1 md:grid-cols-2 w-full">
+              <div class="relative w-full cursor-pointer overflow-hidden h-[250px] md:h-[400px]"
                   :style="getStyles(fieldValue?.image?.container?.properties, screenType)">
                 <Image :src="data.image.source" :imageCover="true" :alt="data.image.alt || 'Image preview'"
                   :imgAttributes="data.image.attributes" class="absolute inset-0 w-full h-full object-cover"
