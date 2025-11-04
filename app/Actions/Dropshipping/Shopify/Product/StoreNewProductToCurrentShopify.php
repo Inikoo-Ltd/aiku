@@ -11,12 +11,26 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Actions\OrgAction;
 use App\Events\UploadProductToShopifyProgressEvent;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class StoreNewProductToCurrentShopify extends OrgAction
+class StoreNewProductToCurrentShopify extends OrgAction implements ShouldBeUnique
 {
     use AsAction;
+
+    public function getJobUniqueId(int $portfolioID): int
+    {
+        return $portfolioID;
+    }
+
+    public function asJob(int $portfolioID): void
+    {
+        $portfolio = Portfolio::find($portfolioID);
+        if (!$portfolio) {
+            $this->handle($portfolio, []);
+        }
+    }
 
     public function handle(Portfolio $portfolio, array $modelData): void
     {
@@ -33,6 +47,7 @@ class StoreNewProductToCurrentShopify extends OrgAction
 
         UploadProductToShopifyProgressEvent::dispatch($portfolio->customerSalesChannel->user, $portfolio);
     }
+
 
 
 
