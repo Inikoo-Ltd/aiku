@@ -52,13 +52,19 @@ class UpdateWooPortfolio
             return;
         }
 
+        $customerSalesChannel= $portfolio->customerSalesChannel;
 
-        if ($portfolio->customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
+        if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
             return;
         }
 
 
-        $wooCommerceUser = $portfolio->customerSalesChannel->user;
+        if ($customerSalesChannel->ban_stock_update_util && $customerSalesChannel->ban_stock_update_util->gt(now())) {
+            return;
+        }
+
+
+        $wooCommerceUser = $customerSalesChannel->user;
         if (!$wooCommerceUser instanceof WooCommerceUser) {
             return;
         }
@@ -86,6 +92,8 @@ class UpdateWooPortfolio
                     'status'           => PlatformPortfolioLogsStatusEnum::OK,
                     'last_stock_value' => $availableQuantity
                 ]);
+
+
                 $portfolio->update([
                     'last_stock_value'      => $availableQuantity,
                     'stock_last_updated_at' => now()
@@ -98,6 +106,9 @@ class UpdateWooPortfolio
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $message
                 ]);
+                $customerSalesChannel->update([
+                    'ban_stock_update_util' => now()->addHours(3),
+                ]);
                 $portfolio->update([
                     'stock_last_fail_updated_at' => now()
                 ]);
@@ -109,6 +120,9 @@ class UpdateWooPortfolio
             ]);
             $portfolio->update([
                 'stock_last_fail_updated_at' => now()
+            ]);
+            $customerSalesChannel->update([
+                'ban_stock_update_util' => now()->addHours(3),
             ]);
         }
     }

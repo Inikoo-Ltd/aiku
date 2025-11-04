@@ -31,6 +31,11 @@ class UpdateInventoryInWooPortfolio
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
+            
+            
+            if ($customerSalesChannel->ban_stock_update_util && $customerSalesChannel->ban_stock_update_util->gt(now())) {
+                continue;
+            }
 
             if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
                 continue;
@@ -40,12 +45,20 @@ class UpdateInventoryInWooPortfolio
             $wooCommerceUser = $customerSalesChannel->user;
 
             if (!$wooCommerceUser) {
+                $customerSalesChannel->update([
+                    'ban_stock_update_util' => now()->addHours(3),
+                ]);
                 continue;
             }
 
 
             $result = $wooCommerceUser->checkConnection();
             if ($result && Arr::has($result, 'environment')) {
+
+                $customerSalesChannel->update([
+                    'ban_stock_update_util' => null
+                ]);
+
                 $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
                     ->whereNotNull('platform_product_id')
                     ->where('item_type', 'Product')
