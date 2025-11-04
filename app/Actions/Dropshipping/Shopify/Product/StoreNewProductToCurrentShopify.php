@@ -27,10 +27,13 @@ class StoreNewProductToCurrentShopify extends OrgAction implements ShouldBeUniqu
     }
 
 
+    public function asJob(Portfolio $portfolio): void
+    {
+        $this->handle($portfolio, []);
+    }
+
     public function handle(Portfolio $portfolio, array $modelData): void
     {
-
-
         $result1 = StoreShopifyProduct::run($portfolio, $modelData);
 
         if ($result1[0]) {
@@ -45,11 +48,8 @@ class StoreNewProductToCurrentShopify extends OrgAction implements ShouldBeUniqu
     }
 
 
-
-
     public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
-
         $this->initialisation($portfolio->customerSalesChannel->organisation, $request);
         $this->handle($portfolio, $this->validatedData);
     }
