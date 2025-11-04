@@ -19,18 +19,13 @@ class StoreNewProductToCurrentShopify extends OrgAction implements ShouldBeUniqu
 {
     use AsAction;
 
-    public function getJobUniqueId(int $portfolioID): int
+    public string $jobQueue = 'shopify';
+
+    public function getJobUniqueId(Portfolio $portfolio): int
     {
-        return $portfolioID;
+        return $portfolio->id;
     }
 
-    public function asJob(int $portfolioID): void
-    {
-        $portfolio = Portfolio::find($portfolioID);
-        if (!$portfolio) {
-            $this->handle($portfolio, []);
-        }
-    }
 
     public function handle(Portfolio $portfolio, array $modelData): void
     {
