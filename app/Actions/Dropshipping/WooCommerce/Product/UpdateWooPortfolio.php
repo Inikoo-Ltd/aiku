@@ -88,10 +88,13 @@ class UpdateWooPortfolio
                     'stock_last_updated_at' => now()
                 ]);
             } else {
+
+                $json = json_encode($response);
+
                 $response = json_decode($response[0], true);
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => Arr::get($response, 'message') ?? __('Unknown')
+                    'response' => $json//Arr::get($response, 'message') ?? __('Unknown')
                 ]);
                 $portfolio->update([
                     'stock_last_fail_updated_at' => now()
