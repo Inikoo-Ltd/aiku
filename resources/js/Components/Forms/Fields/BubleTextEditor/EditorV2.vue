@@ -1088,7 +1088,7 @@ onMounted(async () => {
 }
 
 :deep(.editor-class a) {
-    @apply hover: cursor-pointer;
+    @apply hover:cursor-pointer;
 }
 
 :deep(.editor-class hr) {
