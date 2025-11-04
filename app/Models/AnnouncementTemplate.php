@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use App\Models\Helpers\Media;
+use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 
 /**
  * App\Models\AnnouncementTemplate
@@ -35,7 +35,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 class AnnouncementTemplate extends Model implements HasMedia
 {
     use HasFactory;
-    use InteractsWithMedia;
+    use HasImage;
 
     protected $guarded = [];
 

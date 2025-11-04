@@ -10,6 +10,9 @@ return new class () extends Migration {
         Schema::create('announcement_templates', function (Blueprint $table) {
             $table->id();
 
+            $table->unsignedSmallInteger('group_id')->index();
+            $table->foreign('group_id')->references('id')->on('groups')->nullOnDelete();
+
             $table->string('code')->unique()->index();
             $table->unsignedInteger('screenshot_id')->nullable();
 
