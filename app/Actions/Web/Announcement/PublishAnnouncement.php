@@ -39,6 +39,9 @@ class PublishAnnouncement extends OrgAction
             $firstCommit = true;
         }
 
+        data_set($modelData, 'publisher_id', $this->customer->id);
+        data_set($modelData, 'publisher_type', $this->customer->getMorphClass());
+
         $layout = $announcement->unpublishedSnapshot->layout;
 
         /** @var Snapshot $snapshot */
