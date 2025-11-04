@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property string|null $response
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $last_stock_value
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformPortfolioLogs newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformPortfolioLogs newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PlatformPortfolioLogs query()

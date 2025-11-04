@@ -8,12 +8,13 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Sentry;
 
 class UpdateInventoryInWooPortfolio
 {
@@ -29,21 +30,55 @@ class UpdateInventoryInWooPortfolio
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
-            $portfoliosChunk = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
-                ->whereNotNull('platform_product_id')
-                ->get()->chunk(100);
 
-            foreach ($portfoliosChunk as $portfolioChunk) {
-                if ($customerSalesChannel->user) {
-                    try {
-                        BulkUpdateWooPortfolio::dispatch($customerSalesChannel->user, $portfolioChunk);
-                    } catch (\Exception $e) {
-                        // Sentry::captureException($e);
-                    }
+            if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
+                continue;
+            }
+
+            /** @var \App\Models\Dropshipping\WooCommerceUser $wooCommerceUser */
+            $wooCommerceUser = $customerSalesChannel->user;
+
+            if (!$wooCommerceUser) {
+                continue;
+            }
+
+
+            $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
+                ->whereNotNull('platform_product_id')
+                ->where('item_type', 'Product')
+                ->where('platform_status', true)
+                ->get();
+
+            /** @var Portfolio $portfolio */
+            foreach ($portfolios as $portfolio) {
+                if ($this->checkIfApplicable($portfolio)) {
+                    UpdateWooPortfolio::dispatch($portfolio->id);
                 }
+
             }
         }
     }
+
+    public function checkIfApplicable(Portfolio $portfolio): bool
+    {
+        $applicable = false;
+
+
+
+        if (!$portfolio->stock_last_updated_at) {
+            $applicable = true;
+        } else {
+            /** @var Product $product */
+            $product = $portfolio->item;
+
+            if (!$product->available_quantity_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
+                $applicable = true;
+            }
+        }
+
+        return $applicable;
+    }
+
 
     public function asCommand(): void
     {

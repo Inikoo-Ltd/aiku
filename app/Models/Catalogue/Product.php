@@ -135,7 +135,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $hts_us
  * @property string|null $marketing_ingredients
  * @property string|null $price_updated_at
- * @property string|null $available_quantity_updated_at
+ * @property \Illuminate\Support\Carbon|null $available_quantity_updated_at
  * @property string|null $images_updated_at
  * @property string|null $unit_price price per unit
  * @property array<array-key, mixed>|null $name_i8n
@@ -246,23 +246,24 @@ class Product extends Model implements Auditable, HasMedia
 
 
     protected $casts = [
-        'variant_ratio'          => 'decimal:3',
-        'price'                  => 'decimal:2',
-        'rrp'                    => 'decimal:2',
-        'data'                   => 'array',
-        'settings'               => 'array',
-        'web_images'             => 'array',
-        'marketing_dimensions'   => 'array',
-        'variant_is_visible'     => 'boolean',
-        'state'                  => ProductStateEnum::class,
-        'status'                 => ProductStatusEnum::class,
-        'trade_config'           => ProductTradeConfigEnum::class,
-        'unit_relationship_type' => ProductUnitRelationshipType::class,
-        'fetched_at'             => 'datetime',
-        'last_fetched_at'        => 'datetime',
-        'cpnp_number'            => 'string',
-        'ufi_number'             => 'string',
-        'scpn_number'            => 'string',
+        'variant_ratio'                 => 'decimal:3',
+        'price'                         => 'decimal:2',
+        'rrp'                           => 'decimal:2',
+        'data'                          => 'array',
+        'settings'                      => 'array',
+        'web_images'                    => 'array',
+        'marketing_dimensions'          => 'array',
+        'variant_is_visible'            => 'boolean',
+        'state'                         => ProductStateEnum::class,
+        'status'                        => ProductStatusEnum::class,
+        'trade_config'                  => ProductTradeConfigEnum::class,
+        'unit_relationship_type'        => ProductUnitRelationshipType::class,
+        'fetched_at'                    => 'datetime',
+        'last_fetched_at'               => 'datetime',
+        'available_quantity_updated_at' => 'datetime',
+        'cpnp_number'                   => 'string',
+        'ufi_number'                    => 'string',
+        'scpn_number'                   => 'string',
     ];
 
     protected $attributes = [
@@ -445,7 +446,7 @@ class Product extends Model implements Auditable, HasMedia
 
     public function getLuigiIdentity(): string
     {
-        return $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->webpage?->website?->id . ':' . $this->webpage?->id;
+        return $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->webpage?->website?->id.':'.$this->webpage?->id;
     }
 
     public function frontImage(): HasOne
