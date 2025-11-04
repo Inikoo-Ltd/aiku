@@ -27,7 +27,7 @@ Route::get('/edit', EditProfile::class)->name('edit');
 Route::get('/settings', EditProfileSettings::class)->name('settings');
 
 Route::post('/', UpdateProfile::class)->name('update');
-Route::post('/passkeys', StorePasskey::class)->name('passkeys.store');
+// Route::post('/passkeys', StorePasskey::class)->name('passkeys.store');
 Route::get('/can-visit', CanVisit::class)->name('can_visit');
 
 
