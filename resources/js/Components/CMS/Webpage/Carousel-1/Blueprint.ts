@@ -11,11 +11,11 @@ export default {
 					useIn: ["desktop", "tablet", "mobile"],
 					type: "number",
 				},
-				/* {
+				{
 					label: "Space Between",
-					key: ["carousel_setting", "spaceBetween"],+
+					key: ["carousel_setting", "spaceBetween"],
 					type: "number",
-				}, */
+				},
 				{
 					label: "Use Text",
 					key: ["carousel_setting", "use_text"],
