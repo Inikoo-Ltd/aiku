@@ -44,6 +44,7 @@ class UpdateWooPortfolio
 
     public function handle(int $portfolioID): void
     {
+        return;
         $portfolio = Portfolio::find($portfolioID);
 
 
@@ -77,6 +78,7 @@ class UpdateWooPortfolio
                     "stock_quantity" => $availableQuantity,
                 ]
             );
+          //  dd($response,$availableQuantity);
 
             if (Arr::get($response, 'stock_quantity') == $availableQuantity) {
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
