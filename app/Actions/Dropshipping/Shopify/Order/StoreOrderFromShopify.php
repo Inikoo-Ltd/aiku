@@ -101,6 +101,8 @@ class StoreOrderFromShopify extends OrgAction
                 }
             }
 
+            $order->refresh();
+
             try {
                 PayOrderAsync::run($order);
             } catch (Exception $e) {
