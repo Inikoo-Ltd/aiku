@@ -28,9 +28,8 @@ enum AnnouncementTabsEnum: string
                 'type' => 'icon',
             ],
             AnnouncementTabsEnum::SNAPSHOTS => [
-                'align' => 'right',
                 'title' => __('Snapshots'),
-                'icon' => 'fal fa-money-bill',
+                'icon' => 'fal fa-layer-group',
                 'type' => 'icon',
             ],
         };
