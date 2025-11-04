@@ -67,7 +67,7 @@ class GetCustomerShowcase
                         'customer'     => $customer->id
                     ]
                 ],
-                'increaase_reasons_options' => CreditTransactionReasonEnum::getIncreaseReasons(),
+                'increase_reasons_options' => CreditTransactionReasonEnum::getIncreaseReasons(),
                 'decrease_reasons_options' => CreditTransactionReasonEnum::getDecreaseReasons(),
 
                 'type_options' => CreditTransactionTypeEnum::getOptions()
