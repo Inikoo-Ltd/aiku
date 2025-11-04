@@ -37,7 +37,5 @@ const layout: any = inject("layout", {})
                 parameters: { modelHasWebBlocks: blockData.id }
             }" />
         </div>
-
     </div>
-
 </template>

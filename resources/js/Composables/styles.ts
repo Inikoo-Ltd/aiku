@@ -172,8 +172,15 @@ export const resolveResponsiveValue = (
 				} else if (backgroundType === "gradient") {
 					return backgroundGradient
 				} else {
-					return backgroundImage ? `url(${backgroundImage})` : null
+					return backgroundImage ? `url(${backgroundImage}) no-repeat center center` : null
 				}
+			})(),
+
+			backgroundSize: (() => {
+				const backgroundBase = properties?.background?.[screen] ?? properties?.background
+				const backgroundType = getVal(backgroundBase, ["type"])
+				if (backgroundType == 'image' ) return "cover"
+				return null
 			})(),
 
 			borderTop:

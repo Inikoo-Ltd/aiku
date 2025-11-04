@@ -6,6 +6,7 @@ import GalleryManagement from '@/Components/Utils/GalleryManagement/GalleryManag
 import Modal from '@/Components/Utils/Modal.vue'
 import PureRadio from '@/Components/Pure/PureRadio.vue'
 import ColorPicker from '@/Components/Utils/ColorPicker.vue'
+import Dialog from 'primevue/dialog'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faImage, faPalette } from '@fal'
@@ -17,6 +18,7 @@ import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
 import RadioButton from 'primevue/radiobutton'
 import { set } from 'lodash-es'
+import ImageUploadWithCroppedFunction from '@/Components/ImageUploadWithCroppedFunction.vue'
 
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
 import ColorGradientPicker from '@/Components/Utils/ColorGradientPicker.vue'
@@ -50,138 +52,77 @@ const model = defineModel<BackgroundProperty>({
     }
 })
 
-/* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') }) */
 
 const isOpenGallery = ref(false)
 
-const route_list = inject('route_list', null)
-
-const onSubmitSelectedImage = (images: ImageData[]) => {
-    model.value.image = images[0]
-    isOpenGallery.value = false
-    model.value.type = 'image'
-    emits('update:modelValue', model.value)
-  /*   onSaveWorkshopFromId(side_editor_block_id, 'background property') */
+const closeUploadImage = (visible) => {
+  isOpenGallery.value = visible
 }
 
-
-
-const isLoadingSubmit = ref(false)
-const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
-    const formData = new FormData()
-    Array.from(files).forEach((file, index) => {
-        formData.append(`images[${index}]`, file)
-    })
-
-    // console.log('form', files, formData)
-    isLoadingSubmit.value = true
-    try {
-
-        const aaa = await axios.post(route(props.uploadImageRoute.name, props.uploadImageRoute.parameters),
-            formData,
-            {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            }
-        )
-        
-        model.value.image = aaa.data.data[0]
-        emits('update:modelValue', model.value)
-
-        // Assuming you want to notify on success
-        notify({
-            title: trans('Success'),
-            text: trans('New image added'),
-            type: 'success',
-        });
-
-        console.log(galleryUploadRef)
-        isOpenGallery.value = false
-        // Clear the input or perform any other success actions
-        if (galleryUploadRef.value) {
-            galleryUploadRef.value.fileUploadRef.uploadedFiles = files
-            galleryUploadRef.value.fileUploadRef.files = []
-        }
-
-
-    } catch (error) {
-        console.error('Upload error:', error);
-
-        // Notify on error
-        notify({
-            title: trans('Something went wrong'),
-            text: trans('Failed to add new image'),
-            type: 'error',
-        });
-    } finally {
-        // This block will always execute, regardless of success or error
-        isLoadingSubmit.value = false;
-    }
+const imageSettings = {
+	key: ["image", "source"],
+	stencilProps: {
+		aspectRatio: [16 / 9, null],
+		movable: true,
+		scalable: true,
+		resizable: true,
+	},
 }
-
 
 
 </script>
 
 <template>
-    <div v-if="model?.type" class="grid grid-cols-2 items-center justify-between gap-x-3 flex-wrap px-6 w-full relative">
+    <div v-if="model?.type"
+        class="grid grid-cols-2 items-center justify-between gap-x-3 flex-wrap px-6 w-full relative">
         <div class="relative flex items-center gap-x-2 py-1" v-tooltip="trans('Image background')">
             <div class="group rounded-md relative shadow-lg border border-gray-300">
                 <div class="relative h-12 w-12 cursor-pointer rounded overflow-hidden">
-                    <Image
-                        v-if="model?.image?.thumbnail"
-                        :src="model?.image?.thumbnail"
-                        :key="model?.image?.id"
-                        :alt="model?.image?.name"
-                        :imageCover="true"
+                    <Image 
+                        v-if="model?.image?.source" 
+                        :src="model?.image?.source" 
+                        :key="model?.image?.source?.original"
+                        :alt="'background image'" 
+                        :imageCover="true" 
                         class="h-full"
-                    />
+                     />
 
                     <div v-else class="h-full flex items-center justify-center">
                         <FontAwesomeIcon icon='fas fa-image' class='' fixed-width aria-hidden='true' />
                     </div>
 
-                    
-                    <div v-if="model?.type === 'image'" @click="() => isOpenGallery = true" class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">
+
+                    <div v-if="model?.type === 'image'" @click="() => isOpenGallery = true"
+                        class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">
                         <FontAwesomeIcon icon='fal fa-image' class='text-white' fixed-width aria-hidden='true' />
                     </div>
 
-                    <div v-else @click="() => (model.type = 'image',emits('update:modelValue', model))" class="flex absolute inset-0 bg-gray-200/70 hover:bg-gray-100/40 items-center justify-center cursor-pointer" />
+                    <div v-else @click="() => (model.type = 'image',emits('update:modelValue', model))"
+                        class="flex absolute inset-0 bg-gray-200/70 hover:bg-gray-100/40 items-center justify-center cursor-pointer" />
                 </div>
             </div>
 
-            <PureRadio
-                v-model="model.type"
-                @update:modelValue="() => emits('update:modelValue', model)"
-                :options="[{ name: 'image'}]"
-                by="name"
-                key="image1"
-            />
+            <PureRadio v-model="model.type" @update:modelValue="() => emits('update:modelValue', model)"
+                :options="[{ name: 'image'}]" by="name" key="image1" />
         </div>
-        
+
         <!-- {{ model }} -->
         <!-- List: Background Color -->
         <div class="flex items-center gap-x-4 h-min" v-tooltip="trans('Color background')">
             <div class="relative h-12 aspect-square rounded-md shadow">
-                <ColorPicker
-                    :color="model.color || '#111111'"
-                    class=""
-                    @changeColor="(newColor)=> {
+                <ColorPicker :color="model.color || '#111111'" class="" @changeColor="(newColor)=> {
                         model.color = `rgba(${newColor.rgba.r}, ${newColor.rgba.g}, ${newColor.rgba.b}, ${newColor.rgba.a})`,
                         model.type = 'color',
                         emits('update:modelValue', model)
-                    }"
-                    closeButton
-                    :isEditable="!model.color?.includes('var')"
-                >
+                    }" closeButton :isEditable="!model.color?.includes('var')">
                     <template #button>
                         <div class="group relative h-12 w-12 overflow-hidden rounded" :style="{
                             backgroundColor: model.color
                         }">
-                            <div class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">
-                                <FontAwesomeIcon icon='fal fa-palette' class='text-white' fixed-width aria-hidden='true' />
+                            <div
+                                class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">
+                                <FontAwesomeIcon icon='fal fa-palette' class='text-white' fixed-width
+                                    aria-hidden='true' />
                             </div>
                         </div>
 
@@ -189,88 +130,80 @@ const onSubmitUpload = async (files: File[], galleryUploadRef : any) => {
 
                     <template #before-main-picker>
                         <div class="flex items-center gap-2">
-                            <RadioButton size="small" v-model="model.color" @update:modelValue="() => emits('update:modelValue', model)" inputId="bg-color-picker-1" name="bg-color-picker" value="var(--iris-color-primary)" />
-                            <label class="cursor-pointer" for="bg-color-picker-1">{{ trans("Primary color") }} 
-                                <a  
-                                    :href="route(route().params.shop ? 'grp.org.shops.show.web.websites.workshop' : 'grp.org.fulfilments.show.web.websites.workshop', {...route().params, tab: 'website_layout', section: 'theme_colors'})"
-                                    as="a" 
-                                    target="_blank" 
-                                    class="text-xs text-blue-600">{{ trans("themes") }}</a>
+                            <RadioButton size="small" v-model="model.color"
+                                @update:modelValue="() => emits('update:modelValue', model)" inputId="bg-color-picker-1"
+                                name="bg-color-picker" value="var(--iris-color-primary)" />
+                            <label class="cursor-pointer" for="bg-color-picker-1">{{ trans("Primary color") }}
+                                <a :href="route(route().params.shop ? 'grp.org.shops.show.web.websites.workshop' : 'grp.org.fulfilments.show.web.websites.workshop', {...route().params, tab: 'website_layout', section: 'theme_colors'})"
+                                    as="a" target="_blank" class="text-xs text-blue-600">{{ trans("themes") }}</a>
                             </label>
                         </div>
-                        
+
                         <div class="flex items-center gap-2">
-                            <RadioButton size="small"
-                                :modelValue="!model.color?.includes('var') ? '#111111' : null"
+                            <RadioButton size="small" :modelValue="!model.color?.includes('var') ? '#111111' : null"
                                 @update:modelValue="(e) => model.color.includes('var') ? (model.color = '#111111', emits('update:modelValue', model)) : false"
-                                inputId="bg-color-picker-3"
-                                name="bg-color-picker"
-                                value="#111111" />
+                                inputId="bg-color-picker-3" name="bg-color-picker" value="#111111" />
                             <label class="cursor-pointer" for="bg-color-picker-3">{{ trans("Custom solid") }}</label>
                         </div>
                     </template>
                 </ColorPicker>
-                
-                <div v-if="model.type !== 'color'" @click="() => (model.type = 'color', emits('update:modelValue', model))" class="flex absolute inset-0 items-center justify-center cursor-pointer" />
+
+                <div v-if="model.type !== 'color'"
+                    @click="() => (model.type = 'color', emits('update:modelValue', model))"
+                    class="flex absolute inset-0 items-center justify-center cursor-pointer" />
 
             </div>
             <!-- <div v-else class="h-8 w-8 rounded-md border border-gray-300 shadow" :style="{background: model.color}" /> -->
-            <PureRadio
-                v-model="model.type"
-                @update:modelValue="() => emits('update:modelValue', model)"
-                :options="[{ name: 'color'}]"
-                by="name"
-                key="color2"
-            />
+            <PureRadio v-model="model.type" @update:modelValue="() => emits('update:modelValue', model)"
+                :options="[{ name: 'color'}]" by="name" key="color2" />
         </div>
 
         <!-- Section: gradient -->
         <div class="col-span-2 flex items-center gap-x-4">
             <Popover class="relative" v-slot="{ open: isOpen, close }">
                 <PopoverButton>
-                    <div class="group relative h-12 w-28 rounded-md overflow-hidden ring-1 ring-gray-100 ring-inset" :style="{
+                    <div class="group relative h-12 w-28 rounded-md overflow-hidden ring-1 ring-gray-100 ring-inset"
+                        :style="{
                         background: model?.gradient?.value || 'linear-gradient(45deg, rgba(20, 20, 20, 1), rgba(240, 240, 240, 1))',
                     }">
-                        <div class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">
+                        <div
+                            class="hidden group-hover:flex absolute inset-0 bg-black/30 items-center justify-center cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-palette' class='text-white' fixed-width aria-hidden='true' />
                         </div>
                     </div>
                 </PopoverButton>
 
                 <Transition name="headlessui">
-                    <PopoverPanel class="top-[100%] absolute z-10 left-0 bg-white shadow-lg border border-gray-300 rounded-md p-4 w-72">
-                        <ColorGradientPicker
-                            :data="model?.gradient"
-                            @onChange="(e) => {
+                    <PopoverPanel
+                        class="top-[100%] absolute z-10 left-0 bg-white shadow-lg border border-gray-300 rounded-md p-4 w-72">
+                        <ColorGradientPicker :data="model?.gradient" @onChange="(e) => {
                                 // console.log('eewewewewewewew', e)
                                 model.type = 'gradient',
                                 model.gradient = e
                                 emits('update:modelValue', model)
-                            }"
-                        >
+                            }">
                         </ColorGradientPicker>
                     </PopoverPanel>
                 </Transition>
             </Popover>
 
-            <PureRadio
-                v-model="model.type"
-                @update:modelValue="() => emits('update:modelValue', model)"
-                :options="[{ name: 'gradient'}]"
-                by="name"
-                key="color_gradient"
-            />
+            <PureRadio v-model="model.type" @update:modelValue="() => emits('update:modelValue', model)"
+                :options="[{ name: 'gradient'}]" by="name" key="color_gradient" />
         </div>
     </div>
 
-    <Modal :isOpen="isOpenGallery" @onClose="() => isOpenGallery = false" width="w-3/4" >
-        <GalleryManagement
-            :uploadRoute="route_list?.upload_image"
+   <!-- ✅ PrimeVue Dialog instead of custom Modal -->
+    <Dialog v-model:visible="isOpenGallery" modal header="Select Background Image" class="w-[75vw] max-w-5xl">
+        <ImageUploadWithCroppedFunction 
+            @dialog="(visible) => closeUploadImage(visible)"
+            @update:model-value="(val)=>{
+                model.image = { source : val}
+                emits('update:modelValue', model)
+            }"
+            :stencilProps="imageSettings.stencilProps" 
+            :uploadRoutes="uploadImageRoute" 
             :maxSelected="1"
             :multiple="false"
-            :submitUpload="onSubmitUpload"
-            @selectImage="(image: {}) => false"
-            @submitSelectedImages="(images: ImageData[]) => onSubmitSelectedImage(images)"
         />
-    </Modal>
+    </Dialog>
 </template>
