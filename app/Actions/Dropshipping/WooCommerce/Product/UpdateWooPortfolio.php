@@ -44,7 +44,7 @@ class UpdateWooPortfolio
 
     public function handle(int $portfolioID): void
     {
-        return;
+
         $portfolio = Portfolio::find($portfolioID);
 
 
@@ -71,6 +71,7 @@ class UpdateWooPortfolio
 
         $availableQuantity = $product->available_quantity ?? 0;
 
+
         try {
             $response = $wooCommerceUser->updateWooCommerceProduct(
                 $portfolio->platform_product_id,
@@ -78,7 +79,7 @@ class UpdateWooPortfolio
                     "stock_quantity" => $availableQuantity,
                 ]
             );
-          //  dd($response,$availableQuantity);
+
 
             if (Arr::get($response, 'stock_quantity') == $availableQuantity) {
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
@@ -91,12 +92,11 @@ class UpdateWooPortfolio
                 ]);
             } else {
 
-                $json = json_encode($response);
+                $message = Arr::get($response, '0.message') ?? __('Unknown error');
 
-                //$response = json_decode($response[0], true);
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $json//Arr::get($response, 'message') ?? __('Unknown')
+                    'response' => $message
                 ]);
                 $portfolio->update([
                     'stock_last_fail_updated_at' => now()

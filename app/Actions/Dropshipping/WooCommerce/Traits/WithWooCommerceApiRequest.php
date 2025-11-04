@@ -148,7 +148,9 @@ trait WithWooCommerceApiRequest
 
             // Sentry::captureMessage($e->getMessage());
 
-            return [];
+            return [
+                ['message' => 'WooCommerce API Connection Error: ' . $e->getMessage()],
+            ];
         }
     }
 

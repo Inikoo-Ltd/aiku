@@ -14,6 +14,7 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateInventoryInWooPortfolio
@@ -43,19 +44,23 @@ class UpdateInventoryInWooPortfolio
             }
 
 
-            $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
-                ->whereNotNull('platform_product_id')
-                ->where('item_type', 'Product')
-                ->where('platform_status', true)
-                ->get();
+            $result = $wooCommerceUser->checkConnection();
+            if (Arr::has($result, 'environment')) {
+                $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
+                    ->whereNotNull('platform_product_id')
+                    ->where('item_type', 'Product')
+                    ->where('platform_status', true)
+                    ->get();
 
-            /** @var Portfolio $portfolio */
-            foreach ($portfolios as $portfolio) {
-                if ($this->checkIfApplicable($portfolio)) {
-                    UpdateWooPortfolio::dispatch($portfolio->id);
+                /** @var Portfolio $portfolio */
+                foreach ($portfolios as $portfolio) {
+                    if ($this->checkIfApplicable($portfolio)) {
+                        UpdateWooPortfolio::dispatch($portfolio->id);
+                    }
+
                 }
-
             }
+
         }
     }
 
