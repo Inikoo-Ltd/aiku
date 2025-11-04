@@ -100,7 +100,7 @@ class ShowPayment extends OrgAction
                     'next'     => $this->getNext($payment, $request),
                 ],
                 'pageHead'    => [
-                    'model' => __('payment'),
+                    'model' => __('Payment'),
                     'icon'  => 'fal fa-coins',
                     'title' => $title,
                     'edit'  => $this->canEdit ? [

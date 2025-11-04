@@ -154,11 +154,7 @@ const props = defineProps<{
 const layout = inject('layout')
 const page = usePage()
 
-// Check if we're in a customer menu context
-const isInCustomerMenu = computed(() => {
-	const currentRoute = page.url
-	return currentRoute.includes('/customers/')
-})
+
 
 // Modal state for Account Information
 const isAccountModalVisible = ref(false)
@@ -264,11 +260,23 @@ const getStateTheme = (state: string) => {
 			<div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
 					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-money-bill-wave" :style="{ color: themeColors.buttonBg }" />
 						{{ trans('Payment Summary') }}
 					</h3>
 				</div>
 				<dl class="px-6 py-4 space-y-4">
+
+                    <div class="flex items-center justify-between border-t border-gray-200 pt-4">
+                        <dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
+                            <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
+                            {{ trans('Date') }}
+                        </dt>
+                        <dd class="text-sm text-gray-900">
+                            {{ useFormatTime(normalizedShowcase.date, {
+                            formatTime: 'hm'
+                        }) }}
+                        </dd>
+                    </div>
+
 					<!-- Payment Amount -->
 					<div class="flex items-center justify-between rounded-lg">
 						<dt class="text-sm font-medium">
@@ -280,6 +288,13 @@ const getStateTheme = (state: string) => {
 							normalizedShowcase.amount) }}
 						</dd>
 					</div>
+                    <!-- Currency -->
+                    <div class="flex items-center justify-between">
+                        <dt class="text-sm font-medium text-gray-600">{{ trans('Currency') }}</dt>
+                        <dd class="text-sm text-gray-900">
+                            {{ normalizedShowcase.currency.name }} ({{ normalizedShowcase.currency.code }})
+                        </dd>
+                    </div>
 
 					<!-- Payment Status -->
 					<div class="flex items-center justify-between">
@@ -292,7 +307,7 @@ const getStateTheme = (state: string) => {
 					<!-- Payment Method -->
 					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							{{ trans('Payment Method') }}
+							{{ trans('Payment Service Provider') }}
 						</dt>
 						<dd class="text-sm text-gray-900 flex items-center gap-2">
 							<button @click="openAccountModal"
@@ -304,100 +319,22 @@ const getStateTheme = (state: string) => {
 						</dd>
 					</div>
 
-					<!-- Currency -->
-					<div class="flex items-center justify-between">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Currency') }}</dt>
-						<dd class="text-sm text-gray-900">
-							{{ normalizedShowcase.currency.name }} ({{ normalizedShowcase.currency.code }})
-						</dd>
-					</div>
+                    <!-- Payment Amount -->
+                    <div v-if="normalizedShowcase.creditTransaction"  class="flex items-center justify-between rounded-lg">
+                        <dt class="text-sm font-medium">
+
+                        </dt>
+                        <dd class="text-lg font-semibold">
+                            {{trans('This is associated with a credit transaction')}}
+                        </dd>
+                    </div>
+
+
 				</dl>
 			</div>
 
-			<!-- Section: Customer Profile -->
-			<div v-if="!isInCustomerMenu" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
-				<div class="px-6 py-4 border-b border-gray-200">
-					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-male" :style="{ color: themeColors.buttonBg }" />
-						{{ trans('Customer Information') }}
-					</h3>
-				</div>
-				<dl class="px-6 py-4">
 
-					<!-- Contact name -->
-					<div v-if="normalizedShowcase.customer?.contact_name"
-						class="flex items-center justify-between py-3 border-b border-gray-100">
-						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							<FontAwesomeIcon icon="fal fa-male" class="text-gray-400" />
-							{{ trans('Contact name') }}
-						</dt>
-						<dd class="text-sm text-gray-900">{{ normalizedShowcase.customer.contact_name }}</dd>
-					</div>
 
-					<!-- Company name -->
-					<div v-if="normalizedShowcase.customer?.company_name"
-						class="flex items-center justify-between py-3 border-b border-gray-100">
-						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							<FontAwesomeIcon icon="fal fa-building" class="text-gray-400" />
-							{{ trans('Company name') }}
-						</dt>
-						<dd class="text-sm text-gray-900">{{ normalizedShowcase.customer.company_name }}</dd>
-					</div>
-
-					<!-- Email -->
-					<div v-if="normalizedShowcase.customer?.email"
-						class="flex items-center justify-between py-3 border-b border-gray-100">
-						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							<FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" />
-							{{ trans('Email') }}
-						</dt>
-						<dd class="text-sm text-blue-600 hover:text-blue-800">
-							<a :href="`mailto:${normalizedShowcase.customer.email}`">
-								{{ normalizedShowcase.customer.email }}
-							</a>
-						</dd>
-					</div>
-
-					<!-- Phone -->
-					<div v-if="normalizedShowcase.customer?.phone"
-						class="flex items-center justify-between py-3 border-b border-gray-100">
-						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-							<FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" />
-							{{ trans('Phone') }}
-						</dt>
-						<dd class="text-sm text-blue-600 hover:text-blue-800">
-							<a :href="`tel:${normalizedShowcase.customer.phone}`">
-								{{ normalizedShowcase.customer.phone }}
-							</a>
-						</dd>
-					</div>
-
-					<!-- Address -->
-					<div v-if="normalizedShowcase.customer?.address" class="py-3">
-						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2 mb-2">
-							<FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-gray-400" />
-							{{ trans('Address') }}
-						</dt>
-						<dd class="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
-							<div v-if="normalizedShowcase.customer.address.address_line_1" class="font-medium">
-								{{ normalizedShowcase.customer.address.address_line_1 }}
-							</div>
-							<div v-if="normalizedShowcase.customer.address.address_line_2">
-								{{ normalizedShowcase.customer.address.address_line_2 }}
-							</div>
-							<div v-if="normalizedShowcase.customer.address.locality">
-								{{ normalizedShowcase.customer.address.locality }}
-							</div>
-							<div v-if="normalizedShowcase.customer.address.postal_code">
-								{{ normalizedShowcase.customer.address.postal_code }}
-							</div>
-							<div v-if="normalizedShowcase.customer.address.country">
-								{{ normalizedShowcase.customer.address.country.name }}
-							</div>
-						</dd>
-					</div>
-				</dl>
-			</div>
 		</div>
 
 		<!-- Column 2: Order & Account Information -->
@@ -514,17 +451,12 @@ const getStateTheme = (state: string) => {
 				class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-credit-card" :style="{ color: themeColors.buttonBg }" />
-						{{ trans('Credit Transaction') }}
+						<FontAwesomeIcon icon="fal fa-piggy-bank" :style="{ color: themeColors.buttonBg }" />
+						{{ trans('Associted Credit Transaction') }}
 					</h3>
 				</div>
 				<dl class="px-6 py-4 space-y-4">
-					<!-- Transaction ID -->
-					<div class="flex items-center justify-between rounded-lg">
-						<dt class="text-sm font-medium">{{ trans('Payment Reference') }}</dt>
-						<dd class="text-lg font-semibold" :style="{ color: themeColors.buttonBg }">#{{
-							normalizedShowcase.creditTransaction.payment_reference }}</dd>
-					</div>
+
 
 					<!-- Transaction Amount -->
 					<div class="flex items-center justify-between ">
@@ -557,17 +489,6 @@ const getStateTheme = (state: string) => {
 			</div>
 
 
-			<!-- Section: Credit Transaction Status -->
-			<div v-if="normalizedShowcase.credit_transaction === null"
-				class="rounded-lg bg-yellow-50 border-l-4 border-yellow-400 p-4">
-				<div class="flex">
-					<div class="ml-3">
-						<p class="text-sm text-yellow-700">
-							<strong>{{ trans('Info') }}:</strong> {{ trans('No credit transaction associated with this payment') }}.
-						</p>
-					</div>
-				</div>
-			</div>
 		</div>
 	</div>
 
