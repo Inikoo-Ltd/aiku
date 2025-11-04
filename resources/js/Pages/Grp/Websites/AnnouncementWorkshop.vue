@@ -134,14 +134,16 @@ const onSave = () => {
 
 // Method: Publish announcement
 const isLoadingPublish = ref(false)
-const onPublish = () => {
+const onPublish = (addData: { bodyToSend: {}}) => {
+    const additionalDataToSend = addData.bodyToSend || {}
     const toPublish = {
         ...announcementData.value,
-        compiled_layout: 'ffff' || _component_template_Announcement.value?.compiled_layout || undefined,
-        text: 'xxx'
+        compiled_layout: _component_template_Announcement.value?.compiled_layout || undefined,
+        text: 'xxx',
+        ...additionalDataToSend
     }
     // console.log('toto', _component_template_Announcement.value?.dataToPublish)
-    // console.log('topub', toPublish)
+    console.log('topub', toPublish)
     router[props.routes_list.publish_route.method || 'patch'](
         route(props.routes_list.publish_route.name, props.routes_list.publish_route.parameters),
         toPublish,

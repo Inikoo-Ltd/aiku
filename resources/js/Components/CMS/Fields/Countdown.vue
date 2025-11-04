@@ -14,23 +14,23 @@ import { EditorContent } from '@tiptap/vue-3'
 //     "expired_text": "<p><span style=\"color: #9e958b\"><em>Promo was ended</em></span></p>"
 // }
 
-const Countdown = {
-    date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-    expired_text: ''
-}
+// const Countdown = {
+//     date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+//     expired_text: ''
+// }
 
 const props = defineProps<{
     noToday?: boolean
 }>()
 
 const model = defineModel()
-const announcementData = inject('announcementData', Countdown)
+// const announcementData = inject('announcementData', Countdown)
 
-onMounted(() => {
-    if (!get(announcementData, 'fields.countdown', false)) {
-        set(announcementData, 'fields.countdown', Countdown)
-    }
-})
+// onMounted(() => {
+//     if (!get(announcementData, 'fields.countdown', false)) {
+//         set(announcementData, 'fields.countdown', Countdown)
+//     }
+// })
 </script>
 
 <template>
