@@ -537,7 +537,7 @@ trait WithWooCommerceApiRequest
         return $this->makeWooCommerceRequest('GET', 'webhooks');
     }
 
-    public function checkConnection(): array
+    public function checkConnection(): array|null
     {
         try {
             if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {

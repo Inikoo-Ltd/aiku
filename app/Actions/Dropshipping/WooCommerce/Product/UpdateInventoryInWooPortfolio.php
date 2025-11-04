@@ -45,7 +45,7 @@ class UpdateInventoryInWooPortfolio
 
 
             $result = $wooCommerceUser->checkConnection();
-            if (Arr::has($result, 'environment')) {
+            if ($result && Arr::has($result, 'environment')) {
                 $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
                     ->whereNotNull('platform_product_id')
                     ->where('item_type', 'Product')
