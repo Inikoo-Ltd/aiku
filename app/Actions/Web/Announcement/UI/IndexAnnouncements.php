@@ -11,8 +11,10 @@ namespace App\Actions\Web\Announcement\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\UI\ShowWebsite;
+use App\Http\Resources\Web\AnnouncementResource;
 use App\Http\Resources\Web\BannersResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Banner;
@@ -36,27 +38,27 @@ class IndexAnnouncements extends OrgAction
     public function handle(Shop $parent, $prefix = null)
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
-            $query->where('banners.name', "%$value%");
+            $query->where('announcements.name', "%$value%");
         });
 
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $queryBuilder = QueryBuilder::for(Banner::class)
-            ->leftJoin('organisations', 'banners.organisation_id', '=', 'organisations.id')
-            ->leftJoin('shops', 'banners.shop_id', '=', 'shops.id');
+        $queryBuilder = QueryBuilder::for(Announcement::class)
+            ->leftJoin('organisations', 'announcements.organisation_id', '=', 'organisations.id');
+            // ->leftJoin('websites', 'announcements.website_id', '=', 'websites.id');
 
-        $queryBuilder->where('banners.shop_id', $parent->id);
+        $queryBuilder->where('announcements.shop_id', $parent->id);
         $queryBuilder->select(
-            'banners.id',
-            'banners.slug',
-            'banners.state',
-            'banners.name',
-            'banners.image_id',
-            'banners.date',
-            'shops.name as shop_name',
-            'shops.slug as shop_slug',
+            'announcements.id',
+            'announcements.slug',
+            'announcements.state',
+            'announcements.name',
+            'announcements.image_id',
+            'announcements.date',
+            // 'websites.name as website_name',
+            // 'websites.slug as website_slug',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
         );
@@ -64,7 +66,7 @@ class IndexAnnouncements extends OrgAction
 
         return $queryBuilder
             ->defaultSort('-date')
-            ->allowedSorts(['name', 'date', 'number_views', 'organisation_name', 'shop_name'])
+            ->allowedSorts(['name', 'date', 'number_views', 'organisation_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -90,7 +92,7 @@ class IndexAnnouncements extends OrgAction
             $description = null;
 
             $emptyState = [
-                'title'       => __('No banners found'),
+                'title'       => __('No announcement found'),
                 'count'       => 0,
                 'description' => $description,
                 'action'      => $action
@@ -153,7 +155,7 @@ class IndexAnnouncements extends OrgAction
 
                 ],
 
-                'data' => BannersResource::collection($announcements),
+                'data' => AnnouncementResource::collection($announcements),
             ]
         )->table(
             $this->tableStructure(
@@ -170,7 +172,7 @@ class IndexAnnouncements extends OrgAction
                     'type'   => 'simple',
                     'simple' => [
                         'route' => $routeParameters,
-                        'label' => __('Banners'),
+                        'label' => __('Announcements'),
                         'icon'  => 'fal fa-bars'
                     ],
                 ],
