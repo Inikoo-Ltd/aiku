@@ -11,13 +11,11 @@ namespace App\Actions\Web\Announcement\UI;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebAuthorisation;
 use App\Actions\Web\Website\UI\ShowWebsite;
-use App\Http\Resources\Web\AnnouncementResource;
-use App\Http\Resources\Web\BannersResource;
+use App\Http\Resources\Web\AnnouncementsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
-use App\Models\Web\Banner;
 use App\Models\Web\Website;
 use App\Services\QueryBuilder;
 use Closure;
@@ -32,10 +30,9 @@ class IndexAnnouncements extends OrgAction
     use WithWebAuthorisation;
 
     protected array $elementGroups = [];
-    private Shop $parent;
+    private Website $parent;
 
-
-    public function handle(Shop $parent, $prefix = null)
+    public function handle(Website $website, $prefix = null)
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where('announcements.name', "%$value%");
@@ -46,27 +43,29 @@ class IndexAnnouncements extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(Announcement::class)
-            ->leftJoin('organisations', 'announcements.organisation_id', '=', 'organisations.id');
-            // ->leftJoin('websites', 'announcements.website_id', '=', 'websites.id');
+            ->leftJoin('organisations', 'announcements.organisation_id', '=', 'organisations.id')
+            ->leftJoin('websites', 'announcements.website_id', '=', 'websites.id');
 
-        $queryBuilder->where('announcements.shop_id', $parent->id);
+        $queryBuilder->where('announcements.website_id', $website->id);
         $queryBuilder->select(
             'announcements.id',
-            'announcements.slug',
+            'announcements.ulid',
             'announcements.state',
+            'announcements.status',
             'announcements.name',
-            'announcements.image_id',
-            'announcements.date',
-            // 'websites.name as website_name',
-            // 'websites.slug as website_slug',
+            'announcements.settings',
+            // 'announcements.image_id',
+            'announcements.created_at',
+            'websites.name as website_name',
+            'websites.slug as website_slug',
             'organisations.name as organisation_name',
             'organisations.slug as organisation_slug',
         );
 
 
         return $queryBuilder
-            ->defaultSort('-date')
-            ->allowedSorts(['name', 'date', 'number_views', 'organisation_name'])
+            ->defaultSort('-created_at')
+            ->allowedSorts(['name', 'created_at', 'number_views', 'organisation_name'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -74,7 +73,7 @@ class IndexAnnouncements extends OrgAction
 
 
     public function tableStructure(
-        Shop $parent,
+        Website $parent,
         ?array $modelOperations = null,
         $prefix = null,
         ?array $exportLinks = null
@@ -104,7 +103,7 @@ class IndexAnnouncements extends OrgAction
                 ->withGlobalSearch()
                 ->withEmptyState($emptyState)
                 ->withExportLinks($exportLinks)
-                ->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
+                ->column(key: 'status', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'name', label: __('name'), sortable: true)
                 ->defaultSort('-id');
         };
@@ -112,10 +111,10 @@ class IndexAnnouncements extends OrgAction
 
     public function asController(Organisation $organisation, Shop $shop, Website $website, ActionRequest $request)
     {
-        $this->parent = $shop;
+        $this->parent = $website;
         $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($this->parent);
+        return $this->handle($website);
     }
 
     public function htmlResponse(LengthAwarePaginator $announcements, ActionRequest $request): Response
@@ -155,7 +154,7 @@ class IndexAnnouncements extends OrgAction
 
                 ],
 
-                'data' => AnnouncementResource::collection($announcements),
+                'data' => AnnouncementsResource::collection($announcements),
             ]
         )->table(
             $this->tableStructure(

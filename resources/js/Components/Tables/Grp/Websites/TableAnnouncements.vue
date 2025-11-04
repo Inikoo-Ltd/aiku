@@ -24,13 +24,12 @@ const props = defineProps<{
 }>()
 
 function announcementRoute(announcement) {
-    return ''
-    // return route(
-    //     'grp.org.shops.show.web.announcements.show',
-    //     {
-    //         ...route().queryParams,
-    //         announcement: announcement.ulid,
-    //     })
+    return route(
+        'grp.org.shops.show.web.announcements.show',
+        {
+            ...route().params,
+            announcement: announcement.ulid,
+        })
 }
 </script>
 
@@ -45,7 +44,7 @@ function announcementRoute(announcement) {
         </template>
 
         <template #cell(name)="{ item: announcement }">
-            <Link :href="announcementRoute(announcement)" :id="announcement['ulid']" class="specialUnderlineCustomer py-1 px-2 whitespace-nowrap">
+            <Link :href="announcementRoute(announcement)" :id="announcement['ulid']" class="primaryLink py-1 px-2 whitespace-nowrap">
                 {{announcement['name']}}
             </Link>
         </template>

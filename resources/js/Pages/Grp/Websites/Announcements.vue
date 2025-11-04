@@ -20,8 +20,6 @@ const props = defineProps<{
 </script>
 
 <template layout="CustomerApp">
-  <!-- <pre>{{ props }}</pre> -->
-
   <Head :title="capitalize(title)" />
   <PageHeading :data="pageHead"></PageHeading>
 

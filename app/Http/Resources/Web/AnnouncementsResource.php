@@ -8,14 +8,13 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Models\Announcement;
+use App\Enums\Announcement\AnnouncementStatusEnum;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AnnouncementsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        /** @var Announcement $announcement */
         $announcement = $this;
 
         $extractedSettings = $announcement->extractSettings($announcement->settings);
@@ -25,7 +24,7 @@ class AnnouncementsResource extends JsonResource
             'code'                           => $announcement->code,
             'name'                           => $announcement->name,
             'created_at'                     => $announcement->created_at,
-            'status'                         => $announcement->status->statusIcon()[$announcement->status->value],
+            'status'                         => AnnouncementStatusenum::statusIcon()[$announcement->status->value],
             'show_pages'                     => $extractedSettings['show_pages'],
             'hide_pages'                     => $extractedSettings['hide_pages'],
         ];

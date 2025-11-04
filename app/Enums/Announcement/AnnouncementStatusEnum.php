@@ -25,7 +25,7 @@ enum AnnouncementStatusEnum: string
         ];
     }
 
-    public function statusIcon(): array
+    public static function statusIcon(): array
     {
         return [
             'inactive'    => [
