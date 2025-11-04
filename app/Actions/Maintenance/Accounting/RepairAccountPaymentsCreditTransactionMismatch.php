@@ -12,6 +12,8 @@ use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
+use App\Http\Resources\Accounting\InvoiceResource;
+use App\Http\Resources\Sales\OrderResource;
 use App\Models\Accounting\CreditTransaction;
 use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
@@ -32,9 +34,12 @@ class RepairAccountPaymentsCreditTransactionMismatch
         }
 
         $payment = $creditTransaction->payment;
-//        if($payment->id!=991480){
-//            return;
-//        }
+
+
+        $order = $payment->orders()->first();
+
+
+
 
         $paymentAmount=round(-$payment->amount,2);
         $creditTransactionAmount=round($creditTransaction->amount,2);
@@ -43,7 +48,7 @@ class RepairAccountPaymentsCreditTransactionMismatch
         if($diff!=0){
            // dd($diff,$paymentAmount,$creditTransactionAmount,$creditTransaction->type);
 
-            $command->line(" $diff  Payment  {$payment->id}  {$payment->created_at->format('c')}  ($payment->slug)  amount mismatch {$payment->amount} != {$creditTransaction->amount}");
+            $command->line(" $diff  $order->slug  $order->platform_id  Payment  {$payment->id}  {$payment->created_at->format('c')}  ($payment->slug)  amount mismatch {$payment->amount} != {$creditTransaction->amount}");
         }
 
 
