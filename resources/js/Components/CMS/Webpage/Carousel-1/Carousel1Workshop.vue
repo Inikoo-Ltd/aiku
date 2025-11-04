@@ -138,7 +138,7 @@ const responsiveOptions = computed(() => {
                 }"
                 @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })">
                 <div class="overflow-hidden w-full flex items-center justify-center "
-                  :style="{ aspectRatio: selectedAspectRatio, ...getStyles(modelValue.carousel_data.card_container?.image_properties, screenType) }">
+                  :style="{...getStyles(modelValue.carousel_data.card_container?.image_properties, screenType) }">
                   <Image v-if="data?.image?.source" :src="data.image.source" :alt="data.image.alt || `image-${index}`"
                     :class="'image-container'" class="w-full h-full flex justify-center items-center" />
                   <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">

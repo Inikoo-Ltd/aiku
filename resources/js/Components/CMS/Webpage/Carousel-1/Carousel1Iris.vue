@@ -110,7 +110,7 @@ const responsiveOptions = computed(() => {
               <div class="flex justify-center overflow-visible"
                 :style="getStyles(fieldValue.carousel_data.card_container?.container_image, screenType)" >
                 <div class="overflow-hidden w-full flex items-center justify-center "
-                  :style="{ aspectRatio: selectedAspectRatio, ...getStyles(fieldValue.carousel_data.card_container?.image_properties, screenType) }">
+                  :style="{  ...getStyles(fieldValue.carousel_data.card_container?.image_properties, screenType) }">
                   <Image v-if="data?.image?.source" :src="data.image.source" :alt="data.image.alt || `image-${index}`"
                     :class="'image-container'" class="w-full h-full flex justify-center items-center" />
                   <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
