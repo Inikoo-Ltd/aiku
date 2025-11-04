@@ -92,13 +92,13 @@ class PayRetinaOrderWithBalance extends RetinaAction
                 'type'       => CreditTransactionTypeEnum::PAYMENT,
                 'payment_id' => $payment->id,
             ];
-            $creditTransaction=StoreCreditTransaction::make()->action($customer, $creditTransactionData);
+            $creditTransaction = StoreCreditTransaction::make()->action($customer, $creditTransactionData);
 
-            $paymentAmount=round(-$payment->amount,2);
-            $creditTransactionAmount=round($creditTransaction->amount,2);
-            $diff=$paymentAmount-$creditTransactionAmount;
+            $paymentAmount = round(-$payment->amount, 2);
+            $creditTransactionAmount = round($creditTransaction->amount, 2);
+            $diff = $paymentAmount - $creditTransactionAmount;
 
-            if($diff!=0){
+            if ($diff != 0) {
                 Sentry::captureMessage('Payment amount and credit transaction amount do not match Order:'.$order->id.
                 ' Payment amount:'.$paymentAmount.' Credit transaction amount:'.$creditTransactionAmount);
             }

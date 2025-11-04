@@ -9,9 +9,7 @@ use App\Http\Resources\Accounting\PaymentServiceProviderResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Http\Resources\Sales\OrderResource;
-use App\Models\Accounting\Invoice;
 use App\Models\Accounting\Payment;
-use App\Models\Ordering\Order;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetPaymentShowcase

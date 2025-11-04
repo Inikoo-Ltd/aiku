@@ -41,8 +41,8 @@ class UpdateOrderPaymentsStatus extends OrgAction
         foreach ($order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment) {
             $runningPaymentsAmount += $payment->amount;
         }
-        $runningPaymentsAmount= round($runningPaymentsAmount,2);
-        $totalAmount=  $order->total_amount;
+        $runningPaymentsAmount = round($runningPaymentsAmount, 2);
+        $totalAmount =  $order->total_amount;
 
         if ($runningPaymentsAmount >= $totalAmount) {
             $payStatus = OrderPayStatusEnum::PAID;

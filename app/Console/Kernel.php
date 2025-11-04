@@ -127,9 +127,9 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'CheckAllEbayChannels',
         );
 
-//        $schedule->command('woo:update-inventory')->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
-//            monitorSlug: 'UpdateWooStockInventories',
-//        );
+        $schedule->command('woo:update-inventory')->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'UpdateWooStockInventories',
+        );
 
         $schedule->command('shopify:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateInventoryInShopifyPortfolio',
@@ -159,7 +159,6 @@ class Kernel extends ConsoleKernel
         $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'ConsolidateRecurringBills',
         );
-
     }
 
 

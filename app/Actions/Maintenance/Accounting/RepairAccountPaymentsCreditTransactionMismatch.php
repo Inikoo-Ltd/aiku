@@ -8,19 +8,10 @@
 
 namespace App\Actions\Maintenance\Accounting;
 
-use App\Actions\Helpers\SerialReference\GetSerialReference;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Accounting\CreditTransaction\CreditTransactionTypeEnum;
-use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
-use App\Http\Resources\Accounting\InvoiceResource;
-use App\Http\Resources\Sales\OrderResource;
 use App\Models\Accounting\CreditTransaction;
-use App\Models\Accounting\Invoice;
-use App\Models\Accounting\Payment;
-use App\Models\Catalogue\Shop;
-use App\Models\Helpers\SerialReference;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 class RepairAccountPaymentsCreditTransactionMismatch
 {
@@ -29,7 +20,7 @@ class RepairAccountPaymentsCreditTransactionMismatch
     protected function handle(CreditTransaction $creditTransaction, Command $command): void
     {
 
-        if($creditTransaction->type!=CreditTransactionTypeEnum::PAYMENT){
+        if ($creditTransaction->type != CreditTransactionTypeEnum::PAYMENT) {
             return;
         }
 
@@ -41,13 +32,11 @@ class RepairAccountPaymentsCreditTransactionMismatch
 
 
 
-        $paymentAmount=round(-$payment->amount,2);
-        $creditTransactionAmount=round($creditTransaction->amount,2);
-        $diff=$paymentAmount-$creditTransactionAmount;
+        $paymentAmount = round(-$payment->amount, 2);
+        $creditTransactionAmount = round($creditTransaction->amount, 2);
+        $diff = $paymentAmount - $creditTransactionAmount;
 
-        if($diff!=0){
-           // dd($diff,$paymentAmount,$creditTransactionAmount,$creditTransaction->type);
-
+        if ($diff != 0) {
             $command->line(" $diff  $order->slug  $order->platform_id  Payment  {$payment->id}  {$payment->created_at->format('c')}  ($payment->slug)  amount mismatch {$payment->amount} != {$creditTransaction->amount}");
         }
 

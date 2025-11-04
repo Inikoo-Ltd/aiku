@@ -20,7 +20,6 @@ use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Spatie\QueryBuilder\AllowedFilter;
-use Illuminate\Support\Facades\DB;
 
 class IndexCreditTransactions extends OrgAction
 {

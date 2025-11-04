@@ -173,6 +173,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Stock> $stocks
  * @property-read Collection<int, StoredItem> $storedItems
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
+ * @property-read Collection<int, Tag> $tags
  * @property-read TaxNumber|null $taxNumber
  * @property-read TiktokUser|null $tiktokUser
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens

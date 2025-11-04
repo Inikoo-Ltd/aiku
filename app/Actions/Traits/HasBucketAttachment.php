@@ -12,7 +12,7 @@ trait HasBucketAttachment
 {
     public function getAttachmentData(MasterAsset|Product|TradeUnit|TradeUnitFamily $model): array
     {
-        $attachments = $model->attachments()->get()->keyBy(fn($att) => $att->pivot->scope);
+        $attachments = $model->attachments()->get()->keyBy(fn ($att) => $att->pivot->scope);
 
         $attachmentConfigs = [
             'public'  => [

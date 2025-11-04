@@ -132,9 +132,9 @@ class GenerateInvoiceFromOrder extends OrgAction
 
             $totalPaid = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->sum('payments.amount');
 
-            $amountToCredit = round($totalPaid - $invoice->total_amount,2);
+            $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
 
-            if ($amountToCredit>0) {
+            if ($amountToCredit > 0) {
 
 
                 /** @var \App\Models\Accounting\PaymentAccountShop $paymentAccountShop */
