@@ -270,6 +270,10 @@ const defaultFieldsData = {
     //         }
     //     }
     // },
+    "countdown": {
+        "date": new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        "expired_text": "<p><em>Countdown expired</em></p>"
+    },
     "button_1": {
         "link": {
             "type": "external",

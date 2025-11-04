@@ -42,7 +42,6 @@ const onCopyUlid = async (text: string) => {
         isOnCopy.value = false
     }, 2000)
 }
-
 </script>
 
 

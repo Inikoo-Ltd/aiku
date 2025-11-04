@@ -349,9 +349,9 @@ class GetShopNavigation
                             ],
                             $shop->type == ShopTypeEnum::DROPSHIPPING ?
                             [
-                                "label"   => __("announcements"),
-                                "tooltip" => __("announcements"),
-                                "icon"    => ["fal", "fa-sign"],
+                                "label"   => __("Announcements"),
+                                "tooltip" => __("Announcements"),
+                                "icon"    => ["fal", "fa-megaphone"],
                                 'root'    => 'grp.org.shops.show.web.announcements.',
                                 "route"   => [
                                     "name"       => "grp.org.shops.show.web.announcements.index",

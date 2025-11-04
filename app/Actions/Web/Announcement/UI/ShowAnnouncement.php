@@ -58,15 +58,19 @@ class ShowAnnouncement extends OrgAction
                     'title'     => $announcement->name,
                     'icon'      => [
                         'tooltip' => __('announcement'),
-                        'icon'    => 'fal fa-sign'
+                        'icon'    => 'fal fa-megaphone'
                     ],
-                    'container' => [
-                        'icon'    => ['fal', 'fa-globe'],
-                        'tooltip' => __('Website'),
-                        'label'   => Str::possessive($this->parent->name)
-                    ],
+                    "model" => __('Announcement'),
                     'iconRight' => $announcement->state->stateIcon()[$announcement->state->value],
                     'actions'   => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'edit',
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.web.announcements.edit',
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ],                            
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'primary',
@@ -77,16 +81,6 @@ class ShowAnnouncement extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ] : false,
-                        [
-                            'type'  => 'button',
-                            'style' => 'primary',
-                            'label' => __('Edit'),
-                            'icon'  => ["fal", "fa-drafting-compass"],
-                            'route' => [
-                                'name'       => 'grp.org.shops.show.web.announcements.edit',
-                                'parameters' => array_values($request->route()->originalParameters())
-                            ]
-                        ]
                     ],
                 ],
                 'tabs'        => [
