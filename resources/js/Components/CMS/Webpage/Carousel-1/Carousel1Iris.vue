@@ -127,7 +127,6 @@ watch(
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(fieldValue?.container?.properties, props.screenType)
     }">
-    {{isLooping  }}
       <Carousel
         v-show="hasCards"
         :value="fieldValue.carousel_data.cards"
