@@ -145,7 +145,7 @@ const onSubmitDecrease = () => {
                 @click="() => onSubmitDecrease()"
                 full
                 :loading="isLoading"
-                :disabled="amount <= 0"
+                :disabled="amount <= 0 || !reasonToDecrease"
                 v-tooltip="amount <= 0 ? trans('Add amount to submit') : ''"
             >
             </Button>
