@@ -17,6 +17,7 @@ import { faMoneyBill } from "@fal"
 import { faStop } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import AnnouncementShowcase from './AnnouncementShowcase.vue'
+import TableSnapshots from '@/Components/Tables/TableSnapshots.vue'
 library.add(faMoneyBill, faStop)
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
@@ -26,6 +27,7 @@ const props = defineProps<{
     pageHead: TSPageHeading
     tabs: TSTabs
     showcase: {}
+    snapshots: {}
     
 }>()
 
@@ -36,6 +38,7 @@ const component = computed(() => {
 
     const components: Component = {
         showcase: AnnouncementShowcase,
+        snapshots: TableSnapshots
     }
 
     return components[currentTab.value]
