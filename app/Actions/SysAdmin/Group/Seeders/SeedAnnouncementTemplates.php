@@ -21,7 +21,9 @@ class SeedAnnouncementTemplates
 
     public function handle(Group $group): void
     {
-        foreach (Storage::disk('datasets')->files('announcement/screenshot') as $file) {
+        $files = Storage::disk('datasets')->files('announcement/screenshot');
+
+        foreach ($files as $file) {
             $announcementTemplateCode = pathinfo($file, PATHINFO_FILENAME);
 
             $announcementTemplate = AnnouncementTemplate::where('code', $announcementTemplateCode)->first();
@@ -51,6 +53,12 @@ class SeedAnnouncementTemplates
                 );
             }
         }
+
+        $diff = array_diff(AnnouncementTemplate::all()->pluck('code')->toArray(), array_map(function ($file) {
+            return pathinfo($file, PATHINFO_FILENAME);
+        }, $files));
+
+        AnnouncementTemplate::whereIn('code', $diff)->delete();
     }
 
     public string $commandSignature = 'group:seed_announcement_templates';
