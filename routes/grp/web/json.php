@@ -78,6 +78,7 @@ use App\Actions\Masters\MasterProductCategory\Json\GetMasterDepartmentAndMasterS
 use App\Actions\Ordering\Order\UI\IndexRecentOrderTransactionUploads;
 use App\Actions\Procurement\OrgSupplierProducts\Json\GetOrgSupplierProducts;
 use App\Actions\SysAdmin\User\GetSupervisorUsers;
+use App\Actions\Web\Announcement\UI\GetAnnouncementTemplates;
 use App\Actions\Web\WebBlockHistory\GetWebBlockHistories;
 use App\Actions\Web\WebBlockType\GetWebBlockTypes;
 use App\Actions\Web\Webpage\Json\GetWebpagesForCollection;
@@ -85,6 +86,7 @@ use App\Actions\Web\Website\GetWebsiteCloudflareUniqueVisitors;
 use Illuminate\Support\Facades\Route;
 
 Route::get('web-block-types', GetWebBlockTypes::class)->name('web-block-types.index');
+Route::get('announcement-templates', GetAnnouncementTemplates::class)->name('announcement_templates.index');
 
 Route::get('comms/outboxes/{outbox}/users', GetOutboxUsers::class)->name('outbox.users.index');
 
