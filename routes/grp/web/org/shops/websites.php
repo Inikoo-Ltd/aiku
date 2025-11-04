@@ -12,6 +12,8 @@ use App\Actions\Comms\Outbox\UI\IndexOutboxes;
 use App\Actions\Comms\Outbox\UI\ShowOutbox;
 use App\Actions\Comms\Outbox\UI\ShowOutboxWorkshop;
 use App\Actions\Helpers\Snapshot\UI\IndexSnapshots;
+use App\Actions\Web\Announcement\UI\CreateAnnouncement;
+use App\Actions\Web\Announcement\UI\EditAnnouncement;
 use App\Actions\Web\Announcement\UI\IndexAnnouncements;
 use App\Actions\Web\Announcement\UI\ShowAnnouncement;
 use App\Actions\Web\Announcement\UI\ShowAnnouncementWorkshop;
@@ -158,6 +160,8 @@ Route::prefix('{website}/banners')->name('banners.')->group(function () {
 
 Route::prefix('{website}/announcements')->name('announcements.')->group(function () {
     Route::get('', IndexAnnouncements::class)->name('index');
+    Route::get('create', CreateAnnouncement::class)->name('create')->withoutScopedBindings();
+    Route::get('{announcement:ulid}/edit', EditAnnouncement::class)->name('edit')->withoutScopedBindings();
     Route::get('/{announcement:ulid}/workshop', ShowAnnouncementWorkshop::class)->name('workshop');
     Route::get('/{announcement:ulid}', ShowAnnouncement::class)->name('show')->withoutScopedBindings();
 });

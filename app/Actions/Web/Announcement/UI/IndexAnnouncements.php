@@ -120,7 +120,18 @@ class IndexAnnouncements extends OrgAction
     {
         $container = null;
 
-        $actions = null;
+        $actions = [
+            [
+                'type'  => 'button',
+                'style' => 'primary',
+                'label' => __('Create'),
+                'icon'  => ["fal", "fa-drafting-compass"],
+                'route' => [
+                    'name'       => 'grp.org.shops.show.web.announcements.create',
+                    'parameters' => array_values($request->route()->originalParameters())
+                ]
+            ]
+        ];
 
         return Inertia::render(
             'Websites/Announcements',

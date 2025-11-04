@@ -14,6 +14,7 @@ use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Web\Website;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateAnnouncement extends OrgAction
@@ -31,13 +32,12 @@ class UpdateAnnouncement extends OrgAction
         $snapshot->update(
             [
                 'layout' => [
-                    'container_properties'  => $modelData['container_properties'],
-                    'fields'                => $modelData['fields'],
-                    'settings'              => $modelData['settings']
+                    'container_properties' => Arr::get($modelData, 'container_properties', Arr::get($snapshot->layout, 'container_properties')),
+                    'fields' => Arr::get($modelData, 'fields', Arr::get($snapshot->layout, 'fields')),
+                    'settings' => Arr::get($modelData, 'settings', Arr::get($snapshot->layout, 'settings'))
                 ]
             ]
         );
-
         $announcement->update(
             [
                 'is_dirty' => true
@@ -55,6 +55,7 @@ class UpdateAnnouncement extends OrgAction
     public function rules(): array
     {
         return [
+            'name'                 => ['sometimes', 'string'],
             'template_code'        => ['sometimes', 'string'],
             'fields'               => ['sometimes', 'array'],
             'settings'             => ['sometimes', 'array'],

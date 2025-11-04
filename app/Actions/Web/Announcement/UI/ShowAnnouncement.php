@@ -77,6 +77,16 @@ class ShowAnnouncement extends OrgAction
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
                         ] : false,
+                        [
+                            'type'  => 'button',
+                            'style' => 'primary',
+                            'label' => __('Edit'),
+                            'icon'  => ["fal", "fa-drafting-compass"],
+                            'route' => [
+                                'name'       => 'grp.org.shops.show.web.announcements.edit',
+                                'parameters' => array_values($request->route()->originalParameters())
+                            ]
+                        ]
                     ],
                 ],
                 'tabs'        => [
@@ -159,20 +169,20 @@ class ShowAnnouncement extends OrgAction
 
                 AnnouncementTabsEnum::SHOWCASE->value => $this->tab == AnnouncementTabsEnum::SHOWCASE->value
                     ?
-                    fn() => AnnouncementResource::make($announcement)->getArray()
+                    fn () => AnnouncementResource::make($announcement)->getArray()
                     : Inertia::lazy(
-                        fn() => AnnouncementResource::make($announcement)->getArray()
+                        fn () => AnnouncementResource::make($announcement)->getArray()
                     ),
 
                 AnnouncementTabsEnum::SNAPSHOTS->value => $this->tab == AnnouncementTabsEnum::SNAPSHOTS->value
                     ?
-                    fn() => SnapshotResource::collection(
+                    fn () => SnapshotResource::collection(
                         IndexSnapshots::run(
                             parent: $announcement,
                             prefix: AnnouncementTabsEnum::SNAPSHOTS->value
                         )
                     )
-                    : Inertia::lazy(fn() => SnapshotResource::collection(
+                    : Inertia::lazy(fn () => SnapshotResource::collection(
                         IndexSnapshots::run(
                             parent: $announcement,
                             prefix: AnnouncementTabsEnum::SNAPSHOTS->value

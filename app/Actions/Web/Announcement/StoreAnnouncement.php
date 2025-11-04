@@ -12,6 +12,7 @@ use App\Actions\Helpers\Snapshot\StoreAnnouncementSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Web\WebsiteHydrateAnnouncements;
 use App\Models\Announcement;
+use App\Models\Catalogue\Shop;
 use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Redirect;
@@ -73,11 +74,7 @@ class StoreAnnouncement extends OrgAction
 
     public function authorize(ActionRequest $request): bool
     {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->get('customerUser')->hasPermissionTo("portfolio.banners.edit");
+        return true;
     }
 
     public function rules(): array
@@ -87,14 +84,14 @@ class StoreAnnouncement extends OrgAction
         ];
     }
 
-    public function asController(Website $website, ActionRequest $request): Announcement
+    public function asController(Shop $shop, Website $website, ActionRequest $request): Announcement
     {
         $this->scope    = 'website';
         $this->parent   = $website;
 
-        $this->initialisation($website->organisation, $request);
+        $this->initialisationFromShop($shop, $request);
 
-        return $this->handle($website, $request->validated());
+        return $this->handle($website, $this->validatedData);
     }
 
     public function asCommand(Command $command)
