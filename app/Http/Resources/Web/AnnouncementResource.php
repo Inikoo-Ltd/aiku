@@ -8,6 +8,7 @@
 
 namespace App\Http\Resources\Web;
 
+use App\Enums\Announcement\AnnouncementStateEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Announcement;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -29,10 +30,12 @@ class AnnouncementResource extends JsonResource
             'code'                           => $announcement->code,
             'name'                           => $announcement->name,
             'status'                         => $announcement->status->statusIcon()[$announcement->status->value],
+            'state_icon'                     => $announcement->state->stateIcon()[$announcement->state->value],
             'show_pages'                     => $extractedSettings['show_pages'],
             'hide_pages'                     => $extractedSettings['hide_pages'],
 
             'publisher'                      => $announcement->liveSnapshot?->publisher,
+            'published_message'             => $announcement->published_message,
             'container_properties'           => $announcement->container_properties,
             'created_at'                     => $announcement->created_at,
             'fields'                         => $announcement->fields,
@@ -42,8 +45,8 @@ class AnnouncementResource extends JsonResource
             'schedule_finish_at'             => $announcement->schedule_finish_at,
             'settings'                       => $announcement->settings,
             'state'                          => $announcement->state,
-            'template_code'                  => 'announcement-promo-2-countdown',
-            'updated_at'                     => $announcement->updated_at,
+            'template_code'                  => $announcement->template_code,
+            'ready_at'                       => $announcement->ready_at,
         ];
     }
 }

@@ -16,6 +16,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faMoneyBill } from "@fal"
 import { faStop } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import AnnouncementShowcase from './AnnouncementShowcase.vue'
 library.add(faMoneyBill, faStop)
 
 // import FileShowcase from '@/xxxxxxxxxxxx'
@@ -24,7 +25,7 @@ const props = defineProps<{
     title: string,
     pageHead: TSPageHeading
     tabs: TSTabs
-
+    showcase: {}
     
 }>()
 
@@ -34,7 +35,7 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 const component = computed(() => {
 
     const components: Component = {
-        showcase: DummyComponent
+        showcase: AnnouncementShowcase,
     }
 
     return components[currentTab.value]

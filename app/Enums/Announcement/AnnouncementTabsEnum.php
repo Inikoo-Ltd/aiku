@@ -23,9 +23,8 @@ enum AnnouncementTabsEnum: string
     {
         return match ($this) {
             AnnouncementTabsEnum::SHOWCASE => [
-                'align' => 'right',
                 'title' => __('Showcase'),
-                'icon' => 'fal fa-money-bill',
+                'icon' => 'fal fa-tachometer-alt-fast',
                 'type' => 'icon',
             ],
             AnnouncementTabsEnum::SNAPSHOTS => [
