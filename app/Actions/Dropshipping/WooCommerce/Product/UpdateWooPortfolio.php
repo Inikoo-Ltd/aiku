@@ -85,7 +85,7 @@ class UpdateWooPortfolio
                 ]);
                 $portfolio->update([
                     'last_stock_value'      => $availableQuantity,
-                    'last_stock_updated_at' => now()
+                    'stock_last_updated_at' => now()
                 ]);
             } else {
                 $response = json_decode($response[0], true);
