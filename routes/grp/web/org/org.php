@@ -60,6 +60,9 @@ Route::prefix("settings")
     ->name("settings.")
     ->group(__DIR__."/settings.php");
 
+Route::prefix("tags")
+    ->name("tags.")
+    ->group(__DIR__."/tags.php");
 
 Route::get('/show', ShowOrganisation::class)->name('show');
 

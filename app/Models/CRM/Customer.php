@@ -38,6 +38,7 @@ use App\Models\Fulfilment\StoredItem;
 use App\Models\Goods\Stock;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Media;
+use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\Ordering\Order;
@@ -61,6 +62,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -499,5 +501,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function trafficSource(): BelongsTo
     {
         return $this->belongsTo(TrafficSource::class, 'traffic_source_id');
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
     }
 }
