@@ -107,15 +107,12 @@ defineExpose({
 
 
 const productRoute = (item) => {
-    if (route().current() === 'grp.org.shops.show.ordering.orders.show.invoices.show.refunds.show') {
-        return route('grp.org.shops.show.catalogue.products.current_products.show', {
-            organisation: route().params.organisation,
-            shop: route().params.shop,
-            product: item.slug
-        })
-    }
+    // console.log('id', item.id)
+    // if (route().current() === 'grp.org.shops.show.ordering.orders.show.invoices.show.refunds.show') {
+        return route('grp.helpers.redirect_asset', [item.id])
+    // }
 
-    return ''
+    // return ''
 }
 </script>
 
@@ -132,7 +129,7 @@ const productRoute = (item) => {
 
                     <!-- Previous Refund -->
                     <small v-if="item.total_last_refund" class="text-gray-500 text-xs">
-                        Previous refund: {{ locale.currencyFormat(item.currency_code, item.total_last_refund) }}
+                        {{ trans("Previous refund") }}: {{ locale.currencyFormat(item.currency_code, item.total_last_refund) }}
                     </small>
 
                     <!-- Refundable Amount -->
@@ -141,7 +138,7 @@ const productRoute = (item) => {
                         @click="()=>setAllRefund(item.rowIndex, item.max_refundable_amount)"
                         :disabled="item.net_amount - item.refund_net_amount - item.total_last_refund <= 0"
                         class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
-                        Refundable: {{ locale.currencyFormat(item.currency_code, item.max_refundable_amount)}}
+                        {{ trans("Refundable") }}: {{ locale.currencyFormat(item.currency_code, item.max_refundable_amount)}}
                     </button>
                 </div>
             </template>
