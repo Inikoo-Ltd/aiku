@@ -28,7 +28,6 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction
         $portfoliosIds = DB::table('portfolios')
             ->select('id')
             ->where('customer_sales_channel_id', $customerSalesChannel->id)
-            ->whereNull('deleted_at')
             ->where('status', true)
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
             ->get();
