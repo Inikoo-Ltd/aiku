@@ -32,7 +32,7 @@ class ShopHydratePlatformSalesIntervalsNewPortfolios implements ShouldBeUnique
         }
 
         $queryBase = Portfolio::where('platform_id', $platformId)
-            ->where('products.shop_id', $shop->id)
+            ->where('shop_id', $shop->id)
             ->selectRaw('count(*) as sum_aggregate');
 
         $stats = $this->getIntervalsData(
