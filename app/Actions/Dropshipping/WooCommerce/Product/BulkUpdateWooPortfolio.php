@@ -33,6 +33,7 @@ class BulkUpdateWooPortfolio
 
     public function handle(WooCommerceUser $wooCommerceUser, Collection $portfolios): void
     {
+        return;
         try {
             $productData = [];
             $logs = [];
