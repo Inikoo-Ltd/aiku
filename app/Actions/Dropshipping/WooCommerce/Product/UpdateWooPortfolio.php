@@ -91,7 +91,7 @@ class UpdateWooPortfolio
 
                 $json = json_encode($response);
 
-                $response = json_decode($response[0], true);
+                //$response = json_decode($response[0], true);
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $json//Arr::get($response, 'message') ?? __('Unknown')
