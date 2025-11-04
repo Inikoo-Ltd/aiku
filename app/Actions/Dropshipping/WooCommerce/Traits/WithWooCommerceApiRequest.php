@@ -47,6 +47,15 @@ trait WithWooCommerceApiRequest
      */
     protected int $cacheDuration = 60;
 
+
+    public int $timeOut = 30;
+
+
+    public function setTimeout(int $timeOut): void
+    {
+        $this->timeOut = $timeOut;
+    }
+
     /**
      * Initialize the WooCommerce API credentials
      *
@@ -98,12 +107,12 @@ trait WithWooCommerceApiRequest
         }
 
         try {
-            $response = Http::timeout(45)
+            $response = Http::timeout($this->timeOut)
                 ->withHeaders([
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
                 ])
-                ->connectTimeout(45)
+                ->connectTimeout($this->timeOut)
                 ->withBasicAuth(
                     $this->woocommerceConsumerKey,
                     $this->woocommerceConsumerSecret

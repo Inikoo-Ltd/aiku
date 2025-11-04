@@ -44,7 +44,6 @@ class UpdateWooPortfolio
 
     public function handle(int $portfolioID): void
     {
-
         $portfolio = Portfolio::find($portfolioID);
 
 
@@ -52,7 +51,7 @@ class UpdateWooPortfolio
             return;
         }
 
-        $customerSalesChannel= $portfolio->customerSalesChannel;
+        $customerSalesChannel = $portfolio->customerSalesChannel;
 
         if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
             return;
@@ -78,6 +77,7 @@ class UpdateWooPortfolio
         $availableQuantity = $product->available_quantity ?? 0;
 
 
+        $wooCommerceUser->setTimeout(60);
         try {
             $response = $wooCommerceUser->updateWooCommerceProduct(
                 $portfolio->platform_product_id,
@@ -92,15 +92,17 @@ class UpdateWooPortfolio
                     'status'           => PlatformPortfolioLogsStatusEnum::OK,
                     'last_stock_value' => $availableQuantity
                 ]);
-
+                $customerSalesChannel->update([
+                    'ban_stock_update_util' => null
+                ]);
 
                 $portfolio->update([
                     'last_stock_value'      => $availableQuantity,
                     'stock_last_updated_at' => now()
                 ]);
             } else {
-
                 $message = Arr::get($response, '0.message') ?? __('Unknown error');
+
 
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,

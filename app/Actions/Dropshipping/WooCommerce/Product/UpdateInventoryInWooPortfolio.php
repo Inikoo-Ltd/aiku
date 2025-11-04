@@ -31,8 +31,8 @@ class UpdateInventoryInWooPortfolio
 
         /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
-            
-            
+
+
             if ($customerSalesChannel->ban_stock_update_util && $customerSalesChannel->ban_stock_update_util->gt(now())) {
                 continue;
             }
@@ -51,7 +51,7 @@ class UpdateInventoryInWooPortfolio
                 continue;
             }
 
-
+            $wooCommerceUser->setTimeout(60);
             $result = $wooCommerceUser->checkConnection();
             if ($result && Arr::has($result, 'environment')) {
 
