@@ -96,7 +96,6 @@ const imageSettings = {
 </script>
 
 <template>
-  {{  }}
   <div id="carousel-background-image" class="relative w-full">
     <!-- Carousel -->
     <div :data-refresh="refreshTrigger" :style="{

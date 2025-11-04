@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, Teleport, inject } from "vue"
+import { onBeforeUnmount, onMounted, ref, Teleport, inject, nextTick } from "vue"
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/vue-3'
 import Select from 'primevue/select'
 import { useFontFamilyList } from '@/Composables/useFont'
@@ -170,16 +170,11 @@ const editorInstance = useEditor({
                                     ?.marks.find((mark) => mark.type === linkMark)?.attrs
 
                                 if (attrs) {
-
-                                    // Prevent default link click behavior
                                     event.preventDefault()
-
-                                    // Check if workshop URL exists
                                     if (attrs.workshop) {
                                         CustomLinkConfirm.value = true
                                         attrsCustomLink.value = attrs
                                     } else {
-                                        /*   window.open(attrs.href, "_blank") */
                                         console.log(attrs.href)
                                     }
                                     return true
@@ -270,10 +265,7 @@ const editorInstance = useEditor({
         TableHeader.extend({
             addAttributes() {
                 return {
-                    // extend the existing attributes …
                     ...this.parent?.(),
-
-                    // and add a new one …
                     backgroundColor: {
                         default: null,
                         parseHTML: element => element.getAttribute('data-background-color'),
@@ -310,10 +302,7 @@ const editorInstance = useEditor({
         TableCell.extend({
             addAttributes() {
                 return {
-                    // extend the existing attributes …
                     ...this.parent?.(),
-
-                    // and add a new one …
                     backgroundColor: {
                         default: null,
                         parseHTML: element => element.getAttribute('data-background-color'),
@@ -492,26 +481,30 @@ const convertRemToPx = (remString) => {
     return isNaN(remValue) ? '' : Math.round(remValue * 16).toString()
 }
 
-const shouldShow = ({ editor, view, state, from, to }) => {
+
+/* const shouldShow = ({ editor, view, state, from, to }) => {
     return true
 }
+ */
 
+onMounted(async () => {
+  await nextTick()
 
-onMounted(() => {
-  setTimeout(() => (contentResult.value = editorInstance.value?.getHTML()), 250)
-  tippyOptions.value = {
-    reference: () => document.getElementById('tiptap'),
-    duration: 100,
+  setTimeout(() => {
+    contentResult.value = editorInstance.value?.getHTML()
+  }, 250)
+
+  /* tippyOptions.value = {
     boundary: 'viewport',
-    maxWidth: 780,
-}
+    appendTo: document.getElementById('content-editor-container'),
+  } */
 })
 </script>
 
 <template>
     <div id="tiptap" class="divide-y divide-gray-400">
         <Teleport to="body">
-            <BubbleMenu  ref="_bubbleMenu" :editor="editorInstance"
+            <BubbleMenu  ref="_bubbleMenu"  :editor="editorInstance"
                 v-if="editorInstance && !showDialog" :tippy-options="tippyOptions"
                 class="w-full max-w-[56vw] sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]">
 
@@ -929,7 +922,7 @@ onMounted(() => {
             </BubbleMenu>
         </Teleport>
 
-        <div class="flex flex-col">
+        <div class="flex flex-col" id="content-editor-container">
             <slot name="editor-content" :editor="editorInstance">
                 <EditorContent @click.stop="onEditorClick" :editor="editorInstance" />
             </slot>
