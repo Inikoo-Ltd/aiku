@@ -53,6 +53,7 @@ class UpdateCustomer extends OrgAction
     {
         if (Arr::has($modelData, 'contact_address')) {
             $contactAddressData = Arr::get($modelData, 'contact_address');
+
             Arr::forget($modelData, 'contact_address');
 
 

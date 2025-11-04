@@ -68,7 +68,6 @@ class IndexTags extends OrgAction
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'slug', label: __('slug'), canBeHidden: false)
                 ->column(key: 'scope', label: __('Scope'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('name');
         };
