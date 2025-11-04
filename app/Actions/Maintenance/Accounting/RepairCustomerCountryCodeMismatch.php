@@ -8,20 +8,45 @@
 
 namespace App\Actions\Maintenance\Accounting;
 
+use App\Actions\Helpers\Address\UpdateAddress;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Address;
 use Illuminate\Console\Command;
 
 class RepairCustomerCountryCodeMismatch
 {
     use WithActionUpdate;
 
-    protected function handle(Customer $customer, Command $command): void
+
+    /**
+     * @var array|\ArrayAccess|mixed
+     */
+    private mixed $count=0;
+
+    protected function handle(Address $address, Command $command): void
     {
-        $countryCode0 = $customer->address->country_code;
-        $countryCode1 = $customer->address->country->code;
+        if(!$address->country){
+            return;
+        }
+
+        $countryCode0 = $address->country_code;
+        $countryCode1 = $address->country->code;
         if ($countryCode0 !== $countryCode1) {
-            $command->line("customer: $customer->slug country_code: $countryCode0 ||>>>><<<<|| country_id->code: $countryCode1");
+            $this->count++;
+
+            if($address->is_fixed){
+                $command->line(" $this->count FIXED Address: $address->id  $address->created_at  country_code: $countryCode0 ||>>>><<<<|| country_id->code: $countryCode1");
+            }else{
+                $command->line(" $this->count LIVE Address: $address->id  $address->created_at  country_code: $countryCode0 ||>>>><<<<|| country_id->code: $countryCode1");
+            }
+            UpdateAddress::run($address,[
+                'country_id' => $address->country_id,
+            ]);
+
+
+
+
         }
     }
 
@@ -29,9 +54,9 @@ class RepairCustomerCountryCodeMismatch
 
     public function asCommand(Command $command): void
     {
-        Customer::orderBy('created_at')->chunk(1000, function ($customers) use ($command) {
-            foreach ($customers as $customer) {
-                $this->handle($customer, $command);
+        Address::orderBy('created_at','desc')->chunk(1000, function ($addresses) use ($command) {
+            foreach ($addresses as $address) {
+                $this->handle($address, $command);
             }
         });
     }
