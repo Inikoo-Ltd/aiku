@@ -108,7 +108,7 @@ const props = defineProps<{
             route_store: routeType
             route_increase: routeType
             route_decrease: routeType
-            increaase_reasons_options: {}[]
+            increase_reasons_options: {}[]
             decrease_reasons_options: {}[]
         }
         currency: {
@@ -531,7 +531,7 @@ const copyToClipboard = async (text: string, label: string) => {
     <!-- Modal: Increase balance -->
     <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceIncrease v-model="isModalBalanceIncrease" :routeSubmit="data.balance.route_increase"
-            :options="data.balance.increaase_reasons_options" :currency="data.currency"
+            :options="data.balance.increase_reasons_options" :currency="data.currency"
             :types="data.balance.type_options" />
     </Modal>
 

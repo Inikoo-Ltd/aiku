@@ -33,7 +33,10 @@ const inAdministrativeAreas = (administrativeArea: string, countryID: number) =>
 const addressFields = (countryID: number) => {
     return props.options.countriesAddressData[countryID]['fields'];
 }
-const handleChange = () => props.form.clearErrors(props.fieldName);
+const handleChange = (aa) => {
+    delete addressValues['country_code']
+    props.form.clearErrors(props.fieldName);
+}
 
 </script>
 
