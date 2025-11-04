@@ -38,19 +38,20 @@ class UpdateOrderPaymentsStatus extends OrgAction
         $payStatus             = OrderPayStatusEnum::UNPAID;
         $payDetailedStatus     = OrderPayDetailedStatusEnum::UNPAID;
         /** @var Payment $payment */
-        foreach (
-            $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment
-        ) {
+        foreach ($order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment) {
             $runningPaymentsAmount += $payment->amount;
         }
-        if ($runningPaymentsAmount >= $order->total_amount) {
+        $runningPaymentsAmount= round($runningPaymentsAmount,2);
+        $totalAmount=  $order->total_amount;
+
+        if ($runningPaymentsAmount >= $totalAmount) {
             $payStatus = OrderPayStatusEnum::PAID;
         }
 
 
-        if ($runningPaymentsAmount > $order->total_amount) {
+        if ($runningPaymentsAmount > $totalAmount) {
             $payDetailedStatus = OrderPayDetailedStatusEnum::OVERPAID;
-        } elseif ($runningPaymentsAmount == $order->total_amount) {
+        } elseif ($runningPaymentsAmount == $totalAmount) {
             $payDetailedStatus = OrderPayDetailedStatusEnum::PAID;
         } elseif ($runningPaymentsAmount > 0) {
             $payDetailedStatus = OrderPayDetailedStatusEnum::PARTIALLY_PAID;
