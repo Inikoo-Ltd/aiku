@@ -492,8 +492,8 @@ const onSectionSetting = () => {
     </div>
 
 
-    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false">
-        <div class="h-[500px]">
+    <Modal :isOpen="isModalOpen" @onClose="isModalOpen = false" width="max-w-4xl w-full">
+        <div class="h-[600px]">
             <AnnouncementTemplateList @afterSubmit="() => isModalOpen = false" />
         </div>
     </Modal>
