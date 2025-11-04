@@ -312,6 +312,16 @@ class User extends Authenticatable implements HasMedia, Auditable, HasPasskeys
         return $this->getOrganisations()->first();
     }
 
+    /**
+    * Get the display name for the passkey.
+    */
+    public function getPasskeyDisplayName(): string
+    {
+        // Return a string that identifies this user for passkey purposes
+        // You can use any user attribute that makes sense, like email, username, or name
+        return  $this->username;
+    }
+
 
     public function timeSeries(): HasMany
     {

@@ -26,6 +26,8 @@ enum ProfileTabsEnum: string
     case VISIT_LOGS = 'visit_logs';
     case TIMESHEETS = 'timesheets';
 
+    case PASS_KEYS = 'pass_keys';
+
     // case MY_DATA = 'my_data';
 
 
@@ -66,6 +68,11 @@ enum ProfileTabsEnum: string
                 'icon'  => 'fal fa-clock',
                 'type'  => 'icon',
                 'align' => 'right',
+            ],
+
+            ProfileTabsEnum::PASS_KEYS => [
+                'title' => __('Pass keys'),
+                'icon'  => 'fal fa-clock',
             ],
             // ProfileTabsEnum::MY_DATA => [
             //     'title' => __('My data'),

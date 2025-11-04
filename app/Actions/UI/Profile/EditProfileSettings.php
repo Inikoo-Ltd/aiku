@@ -32,6 +32,7 @@ class EditProfileSettings
 
     public function jsonResponse(User $user): array
     {
+        Log::info("jsonResponse=>".json_decode($user->passkey_options) );
         return $this->generateBlueprint($user);
     }
 
@@ -96,6 +97,17 @@ class EditProfileSettings
                                 'required' => false,
                                 'options'  => $printers,
                                 'value'    => Arr::get($user->settings, 'preferred_printer_id'),
+                            ],
+                        ],
+                    ],
+                    [
+                        "label"  => __("passkeys"),
+                        "icon"   => "fal fa-sliders-v",
+                        "fields" => [
+                            "passkey" => [
+                                "type"  => "input",
+                                "label" => __("Generate passkey"),
+                                "value" => Arr::get('', 'passkey'),
                             ],
                         ],
                     ],

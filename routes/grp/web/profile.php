@@ -19,6 +19,7 @@ use App\Actions\UI\Profile\ShowProfileIndexVisitLogs;
 use App\Actions\UI\Profile\ShowProfilePageHeadTabs;
 use App\Actions\UI\Profile\ShowProfileShowcase;
 use App\Actions\UI\Profile\UpdateProfile;
+use App\Actions\UI\Profile\ShowProfileIndexPassKeys;
 // use App\Actions\UI\Profile\StorePasskey;
 use Illuminate\Support\Facades\Route;
 
@@ -40,3 +41,4 @@ Route::get('/histories', ShowProfileIndexHistory::class)->name('history.index');
 Route::get('/visit-logs', ShowProfileIndexVisitLogs::class)->name('visit-logs.index');
 Route::get('/kpis', ShowProfileIndexKpi::class)->name('kpis.index');
 Route::get('/todo', ShowProfileIndexTodo::class)->name('todo.index');
+// Route::get('/pass-keys', ShowProfileIndexPassKeys::class)->name('pass-keys.index');
