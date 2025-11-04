@@ -14,10 +14,17 @@ import { AnnouncementData } from '@/types/Announcement'
 import Checkbox from 'primevue/checkbox'
 import { set } from 'lodash'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-
-
+import { Image as ImageTS } from '@/types/Image'
 
 library.add(faPresentation, faCube, faText, faImage, faImages, faPaperclip, faShoppingBasket, faStar, faHandHoldingBox, faBoxFull, faBars, faBorderAll, faLocationArrow)
+
+interface AnnouncementTemplateCode {
+    id: number
+    code: string
+    screenshot: ImageTS
+    // Add other properties as needed
+}
+
 const props = withDefaults(defineProps<{
     // onPickBlock: Function
     // webBlockTypes: Root
@@ -33,10 +40,9 @@ const emits = defineEmits<{
 const layout = inject('layout', layoutStructure)
 
 const announcementData = inject<AnnouncementData | null>('announcementData', null)
-console.log('qqq', announcementData)
 
-const announcements_list = ref<AnnouncementData[] | null>(null)
-const announcements_list_categories = ref<string[] | []>([])
+const announcements_list = ref<AnnouncementTemplateCode[] | null>(null)
+// const announcements_list_categories = ref<string[] | []>([])
 const selectedCategory = ref<string>('all')
 const compFilteredAnnouncementList = computed(() => {
     if (selectedCategory.value === 'all') {
@@ -109,17 +115,18 @@ const fetchAnnouncementList = async () => {
     console.log('vvvvv', layout.currentParams)
     try {
         const response = await axios.get(
-            route('grp.org.shops.show.web.announcements.index', layout.currentParams),
+            route('grp.json.announcement_templates.index'),
         )
 
+        console.log('kelo', response)
         announcements_list.value = response.data.data
 
         // Set category announcement
         if (announcements_list.value) {
-            announcements_list_categories.value = Array.from(response.data.data.reduce((acc, item) => {
-                acc.add(item.category)
-                return acc
-            }, new Set()))
+            // announcements_list_categories.value = Array.from(response.data.data.reduce((acc, item) => {
+            //     acc.add(item.category)
+            //     return acc
+            // }, new Set()))
         } else {
             console.log('No data available');
         }
@@ -154,7 +161,7 @@ onMounted(() => {
     </div>
 
     <div class="h-[90%] flex gap-x-8 border rounded-xl overflow-hidden">
-        <nav class="w-1/5 bg-gray-100 py-4" aria-label="Sidebar">
+        <!-- <nav class="w-1/5 bg-gray-100 py-4" aria-label="Sidebar">
             <ul v-if="!isLoadingFetch" role="list" class="space-y-1">
                 <li
                     v-for="category in ['all', ...announcements_list_categories || []]"
@@ -173,14 +180,14 @@ onMounted(() => {
 
                 </div>
             </div>
-        </nav>
+        </nav> -->
 
 
         <section class="h-full mx-auto w-full py-4">
             <div class="relative grid gap-y-8 gap-x-4 pr-8 h-full overflow-y-auto overflow-x-hidden">
                 <template v-if="!isLoadingFetch">
-                    <template v-if="compFilteredAnnouncementList?.length">
-                        <div v-for="announcement in compFilteredAnnouncementList"
+                    <template v-if="compFilteredAnnouncementList?.length || true">
+                        <div v-for="announcement in announcements_list"
                             :key="announcement.code"
                             class="cursor-pointer overflow-hidden h-fit group flex flex-col gap-x-2 relative isolate"
                         >
@@ -200,8 +207,8 @@ onMounted(() => {
                                     announcement.code == selectedTemplate?.code ? 'border border-indigo-500' : 'border border-gray-300 hover:border-indigo-500'
                                 ]"
                             >
-                                <div class="h-16 w-full object-cover">
-                                    <Image :src="announcement.source" :imageContain="true" />
+                                <div class="h-16 w-full object-cover asdzxc">
+                                    <Image :src="announcement.screenshot" ximageContain="true" class="qwezxc"/>
                                 </div>
 
                                 <!-- Checkbox: Full template -->
@@ -213,6 +220,7 @@ onMounted(() => {
                                     <span class="cursor-pointer select-none">{{ trans('Full template') }} </span>
                                 </div>
                             </div>
+
                             <!-- Component: clickable -->
                             <component
                                 :is="getAnnouncementComponent(announcement.code)"
@@ -224,6 +232,7 @@ onMounted(() => {
                     </template>
                     <div v-else>{{ trans("No template available") }}</div>
                 </template>
+                
                 <div v-else class="grid gap-y-8">
                     <div v-for="_ in 3" class="grid gap-y-2">
                         <div class="h-5 skeleton w-56"></div>

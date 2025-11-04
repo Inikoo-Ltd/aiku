@@ -18,7 +18,7 @@ class AnnouncementTemplatesResource extends JsonResource
         return [
             'id'                           => $this->id,
             'code'                         => $this->code,
-            'screenshot'                   => $this->screenshot ? GetPictureSources::run($this->screenshot->getImage) : null
+            'screenshot'                   => $this->screenshot ? GetPictureSources::run($this->screenshot->getImage()) : null
         ];
     }
 }
