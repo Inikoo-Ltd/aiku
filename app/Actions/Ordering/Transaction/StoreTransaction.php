@@ -8,11 +8,12 @@
 
 namespace App\Actions\Ordering\Transaction;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrders;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateOrderIntervals;
 use App\Actions\Ordering\Order\CalculateOrderTotalAmounts;
 use App\Actions\Ordering\Order\Hydrators\OrderHydrateTransactions;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithOrderExchanges;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Enums\Ordering\Transaction\TransactionFailStatusEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStatusEnum;
@@ -90,7 +91,10 @@ class StoreTransaction extends OrgAction
             OrderHydrateTransactions::dispatch($order);
         }
 
-        AssetHydrateOrders::dispatch($transaction->asset)->delay($this->hydratorsDelay);
+
+        $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+
+        AssetHydrateOrderIntervals::dispatch($transaction->asset_id, $intervalsExceptHistorical, [])->delay($this->hydratorsDelay);
 
 
         return $transaction;
