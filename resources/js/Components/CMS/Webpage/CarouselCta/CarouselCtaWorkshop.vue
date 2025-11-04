@@ -81,15 +81,20 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                         sendMessageToParent('activeChildBlockArray', index)
                                     }
                                 ">
-                                    <EditorV2 v-if="data?.text" v-model="data.text"
+                                    <EditorV2 
+                                        v-if="data?.text" 
+                                        v-model="data.text"
                                         @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
-                                        @update:data="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
+                                        @update:modelValue="(e) => { data.text = e, emits('autoSave')}" 
+                                        class="mb-6" 
+                                        :uploadImageRoute="{
                                             name: webpageData.images_upload_route.name,
                                             parameters: {
                                                 ...webpageData.images_upload_route.parameters,
                                                 modelHasWebBlocks: blockData?.id,
                                             },
-                                        }" />
+                                        }" 
+                                    />
 
                                     <div class="flex justify-center">
                                         <Button
