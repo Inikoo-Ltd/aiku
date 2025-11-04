@@ -247,6 +247,12 @@ class Order extends Model implements HasMedia, Auditable
 
     protected array $auditInclude = [
         'reference',
+        'total_amount',
+        'charges_amount',
+        'net_amount',
+        'goods_amount',
+        'shipping_amount',
+        'payment_amount',
         'handing_type',
     ];
 
