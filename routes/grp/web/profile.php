@@ -19,7 +19,7 @@ use App\Actions\UI\Profile\ShowProfileIndexVisitLogs;
 use App\Actions\UI\Profile\ShowProfilePageHeadTabs;
 use App\Actions\UI\Profile\ShowProfileShowcase;
 use App\Actions\UI\Profile\UpdateProfile;
-use App\Actions\UI\Profile\StorePasskey;
+// use App\Actions\UI\Profile\StorePasskey;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', ShowProfile::class)->name('show');
