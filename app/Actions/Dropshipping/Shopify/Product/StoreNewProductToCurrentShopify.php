@@ -29,7 +29,7 @@ class StoreNewProductToCurrentShopify extends OrgAction implements ShouldBeUniqu
 
     public function handle(Portfolio $portfolio, array $modelData): void
     {
-        return;
+
 
         $result1 = StoreShopifyProduct::run($portfolio, $modelData);
 
