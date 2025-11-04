@@ -32,6 +32,7 @@ class AnnouncementResource extends JsonResource
             'show_pages'                     => $extractedSettings['show_pages'],
             'hide_pages'                     => $extractedSettings['hide_pages'],
 
+            'publisher'                      => $announcement->liveSnapshot?->publisher,
             'container_properties'           => $announcement->container_properties,
             'created_at'                     => $announcement->created_at,
             'fields'                         => $announcement->fields,
