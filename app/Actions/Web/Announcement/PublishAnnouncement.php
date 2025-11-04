@@ -126,7 +126,7 @@ class PublishAnnouncement extends OrgAction
     public function rules(): array
     {
         return [
-            'code'                 => ['sometimes', 'string'],
+            'code'                 => ['sometimes', 'string', 'nullable'],
             'schedule_at'          => ['sometimes', 'date', 'nullable'],
             'schedule_finish_at'   => ['sometimes', 'date', 'nullable'],
             'published_message'    => ['sometimes', 'string'],
