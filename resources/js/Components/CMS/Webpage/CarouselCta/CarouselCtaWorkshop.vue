@@ -54,7 +54,7 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                     <div :style="{
                         ...getStyles(data.container?.properties, screenType),
                     }">
-                        <div class="grid grid-cols-1 md:grid-cols-2 w-full">
+                        <div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
 
                             <div class="relative w-full md:h-full cursor-pointer overflow-hidden" @click.stop="
                                 () => {
