@@ -14,7 +14,6 @@ use App\Actions\Traits\WithStoreOffer;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
-use App\Rules\IUnique;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -45,18 +44,6 @@ class StoreOfferAllowance extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code'          => [
-                'required',
-                new IUnique(
-                    table: 'offer_allowances',
-                    extraConditions: [
-                        ['column' => 'shop_id', 'value' => $this->shop->id],
-                    ]
-                ),
-
-                'max:64',
-                'alpha_dash'
-            ],
             'data'          => ['sometimes', 'required'],
             'start_at'      => ['sometimes', 'date'],
             'end_at'        => ['sometimes', 'nullable', 'date'],
