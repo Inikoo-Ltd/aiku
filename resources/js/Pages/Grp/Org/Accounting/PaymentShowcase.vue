@@ -8,7 +8,8 @@ import { faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faM
 import { library } from '@fortawesome/fontawesome-svg-core'
 import Tag from "@/Components/Tag.vue"
 import { useLocaleStore } from "@/Stores/locale"
-import { usePage } from '@inertiajs/vue3'
+import { Link, usePage } from '@inertiajs/vue3'
+import { layoutStructure } from "@/Composables/useLayoutStructure"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle, faUndo, faTimes, faEye)
 
@@ -151,10 +152,6 @@ const props = defineProps<{
 	tab: string
 }>()
 
-const layout = inject('layout')
-const page = usePage()
-
-
 
 // Modal state for Account Information
 const isAccountModalVisible = ref(false)
@@ -225,6 +222,8 @@ const normalizedShowcase = computed(() => {
 	}
 })
 
+console.log('normalizedShowcase', normalizedShowcase.value)
+
 const isRefund = computed(() => {
 	return parseFloat(normalizedShowcase.value.amount) < 0
 })
@@ -250,6 +249,16 @@ const getStateTheme = (state: string) => {
 	}
 }
 // console.log(props.data)
+
+const layout = inject('layout', layoutStructure)
+
+const routeInvoice = (invoice) => {
+	return route('grp.org.accounting.invoices.show', {
+		organisation: layout?.currentParams?.organisation,
+		invoice: invoice.slug
+	})
+
+}
 </script>
 
 <template>
@@ -259,18 +268,18 @@ const getStateTheme = (state: string) => {
 			<!-- Section: Payment Summary -->
 			<div class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
+					<h3 class="text-lg font-medium flex items-center gap-2">
 						{{ trans('Payment Summary') }}
 					</h3>
 				</div>
 				<dl class="px-6 py-4 space-y-4">
 
-                    <div class="flex items-center justify-between border-t border-gray-200 pt-4">
+                    <div class="flex items-center justify-between">
                         <dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
                             <FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
                             {{ trans('Date') }}
                         </dt>
-                        <dd class="text-sm text-gray-900">
+                        <dd class="text-sm">
                             {{ useFormatTime(normalizedShowcase.date, {
                             formatTime: 'hm'
                         }) }}
@@ -291,7 +300,7 @@ const getStateTheme = (state: string) => {
                     <!-- Currency -->
                     <div class="flex items-center justify-between">
                         <dt class="text-sm font-medium text-gray-600">{{ trans('Currency') }}</dt>
-                        <dd class="text-sm text-gray-900">
+                        <dd class="text-sm">
                             {{ normalizedShowcase.currency.name }} ({{ normalizedShowcase.currency.code }})
                         </dd>
                     </div>
@@ -309,7 +318,7 @@ const getStateTheme = (state: string) => {
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
 							{{ trans('Payment Service Provider') }}
 						</dt>
-						<dd class="text-sm text-gray-900 flex items-center gap-2">
+						<dd class="text-sm flex items-center gap-2">
 							<button @click="openAccountModal"
 								class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
 								v-tooltip="trans('View Account Information')">
@@ -340,21 +349,21 @@ const getStateTheme = (state: string) => {
 		<!-- Column 2: Order & Account Information -->
 		<div class="space-y-6">
 			<!-- Section: Order Information -->
-			<div v-if="normalizedShowcase.parentData" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
+			<div v-if="normalizedShowcase.order_data" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
-					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
+					<h3 class="text-lg font-medium flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-file-invoice" :style="{ color: themeColors.buttonBg }" />
 						{{ trans('Order Information') }}
 					</h3>
 				</div>
 
 				<!-- If parent_data exists -->
-				<div v-if="normalizedShowcase.parentData" class="px-6 py-4 space-y-4">
+				<div v-if="normalizedShowcase.order_data" class="px-6 py-4 space-y-4">
 					<!-- Order Reference -->
 					<div class="flex items-center justify-between rounded-lg">
 						<dt class="text-sm font-medium">{{ trans('Order Reference') }}</dt>
 						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">{{
-							normalizedShowcase.parentData.reference }}</dd>
+							normalizedShowcase.order_data.reference }}</dd>
 					</div>
 
 					<!-- Total Amount -->
@@ -362,7 +371,7 @@ const getStateTheme = (state: string) => {
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Amount') }}</dt>
 						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.parentData.total_amount) }}
+							normalizedShowcase.order_data.total_amount) }}
 						</dd>
 					</div>
 
@@ -370,8 +379,8 @@ const getStateTheme = (state: string) => {
 					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Order Status') }}</dt>
 						<dd>
-							<Tag :label="normalizedShowcase.parentData.state_label"
-								:theme="getStateTheme(normalizedShowcase.parentData.state)" />
+							<Tag :label="normalizedShowcase.order_data.state_label"
+								:theme="getStateTheme(normalizedShowcase.order_data.state)" />
 						</dd>
 					</div>
 
@@ -381,55 +390,55 @@ const getStateTheme = (state: string) => {
 
 							{{ trans('Payment Status') }}
 							<FontAwesomeIcon
-								:icon="normalizedShowcase.parentData.is_fully_paid ? 'fal fa-check-circle' : 'fal fa-times-circle'"
-								:class="normalizedShowcase.parentData.is_fully_paid ? 'text-green-500' : 'text-red-500'" />
+								:icon="normalizedShowcase.order_data.is_fully_paid ? 'fal fa-check-circle' : 'fal fa-times-circle'"
+								:class="normalizedShowcase.order_data.is_fully_paid ? 'text-green-500' : 'text-red-500'" />
 						</dt>
 						<dd class="text-sm font-medium"
-							:class="normalizedShowcase.parentData.is_fully_paid ? 'text-green-700' : 'text-red-700'">
-							{{ normalizedShowcase.parentData.is_fully_paid ? trans('Fully Paid') : trans('Unpaid') }}
+							:class="normalizedShowcase.order_data.is_fully_paid ? 'text-green-700' : 'text-red-700'">
+							{{ normalizedShowcase.order_data.is_fully_paid ? trans('Fully Paid') : trans('Unpaid') }}
 						</dd>
 					</div>
 
 					<!-- Net Amount -->
 					<div class="flex items-center justify-between border-t border-gray-200 pt-4">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Net Amount') }}</dt>
-						<dd class="text-sm text-gray-900">
+						<dd class="text-sm">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.parentData.net_amount) }}
+							normalizedShowcase.order_data.net_amount) }}
 						</dd>
 					</div>
 
 					<!-- Payment Amount -->
 					<div class="flex items-center justify-between py-2">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Payment Amount') }}</dt>
-						<dd class="text-sm text-gray-900">
+						<dd class="text-sm">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.parentData.payment_amount) }}
+							normalizedShowcase.order_data.payment_amount) }}
 						</dd>
 					</div>
 
 					<!-- Order Dates -->
 					<div class="border-t border-gray-200 pt-4 space-y-3">
-						<div v-if="normalizedShowcase.parentData.created_at" class="flex items-center justify-between">
+						<div v-if="normalizedShowcase.order_data.created_at" class="flex items-center justify-between">
 							<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
 								<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
 								{{ trans('Created') }}
 							</dt>
-							<dd class="text-sm text-gray-900">
-								{{ useFormatTime(normalizedShowcase.parentData.created_at, {
+							<dd class="text-sm">
+								{{ useFormatTime(normalizedShowcase.order_data.created_at, {
 								formatTime: 'hm'
 								}) }}
 							</dd>
 						</div>
 
-						<div v-if="normalizedShowcase.parentData.cancelled_at"
+						<div v-if="normalizedShowcase.order_data.cancelled_at"
 							class="flex items-center justify-between">
 							<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
 								<FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400" />
 								{{ trans('Cancelled') }}
 							</dt>
 							<dd class="text-sm text-red-600">
-								{{ useFormatTime(normalizedShowcase.parentData.cancelled_at, {
+								{{ useFormatTime(normalizedShowcase.order_data.cancelled_at, {
 								formatTime: 'hm'
 								}) }}
 							</dd>
@@ -446,11 +455,85 @@ const getStateTheme = (state: string) => {
 				</div>
 			</div>
 
+			<!-- Section: Invoice data -->
+			<div v-if="normalizedShowcase.invoice_data" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
+				<div class="px-6 py-4 border-b border-gray-200">
+					<h3 class="text-lg font-medium flex items-center gap-2">
+						<FontAwesomeIcon icon="fal fa-file-invoice-dollar" :style="{ color: themeColors.buttonBg }" />
+						{{ trans('Invoice Information') }}
+					</h3>
+				</div>
+
+				<!-- If parent_data exists -->
+				<div v-if="normalizedShowcase.invoice_data" class="px-6 py-4 space-y-4">
+					<!-- Invoice Reference -->
+					<div class="flex items-center justify-between rounded-lg">
+						<dt class="text-sm font-medium">{{ trans('Invoice Reference') }}</dt>
+						<Link :href="routeInvoice(normalizedShowcase.invoice_data)" class="text-sm primaryLink" xstyle="{ color: themeColors.primaryBg }">
+							{{ normalizedShowcase.invoice_data.reference }}
+						</Link>
+					</div>
+					
+					<!-- Paid at -->
+					<div class="flex items-center justify-between">
+						<dt class="text-sm font-medium text-gray-600">{{ trans('Paid at') }}</dt>
+						<dd class="text-sm">
+							{{ useFormatTime(normalizedShowcase.invoice_data.paid_at, { formatTime: 'hm' }) }}
+						</dd>
+					</div>
+
+					<!-- Net Amount -->
+					<div class="flex items-center justify-between border-t border-gray-200 pt-4">
+						<dt class="text-sm font-medium text-gray-600">{{ trans('Net Amount') }}</dt>
+						<dd class="text-sm">
+							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
+							normalizedShowcase.invoice_data.net_amount) }}
+						</dd>
+					</div>
+					
+					<!-- Total Amount -->
+					<div class="flex items-center justify-between">
+						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Amount') }}</dt>
+						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
+							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code, normalizedShowcase.invoice_data.total_amount) }}
+						</dd>
+					</div>
+
+					<!-- Order Dates -->
+					<!-- <div class="border-t border-gray-200 pt-4 space-y-3">
+						<div v-if="normalizedShowcase.invoice_data.created_at" class="flex items-center justify-between">
+							<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
+								<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
+								{{ trans('Created') }}
+							</dt>
+							<dd class="text-sm">
+								{{ useFormatTime(normalizedShowcase.invoice_data.created_at, {
+								formatTime: 'hm'
+								}) }}
+							</dd>
+						</div>
+
+						<div v-if="normalizedShowcase.invoice_data.cancelled_at"
+							class="flex items-center justify-between">
+							<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
+								<FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400" />
+								{{ trans('Cancelled') }}
+							</dt>
+							<dd class="text-sm text-red-600">
+								{{ useFormatTime(normalizedShowcase.invoice_data.cancelled_at, {
+								formatTime: 'hm'
+								}) }}
+							</dd>
+						</div>
+					</div> -->
+				</div>
+			</div>
+
 			<!-- Section: Credit Transaction Information -->
 			<div v-if="normalizedShowcase.creditTransaction"
 				class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
-					<h3 class="text-lg font-medium text-gray-900 flex items-center gap-2">
+					<h3 class="text-lg font-medium flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-piggy-bank" :style="{ color: themeColors.buttonBg }" />
 						{{ trans('Associted Credit Transaction') }}
 					</h3>
@@ -470,7 +553,7 @@ const getStateTheme = (state: string) => {
 					<!-- Transaction Type -->
 					<div class="flex items-center justify-between ">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Transaction Type') }}</dt>
-						<dd class="text-sm text-gray-900">{{ normalizedShowcase.creditTransaction.type }}</dd>
+						<dd class="text-sm">{{ normalizedShowcase.creditTransaction.type }}</dd>
 					</div>
 
 					<!-- Transaction Date -->
@@ -479,7 +562,7 @@ const getStateTheme = (state: string) => {
 							<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
 							{{ trans('Transaction Date') }}
 						</dt>
-						<dd class="text-sm text-gray-900">
+						<dd class="text-sm">
 							{{ useFormatTime(normalizedShowcase.creditTransaction.created_at, {
 							formatTime: 'hm'
 							}) }}
@@ -529,7 +612,7 @@ const getStateTheme = (state: string) => {
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
 							{{ trans('Service Provider') }}
 						</dt>
-						<dd class="text-sm text-gray-900">{{ normalizedShowcase.paymentServiceProvider.name }}</dd>
+						<dd class="text-sm">{{ normalizedShowcase.paymentServiceProvider.name }}</dd>
 					</div>
 
 					<!-- Provider Code -->
@@ -537,7 +620,7 @@ const getStateTheme = (state: string) => {
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
 							{{ trans('Provider Code') }}
 						</dt>
-						<dd class="text-sm text-gray-900">{{ normalizedShowcase.paymentServiceProvider.code }}</dd>
+						<dd class="text-sm">{{ normalizedShowcase.paymentServiceProvider.code }}</dd>
 					</div>
 				</dl>
 			</div>

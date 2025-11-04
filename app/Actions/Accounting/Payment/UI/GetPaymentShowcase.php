@@ -46,6 +46,7 @@ class GetPaymentShowcase
         return [
 
             'amount'                 => $payment->amount,
+            'date'                   => $payment->date,
             'state'                  => $payment->state,
             'customer'               => CustomerResource::make($payment->customer),
             'order_data'             => $orderData,
