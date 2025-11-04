@@ -20,15 +20,18 @@ class GetPaymentShowcase
 
     public function handle(Payment $payment): array
     {
-        $parentResource = null;
-        $parent         = $payment->invoices()->first() ?? $payment->orders()->first();
-        if ($parent instanceof Order) {
-            $parentResource = OrderResource::make($parent);
-        } elseif ($parent instanceof Invoice) {
-            $parentResource = InvoiceResource::make($parent);
+        $invoiceData = null;
+        $orderData   = null;
+        $invoice     = $payment->invoices()->first();
+        if ($invoice) {
+            $invoiceData = InvoiceResource::make($invoice);
         } else {
-            $parentResource = null;
+            $order = $payment->orders()->first();
+            if ($order) {
+                $orderData = OrderResource::make($order)->toArray(request());
+            }
         }
+
 
         $paymentServiceProvider = null;
         if ($serviceProvider = $payment->orgPaymentServiceProvider?->paymentServiceProvider) {
@@ -41,15 +44,17 @@ class GetPaymentShowcase
         }
 
         return [
-            'parent_type'    => $parent ? class_basename($parent) : null,
-            'amount'         => $payment->amount,
-            'state'          => $payment->state,
-            'customer'       => CustomerResource::make($payment->customer),
-            'parent_data'    => $parentResource,
-            'currency'       => CurrencyResource::make($payment->currency),
-            'paymentAccount' => PaymentAccountResource::make($payment->paymentAccount),
+
+            'amount'                 => $payment->amount,
+            'date'                   => $payment->date,
+            'state'                  => $payment->state,
+            'customer'               => CustomerResource::make($payment->customer),
+            'order_data'             => $orderData,
+            'invoice_data'           => $invoiceData,
+            'currency'               => CurrencyResource::make($payment->currency),
+            'paymentAccount'         => PaymentAccountResource::make($payment->paymentAccount),
             'paymentServiceProvider' => $paymentServiceProvider,
-            'credit_transaction' => $creditTransaction
+            'credit_transaction'     => $creditTransaction
         ];
     }
 }
