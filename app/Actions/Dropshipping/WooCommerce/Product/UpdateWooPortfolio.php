@@ -108,9 +108,7 @@ class UpdateWooPortfolio
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
                     'response' => $message
                 ]);
-                $customerSalesChannel->update([
-                    'ban_stock_update_util' => now()->addHours(3),
-                ]);
+
                 $portfolio->update([
                     'stock_last_fail_updated_at' => now()
                 ]);
