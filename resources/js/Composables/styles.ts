@@ -1,4 +1,3 @@
-import { visibility } from 'html2canvas/dist/types/css/property-descriptors/visibility';
 import { computed } from 'vue'
 
 export const getBoxShadowFromParts = (shadowObj: any, color: string) => {
@@ -172,16 +171,43 @@ export const resolveResponsiveValue = (
 				} else if (backgroundType === "gradient") {
 					return backgroundGradient
 				} else {
-					return backgroundImage ? `url(${backgroundImage}) no-repeat center center` : null
+					return backgroundImage ? `url(${backgroundImage})` : null
 				}
 			})(),
 
 			backgroundSize: (() => {
 				const backgroundBase = properties?.background?.[screen] ?? properties?.background
 				const backgroundType = getVal(backgroundBase, ["type"])
-				if (backgroundType == 'image' ) return "cover"
+				const size =  getVal(backgroundBase, ["size"])
+				if (backgroundType == 'image' ) return `${size}%`
 				return null
 			})(),
+
+			backgroundRepeat: (() => {
+				const backgroundBase = properties?.background?.[screen] ?? properties?.background
+				const backgroundType = getVal(backgroundBase, ["type"])
+				const repeat =  getVal(backgroundBase, ["repeat"])
+				if (backgroundType == 'image' ) return repeat 
+				return null
+			})(),
+
+			backgroundPositionX:(() => {
+				const backgroundBase = properties?.background?.[screen] ?? properties?.background
+				const backgroundType = getVal(backgroundBase, ["type"])
+				const positionX =  getVal(backgroundBase, ["positionX"])
+				if (backgroundType == 'image' ) return `${positionX}%`
+				return null
+			})(),
+
+			backgroundPositionY:(() => {
+				const backgroundBase = properties?.background?.[screen] ?? properties?.background
+				const backgroundType = getVal(backgroundBase, ["type"])
+				const positionY =  getVal(backgroundBase, ["positionY"])
+				if (backgroundType == 'image' ) return `${positionY}%`
+				return null
+			})(),
+
+
 
 			borderTop:
 				getVal(properties?.border, ["top", "value"]) &&
