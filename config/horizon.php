@@ -262,7 +262,7 @@ return [
         ],
         'low-priority'     => [
             'connection'          => 'redis',
-            'queue'               => ['low-priority', 'shopify', 'woo', 'ebay'],
+            'queue'               => ['low-priority'],
             'balance'             => 'auto',
             'autoScalingStrategy' => 'time',
             'maxProcesses'        => 1,
