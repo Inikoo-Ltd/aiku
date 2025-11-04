@@ -9,6 +9,9 @@
 namespace App\Models\Discounts;
 
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetFilter;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Models\Accounting\InvoiceTransaction;
 use App\Models\Ordering\Transaction;
 use App\Models\Traits\HasHistory;
@@ -87,6 +90,9 @@ class OfferAllowance extends Model implements Auditable
         'source_data'     => 'array',
         'target_data'     => 'array',
         'state'           => OfferAllowanceStateEnum::class,
+        'type'            => OfferAllowanceType::class,
+        'class'           => OfferAllowanceClass::class,
+        'target_type'     => OfferAllowanceTargetFilter::class,
         'begin_at'        => 'datetime',
         'end_at'          => 'datetime',
         'fetched_at'      => 'datetime',
@@ -116,7 +122,15 @@ class OfferAllowance extends Model implements Auditable
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return $this->code.'-'.$this->offer->slug;
+                $slug = '';
+                if ($this->type) {
+                    $slug = $this->type->slug();
+                }
+                if ($this->target_type) {
+                    $slug .= '-'.$this->target_type->slug();
+                }
+                return preg_replace('/^-/', '', $slug);
+
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug')

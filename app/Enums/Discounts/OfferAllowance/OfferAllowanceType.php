@@ -8,11 +8,23 @@
 
 namespace App\Enums\Discounts\OfferAllowance;
 
-/**
- * Types of OfferAllowance effects.
- * Keep minimal to current usage; extend as needed.
- */
 enum OfferAllowanceType: string
 {
     case PERCENTAGE_OFF = 'percentage_off';
+
+    public function label(): string
+    {
+        return match ($this) {
+            OfferAllowanceType::PERCENTAGE_OFF => __('Percentage Off'),
+        };
+    }
+
+    public function slug(): string
+    {
+        return match ($this) {
+            OfferAllowanceType::PERCENTAGE_OFF => 'off',
+        };
+    }
+
+
 }

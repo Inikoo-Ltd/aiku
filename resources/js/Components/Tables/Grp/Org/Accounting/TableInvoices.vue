@@ -21,7 +21,7 @@ import { RouteParams } from "@/types/route-params";
 library.add(faFileInvoiceDollar, faCircle, faCheckCircle, faQuestionCircle);
 
 
-defineProps<{
+const props = defineProps<{
   data: {}
   tab?: string
 }>();
