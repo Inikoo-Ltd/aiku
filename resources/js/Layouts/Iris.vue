@@ -20,6 +20,7 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
 import { irisStyleVariables } from '@/Composables/Workshop'
+import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
@@ -29,6 +30,7 @@ provide('layout', layout)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
 
+const propsAnnouncement = usePage().props?.iris?.announcement
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const footer = usePage().props?.iris?.footer
@@ -124,6 +126,11 @@ console.log('handle', usePage().props)
         </Modal>
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
+
+            <IrisAnnouncement
+                v-if="propsAnnouncement"
+                :data="propsAnnouncement"
+            />
 
             <!-- Section: Topbar, Header, Menu, Sidebar -->
             <IrisHeader v-if="header?.header" :data="header" :colorThemed="theme" :menu="navigation"

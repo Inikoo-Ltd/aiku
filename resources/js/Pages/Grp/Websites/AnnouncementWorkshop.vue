@@ -311,7 +311,7 @@ const onSectionSetting = () => {
             </div> -->
         </template>
 
-        <template #other>
+        <template v-if="announcementData.template_code" #other>
             <div class="flex gap-x-2 flex-wrap gap-y-1.5 justify-end">
                 <Button @click="onReset" label="Reset" v-tooltip="trans('Reset data to last publish') + ` (${useFormatTime(last_published_date || '', {formatTime: 'hm'})})`" :loading="isLoadingReset" :style="'negative'" :disabled="!is_announcement_dirty" icon="fal fa-undo-alt" />
                 <!-- <Button @click="() => false" label="Stop now" :loading="isLoadingSave" :style="'red'" icon="fas fa-square" /> -->
@@ -357,7 +357,7 @@ const onSectionSetting = () => {
     </PageHeading>
 
     <!-- Section: Tab selector -->
-    <div class="mx-auto max-w-md px-2 sm:px-0 my-4 flex gap-x-2">
+    <div v-if="announcementData.template_code" class="mx-auto max-w-md px-2 sm:px-0 my-4 flex gap-x-2">
         <!-- {{ selectedTab }} -->
         <TabGroup :selectedIndex="selectedTab" @change="(e: number) => selectedTab === e ? '' : changeTab(e)">
             <TabList class="flex space-x-1 rounded-xl bg-slate-600 p-1">
@@ -379,12 +379,13 @@ const onSectionSetting = () => {
                     </button>
                 </Tab>
             </TabList>
-
         </TabGroup>
+
         <div @click="() => false ? onSave() : false" v-tooltip="trans('Save status')" class="flex items-center px-2 text-3xl">
             <LoadingIcon v-if="isLoadingSave" />
             <FontAwesomeIcon v-else icon='fal fa-save' class='text-gray-300' fixed-width aria-hidden='true' />
         </div>
+        
         <!-- <Button @click="onSave" label="save" :loading="isLoadingSave" :style="'tertiary'" icon="fal fa-save" /> -->
 
     </div>
@@ -392,7 +393,7 @@ const onSectionSetting = () => {
     <!-- Section: Workshop -->
     <div v-show="selectedTab === 0" class="flex border-t border-gray-300">
         <!-- Section: Side editor -->
-        <div class="w-[600px] py-2 px-3 ">
+        <div v-if="announcementData.template_code" class="w-[600px] py-2 px-3 ">
             <div class="w-full text-lg font-semibold flex items-center justify-between gap-3 border-b border-gray-300">
                 <div class="flex items-center gap-3">
                     {{ trans('Announcement') }}
@@ -406,7 +407,6 @@ const onSectionSetting = () => {
 
             <div class="h-[calc(100vh-280px)] w-[450px] overflow-y-auto rounded-md shadow-lg">
                 <AnnouncementSideEditor
-                    v-if="announcementData.template_code"
                     :blueprint="_component_template_Announcement?.fieldSideEditor"
                 />
             </div>
@@ -425,7 +425,7 @@ const onSectionSetting = () => {
                 </div> -->
 
                 <!-- Section: Screenview -->
-                <div class="flex justify-between w-full py-2 px-2">
+                <div v-if="announcementData.template_code" class="flex justify-between w-full py-2 px-2">
                     <div>
                         <!-- <ScreenView @screenView="false" /> -->
                     </div>
@@ -438,7 +438,7 @@ const onSectionSetting = () => {
                 </div>
             </div>
 
-            <div class="border-2 h-full w-full">
+            <div class="xborder-2 h-full w-full">
                 <div class="h-full w-full bg-white relative">
                     <div v-if="announcementData.template_code"
                         ref="_parentComponent"
