@@ -399,7 +399,7 @@ trait WithEbayApiRequest
             "pricingSummary" => [
                 "price" => [
                     "value" => Arr::get($offerData, 'price', 0),
-                    "currency" => Arr::get($offerData, 'currency', 'USD')
+                    "currency" => Arr::get($offerData, 'currency', 'GBP')
                 ]
             ],
             "listingPolicies" => [
