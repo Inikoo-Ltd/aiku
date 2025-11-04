@@ -10,6 +10,8 @@ import Tag from "@/Components/Tag.vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { Link, usePage } from '@inertiajs/vue3'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
+import RecommendationCustomerRecentlyBoughtSlideIris from "@/Components/Iris/Recommendations/RecommendationCustomerRecentlyBoughtSlideIris.vue"
+import Icon from "@/Components/Icon.vue"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle, faUndo, faTimes, faEye)
 
@@ -259,6 +261,16 @@ const routeInvoice = (invoice) => {
 	})
 
 }
+
+const routeOrder = (order) => {
+	return route('grp.org.shops.show.crm.customers.show.orders.show', {
+		organisation: layout?.currentParams?.organisation,
+		shop: layout?.currentParams?.shop,
+		customer: order.customer_slug,
+		order: order.slug
+	})
+}
+
 </script>
 
 <template>
@@ -348,46 +360,40 @@ const routeInvoice = (invoice) => {
 
 		<!-- Column 2: Order & Account Information -->
 		<div class="space-y-6">
-			<!-- Section: Order Information -->
+			<!-- Section: Order data -->
 			<div v-if="normalizedShowcase.order_data" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
-						<FontAwesomeIcon icon="fal fa-file-invoice" :style="{ color: themeColors.buttonBg }" />
+						<FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: themeColors.buttonBg }" />
 						{{ trans('Order Information') }}
 					</h3>
-				</div>
+					<div>
 
-				<!-- If parent_data exists -->
-				<div v-if="normalizedShowcase.order_data" class="px-6 py-4 space-y-4">
-					<!-- Order Reference -->
+					</div>
+				</div>
+				
+				<div class="px-6 py-4 space-y-4">
+					<!-- Order data: Order Reference -->
 					<div class="flex items-center justify-between rounded-lg">
 						<dt class="text-sm font-medium">{{ trans('Order Reference') }}</dt>
-						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">{{
-							normalizedShowcase.order_data.reference }}</dd>
+						<Link :href="routeOrder(normalizedShowcase.order_data)" class="text-sm primaryLink" xstyle="{ color: themeColors.primaryBg }">
+							{{ normalizedShowcase.order_data.reference }}
+						</Link>
 					</div>
 
-					<!-- Total Amount -->
-					<div class="flex items-center justify-between">
-						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Amount') }}</dt>
-						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
-							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.order_data.total_amount) }}
-						</dd>
-					</div>
-
-					<!-- Order Status -->
+					<!-- Order data: Order Status -->
 					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Order Status') }}</dt>
 						<dd>
-							<Tag :label="normalizedShowcase.order_data.state_label"
-								:theme="getStateTheme(normalizedShowcase.order_data.state)" />
+							<Icon :data="normalizedShowcase.order_data?.state_icon" />
+							<!-- <Tag :label="normalizedShowcase.order_data.state_label"
+								:theme="getStateTheme(normalizedShowcase.order_data.state)" /> -->
 						</dd>
 					</div>
 
-					<!-- Payment Status -->
+					<!-- Order data: Payment Status -->
 					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-
 							{{ trans('Payment Status') }}
 							<FontAwesomeIcon
 								:icon="normalizedShowcase.order_data.is_fully_paid ? 'fal fa-check-circle' : 'fal fa-times-circle'"
@@ -399,7 +405,7 @@ const routeInvoice = (invoice) => {
 						</dd>
 					</div>
 
-					<!-- Net Amount -->
+					<!-- Order data: Net Amount -->
 					<div class="flex items-center justify-between border-t border-gray-200 pt-4">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Net Amount') }}</dt>
 						<dd class="text-sm">
@@ -408,8 +414,8 @@ const routeInvoice = (invoice) => {
 						</dd>
 					</div>
 
-					<!-- Payment Amount -->
-					<div class="flex items-center justify-between py-2">
+					<!-- Order data: Payment Amount -->
+					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Payment Amount') }}</dt>
 						<dd class="text-sm">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
@@ -417,17 +423,24 @@ const routeInvoice = (invoice) => {
 						</dd>
 					</div>
 
-					<!-- Order Dates -->
+					<!-- Order data: Total Amount -->
+					<div class="flex items-center justify-between">
+						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Amount') }}</dt>
+						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
+							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
+							normalizedShowcase.order_data.total_amount) }}
+						</dd>
+					</div>
+
+					<!-- Order data: Created/Cancelled -->
 					<div class="border-t border-gray-200 pt-4 space-y-3">
 						<div v-if="normalizedShowcase.order_data.created_at" class="flex items-center justify-between">
-							<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
+							<dt v-tooltip="trans('Date of order created')" class="text-sm font-medium text-gray-600 flex items-center gap-2">
 								<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
 								{{ trans('Created') }}
 							</dt>
 							<dd class="text-sm">
-								{{ useFormatTime(normalizedShowcase.order_data.created_at, {
-								formatTime: 'hm'
-								}) }}
+								{{ useFormatTime(normalizedShowcase.order_data.created_at, { formatTime: 'hm' }) }}
 							</dd>
 						</div>
 
@@ -445,14 +458,6 @@ const routeInvoice = (invoice) => {
 						</div>
 					</div>
 				</div>
-
-				<!-- If no parent_data -->
-				<div v-else class="px-6 py-8">
-					<div class="text-center">
-						<FontAwesomeIcon icon="fal fa-file-invoice" class="text-gray-300 text-4xl mb-4" />
-						<p class="text-gray-500">{{ trans('No order associated with this payment') }}</p>
-					</div>
-				</div>
 			</div>
 
 			<!-- Section: Invoice data -->
@@ -464,9 +469,8 @@ const routeInvoice = (invoice) => {
 					</h3>
 				</div>
 
-				<!-- If parent_data exists -->
-				<div v-if="normalizedShowcase.invoice_data" class="px-6 py-4 space-y-4">
-					<!-- Invoice Reference -->
+				<div class="px-6 py-4 space-y-4">
+					<!-- Invoice data: Invoice Reference -->
 					<div class="flex items-center justify-between rounded-lg">
 						<dt class="text-sm font-medium">{{ trans('Invoice Reference') }}</dt>
 						<Link :href="routeInvoice(normalizedShowcase.invoice_data)" class="text-sm primaryLink" xstyle="{ color: themeColors.primaryBg }">
@@ -474,7 +478,7 @@ const routeInvoice = (invoice) => {
 						</Link>
 					</div>
 					
-					<!-- Paid at -->
+					<!-- Invoice data: Paid at -->
 					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Paid at') }}</dt>
 						<dd class="text-sm">
@@ -482,7 +486,7 @@ const routeInvoice = (invoice) => {
 						</dd>
 					</div>
 
-					<!-- Net Amount -->
+					<!-- Invoice data: Net Amount -->
 					<div class="flex items-center justify-between border-t border-gray-200 pt-4">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Net Amount') }}</dt>
 						<dd class="text-sm">
@@ -490,42 +494,14 @@ const routeInvoice = (invoice) => {
 							normalizedShowcase.invoice_data.net_amount) }}
 						</dd>
 					</div>
-					
-					<!-- Total Amount -->
+
+					<!-- Invoice data: Total Amount -->
 					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Amount') }}</dt>
 						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code, normalizedShowcase.invoice_data.total_amount) }}
 						</dd>
 					</div>
-
-					<!-- Order Dates -->
-					<!-- <div class="border-t border-gray-200 pt-4 space-y-3">
-						<div v-if="normalizedShowcase.invoice_data.created_at" class="flex items-center justify-between">
-							<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-								<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
-								{{ trans('Created') }}
-							</dt>
-							<dd class="text-sm">
-								{{ useFormatTime(normalizedShowcase.invoice_data.created_at, {
-								formatTime: 'hm'
-								}) }}
-							</dd>
-						</div>
-
-						<div v-if="normalizedShowcase.invoice_data.cancelled_at"
-							class="flex items-center justify-between">
-							<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
-								<FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400" />
-								{{ trans('Cancelled') }}
-							</dt>
-							<dd class="text-sm text-red-600">
-								{{ useFormatTime(normalizedShowcase.invoice_data.cancelled_at, {
-								formatTime: 'hm'
-								}) }}
-							</dd>
-						</div>
-					</div> -->
 				</div>
 			</div>
 
