@@ -8,7 +8,6 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Enums\Announcement\AnnouncementStateEnum;
 use App\Http\Resources\HasSelfCall;
 use App\Models\Announcement;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -46,7 +45,7 @@ class AnnouncementResource extends JsonResource
             'settings'                       => $announcement->settings,
             'state'                          => $announcement->state,
             'template_code'                  => $announcement->template_code,
-            'ready_at'                       => $announcement->ready_at,
+            'ready_at'                       => $announcement->ready_at
         ];
     }
 }

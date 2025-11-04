@@ -39,6 +39,7 @@ class Announcement extends Model
         "settings"             => "array",
         "published_settings"   => "array",
         "live_at"              => "datetime",
+        "ready_at"              => "datetime",
         "closed_at"            => "datetime",
         "schedule_at"          => "datetime",
         "schedule_finish_at"   => "datetime",
