@@ -28,7 +28,7 @@ class GetPaymentShowcase
         } else {
             $order = $payment->orders()->first();
             if ($order) {
-                $orderData = OrderResource::make($order);
+                $orderData = OrderResource::make($order)->toArray(request());
             }
         }
 
@@ -46,6 +46,7 @@ class GetPaymentShowcase
         return [
 
             'amount'                 => $payment->amount,
+            'date'                   => $payment->date,
             'state'                  => $payment->state,
             'customer'               => CustomerResource::make($payment->customer),
             'order_data'             => $orderData,
