@@ -98,12 +98,12 @@ trait WithWooCommerceApiRequest
         }
 
         try {
-            $response = Http::timeout(30)
+            $response = Http::timeout(45)
                 ->withHeaders([
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
                 ])
-                ->connectTimeout(30)
+                ->connectTimeout(45)
                 ->withBasicAuth(
                     $this->woocommerceConsumerKey,
                     $this->woocommerceConsumerSecret
