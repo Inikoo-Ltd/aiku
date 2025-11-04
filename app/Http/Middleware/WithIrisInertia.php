@@ -10,9 +10,11 @@ namespace App\Http\Middleware;
 
 use App\Actions\Catalogue\ProductCategory\Json\GetIrisProductCategoryNavigation;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Helpers\LanguageResource;
 use App\Http\Resources\UI\LoggedWebUserResource;
+use App\Http\Resources\Web\AnnouncementResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\CRM\WebUser;
 use App\Models\Helpers\Language;
@@ -77,6 +79,7 @@ trait WithIrisInertia
                 $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
                 ['product_categories' => GetIrisProductCategoryNavigation::run($website)]
             ),
+            'announcements' => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get()),
             'shop'                 => [
                 'type' => $shop->type->value,
                 'id'   => $shop->id,
