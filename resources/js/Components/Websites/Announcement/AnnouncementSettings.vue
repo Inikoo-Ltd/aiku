@@ -111,6 +111,8 @@ const settingsUser = ref({
     authState: 'all', // 'logout' || 'all'
 })
 
+const publishMessage = ref('')
+
 </script>
 
 <template>
@@ -131,10 +133,12 @@ const settingsUser = ref({
                     type="radio"
                     class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                 />
-                <label for="pages-all"
-                    class="cursor-pointer block font-medium ">{{ trans("All pages") }}</label>
+                <label for="pages-all" class="cursor-pointer block font-medium ">
+                    {{ trans("All pages") }}
+                </label>
             </div>
-            <div v-if="true" class="flex items-center gap-x-3">
+
+            <div v-if="false" class="flex items-center gap-x-3">
                 <input
                     value="specific"
                     @input="(val: string) => set(announcementDataSettings, 'target_pages.type', val.target.value)"
@@ -412,21 +416,20 @@ const settingsUser = ref({
             <fieldset class="">
                 <div class="text-sm/6 font-semibold "><span class="text-red-500 text-base leading-none mr-0.5">*</span>{{ trans("Description") }}</div>
                 <PureTextarea
-                    :modelValue="get(announcementData, 'published_message', '')"
-                    @update:modelValue="(e) => set(announcementData, 'published_message', e)"
+                    v-model="publishMessage"
                     :placeholder="trans('My first publish')"
                     inputClass=""
                 />
             </fieldset>
 
             <Button
-                @click="() => onPublish()"
+                @click="() => onPublish({ bodyToSend: { published_message: publishMessage } })"
                 label="Publish"
                 icon="fal fa-rocket-launch"
                 full
                 size="xl"
-                :disabled="!get(announcementData, 'published_message', '') || isLoadingPublish || !get(announcementData, 'template_code', false)"
-                v-tooltip="!get(announcementData, 'template_code', false) ? trans('Select template to publish') : !get(announcementData, 'published_message', '') ? trans('Fill the description') : ''"
+                :disabled="!publishMessage || isLoadingPublish || !get(announcementData, 'template_code', false)"
+                v-tooltip="!get(announcementData, 'template_code', false) ? trans('Select template to publish') : !publishMessage ? trans('Fill the description') : ''"
             />
             
             <!-- <pre>{{announcementData.schedule_at}}</pre> -->

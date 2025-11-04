@@ -125,6 +125,7 @@ console.log('handle', usePage().props)
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
 
+            <!-- Section: Topbar, Header, Menu, Sidebar -->
             <IrisHeader v-if="header?.header" :data="header" :colorThemed="theme" :menu="navigation"
                 :screen-type="screenType" :custom-sidebar="customSidebar" />
 
