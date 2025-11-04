@@ -40,7 +40,7 @@ class IncreaseCreditTransactionCustomer extends OrgAction
             'amount'     => ['required', 'numeric'],
             'date'       => ['sometimes', 'date'],
             'type'       => ['required', Rule::enum(CreditTransactionTypeEnum::class)],
-            'reason'     => ['sometimes', Rule::enum(CreditTransactionReasonEnum::class)],
+            'reason'     => ['required', Rule::enum(CreditTransactionReasonEnum::class)],
             'notes'      => ['sometimes'],
             'payment_id' => [
                 'sometimes',
