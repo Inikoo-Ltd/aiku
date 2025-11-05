@@ -13,7 +13,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: 'mobile' | 'tablet' | 'desktop'
-  indexBlock: number
+  indexBlock?: number
 }>()
 
 const emits = defineEmits<{ (e: 'autoSave'): void }>()

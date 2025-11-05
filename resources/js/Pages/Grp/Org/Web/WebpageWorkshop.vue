@@ -40,7 +40,7 @@ import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
   faStars, faTimes, faBars, faExternalLink, faExpandWide, faCompressWide,
   faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull,
-  faEye,
+  faEye, 
   faUndo,
   faRedo,
   faChevronRight
@@ -52,7 +52,7 @@ import { faChevronLeft } from "@far";
 library.add(
   faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars,
   faBars, faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower,
-  faSkull, faEye
+  faSkull, faEye,
 );
 
 const props = defineProps<{

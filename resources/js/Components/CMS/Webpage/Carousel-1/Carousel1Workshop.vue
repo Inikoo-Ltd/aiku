@@ -16,7 +16,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: 'mobile' | 'tablet' | 'desktop',
-  indexBlock: number
+  indexBlock?: number
 }>()
 
 const emits = defineEmits<{ (e: 'autoSave'): void }>()
@@ -25,6 +25,7 @@ const keySwiper = ref(ulid())
 const layout: any = inject("layout", {})
 const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
+const refreshTrigger = ref(0)
 const imageSettings = {
   key: ["image", "source"],
   stencilProps: {
@@ -68,6 +69,7 @@ const refreshCarousel = async (delay = 100) => {
   keySwiper.value = ulid()
   await nextTick()
 }
+
 
 // Watch for settings or screen changes
 watch(
@@ -118,6 +120,8 @@ const responsiveOptions = computed(() => {
     }
   ]
 })
+
+
 
 
 </script>
