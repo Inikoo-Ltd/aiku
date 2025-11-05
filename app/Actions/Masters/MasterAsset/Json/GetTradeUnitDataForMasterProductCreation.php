@@ -152,6 +152,7 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
             'grp_currency'   => $organisation->group->currency->code,
             'grp_cost'       => $grpCost,
             'has_org_stocks' => $organisationHasOrgStocks,
+            'create_in_shop' => true,
         ];
     }
 

@@ -34,7 +34,7 @@ interface ProductItem {
         stock?: number;
         price?: number;
         rrp?: number;
-        has_org_stocks?: boolean;
+        create_in_shop?: boolean;
         useCustomRrp?: boolean; // flag for custom RRP
     };
 }
@@ -93,13 +93,13 @@ const allChecked = computed({
     get() {
         return (
             modelValue.value.data.length > 0 &&
-            modelValue.value.data.every((item) => item.product?.has_org_stocks)
+            modelValue.value.data.every((item) => item.product?.create_in_shop)
         );
     },
     set(val: boolean) {
         modelValue.value.data.forEach((item) => {
             if (item.product) {
-                item.product.has_org_stocks = val;
+                item.product.create_in_shop = val;
             }
         });
         emits("change", modelValue.value);
@@ -167,18 +167,18 @@ function roundDown2(num: number) {
 
                 <tbody>
                     <tr v-for="item in modelValue.data" :key="item.id" class="transition-colors" :class="{
-                        'opacity-50': !item.product.has_org_stocks,
+                        'opacity-50': !item.product.create_in_shop,
                     }">
                         <!-- ✅ Checkbox always usable -->
                         <td class="px-2 py-1 border-b border-gray-100 text-center">
-                            <input type="checkbox" v-model="item.product.has_org_stocks"
+                            <input type="checkbox" v-model="item.product.create_in_shop"
                                 @change="emits('change', modelValue)" class="cursor-pointer relative z-10" />
                         </td>
 
-                        <!-- ✅ Rest of row disabled when has_org_stocks = false -->
+                        <!-- ✅ Rest of row disabled when create_in_shop = false -->
                         <td colspan="7" class="p-0">
                             <div class="grid grid-cols-7 items-center" :class="{
-                                'pointer-events-none': !item.product.has_org_stocks,
+                                'pointer-events-none': !item.product.create_in_shop,
                             }">
                                 <!-- Shop name -->
                                 <div class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
@@ -199,7 +199,7 @@ function roundDown2(num: number) {
                                 <!-- Price -->
                                 <div class="px-2 py-1 border-b w-48">
                                     <InputNumber v-model="item.product.price" mode="currency"
-                                        :disabled="!item.product.has_org_stocks"
+                                        :disabled="!item.product.create_in_shop"
                                         :currency="item?.product?.shop_currency ? item.product.shop_currency : item.currency"
                                         :step="0.25" :showButtons="true" inputClass="w-full text-xs"
                                         @input="emits('change', modelValue)" />
@@ -224,7 +224,7 @@ function roundDown2(num: number) {
                                 <div class="px-2 py-1 border-b w-48">
                                     <div class="flex items-center gap-2">
                                         <InputNumber v-if="item.product?.useCustomRrp" v-model="item.product.rrp"
-                                            mode="currency" :disabled="!item.product.has_org_stocks"
+                                            mode="currency" :disabled="!item.product.create_in_shop"
                                             :currency="item?.product?.shop_currency ? item.product?.shop_currency : item?.grp_currency"
                                             :step="0.25" :showButtons="true" inputClass="w-full text-xs"
                                             @input="emits('change', modelValue)" />
@@ -238,7 +238,7 @@ function roundDown2(num: number) {
 
                                         <button
                                             class="px-2 py-1 text-[10px] rounded border bg-gray-50 hover:bg-gray-100"
-                                            :disabled="!item.product.has_org_stocks"
+                                            :disabled="!item.product.create_in_shop"
                                             @click="item.product!.useCustomRrp = !item.product?.useCustomRrp">
                                             {{ item.product?.useCustomRrp ? 'Auto' : 'Custom' }}
                                         </button>

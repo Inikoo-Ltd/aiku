@@ -34,10 +34,12 @@ const props = withDefaults(defineProps<{
   idxSubmitSuccess?: number
   key_quantity?: string
   head_label?: string
+  no_data_label?: string
   tabs?: Array<{ label: string, routeFetch: routeType }>
 }>(), {
   key_quantity: 'quantity_selected',
-  head_label: 'Selected Products'
+  head_label: 'Selected Products',
+  no_data_label : 'No Data Available'
 })
 
 const emits = defineEmits<{
@@ -287,7 +289,7 @@ defineExpose({
       </div>
       <div v-else>
         <div class="border rounded-md bg-gray-50 p-6 text-center text-gray-500">
-          <p class="font-medium">No Data Available</p>
+          <p class="font-medium">{{ no_data_label }}</p>
           <p class="text-sm text-gray-400 mb-4">Please add an item to see content here.</p>
           <div><Button @click="openDialog" :label="'select'" size="xs" type="dashed" :icon="faPlus"></Button></div>
         </div>

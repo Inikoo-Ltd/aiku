@@ -142,7 +142,7 @@ const getTableData = (data) => {
         for (const tableDataItem of data.data) {
             finalDataTable[tableDataItem.id] = {
                 price: tableDataItem.product.price || null,
-                has_org_stocks: tableDataItem.product.has_org_stocks,
+                create_in_shop: tableDataItem.product.create_in_shop,
                 rrp: tableDataItem.product.rrp || null
             }
         }
@@ -187,7 +187,7 @@ const ListSelectorChange = (value) => {
         form.description_extra = value[0].description_extra
         form.units = value.length > 1 ? 1 : value[0]?.quantity || 1
         form.gross_weight = value[0]?.gross_weight || 0
-        form.marketing_dimensions = value[0]?.dimensions || null
+        form.marketing_dimensions = value[0]?.dimensions || null     
     }
     getTableData(tableData.value)
 }
@@ -202,7 +202,7 @@ const submitForm = async (redirect = true) => {
     const finalDataTable: Record<number, { price: number | string }> = {}
     for (const tableDataItem of tableData.value.data) {
 
-        let create_in_shop = tableDataItem.product.has_org_stocks
+        let create_in_shop = tableDataItem.product.create_in_shop
         let price = tableDataItem.product.price
         let rrp = tableDataItem.product.rrp
 
@@ -344,7 +344,7 @@ const successEditTradeUnit = (data) => {
         <!-- Header -->
         <template #header>
             <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2 flex-1">
-                {{ trans("Create Product") }}
+                {{ trans("Create Master Product") }}
             </h2>
             <button @click="toggleFull" class="text-gray-500 hover:text-gray-700 mx-3">
                 <FontAwesomeIcon :icon="isFull ? faMinimize : faExpand" />
@@ -355,7 +355,7 @@ const successEditTradeUnit = (data) => {
         <div class="p-4 pt-0 space-y-6 overflow-y-auto">
             <!-- Trade Unit Selector -->
             <div>
-                <ListSelector :key="key" ref="listSelectorRef" v-model="form.trade_units" :withQuantity="true"
+                <ListSelector :key="key" ref="listSelectorRef" no_data_label="Select Trade Unit" v-model="form.trade_units" :withQuantity="true"
                     :tabs="selectorTab" head_label="Select Trade Units" @update:model-value="ListSelectorChange"
                     key_quantity="quantity" :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
