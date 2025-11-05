@@ -92,24 +92,24 @@ const onCopyUlid = async (text: string) => {
                             </dd>
                         </div>
 
-                        <!-- Net Amount -->
-                        <div class="flex items-center justify-between border-t border-gray-200 pt-4">
+                        <!-- Last Publisher -->
+                        <div v-if="data.publisher?.contact_name" class="flex items-center justify-between border-t border-gray-200 pt-4">
                             <dt class="text-sm font-medium text-gray-600">{{ trans('Last Publisher') }}</dt>
                             <dd class="text-sm">
-                                <span class="font-bold">{{  data.publisher.contact_name }}</span> ({{ data.publisher.username  }})
+                                <span class="font-bold">{{ data.publisher.contact_name }}</span> ({{ data.publisher.username  }})
                             </dd>
                         </div>
 
-                        <!-- Payment Amount -->
-                        <div class="flex items-center justify-between ">
+                        <!-- Last Published Time -->
+                        <div v-if="data.ready_at" class="flex items-center justify-between ">
                             <dt class="text-sm font-medium text-gray-600">{{ trans('Last Published time') }}</dt>
                             <dd v-tooltip="useFormatTime(data.ready_at, {formatTime: 'hms'} )" class="text-sm">
                                 {{ useFormatTime(data.ready_at, {formatTime: 'hm'} ) }}
                             </dd>
                         </div>
 
-                        <!-- Payment Amount -->
-                        <div class="flex flex-col items-start justify-between">
+                        <!-- Last Published message -->
+                        <div v-if="data.published_message" class="flex flex-col items-start justify-between">
                             <dt class="text-sm font-medium text-gray-600">{{ trans('Last Published message') }}</dt>
                             <dd class="text-sm border border-gray-300 bg-gray-700/5 italic text-gray-500 px-3 py-2 mt-1 w-full rounded">
                                 {{ data.published_message ?? '-'}}

@@ -523,7 +523,6 @@ defineExpose({
 
             <div v-else @click="() => (onClickOpenFieldWorkshop(accordionKey(2)))" class="announcement-component-editable flex justify-center" v-html="announcementData?.fields?.countdown?.expired_text">
             </div>
-            {{ accordionKey(2) }}
             
             <div v-if="announcementData?.fields.button_1.text" class="mt-2 mb-1 md:mt-0 md:mb-0 relative justify-self-center md:justify-self-end">
                 <div v-if="isEditable"  @click="() => (onClickOpenFieldWorkshop(3))" class="absolute inset-0 announcement-component-editable " />
