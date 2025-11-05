@@ -80,11 +80,11 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
 
             $orgStocksData['shop_currency'] = $shop->currency->code;
             $orgStocksData['shop_cost']     = $shopCost;
-            $orgStocksData['id']     = $shop->id;
+            $orgStocksData['id']            = $shop->id;
             $orgStocksData['price']         = $price;
             $orgStocksData['rrp']           = $rrp;
             $orgStocksData['gross_weight']  = $tradeUnits[0]['model']->gross_weight * $tradeUnits[0]['quantity'];
-            $organisationsData['images']    = $shop->organisation->media->map(fn ($media) => [
+            $organisationsData['images']    = $shop->organisation->media->map(fn($media) => [
                 'id'  => $media->id,
                 'url' => $media->getUrl()
             ]);
@@ -93,15 +93,16 @@ class GetTradeUnitDataForMasterProductCreation extends GrpAction
                 : null;
 
             $finalData['shops'][] =
-                 $orgStocksData;
+                $orgStocksData;
         }
 
         foreach ($tradeUnits as $tradeUnit) {
             $finalData['trade_units'][] = [
-                'id'    => $tradeUnit['id'],
+                'id'     => $tradeUnit['id'],
                 'images' => $tradeUnit['images']
             ];
         }
+
         return $finalData;
     }
 

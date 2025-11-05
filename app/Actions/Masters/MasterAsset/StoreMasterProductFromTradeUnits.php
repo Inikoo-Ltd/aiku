@@ -42,6 +42,8 @@ class StoreMasterProductFromTradeUnits extends GrpAction
         $tradeUnits = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
+        dd($shopProducts);
+
         if (!Arr::has($modelData, 'unit') && count($tradeUnits) == 1) {
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
         }
@@ -170,6 +172,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
      */
     public function asController(MasterProductCategory $masterFamily, ActionRequest $request): MasterAsset
     {
+
         $this->masterFamily = $masterFamily;
 
         $this->initialisation($masterFamily->group, $request);

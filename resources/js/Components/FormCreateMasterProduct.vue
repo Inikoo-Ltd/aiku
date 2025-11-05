@@ -201,10 +201,20 @@ const submitForm = async (redirect = true) => {
 
     const finalDataTable: Record<number, { price: number | string }> = {}
     for (const tableDataItem of tableData.value.data) {
+
+        let create_in_shop = tableDataItem.product.has_org_stocks
+        let price = tableDataItem.product.price
+        let rrp = tableDataItem.product.rrp
+
+        if(!create_in_shop){
+            rrp=1;
+            price=1;
+        }
+
         finalDataTable[tableDataItem.id] = {
-            price: tableDataItem.product.price,
-            create_in_shop : tableDataItem.product.has_org_stocks,
-            rrp: tableDataItem.product.rrp
+            price: price,
+            create_in_shop : create_in_shop,
+            rrp: rrp
         }
     }
 
