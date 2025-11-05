@@ -17,6 +17,7 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -77,7 +78,7 @@ class UpdateWooPortfolio
         $availableQuantity = $product->available_quantity ?? 0;
 
 
-        $wooCommerceUser->setTimeout(60);
+        $wooCommerceUser->setTimeout(45);
         try {
             $response = $wooCommerceUser->updateWooCommerceProduct(
                 $portfolio->platform_product_id,
@@ -106,8 +107,15 @@ class UpdateWooPortfolio
 
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $message
+                    'response' => 'E1: '.$message
                 ]);
+
+                // If the platform responded with a timeout, temporarily ban stock updates for this channel
+                if ($message && Str::contains(Str::lower($message), 'operation timed out')) {
+                    $customerSalesChannel->update([
+                        'ban_stock_update_util' => now()->addHours(3),
+                    ]);
+                }
 
                 $portfolio->update([
                     'stock_last_fail_updated_at' => now()
@@ -116,7 +124,7 @@ class UpdateWooPortfolio
         } catch (Throwable $e) {
             UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                 'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                'response' => $e->getMessage()
+                'response' => 'E2: '.$e->getMessage()
             ]);
             $portfolio->update([
                 'stock_last_fail_updated_at' => now()

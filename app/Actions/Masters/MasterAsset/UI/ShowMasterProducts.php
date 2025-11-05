@@ -31,6 +31,8 @@ use App\Models\SysAdmin\Group;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
+use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 
 class ShowMasterProducts extends GrpAction
 {
@@ -175,6 +177,7 @@ class ShowMasterProducts extends GrpAction
                     ],
                     'actions' => [
                         [
+                            'key'   => 'edit',
                             'type'  => 'button',
                             'style' => 'edit',
                             'route' => [
@@ -182,7 +185,17 @@ class ShowMasterProducts extends GrpAction
                                 'parameters' => $request->route()->originalParameters()
                             ]
                         ],
+                        [
+                            'key'   => 'assign',
+                            'type'  => 'button',
+                            'style' => 'create',
+                            'route' => [
+                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                                'parameters' => $request->route()->originalParameters()
+                            ]
+                        ],
                         $this->canDelete ? [
+                            'key'   => 'delete',
                             'type'  => 'button',
                             'style' => 'delete',
                             'route' => [
@@ -192,6 +205,8 @@ class ShowMasterProducts extends GrpAction
                         ] : false
                     ],
                 ],
+                'currency'              => $masterAsset->group->currency,
+                'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
                 'tabs'        => [
                     'current'    => $this->tab,
                     'navigation' => MasterAssetTabsEnum::navigation()

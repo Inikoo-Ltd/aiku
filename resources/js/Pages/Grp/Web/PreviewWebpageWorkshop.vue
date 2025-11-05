@@ -10,6 +10,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import { faTimes } from "@fal"
+import {debounce} from "lodash-es"
 
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import "@/../css/Iris/editor.css"
@@ -29,7 +30,6 @@ const props = defineProps<{
   }
   luigisbox_tracker_id?: string
 }>()
-
 const layout: any = inject("layout", {});
 const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
@@ -72,6 +72,12 @@ const updateData = (val: any) => {
   sendMessageToParent("autosave", JSON.parse(JSON.stringify(val)))
 }
 
+
+const debouncedSetWebpage = debounce((value: any) => {
+  data.value = value
+}, 1000)
+
+
 const handleMessage = (event: MessageEvent) => {
   const { key, value } = event.data
   if (key === "isPreviewLoggedIn") filterBlock.value = value
@@ -82,23 +88,16 @@ const handleMessage = (event: MessageEvent) => {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
   }
   if (key === "reload") reloadPage()
-  if (key === "setWebpage") {
-    data.value = value
-   /*  reloadPage(true) */
-  }
+  if (key === "setWebpage") debouncedSetWebpage(value)
 }
 
-const uploadImage = ()=>{
-  console.log('masuk')
-  sendMessageToParent("uploadImage", 'test')
-}
+
 
 const reloadPage = (withkey = false) => {
   router.reload({ only: ["webpage"] })
   if (withkey) key.value = ulid()
 }
 
-provide("reloadPage", reloadPage)
 provide("reloadPage", reloadPage)
 
 onMounted(() => {
@@ -115,9 +114,9 @@ onBeforeUnmount(() => {
   window.removeEventListener("message", handleMessage)
 })
 
-watch(() => props.webpage, (val) => {
+/* watch(() => props.webpage, (val) => {
   data.value = val ? { ...val } : undefined
-})
+}) */
 
 watch(filterBlock, () => {
   updateIrisLayout()
