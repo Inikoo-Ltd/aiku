@@ -731,7 +731,7 @@ Route::name('shop.')->prefix('shop/{shop:id}')->group(function () {
 
     Route::prefix('website/{website:id}')->name('website.')->group(function () {
         Route::prefix('announcements')->name('announcement.')->group(function () {
-            Route::post('upload-images', UploadImagesToAnnouncement::class)->name('upload-images.store')->withoutScopedBindings();
+            Route::post('{announcement}/upload-images', UploadImagesToAnnouncement::class)->name('upload-images.store')->withoutScopedBindings();
             Route::post('/', StoreAnnouncement::class)->name('store')->withoutScopedBindings();
             Route::patch('{announcement}/publish', PublishAnnouncement::class)->name('publish')->withoutScopedBindings();
             Route::patch('{announcement}', UpdateAnnouncement::class)->name('update')->withoutScopedBindings();
