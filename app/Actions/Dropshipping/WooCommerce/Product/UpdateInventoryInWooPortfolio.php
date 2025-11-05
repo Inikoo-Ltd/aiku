@@ -49,7 +49,7 @@ class UpdateInventoryInWooPortfolio
                 continue;
             }
 
-            $wooCommerceUser->setTimeout(45);
+            $wooCommerceUser->setTimeout(20);
             $result = $wooCommerceUser->checkConnection();
             if ($result && Arr::has($result, 'environment')) {
 
@@ -69,6 +69,7 @@ class UpdateInventoryInWooPortfolio
                 foreach ($portfolios as $portfolio) {
                     if ($this->checkIfApplicable($portfolio)) {
                         if($first){
+                            $wooCommerceUser->setTimeout(45);
                             UpdateWooPortfolio::run($portfolio->id);
                             $first=false;
                         }else{
