@@ -59,7 +59,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
 					sendMessageToParent('activeBlock', indexBlock)
 					sendMessageToParent('activeChildBlock', bKeys[0])
 				}">
-				<Image :src="modelValue?.image?.source" :imageCover
+				<Image :src="modelValue?.image?.source" :imageCover="true"
 					:alt="modelValue?.image?.alt" :imgAttributes="modelValue?.image?.attributes"
 					:style="getStyles(modelValue?.image?.properties)" class="w-full h-full object-cover" />
 			</div>

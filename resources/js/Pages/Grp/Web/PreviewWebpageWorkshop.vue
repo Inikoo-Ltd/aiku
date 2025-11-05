@@ -74,6 +74,7 @@ const updateData = (val: any) => {
 
 
 const debouncedSetWebpage = debounce((value: any) => {
+  console.log("Setting webpage data from parent")
   data.value = value
 }, 1000)
 
@@ -91,9 +92,8 @@ const handleMessage = (event: MessageEvent) => {
   if (key === "setWebpage") debouncedSetWebpage(value)
 }
 
-
-
 const reloadPage = (withkey = false) => {
+  console.log("Reloading webpage preview")
   router.reload({ only: ["webpage"] })
   if (withkey) key.value = ulid()
 }
@@ -114,9 +114,9 @@ onBeforeUnmount(() => {
   window.removeEventListener("message", handleMessage)
 })
 
-/* watch(() => props.webpage, (val) => {
+watch(() => props.webpage, (val) => {
   data.value = val ? { ...val } : undefined
-}) */
+})
 
 watch(filterBlock, () => {
   updateIrisLayout()

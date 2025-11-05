@@ -229,7 +229,7 @@ const debounceSaveWorkshop = (block) => {
       // Reload the preview
       data.value.layout = response.data.data.layout;
       saveState()
-      sendToIframe({ key: "reload", value: {} });
+      /* sendToIframe({ key: "reload", value: {} }); */
     } catch (error) {
       if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
         console.log(error)
