@@ -33,7 +33,8 @@ class RepairWebhookShopifyUsers
 
             $webhooksData = IndexShopifyUserWebhooks::run($shopifyUser);
 
-            if($webhooksData[0]) {
+
+            if($webhooksData[0] and is_array($webhooksData[1])) {
                 foreach ($webhooksData[1] as $webhook) {
                     if (in_array($webhook['topic'], ['PRODUCTS_DELETE', 'PRODUCTS_UPDATE'])) {
                         $webhookId = $webhook['id'];
@@ -53,9 +54,9 @@ class RepairWebhookShopifyUsers
 
     public function asCommand(Command $command): void
     {
-//        $shopifyUsers = ShopifyUser::find(52);
-//        $this->handle($shopifyUsers);
-//        exit;
+        $shopifyUsers = ShopifyUser::find(2238);
+        $this->handle($shopifyUsers);
+        exit;
 
         foreach (ShopifyUser::withTrashed()->orderBy('id','desc')->get() as $shopifyUser) {
             $this->handle($shopifyUser);
