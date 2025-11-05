@@ -50,7 +50,6 @@ class FulfillOrderToEbay extends OrgAction
 
         $ebayUser->fulfillOrder($fulfillOrderId, [
             'line_items' => $lineItems,
-            'shippedDate' => now()->timestamp,
             'tracking_number' => $shipment->tracking,
             'carrier_code' => $shipment->shipper->name
         ]);
