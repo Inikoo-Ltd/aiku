@@ -219,8 +219,8 @@ task('deploy', [
     'deploy:publish',
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
-    'artisan:octane:reload',
-    'artisan:inertia:stop-ssr',
+    //'artisan:octane:reload',
+    //'artisan:inertia:stop-ssr',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
 ]);
