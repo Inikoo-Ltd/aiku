@@ -49,7 +49,7 @@ class DeleteWebhooksFromShopify extends OrgAction
         return [true, ['deleted_count' => $deletedCount]];
     }
 
-    private function deleteWebhook(ShopifyUser $shopifyUser, string $webhookID): array
+    public function deleteWebhook(ShopifyUser $shopifyUser, string $webhookID): array
     {
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
