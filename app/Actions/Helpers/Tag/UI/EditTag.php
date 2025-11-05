@@ -43,10 +43,14 @@ class EditTag extends OrgAction
 
     public function htmlResponse(Tag $tag, ActionRequest $request): Response
     {
-        $scopes = collect(TagScopeEnum::cases())->map(fn ($case) => [
-            'label' => $case->pretty(),
-            'value' => $case->value,
-        ])->toArray();
+        $scopes = collect(TagScopeEnum::cases())
+            ->filter(fn ($case) => $case !== TagScopeEnum::PRODUCT_PROPERTY)
+            ->map(fn ($case) => [
+                'label' => $case->pretty(),
+                'value' => $case->value,
+            ])
+            ->values()
+            ->toArray();
 
         return Inertia::render(
             'EditModel',

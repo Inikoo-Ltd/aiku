@@ -38,7 +38,11 @@ class UpdateTag extends OrgAction
 
     public function htmlResponse(Tag $tag): RedirectResponse
     {
-        return Redirect::route('grp.org.tags.show', [$this->organisation->slug]);
+        return Redirect::route('grp.org.tags.show', [$this->organisation->slug])->with('notification', [
+            'status'  => 'success',
+            'title'   => __('Success'),
+            'description' => __('Tag successfully updated.'),
+        ]);
     }
 
     public function handle(Tag $tag, array $modelData): Tag
