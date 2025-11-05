@@ -23,17 +23,17 @@ const layout = inject('layout', layoutStructure)
 const props = withDefaults(defineProps<{
     //props for all
     tabs: string[];
-    multiple: boolean;
+    multiple?: boolean;
     maxSelected?: number;
     submitUpload?:Function
     isLoadingSubmit?: boolean;
     //propsforUpload 
-    uploadRoute: routeType;
+    uploadRoute?: routeType;
     //stockImages
     stockImagesRoute?: routeType;
     //images uploded
     imagesUploadedRoutes?: routeType;
-    attachImageRoute: routeType;
+    attachImageRoute?: routeType;
 }>(), {
     multiple: false,
     tabs: () => ['upload', 'images_uploaded', 'stock_images'],

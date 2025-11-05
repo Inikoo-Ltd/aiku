@@ -30,7 +30,6 @@ const props = defineProps<{
   }
   luigisbox_tracker_id?: string
 }>()
-
 const layout: any = inject("layout", {});
 const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
@@ -75,9 +74,8 @@ const updateData = (val: any) => {
 
 
 const debouncedSetWebpage = debounce((value: any) => {
+  console.log("Setting webpage data from parent")
   data.value = value
-  // optionally trigger reload if needed:
-  // reloadPage(true)
 }, 1000)
 
 
@@ -94,17 +92,12 @@ const handleMessage = (event: MessageEvent) => {
   if (key === "setWebpage") debouncedSetWebpage(value)
 }
 
-const uploadImage = ()=>{
-  console.log('masuk')
-  sendMessageToParent("uploadImage", 'test')
-}
-
 const reloadPage = (withkey = false) => {
+  console.log("Reloading webpage preview")
   router.reload({ only: ["webpage"] })
   if (withkey) key.value = ulid()
 }
 
-provide("reloadPage", reloadPage)
 provide("reloadPage", reloadPage)
 
 onMounted(() => {

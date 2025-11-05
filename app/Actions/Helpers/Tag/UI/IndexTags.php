@@ -58,6 +58,8 @@ class IndexTags extends OrgAction
 
         if ($parent instanceof TradeUnit) {
             $queryBuilder->where('scope', TagScopeEnum::PRODUCT_PROPERTY);
+        } else {
+            $queryBuilder->whereNot('scope', TagScopeEnum::PRODUCT_PROPERTY);
         }
 
         $queryBuilder

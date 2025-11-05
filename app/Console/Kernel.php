@@ -129,7 +129,6 @@ class Kernel extends ConsoleKernel
 
         $schedule->command('woo:update-inventory')
             ->hourly()
-            ->unlessBetween('5:00', '17:00')
             ->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateWooStockInventories',
         );
