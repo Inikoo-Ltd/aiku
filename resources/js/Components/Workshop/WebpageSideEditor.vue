@@ -31,7 +31,7 @@ const modelModalBlocklist = defineModel()
 
 const props = defineProps<{
   webpage: RootWebpage
-  webBlockTypes: Root
+  webBlockTypes: Daum
   selectedTab: Number
 }>()
 

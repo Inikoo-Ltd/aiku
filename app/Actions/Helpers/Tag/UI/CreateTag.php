@@ -50,10 +50,14 @@ class CreateTag extends OrgAction
             ];
         }
 
-        $scopes = collect(TagScopeEnum::cases())->map(fn ($case) => [
-            'label' => $case->pretty(),
-            'value' => $case->value,
-        ])->toArray();
+        $scopes = collect(TagScopeEnum::cases())
+            ->filter(fn ($case) => $case !== TagScopeEnum::PRODUCT_PROPERTY)
+            ->map(fn ($case) => [
+                'label' => $case->pretty(),
+                'value' => $case->value,
+            ])
+            ->values()
+            ->toArray();
 
         return Inertia::render(
             'CreateModel',

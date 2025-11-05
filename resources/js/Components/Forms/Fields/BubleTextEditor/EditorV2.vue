@@ -154,9 +154,9 @@ const editorInstance = useEditor({
         FontFamily.configure({
             types: ['textStyle'],
         }),
-        Link.configure({
+       /*  Link.configure({
             openOnClick: false
-        }),
+        }), */
         customLink.extend({
             addProseMirrorPlugins() {
                 return [
@@ -337,7 +337,7 @@ const editorInstance = useEditor({
             },
         }),
         Gapcursor,
-        Image,
+       /*  Image, */
         TextStyle,
         FontSize.configure({
             types: ['textStyle'],
