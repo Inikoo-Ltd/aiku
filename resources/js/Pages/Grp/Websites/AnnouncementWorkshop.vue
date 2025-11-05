@@ -37,6 +37,7 @@ import VueDatePicker from '@vuepic/vue-datepicker';
 import { useFormatTime } from '@/Composables/useFormatTime'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import Icon from '@/Components/Icon.vue'
+import { onBeforeUnmount } from 'vue'
 
 library.add(faStop, faGlobe, faImage, faExternalLink, faRocketLaunch, faSave, faUndoAlt, faInfoCircle, faChevronDown, faCircle, faHandPointer, faStopwatch20, faSquare, faThLarge, faCheckCircle)
 
@@ -96,10 +97,28 @@ const props = defineProps<{
 }>()
 
 const announcementData = ref(props.announcement_data)
-console.log('ann', announcementData.value)
 provide('announcementData', announcementData.value)
 
 const isModalOpen = ref(false)
+
+// Section: Screen type (mobile, tablet, desktop)
+const screenType = inject('screenType', ref('desktop'))
+const checkScreenType = () => {
+    const width = window.innerWidth
+    if (width < 640) screenType.value = 'mobile'
+    else if (width >= 640 && width < 1024) screenType.value = 'tablet'
+    else screenType.value = 'desktop'
+}
+provide('screenType', screenType)
+provide('currentView', screenType)
+onMounted(() => {
+    checkScreenType()
+    window.addEventListener('resize', checkScreenType)
+})
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', checkScreenType)
+})
+
 
 // Method: Save announcement
 const isLoadingSave = ref(false)
@@ -425,9 +444,9 @@ const onSectionSetting = () => {
                 </div> -->
 
                 <!-- Section: Screenview -->
-                <div v-if="announcementData.template_code" class="flex justify-between w-full py-2 px-2">
+                <!-- <div v-if="announcementData.template_code" class="flex justify-between w-full py-2 px-2">
                     <div>
-                        <!-- <ScreenView @screenView="false" /> -->
+                        <ScreenView v-model="screenType" />
                     </div>
 
                     <a :href="deliveryUrl"
@@ -435,7 +454,7 @@ const onSectionSetting = () => {
                         What will showed in <span class="font-semibold">{{ website.name }}</span>?
                         <FontAwesomeIcon icon='fal fa-external-link' aria-hidden='true' />
                     </a>
-                </div>
+                </div> -->
             </div>
 
             <div class="xborder-2 h-full w-full">
