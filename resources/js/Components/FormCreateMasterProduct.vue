@@ -203,7 +203,7 @@ const submitForm = async (redirect = true) => {
     for (const tableDataItem of tableData.value.data) {
         finalDataTable[tableDataItem.id] = {
             price: tableDataItem.product.price,
-            create_webpage: tableDataItem.product.has_org_stocks,
+            create_in_shop : tableDataItem.product.has_org_stocks,
             rrp: tableDataItem.product.rrp
         }
     }
