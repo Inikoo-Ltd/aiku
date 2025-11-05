@@ -1,34 +1,40 @@
 <script setup lang="ts">
 import { getIrisAnnouncementComponent } from "@/Composables/getIrisComponents"
-import { routeType } from "@/types/route"
 import { inject, provide, computed } from "vue"
-import { notify } from "@kyvg/vue3-notification"
-import { trans } from "laravel-vue-i18n"
-import axios from "axios"
-import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue"
-import { getStyles } from "@/Composables/styles"
 
 const props = defineProps<{
     data: {
-        key: string,
-        data: object,
-        blueprint: object
-        loginRoute?: routeType
+        container_properties: {}
+        settings: {
+            target_pages: {
+                type: 'all' | 'specific'
+            }
+            target_users: {
+                auth_state: 'all' | 'logged_in' | 'logged_out'
+            }
+        }
     }
 }>()
 
-
 const layout = inject("layout", {})
 const isLoggedIn = computed(() => {
-    return layout.iris?.user_auth ? true : false
+    return layout.iris?.is_logged_in
 })
 provide("isPreviewLoggedIn", isLoggedIn)
 
+const shouldShowAnnouncement = computed(() => {
+    const authState = props.data.settings.target_users.auth_state
+    if (authState === 'all') return true
+    if (authState === 'logged_in') return isLoggedIn.value
+    if (authState === 'logged_out') return !isLoggedIn.value
+    return false
+})
 
 </script>
 
 <template>
     <component
+        v-if="shouldShowAnnouncement"
         :is="getIrisAnnouncementComponent(data?.template_code)"
         :announcementData="data"
     />
