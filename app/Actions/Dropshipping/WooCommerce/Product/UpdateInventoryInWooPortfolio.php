@@ -45,9 +45,7 @@ class UpdateInventoryInWooPortfolio
             $wooCommerceUser = $customerSalesChannel->user;
 
             if (!$wooCommerceUser) {
-                $customerSalesChannel->update([
-                    'ban_stock_update_util' => now()->addHours(3),
-                ]);
+
                 continue;
             }
 
@@ -72,6 +70,10 @@ class UpdateInventoryInWooPortfolio
                     }
 
                 }
+            }else{
+                $customerSalesChannel->update([
+                    'ban_stock_update_util' => now()->addHours(3),
+                ]);
             }
 
         }

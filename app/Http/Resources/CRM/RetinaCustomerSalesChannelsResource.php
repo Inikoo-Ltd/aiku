@@ -28,6 +28,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $can_connect_to_platform
  * @property mixed $exist_in_platform
  * @property mixed $platform_status
+ * @property mixed $number_portfolio_broken
  */
 class RetinaCustomerSalesChannelsResource extends JsonResource
 {
@@ -35,6 +36,15 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
 
     public function toArray($request): array
     {
+
+        $deleteMsg=match ($this->platform_code) {
+            'manual'=>__('This operation is irreversible.'),
+            'shopify'=>__('The channel will be unlinked from your Shopify store. You can relinked again creating a new channel.'),
+            default=>__('The channel will be unlinked from your shop. You can relinked again creating a new channel.'),
+        };
+
+
+
         return [
             'slug'                    => $this->slug,
             'id'                      => $this->id,
@@ -50,10 +60,11 @@ class RetinaCustomerSalesChannelsResource extends JsonResource
             'platform_code'           => $this->platform_code,
             'platform_name'           => $this->platform_name,
             'platform_image'          => $this->getPlatformLogo($this->platform_code),
-
             'can_connect_to_platform' => $this->can_connect_to_platform,
-            'exist_in_platform' => $this->exist_in_platform,
-            'platform_status' => $this->platform_status,
+            'exist_in_platform'       => $this->exist_in_platform,
+            'platform_status'         => $this->platform_status,
+
+            'delete_msg' => $deleteMsg,
 
             'delete_route' => [
                 'method'     => 'delete',

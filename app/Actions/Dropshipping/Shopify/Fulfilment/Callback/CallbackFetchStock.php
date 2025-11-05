@@ -35,6 +35,12 @@ class CallbackFetchStock extends OrgAction
             /** @var Product $product */
             $product = $portfolio->item;
             $stock[$portfolio->sku] = $product->available_quantity;
+
+            $portfolio->update([
+                'last_stock_value'      => $product->available_quantity,
+                'stock_last_updated_at' => now()
+            ]);
+
         }
 
 
