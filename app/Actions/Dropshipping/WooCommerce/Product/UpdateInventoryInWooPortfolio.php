@@ -49,7 +49,7 @@ class UpdateInventoryInWooPortfolio
                 continue;
             }
 
-            $wooCommerceUser->setTimeout(60);
+            $wooCommerceUser->setTimeout(20);
             $result = $wooCommerceUser->checkConnection();
             if ($result && Arr::has($result, 'environment')) {
 
@@ -69,10 +69,13 @@ class UpdateInventoryInWooPortfolio
                 foreach ($portfolios as $portfolio) {
                     if ($this->checkIfApplicable($portfolio)) {
                         if($first){
+                            $wooCommerceUser->setTimeout(45);
                             UpdateWooPortfolio::run($portfolio->id);
                             $first=false;
                         }else{
-                            UpdateWooPortfolio::dispatch($portfolio->id);
+                            // Add jitter to spread API calls and avoid bursts
+                            $delaySeconds = random_int(1, 120);
+                            UpdateWooPortfolio::dispatch($portfolio->id)->delay(now()->addSeconds($delaySeconds));
                         }
                     }
 
