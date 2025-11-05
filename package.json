@@ -60,6 +60,7 @@
         "@newrelic/browser-agent": "^1.282.0",
         "@primevue/themes": "^4.0.4",
         "@sentry/vue": "^7.120.2",
+        "@simplewebauthn/browser": "^13.2.2",
         "@tiptap/extension-bubble-menu": "^2.2.4",
         "@tiptap/extension-character-count": "^2.0.3",
         "@tiptap/extension-color": "^2.2.3",
