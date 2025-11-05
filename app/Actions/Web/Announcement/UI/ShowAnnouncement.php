@@ -19,7 +19,6 @@ use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
 use App\Models\Web\Website;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -70,7 +69,7 @@ class ShowAnnouncement extends OrgAction
                                 'name'       => 'grp.org.shops.show.web.announcements.edit',
                                 'parameters' => array_values($request->route()->originalParameters())
                             ]
-                        ],                            
+                        ],
                         $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'primary',
@@ -193,23 +192,10 @@ class ShowAnnouncement extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, string $suffix = null): array
     {
-        return [];
-
         $headCrumb = function (string $type, Announcement $announcement, array $routeParameters, string $suffix = null) {
             return [
                 [
                     'type'           => $type,
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Announcements')
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $announcement->name,
-                        ],
-
-                    ],
                     'simple'         => [
                         'route' => $routeParameters['model'],
                         'label' => $announcement->name
@@ -225,13 +211,9 @@ class ShowAnnouncement extends OrgAction
             array_merge(
                 IndexAnnouncements::make()->getBreadcrumbs($routeName, $routeParameters),
                 $headCrumb(
-                    'modelWithIndex',
-                    Announcement::firstWhere('slug', $routeParameters['announcement']),
+                    'simple',
+                    Announcement::firstWhere('ulid', $routeParameters['announcement']),
                     [
-                        'index' => [
-                            'name'       => 'grp.org.shops.show.web.announcements.index',
-                            'parameters' => $routeParameters
-                        ],
                         'model' => [
                             'name'       => 'grp.org.shops.show.web.announcements.show',
                             'parameters' => $routeParameters
