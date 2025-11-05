@@ -229,8 +229,19 @@ const defaultContainerData = {
         }
     },
     "background": {
-        "type": "color",
-        "color": "linear-gradient(90deg, #f1e1c2 0%, #fcbc98 35%, #f9cdc3 57%, #facefb 83%)",
+        "type": "gradient",
+        "color": "#f1e1c2",
+        "gradient": {
+            "value": "linear-gradient(90deg, #f1e1c2 0%, #fcbc98 35%, #f9cdc3 57%, #facefb 83%)",
+            "colors": [
+                "#f1e1c2",
+                "#fcbc98",
+                "#f9cdc3",
+                "#facefb",
+            ],
+            "angle": "to right",
+            "type": "linear"
+        },
         "image": {
             "original": null
         }
@@ -277,9 +288,8 @@ const defaultFieldsData = {
     "button_1": {
         "link": {
             "type": "external",
-            "url": "#",
-            "id": 9,
-            "workshop_route": ""
+            "href": "#",
+            "target": "_blank",
         },
         "text": 'Claim Now!',
         "container": {
@@ -468,28 +478,29 @@ defineExpose({
             
             </div>
             
+            <!-- Section: Countdown -->
             <div v-if="compTimeLeft > new Date().getTime()" @click="() => (onClickOpenFieldWorkshop(2))" class="announcement-component-editable grid grid-cols-4 gap-x-2 font-sans mx-auto">
                 <div class="flex flex-col items-center">
                     <div id="countdown-days" class="text-base w-fit flex justify-center overflow-hidden relative rounded-md tabular-nums">
-                        {{days}}
+                        {{ days }}
                     </div>
                     <div class="text-xs opacity-60">{{ trans("Days") }}</div>
                 </div>
                 <div class="flex flex-col items-center">
                     <div id="countdown-hours" class="text-base w-fit flex justify-center overflow-hidden relative rounded-md tabular-nums">
-                        {{hours}}
+                        {{ hours }}
                     </div>
                     <div class="text-xs opacity-60">{{ trans("Hours") }}</div>
                 </div>
                 <div class="flex flex-col items-center">
                     <div id="countdown-minutes" class="text-base w-fit flex justify-center overflow-hidden relative rounded-md tabular-nums">
-                        {{minutes}}
+                        {{ minutes }}
                     </div>
                     <div class="text-xs opacity-60">{{ trans("Minutes") }}</div>
                 </div>
                 <div class="flex flex-col items-center">
                     <div id="countdown-seconds" class="text-base w-fit flex justify-center overflow-hidden relative rounded-md tabular-nums">
-                        {{seconds}}
+                        {{ seconds }}
                     </div>
                     <div class="text-xs opacity-60">{{ trans("Seconds") }}</div>
                 </div>
@@ -498,7 +509,7 @@ defineExpose({
             <div v-else @click="() => (onClickOpenFieldWorkshop(2))" class="announcement-component-editable flex justify-center" v-html="announcementData?.fields?.countdown?.expired_text">
             </div>
             
-            <div v-if="announcementData?.fields.button_1.text" class="relative justify-self-center md:justify-self-end">
+            <div v-if="announcementData?.fields.button_1.text" class="mt-2 mb-1 md:mt-0 md:mb-0 relative justify-self-center md:justify-self-end">
                 <div v-if="isEditable"  @click="() => (onClickOpenFieldWorkshop(3))" class="absolute inset-0 announcement-component-editable " />
                 <a :href="announcementData?.fields.button_1.link.href || '#'" :target="announcementData?.fields.button_1.link.target" v-html="announcementData?.fields.button_1.text" :style="getStyles(announcementData?.fields.button_1.container.properties)">
                 </a>

@@ -207,7 +207,7 @@ const defaultContainerData = {
     },
     "background": {
         "type": "gradient",
-        "color": "linear-gradient(90deg, rgba(221,245,254,1) 0%, rgba(252,247,255,1) 16%, rgba(255,252,246,1) 35%, rgba(248,240,255,1) 57%, rgba(255,250,246,1) 83%)",
+        "color": "rgba(221,245,254,1)",
         "image": {
             "original": null
         },
@@ -255,11 +255,9 @@ const defaultFieldsData = {
     },
     "button_1": {
         "link": {
-            "type" : "internal",
-            "href": "https://wowsbar.com",
-            "id": 9,
-            "workshop_route" : "",
-            "target": "_blank"
+            "type": "external",
+            "href": "#",
+            "target": "_blank",
         },
         "text": 'Claim Now!',
         "container": {
@@ -385,9 +383,7 @@ defineExpose({
         v-if="!isToSelectOnly"
         :style="getStyles(announcementData?.container_properties)"
     >
-    <!-- <pre>{{ announcementData?.container_properties }}</pre> -->
-        <div class="flex flex-wrap gap-x-4 items-center justify-center w-full"
-        >
+        <div class="flex flex-wrap gap-x-4 items-center justify-center w-full">
             <div
                 v-if="announcementData?.fields?.text_1"
                 ref="_text_1"
@@ -405,7 +401,7 @@ defineExpose({
                 :href="announcementData?.fields.button_1.link.href || '#'"
                 :target="announcementData?.fields.button_1.link.target" 
                 v-html="announcementData?.fields.button_1.text"
-                class="inline-flex items-center announcement-component-editable"
+                class="mt-3 md:mt-0 inline-flex items-center announcement-component-editable"
                 :style="getStyles(announcementData?.fields.button_1?.container?.properties)"
             >
             </a>
