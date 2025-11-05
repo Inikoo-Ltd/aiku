@@ -54,9 +54,6 @@ class RepairWebhookShopifyUsers
 
     public function asCommand(Command $command): void
     {
-        $shopifyUsers = ShopifyUser::find(2238);
-        $this->handle($shopifyUsers);
-        exit;
 
         foreach (ShopifyUser::withTrashed()->orderBy('id','desc')->get() as $shopifyUser) {
             $this->handle($shopifyUser);
