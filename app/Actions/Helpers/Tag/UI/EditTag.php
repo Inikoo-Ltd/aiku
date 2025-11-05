@@ -72,22 +72,27 @@ class EditTag extends OrgAction
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('Edit Tag'),
+                            'label'  => __('Name'),
+                            'title'  => __('Edit Name'),
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
                                     'label' => __('Name'),
-                                    'required' => true,
                                     'value' => $tag->name
                                 ],
+                            ],
+                        ],
+                        [
+                            'label'  => __('Scope'),
+                            'title'  => __('Edit Scope'),
+                            'fields' => [
                                 'scope' => [
                                     'type'     => 'select',
                                     'label'    => __('Scope'),
-                                    'required' => true,
                                     'options'  => $scopes,
                                     'value'    => $tag->scope
                                 ],
-                            ],
+                            ]
                         ]
                     ],
                     'args' => [
