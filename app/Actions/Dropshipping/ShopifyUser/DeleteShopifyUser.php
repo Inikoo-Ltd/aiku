@@ -62,7 +62,7 @@ class DeleteShopifyUser extends OrgAction
             'status' => false
         ]);
 
-        if ($shopifyUser->customerSalesChannel) {
+        if ($shopifyUser->customerSalesChannel->status != CustomerSalesChannelStatusEnum::CLOSED) {
             UpdateCustomerSalesChannel::run($shopifyUser->customerSalesChannel, [
                 'status' => CustomerSalesChannelStatusEnum::CLOSED
             ]);

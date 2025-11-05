@@ -9,12 +9,8 @@
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
 use App\Actions\Dropshipping\Amazon\DeleteAmazonUser;
-use App\Actions\Dropshipping\CustomerClient\DeleteCustomerClient;
 use App\Actions\Dropshipping\Ebay\DeleteEbayUser;
 use App\Actions\Dropshipping\Magento\DeleteMagentoUser;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewChannels;
-use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomers;
-use App\Actions\Dropshipping\Portfolio\DeletePortfolio;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\WooCommerce\DeleteWooCommerceUser;
 use App\Actions\OrgAction;
@@ -24,10 +20,19 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\ActionRequest;
 
-class DeleteCustomerSalesChannel extends OrgAction
+class CloseCustomerSalesChannel extends OrgAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel): ?bool
     {
+        UpdateCustomerSalesChannel::run(
+            $customerSalesChannel,
+            [
+                'status' => CustomerSalesChannelStatusEnum::CLOSED,
+                'name' => $customerSalesChannel->name.' - deleted - '.rand(00, 99), // This for user can make another channel with the same name
+                'closed_at' => now()
+            ]
+        );
+
         if ($customerSalesChannel->user) {
             match ($customerSalesChannel->platform->type) {
                 PlatformTypeEnum::SHOPIFY => DeleteShopifyUser::run($customerSalesChannel->user),
@@ -39,47 +44,21 @@ class DeleteCustomerSalesChannel extends OrgAction
             };
         }
 
-        $numberOrders = $customerSalesChannel->orders()->count();
-        if ($numberOrders > 0) {
-            UpdateCustomerSalesChannel::run(
-                $customerSalesChannel,
-                [
-                    'status' => CustomerSalesChannelStatusEnum::CLOSED,
-                    'name' => $customerSalesChannel->name . ' - deleted - ' . rand(00, 99), // This for user can make another channel with same name
-                    'closed_at' => now()
-                ]
-            );
+        CloseCustomerSalesChannelPostActions::dispatch($customerSalesChannel);
 
-            return false;
-        } else {
-            foreach ($customerSalesChannel->clients as $client) {
-                DeleteCustomerClient::run($client);
-            }
 
-            foreach ($customerSalesChannel->portfolios as $portfolio) {
-                DeletePortfolio::run($portfolio);
-            }
-
-            $result = $customerSalesChannel->delete();
-
-            if ($customerSalesChannel->shop && $customerSalesChannel->platform->id) {
-                ShopHydratePlatformSalesIntervalsNewChannels::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay($this->hydratorsDelay);
-                ShopHydratePlatformSalesIntervalsNewCustomers::dispatch($customerSalesChannel->shop, $customerSalesChannel->platform->id)->delay($this->hydratorsDelay);
-            }
-
-            return $result;
-        }
+        return false;
     }
 
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request)
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
     {
         $this->initialisationFromShop($customerSalesChannel->shop, $request);
 
         $this->handle($customerSalesChannel);
     }
 
-    public string $commandSignature = 'delete:customer-sales-channel  {customer_sales_channel}';
+    public string $commandSignature = 'customer-sales-channel:close  {customer_sales_channel}';
 
 
     public function asCommand(Command $command): int
@@ -87,7 +66,7 @@ class DeleteCustomerSalesChannel extends OrgAction
         try {
             $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customer_sales_channel'))->firstOrFail();
             $this->handle($customerSalesChannel);
-            $command->info('Customer sales channel deleted');
+            $command->info('Customer sales channel closed');
 
             return 0;
         } catch (\Exception $e) {

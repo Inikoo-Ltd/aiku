@@ -18,7 +18,7 @@ class RetinaDeleteCustomerSalesChannel extends RetinaAction
 {
     public function handle(CustomerSalesChannel $customerSalesChannel): ?bool
     {
-        return DeleteCustomerSalesChannel::run($customerSalesChannel);
+        return CloseCustomerSalesChannel::run($customerSalesChannel);
     }
 
     public function authorize(ActionRequest $request): bool
