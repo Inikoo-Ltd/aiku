@@ -16,16 +16,31 @@ use App\Http\Resources\Catalogue\TagsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTags extends OrgAction
 {
-    public function handle(Model $parent, $prefix = null): LengthAwarePaginator
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromGroup($tradeUnit->group, $request);
+
+        return $this->handle($tradeUnit, $this->validatedData);
+    }
+
+    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation, $request);
+    }
+
+    public function handle(Organisation|TradeUnit $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
