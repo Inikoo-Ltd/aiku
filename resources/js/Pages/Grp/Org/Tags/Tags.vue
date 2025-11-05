@@ -14,10 +14,22 @@
         pageHeading: [];
         data: any;
     }>();
+
+    function editRoute(tag: any) {
+        return route('grp.org.tags.edit', [route().params.organisation, tag.slug]);
+    }
 </script>
 
 <template>
     <Head :title="title" />
     <PageHeading :data="pageHeading" />
-    <Table :resource="data" :name="title" />
+    <Table :resource="data" :name="title">
+        <template #cell(action)="{ item }">
+            <div class="flex gap-2">
+                <a :href="editRoute(item)" class="primaryLink">
+                    Edit
+                </a>
+            </div>
+        </template>
+    </Table>
 </template>
