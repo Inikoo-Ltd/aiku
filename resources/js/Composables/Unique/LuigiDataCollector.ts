@@ -32,7 +32,7 @@ export const RecommendationCollector = (response: Response) => {
             items: listItems,
             filters: {
                 "RecommenderClientId": response.recommender_client_identifier,
-                "ItemIds": idItems,
+                // "ItemIds": idItems,  // No longer needed, even written in docs
                 "Type": response.recommendation_type,
                 "RecommendationId": response.recommendation_id,
             }
