@@ -106,7 +106,7 @@ class UpdateWooPortfolio
 
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $message
+                    'response' => 'E1: '.$message
                 ]);
 
                 $portfolio->update([
@@ -116,7 +116,7 @@ class UpdateWooPortfolio
         } catch (Throwable $e) {
             UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                 'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                'response' => $e->getMessage()
+                'response' => 'E2: '.$e->getMessage()
             ]);
             $portfolio->update([
                 'stock_last_fail_updated_at' => now()
