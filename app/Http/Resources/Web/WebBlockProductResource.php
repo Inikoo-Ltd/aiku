@@ -50,10 +50,20 @@ class WebBlockProductResource extends JsonResource
             'unit'              => $product->unit,
         ];
 
-        $luigi_identity = $product->group_id . ':' . $product->organisation_id . ':' . $product->shop_id . ':' . $product->webpage?->website?->id . ':' . $product->webpage?->id;
+        $margin     = '';
+        $rrpPerUnit = '';
+        $profit     = '';
+        $units = (int) $this->units;
+        if ($product->rrp > 0) {
+            $margin     = percentage(round((($product->rrp - $product->price) / $this->rrp) * 100, 1), 100);
+            $rrpPerUnit = round($product->rrp / $product->units, 2);
+            // $profit     = round(($product->price - $product->rrp) / $product->units, 2);
+            $profit     = round($product->rrp - $product->price, 2);
+        }
+
 
         return [
-            'luigi_identity'    => $luigi_identity,
+            'luigi_identity'    => $product->getLuigiIdentity(),
             'slug'              => $product->slug,
             'code'              => $product->code,
             'name'              => $product->name,
@@ -67,10 +77,13 @@ class WebBlockProductResource extends JsonResource
             'image_id'          => $product->image_id,
             'currency_code'     => $product->currency->code,
             'rrp'               => $product->rrp,
+            'rrp_per_unit'      => $rrpPerUnit,
+            'margin'            => $margin,
+            'profit'            => $profit,
             'price'             => $product->price,
             'status'            => $product->status,
             'state'             => $product->state,
-            'units'             => $product->units,
+            'units'             => $units,
             'unit'              => $product->unit,
             'web_images'        => $product->web_images,
             'created_at'        => $product->created_at,

@@ -15,6 +15,7 @@ use App\Enums\Catalogue\Shop\ShopStateEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Barcode;
+use App\Models\Helpers\Country;
 use App\Models\SysAdmin\Organisation;
 use App\Transfers\Aurora\WithAuroraImages;
 use App\Transfers\Aurora\WithAuroraParsers;
@@ -23,6 +24,7 @@ use Exception;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
 
 class FetchAuroraTradeUnits extends FetchAuroraAction
@@ -178,7 +180,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                 }
 
 
-
                 $this->fetchTradeUnitProductPropertiesInfo(
                     $tradeUnit,
                 );
@@ -275,7 +276,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         }
 
 
-        return [
+        $data = [
             'un_number'                    => $productPropertiesInfo->{'Product UN Number'} ?? null,
             'un_class'                     => $productPropertiesInfo->{'Product UN Class'} ?? null,
             'packing_group'                => $productPropertiesInfo->{'Product Packing Group'} ?? null,
@@ -297,13 +298,52 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             'pictogram_oxidising'          => $productPropertiesInfo->{'Product Pictogram Oxidising'} == 'Yes',
             'pictogram_danger'             => $productPropertiesInfo->{'Product Pictogram Danger'} == 'Yes',
             'cpnp_number'                  => $productPropertiesInfo->{'Product CPNP Number'} ?? null,
-            'country_of_origin'            => $productPropertiesInfo->{'Product Origin Country Code'} ?? null,
             'tariff_code'                  => $productPropertiesInfo->{'Product Tariff Code'} ?? null,
             'duty_rate'                    => $dutyRate,
             'hts_us'                       => $productPropertiesInfo->{'Product HTSUS Code'} ?? null,
         ];
+
+        if ($productPropertiesInfo->{'Product Origin Country Code'} != '') {
+            $data['origin_country_id'] = $this->parseCountryOrigin($productPropertiesInfo->{'Product Origin Country Code'});
+        }
+
+        return $data;
     }
 
+
+    public function parseCountryOrigin(?string $countryOrigin): ?int
+    {
+        if (!$countryOrigin || is_numeric($countryOrigin)) {
+            return null;
+        }
+
+        $countryOrigin = Str::upper($countryOrigin);
+
+        if ($countryOrigin == 'UK' || $countryOrigin == 'GB') {
+            $countryOrigin = 'GBR';
+        }
+
+        if ($countryOrigin == 'CHI' || $countryOrigin == 'CNY') {
+            $countryOrigin = 'CHN';
+        }
+
+        if ($countryOrigin == 'IDR' || $countryOrigin == 'IDO') {
+            $countryOrigin = 'IDN';
+        }
+
+        $country = null;
+        if (strlen($countryOrigin) == 3) {
+            $country = Country::where('iso3', $countryOrigin)->first();
+        }
+
+        //        if (!$country) {
+        //            print "\nXXXXX-->".$countryOrigin.'<--\n';
+        //        }
+
+        return $country?->id;
+
+
+    }
 
     public function getModelsQuery(): Builder
     {
@@ -322,6 +362,4 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
         return $query->count();
     }
-
-
 }

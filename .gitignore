@@ -110,3 +110,4 @@ rgb.icc
 
 /slim_restore.sh
 /get_slim.sh
+/devops/haproxy/haproxy.cfg

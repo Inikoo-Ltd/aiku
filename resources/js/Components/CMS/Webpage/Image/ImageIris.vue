@@ -14,6 +14,7 @@ import { computed } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 
 library.add(faCube, faStar, faImage, faPencil)
@@ -110,13 +111,16 @@ const resolvedGap = computed(() => {
                 v-if="getHref(index)"
                 :is="getHrefFromImageData(image)
                     ? image.link_data?.target === '_self' && image.link_data?.type === 'internal'
-                        ? Link : 'a'
+                        ? LinkIris : 'a'
                     : 'div'"
                 :href="getHrefFromImageData(image) || undefined"
                 :target="image.link_data?.target"
                 rel="noopener noreferrer"
                 class="block w-full h-full"
+                :type="image.link_data?.type"
+                :chanonical_url="image.link_data?.canonical_url"
             >
+            <template #default>
                 <Image
                     :src="image?.source"
                     :alt="image?.properties?.alt || `image ${index + 1}`"
@@ -127,6 +131,7 @@ const resolvedGap = computed(() => {
                     }"
                     :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
                 />
+            </template>
             </component>
           <div v-else class="block w-full h-full">
             <Image :src="image?.source" :alt="image?.properties?.alt || `image ${index + 1}`" :imageCover="true" :style="{

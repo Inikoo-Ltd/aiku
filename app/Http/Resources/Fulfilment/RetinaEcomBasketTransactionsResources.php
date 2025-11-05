@@ -17,13 +17,28 @@ use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @property mixed $id
- * @property mixed $date
- * @property mixed $name
- * @property mixed $reference
- * @property mixed $slug
- * @property mixed $state
- * @property mixed $number_item_transactions
+ * Properties expected on the underlying Transaction resource.
+ * @property int $id
+ * @property string $state
+ * @property string $status
+ * @property int $quantity_ordered
+ * @property int $quantity_bonus
+ * @property int $quantity_dispatched
+ * @property int $quantity_fail
+ * @property int $quantity_cancelled
+ * @property numeric-string|int|float|null $gross_amount
+ * @property numeric-string|int|float|null $net_amount
+ * @property string|null $asset_code
+ * @property string|null $asset_name
+ * @property string|null $asset_type
+ * @property numeric-string|int|float|null $price
+ * @property string|null $product_slug
+ * @property int|null $product_image_id
+ * @property int|null $product_id
+ * @property string|null $model_type
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property numeric-string|int|float|null $available_quantity
+ * @property string|null $currency_code
  */
 class RetinaEcomBasketTransactionsResources extends JsonResource
 {
@@ -42,7 +57,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             $webpage = Webpage::where('model_id', $transaction->product_id)
             ->where('model_type', class_basename(Product::class))->first();
 
-            $webpageUrl = $webpage->getUrl();
+            $webpageUrl = $webpage->getCanonicalUrl();
         }
 
         return [
@@ -66,7 +81,6 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'available_quantity'    => $transaction->available_quantity,
             'currency_code'       => $transaction->currency_code,
             'webpage_url'         => $webpageUrl,
-            // 'image'               => $transaction->product_id ? Product::find($transaction->product_id)->imageSources(200, 200) : null,
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',
                 'parameters' => [

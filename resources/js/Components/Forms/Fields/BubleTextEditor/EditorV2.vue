@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, Teleport, inject } from "vue"
+import { onBeforeUnmount, onMounted, ref, Teleport, inject, nextTick } from "vue"
 import { useEditor, EditorContent, BubbleMenu } from '@tiptap/vue-3'
-/* import type DataTable from "@/models/table" */
 import Select from 'primevue/select'
 import { useFontFamilyList } from '@/Composables/useFont'
 
@@ -41,22 +40,6 @@ import FontFamily from '@tiptap/extension-font-family'
 import Highlight from '@tiptap/extension-highlight'
 import UtilsColorPicker from '@/Components/Utils/ColorPicker.vue'
 import {CustomImage} from './CustomResizeImage/CustomImageSetting'
-/* import ImageResize from 'tiptap-extension-resize-image'; */
-// ImagePlus is only loaded on the client to avoid SSR ESM resolution issues
-/* let ImagePlus: any = null; */
-/* if (typeof window !== 'undefined') {
-    const mod = await import('tiptap-image-plus')
-    ImagePlus = (mod as any).ImagePlus
-} */
-
-/* import  { ImagePlus } from 'tiptap-image-plus' */
-/* let ImagePlus: any = null;
-
-if (typeof window !== "undefined") {
-  const ImagePlusPkg = await import("tiptap-image-plus");
-  ImagePlus = ImagePlusPkg.ImagePlus;
-} */
-
 import Dialog from 'primevue/dialog';
 import Placeholder from "@tiptap/extension-placeholder"
 
@@ -89,7 +72,7 @@ import {
     faExternalLink,
     faTimesCircle,
 } from "@far"
-import { faTable, faPalette, faUnlink, faLanguage } from "@fal"
+import { faTable, faPalette, faUnlink, faLanguage, faTimes } from "@fal"
 import { faEraser, faTint, faTable as fasTable, } from "@fas"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
@@ -101,7 +84,6 @@ import TiptapImageDialog from "@/Components/Forms/Fields/BubleTextEditor/TiptapI
 import { Plugin } from "prosemirror-state"
 import Variabel from "./Variables/Variables"
 import suggestion from './Variables/suggestion'
-// import CustomLink from "./CustomLink/CustomLink.vue"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { irisVariable } from "@/Composables/variableList"
@@ -133,7 +115,6 @@ const emits = defineEmits<{
 }>()
 
 const layout = inject('layout', {})
-console.log(layout)
 const _bubbleMenu = ref(null)
 const showDialog = ref(false)
 const contentResult = ref<string>()
@@ -145,6 +126,7 @@ const showAddImageDialog = ref<boolean>(false)
 const showLinkDialog = ref<boolean>()
 const CustomLinkConfirm = ref(false)
 const attrsCustomLink = ref<Object>(null)
+const tippyOptions = ref({})
 
 const editorInstance = useEditor({
     content: props.modelValue,
@@ -164,12 +146,6 @@ const editorInstance = useEditor({
         Paragraph,
         Document,
         Text,
-      /*   ...(ImagePlus ? [ImagePlus.configure({
-            wrapperStyle: { cursor: 'pointer' },
-        })] : []), */
-        /*  ImagePlus.configure({
-            wrapperStyle: { cursor: 'pointer' },
-        }), */
         CustomImage,
         History,
         Placeholder.configure({
@@ -194,16 +170,11 @@ const editorInstance = useEditor({
                                     ?.marks.find((mark) => mark.type === linkMark)?.attrs
 
                                 if (attrs) {
-
-                                    // Prevent default link click behavior
                                     event.preventDefault()
-
-                                    // Check if workshop URL exists
                                     if (attrs.workshop) {
                                         CustomLinkConfirm.value = true
                                         attrsCustomLink.value = attrs
                                     } else {
-                                        /*   window.open(attrs.href, "_blank") */
                                         console.log(attrs.href)
                                     }
                                     return true
@@ -294,10 +265,7 @@ const editorInstance = useEditor({
         TableHeader.extend({
             addAttributes() {
                 return {
-                    // extend the existing attributes …
                     ...this.parent?.(),
-
-                    // and add a new one …
                     backgroundColor: {
                         default: null,
                         parseHTML: element => element.getAttribute('data-background-color'),
@@ -334,10 +302,7 @@ const editorInstance = useEditor({
         TableCell.extend({
             addAttributes() {
                 return {
-                    // extend the existing attributes …
                     ...this.parent?.(),
-
-                    // and add a new one …
                     backgroundColor: {
                         default: null,
                         parseHTML: element => element.getAttribute('data-background-color'),
@@ -442,7 +407,6 @@ function updateLink(value?: string) {
 
 
 function insertImage(url: string) {
-    //function alt by ai
     editorInstance.value?.chain().focus().setImage({ src: url, alt: "image" }).run()
 }
 
@@ -517,56 +481,30 @@ const convertRemToPx = (remString) => {
     return isNaN(remValue) ? '' : Math.round(remValue * 16).toString()
 }
 
-const shouldShow = ({ editor, view, state, from, to }) => {
-    // tampil hanya jika ada teks yang diseleksi
+
+/* const shouldShow = ({ editor, view, state, from, to }) => {
     return true
 }
+ */
 
-const tippyOptions = ref({}) // default kosong
+onMounted(async () => {
+  await nextTick()
 
-/* const onTranslate = async () => {
-  try {
-    const text = editorInstance?.value?.getHTML() || ""; // or getHTML()
+  setTimeout(() => {
+    contentResult.value = editorInstance.value?.getHTML()
+  }, 250)
 
-    if (!text) {
-      console.warn("Editor is empty, nothing to translate.");
-      return;
-    }
-
-    const response = await axios.post(
-      route("grp.models.translate", {
-        languageFrom: "en",
-        languageTo: 'id',
-      }),
-      { text }
-    );
-
-    if (response.data) {
-      console.log("Translated text:", response.data);
-
-      // Example: replace editor content with translated version
-      editorInstance?.value?.commands.setContent(response.data, false);
-    }
-  } catch (error) {
-    console.error("Translation failed:", error);
-  }
-}; */
-
-onMounted(() => {
-  setTimeout(() => (contentResult.value = editorInstance.value?.getHTML()), 250)
-  tippyOptions.value = {
-    appendTo: () => document.body,
-    duration: 100,
+  /* tippyOptions.value = {
     boundary: 'viewport',
-    maxWidth: 780,
-}
+    appendTo: document.getElementById('content-editor-container'),
+  } */
 })
 </script>
 
 <template>
     <div id="tiptap" class="divide-y divide-gray-400">
         <Teleport to="body">
-            <BubbleMenu :should-show="shouldShow" ref="_bubbleMenu" :editor="editorInstance"
+            <BubbleMenu  ref="_bubbleMenu"  :editor="editorInstance"
                 v-if="editorInstance && !showDialog" :tippy-options="tippyOptions"
                 class="w-full max-w-[56vw] sm:max-w-[640px] md:max-w-[768px] lg:max-w-[900px]">
 
@@ -635,7 +573,7 @@ onMounted(() => {
                                         <!-- Clear Font Size Button -->
                                         <FontAwesomeIcon v-if="editorInstance?.getAttributes('textStyle').fontSize"
                                             @click="editorInstance?.chain().focus().unsetFontSize().run()"
-                                            icon="fal fa-times" class="text-red-500 ml-2 cursor-pointer"
+                                            :icon="faTimes" class="text-red-500 ml-2 cursor-pointer"
                                             aria-hidden="true" />
                                     </div>
 
@@ -691,14 +629,6 @@ onMounted(() => {
                                 @click="editorInstance?.chain().focus().toggleStrike().run()">
                                 <FontAwesomeIcon :icon="faStrikethrough" class="h-5 w-5 sm:h-4 sm:w-4" />
                             </TiptapToolbarButton>
-
-                            <!--  <TiptapToolbarButton v-if="toogle.includes('color')" label="Text Color">
-                            <ColorPicker
-                                v-model="editorInstance.getAttributes('textStyle').color"
-                                :baseZIndex="9999"
-                                @update:model-value="color => editorInstance?.chain().focus().setColor(`#${color}`).run()"
-                            />
-                        </TiptapToolbarButton> -->
 
                             <TiptapToolbarButton v-if="toogle.includes('color')" label="Text Color">
                                 <div class="relative w-7 h-7">
@@ -889,7 +819,7 @@ onMounted(() => {
                                             <div class="mb-2">
                                                 <Select size="small"
                                                     :modelValue="editorInstance.getAttributes('tableCell')?.borderWidth"
-                                                    @update:modelValue="(e) => (console.log('qqq'), editorInstance?.chain().focus().setCellAttribute('borderWidth', e).run())"
+                                                    @update:modelValue="(e) => (editorInstance?.chain().focus().setCellAttribute('borderWidth', e).run())"
                                                     :options="tableBorderWidthOptions" optionLabel="label"
                                                     optionValue="value" :placeholder="trans('Select border width')"
                                                     fluid />
@@ -990,32 +920,59 @@ onMounted(() => {
                     </section>
                 </div>
             </BubbleMenu>
-
         </Teleport>
 
-
-        <div class="flex flex-col">
+        <div class="flex flex-col" id="content-editor-container">
             <slot name="editor-content" :editor="editorInstance">
                 <EditorContent @click.stop="onEditorClick" :editor="editorInstance" />
             </slot>
         </div>
 
-        <TiptapTableDialog v-if="showAddTableDialog" :show="showAddTableDialog"
-            @close="() => { showAddTableDialog = false, showDialog = false; }" @insert="insertTable" />
+        <TiptapTableDialog 
+            v-if="showAddTableDialog" 
+            :show="showAddTableDialog"
+            @close="() => { showAddTableDialog = false, showDialog = false; }" 
+            @insert="insertTable" 
+        />
 
-        <TiptapLinkCustomDialog v-if="showLinkDialogCustom" :show="showLinkDialogCustom" :attribut="currentLinkInDialog"
-            @close="() => { showLinkDialogCustom = false; showDialog = false; }" @update="updateLinkCustom" />
-        <TiptapImageDialog v-if="showAddImageDialog" :show="showAddImageDialog"
-            @close="() => { showAddImageDialog = false, showDialog = false }" @insert="insertImage"
-            :uploadImageRoute="uploadImageRoute" />
-        <TiptapLinkDialog v-if="showLinkDialog" :show="showLinkDialog" :current-url="currentLinkInDialog"
-            @close="() => { showLinkDialog = false; showDialog = false; }" @update="updateLink" />
-        <TiptapVideoDialog v-if="showAddYoutubeDialog" :show="showAddYoutubeDialog" @insert="insertYoutubeVideo"
-            @close="() => { showAddYoutubeDialog = false; showDialog = false; }" />
+        <TiptapLinkCustomDialog 
+            v-if="showLinkDialogCustom" 
+            :show="showLinkDialogCustom" 
+            :attribut="currentLinkInDialog"
+            @close="() => { showLinkDialogCustom = false; showDialog = false; }" 
+            @update="updateLinkCustom" 
+        />
+        <TiptapImageDialog 
+            v-if="showAddImageDialog" 
+            :show="showAddImageDialog"
+            @close="() => { showAddImageDialog = false, showDialog = false }" 
+            @insert="insertImage"
+            :uploadImageRoute="uploadImageRoute" 
+        />
+        <TiptapLinkDialog 
+            v-if="showLinkDialog" 
+            :show="showLinkDialog" 
+            :current-url="currentLinkInDialog"
+            @close="() => { showLinkDialog = false; showDialog = false; }" 
+            @update="updateLink" 
+        />
+
+        <TiptapVideoDialog 
+            v-if="showAddYoutubeDialog" 
+            :show="showAddYoutubeDialog" 
+            @insert="insertYoutubeVideo"
+            @close="() => { showAddYoutubeDialog = false; showDialog = false; }" 
+        />
 
 
-        <Dialog v-model:visible="CustomLinkConfirm" :style="{ width: '25rem' }" modal :closable="false"
-            :dismissableMask="true" :showHeader="false">
+        <Dialog 
+            v-model:visible="CustomLinkConfirm" 
+            :style="{ width: '25rem' }" 
+            modal 
+            :closable="false"
+            :dismissableMask="true" 
+            :showHeader="false"
+        >
             <div class="pt-5">
                 <ul class="list-none p-0">
                     <li class="mb-2">
@@ -1038,10 +995,19 @@ onMounted(() => {
 
 
 <style scoped>
+
+.BubbleMenu {
+  position: fixed !important;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+}
+
 :deep(.tippy-box) {
     min-width: 10px !important;
     max-width: max-content !important;
-    background-color: red
+    background-color: transparent
 }
 
 
@@ -1122,7 +1088,7 @@ onMounted(() => {
 }
 
 :deep(.editor-class a) {
-    @apply hover:underline font-semibold cursor-pointer;
+    @apply hover:cursor-pointer;
 }
 
 :deep(.editor-class hr) {

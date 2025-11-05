@@ -8,17 +8,18 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\Dispatching\DeliveryNote\Search\DeliveryNoteRecordSearch;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Actions\Traits\WithFixedAddressActions;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Http\Resources\Dispatching\DeliveryNoteResource;
 use App\Models\Dispatching\DeliveryNote;
 use App\Rules\IUnique;
@@ -32,11 +33,13 @@ class UpdateDeliveryNote extends OrgAction
     use WithActionUpdate;
     use WithFixedAddressActions;
     use WithNoStrictRules;
+    use HasDeliveryNoteHydrators;
 
     private DeliveryNote $deliveryNote;
 
     public function handle(DeliveryNote $deliveryNote, array $modelData): DeliveryNote
     {
+        $oldState     = $deliveryNote->state;
         $deliveryNote = $this->update($deliveryNote, $modelData, ['data']);
         $changes      = Arr::except($deliveryNote->getChanges(), ['updated_at', 'last_fetched_at']);
 
@@ -44,14 +47,21 @@ class UpdateDeliveryNote extends OrgAction
 
         if (count($changes) > 0) {
             DeliveryNoteRecordSearch::dispatch($deliveryNote)->delay($this->hydratorsDelay);
-            if (Arr::hasAny($changes, ['type', 'state', 'status'])) {
-                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group)->delay($this->hydratorsDelay);
-                OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation)->delay($this->hydratorsDelay);
-                ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop)->delay($this->hydratorsDelay);
-                CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer)->delay($this->hydratorsDelay);
 
-                OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-                    ->delay($this->hydratorsDelay);
+            if (Arr::has($changes, 'type')) {
+                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
+                GroupHydrateDeliveryNotes::dispatch($deliveryNote->group_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
+                OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
+                OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
+                ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
+                ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
+                CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer_id, DeliveryNoteTypeEnum::ORDER)->delay($this->hydratorsDelay);
+                CustomerHydrateDeliveryNotes::dispatch($deliveryNote->customer_id, DeliveryNoteTypeEnum::REPLACEMENT)->delay($this->hydratorsDelay);
+            }
+
+            if (Arr::has($changes, 'state')) {
+                $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+                $this->deliveryNoteHandlingHydrators($deliveryNote, $deliveryNote->state);
             }
 
 

@@ -4,6 +4,7 @@ import { faChevronDown } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import ProductSpecDocumentation from '@/Components/CMS/Webpage/Product1/ProductSpec&Documentation.vue';
 import { getStyles } from "@/Composables/styles"
+import { trans } from 'laravel-vue-i18n'
 
 const props = defineProps<{
     product: {
@@ -49,7 +50,7 @@ const openDisclosureId = ref<number | null>(null)
                         class="w-full mb-1 border-b border-gray-400 font-bold text-gray-800 py-1 flex justify-between items-center cursor-pointer"
                         :class="fullWidth ? 'w-full' : 'sm:w-7/12'"
                         >
-                        <div class="text-base font-semibold">Product Specifications & Documentations</div>
+                        <div class="text-base font-semibold">{{ trans("Product Specifications & Documentations") }}</div>
                         <FontAwesomeIcon :icon="faChevronDown"
                             class="text-sm text-gray-500 transform transition-transform duration-200"
                             :class="{ 'rotate-180': openDisclosureId === 'spec-1' }" />

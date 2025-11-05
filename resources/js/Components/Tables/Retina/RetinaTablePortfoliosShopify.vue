@@ -31,7 +31,8 @@ import {
     faClone,
     faLink, faScrewdriver, faTools,
     faRecycle, faHandPointer, faHandshakeSlash, faHandshake,
-    faTimes
+    faTimes,
+    faUnlink
 } from "@fal"
 import {faStar, faFilter} from "@fas"
 import {faExclamationTriangle as fadExclamationTriangle} from "@fad"
@@ -46,7 +47,7 @@ import axios from "axios"
 import PureProgressBar from "@/Components/PureProgressBar.vue"
 import {Message} from "primevue"
 
-library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
+library.add(faUnlink, faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
 interface PlatformData {
     id: number
@@ -424,8 +425,7 @@ onMounted(() => {
 
     <Table :resource="data" :name="tab" class="mt-5" isCheckBox @onChecked="(item) => onChangeCheked(true, item)"
            @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'
-           :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table"
-           :disabledCheckbox="(item)=>onDisableCheckbox(item)" :isParentLoading="!!isLoadingTable">
+           :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table">
 
         <template #header-checkbox="data">
             <div></div>
@@ -591,8 +591,8 @@ onMounted(() => {
             <div class="mx-auto flex flex-wrap justify-center gap-2">
                 <ButtonWithLink
 					v-if="
-						!item.has_valid_platform_product_id && 
-						!item.exist_in_platform && 
+						!item.has_valid_platform_product_id &&
+						!item.exist_in_platform &&
 						!item.platform_status &&
 						(get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading')
 					"
@@ -634,7 +634,7 @@ onMounted(() => {
                                 size="xxs"
                                 icon="fal fa-tools"
                             />
-                            
+
                             <Button
                                 v-else
                                 @click="() => (isOpenModal = true, selectedPortfolio = item)"
@@ -753,6 +753,17 @@ onMounted(() => {
                 type="negative"
                 icon="fal fa-skull"
                 :routeTarget="item.delete_portfolio"
+                size="xs"
+                :bindToLink="{
+            						preserveScroll: true,
+            					}"
+            />
+            <ButtonWithLink
+                v-if="item.platform_status"
+                v-tooltip="trans('unlink product')"
+                type="negative"
+                icon="fal fa-unlink"
+                :routeTarget="item.unlink_portfolio"
                 size="xs"
                 :bindToLink="{
             						preserveScroll: true,

@@ -14,22 +14,26 @@ use App\Models\Dropshipping\EbayUser;
 use App\Models\Dropshipping\Portfolio;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreNewProductToCurrentEbay extends OrgAction
 {
     use AsAction;
-    use WithAttributes;
+
+    public string $jobQueue = 'ebay';
+
 
     /**
      * @throws \Exception
      */
-    public function handle(EbayUser $ebayUser, Portfolio $portfolio)
+    public function handle(EbayUser $ebayUser, Portfolio $portfolio): void
     {
         StoreEbayProduct::run($ebayUser, $portfolio);
     }
 
-    public function asController(Portfolio $portfolio, ActionRequest $request)
+    /**
+     * @throws \Exception
+     */
+    public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
         $this->initialisation($portfolio->organisation, $request);
 

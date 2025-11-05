@@ -38,11 +38,13 @@ class RetinaCustomerSalesChannelResource extends JsonResource
         $customerSalesChannels = $this;
 
         $reconnectRoute = null;
+        $testRoute = null;
 
         if (in_array($customerSalesChannels->platform->type, [
             PlatformTypeEnum::SHOPIFY,
             PlatformTypeEnum::WOOCOMMERCE,
             PlatformTypeEnum::MAGENTO,
+            PlatformTypeEnum::EBAY,
 
         ])) {
             $reconnectRoute = [
@@ -52,8 +54,18 @@ class RetinaCustomerSalesChannelResource extends JsonResource
                 ],
                 'method'     => 'get',
             ];
+
         }
 
+        if ($customerSalesChannels->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
+            $testRoute = [
+                'name'       => 'retina.dropshipping.platform.wc.test_connection',
+                'parameters' => [
+                    'customerSalesChannel' => $this->slug
+                ],
+                'method'     => 'post',
+            ];
+        }
 
         return [
             'slug'                    => $this->slug,
@@ -63,7 +75,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'number_portfolios'       => $this->number_portfolios,
             'number_customer_clients' => $this->number_customer_clients,
             'number_orders'           => $this->number_orders,
-            'type'                    => $this->type,
+            'type'                    => $customerSalesChannels->platform->type,
             'status'                  => $this->status,
             'amount'                  => $this->total_amount,
             'platform_code'           => $this->platform_code,
@@ -71,7 +83,7 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
 
             'reconnect_route' => $reconnectRoute,
-
+            'test_route' => $testRoute,
             'delete_route' => [
                 'method'     => 'delete',
                 'name'       => 'retina.models.customer_sales_channel.delete',

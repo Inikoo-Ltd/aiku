@@ -35,6 +35,8 @@ use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
+use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Helpers\Address;
 use App\Models\Inventory\Warehouse;
 use App\Models\Ordering\Order;
@@ -105,6 +107,30 @@ class ShowDeliveryNote extends OrgAction
 
         return $this->handle($deliveryNote);
     }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    {
+        $this->parent = $customer;
+        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
+
+        return $this->handle($deliveryNote);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderInCustomerClientInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    {
+        $this->parent = $customer;
+        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
+
+        return $this->handle($deliveryNote);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderInPlatformInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
+    {
+        $this->parent = $customer;
+        $this->initialisationFromShop($shop, $request)->withTab(DeliveryNoteTabsEnum::values());
+
+        return $this->handle($deliveryNote);
+    }
 
     public function getHandlingActions(DeliveryNote $deliveryNote): array
     {
@@ -131,25 +157,11 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        $actions[] = [
-            'type'    => 'button',
-            'style'   => 'save',
-            'tooltip' => __('Change picker'),
-            'icon'    => 'fal fa-exchange-alt',
-            'label'   => __('Change Picker'),
-            'key'     => 'change-picker',
-        ];
-
-
         return $actions;
     }
 
-
-    public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
+    public function wrappedActions(DeliveryNote $deliveryNote, ActionRequest $request): array
     {
-        $startPickingLabel    = __('Start picking');
-        $generateInvoiceLabel = __('Generate Invoice');
-
         $showCancel = true;
 
         if (in_array($deliveryNote->state, [
@@ -160,9 +172,9 @@ class ShowDeliveryNote extends OrgAction
             $showCancel = false;
         }
 
-        $cancelActions = [];
+        $actions = [];
         if ($showCancel) {
-            $cancelActions = [
+            $actions[] = [
                 'type'  => 'button',
                 'style' => 'cancel',
                 'key'   => 'cancel',
@@ -177,7 +189,44 @@ class ShowDeliveryNote extends OrgAction
             ];
         }
 
-        $actions = match ($deliveryNote->state) {
+        if ($deliveryNote->state === DeliveryNoteStateEnum::HANDLING) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'tooltip' => __('Change picker'),
+                'icon'    => 'fal fa-exchange-alt',
+                'label'   => __('Change Picker'),
+                'key'     => 'change-picker',
+            ];
+        }
+
+        if (in_array($deliveryNote->state, [DeliveryNoteStateEnum::PACKED, DeliveryNoteStateEnum::FINALISED])) {
+            $actions[] = [
+                'type'    => 'button',
+                'style'   => 'save',
+                'icon'    => 'fal fa-tired',
+                'tooltip' => __('Unpack the parcels'),
+                'label'   => __('Unpack'),
+                'key'     => 'unpack',
+                'route'   => [
+                    'method'     => 'patch',
+                    'name'       => 'grp.models.delivery_note.state.unpacked',
+                    'parameters' => [
+                        'deliveryNote' => $deliveryNote->id
+                    ]
+                ],
+            ];
+        }
+
+        return $actions;
+    }
+
+    public function getActions(DeliveryNote $deliveryNote, ActionRequest $request): array
+    {
+        $startPickingLabel    = __('Start picking');
+        $generateInvoiceLabel = __('Generate Invoice');
+
+        return match ($deliveryNote->state) {
             DeliveryNoteStateEnum::UNASSIGNED => [
                 [
                     'type'      => 'button',
@@ -289,7 +338,7 @@ class ShowDeliveryNote extends OrgAction
                             'deliveryNote' => $deliveryNote->id
                         ]
                     ]
-                ] : [],
+                ] : []
             ],
             DeliveryNoteStateEnum::FINALISED => [
                 [
@@ -355,8 +404,6 @@ class ShowDeliveryNote extends OrgAction
             ],
             default => []
         };
-
-        return [...$actions, $cancelActions];
     }
 
     public function getInvoiceButton(DeliveryNote $deliveryNote): array
@@ -531,7 +578,7 @@ class ShowDeliveryNote extends OrgAction
             if (
                 $deliveryNote->state === DeliveryNoteStateEnum::QUEUED && $case == DeliveryNoteStateEnum::QUEUED || $deliveryNote->state === DeliveryNoteStateEnum::HANDLING && $case == DeliveryNoteStateEnum::HANDLING
             ) {
-                $label .= ' ('.$deliveryNote->pickerUser->contact_name.')';
+                $label .= ' ('.$deliveryNote->pickerUser?->contact_name.')';
             }
 
 
@@ -605,7 +652,8 @@ class ShowDeliveryNote extends OrgAction
                     'label' => $deliveryNote->state->labels()[$deliveryNote->state->value],
                 ],
                 'actions'    => $actions,
-                $this->getInvoiceButton($deliveryNote)
+                $this->getInvoiceButton($deliveryNote),
+                'wrapped_actions' => $this->wrappedActions($deliveryNote, $request),
             ],
             'warning'       => $warning,
             'tabs'          => [

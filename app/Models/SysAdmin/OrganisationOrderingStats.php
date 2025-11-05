@@ -199,6 +199,32 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_dropshipping_shop_delivery_note_items_state_cancelled
  * @property int $number_dropshipping_shop_delivery_note_items_state_out_of_stock
  * @property int $number_dropshipping_shop_delivery_note_items_state_no_dispatche
+ * @property string|null $average_historic_clv_amount_org_currency
+ * @property string|null $average_historic_clv_amount_grp_currency
+ * @property string|null $average_predicted_clv_amount_org_currency
+ * @property string|null $average_predicted_clv_amount_grp_currency
+ * @property string|null $average_total_clv_amount_org_currency
+ * @property string|null $average_total_clv_amount_grp_currency
+ * @property float|null $average_churn_interval in days
+ * @property float|null $average_churn_risk_prediction
+ * @property float|null $average_time_between_orders
+ * @property string|null $average_order_value
+ * @property string|null $expected_date_of_next_order
+ * @property string $revenue_amount
+ * @property string $revenue_amount_org_currency
+ * @property string $revenue_amount_grp_currency
+ * @property string $lost_revenue_out_of_stock_amount
+ * @property string $lost_revenue_out_of_stock_amount_org_currency
+ * @property string $lost_revenue_out_of_stock_amount_grp_currency
+ * @property string $lost_revenue_replacements_amount
+ * @property string $lost_revenue_replacements_amount_org_currency
+ * @property string $lost_revenue_replacements_amount_grp_currency
+ * @property string $lost_revenue_compensations_amount
+ * @property string $lost_revenue_compensations_amount_org_currency
+ * @property string $lost_revenue_compensations_amount_grp_currency
+ * @property string $lost_revenue_other_amount
+ * @property string $lost_revenue_other_amount_org_currency
+ * @property string $lost_revenue_other_amount_grp_currency
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrganisationOrderingStats newQuery()

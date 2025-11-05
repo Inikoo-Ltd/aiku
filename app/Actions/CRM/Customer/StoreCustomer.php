@@ -58,11 +58,14 @@ class StoreCustomer extends OrgAction
     use WithProcessContactNameComponents;
     use WithPrepareTaxNumberValidation;
 
+    protected Shop $shop;
+
     /**
      * @throws \Throwable
      */
     public function handle(Shop $shop, array $modelData): Customer
     {
+        $this->shop = $shop;
         data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
 
         $contactAddressData = Arr::get($modelData, 'contact_address', []);
@@ -147,7 +150,8 @@ class StoreCustomer extends OrgAction
 
                 StoreTaxNumber::run(
                     owner: $customer,
-                    modelData: $taxNumberData
+                    modelData: $taxNumberData,
+                    strict: $this->strict
                 );
             }
 
@@ -174,9 +178,12 @@ class StoreCustomer extends OrgAction
         }
 
         if ($customer->shop->is_aiku) {
-            //SaveCustomerInAurora::dispatch($customer);
+            SaveCustomerInAurora::dispatch($customer);
         }
 
+        if ($customer->shop->is_aiku) {
+            MatchCustomerProspects::run($customer);
+        }
 
         return $customer;
     }
@@ -205,6 +212,8 @@ class StoreCustomer extends OrgAction
 
     public function rules(): array
     {
+        $requirePhoneNumber = Arr::get($this->shop->settings, 'registration.require_phone_number', false);
+
         $rules = [
             'reference'                => [
                 'sometimes',
@@ -228,12 +237,12 @@ class StoreCustomer extends OrgAction
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],
             'phone'                    => [
-                'nullable',
+                $requirePhoneNumber ? 'required' : 'nullable',
                 'string:32'
             ],
             'identity_document_number' => ['sometimes', 'nullable', 'string'],
@@ -285,7 +294,7 @@ class StoreCustomer extends OrgAction
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ];

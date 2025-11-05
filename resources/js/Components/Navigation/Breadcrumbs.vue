@@ -82,35 +82,37 @@ const isLoading = ref<string | boolean>(false)
 </script>
 
 <template>
-    <nav class="overflow-y-hidden py-4 md:py-0 flex text-gray-600 h-10 xl:h-6 border-b border-gray-200 text-sm" aria-label="Breadcrumb">
+    <nav class="isolate relative xxxoverflow-y-hidden flex text-gray-600 h-8 xl:h-8 border-b border-gray-200 text-xs md:text-sm" aria-label="Breadcrumb">
         <!-- Breadcrumb -->
-        <TransitionGroup name="list-to-down" tag="ol" class="w-full mx-auto px-4 flex">
+        <TransitionGroup name="list-to-down" tag="ol" class="w-full mx-auto md:px-4 flex">
             <li v-for="(breadcrumb, breadcrumbIdx) in breadcrumbs" :key="breadcrumbIdx"
-                class="hidden first:flex last:flex md:flex">
+                class="hidden first:flex last:flex md:flex items-center">
         
                 <div class="flex items-center">
                     <!-- Shorter Breadcrumb on Mobile size -->
-                    <div v-if="breadcrumbs.length > 2 && breadcrumbIdx != 0" class="md:hidden">
+                    <div v-if="breadcrumbs.length > 2 && breadcrumbIdx != 0" class="md:hidden flex items-center">
                         <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
                         <span>...</span>
                     </div>
+                    
                     <template v-if="breadcrumb.type === 'simple'">
                         <FontAwesomeIcon v-if="breadcrumbIdx !== 0" class="flex-shrink-0 h-3 w-3 mx-3 opacity-50" icon="fa-regular fa-chevron-right" aria-hidden="true" />
                         <component
                             :is="breadcrumb.simple.url || breadcrumb.simple.route?.name ? Link : 'span'"
                             xclass="'' || ''"
                             :href="breadcrumb.simple.url ? breadcrumb.simple.url : breadcrumb.simple?.route?.name ? route( breadcrumb.simple.route.name, breadcrumb.simple.route.parameters ) : '#' "
-                            class="hover:text-gray-700 overflow-hidden"
+                            class="hover:text-gray-700 overflow-hidden flex items-center"
                         >
                             <Transition name="spin-to-down">
-                                <FontAwesomeIcon v-if="breadcrumb.simple?.icon" :class="breadcrumb.simple.label ? 'mr-1' : ''" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
+                                <FontAwesomeIcon v-if="breadcrumb.simple?.icon" :class="breadcrumb.simple.label ? 'mr-1' : ''" fixed-width class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
                             </Transition>
         
                             <Transition name="spin-to-down">
-                                <div :key="breadcrumb.simple.label" class="inline-block">{{ breadcrumb.simple.label }}</div>
+                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 w-[19rem] sm:w-auto">{{ breadcrumb.simple.label }}</div>
                             </Transition>
                         </component>
                     </template>
+                    
                     <!-- Section: Create Model -->
                     <template v-else-if="breadcrumb.type === 'creatingModel'">
                         <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-yellow-500 ml-2" icon="fas fa-sparkles" aria-hidden="true" />
@@ -138,7 +140,7 @@ const isLoading = ref<string | boolean>(false)
         </TransitionGroup>
 
         <!-- Popup for Breadcrumb List on Mobile -->
-        <Menu as="div" class="z-10 w-fit h-8 absolute top-0 md:hidden">
+        <Menu as="div" class="z-50 w-fit h-8 absolute top-0 md:hidden">
             <MenuButton class="absolute w-64 h-full"></MenuButton>
             <transition enter-active-class="transition ease-out duration-100"
                 enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100"
@@ -209,7 +211,7 @@ const isLoading = ref<string | boolean>(false)
             </transition>
         </Menu>
 
-        <div v-if="props.navigation?.previous || props.navigation?.next" class="h-full flex justify-end items-center pr-2 space-x-2 text-sm text-gray-700 font-semibold">
+        <div v-if="props.navigation?.previous || props.navigation?.next" class="h-full flex justify-end items-center pr-2 space-x-2 text-xs md:text-sm text-gray-700 font-semibold">
             <!-- Button: Previous -->
             <div class="flex justify-center items-center w-12 xl:w-8 h-full">
                 <Link v-if="props.navigation.previous"

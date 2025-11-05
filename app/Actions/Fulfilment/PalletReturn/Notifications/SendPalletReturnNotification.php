@@ -24,10 +24,10 @@ class SendPalletReturnNotification extends OrgAction
     {
         $palletReturn->refresh();
 
-        broadcast(new BroadcastFulfilmentCustomerNotification(
+        /*broadcast(new BroadcastFulfilmentCustomerNotification(
             $palletReturn->group,
             $palletReturn
-        ))->toOthers();
+        ))->toOthers();*/
 
         StoreRetinaFulfilmentCustomerNotification::dispatch($palletReturn);
     }

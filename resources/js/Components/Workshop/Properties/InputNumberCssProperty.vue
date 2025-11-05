@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject } from 'vue'
+import { inject, watch } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
@@ -12,10 +12,22 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 library.add(faBorderOuter, faLink, faUnlink)
 type CssProperty = { value: number; unit: string }
 
+const props = withDefaults(defineProps<{
+    unit_option?: { label: string; value: string }[]
+    defaultValue?: { value: number; unit: string }
+    }>(), {
+        defaultValue: () => ({ value: 0, unit: 'px' })
+    }
+)
+
 // Menggunakan defineModel() dengan nilai default
-const model = defineModel<{ value: number; unit: string }>({
-  default: () => ({ value: 0, unit: 'px' }) 
-})
+const model = defineModel<{ value: number; unit: string }>()
+
+watch(() => props.defaultValue, (nv) => {
+    if (model.value?.value == null && nv) {
+        model.value = nv
+    }
+}, { immediate: true })
 
 
 const emits = defineEmits<{
@@ -38,7 +50,7 @@ function updateModel<K extends keyof CssProperty>(key: K, newValue: CssProperty[
         <div class="text-xs">{{ trans('Type Unit') }}</div>
         <Popover v-slot="{ open }" class="relative">
           <PopoverButton :class="open ? 'text-indigo-500' : ''" class="underline">
-            {{ model.unit }}
+            {{ model?.unit }}
           </PopoverButton>
 
           <transition enter-active-class="transition duration-200 ease-out"
@@ -49,16 +61,27 @@ function updateModel<K extends keyof CssProperty>(key: K, newValue: CssProperty[
                       leave-to-class="translate-y-1 opacity-0">
             <PopoverPanel v-slot="{ close }"
                           class="bg-white shadow mt-3 absolute top-full right-0 z-10 w-32 transform rounded overflow-hidden">
-              <div @click="() => { updateModel('unit', 'px'); close() }" 
-                   class="px-4 py-1.5 cursor-pointer"
-                   :class="model.unit === 'px' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">
-                px
-              </div>
-              <div @click="() => { updateModel('unit', '%'); close() }" 
-                   class="px-4 py-1.5 cursor-pointer"
-                   :class="model.unit === '%' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">
-                %
-              </div>
+                <div v-if="unit_option?.length">
+                    <div v-for="option in unit_option"
+                        @click="() => { updateModel('unit', option.value); close() }"
+                        class="px-4 py-1.5 cursor-pointer"
+                        :class="model?.unit === option.value ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">
+                        {{ option.label }}
+                    </div>
+                </div>
+
+                <div v-else>
+                    <div @click="() => { updateModel('unit', 'px'); close() }"
+                        class="px-4 py-1.5 cursor-pointer"
+                        :class="model?.unit === 'px' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">
+                        px
+                    </div>
+                    <div @click="() => { updateModel('unit', '%'); close() }"
+                        class="px-4 py-1.5 cursor-pointer"
+                        :class="model?.unit === '%' ? 'bg-indigo-500 text-white' : 'hover:bg-indigo-100'">
+                        %
+                    </div>
+                </div>
             </PopoverPanel>
           </transition>
         </Popover>
@@ -72,10 +95,10 @@ function updateModel<K extends keyof CssProperty>(key: K, newValue: CssProperty[
                 <FontAwesomeIcon icon="fad fa-border-outer" v-tooltip="trans('Width')" class="" fixed-width aria-hidden="true" />
                 <div class="col-span-4">
                   <PureInputNumber
-                    :modelValue="model.value"
+                    :modelValue="model?.value"
                     @update:model-value="val => updateModel('value', val)"
                     class=""
-                    :suffix="model.unit"
+                    :suffix="model?.unit"
                   />
                 </div>
               </div>

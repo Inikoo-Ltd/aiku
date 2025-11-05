@@ -25,10 +25,11 @@ import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 // import RecommendersLuigi1Iris from '@/Components/CMS/Webpage/SeeAlso1/RecommendersLuigi1Iris.vue'
 import BasketRecommendations from '@/Components/Retina/BasketRecommendations.vue'
-import { AddressManagement } from '@/types/PureComponent/Address'
+import { Address, AddressManagement } from '@/types/PureComponent/Address'
 import { ToggleSwitch } from 'primevue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
+import { useLayoutStore } from "@/Stores/retinaLayout"
 library.add(faTag, faCheck)
 
 interface ChargeResource {
@@ -99,6 +100,7 @@ const props = defineProps<{
     }
     total_products: number
     is_in_basket: boolean
+    contact_address: Address | null
     address_management: AddressManagement
     is_unable_dispatch: boolean
     charges: {
@@ -108,7 +110,6 @@ const props = defineProps<{
     }
 }>()
 
-console.log(props.transactions)
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
@@ -288,6 +289,7 @@ const onAddProducts = async (product: Product) => {
                     }
                 }
                 listLoadingProducts.value[`id-${product.historic_asset_id}`] = 'success'
+                layout.reload_handle()
             },
             onFinish: () => {
                 isLoadingSubmit.value = false
@@ -365,6 +367,7 @@ const onAddProductFromRecommender = async (productId: string, productCode: strin
                         ]
                     }
                 })
+                layout.reload_handle()
 
                 listLoadingProducts.value[`recommender-${productId}`] = 'success'
             },
@@ -556,10 +559,11 @@ const onChangeInsurance = async (val: boolean) => {
         :balance
         :address_management
         :is_unable_dispatch
+        :contact_address
     />
     
     <template v-if="order">
-        <div class="mb-4 mx-4 mt-4 rounded-md border border-gray-200">
+        <div class="mb-4 mx-4 mt-4 overflow-x-auto rounded-md border border-gray-200">
             <TableEcomBasket
                 :data="transactions"
                 :updateRoute="routes.update_route"
@@ -638,8 +642,8 @@ const onChangeInsurance = async (val: boolean) => {
         </div>
         
         <div class="w-full px-4 mt-8">
-            <div v-if="total_products > 0" class="flex justify-end px-6 gap-x-4">
-                <div class="grid grid-cols-3 gap-x-4 w-full">
+            <div v-if="total_products > 0" class="flex flex-col md:flex-row justify-end px-6 gap-x-4">
+                <div class="grid md:grid-cols-3 gap-y-4 gap-x-4 w-full">
                     <div></div>
         
                     <!-- Input text: Delivery instructions -->
@@ -678,6 +682,8 @@ const onChangeInsurance = async (val: boolean) => {
                         />
                     </div>
                 </div>
+                
+                <!-- Section: button Place Order & button Checkout -->
                 <div v-if="!is_unable_dispatch" class="w-72 pt-5">
                     <!-- Place Order -->
                     <template v-if="Number(total_to_pay) === 0 && Number(balance) > 0">
@@ -696,6 +702,7 @@ const onChangeInsurance = async (val: boolean) => {
                             </div>
                         </div>
                     </template>
+                    
                     <!-- Checkout -->
                     <ButtonWithLink
                         v-else

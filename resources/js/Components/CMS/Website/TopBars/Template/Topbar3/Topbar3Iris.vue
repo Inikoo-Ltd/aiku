@@ -47,6 +47,7 @@ const emits = defineEmits<{
     (e: 'setPanelActive', value: string | number): void
 }>()
 
+const screenType = inject("screenType", "desktop")
 
 </script>
 
@@ -100,6 +101,7 @@ const emits = defineEmits<{
             </ButtonWithLink>
 
             <SwitchLanguage
+                v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length"
                 class="md:hidden"
             />
 
@@ -172,6 +174,7 @@ const emits = defineEmits<{
 
         <div class="action_buttons" style="display: flex; justify-content: flex-end; column-gap: 5px; grid-column: span 5 / span 5">
             <SwitchLanguage
+                v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length"
                 class="hidden md:block"
             />
 

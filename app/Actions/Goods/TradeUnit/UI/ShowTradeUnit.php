@@ -18,7 +18,6 @@ use App\Enums\UI\SupplyChain\TradeUnitTabsEnum;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\StocksResource;
 use App\Http\Resources\Goods\TradeUnitResource;
-use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
 use App\Models\Goods\TradeUnit;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -77,12 +76,9 @@ class ShowTradeUnit extends GrpAction
                         ] : false,
                     ]
                 ],
-                
-
                 'tabs' => [
                     'current'    => $this->tab,
                     'navigation' => TradeUnitTabsEnum::navigation()
-
                 ],
 
                 TradeUnitTabsEnum::SHOWCASE->value => $this->tab == TradeUnitTabsEnum::SHOWCASE->value ?

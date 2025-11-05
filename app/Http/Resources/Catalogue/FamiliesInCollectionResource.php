@@ -42,7 +42,6 @@ class FamiliesInCollectionResource extends JsonResource
         return [
             'id'   => $this->id,
             'slug' => $this->slug,
-
             'image'                   => $imageSources,
             'state'                   => [
                 'tooltip' => $this->state?->labels()[$this->state->value] ?? null,

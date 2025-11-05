@@ -24,7 +24,6 @@ library.add(faPencil, faStickyNote, faTrash, faPlus, faLock, faTimes, faSyncAlt)
 const props = defineProps<{
     noteData: PDRNotes
     updateRoute: routeType
-    fetchRoute: routeType
 }>()
 
 // Section: Modal Note

@@ -52,7 +52,7 @@ const onClickRemoveBar = (tabName: 'activeUsers') => {
                 </div>
 
                 <!-- Looping: User online list -->
-                <template v-for="(user, index) in useLiveUsers().liveUsers" :key="`${user.id}` + user.action + index">
+                <template v-for="(user, index) in useLiveUsers().liveUsers" :key="`${user?.id}` + user?.action + index">
                     <template v-if="!(
                         (user.action === 'leave' && useIsFutureIsAPast(user?.last_active, 300)) ||
                         (user.action === 'logout' && useIsFutureIsAPast(user?.last_active, 3)))

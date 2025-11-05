@@ -39,14 +39,16 @@ const getCatalog = () => {
 
 const beeConfig = () => {
     beeInstance.value = new Bee();
-    var endpoint = "https://auth.getbee.io/apiauth";
+    var endpoint = "https://auth.getbee.io/loginV2";
     var payload = {
         client_id: props.apiKey.client_id,
         client_secret: props.apiKey.client_secret,
+        uid : 'test1-clientside'
     };
     var headers = {
         'Content-Type': 'application/json',
     }
+    
     axios
         .post(endpoint,payload,headers)
         .then((response) => {

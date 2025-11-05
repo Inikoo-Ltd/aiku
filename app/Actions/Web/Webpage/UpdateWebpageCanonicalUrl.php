@@ -15,37 +15,93 @@ use App\Models\Catalogue\Collection;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Web\Webpage;
+use App\Models\Web\Website;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateWebpageCanonicalUrl implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'urgent';
+
     public function getJobUniqueId(Webpage $webpage): string
     {
         return (string)$webpage->id;
     }
 
-    public function handle(Webpage $webpage): void
+    public function handle(Webpage $webpage, $updateChildren = true): string
     {
-
-
-        $canonicalUrl = match ($webpage->type) {
+        $canonicalPath = match ($webpage->type) {
             WebpageTypeEnum::CATALOGUE => $this->getWebpageTypeCatalogue($webpage),
             WebpageTypeEnum::STOREFRONT => '',
             WebpageTypeEnum::BLOG => 'blog/'.$webpage->url,
             default => $webpage->url
         };
 
-        $canonicalUrl = 'https://'.$webpage->website->domain.'/'.$canonicalUrl;
+        $canonicalPath = preg_replace('#/+#', '/', $canonicalPath);
+        $canonicalPath = ltrim($canonicalPath, '/');
 
+        $canonicalUrl = 'https://www.'.$webpage->website->domain.'/'.$canonicalPath;
+
+
+        $canonicalUrl = $this->trimTrailingSlash($canonicalUrl);
+        $canonicalUrl = replaceUrlSubdomain($canonicalUrl, $webpage->website->is_migrating ? 'v2' : 'www');
+
+        $canonicalUrl = strtolower($canonicalUrl);
+
+        $oldCanonicalUrl = $webpage->canonical_url;
         $webpage->update([
             'canonical_url' => $canonicalUrl,
         ]);
+
+        if ($oldCanonicalUrl != $canonicalUrl) {
+            $key = config('iris.cache.webpage.prefix').'_'.$webpage->website_id.'_canonicals_'.$webpage->id;
+            Cache::forget($key);
+        }
+
+        if ($updateChildren) {
+            $this->updateChildrenCanonicalUrls($webpage);
+        }
+
+        return $canonicalUrl;
     }
 
+    protected function updateChildrenCanonicalUrls(Webpage $webpage): void
+    {
+        $model = $webpage->model;
+        if ($model instanceof ProductCategory) {
+            foreach ($model->getProducts() as $product) {
+                $webpage = $product->webpage;
+                if ($webpage) {
+                    UpdateWebpageCanonicalUrl::dispatch($webpage, false)->delay(2);
+                }
+            }
+            foreach ($model->getFamilies() as $family) {
+                $webpage = $family->webpage;
+                if ($webpage) {
+                    UpdateWebpageCanonicalUrl::dispatch($webpage, false)->delay(2);
+                }
+            }
+
+            foreach ($model->getSubDepartments() as $subDepartment) {
+                $webpage = $subDepartment->webpage;
+                if ($webpage) {
+                    UpdateWebpageCanonicalUrl::dispatch($webpage, false)->delay(2);
+                }
+            }
+
+            foreach ($model->collections as $collection) {
+                $webpage = $collection->webpage;
+                if ($webpage) {
+                    UpdateWebpageCanonicalUrl::dispatch($webpage, false)->delay(2);
+                }
+            }
+        }
+    }
 
     protected function getWebpageTypeCatalogue(Webpage $webpage): string
     {
@@ -67,13 +123,15 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
     {
         /** @var Collection $collection */
         $collection = $webpage->model;
+        if (!$collection) {
+            return $webpage->url;
+        }
 
         $done = false;
         $url  = '';
 
 
-
-        foreach ($collection->subDepartments as $subDepartment) {
+        foreach ($collection->parentSubDepartments as $subDepartment) {
             if ($subDepartment->webpage && $subDepartment->webpage->state != WebpageStateEnum::CLOSED) {
                 $url = $this->getProductCategoryCanonicalUrl($subDepartment->webpage);
 
@@ -83,11 +141,9 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         }
 
         if (!$done) {
-            foreach ($collection->departments as $department) {
+            foreach ($collection->parentSubDepartments as $department) {
                 if ($department->webpage && $department->webpage->state != WebpageStateEnum::CLOSED) {
                     $url = $this->getProductCategoryCanonicalUrl($department->webpage);
-
-                    $done = true;
                     break;
                 }
             }
@@ -111,7 +167,7 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         } elseif ($product->department && $product->department->webpage && $product->department->webpage->state != WebpageStateEnum::CLOSED) {
             $url = $this->getProductCategoryCanonicalUrl($product->department->webpage);
         }
-        $url .= $webpage->url;
+        $url .= '/'.$webpage->url;
 
         return $this->trimTrailingSlash($url);
     }
@@ -121,6 +177,14 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $url = '';
         /** @var ProductCategory $productCategory */
         $productCategory = $webpage->model;
+
+        if (!$productCategory) {
+            $productCategory = ProductCategory::withTrashed()->where('id', $webpage->model_id)->first();
+        }
+
+        if (!$productCategory) {
+            return $url;
+        }
 
 
         if ($productCategory->type == ProductCategoryTypeEnum::DEPARTMENT) {
@@ -182,24 +246,42 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         return rtrim($url, '/');
     }
 
-    public string $commandSignature = 'webpage:update_canonical';
+    public string $commandSignature = 'webpage:update_canonical {type?} {slug?}';
 
-    public function asCommand(Command $command): void
+    public function asCommand(Command $command): int
     {
+        $debug = false;
+        $query = DB::table('webpages')->select('id');
+        if ($command->argument('type')) {
+            if (in_array($command->argument('type'), ['page', 'webpage', 'p'])) {
+                $query->where('slug', $command->argument('slug'));
+                $debug = true;
+            } elseif (in_array($command->argument('type'), ['website', 'w'])) {
+                $website = Website::where('slug', $command->argument('slug'))->first();
+                $query->where('website_id', $website->id);
+            }
+        }
+
         $startTime = microtime(true);
         $processed = 0;
 
         // Determine total for the progress bar
-        $total       = Webpage::count();
+        $total       = $query->count();
         $progressBar = $command->getOutput()->createProgressBar($total);
-        $progressBar->setRedrawFrequency(100);
+        $progressBar->setRedrawFrequency(1);
         $progressBar->start();
 
-        Webpage::query()
-            ->orderBy('id')
-            ->chunkById(500, function ($webpages) use (&$processed, $progressBar) {
-                foreach ($webpages as $webpage) {
-                    $this->handle($webpage);
+        $query->orderBy('id')
+            ->chunkById(200, function ($webpages) use (&$processed, $progressBar, $command, $debug) {
+                foreach ($webpages as $webpageID) {
+                    $webpage = Webpage::withTrashed()->where('id', $webpageID->id)->first();
+                    if ($webpage) {
+                        $this->handle($webpage, false);
+                        if ($debug) {
+                            $command->info($webpage->id.' '.$webpage->url.' '.$webpage->canonical_url);
+                        }
+                    }
+
                     $processed++;
                     $progressBar->advance();
                 }
@@ -211,6 +293,8 @@ class UpdateWebpageCanonicalUrl implements ShouldBeUnique
         $duration = microtime(true) - $startTime;
         $human    = gmdate('H:i:s', (int)$duration);
         $command->info("Processed $processed webpages in $human.");
+
+        return 0;
     }
 
 }

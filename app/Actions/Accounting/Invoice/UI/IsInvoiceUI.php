@@ -331,6 +331,8 @@ trait IsInvoiceUI
 
                 ]
             ],
+
+            default => null
         };
     }
 

@@ -9,8 +9,10 @@
 namespace App\Actions\Retina\UI\Layout;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\CRM\WebUser;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class GetRetinaDropshippingNavigation
@@ -102,8 +104,9 @@ class GetRetinaDropshippingNavigation
         $platforms_navigation = [];
 
 
+        /** @var CustomerSalesChannel $customerSalesChannels */
         foreach (
-            $customer->customerSalesChannels()->whereNull('closed_at')->get() as $customerSalesChannels
+            $customer->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::OPEN)->get() as $customerSalesChannels
         ) {
             $reference = $customerSalesChannels->name ?? 'n/a';
 
@@ -234,6 +237,27 @@ class GetRetinaDropshippingNavigation
             ]
         ];
 
+        $groupNavigation['marketing'] = [
+            'label'   => __('manage email'),
+            'icon'    => ['fal', 'fa-envelope'],
+            'root'    => 'retina.email.',
+            'route'   => [
+                'name' => 'retina.email.settings.edit'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('email'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'retina.email.settings.',
+                        'route' => [
+                            'name' => 'retina.email.settings.edit',
+
+                        ]
+                    ]
+                ]
+            ]
+        ];
 
         return $groupNavigation;
     }

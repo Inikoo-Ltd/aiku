@@ -21,6 +21,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCreditTransactions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomerBalances;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateCustomers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotesState;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDepartments;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDispatchedEmails;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateEmailAddresses;
@@ -42,6 +43,14 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderInBasketAtCustomerUpdateIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrders;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrdersDispatchedToday;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateCreating;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateFinalised;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateHandling;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateHandlingBlocked;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateInWarehouse;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStatePacked;
+use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderStateSubmitted;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOutboxes;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydratePalletDeliveries;
@@ -58,7 +67,6 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateInvoiceTransactions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateJobPositions;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateLocations;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateMailshots;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderHandling;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrderIntervals;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrganisations;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOrgStockFamilies;
@@ -102,6 +110,8 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUserRequests;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateWebUsers;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeletedInvoices;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\SysAdmin\Group;
 
 class HydrateGroup extends HydrateModel
@@ -184,7 +194,15 @@ class HydrateGroup extends HydrateModel
         GroupHydrateInvoiceTransactions::run($group);
         GroupHydrateVariants::run($group);
 
-        GroupHydrateOrderHandling::run($group);
+        GroupHydrateOrderStateCreating::run($group->id);
+        GroupHydrateOrderStateSubmitted::run($group->id);
+        GroupHydrateOrderStateInWarehouse::run($group->id);
+        GroupHydrateOrderStateHandling::run($group->id);
+        GroupHydrateOrderStateHandlingBlocked::run($group->id);
+        GroupHydrateOrderStatePacked::run($group->id);
+        GroupHydrateOrderStateFinalised::run($group->id);
+        GroupHydrateOrdersDispatchedToday::run($group->id);
+
         //fulfilment
         GroupHydratePallets::run($group);
         GroupHydratePalletDeliveries::run($group);
@@ -203,7 +221,14 @@ class HydrateGroup extends HydrateModel
 
         GroupHydrateOrders::run($group);
         GroupHydratePurges::run($group);
-        GroupHydrateDeliveryNotes::run($group);
+        GroupHydrateDeliveryNotes::run($group->id, DeliveryNoteTypeEnum::ORDER);
+        GroupHydrateDeliveryNotes::run($group->id, DeliveryNoteTypeEnum::REPLACEMENT);
+
+        foreach (DeliveryNoteStateEnum::cases() as $case) {
+            GroupHydrateDeliveryNotesState::run($group->id, $case);
+        }
+
+
         GroupHydrateAdjustments::run($group);
         GroupHydrateWebUsers::run($group);
         GroupHydrateDeletedInvoices::run($group);
@@ -219,7 +244,6 @@ class HydrateGroup extends HydrateModel
 
         GroupHydrateMasterFamiliesWithNoDepartment::run($group);
         GroupHydrateInvoiceCategories::dispatch($group);
-
     }
 
 }

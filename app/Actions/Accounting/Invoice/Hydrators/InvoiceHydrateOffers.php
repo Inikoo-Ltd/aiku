@@ -29,8 +29,8 @@ class InvoiceHydrateOffers implements ShouldBeUnique
     {
 
         $stats = [
-            'number_offer_components' => $invoice->invoiceTransactions->sum(function ($transaction) {
-                return $this->countOfferComponents($transaction);
+            'number_offer_allowances' => $invoice->invoiceTransactions->sum(function ($transaction) {
+                return $this->countOfferAllowances($transaction);
             }),
             'number_offers' => $invoice->invoiceTransactions->sum(function ($transaction) {
                 return $this->countOffers($transaction);
@@ -44,11 +44,11 @@ class InvoiceHydrateOffers implements ShouldBeUnique
         $invoice->stats()->update($stats);
     }
 
-    public function countOfferComponents(InvoiceTransaction $transaction): int
+    public function countOfferAllowances(InvoiceTransaction $transaction): int
     {
-        return $transaction->offerComponents()
-            ->distinct('offer_component_id')
-            ->count('offer_component_id');
+        return $transaction->offerAllowances()
+            ->distinct('offer_allowance_id')
+            ->count('offer_allowance_id');
     }
 
     public function countOffers(InvoiceTransaction $transaction): int

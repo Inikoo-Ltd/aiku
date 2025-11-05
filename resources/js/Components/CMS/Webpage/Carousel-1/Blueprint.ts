@@ -47,12 +47,6 @@ export default {
 							type: "background",
 						},
 						{
-							key: ["dimension"],
-							label: "Dimension",
-							type: "dimension",
-							useIn: ["desktop", "tablet", "mobile"],
-						},
-						{
 							key: ["padding"],
 							label: "Padding",
 							type: "padding",
@@ -82,39 +76,14 @@ export default {
 							type: "dimension",
 							useIn: ["desktop", "tablet", "mobile"],
 						},
-						{
-							key: ["container_image", "justifyContent"],
-							label: "Justify Content",
-							useIn: ["desktop", "tablet", "mobile"],
-							type: "select",
-							props_data: {
-								placeholder: "Object",
-								options: [
-									{
-										label: "Center",
-										value: "center",
-									},
-									{
-										label: "End",
-										value: "end",
-									},
-									{
-										label: "Start",
-										value: "start",
-									},
-									{
-										label: "none",
-										value: null,
-									},
-								],
-							},
-						},
 					],
 				},
-				{
-					key: ["cards"],
+			],
+		},
+		{
+					key: ["carousel_data","cards"],
 					name: "Cards  Data",
-					type: "array-data",
+					type: "array-data-drawer",
 					props_data: {
 						blueprint: CardBlueprint.blueprint,
 						order_name: "card",
@@ -130,8 +99,6 @@ export default {
 						},
 					},
 				},
-			],
-		},
 		{
 			name: "Layout",
 			key: ["container", "properties"],

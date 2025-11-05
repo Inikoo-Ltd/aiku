@@ -6,7 +6,7 @@ import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { ref, toRaw } from 'vue'
-import { router } from '@inertiajs/vue3'
+import { Link, router } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import PureInput from '@/Components/Pure/PureInput.vue'
 import InputNumber from 'primevue/inputnumber'
@@ -39,7 +39,7 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: For
     let tempValue = toRaw(amount.refund_amount)
     router[routeRefund.method || 'post'](
         route(
-            routeRefund.name, 
+            routeRefund.name,
             routeRefund.parameters
         ),
         {
@@ -52,7 +52,7 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: For
             },
             onSuccess: () => {
                 amount.defaults()
-                amount.reset();             
+                amount.reset();
             },
             onFinish: () => {
                 amount.processing = false
@@ -106,6 +106,14 @@ defineExpose({
 })
 
 
+const productRoute = (item) => {
+    // console.log('id', item.id)
+    // if (route().current() === 'grp.org.shops.show.ordering.orders.show.invoices.show.refunds.show') {
+        return route('grp.helpers.redirect_asset', [item.id])
+    // }
+
+    // return ''
+}
 </script>
 
 <template>
@@ -121,7 +129,7 @@ defineExpose({
 
                     <!-- Previous Refund -->
                     <small v-if="item.total_last_refund" class="text-gray-500 text-xs">
-                        Previous refund: {{ locale.currencyFormat(item.currency_code, item.total_last_refund) }}
+                        {{ trans("Previous refund") }}: {{ locale.currencyFormat(item.currency_code, item.total_last_refund) }}
                     </small>
 
                     <!-- Refundable Amount -->
@@ -130,10 +138,26 @@ defineExpose({
                         @click="()=>setAllRefund(item.rowIndex, item.max_refundable_amount)"
                         :disabled="item.net_amount - item.refund_net_amount - item.total_last_refund <= 0"
                         class="px-2 py-1 text-xs bg-gray-300 rounded disabled:bg-gray-300 disabled:cursor-not-allowed hover:text-blue-500 disabled:hover:bg-gray-300 transition">
-                        Refundable: {{ locale.currencyFormat(item.currency_code, item.max_refundable_amount)}}
+                        {{ trans("Refundable") }}: {{ locale.currencyFormat(item.currency_code, item.max_refundable_amount)}}
                     </button>
                 </div>
             </template>
+
+            <template #cell(code)="{ item }">
+                <Link v-if="productRoute(item)" :href="productRoute(item)" class="whitespace-normal primaryLink">
+                    {{ item.code }}
+                </Link>
+                <div v-else class="whitespace-normal">
+                    {{ item.code }}
+                </div>
+            </template>
+
+            <template #cell(description)="{ item }">
+                <div class="whitespace-normal">
+                    {{item.name}}
+                </div>
+            </template>
+
             <!-- <template #cell(prev_refund)="{ item }">
                 <div :class="item.net_amount < 0 ? 'text-red-500' : ''">
                     <Tag v-if="Number(item.total_last_refund)" v-tooltip="trans('Total previous refund')" :label="locale.currencyFormat(item.currency_code, item.total_last_refund)" noHoverColor :theme="2" size="sm" />
@@ -159,7 +183,7 @@ defineExpose({
                             type="secondary"
                             :xtype="get(proxyItem, 'refund_type', null) == 'full' ? 'black' : 'secondary'"
                         />
-                        
+
                         <Button
                             v-if="!get(proxyItem, ['refund_net_amount'], 0)"
                             @click="() => get(proxyItem, 'refund_type', null) == 'partial' ? set(proxyItem, 'refund_type', null): set(proxyItem, 'refund_type', 'partial')"
@@ -198,7 +222,7 @@ defineExpose({
                                         <FontAwesomeIcon icon="fal fa-plus" aria-hidden="true" />
                                     </template>
                                 </InputNumber>
-                    
+
                                 <p v-if="get(proxyItem, ['new_refund_amount'], null) > item.net_amount" class="italic text-red-500 text-xs mt-1">
                                     {{ trans('Refund amount should not over the net amount') }}
                                 </p>
@@ -226,21 +250,21 @@ defineExpose({
                                 type="tertiary"
                                 :xtype="get(proxyItem, 'refund_type', null) == 'full' ? 'black' : 'secondary'"
                             />
-                        </div>   
+                        </div>
                         </div> -->
-                
+
                         <div class="flex items-center gap-3 w-fit">
-                            <ActionCell 
+                            <ActionCell
                                 v-if="Number(item.total_last_refund) < Number(item.net_amount)"
                                 :ref="(e) => _formCell[item.rowIndex] = e"
                                 :modelValue="get(proxyItem, ['new_refund_amount'], get(proxyItem, ['refund_net_amount'], 0))"
-                                :max="item.max_refundable_amount" 
+                                :max="item.max_refundable_amount"
                                 @input="(e) => set(proxyItem, ['new_refund_amount'], e.value)"
-                                @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)" 
-                                :min="0" 
+                                @update:model-value="(e) => set(proxyItem, ['new_refund_amount'], e)"
+                                :min="0"
                                 placeholder="0"
-                                mode="currency" 
-                                :currency="item.currency_code" 
+                                mode="currency"
+                                :currency="item.currency_code"
                                 :step="item.original_item_net_price"
                                 @refund="(form) => onClickQuantity(item.refund_route, item.rowIndex, form)"
                             />

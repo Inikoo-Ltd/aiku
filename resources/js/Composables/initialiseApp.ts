@@ -23,7 +23,7 @@ export const initialiseApp = () => {
     const echoPersonal = useEchoGrpPersonal()
     const echoGeneral = useEchoGrpGeneral()
 
-    console.log('klklk', usePage())
+
     useLiveUsers().subscribe()  // Websockets: active users
     echoGeneral.subscribe(usePage().props.layout?.group?.id)  // Websockets: notification
 
@@ -181,6 +181,15 @@ export const initialiseApp = () => {
         if (usePage().props.auth.user) {
             layout.user = usePage().props.auth.user
         }
+
+        if (usePage().props.notifications) {
+            layout.notifications = usePage().props.notifications
+        }
+
+        if (usePage().props.avatar_thumbnail) {
+            layout.avatar_thumbnail = usePage().props.avatar_thumbnail
+        }
+        
 
         layout.app.name = "Aiku"
     })

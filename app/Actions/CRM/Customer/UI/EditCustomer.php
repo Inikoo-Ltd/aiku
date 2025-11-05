@@ -11,6 +11,7 @@ namespace App\Actions\CRM\Customer\UI;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use App\Models\CRM\Customer;
@@ -40,6 +41,7 @@ class EditCustomer extends OrgAction
     public function htmlResponse(Customer $customer, ActionRequest $request): Response
     {
         $spain = \App\Models\Helpers\Country::where('code', 'ES')->first();
+
 
         return Inertia::render(
             'EditModel',
@@ -96,6 +98,24 @@ class EditCustomer extends OrgAction
                                     'options' => [
                                         'countriesAddressData' => GetAddressData::run()
                                     ]
+                                ],
+                                'delivery_address'         => [
+                                    'hidden' => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
+                                    'type'    => 'delivery_address',
+                                    'label'   => __('Delivery Address'),
+                                    'noSaveButton'  => true,
+                                    'options' => [
+                                        'same_as_contact' => [
+                                            'label'         => __('Same as contact address'),
+                                            'key_payload'   => 'delivery_address_id',
+                                            'payload'       => $customer->address_id
+                                        ],
+                                        'countriesAddressData'    => GetAddressData::run()
+                                    ],
+                                    'value'   => [
+                                        'is_same_as_contact'    => $customer->delivery_address_id == $customer->address_id,
+                                        'address'               => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
+                                    ],
                                 ],
                                 'tax_number'               => [
                                     'type'    => 'tax_number',

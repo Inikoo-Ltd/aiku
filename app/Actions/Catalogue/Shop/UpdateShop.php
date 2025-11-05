@@ -116,10 +116,21 @@ class UpdateShop extends OrgAction
             data_set($modelData, "settings.registration.require_approval", Arr::pull($modelData, 'required_approval'));
         }
 
+        if (Arr::exists($modelData, 'required_phone_number')) {
+            data_set($modelData, "settings.registration.require_phone_number", Arr::pull($modelData, 'required_phone_number'));
+        }
+
+        if (Arr::exists($modelData, 'marketing_opt_in_label')) {
+            data_set($modelData, "settings.registration.marketing_opt_in_label", Arr::pull($modelData, 'marketing_opt_in_label'));
+        }
+
+        if (Arr::exists($modelData, 'marketing_opt_in_default')) {
+            data_set($modelData, "settings.registration.marketing_opt_in_default", Arr::pull($modelData, 'marketing_opt_in_default'));
+        }
+
         if (Arr::exists($modelData, 'stand_alone_invoice_numbers')) {
             data_set($modelData, "settings.invoicing.stand_alone_invoice_numbers", Arr::pull($modelData, 'stand_alone_invoice_numbers'));
         }
-
 
         $shop    = $this->update($shop, $modelData, ['data', 'settings']);
         $changes = $shop->getChanges();
@@ -152,16 +163,15 @@ class UpdateShop extends OrgAction
 
     public function updateInvoiceSerialReferences(Shop $shop, array $modelData): Shop
     {
-
         $invoiceSerialReference = SerialReference::where('model', SerialReferenceModelEnum::INVOICE)
             ->where('container_type', 'Shop')
             ->where('container_id', $shop->id)->first();
 
         $invoiceSerialReference->updateQuietly(
             [
-            'format' => $modelData['stand_alone_invoice_numbers_format'],
-            'serial' => $modelData['stand_alone_invoice_numbers_serial'],
-        ]
+                'format' => $modelData['stand_alone_invoice_numbers_format'],
+                'serial' => $modelData['stand_alone_invoice_numbers_serial'],
+            ]
         );
 
 
@@ -184,6 +194,7 @@ class UpdateShop extends OrgAction
             'settings' => $settings,
         ]);
         $shop->refresh();
+
         return $shop;
     }
 
@@ -241,6 +252,9 @@ class UpdateShop extends OrgAction
             'registration_number'          => ['sometimes', 'string'],
             'vat_number'                   => ['sometimes', 'string'],
             'required_approval'            => ['sometimes', 'boolean'],
+            'required_phone_number'        => ['sometimes', 'boolean'],
+            'marketing_opt_in_default'     => ['sometimes', 'boolean'],
+            'marketing_opt_in_label'       => ['sometimes', 'string'],
             'invoice_footer'               => ['sometimes', 'string', 'max:10000'],
             'cost_price_ratio'             => ['sometimes', 'numeric', 'min:0'],
             'price_rrp_ratio'              => ['sometimes', 'numeric', 'min:0'],

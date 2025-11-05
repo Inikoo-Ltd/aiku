@@ -9,50 +9,31 @@
 
 namespace App\Http\Resources\Web;
 
-use App\Actions\Helpers\Images\GetPictureSources;
 use App\Http\Resources\HasSelfCall;
-use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @property mixed $slug
+ * @property mixed $code
+ * @property mixed $name
+ * @property mixed $canonical_url
+ * @property mixed $web_images
+ * @property mixed $title
+ */
 class WebBlockCollectionResource extends JsonResource
 {
     use HasSelfCall;
 
     public function toArray($request): array
     {
-
-
-        $imageSources = null;
-        $media        = Media::find($this->image_id);
-        if ($media) {
-            $width  = 0;
-            $height = 0;
-
-
-            $image        = $media->getImage()->resize($width, $height);
-            $imageSources = GetPictureSources::run($image);
-        }
-
         $webImages = json_decode(trim($this->web_images, '"'), true) ?? [];
+
         return [
-            'slug'  => $this->slug,
-            'code'  => $this->code,
-            'name'  => $this->name,
-            'image' => $imageSources,
-            'url'   => $this->url,
-            'web_images' => $webImages,
-            'products_route' => [
-                'name' => 'grp.json.collection.products.index',
-                'parameters' => [
-                    'collection' => $this->slug,
-                ]
-            ],
-            'families_route' => [
-                'name' => 'grp.json.collection.families.index',
-                'parameters' => [
-                    'collection' => $this->slug,
-                ]
-            ]
+            'code'       => $this->code,
+            'name'       => $this->name,
+            'title'      => $this->title ?? $this->name ?? $this->code,
+            'url'        => $this->canonical_url,
+            'web_images' => $webImages
         ];
     }
 }

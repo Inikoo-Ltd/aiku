@@ -16,6 +16,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCreditTransac
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomerBalances;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotesState;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDepartments;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamilies;
@@ -27,6 +28,14 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateLocations;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateMailshots;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrdersDispatchedToday;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateCreating;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateFinalised;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateHandling;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateHandlingBlocked;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateInWarehouse;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStatePacked;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderStateSubmitted;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgAgents;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgPostRooms;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgSupplierProducts;
@@ -43,7 +52,6 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePayments;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateEmployees;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateJobPositions;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderHandling;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrderIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRegistrationIntervals;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShops;
@@ -59,7 +67,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateServices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePurges;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRedirects;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotesState;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSpaces;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateStoredItemAudits;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateStoredItems;
@@ -75,6 +83,8 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUserReques
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUsers;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 
@@ -91,7 +101,6 @@ class HydrateOrganisations extends HydrateModel
 
     public function handle(Organisation $organisation): void
     {
-
         OrganisationHydrateAudits::run($organisation);
         OrganisationHydrateEmployees::run($organisation);
         OrganisationHydrateShops::run($organisation);
@@ -101,7 +110,10 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateCustomers::run($organisation);
         OrganisationHydrateOrders::run($organisation);
         OrganisationHydratePurges::run($organisation);
-        OrganisationHydrateDeliveryNotes::run($organisation);
+        OrganisationHydrateDeliveryNotes::run($organisation->id, DeliveryNoteTypeEnum::ORDER);
+        OrganisationHydrateDeliveryNotes::run($organisation->id, DeliveryNoteTypeEnum::REPLACEMENT);
+        ;
+
         OrganisationHydratePurchaseOrders::run($organisation);
         OrganisationHydrateWebsites::run($organisation);
         OrganisationHydrateWebpages::run($organisation);
@@ -121,6 +133,8 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateCustomerBalances::run($organisation);
         OrganisationHydrateDispatchedEmails::run($organisation);
         OrganisationHydrateWebUsers::run($organisation);
+
+
 
         if ($organisation->type == OrganisationTypeEnum::SHOP) {
             OrganisationHydrateRegistrationIntervals::run($organisation);
@@ -155,7 +169,16 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateTopUps::run($organisation);
             OrganisationHydrateCreditTransactions::run($organisation);
             OrganisationHydrateAdjustments::run($organisation);
-            OrganisationHydrateOrderHandling::run($organisation);
+
+            OrganisationHydrateOrderStateCreating::run($organisation->id);
+            OrganisationHydrateOrderStateSubmitted::run($organisation->id);
+            OrganisationHydrateOrderStateInWarehouse::run($organisation->id);
+            OrganisationHydrateOrderStateHandling::run($organisation->id);
+            OrganisationHydrateOrderStateHandlingBlocked::run($organisation->id);
+            OrganisationHydrateOrderStatePacked::run($organisation->id);
+            OrganisationHydrateOrderStateFinalised::run($organisation->id);
+            OrganisationHydrateOrdersDispatchedToday::run($organisation->id);
+
             OrganisationHydrateMailshots::run($organisation);
             OrganisationHydrateDeletedInvoices::run($organisation);
 
@@ -166,14 +189,17 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateProductsWithNoFamily::run($organisation);
             OrganisationHydrateWebUserRequests::run($organisation->id);
 
-            foreach (ShopTypeEnum::cases() as $type) {
-                if ($type != ShopTypeEnum::FULFILMENT) {
-                    OrganisationHydrateShopTypeDeliveryNotes::run($organisation, $type);
-                }
-
+            foreach (DeliveryNoteStateEnum::cases() as $case) {
+                OrganisationHydrateDeliveryNotesState::run($organisation->id, $case);
             }
 
-
+            foreach (ShopTypeEnum::cases() as $type) {
+                if ($type != ShopTypeEnum::FULFILMENT) {
+                    foreach (DeliveryNoteStateEnum::cases() as $deliveryNoteState) {
+                        OrganisationHydrateShopTypeDeliveryNotesState::run($organisation->id, $type, $deliveryNoteState);
+                    }
+                }
+            }
         }
     }
 

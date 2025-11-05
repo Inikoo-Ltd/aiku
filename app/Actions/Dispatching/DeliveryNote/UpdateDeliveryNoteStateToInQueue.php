@@ -8,9 +8,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -22,6 +22,7 @@ use Lorisleiva\Actions\ActionRequest;
 class UpdateDeliveryNoteStateToInQueue extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
     private DeliveryNote $deliveryNote;
 
@@ -30,6 +31,7 @@ class UpdateDeliveryNoteStateToInQueue extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
+        $oldState = $deliveryNote->state;
         data_set($modelData, 'queued_at', now());
         data_set($modelData, 'state', DeliveryNoteStateEnum::QUEUED->value);
         data_set($modelData, 'picker_user_id', $user->id);
@@ -47,9 +49,9 @@ class UpdateDeliveryNoteStateToInQueue extends OrgAction
         });
 
         DeliveryNoteHydrateItems::dispatch($deliveryNote)->delay($this->hydratorsDelay);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::QUEUED);
 
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
 
         return $deliveryNote;
     }

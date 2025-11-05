@@ -316,7 +316,7 @@ const generateLinkPallet = (pallet: {}) => {
             <div>
                 {{ item.customer_reference }}
                 <div v-if="item.notes" class="text-gray-400">
-                    <FontAwesomeIcon v-tooltip="trans('Pallet\'s note')" icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
+                    <FontAwesomeIcon v-tooltip="trans(`Pallet's note`)" icon="fal fa-sticky-note" fixed-width aria-hidden="true" />
                     <span>
                         {{ item.notes }}
                     </span>

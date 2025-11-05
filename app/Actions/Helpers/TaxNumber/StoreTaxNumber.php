@@ -8,26 +8,48 @@
 
 namespace App\Actions\Helpers\TaxNumber;
 
+use App\Actions\Helpers\TaxNumber\Concerns\HasTaxNumberType;
 use App\Enums\Helpers\TaxNumber\TaxNumberTypeEnum;
 use App\Models\CRM\Customer;
+use App\Models\Helpers\Country;
 use App\Models\Helpers\TaxNumber;
 use App\Models\Catalogue\Shop;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class StoreTaxNumber
 {
     use AsAction;
+    use HasTaxNumberType;
 
-    public function handle(Shop|Customer $owner, array $modelData = []): TaxNumber
+    public function handle(Shop|Customer $owner, array $modelData = [], bool $strict = true): TaxNumber
     {
+
+        $country = Country::find($modelData['country_id']);
+        if ($country) {
+            data_set($modelData, 'country_code', $country->code, false);
+            data_set($modelData, 'type', $this->getTaxNumberType($country), false);
+
+        }
+        data_set($modelData, 'checksum', hash('sha512', implode('', [
+            Arr::get($modelData, 'number', ''),
+            Arr::get($modelData, 'country_id', '')
+        ])));
+
+
 
         /** @var TaxNumber $taxNumber */
         $taxNumber = $owner->taxNumber()->create($modelData);
 
-        if ($taxNumber->type == TaxNumberTypeEnum::EU_VAT) {
-            $taxNumber = ValidateEuropeanTaxNumber::run($taxNumber);
+        if ($strict) {
+            if ($taxNumber->type == TaxNumberTypeEnum::EU_VAT) {
+                $taxNumber = ValidateEuropeanTaxNumber::run($taxNumber);
+            } elseif ($taxNumber->type == TaxNumberTypeEnum::GB_VAT) {
+                $taxNumber = ValidateGBTaxNumber::run($taxNumber);
+            }
         }
 
         return $taxNumber;
     }
+
 }

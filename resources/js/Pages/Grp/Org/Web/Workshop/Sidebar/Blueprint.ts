@@ -1,3 +1,5 @@
+import { trans } from "laravel-vue-i18n"
+
 export default {
 	blueprint: [
 		{
@@ -10,49 +12,113 @@ export default {
 					type: "background",
 				},
 				{
-					key: ["border"],
-					label: "Border",
-					type: "border",
-				},
-				{
-                    key: ["shadow"],
-                    label : "Shadow",
-                    type: "shadow",
-                },
-                {
-                    key: ["shadowColor"],
-                    label : "Shadow Color",
-                    type: "color",
-                },
-			],
-		},
-        {
-			name: "Navigation",
-			key: ["navigation_container", "properties"],
-			replaceForm: [
-				{
 					key: ["text"],
+					label: "Text",
 					type: "textProperty",
 				},
-			],
-		},
-         {
-			name: "Subnavigation",
-			key: ["sub_navigation", "properties"],
-			replaceForm: [
 				{
-					key: ["text"],
-					type: "textProperty",
+					key: ["border", "color"],
+					label: "Lines",
+					information: trans('Lines that used to separates the menu'),
+					type: "color",
+				},
+				{
+					key: ["border", "width"],
+					label: "Lines thickness",
+					information: trans('Reasonal number is 0px to 12px'),
+					props_data: {
+						unit_option: [
+							{ label: 'px', value: 'px' },
+						],
+						defaultValue: {
+							value: 1,
+							unit: 'px',
+						}
+					},
+					type: "numberCss",
 				},
 			],
 		},
-        {
-			name: "Link Subnavigation",
-			key: ["sub_navigation_link", "properties"],
+		{
+			name: "Logo size",
+			key: ["logo_dimension"],
+			// icon: {
+			// 	icon: 'fal fa-image',
+			// },
 			replaceForm: [
 				{
-					key: ["text"],
-					type: "textProperty",
+					key: ["dimension"],
+					label: "Dimension",
+					type: "dimension",
+				},
+			],
+		},
+        // {
+		// 	name: "Navigation",
+		// 	key: ["navigation_container", "properties"],
+		// 	replaceForm: [
+		// 		{
+		// 			key: ["text"],
+		// 			type: "textProperty",
+		// 		},
+		// 	],
+		// },
+        //  {
+		// 	name: "Subnavigation",
+		// 	key: ["sub_navigation", "properties"],
+		// 	replaceForm: [
+		// 		{
+		// 			key: ["text"],
+		// 			type: "textProperty",
+		// 		},
+		// 	],
+		// },
+        // {
+		// 	name: "Link Subnavigation",
+		// 	key: ["sub_navigation_link", "properties"],
+		// 	replaceForm: [
+		// 		{
+		// 			key: ["text"],
+		// 			type: "textProperty",
+		// 		},
+		// 	],
+		// },
+	],
+	blueprint_additional_items: [
+		{
+			name: "Additional Items (bottom)",
+			key: ["additional_items"],
+			replaceForm: [
+				{
+					key: ["items_list"],
+					type: "array-data",
+					props_data: {
+						blueprint: [
+							{
+								key: ["icon"],
+								label: "Icon",
+								type: "icon-picker",
+							},
+							{
+								key: ["text"],
+								label: "Text",
+								type: "editorhtml",
+							},
+							{
+								key: ["url"],
+								label: "URL",
+								type: "link",
+							},
+						],
+						order_name: "item",
+						can_drag: true,
+						can_delete: true,
+						can_add: true,
+						new_value_data: {
+							text: "Lorem Ipsum",
+							icon: ["far", "chevron-right"]
+						},
+					},
 				},
 			],
 		},

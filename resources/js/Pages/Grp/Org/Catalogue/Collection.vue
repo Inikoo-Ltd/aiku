@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, router } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 import type { Component } from 'vue'
 
@@ -27,6 +27,7 @@ import { faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableCollections from '@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 library.add(faPlus)
 
 const props = defineProps<{
@@ -43,6 +44,7 @@ const props = defineProps<{
         products: { dataList: routeType, submitAttach: routeType, detach: routeType }
         collections: { dataList: routeType, submitAttach: routeType, detach: routeType }
     }
+    url_master: routeType | null
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -131,7 +133,7 @@ const onSubmitAttach = async ({
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #other>
-            <section v-if="currentTab == 'families'">
+          <!--   <section v-if="currentTab == 'families'">
                 <Button
                     type="secondary"
                     label="Attach families"
@@ -157,7 +159,23 @@ const onSubmitAttach = async ({
                     @click="isModalOpen.collections.value = true"
                     :tooltip="trans('Attach products to this collections')"
                 />
-            </section>
+            </section> -->
+        </template>
+
+        <template #afterTitle2>
+            <div v-if="url_master" class="whitespace-nowrap">
+                <Link
+                    :href="route(url_master.name, url_master.parameters)"
+                    v-tooltip="trans('Go to Master collection')"
+                    class="opacity-70 hover:opacity-100"
+                >
+                    <FontAwesomeIcon
+                        icon="fab fa-octopus-deploy"
+                        color="#4B0082"
+                        fixed-width
+                    />
+                </Link>
+            </div>
         </template>
     </PageHeading>
 

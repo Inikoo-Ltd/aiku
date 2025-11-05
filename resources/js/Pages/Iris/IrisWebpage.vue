@@ -14,12 +14,15 @@ import { getIrisComponent } from '@/Composables/getIrisComponents'
 
 
 const props = defineProps<{
-  webpage : any
+  webpage_data : any
   web_blocks: any,
   webpage_img : any,
 }>()
+
 defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
+
+const layout: any = inject("layout", {});
 
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const currentUrl = ref('')
@@ -32,37 +35,13 @@ const checkScreenType = () => {
   else screenType.value = 'desktop'
 }
 
-
-/* function injectMetaTagFromString(rawHtml: string) {
-  if (!rawHtml?.trim().startsWith('<')) return
-
-  const wrapper = document.createElement('div')
-  wrapper.innerHTML = rawHtml.trim()
-  const element = wrapper.firstElementChild
-
-  if (element && element instanceof HTMLElement) {
-    // Prevent duplicates if meta with same name exists
-    if (element.tagName.toLowerCase() === 'meta') {
-      const nameAttr = element.getAttribute('name')
-      if (nameAttr) {
-        const existing = document.head.querySelector(`meta[name="${nameAttr}"]`)
-        if (existing) document.head.removeChild(existing)
-      }
-    }
-
-    document.head.appendChild(element)
-  }
-} */
-
-
-
 onMounted(() => {
   currentUrl.value = window.location.href
 
-  // Inject structured data as script
+  if(props?.webpage_data?.seo_data?.structured_data){
   const script = document.createElement('script')
   script.type = 'application/ld+json'
-  let structuredData = props.webpage.structured_data
+  let structuredData = props.webpage_data?.seo_data?.structured_data
 
   if (typeof structuredData !== 'string') {
     try {
@@ -73,17 +52,17 @@ onMounted(() => {
     }
   }
 
+  
   script.textContent = structuredData
   document.head.appendChild(script)
-
-  // ✅ Inject custom meta tag if valid
-  // if (props.script_website) {
-  //   injectMetaTagFromString(props.script_website)
-  // }
+}
 
   checkScreenType()
   window.addEventListener('resize', checkScreenType)
   window.listWebBlocks = props.web_blocks
+
+
+  if(layout.iris.is_logged_in) layout.log_user()
 })
 
 
@@ -91,25 +70,24 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', checkScreenType)
 })
 
-const layout: any = inject("layout", {});
+
 
 
 </script>
 
 <template>
     <Head>
-        <title>{{ webpage.title }}</title>
-        <meta name="description" :content="webpage.description" />
+        <title>{{ webpage_data.title }}</title>
+        <meta name="description" :content="webpage_data.description" />
         <meta property="og:type" content="website" />
-        <meta property="og:title" :content="webpage.title" />
-        <meta property="og:description" :content="webpage.description" />
+        <meta property="og:title" :content="webpage_data.title" />
+        <meta property="og:description" :content="webpage_data.description" />
         <meta property="og:url" :content="currentUrl" />
         <meta property="og:image" :content="webpage_img.png" />
-        <meta property="og:image:alt" :content="webpage.title" />
+        <meta property="og:image:alt" :content="webpage_data.title" />
         <meta property="og:locale" content="en_US" />
-        <meta property="og:site_name" :content="webpage.title" />
+        <meta property="og:site_name" :content="webpage_data.title" />
     </Head>
-
 
 
   <div class="bg-white">

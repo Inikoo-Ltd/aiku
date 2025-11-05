@@ -21,6 +21,7 @@ library.add(faEnvelope, faUser, faAsterisk, faInfoCircle, faPhone, faBuilding, f
 // Set default layout
 // defineOptions({ layout: RetinaShowIris })
 const props = defineProps<{
+  	requiresPhoneNumber: boolean,
 	countriesAddressData: [],
 	polls: [],
 	registerRoute: {
@@ -33,6 +34,10 @@ const props = defineProps<{
 		email: string
 		contact_name: string
 
+	}
+	registration_settings: {
+		marketing_opt_in_label: string
+		marketing_opt_in_default: boolean
 	}
 }>()
 
@@ -54,7 +59,7 @@ const form = useForm({
 	password_confirmation: "",
 	contact_address: {},
 	poll_replies: initialPollReplies,
-	is_opt_in: false,
+	is_opt_in: props.registration_settings.marketing_opt_in_default,
 	interest: [],
     tax_number: ''
 
@@ -106,6 +111,8 @@ onMounted(async () => {
 const registrationWarning = ref({})
 provide('registrationWarning', registrationWarning)
 
+const is_agree_tnc = ref(false)
+const is_error_tnc = ref(false)
 </script>
 
 <template>
@@ -214,13 +221,24 @@ provide('registrationWarning', registrationWarning)
 								:countriesAddressData
 								:polls
 								:form
+								:requiresPhoneNumber="props.requiresPhoneNumber"
 							/>
 							
 							<!-- Opt in newsletter -->
-							<div class="flex items-center gap-2 sm:col-span-6">
-								<Checkbox v-model="form.is_opt_in" inputId="opt_in_newsletter" name="opt_in_newsletter" binary />
+							<div class="flex xitems-center gap-2 sm:col-span-6">
+								<Checkbox v-model="form.is_opt_in" inputId="opt_in_newsletter" name="opt_in_newsletter" binary class="mt-0.5" />
 								<label for="opt_in_newsletter">
-									{{ trans("Opt in to our newsletter for updates and offers.") }}
+									{{ registration_settings?.marketing_opt_in_label ?? trans("Opt in to our newsletter for updates and offers.") }}
+								</label>
+							</div>
+							
+							<!-- Opt in newsletter -->
+							<div class="flex xitems-center gap-2 sm:col-span-6" :class="is_error_tnc ? 'errorShake' : ''">
+								<Checkbox v-model="is_agree_tnc" @update:model-value="() => is_error_tnc = false" inputId="is_agree_tnc" name="is_agree_tnc" binary class="mt-0.5" />
+								<label for="is_agree_tnc">
+									<a href="/terms-and-conditions" target="_blank" class="underline">
+										{{ trans("I agree with the terms and conditions") }}
+									</a>
 								</label>
 							</div>
 						</div>
@@ -261,16 +279,19 @@ provide('registrationWarning', registrationWarning)
 							</ul>
 						</div>
 
-						<div class="flex justify-end">
+						<div class="relative flex justify-end">
 							<button
 								type="submit"
 								:disabled="isLoading"
-								class="w-full inline-flex justify-center items-center px-6 bg-black py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+								class="w-full inline-flex justify-center items-center px-6 bg-black disabled:opacity-70 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
 								<span v-if="isLoading" class="loader mr-2">
 									<LoadingIcon />
 								</span>
 								{{ trans("Register") }}
 							</button>
+							<div @click="() => !is_agree_tnc ? is_error_tnc = true : submit()" class="absolute inset-0 cursor-pointer">
+
+							</div>
 						</div>
 					</div>
 				</form>

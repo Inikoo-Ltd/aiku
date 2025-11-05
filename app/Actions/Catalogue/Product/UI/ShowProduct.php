@@ -223,11 +223,12 @@ class ShowProduct extends OrgAction
                     ]
                 ],
                 'tooltip' => __('Sub-department').': '.$product->subDepartment->name,
-                'icon'    => ['fal', 'folders']
+                'icon'    => ['fal', 'folder-download']
             ];
         }
 
         if ($product->family) {
+            $route = null;
             if ($product->subDepartment) {
                 $route = [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.sub_departments.show.family.show',
@@ -239,7 +240,7 @@ class ShowProduct extends OrgAction
                         'family'        => $product->family->slug,
                     ]
                 ];
-            } else {
+            } elseif ($product->department) {
                 $route = [
                     'name'       => 'grp.org.shops.show.catalogue.departments.show.families.show',
                     'parameters' => [
@@ -251,12 +252,16 @@ class ShowProduct extends OrgAction
                 ];
             }
 
-            $miniBreadcrumbs[] = [
-                'label'   => $product->family->name,
-                'to'      => $route,
-                'tooltip' => __('Family').': '.$product->family->name,
-                'icon'    => ['fal', 'folder']
-            ];
+            if ($route) {
+                $miniBreadcrumbs[] = [
+                    'label'   => $product->family->name,
+                    'to'      => $route,
+                    'tooltip' => __('Family').': '.$product->family->name,
+                    'icon'    => ['fal', 'folder']
+                ];
+            }
+
+
         }
 
 
@@ -372,6 +377,10 @@ class ShowProduct extends OrgAction
                 ProductTabsEnum::IMAGES->value => $this->tab == ProductTabsEnum::IMAGES->value ?
                     fn () => GetProductImagesShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductImagesShowcase::run($product)),
+
+                ProductTabsEnum::ATTACHMENTS->value => $this->tab == ProductTabsEnum::ATTACHMENTS->value ?
+                    fn () => GetProductAttachment::run($product)
+                    : Inertia::lazy(fn () => GetProductAttachment::run($product)),
 
                 ProductTabsEnum::HISTORY->value => $this->tab == ProductTabsEnum::HISTORY->value ?
                     fn () => HistoryResource::collection(IndexHistory::run($product))

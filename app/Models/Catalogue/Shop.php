@@ -37,20 +37,23 @@ use App\Models\CRM\TrafficSource;
 use App\Models\CRM\WebUser;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
-use App\Models\Discounts\OfferComponent;
+use App\Models\Discounts\OfferAllowance;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\PlatformShopSalesIntervals;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Helpers\Address;
+use App\Models\Helpers\Brand;
 use App\Models\Helpers\Country;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\InvoiceTransactionHasFeedback;
 use App\Models\Helpers\Language;
 use App\Models\Helpers\Query;
 use App\Models\Helpers\SerialReference;
+use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
 use App\Models\Helpers\Timezone;
 use App\Models\Helpers\UniversalSearch;
@@ -147,6 +150,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Appointment> $appointments
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Asset> $assets
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read LaravelCollection<int, Brand> $brands
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, CustomerClient> $clients
  * @property-read Address|null $collectionAddress
@@ -173,8 +177,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\ShopMailshotsIntervals|null $mailshotsIntervals
  * @property-read MasterShop|null $masterShop
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read LaravelCollection<int, OfferAllowance> $offerAllowances
  * @property-read LaravelCollection<int, OfferCampaign> $offerCampaigns
- * @property-read LaravelCollection<int, OfferComponent> $offerComponents
  * @property-read LaravelCollection<int, Offer> $offers
  * @property-read \App\Models\Catalogue\ShopOrderHandlingStats|null $orderHandlingStats
  * @property-read \App\Models\Catalogue\ShopOrderingIntervals|null $orderingIntervals
@@ -194,6 +198,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, PaymentAccountShop> $paymentAccountShops
  * @property-read LaravelCollection<int, Payment> $payments
  * @property-read LaravelCollection<int, Picking> $pickings
+ * @property-read LaravelCollection<int, PlatformShopSalesIntervals> $platformSalesIntervals
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopPlatformStats> $platformStats
  * @property-read LaravelCollection<int, Poll> $polls
  * @property-read LaravelCollection<int, Portfolio> $portfolios
@@ -214,6 +219,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, ShippingZone> $shippingZones
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $shopCollections
  * @property-read \App\Models\Catalogue\ShopStats|null $stats
+ * @property-read LaravelCollection<int, Tag> $tags
  * @property-read LaravelCollection<int, Task> $tasks
  * @property-read TaxNumber|null $taxNumber
  * @property-read LaravelCollection<int, \App\Models\Catalogue\ShopTimeSeries> $timeSeries
@@ -462,9 +468,9 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(Offer::class);
     }
 
-    public function offerComponents(): HasMany
+    public function offerAllowances(): HasMany
     {
-        return $this->hasMany(OfferComponent::class);
+        return $this->hasMany(OfferAllowance::class);
     }
 
     public function taxNumber(): MorphOne
@@ -531,6 +537,7 @@ class Shop extends Model implements HasMedia, Auditable
     {
         return $this->morphToMany(Collection::class, 'model', 'model_has_collections')->withTimestamps();
     }
+
 
     public function shopCollections(): HasMany
     {
@@ -703,4 +710,24 @@ class Shop extends Model implements HasMedia, Auditable
         return $this->hasMany(ShopPlatformStats::class);
     }
 
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Tag::class,
+            'model_has_tags'
+        );
+    }
+
+    public function brands(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Brand::class,
+            'model_has_brands'
+        );
+    }
+
+    public function platformSalesIntervals(): HasMany
+    {
+        return $this->hasMany(PlatformShopSalesIntervals::class);
+    }
 }

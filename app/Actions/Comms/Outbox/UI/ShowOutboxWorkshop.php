@@ -36,13 +36,17 @@ class ShowOutboxWorkshop extends OrgAction
      */
     public function handle(Outbox $outbox): Email
     {
+
+        if ($outbox->model_type === 'Mailshot') {
+            abort(404);
+        }
         if ($outbox->builder == EmailBuilderEnum::BLADE) {
             throw ValidationException::withMessages([
                 'value' => 'Builder is not supported'
             ]);
         }
 
-        return $outbox->emailOngoingRun?->email;
+        return $outbox->emailOngoingRun->email;
     }
 
     /** @noinspection PhpUnusedParameterInspection */
@@ -87,7 +91,7 @@ class ShowOutboxWorkshop extends OrgAction
         $beeFreeSettings = Arr::get($email->group->settings, 'beefree');
 
         return Inertia::render(
-            'Org/Web/Workshop/Outbox/OutboxWorkshop', //NEED VUE FILE
+            'Org/Web/Workshop/Outbox/OutboxWorkshop',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $request->route()->getName(),

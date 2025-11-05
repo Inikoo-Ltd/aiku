@@ -9,10 +9,10 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNote\Hydrators\DeliveryNoteHydrateItems;
-use App\Actions\Ordering\Order\UpdateOrderStateToHandling;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToHandling;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -25,6 +25,7 @@ use Lorisleiva\Actions\ActionRequest;
 class StartHandlingDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
     protected User $user;
 
@@ -33,6 +34,7 @@ class StartHandlingDeliveryNote extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        $oldState = $deliveryNote->state;
         if ($deliveryNote->state == DeliveryNoteStateEnum::UNASSIGNED) {
             $deliveryNote = UpdateDeliveryNoteStateToInQueue::make()->action($deliveryNote, $this->user);
         }
@@ -59,9 +61,9 @@ class StartHandlingDeliveryNote extends OrgAction
             return $deliveryNote;
         });
 
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
 
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
         return $deliveryNote;
     }
 

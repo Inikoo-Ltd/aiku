@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Log;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
@@ -25,14 +26,14 @@ class FindShopifyProductVariant
         $shopifyUser = $customerSalesChannel->user;
 
         if (!$shopifyUser) {
-            Sentry::captureMessage("Shopify user not found");
+            // Sentry::captureMessage("Shopify user not found");
             return null;
         }
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
 
         if (!$client) {
-            Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
+            // Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
             return null;
         }
 
@@ -95,7 +96,7 @@ class FindShopifyProductVariant
 
             if (!empty($response['errors']) || !isset($response['body'])) {
                 $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product search failed: channel: $customerSalesChannel->id  >".$searchValue."<   >".$searchType."<  ".$errorMessage);
+                Log::info("Product search failed: channel: $customerSalesChannel->id  >".$searchValue."<   >".$searchType."<  ".$errorMessage);
 
                 return null;
             }
@@ -128,7 +129,7 @@ class FindShopifyProductVariant
 
             return ['products' => $products];
         } catch (\Exception $e) {
-            Sentry::captureException($e);
+            // Sentry::captureException($e);
 
             return null;
         }

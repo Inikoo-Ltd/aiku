@@ -99,6 +99,7 @@ class StoreProspect extends OrgAction
 
             return $prospect;
         });
+        $prospect->refresh();
 
         ProspectRecordSearch::dispatch($prospect)->delay($this->hydratorsDelay);
         OrganisationHydrateProspects::dispatch($shop->organisation)->delay($this->hydratorsDelay);
@@ -107,7 +108,11 @@ class StoreProspect extends OrgAction
         HydrateModelTypeQueries::dispatch('Prospect')->delay($this->hydratorsDelay);
 
 
-        $prospect->refresh();
+
+        if ($prospect->shop->is_aiku) {
+            SaveProspectInAurora::dispatch($prospect);
+        }
+
 
         return $prospect;
     }

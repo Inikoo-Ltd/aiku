@@ -11,12 +11,22 @@ namespace App\Actions\Catalogue\Shop;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAdjustments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateBrands;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeletedInvoices;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotesState;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamiliesWithNoDepartment;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateMailshots;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCreatedIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderInBasketAtCustomerUpdateIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrdersDispatchedToday;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateCreating;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateFinalised;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateHandling;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateHandlingBlocked;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateInWarehouse;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStatePacked;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderStateSubmitted;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOutboxes;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProductsWithNoFamily;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateRegistrationIntervals;
@@ -33,7 +43,6 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDepartments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateFamilies;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateInvoices;
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderHandling;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrderIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOrders;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePaymentAccounts;
@@ -41,13 +50,17 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePayments;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePlatformStats;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePolls;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProducts;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateProspects;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydratePurges;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateSalesIntervals;
+use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTags;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateTopUps;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVariants;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateVisitorsIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateWebUsers;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\Catalogue\Shop;
 
 class HydrateShops
@@ -69,7 +82,8 @@ class HydrateShops
         ShopHydrateCustomerInvoices::run($shop);
         ShopHydrateOrders::run($shop);
         ShopHydratePurges::run($shop);
-        ShopHydrateDeliveryNotes::run($shop);
+        ShopHydrateDeliveryNotes::run($shop->id, DeliveryNoteTypeEnum::ORDER);
+        ShopHydrateDeliveryNotes::run($shop->id, DeliveryNoteTypeEnum::REPLACEMENT);
         ShopHydrateDepartments::run($shop);
         ShopHydrateFamilies::run($shop);
         ShopHydrateInvoices::run($shop);
@@ -88,7 +102,17 @@ class HydrateShops
         ShopHydrateRentals::run($shop);
         ShopHydrateCrmStats::run($shop);
         ShopHydrateAdjustments::run($shop);
-        ShopHydrateOrderHandling::run($shop);
+
+        ShopHydrateOrderStateCreating::run($shop->id);
+        ShopHydrateOrderStateSubmitted::run($shop->id);
+        ShopHydrateOrderStateInWarehouse::run($shop->id);
+        ShopHydrateOrderStateHandling::run($shop->id);
+        ShopHydrateOrderStateHandlingBlocked::run($shop->id);
+        ShopHydrateOrderStatePacked::run($shop->id);
+        ShopHydrateOrderStateFinalised::run($shop->id);
+        ShopHydrateOrdersDispatchedToday::run($shop->id);
+
+
         ShopHydrateDeletedInvoices::run($shop);
         ShopHydrateOrderIntervals::run($shop);
         ShopHydrateRegistrationIntervals::run($shop);
@@ -102,6 +126,14 @@ class HydrateShops
         ShopHydrateWebUsers::run($shop);
         ShopHydrateVisitorsIntervals::run($shop);
         ShopHydratePlatformStats::run($shop);
+        ShopHydrateProspects::run($shop);
+        ShopHydrateTags::run($shop);
+        ShopHydrateBrands::run($shop);
+
+        foreach (DeliveryNoteStateEnum::cases() as $case) {
+            ShopHydrateDeliveryNotesState::run($shop->id, $case);
+        }
+
     }
 
 }

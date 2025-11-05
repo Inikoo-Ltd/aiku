@@ -26,7 +26,7 @@ class PayOrderAsync extends RetinaAction
         $customer = $order->customer;
 
         if ($customer->balance >= $order->total_amount) {
-            PayRetinaOrderWithBalanceAsync::run($order);
+            PayRetinaOrderWithBalance::run($order, false);
         } else {
             foreach ($customer->mitSavedCard->sortBy('priority') as $card) {
                 if ($card->state == 'success') {

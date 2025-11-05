@@ -12,19 +12,27 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
+use App\Models\Helpers\Country;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class FetchWooUserOrders extends OrgAction
+class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
 {
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
 
+    public string $jobQueue = 'woo';
+
+    public function getJobUniqueId(WooCommerceUser $wooCommerceUser): string
+    {
+        return $wooCommerceUser->id;
+    }
 
     public string $commandSignature = 'fetch:woo-user-orders {slug}';
 
@@ -50,6 +58,24 @@ class FetchWooUserOrders extends OrgAction
         }
 
         foreach ($wooOrders as $wooOrder) {
+            if (!Arr::get($wooOrder, 'date_paid')) {
+                continue;
+            }
+
+            if (! Arr::get($wooOrder, 'shipping.country')) {
+                continue;
+            }
+
+            if ($wooCommerceUser->customerSalesChannel?->shop) {
+                $country = Country::where('code', Arr::get($wooOrder, 'shipping.country'))->first();
+
+                if ($country) {
+                    if (in_array($country->id, $wooCommerceUser->customerSalesChannel->shop->forbidden_dispatch_countries)) {
+                        continue;
+                    }
+                }
+            }
+
             if (DB::table('orders')
                 ->where('customer_id', $wooCommerceUser->customer_id)
                 ->where('platform_order_id', Arr::get($wooOrder, 'order_key'))

@@ -60,7 +60,8 @@ class IndexMasterProducts extends GrpAction
         $queryBuilder = QueryBuilder::for(MasterAsset::class);
         $queryBuilder->where('is_main', true);
         $queryBuilder->leftJoin('master_asset_stats', 'master_assets.id', '=', 'master_asset_stats.master_asset_id');
-
+        $queryBuilder->leftJoin('groups', 'master_assets.group_id', 'groups.id');
+        $queryBuilder->leftJoin('currencies', 'groups.currency_id', 'currencies.id');
 
         $queryBuilder->select(
             [
@@ -70,7 +71,10 @@ class IndexMasterProducts extends GrpAction
                 'master_assets.slug',
                 'master_assets.status',
                 'master_assets.price',
+                'master_assets.unit',
+                'master_assets.rrp',
                 'master_asset_stats.number_current_assets as used_in',
+                'currencies.code as currency_code',
             ]
         );
         if ($parent instanceof Group) {
@@ -159,7 +163,11 @@ class IndexMasterProducts extends GrpAction
 
             $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'unit', label: __('unit'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'rrp', label: __('rrp'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current products with this master'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'actions', label: __('actions'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('code');
         };
     }
@@ -264,6 +272,7 @@ class IndexMasterProducts extends GrpAction
                 ],
                 'data'        => MasterProductsResource::collection($masterAssets),
                 'masterProductCategory' => $this->parent->id,
+                'editable_table' => true,
                 'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($this->masterShop, 'shops')),
 
             ]

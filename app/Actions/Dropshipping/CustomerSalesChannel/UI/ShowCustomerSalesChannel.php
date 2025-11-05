@@ -11,10 +11,12 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\UI;
 
 use App\Actions\CRM\Customer\UI\ShowCustomer;
 use App\Actions\CRM\Platform\UI\ShowPlatform;
+use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithCRMAuthorisation;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Enums\UI\CRM\CustomerPlatformTabsEnum;
+use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -91,21 +93,20 @@ class ShowCustomerSalesChannel extends OrgAction
                     'navigation' => $navigation
                 ],
 
-                'platform'               => $customerSalesChannel->platform,
-                'customer_sales_channel' => $customerSalesChannel,
-                'platform_user'          => $customerSalesChannel->user,
-
-
                 'showcase' => [
                     'stats' => [
                         'name'                    => $name,
                         'number_orders'           => $customerSalesChannel->number_orders,
                         'number_customer_clients' => $customerSalesChannel->number_customer_clients,
-                        'number_portfolios'       => $customerSalesChannel->number_portfolios
-                    ]
-                ]
+                        'number_portfolios'       => $customerSalesChannel->number_portfolios,
+                    ],
+                    'platform'               => $customerSalesChannel->platform,
+                    'customer_sales_channel' => $customerSalesChannel,
+                    'platform_user'          => $customerSalesChannel->user,
+                ],
+                'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($customerSalesChannel))
             ]
-        );
+        )->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));
     }
 
     public function getBreadcrumbs(CustomerSalesChannel $customerSalesChannel, string $routeName, array $routeParameters): array

@@ -281,6 +281,30 @@ class Webpage extends Model implements Auditable, HasMedia
         };
     }
 
+    public function getCanonicalUrl(): ?string
+    {
+
+        $url = $this->canonical_url;
+        $environment = app()->environment();
+
+
+        if ($environment == 'local') {
+            $localDomain = match (request()->website->shop->type) {
+                ShopTypeEnum::FULFILMENT => 'fulfilment.test',
+                ShopTypeEnum::DROPSHIPPING => 'ds.test',
+                default => 'ecom.test'
+            };
+
+
+            return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain), '');
+        } elseif ($environment == 'staging') {
+            return replaceUrlSubdomain($url, 'canary');
+        }
+
+
+        return $url;
+    }
+
     public function externalLinks()
     {
         return $this->belongsToMany(ExternalLink::class, 'web_block_has_external_link')

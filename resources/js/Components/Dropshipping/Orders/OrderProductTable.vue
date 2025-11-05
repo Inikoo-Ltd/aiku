@@ -15,6 +15,7 @@ import { debounce, includes } from 'lodash-es'
 import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import { ulid } from 'ulid'
+import Image from "@/Components/Image.vue"
 
 type ProductRow = {
   id: number
@@ -277,11 +278,20 @@ defineExpose({
         </div>
       </template> -->
 
+      <template #cell(image)="{ item }">
+         <!-- <pre>{{ item }}</pre> -->
+          <Image :src="item.image?.thumbnail" class="h-[50px] aspect-square" />
+      </template>
+
       <!-- Column: Code -->
       <template #cell(asset_code)="{ item }">
-        <Link :href="productRoute(item)" class="primaryLink">
-        {{ item.asset_code }}
+        <Link v-if="productRoute(item)" :href="productRoute(item)" class="primaryLink">
+          {{ item.asset_code }}
         </Link>
+
+        <div v-else>
+          {{ item.asset_code }}
+        </div>
       </template>
 
       <!-- Column: Name / Stock -->

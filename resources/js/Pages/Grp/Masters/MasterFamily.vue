@@ -12,11 +12,12 @@ import {
     faUser,
     faBrowser,
     faPlus, faMinus,
+    faUpload,
 } from "@fal"
 import { faExclamationTriangle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, defineAsyncComponent, inject, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
@@ -34,6 +35,8 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import TableFamilies from "@/Components/Tables/Grp/Org/Catalogue/TableFamilies.vue"
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from 'primevue/breadcrumb'
+import { create } from "lodash"
+import UploadExcel from "@/Components/Upload/UploadExcel.vue"
 
 library.add(
     faFolder,
@@ -70,9 +73,9 @@ const props = defineProps<{
     images?:object
     mini_breadcrumbs?: any[]
 }>()
-
+const layout = inject("layout")
 const currentTab = ref(props.tabs.current)
-
+const isModalUploadOpen = ref(false)
 
 const handleTabUpdate = (tabSlug: string) => {
     useTabChange(tabSlug, currentTab)
@@ -115,6 +118,17 @@ const showDialog = ref(false);
             </Link>
             </div>
         </template>
+
+        <template #other>
+			<Button
+                v-if="layout?.app?.environment === 'local'"
+				@click="() => (isModalUploadOpen = true)"
+				:style="create"
+				:icon="faUpload"
+				v-tooltip="'upload excel'" 
+                label="Upload Excel"
+            />
+		</template>
     </PageHeading>
 
     <Message v-if="is_orphan" severity="warn" class="m-4 mb-2">
@@ -124,18 +138,21 @@ const showDialog = ref(false);
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
 
-    <div v-if="mini_breadcrumbs.length != 0" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+     <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
      <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
                     <!-- Breadcrumb link or text -->
-                    <component :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
+                    <span v-if="!item.to">
+                        {{ item.label || '-' }}
+                    </span>
+                    <component v-else :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
                         :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
                         <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
-                        <span class="truncate max-w-[150px] md:max-w-full">{{ item.label || '-' }}</span>
+                        <span class="">{{ item.label || '-' }}</span>
                     </component>
                 </div>
             </template>
@@ -152,6 +169,17 @@ const showDialog = ref(false);
         :shopsData="shopsData"
         :masterProductCategory="masterProductCategory"
     />
+
+
+    <UploadExcel
+		v-model="isModalUploadOpen"
+		scope="Pallet delivery"
+		:title="{
+			label: 'Upload your excel file',
+			information: `The list of column file:`,
+		}"
+		progressDescription="Adding Pallet Deliveries"
+		:additionalDataToSend="undefined" />
 
 </template>
 

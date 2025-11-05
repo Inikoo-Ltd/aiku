@@ -12,7 +12,7 @@ use App\Models\Catalogue\Asset;
 use App\Models\Catalogue\HistoricAsset;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
-use App\Models\Discounts\OfferComponent;
+use App\Models\Discounts\OfferAllowance;
 use App\Models\Fulfilment\RecurringBillTransaction;
 use App\Models\Helpers\Currency;
 use App\Models\Helpers\InvoiceTransactionHasFeedback;
@@ -75,8 +75,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Model|\Eloquent $item
  * @property-read Model|\Eloquent|null $model
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Offer> $offer
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferAllowance> $offerAllowances
  * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferCampaign> $offerCampaign
- * @property-read \Illuminate\Database\Eloquent\Collection<int, OfferComponent> $offerComponents
  * @property-read Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read RecurringBillTransaction|null $recurringBillTransaction
@@ -164,17 +164,17 @@ class InvoiceTransaction extends Model
 
     public function offerCampaign(): BelongsToMany
     {
-        return $this->belongsToMany(OfferCampaign::class, 'invoice_transaction_has_offer_components');
+        return $this->belongsToMany(OfferCampaign::class, 'invoice_transaction_has_offer_allowances');
     }
 
     public function offer(): BelongsToMany
     {
-        return $this->belongsToMany(Offer::class, 'invoice_transaction_has_offer_components');
+        return $this->belongsToMany(Offer::class, 'invoice_transaction_has_offer_allowances');
     }
 
-    public function offerComponents(): BelongsToMany
+    public function offerAllowances(): BelongsToMany
     {
-        return $this->belongsToMany(OfferComponent::class, 'invoice_transaction_has_offer_components');
+        return $this->belongsToMany(OfferAllowance::class, 'invoice_transaction_has_offer_allowances');
     }
 
     public function transactionRefunds(): HasMany

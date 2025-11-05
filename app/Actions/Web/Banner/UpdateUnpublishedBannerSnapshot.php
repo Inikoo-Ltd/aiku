@@ -38,6 +38,15 @@ class UpdateUnpublishedBannerSnapshot extends OrgAction
 
 
         if ($slides) {
+            $existingSlides = Slide::where('snapshot_id', $snapshot->id)->get()->pluck('ulid')->toArray();
+            $newSlideUlids = array_keys($slides);
+
+            foreach ($existingSlides as $ulid) {
+                if (!in_array($ulid, $newSlideUlids)) {
+                    Slide::where('ulid', $ulid)->where('snapshot_id', $snapshot->id)->delete();
+                }
+            }
+
             foreach ($slides as $ulid => $slideData) {
                 $slide = Slide::where('ulid', $ulid)->first();
                 if ($slide) {

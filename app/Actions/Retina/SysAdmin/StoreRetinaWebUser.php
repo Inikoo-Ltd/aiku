@@ -30,7 +30,6 @@ class StoreRetinaWebUser extends RetinaAction
 {
     use WithNoStrictRules;
 
-    protected Customer $customer;
     protected Customer|FulfilmentCustomer $parent;
     private bool $action = false;
 

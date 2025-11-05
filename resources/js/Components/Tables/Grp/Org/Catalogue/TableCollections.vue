@@ -28,7 +28,7 @@ import SelectQuery from "@/Components/SelectQuery.vue"
 
 library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree)
 
-defineProps<{
+const props = defineProps<{
     data: {}
     tab?: string
     routes: {
@@ -263,6 +263,13 @@ const SetOffline = () => {
     )
 }
 
+const getRouteCollection = (url_master: any) => {
+    if(url_master && url_master.name){
+        return String(route(url_master.name, url_master.parameters));
+    }
+    return '#'
+}
+
 
 const SetOnline = () => {
     if (!selectedCollection.value) return
@@ -332,6 +339,14 @@ function handleUrlChange(e: string | null) {
         </template>
         <template #cell(code)="{ item: collection }">
             <div class="flex items-center gap-2">
+                <Link
+                    :href="getRouteCollection(collection.url_master)"
+                    v-tooltip="trans('Go to Master collections')"
+                    class="-mr-1.5"
+                    :class="[collection.master_collection_id ? 'opacity-70 hover:opacity-100' : 'opacity-0']">
+                    <FontAwesomeIcon icon="fab fa-octopus-deploy" color="#4B0082" fixed-width />
+                </Link>
+
                 <Link :href="collectionRoute(collection) as string" class="primaryLink">
                     {{ collection["code"] }}
                 </Link>
@@ -396,7 +411,7 @@ function handleUrlChange(e: string | null) {
 
         <template #cell(actions)="{ item }">
             <div class="flex gap-x-2 gap-y-2">
-                <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed' || item.state == 'inactive' || item.state == 'in_process'">
+               <!--  <div v-if="!item.webpage_state && item.webpage_state != 'live' && item.webpage_state != 'closed' || item.state == 'inactive' || item.state == 'in_process'">
                     <Link v-if="item.route_delete_collection " as="button"
                           :href="route(item.route_delete_collection.name, item.route_delete_collection.parameters)"
                           :method="item.route_delete_collection.method" preserve-scroll
@@ -405,7 +420,7 @@ function handleUrlChange(e: string | null) {
                         <Button :icon="faTrashAlt" type="negative" size="xs" v-tooltip="'Delete collection'"
                                 :loading="isLoadingDetach.includes('detach' + item.id)" />
                     </Link>
-                </div>
+                </div> -->
                 <ConfirmPopup>
                     <template #icon>
                         <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />

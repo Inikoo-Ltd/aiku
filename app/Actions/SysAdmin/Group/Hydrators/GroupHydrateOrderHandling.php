@@ -18,6 +18,7 @@ use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
+//todo delete
 class GroupHydrateOrderHandling implements ShouldBeUnique
 {
     use AsAction;
@@ -26,33 +27,18 @@ class GroupHydrateOrderHandling implements ShouldBeUnique
 
     public string $jobQueue = 'sales';
 
-    public function getJobUniqueId(Group $group): string
+    public function getJobUniqueId(int $groupID): string
     {
-        return $group->id;
+        return $groupID;
     }
 
-    public function handle(Group $group): void
+    public function handle(int $groupID): void
     {
+        $group = Group::find($groupID);
+        if (!$group) {
+            return;
+        }
         $stats = [
-            'number_orders_state_creating'                      => $group->orders()->where('state', OrderStateEnum::CREATING)->count(),
-            'orders_state_creating_amount_grp_currency'         => $group->orders()->where('state', OrderStateEnum::CREATING)->sum('grp_net_amount'),
-
-            'number_orders_state_submitted'                     => $group->orders()->where('state', OrderStateEnum::SUBMITTED)->count(),
-            'orders_state_submitted_amount_grp_currency'        => $group->orders()->where('state', OrderStateEnum::SUBMITTED)->sum('grp_net_amount'),
-
-            'number_orders_state_submitted_paid'                => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
-                                                                                        ->whereColumn('payment_amount', '>=', 'total_amount')
-                                                                                        ->count(),
-            'orders_state_submitted_paid_amount_grp_currency'   => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
-                                                                                        ->whereColumn('payment_amount', '>=', 'total_amount')
-                                                                                        ->sum('grp_net_amount'),
-
-            'number_orders_state_submitted_not_paid'                => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
-                                                                                            ->where('payment_amount', 0)
-                                                                                            ->count(),
-            'orders_state_submitted_not_paid_amount_grp_currency'   => $group->orders()->where('state', OrderStateEnum::SUBMITTED)
-                                                                                            ->where('payment_amount', 0)
-                                                                                            ->sum('grp_net_amount'),
 
             'number_orders_state_in_warehouse'                 => $group->orders()->where('state', OrderStateEnum::IN_WAREHOUSE)->count(),
             'orders_state_in_warehouse_amount_grp_currency'    => $group->orders()->where('state', OrderStateEnum::IN_WAREHOUSE)->sum('grp_net_amount'),

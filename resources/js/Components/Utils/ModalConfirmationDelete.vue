@@ -181,7 +181,7 @@ const messageDelete = ref('')
                                             <Button
                                                 type="tertiary"
                                                 icccon="far fa-arrow-left"
-                                                :label="cancelLabel ?? trans('cancel')"
+                                                :label="cancelLabel ?? trans('Cancel')"
                                                 full
                                                 @click="() => (isOpenModal = false, emits('onNo'))"
                                             />

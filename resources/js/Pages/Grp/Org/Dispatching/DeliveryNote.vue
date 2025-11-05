@@ -49,7 +49,6 @@ import { trans } from "laravel-vue-i18n";
 import PureMultiselectInfiniteScroll from "@/Components/Pure/PureMultiselectInfiniteScroll.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { notify } from "@kyvg/vue3-notification";
-import axios from "axios";
 import { get, debounce } from 'lodash-es';
 import PureInput from "@/Components/Pure/PureInput.vue";
 import ToggleSwitch from 'primevue/toggleswitch';
@@ -182,23 +181,7 @@ const isLoadingData = ref<string | boolean>(false);
 const formTrackingNumber = useForm({shipping_id: "", tracking_number: ""});
 const isModalShipment = ref(false);
 const optionShippingList = ref([]);
-// const onOpenModalTrackingNumber = async () => {
-//     isLoadingData.value = "addTrackingNumber";
-//     try {
-//         const xxx = await axios.get(
-//             route(props.shipments.fetch_route.name, props.shipments.fetch_route.parameters)
-//         );
-//         optionShippingList.value = xxx?.data?.data || [];
-//     } catch (error) {
-//         console.error(error);
-//         notify({
-//             title: trans("Something went wrong."),
-//             text: trans("Failed to retrieve shipper list"),
-//             type: "error"
-//         });
-//     }
-//     isLoadingData.value = false;
-// };
+
 const onSubmitShipment = () => {
     formTrackingNumber
         .transform((data) => ({

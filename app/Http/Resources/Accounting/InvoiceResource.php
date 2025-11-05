@@ -21,18 +21,20 @@ class InvoiceResource extends JsonResource
         /** @var Invoice $invoice */
         $invoice = $this;
 
+        $timeZone = $invoice->shop->timezone->name;
+
         return [
             'slug'                => $invoice->slug,
             'reference'           => $invoice->reference,
             'total_amount'        => $invoice->total_amount,
             'net_amount'          => $invoice->net_amount,
-            'date'                => $invoice->date,
+            'date'                => $invoice->date?->copy()->setTimezone($timeZone)->toDateString(),
             'type'                => [
                 'label' => $invoice->type->labels()[$invoice->type->value],
                 'icon'  => $invoice->type->typeIcon()[$invoice->type->value],
             ],
-            'tax_liability_at'    => $invoice->tax_liability_at,
-            'paid_at'             => $invoice->paid_at,
+            'tax_liability_at'    => $invoice->tax_liability_at?->copy()->setTimezone($timeZone)->toISOString(),
+            'paid_at'             => $invoice->paid_at?->copy()->setTimezone($timeZone)->toISOString(),
             'in_process'          => $invoice->in_process,
             'created_at'          => $invoice->created_at,
             'updated_at'          => $invoice->updated_at,

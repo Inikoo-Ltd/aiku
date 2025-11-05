@@ -9,13 +9,13 @@ import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { Product } from "@/types/product"
 import Icon from "@/Components/Icon.vue"
-import { remove as loRemove } from "lodash-es"
+import { remove as loRemove, cloneDeep} from "lodash-es"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faConciergeBell, faGarage, faExclamationTriangle, faPencil, faMinus } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { routeType } from "@/types/route"
 import Button from "@/Components/Elements/Buttons/Button.vue"
-import { onMounted, onUnmounted, ref, inject } from "vue"
+import { onMounted, onUnmounted, ref, inject, shallowRef  } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Invoice } from "@/types/invoice"
@@ -47,12 +47,13 @@ const emits = defineEmits<{
     (e: "selectedRow", value: {}): void
 }>()
 
-const editingValues = ref<Record<number, { price: number; rrp: number }>>({})
+const editingValues = shallowRef<Record<number, { price: number; rrp: number, unit : string }>>({})
 const editingBackup = ref<Record<number, any>>({})
 const onEditOpen = ref<number[]>([])
 const loadingSave = ref([])
 
-function onEdit(item) {
+function onEdit(data) {
+    const item = cloneDeep(data)
     // backup original values
     editingBackup.value[item.id] = { ...item }
 
@@ -60,7 +61,7 @@ function onEdit(item) {
     editingValues.value[item.id] = {
         price: item.price,
         rrp: item.rrp,
-        unit : item.unit
+        unit: item.unit
     }
 
     if (!onEditOpen.value.includes(item.id)) {
@@ -78,7 +79,7 @@ function onSave(item) {
         {
             price: updated.price,
             rrp: updated.rrp,
-            unit : updated.unit
+            unit: updated.unit
         },
         {
             preserveScroll: true,
@@ -340,13 +341,22 @@ onUnmounted(() => {
 })
 
 const locale = inject("locale", aikuLocaleStructure)
+const _table = ref<InstanceType<typeof Table> | null>(null)
+
+
+onMounted(() => {
+    if (_table.value) {
+        _table.value.selectRow['113836'] = true
+        console.log(_table.value.selectRow)
+    }
+})
 
 
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="isCheckboxProducts"
-        @onSelectRow="(item) => emits('selectedRow', item)">
+        @onSelectRow="(item) => emits('selectedRow', item)" key="product-table" ref="_table">
         <template #cell(organisation_code)="{ item: refund }">
             <Link v-tooltip='refund["organisation_name"]' :href="organisationRoute(refund)" class="secondaryLink">
             {{ refund["organisation_code"] }}
@@ -356,51 +366,47 @@ const locale = inject("locale", aikuLocaleStructure)
             <Icon :data="product.state"></Icon>
         </template>
 
-         <template #cell(unit)="{ item: product }">
-            <div class="w-1/2">
-                <PureInput v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].unit" ></PureInput>
-                <span v-else>{{product.unit}}</span>
-            </div>
+        <template #cell(unit)="{ item: product }"> 
+                <PureInput v-if="onEditOpen.includes(product.id)" :key="product.id" v-model="editingValues[product.id].unit"></PureInput>
+                <span v-else>{{ product.unit }}</span>
         </template>
 
         <template #cell(price)="{ item: product }">
-            <div class="w-1/2">
+            <div>
                 <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].price"
-                mode="currency" :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal"
-                inputClass="w-full text-xs">
-                <template #incrementbuttonicon>
-                    <FontAwesomeIcon :icon="faPlus" />
-                </template>
-                <template #decrementbuttonicon>
-                    <FontAwesomeIcon :icon="faMinus" />
-                </template>
-            </InputNumber>
-            <span v-else>
-                {{ locale.currencyFormat(product.currency_code, product.price) }}
-            </span>
-
+                    mode="currency" :currency="product.currency_code" :step="0.25" showButtons
+                    button-layout="horizontal" inputClass="w-full text-xs">
+                    <template #incrementbuttonicon>
+                        <FontAwesomeIcon :icon="faPlus" />
+                    </template>
+                    <template #decrementbuttonicon>
+                        <FontAwesomeIcon :icon="faMinus" />
+                    </template>
+                </InputNumber>
+                <span v-else>
+                    {{ locale.currencyFormat(product.currency_code, product.price) }}
+                </span>
             </div>
-            
         </template>
 
 
         <template #cell(rrp)="{ item: product }">
-            <div class="w-1/2">
-                <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].rrp" mode="currency"
-                :currency="product.currency_code" :step="0.25" showButtons button-layout="horizontal" 
-                inputClass="w-full text-xs">
-                <template #incrementbuttonicon>
-                    <FontAwesomeIcon :icon="faPlus" />
-                </template>
-                <template #decrementbuttonicon>
-                    <FontAwesomeIcon :icon="faMinus" />
-                </template>
-            </InputNumber>
+            <div>
+                <InputNumber v-if="onEditOpen.includes(product.id)" v-model="editingValues[product.id].rrp"
+                    mode="currency" :currency="product.currency_code" :step="0.25" showButtons
+                    button-layout="horizontal" inputClass="w-full text-xs">
+                    <template #incrementbuttonicon>
+                        <FontAwesomeIcon :icon="faPlus" />
+                    </template>
+                    <template #decrementbuttonicon>
+                        <FontAwesomeIcon :icon="faMinus" />
+                    </template>
+                </InputNumber>
 
-            <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
+                <span v-else>{{ locale.currencyFormat(product.currency_code, product.rrp) }}</span>
 
             </div>
-            
+
         </template>
 
 
@@ -461,17 +467,17 @@ const locale = inject("locale", aikuLocaleStructure)
             </Link>
 
             <div v-if="master || editable_table">
-                <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="onEdit(item)">
+                <button v-if="!onEditOpen.includes(item.id)" class="h-9 align-bottom text-center" @click="()=>onEdit(item)">
                     <FontAwesomeIcon icon="fal fa-pencil" class="h-5 text-gray-500 hover:text-gray-700"
                         aria-hidden="true" v-tooltip="'edit'" />
                 </button>
 
                 <span v-else class="flex items-center space-x-3">
-                    <Button type="negative" v-tooltip="'cancel'" :icon="faXmark" @click="onCancel(item)" size="sm">
+                    <Button type="negative" v-tooltip="'cancel'" :icon="faXmark" @click="()=>onCancel(item)" size="sm">
                     </Button>
 
                     <button class="h-9 align-bottom text-center" :disabled="loadingSave.includes(item.id)"
-                        @click="onSave(item)" v-tooltip="'save'">
+                        @click="()=>onSave(item)" v-tooltip="'save'">
                         <FontAwesomeIcon v-if="loadingSave.includes(item.id)" icon="fad fa-spinner-third"
                             class="text-2xl animate-spin" fixed-width aria-hidden="true" />
 

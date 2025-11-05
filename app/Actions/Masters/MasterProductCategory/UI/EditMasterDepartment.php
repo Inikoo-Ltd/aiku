@@ -83,22 +83,31 @@ class EditMasterDepartment extends OrgAction
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $masterProductCategory->name
                                 ],
                                 'description_title' => [
                                     'type'  => 'input',
-                                    'label' => __('description title'),
+                                    'label' => __('Description title'),
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
                                     'value' => $masterProductCategory->description_title
                                 ],
                                 'description' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description'),
+                                    'label' => __('Description'),
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
                                     'value' => $masterProductCategory->description
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
                                     'label' => __('Extra description'),
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
                                     'value' => $masterProductCategory->description_extra
                                 ],
                             ]

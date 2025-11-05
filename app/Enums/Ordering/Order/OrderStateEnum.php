@@ -60,7 +60,7 @@ enum OrderStateEnum: string
             ],
             'submitted'        => [
                 'tooltip' => __('Submitted'),
-                'icon'    => 'fal fa-paper-plane',
+                'icon'    => 'fal fa-inbox-in',
                 'class'   => 'text-indigo-400',
                 'color'   => 'indigo',
                 'app'     => [
@@ -80,7 +80,7 @@ enum OrderStateEnum: string
             ],
             'handling'         => [
                 'tooltip' => __('Handling'),
-                'icon'    => 'fal fa-hands-helping',
+                'icon'    => 'fal fa-apple-crate',
                 'class'   => 'text-gray-500',
                 'color'   => 'slate',
                 'app'     => [
@@ -90,11 +90,11 @@ enum OrderStateEnum: string
             ],
             'handling_blocked' => [
                 'tooltip' => __('Handling Blocked'),
-                'icon'    => 'fal fa-hands-helping',
-                'class'   => 'text-gray-500',
+                'icon'    => 'fal fa-ban',
+                'class'   => 'text-red-500',
                 'color'   => 'slate',
                 'app'     => [
-                    'name' => 'times',
+                    'name' => 'ban',
                     'type' => 'font-awesome-5'
                 ]
             ],
@@ -120,7 +120,7 @@ enum OrderStateEnum: string
             ],
             'dispatched'       => [
                 'tooltip' => __('Dispatched'),
-                'icon'    => 'fal fa-shipping-fast',
+                'icon'    => 'fal fa-paper-plane',
                 'class'   => 'text-gray-500',
                 'color'   => 'purple',
                 'app'     => [

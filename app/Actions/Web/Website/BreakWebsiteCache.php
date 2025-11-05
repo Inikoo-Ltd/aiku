@@ -11,6 +11,7 @@ namespace App\Actions\Web\Website;
 use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Models\Web\Website;
+use Illuminate\Console\Command;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Lorisleiva\Actions\ActionRequest;
@@ -25,6 +26,10 @@ class BreakWebsiteCache extends OrgAction
         ClearCacheByWildcard::run(config('iris.cache.webpage_path.prefix').'_'.$website->id.'_*');
         ClearCacheByWildcard::run(config('iris.cache.webpage.prefix').'_'.$website->id.'_*');
 
+
+        BreakWebsiteVarnishCache::run($website);
+
+
         return $website;
     }
 
@@ -38,6 +43,19 @@ class BreakWebsiteCache extends OrgAction
     public function htmlResponse(): RedirectResponse
     {
         return back();
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'website:break_cache {slug}';
+    }
+
+    public function asCommand(Command $command): int
+    {
+        $website = Website::where('slug', $command->argument('slug'))->first();
+        $this->handle($website);
+
+        return 0;
     }
 
 }

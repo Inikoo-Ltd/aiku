@@ -671,7 +671,7 @@ const selectRow: {[key: string]: boolean} = reactive({...props.selectedRow})
 
 // To preserve the object selectRow
 if (props.isCheckBox) {
-    for(const row in props.resource.data){
+    for(const row in props?.resource?.data){
         if(props.resource.data[row][props.checkboxKey]) {
             selectRow[props.resource.data[row][props.checkboxKey]] = selectRow[props.resource.data[row][props.checkboxKey]] ? true : false
         }
@@ -706,7 +706,7 @@ watch(selectRow, () => {
 }, {deep: true})
 
 defineExpose({
-    data : props.resource.data,
+    data : props?.resource?.data,
     queryBuilderData : queryBuilderData,
     selectRow : selectRow,
     compResourceData : compResourceData.value
@@ -974,7 +974,6 @@ const isLoading = ref<string | boolean>(false)
 
                                                 <slot v-if="disabledCheckbox(item)" :name="`disable-checkbox`">
                                                     <FontAwesomeIcon v-if="disabledCheckbox(item)"
-                                                        xclick="async () => (setLodash(item, ['is_checked'], !item.is_checked), emits('onChecked', item))"
                                                         icon="fal fa-minus-square"
                                                         class='text-gray-400 p-2 cursor-not-allowed text-lg mx-auto block'
                                                         fixed-width aria-hidden='true' />

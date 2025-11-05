@@ -92,7 +92,7 @@ class EditStoredItem extends OrgAction
                                 'name' => [
                                     'type'    => 'input',
                                     'label'   => __('name'),
-                                    'placeholder'   => __('Customer\'s SKU name'),
+                                    'placeholder'   => __("Customer's SKU name"),
                                     'value'   => $storedItem->name,
                                     // 'required' => true
                                 ],

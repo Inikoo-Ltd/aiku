@@ -8,6 +8,7 @@
 
 namespace App\Actions\Retina\Dropshipping\CustomerSalesChannel;
 
+use App\Actions\Dropshipping\Ebay\AuthorizeRetinaEbayUser;
 use App\Actions\Dropshipping\Magento\ReAuthorizeMagentoUser;
 use App\Actions\Dropshipping\WooCommerce\ReAuthorizeRetinaWooCommerceUser;
 use App\Actions\RetinaAction;
@@ -34,6 +35,7 @@ class ReconnectRetinaCustomerSalesChannel extends RetinaAction
             ]),
             PlatformTypeEnum::WOOCOMMERCE => ReAuthorizeRetinaWooCommerceUser::run($platformUser),
             PlatformTypeEnum::MAGENTO => ReAuthorizeMagentoUser::run($platformUser),
+            PlatformTypeEnum::EBAY => AuthorizeRetinaEbayUser::run(),
             default => null
         };
     }

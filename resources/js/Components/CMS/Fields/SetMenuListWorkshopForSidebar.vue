@@ -6,7 +6,7 @@ import EditMode from "../Website/Menus/EditMode/EditMode.vue";
 import { notify } from "@kyvg/vue3-notification";
 import { routeType } from "@/types/route";
 import axios from "axios";
-import { debounce } from "lodash-es"
+import { debounce, get } from "lodash-es"
 import { ulid } from "ulid";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -17,6 +17,7 @@ import { faExclamationTriangle } from "@far";
 import { trans } from "laravel-vue-i18n"
 import InformationIcon from "@/Components/Utils/InformationIcon.vue"
 import { set } from "lodash-es";
+import UploadImage from "@/Components/Pure/UploadImage.vue"
 
 const props = defineProps<{
     data: {
@@ -29,6 +30,7 @@ const props = defineProps<{
         }
     }
     autosaveRoute: routeType
+    uploadImageRoute: routeType
 }>()
 console.log('-- Menu list props.data', props.data)
 
@@ -36,11 +38,11 @@ const emits = defineEmits<{
     (e: 'auto-save'): void
 }>()
 
-const confirm = useConfirm()
+// const confirm = useConfirm()
 const visibleDrawer = ref(false);
 const selectedMenu = ref(0)
 const selectedArea = ref<'top' | 'bottom'>('top')
-const deleteButtonRefs = ref<HTMLElement[]>([]);
+// const deleteButtonRefs = ref<HTMLElement[]>([]);
 
 // Initialize arrays if they don't exist
 if (!props.data && !props.data?.data?.fieldValue?.navigation) {
@@ -60,13 +62,13 @@ if (!props.data && !props.data?.data?.fieldValue?.navigation_bottom) {
 //     ];
 // });
 
-const allowMove = (evt: any) => {
-    // Allow move if drag handle is used OR if we're moving to empty area
-    const isDragHandle = evt.originalEvent?.target?.closest('.drag-handle') !== null;
-    const isEmptyTarget = evt.to && evt.to.children.length === 0;
+// const allowMove = (evt: any) => {
+//     // Allow move if drag handle is used OR if we're moving to empty area
+//     const isDragHandle = evt.originalEvent?.target?.closest('.drag-handle') !== null;
+//     const isEmptyTarget = evt.to && evt.to.children.length === 0;
 
-    return isDragHandle || isEmptyTarget;
-}
+//     return isDragHandle || isEmptyTarget;
+// }
 
 const SetMenuActive = (item: any, isTop: boolean) => {
     const area = isTop ? 'top' : 'bottom';
@@ -160,9 +162,28 @@ const autoSave = async (event?) => {
 </script>
 
 <template>
+    <!-- Section: upload logo -->
+    <div class="my-4">
+        <div class="text-base font-medium mb-2">
+            {{ trans("Logo") }}
+            <InformationIcon :information="trans('The logo will only apply for sidebar. If logo is not provided, Sidebar will use main logo.')" />
+        </div>
+
+        <UploadImage
+            :modelValue="get(data, ['data', 'fieldValue', 'sidebar_logo'], null)"
+            :upload-routes="uploadImageRoute"
+            @update:modelValue="(value) => {
+                set(data, ['data', 'fieldValue', 'sidebar_logo'], value),
+                autoSave()
+            }"
+        />
+    </div>
+
     <!-- Top Navigation Area -->
-    <div class="mb-4">
-        <div class="text-sm font-medium text-gray-600 mb-2 px-2">Top Custom Menu</div>
+    <div class="my-4">
+        <div class="text-base font-medium mb-2">
+            {{ trans("Top Custom Menu") }}
+        </div>
         <div class="mb-3">
             <Button :label="'Add Top Navigation'" type="create" :size="'xs'" @click="() => addNavigation('top')" />
         </div>
@@ -198,8 +219,8 @@ const autoSave = async (event?) => {
             </template>
             <template #fallback>
                 <div class="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                    <div class="text-sm">Drop top navigation items here</div>
-                    <div class="text-xs mt-1">or click "Add Top Navigation" to create new item</div>
+                    <div class="text-sm">{{ trans("Drop top navigation items here") }}</div>
+                    <div class="text-xs mt-1">{{ trans("or click \"Add Top Navigation\" to create new item") }}</div>
                 </div>
             </template>
         </draggable>
@@ -208,16 +229,15 @@ const autoSave = async (event?) => {
     <!-- Static Menu Separator -->
     <div class="flex items-center my-6">
         <!-- <div class="flex-grow border-t border-gray-300"></div> -->
-        <div class="px-8 py-5 bg-gray-200 w-full text-center text-gray-600 font-medium text-sm border border-gray-300 rounded">
+        <div class="px-8 py-5 bg-gray-200 w-full text-center text-gray-600 font-medium text-sm border border-dashed border-gray-400 rounded">
             {{ trans("Area reserved by system") }}
             <InformationIcon :information="trans('Automatically showed Departments list')" />
         </div>
-        <!-- <div class="flex-grow border-t border-gray-300"></div> -->
     </div>
 
     <!-- Bottom Navigation Area -->
     <div class="mb-4">
-        <div class="text-sm font-medium text-gray-600 mb-2 px-2">Bottom Custom Menu</div>
+        <div class="text-base font-medium mb-2">{{ trans("Bottom Custom Menu") }}</div>
         <div class="mb-3">
             <Button :label="'Add Bottom Navigation'" type="create" :size="'xs'"
                 @click="() => addNavigation('bottom')" />
@@ -254,8 +274,8 @@ const autoSave = async (event?) => {
             </template>
             <template #fallback>
                 <div class="text-center text-gray-400 py-8 border-2 border-dashed border-gray-300 rounded-lg">
-                    <div class="text-sm">Drop bottom navigation items here</div>
-                    <div class="text-xs mt-1">or click "Add Bottom Navigation" to create new item</div>
+                    <div class="text-sm">{{ trans("Drop bottom navigation items here") }}</div>
+                    <div class="text-xs mt-1">{{ trans("or click \"Add Bottom Navigation\" to create new item") }}</div>
                 </div>
             </template>
         </draggable>

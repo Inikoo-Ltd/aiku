@@ -60,7 +60,7 @@ class EditOrganisationSettings extends OrgAction
                 "formData" => [
                     "blueprint" => [
                         [
-                            "label"  => __("details"),
+                            "label"  => __("Details"),
                             "icon"   => "fa-light fa-fingerprint",
                             "fields" => [
                                 "name" => [
@@ -94,7 +94,7 @@ class EditOrganisationSettings extends OrgAction
                             ],
                         ],
                         [
-                            "label"  => __("branding"),
+                            "label"  => __("Branding"),
                             "icon"   => "fa-light fa-copyright",
                             "fields" => [
                                 "ui_name" => [
@@ -110,10 +110,14 @@ class EditOrganisationSettings extends OrgAction
                             ],
                         ],
                         [
-                            "label"  => __("Invoice formats"),
+                            "label"  => __("Invoicing"),
                             "icon"   => "fa-light fa-file-invoice",
                             "fields" => [
-
+                                'show_tax_liability_date' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Show tax liability date'),
+                                    'value' => Arr::get($organisation->settings, 'invoicing.show_tax_liability_date', false),
+                                ],
                                 'attach_isdoc_to_pdf' => [
                                     'type'  => 'toggle',
                                     'label' => __('Attach ISDoc to PDF'),

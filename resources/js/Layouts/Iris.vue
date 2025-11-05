@@ -7,7 +7,7 @@ import Footer from '@/Layouts/Iris/Footer.vue'
 import { useColorTheme } from '@/Composables/useStockList'
 import { usePage } from '@inertiajs/vue3'
 import ScreenWarning from '@/Components/Utils/ScreenWarning.vue'
-import { provide, ref, onMounted, onBeforeUnmount } from 'vue'
+import { provide, ref, onMounted, onBeforeUnmount, onBeforeMount } from 'vue'
 import { initialiseIrisApp } from '@/Composables/initialiseIris'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { trans } from 'laravel-vue-i18n'
@@ -20,10 +20,15 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import Breadcrumbs from '@/Components/Navigation/Breadcrumbs.vue'
 import { irisStyleVariables } from '@/Composables/Workshop'
+import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
+import { setColorStyleRoot } from '@/Composables/useApp'
+import { getStyles } from '@/Composables/styles'
+import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
 import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
+
 const layout = useIrisLayoutStore()
 const isOpenMenuMobile = ref(false)
 provide('layout', layout)
@@ -72,10 +77,11 @@ const checkScreenType = () => {
     else screenType.value = 'desktop'
 }
 
-
+provide('screenType', screenType)
 
 onMounted(() => {
     checkScreenType()
+    setColorStyleRoot(theme?.color)
     layout.app.webpage_layout = theme
     window.addEventListener('resize', checkScreenType)
 
@@ -90,6 +96,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
     window.removeEventListener('resize', checkScreenType)
+})
+
+onBeforeMount(()=>{
+initialiseIrisVarnish(useIrisLayoutStore)
 })
 
 console.log('handle', usePage().props)
@@ -133,14 +143,37 @@ console.log('handle', usePage().props)
             />
 
             <!-- Section: Topbar, Header, Menu, Sidebar -->
-            <IrisHeader v-if="header?.header" :data="header" :colorThemed="theme" :menu="navigation"
-                :screen-type="screenType" :custom-sidebar="customSidebar" />
+            <IrisHeader
+                v-if="header?.header"
+                :data="header"
+                :colorThemed="theme"
+                :menu="navigation"
+                :screen-type="screenType"
+                :custom-sidebar="customSidebar"
+            />
 
-            <Breadcrumbs v-if="usePage().props.breadcrumbs?.length" id="iris_breadcrumbs"
-                class="md:py-4 px-2 w-full xborder-b-0 mx-auto transition-all xbg-gray-100 border-b-0 border-transparent"
-                :breadcrumbs="usePage().props.breadcrumbs ?? []"
-                :navigation="usePage().props.navigation ?? []"
-                :layout="layout" />
+            <div class="border-b border-gray-200 ">
+                <div
+                    class="transition-all border-b-0 border-transparent"
+                    :style="{
+                        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
+                        marginLeft: getStyles(layout?.app?.webpage_layout?.container?.properties, screenType)?.paddingLeft,
+                        marginRight: getStyles(layout?.app?.webpage_layout?.container?.properties, screenType)?.paddingRight,
+                        paddingLeft: '0',
+                        paddingRight: '0',
+                        paddingTop: '0',
+                        paddingBottom: '0',
+                    }"
+                >
+                    <BreadcrumbsIris
+                        v-if="usePage().props.breadcrumbs?.length"
+                        id="iris_breadcrumbs"
+                        :breadcrumbs="usePage().props.breadcrumbs ?? []"
+                        :navigation="usePage().props.navigation ?? []"
+                        :layout="layout"
+                    />
+                </div>
+            </div>
 
             <main>
                 <div>
@@ -148,7 +181,12 @@ console.log('handle', usePage().props)
                 </div>
             </main>
 
-            <Footer v-if="footer && !isArray(footer)" :data="footer" :colorThemed="theme" />
+            <Footer
+                v-if="footer && !isArray(footer)"
+                v-once
+                :data="footer"
+                :colorThemed="theme"
+            />
         </div>
     </div>
 

@@ -10,12 +10,12 @@ namespace App\Actions\Catalogue\Shop\Seeders;
 
 use App\Actions\Discounts\Offer\StoreOffer;
 use App\Actions\Discounts\OfferCampaign\StoreOfferCampaign;
-use App\Actions\Discounts\OfferComponent\StoreOfferComponent;
+use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\GrpAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
-use App\Enums\Discounts\OfferComponent\OfferComponentStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -67,12 +67,12 @@ class SeedShopOfferCampaigns extends GrpAction
                     strict: false
                 );
 
-                StoreOfferComponent::make()->action(
+                StoreOfferAllowance::make()->action(
                     $discretionaryOffer,
                     null,
                     [
                         'code'             => 'di-'.$shop->slug,
-                        'state'            => OfferComponentStateEnum::ACTIVE,
+                        'state'            => OfferAllowanceStateEnum::ACTIVE,
                         'start_at'         => $shop->created_at,
                         'trigger_scope'    => 'NA',
                         'is_discretionary' => true

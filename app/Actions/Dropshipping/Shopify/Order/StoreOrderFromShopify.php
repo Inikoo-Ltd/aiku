@@ -11,7 +11,7 @@ namespace App\Actions\Dropshipping\Shopify\Order;
 use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\Dropshipping\CustomerClient\UpdateCustomerClient;
 use App\Actions\Ordering\Order\StoreOrder;
-use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Actions\OrgAction;
 use App\Actions\Retina\Dropshipping\Client\Traits\WithGeneratedShopifyAddress;
@@ -100,6 +100,8 @@ class StoreOrderFromShopify extends OrgAction
                     );
                 }
             }
+
+            $order->refresh();
 
             try {
                 PayOrderAsync::run($order);

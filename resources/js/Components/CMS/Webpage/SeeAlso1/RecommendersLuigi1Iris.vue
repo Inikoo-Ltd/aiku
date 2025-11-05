@@ -66,7 +66,7 @@ const isProductLoading = (productId: string) => {
 }
 
 const fetchRecommenders = async () => {
-    // console.log('11111 recommmmm', layout.iris?.user_auth?.customer_id?.toString())
+    // console.log('11111 recommmmm', layout.iris?.auth?.user?.customer_id?.toString())
     // console.log('22222 recommmmm', layout.user.user.customer_id)
     try {
         isLoadingFetch.value = true
@@ -79,7 +79,7 @@ const fetchRecommenders = async () => {
                     "recommendation_type": props.recommendation_type || "test_reco",
                     "recommender_client_identifier": props.recommendation_type || "test_reco",
                     "size": 7,
-                    "user_id": layout.iris?.user_auth?.customer_id?.toString(),
+                    "user_id": layout.iris?.auth?.user?.customer_id?.toString(),
                     "recommendation_context": {},
                     // "hit_fields": ["url", "title"]
                 }

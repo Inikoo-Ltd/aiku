@@ -29,7 +29,11 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Mail\DispatchedEmailsResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
 use App\Models\Dispatching\DeliveryNote;
+use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
@@ -69,6 +73,39 @@ class ShowInvoice extends OrgAction
 
     /** @noinspection PhpUnusedParameterInspection */
     public function inShop(Organisation $organisation, Shop $shop, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
+
+        return $this->handle($invoice);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderShop(Organisation $organisation, Shop $shop, Order $order, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
+
+        return $this->handle($invoice);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
+
+        return $this->handle($invoice);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderInCustomerClientInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, Invoice $invoice, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
+
+        return $this->handle($invoice);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inOrderInPlatformInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, Invoice $invoice, ActionRequest $request): Invoice
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab(InvoiceTabsEnum::values());
@@ -239,7 +276,7 @@ class ShowInvoice extends OrgAction
                 ],
                 'pageHead'    => [
                     'subNavigation'   => $subNavigation,
-                    'model'           => __('invoice'),
+                    'model'           => __('Invoice'),
                     'title'           => $invoice->reference,
                     'icon'            => [
                         'icon'  => ['fal', 'fa-file-invoice-dollar'],

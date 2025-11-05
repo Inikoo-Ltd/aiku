@@ -41,7 +41,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $type
  * @property string|null $trigger_type
  * @property int|null $trigger_id
- * @property array<array-key, mixed> $allowances
+ * @property array<array-key, mixed> $trigger_data
  * @property array<array-key, mixed> $data
  * @property array<array-key, mixed> $settings
  * @property bool $is_discretionary
@@ -58,8 +58,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferAllowance> $offerAllowances
  * @property-read \App\Models\Discounts\OfferCampaign $offerCampaign
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Discounts\OfferComponent> $offerComponents
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Discounts\OfferStats|null $stats
@@ -86,7 +86,7 @@ class Offer extends Model implements Auditable
     protected $casts = [
         'data'            => 'array',
         'settings'        => 'array',
-        'allowances'      => 'array',
+        'trigger_data'    => 'array',
         'source_data'     => 'array',
         'begin_at'        => 'datetime',
         'end_at'          => 'datetime',
@@ -97,10 +97,10 @@ class Offer extends Model implements Auditable
     ];
 
     protected $attributes = [
-        'data'        => '{}',
-        'settings'    => '{}',
-        'allowances'  => '{}',
-        'source_data' => '{}',
+        'data'         => '{}',
+        'settings'     => '{}',
+        'trigger_data' => '{}',
+        'source_data'  => '{}',
     ];
 
     protected $guarded = [];
@@ -143,19 +143,19 @@ class Offer extends Model implements Auditable
         return $this->belongsTo(OfferCampaign::class);
     }
 
-    public function offerComponents(): HasMany
+    public function offerAllowances(): HasMany
     {
-        return $this->hasMany(OfferComponent::class);
+        return $this->hasMany(OfferAllowance::class);
     }
 
     public function transactions(): BelongsToMany
     {
-        return $this->belongsToMany(Transaction::class, 'transaction_has_offer_components');
+        return $this->belongsToMany(Transaction::class, 'transaction_has_offer_allowances');
     }
 
     public function invoiceTransactions(): BelongsToMany
     {
-        return $this->belongsToMany(InvoiceTransaction::class, 'invoice_transaction_has_offer_components');
+        return $this->belongsToMany(InvoiceTransaction::class, 'invoice_transaction_has_offer_allowances');
     }
 
 }

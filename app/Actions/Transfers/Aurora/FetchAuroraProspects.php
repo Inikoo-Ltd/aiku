@@ -88,8 +88,10 @@ class FetchAuroraProspects extends FetchAuroraAction
         }
 
         if ($this->shop) {
-            $query->where('Prospect Store Key', $this->shop->source_id);
+            $sourceData = explode(':', $this->shop->source_id);
+            $query->where('Prospect Store Key', $sourceData[1]);
         }
+
 
         return $query;
     }
@@ -102,7 +104,8 @@ class FetchAuroraProspects extends FetchAuroraAction
             $query->whereNull('aiku_id');
         }
         if ($this->shop) {
-            $query->where('Prospect Store Key', $this->shop->source_id);
+            $sourceData = explode(':', $this->shop->source_id);
+            $query->where('Prospect Store Key', $sourceData[1]);
         }
 
         return $query->count();

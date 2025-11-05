@@ -13,7 +13,9 @@ use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshipp
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -50,8 +52,17 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
 
         $renderPage = $customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL ? 'Dropshipping/Platform/PlatformManualDashboard' : 'Dropshipping/Platform/PlatformDashboard';
 
-
         $isFulfilment = $this->shop->type == ShopTypeEnum::FULFILMENT;
+
+        $canConnectToPlatform = $customerSalesChannel->can_connect_to_platform;
+        $existInPlatform = $customerSalesChannel->exist_in_platform;
+        $platformStatus = $customerSalesChannel->platform_status;
+
+        if ($customerSalesChannel->status == CustomerSalesChannelStatusEnum::CLOSED) {
+            $canConnectToPlatform = false;
+            $existInPlatform = false;
+            $platformStatus = false;
+        }
 
         return Inertia::render($renderPage, [
             'title'                   => $title,
@@ -91,9 +102,12 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             'platform'                => $customerSalesChannel->platform,
             'platform_logo'           => $this->getPlatformLogo($customerSalesChannel->platform->code),
             'platformData'            => $this->getPlatformData($customerSalesChannel),
-            'can_connect_to_platform' => $customerSalesChannel->can_connect_to_platform,
-            'exist_in_platform'       => $customerSalesChannel->exist_in_platform,
-            'platform_status'         => $customerSalesChannel->platform_status,
+            'can_connect_to_platform' => $canConnectToPlatform,
+            'exist_in_platform'       => $existInPlatform,
+            'platform_status'         => $platformStatus,
+
+            'error_captcha' => Arr::get($customerSalesChannel->user?->data ?? [], 'error_data'),
+
             'step'                    => $step
         ]);
     }

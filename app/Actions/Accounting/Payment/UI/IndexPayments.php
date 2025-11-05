@@ -177,7 +177,15 @@ class IndexPayments extends OrgAction
                         elements: $elementGroup['elements']
                     );
                 }
+            } elseif ($parent instanceof Order) {
+                $table->withEmptyState(
+                    [
+                        'title' => __("No payment has been made for this order"),
+                        'count' => 0,
+                    ]
+                );
             }
+
             $table
                 ->withGlobalSearch()
                 ->withModelOperations($modelOperations)

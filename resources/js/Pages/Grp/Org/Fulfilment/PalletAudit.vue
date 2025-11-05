@@ -212,7 +212,7 @@ const isModalOpened = ref(false)
             >
                 <template #default="{ openModal }">
                     <Button @click="openModal" type="dashed" icon="fas fa-plus" fuxll
-                        :label="trans('Customer\'s SKU')" />
+                        :label="trans(`Customer's SKU`)" />
                 </template>
 
                 <template #modal="{ form, sendToServer, closeModal }">
@@ -224,7 +224,7 @@ const isModalOpened = ref(false)
                             audited_quantity: form.quantity,
                         },
                         true
-                    )" :stored_items="pallet?.data?.stored_items" @closeModal="closeModal" :title="trans('Add Customer\'s SKU')" />
+                    )" :stored_items="pallet?.data?.stored_items" @closeModal="closeModal" :title="trans(`Add Customer's SKU`)" />
                 </template>
             </StoredItemsProperty>
         </template>
@@ -252,7 +252,7 @@ const isModalOpened = ref(false)
         <Column field="reference" :header="trans('SKU')" class="">
             <template #body="{ data }">
                 <div class="whitespace-nowrap">{{ data.reference }}
-                    <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="trans('New added Customer\'s SKU')" icon='fas fa-star' size="xs" class='text-indigo-500' fixed-width aria-hidden='true' />
+                    <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="trans(`New added Customer's SKU`)" icon='fas fa-star' size="xs" class='text-indigo-500' fixed-width aria-hidden='true' />
                 </div>
             </template>
         </Column>
@@ -439,7 +439,7 @@ const isModalOpened = ref(false)
     </DataTable>
 
     <div v-if="editDeltas" class="mx-auto px-4 w-10/12 mt-4">
-        <Button @click="isModalOpened = true" type="dashed" icon="fas fa-plus" full :label="trans('Customer\'s SKU')" />
+        <Button @click="isModalOpened = true" type="dashed" icon="fas fa-plus" full :label="trans(`Customer's SKU`)" />
     </div>
 
 

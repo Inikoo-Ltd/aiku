@@ -47,12 +47,17 @@ import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Workshop.vue'
 import SeeAlso1Workshop from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Workshop.vue'
 import BlogWorkshop from '@/Components/CMS/Webpage/Blog/BlogWorkshop.vue'
 import EditFooter1Translation from '@/Components/CMS/Website/Footers/footerTheme1/EditFooter1Translation.vue'
+import CarouselCtaWorkshop from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaWorkshop.vue'
+import CarouselImageBackground from '@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundWorkshop.vue'
 
 
 
 import LuigiTrends1Workshop from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Workshop.vue'
 import LuigiLastSeen1Workshop from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Workshop.vue'
 import LuigiItemAlternatives1Workshop from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Workshop.vue'
+
+import RecommendationCustomerRecentlyBought1Workshop from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Workshop.vue'
+import CtaImageBackroundWorkshop from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundWorkshop.vue'
 
 export const getComponent = (componentName: string) => {
     const components: Component = {
@@ -98,7 +103,9 @@ export const getComponent = (componentName: string) => {
         'luigi-trends-1' : LuigiTrends1Workshop,
         'luigi-last-seen-1' : LuigiLastSeen1Workshop,
         'luigi-item-alternatives-1' : LuigiItemAlternatives1Workshop,
+        'recommendation-customer-recently-bought-1': RecommendationCustomerRecentlyBought1Workshop,
 
+        "cta-image-background" : CtaImageBackroundWorkshop,
         'banner': WowsbarBanner,
         "bento-grid-1": BentoGrid,
         "bricks": Gallery,
@@ -125,7 +132,9 @@ export const getComponent = (componentName: string) => {
         'video-1': Video1Workshop,
         "user-subscribe": UserSubscribeWorkshop,
         'cta4' :Cta4,
-        'blog' : BlogWorkshop
+        'blog' : BlogWorkshop,
+        'carousel-cta' : CarouselCtaWorkshop,
+        'carousel-image-background' : CarouselImageBackground
     }
 
     return components[componentName] ?? NotFoundComponents

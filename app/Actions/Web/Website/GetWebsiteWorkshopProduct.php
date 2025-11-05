@@ -18,6 +18,7 @@ class GetWebsiteWorkshopProduct
     public function handle(Website $website, Product $product): array
     {
 
+
         $webBlockTypes = WebBlockType::where('category', WebBlockCategoryScopeEnum::PRODUCT->value)->get();
 
         $layout = Arr::get($website->unpublishedProductSnapshot, 'layout.product', []);

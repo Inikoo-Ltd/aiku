@@ -14,6 +14,7 @@ import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ReviewContent from "@/Components/ReviewContent.vue"
+import AttachmentCard from "@/Components/AttachmentCard.vue"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -26,6 +27,8 @@ const props = defineProps<{
 		attachImageRoute: routeType
 		deleteImageRoute: routeType
 		imagesUploadedRoutes: routeType
+		webpage_url: string
+		attachment_box?: {}
 		translation_box: {
 			title: string
 			languages: Record<string, string>
@@ -90,15 +93,14 @@ const props = defineProps<{
 			product_languages: string | null
 			warnings: string | null
 		}
-		images: {}
+		images: any
 	}
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
 const imagesSetup = ref(
-	props.data.images
-		.filter(item => item.type === "image")
-		.map(item => ({
+	props?.data?.images?.filter((item: any) => item.type === "image")
+		.map((item : any) => ({
 			label: item.label,
 			column: item.column_in_db,
 			images: item.images,
@@ -124,6 +126,18 @@ const validImages = computed(() =>
 </script>
 
 <template>
+	<div v-if="data.webpage_url"
+		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
+		<div class="flex items-center gap-2 text-blue-700 text-sm">
+			<FontAwesomeIcon :icon="faExternalLink" class="text-blue-500" />
+			<a :href="data.webpage_url" target="_blank" rel="noopener noreferrer"
+				class="font-medium break-all hover:underline hover:text-blue-800 transition-colors duration-200">
+				{{ data.webpage_url }}
+			</a>
+		</div>
+	</div>
+
+
 	<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mx-3 lg:mx-0 mt-2">
 		<!-- Sidebar -->
 		<div class="space-y-4 lg:space-y-6">
@@ -179,7 +193,7 @@ const validImages = computed(() =>
 
 		<div class="bg-white h-fit mx-4  shadow-sm ">
 			<div class="my-4 ">
-				<ReviewContent  :data="data.product.data" />
+				<ReviewContent :data="data.product.data" />
 			</div>
 			<dl class="space-y-2 text-sm border border-gray-100 px-4 py-2 lg:p-6 lg:py-4 rounded">
 				<!-- Stock -->
@@ -231,13 +245,21 @@ const validImages = computed(() =>
 							{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.rrp) }}
 						</span>
 						<span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-							({{ (((data.product.data?.rrp - data.product.data?.price) / data.product.data?.rrp) * 100).toFixed(2) }}%)
+							({{ (((data.product.data?.rrp - data.product.data?.price) / data.product.data?.rrp) *
+							100).toFixed(2) }}%)
 						</span>
 					</dd>
 				</div>
 			</dl>
 
+
+			<div>
+				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
+			</div>
+
 		</div>
+
+
 	</div>
 </template>
 

@@ -9,7 +9,15 @@ export default {
 				{
 					key: ["source"],
 					label: "Image",
-					type: "upload_image",
+					type: "image-cropped",
+					props_data: {
+						stencilProps: {
+							aspectRatio: [16 / 9, null],
+							movable: true,
+							scalable: true,
+							resizable: true,
+						},
+					},
 				},
 				{
 					key: ["alt"],
@@ -21,140 +29,6 @@ export default {
 					label: "Dimension",
 					type: "dimension",
 					useIn: ["desktop", "tablet", "mobile"],
-				},
-				{
-					key: ["properties","padding"],
-					useIn: ["desktop", "tablet", "mobile"],
-					label: "Padding",
-					type: "padding",
-				},
-				{
-					key: ["properties","margin"],
-					useIn: ["desktop", "tablet", "mobile"],
-					label: "Margin",
-					type: "margin",
-				},
-				{
-					key: ['container',"properties", "justifyContent"],
-					label: "Justify Content",
-					useIn: ["desktop", "tablet", "mobile"],
-					type: "select",
-					props_data: {
-						placeholder: "Object",
-						options: [
-							{
-								label: "Center",
-								value: "center",
-							},
-							{
-								label: "End",
-								value: "end",
-							},
-							{
-								label: "Start",
-								value: "start",
-							},
-							{
-								label: "none",
-								value: null,
-							},
-						],
-					},
-				},
-				{
-					key: ["properties", "object_fit"],
-					label: "Object Image",
-					useIn: ["desktop", "tablet", "mobile"],
-					type: "select",
-					props_data: {
-						placeholder: "Object",
-						options: [
-							{
-								label: "contain",
-								value: "contain",
-							},
-							{
-								label: "cover",
-								value: "cover",
-							},
-							{
-								label: "none",
-								value: "none",
-							},
-							{
-								label: "scale-down",
-								value: "scale-down",
-							},
-						],
-					},
-				},
-				{
-					key: ["properties", "object_position"],
-					label: "Object Position",
-					useIn: ["desktop", "tablet", "mobile"],
-					type: "select",
-					props_data: {
-						placeholder: "Object",
-						options: [
-							{
-								label: "Bottom",
-								value: "bottom",
-							},
-							{
-								label: "Center",
-								value: "center",
-							},
-							{
-								label: "Left",
-								value: "left",
-							},
-							{
-								label: "Right",
-								value: "right",
-							},
-							{
-								label: "Top",
-								value: "top",
-							},
-							{
-								label: "Left Bottom",
-								value: "left bottom",
-							},
-							{
-								label: "Left Top",
-								value: "left top",
-							},
-							{
-								label: "Right Bottom",
-								value: "right bottom",
-							},
-							{
-								label: "Right Top",
-								value: "right top",
-							},
-						],
-					},
-				},
-				{
-					key: ["attributes", "fetchpriority"],
-					label: trans("Fetch Priority"),
-					information: trans(
-						"Priority of the image to loaded. Higher priority images are loaded first (good for LCP)."
-					),
-					type: "select",
-					props_data: {
-						placeholder: trans("Priority"),
-						options: [
-							{
-								label: trans("High"),
-								value: "high",
-							},
-							{
-								label: trans("Low"),
-								value: "low",
-							},
-						],
-					},
 				},
 			],
 		},

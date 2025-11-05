@@ -144,7 +144,7 @@ trait WithLayoutNavigation
     {
         if ($user->authTo("human-resources.$organisation->id.view")) {
             $navigation['hr'] = [
-                'label'   => __('human resources'),
+                'label'   => __('Human Resources'),
                 'icon'    => ['fal', 'fa-user-hard-hat'],
                 'root'    => 'grp.org.hr',
                 'route'   => [

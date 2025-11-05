@@ -75,8 +75,8 @@ class IndexPortfoliosInPlatform extends OrgAction
             $table
                 ->withModelOperations($modelOperations)
                 ->withGlobalSearch()
-                ->column(key: 'item_code', label: __('product'), canBeHidden: false, searchable: true)
-                ->column(key: 'item_name', label: __('product name'), canBeHidden: false, searchable: true)
+                ->column(key: 'item_code', label: __('Product'), canBeHidden: false, searchable: true)
+                ->column(key: 'item_name', label: __('Product Name'), canBeHidden: false, searchable: true)
                 ->column(key: 'platform_status', label: __('Status'), canBeHidden: false, sortable: true, searchable: true);
         };
     }

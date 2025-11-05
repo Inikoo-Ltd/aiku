@@ -25,7 +25,6 @@ return new class () extends Migration {
             $table->foreign('mailshot_id')->references('id')->on('mailshots')->nullOnDelete();
 
             $table->index('outbox_id');
-            $table->index('organisation_id');
 
             // Indices for commonly sorted columns
             $table->index('sent_at');
@@ -44,7 +43,6 @@ return new class () extends Migration {
             $table->dropIndex(['post_room_id']);
             $table->dropIndex(['outbox_id']);
             $table->dropIndex(['mailshot_id']);
-            $table->dropIndex(['organisation_id']);
             $table->dropIndex(['group_id']);
             $table->dropIndex(['shop_id']);
 

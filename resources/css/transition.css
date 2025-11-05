@@ -125,6 +125,27 @@
     opacity: 0;
 }
 
+
+/* Transition name="slide-absolute-to-right" */
+.slide-absolute-to-right-enter-from,
+.slide-absolute-to-right-leave-to {
+    position: absolute;
+}
+.slide-absolute-to-right-enter-active {
+    transition: all 0.1s ease-out;
+}
+.slide-absolute-to-right-leave-active {
+    transition: all 0.1s cubic-bezier(1, 0.5, 0.8, 1);
+}
+.slide-absolute-to-right-enter-from {
+    transform: translateX(-100%);
+    opacity: 0;
+}
+.slide-absolute-to-right-leave-to {
+    transform: translateX(100%);
+    opacity: 0;
+}
+
 /* Transition name="slide-to-left" */
 .slide-to-left-enter-active {
     transition: all 0.1s ease-out;

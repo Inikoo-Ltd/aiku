@@ -95,7 +95,7 @@ class ShowMasterCollection extends GrpAction
         return Inertia::render(
             'Masters/MasterCollection',
             [
-                'title'       => __('master collection'),
+                'title'       => __('Master collection'),
                 'breadcrumbs' => $this->getBreadcrumbs(
                     $masterCollection,
                     $request->route()->getName(),
@@ -107,16 +107,16 @@ class ShowMasterCollection extends GrpAction
                 ],
                 'pageHead'    => [
                     'title'   => $masterCollection->name,
-                    'model'   => '',
+                    'model'   => __("Master collection"),
                     'icon'    => [
-                        'icon'  => ['fal', 'fa-layer-group'],
+                        'icon'  => ['fal', 'fa-album-collection'],
                         'title' => __('Master collection')
                     ],
                     'actions' => [],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,
-                    'navigation' => MasterCollectionTabsEnum::navigation()
+                    'navigation' => MasterCollectionTabsEnum::navigationWithStats($masterCollection)
                 ],
                 'routes'      => [
                     'families'    => [

@@ -31,7 +31,7 @@ class ShowHumanResourcesDashboard extends OrgAction
 
     public function htmlResponse(ActionRequest $request): Response
     {
-        $title = __('human resources');
+        $title = __('Human Resources');
 
         return Inertia::render(
             'Org/HumanResources/HumanResourcesDashboard',

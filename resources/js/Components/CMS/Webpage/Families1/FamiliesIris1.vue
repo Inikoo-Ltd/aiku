@@ -5,8 +5,9 @@ import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Family1Render from './Families1Render.vue'
 import { getStyles } from "@/Composables/styles"
-import { computed, inject} from "vue"
+import { computed, inject } from "vue"
 import { trans } from "laravel-vue-i18n"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -52,12 +53,16 @@ const layout: any = inject("layout", {})
     }">
       <h2 class="text-2xl font-bold mb-6">{{ trans("Browse By Product Lines:") }}</h2>
       <div :class="['grid gap-8', responsiveGridClass]">
-        <a v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`${item.url}`">
-          <Family1Render :data="item" />
-        </a>
-        <a v-for="(item, index) in props?.fieldValue?.collections || []" :key="index" :href="`${item.url}`">
-          <Family1Render :data="item" />
-        </a>
+        <LinkIris v-for="(item, index) in props?.fieldValue?.families || []" :key="index" :href="`${item.url}`" type="internal">
+          <template #default>
+            <Family1Render :data="item" />
+          </template>
+        </LinkIris>
+        <LinkIris v-for="(item, index) in props?.fieldValue?.collections || []" :key="index" :href="`${item.url}`"  type="internal">
+          <template #default>
+            <Family1Render :data="item" />
+          </template>
+        </LinkIris>
       </div>
     </div>
   </div>

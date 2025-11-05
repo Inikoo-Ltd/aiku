@@ -53,6 +53,7 @@ class UpdateCustomer extends OrgAction
     {
         if (Arr::has($modelData, 'contact_address')) {
             $contactAddressData = Arr::get($modelData, 'contact_address');
+
             Arr::forget($modelData, 'contact_address');
 
 
@@ -76,14 +77,34 @@ class UpdateCustomer extends OrgAction
         if (Arr::has($modelData, 'delivery_address')) {
             $deliveryAddressData = Arr::get($modelData, 'delivery_address');
             Arr::forget($modelData, 'delivery_address');
-            UpdateAddress::run($customer->deliveryAddress, $deliveryAddressData);
+
+            if ($customer->address_id != $customer->delivery_address_id) {
+                UpdateAddress::run($customer->deliveryAddress, $deliveryAddressData);
+            } else {
+                $customer = $this->addAddressToModelFromArray(
+                    model: $customer,
+                    addressData: $deliveryAddressData,
+                    scope: 'delivery',
+                    updateLocation: false,
+                    updateAddressField: 'delivery_address_id'
+                );
+            }
         }
+
+
         if (Arr::has($modelData, 'tax_number')) {
-            $taxNumberData = Arr::get($modelData, 'tax_number');
-            Arr::forget($modelData, 'tax_number');
+            if ($this->strict) {
+                $taxNumberData = [];
+                data_set($taxNumberData, 'number', Arr::get($modelData, 'tax_number.number'));
+                data_set($taxNumberData, 'country_id', $customer->address->country_id);
+                Arr::forget($modelData, 'tax_number');
+            } else {
+                $taxNumberData = Arr::pull($modelData, 'tax_number');
+            }
 
 
-            if ($taxNumberData) {
+            if (Arr::get($taxNumberData, 'number')) {
+
                 if (!$customer->taxNumber) {
                     if (!Arr::get($taxNumberData, 'data.name')) {
                         Arr::forget($taxNumberData, 'data.name');
@@ -96,10 +117,11 @@ class UpdateCustomer extends OrgAction
 
                     StoreTaxNumber::run(
                         owner: $customer,
-                        modelData: $taxNumberData
+                        modelData: $taxNumberData,
+                        strict: $this->strict
                     );
                 } else {
-                    UpdateTaxNumber::run($customer->taxNumber, $taxNumberData);
+                    UpdateTaxNumber::run($customer->taxNumber, $taxNumberData, $this->strict);
                 }
             } elseif ($customer->taxNumber) {
                 DeleteTaxNumber::run($customer->taxNumber);
@@ -169,6 +191,11 @@ class UpdateCustomer extends OrgAction
         }
 
 
+        if (Arr::has($changes, 'email') && $customer->shop->is_aiku) {
+            MatchCustomerProspects::run($customer);
+        }
+
+
         return $customer;
     }
 
@@ -185,7 +212,7 @@ class UpdateCustomer extends OrgAction
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->customer->id, 'operator' => '!=']
                     ]
                 ),
@@ -199,6 +226,7 @@ class UpdateCustomer extends OrgAction
             'contact_website'          => ['sometimes', 'nullable', 'active_url'],
             'contact_address'          => ['sometimes', 'required', new ValidAddress()],
             'delivery_address'         => ['sometimes', 'nullable', new ValidAddress()],
+            'delivery_address_id'      => ['sometimes', 'integer'],
             'timezone_id'              => ['sometimes', 'nullable', 'exists:timezones,id'],
             'language_id'              => ['sometimes', 'nullable', 'exists:languages,id'],
             'balance'                  => ['sometimes', 'nullable'],
@@ -242,7 +270,7 @@ class UpdateCustomer extends OrgAction
                     table: 'customers',
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->customer->id, 'operator' => '!=']
                     ]
                 ),

@@ -105,16 +105,21 @@ class GenerateInvoiceFromOrder extends OrgAction
                 if ($transaction->model_type == 'Adjustment') {
                     /** @var Adjustment $adjustment */
                     $adjustment = Adjustment::find($transaction->model_id);
+
                     StoreInvoiceTransactionFromAdjustment::make()->action($invoice, $adjustment, $data);
                 } elseif ($transaction->model_type == 'Charge') {
+
                     StoreInvoiceTransactionFromCharge::make()->action(
                         invoice: $invoice,
                         charge: $transaction->model,
                         modelData: $data
                     );
+
                 } elseif ($transaction->model_type == 'ShippingZone') {
+
                     StoreInvoiceTransactionFromShipping::make()->action($invoice, $transaction->model, $data);
                 } else {
+
                     $updatedData = $this->recalculateTransactionTotals($transaction);
                     StoreInvoiceTransaction::make()->action($invoice, $transaction, $updatedData);
                     $transaction->update(
@@ -125,11 +130,13 @@ class GenerateInvoiceFromOrder extends OrgAction
                 }
             }
 
-
             $totalPaid = $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->sum('payments.amount');
 
-            if ($totalPaid > $invoice->total_amount) {
-                $amountToCredit = $totalPaid - $invoice->total_amount;
+            $amountToCredit = round($totalPaid - $invoice->total_amount, 2);
+
+            if ($amountToCredit > 0) {
+
+
                 /** @var \App\Models\Accounting\PaymentAccountShop $paymentAccountShop */
                 $paymentAccountShop = $order->shop->paymentAccountShops()->where('type', PaymentAccountTypeEnum::ACCOUNT)->first();
                 $paymentData        = [

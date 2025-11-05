@@ -23,7 +23,6 @@ const locale = inject("locale", aikuLocaleStructure)
 
 
 function assetRedirectRoute(transaction: InvoiceTransaction) {
-    console.log(route().current())
     if (route().current() == "retina.fulfilment.billing.invoices.show" || route().current() == "retina.dropshipping.invoices.show" || !transaction.asset_id) {
         return ""
     } else {

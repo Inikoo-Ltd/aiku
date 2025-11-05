@@ -24,6 +24,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_collections_state_discontinued
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int $number_master_families
+ * @property int $number_current_master_families
+ * @property int $number_master_products
+ * @property int $number_current_master_products
+ * @property int $number_indirect_master_products
+ * @property int $number_indirect_current_master_products
+ * @property int $number_master_collections
+ * @property int $number_current_master_collections
+ * @property int $number_parents
+ * @property int $number_current_collections
  * @property-read \App\Models\Masters\MasterCollection $masterCollection
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollectionStats newQuery()
@@ -33,6 +43,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class MasterCollectionStats extends Model
 {
     protected $table = 'master_collection_stats';
+
+    protected $guarded = [];
 
     public function masterCollection(): BelongsTo
     {

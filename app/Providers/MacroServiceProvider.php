@@ -56,7 +56,9 @@ class MacroServiceProvider extends ServiceProvider
         Builder::macro('whereAnyWordStartWith', function (string $column, string $value): Builder {
             /** @var Builder $this */
             $quotedValue = DB::connection()->getPdo()->quote($value);
-            return $this->where(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"));
+            return $this->where(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
+                ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
+
         });
 
         Builder::macro('whereStartWith', function (string $column, string $value): Builder {
@@ -72,7 +74,8 @@ class MacroServiceProvider extends ServiceProvider
         Builder::macro('orWhereAnyWordStartWith', function (string $column, string $value): Builder {
             /** @var Builder $this */
             $quotedValue = DB::connection()->getPdo()->quote($value);
-            return $this->orWhere(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"));
+            return $this->orWhere(DB::raw("extensions.remove_accents(".$column.")  COLLATE \"C\""), '~*', DB::raw("('\y' ||  extensions.remove_accents($quotedValue) ||   '.*\y')"))
+                ->orWhereRaw("$column COLLATE \"C\" ILIKE ?", '%'.$value.'%');
         });
 
         Builder::macro('orWhereStartWith', function (string $column, string $value): Builder {

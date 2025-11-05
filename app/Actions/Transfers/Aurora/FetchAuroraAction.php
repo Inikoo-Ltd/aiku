@@ -82,7 +82,8 @@ class FetchAuroraAction extends FetchAction
                 'fetch:portfolios',
                 'fetch:favourites',
                 'fetch:offer_components',
-                'fetch:product_org_stocks'
+                'fetch:product_org_stocks',
+                'fetch:prospects',
             ]) and $command->option('shop')) {
             $this->shop = Shop::where('slug', $command->option('shop'))->firstOrFail();
         }
@@ -141,6 +142,9 @@ class FetchAuroraAction extends FetchAction
 
         if ($command->getName() == 'fetch:orders') {
             $this->basket = $command->option('basket') ?? false;
+            $this->onlyCancelled = $command->option('only_cancelled') ?? false;
+
+
         }
 
         if ($command->getName() == 'fetch:histories' and $command->option('model')) {

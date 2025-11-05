@@ -25,7 +25,6 @@ const props = defineProps<{
     }
     tableName: string
 }>()
-
 // console.log('element', props.elements)
 const emits = defineEmits<{
     (e: 'checkboxChanged', value: SelectedElement): void
@@ -157,7 +156,7 @@ onMounted(() => {
                     @click="onClickCheckbox(element, selectedGroup)"
                     @dblclick="onDoubleClickCheckbox(element, selectedGroup)"
                     role="filter"
-                    :id="value[0].replace(' ','-')"
+                    :id="value[0]?.replace(' ','-')"
                 >
                     <FontAwesomeIcon v-if="selectedElement[selectedGroup]?.includes(element)" icon="fal fa-check-square" aria-hidden="true" />
                     <FontAwesomeIcon v-else icon="fal fa-square" aria-hidden="true" />
@@ -185,7 +184,7 @@ onMounted(() => {
                         <span v-if="Object.keys(props.elements).length > 1" class="pl-2 flex items-center justify-center">
                             <FontAwesomeIcon icon="fal fa-chevron-down" class="transition-all duration-200 ease-in-out" :class="[open ? 'rotate-180' : '']" aria-hidden="true" />
                         </span>
-                        <span class="px-4">{{ elements[selectedGroup].label }}</span>
+                        <span class="px-4 text-nowrap">{{ elements[selectedGroup].label }}</span>
                     </MenuButton>
                 </div>
                 <!-- List of button -->

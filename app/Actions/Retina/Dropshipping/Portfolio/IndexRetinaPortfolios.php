@@ -8,20 +8,22 @@
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
+use App\Actions\Dropshipping\Portfolio\Logs\IndexPlatformPortfolioLogs;
 use App\Actions\Retina\Platform\ShowRetinaCustomerSalesChannelDashboard;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithPlatformStatusCheck;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Enums\UI\Portfolio\CustomerSalesChannelPortfolioTabsEnum;
 use App\Http\Resources\CRM\RetinaCustomerSalesChannelResource;
 use App\Http\Resources\Dropshipping\DropshippingPortfoliosResource;
+use App\Http\Resources\Dropshipping\PlatformPortfolioLogsResource;
 use App\Http\Resources\Platform\PlatformsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\AmazonUser;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\MagentoUser;
-use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -115,7 +117,7 @@ class IndexRetinaPortfolios extends RetinaAction
     {
         $this->customerSalesChannel = $customerSalesChannel;
 
-        $this->initialisation($request);
+        $this->initialisation($request)->withTab(CustomerSalesChannelPortfolioTabsEnum::values());
 
         return $this->handle($customerSalesChannel, 'products');
     }
@@ -134,9 +136,8 @@ class IndexRetinaPortfolios extends RetinaAction
 
         $title = __('My Products');
 
-        $platform       = Platform::where('type', PlatformTypeEnum::MANUAL)->first();
-        $manualChannels = $this->customer->customerSalesChannels()
-            ->where('platform_id', $platform->id)
+        $channels = $this->customer->customerSalesChannels()
+            ->whereNot('id', $this->customerSalesChannel->id)
             ->where('status', CustomerSalesChannelStatusEnum::OPEN)
             ->get();
 
@@ -204,8 +205,22 @@ class IndexRetinaPortfolios extends RetinaAction
             };
         }
 
-        $actions = [];
-
+        $actions = [
+            [
+                'type'  => 'button',
+                'style' => 'tertiary',
+                'tooltip' => __('This will automatically synced every day at 3:00 UTC'),
+                'label'   => __('Re-Sync'),
+                'icon' => ['fal', 'fa-tachometer-alt'],
+                'route' => [
+                    'method' => 'post',
+                    'name' => 'retina.models.customer_sales_channel.portfolio_shopify_sync',
+                    'parameters' => [
+                        'customerSalesChannel' => $this->customerSalesChannel->id
+                    ]
+                ],
+            ]
+        ];
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
@@ -215,6 +230,15 @@ class IndexRetinaPortfolios extends RetinaAction
                 ->count();
         }
 
+        $groupedPortfolios = $this->customerSalesChannel->portfolios->groupBy(function ($portfolio) {
+            return strtoupper(substr($portfolio->item_code, 0, 1));
+        })->map(function ($group) {
+            return [
+                'char' => strtoupper(substr($group->first()->item_code, 0, 1)),
+                'count' => $group->count(),
+                'ids' => $group->pluck('id')->implode(',')
+            ];
+        })->sortKeys();
 
         return Inertia::render(
             'Dropshipping/Portfolios',
@@ -230,8 +254,22 @@ class IndexRetinaPortfolios extends RetinaAction
                     'icon'       => 'fal fa-cube',
                     'actions'    => $actions,
                 ],
+
+                'grouped_portfolios' => $groupedPortfolios,
+
+                'tabs'        => [
+                    'current'    => $this->tab,
+                    'navigation' => CustomerSalesChannelPortfolioTabsEnum::navigation()
+                ],
+
                 'routes'         => [
                     'bulk_upload'               => $bulkUploadRoute,
+                    'bulk_unlink'               => [
+                        'name' => 'retina.models.dropshipping.bulk.unlink',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
                     'batch_all'                 => $bulkAllRoute,
                     'fetch_products'            => match ($this->customerSalesChannel->platform->type) {
                         PlatformTypeEnum::WOOCOMMERCE => [
@@ -357,6 +395,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
                 'product_count' => $this->customerSalesChannel->number_portfolios,
 
+                'logs' => PlatformPortfolioLogsResource::collection(IndexPlatformPortfolioLogs::run($this->customerSalesChannel)),
 
                 'count_product_not_synced' => $countProductsNotSync,
                 'platform_user_id'         => $platformUser?->id,
@@ -364,9 +403,10 @@ class IndexRetinaPortfolios extends RetinaAction
                 'products'                 => DropshippingPortfoliosResource::collection($portfolios),
                 'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
-                'manual_channels'          => CustomerSalesChannelsResourceTOFIX::collection($manualChannels)//  Do now use the resource. Use an array of necessary data
+                'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels)//  Do now use the resource. Use an array of necessary data
             ]
-        )->table($this->tableStructure(prefix: 'products'));
+        )->table($this->tableStructure(prefix: 'products'))
+            ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));
     }
 
     public function tableStructure(?array $modelOperations = null, $prefix = null): \Closure
@@ -392,7 +432,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
-                $table->column(key: 'status', label: __('status'));
+                $table->column(key: 'status', label: __('Status'));
 
                 $matchesLabel = __($this->customerSalesChannel->platform->name . ' product');
 
@@ -402,6 +442,7 @@ class IndexRetinaPortfolios extends RetinaAction
 
 
             $table->column(key: 'delete', label: '', canBeHidden: false);
+            $table->column(key: 'message', label: 'Response', canBeHidden: false);
         };
     }
 

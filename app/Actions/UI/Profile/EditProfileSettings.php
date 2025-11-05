@@ -39,11 +39,19 @@ class EditProfileSettings
     {
         try {
             $cacheKey = "user_printers_" . $user->id;
-            $printers = cache()->remember($cacheKey, now()->addMinutes(1), function () {
+            $printers = cache()->remember($cacheKey, now()->addMinutes(), function () {
                 return GetPrintNodePrinters::make()->action([])->map(function ($printer) {
+
+                    $state = $printer->state;
+                    if ($printer->state == 'offline') {
+                        $state = '🚫';
+                    } elseif ($printer->state == 'online') {
+                        $state = '✅';
+                    }
+
                     return [
                         'value' => $printer->id,
-                        'label' => $printer->name . ' (' . $printer->computer->name . ')'  . ' - ' . $printer->state,
+                        'label' => '['.$printer->id.'] '.$printer->name . ' (' . $printer->computer->name . ')'  . ' ' . $state,
                     ];
                 })->values()->toArray();
             });

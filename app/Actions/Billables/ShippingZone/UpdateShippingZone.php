@@ -37,7 +37,7 @@ class UpdateShippingZone extends OrgAction
                     extraConditions: [
                         ['column' => 'shop_id', 'value' => $this->shop->id],
                         ['column' => 'id', 'value' => $this->shippingZone->id, 'operator' => '!='],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
                 'between:2,16',

@@ -38,12 +38,18 @@ import CTAVideo1Blueprint from '@/Components/CMS/Webpage/CtaVideo1/Blueprint'
 import CollectionBluprint from '@/Components/CMS/Webpage/Collections1/Blueprint'
 import UserSubscribe from "@/Components/CMS/Webpage/UserSubscribe/Blueprint"
 import Families1Blueprint from '@/Components/CMS/Webpage/Families1/Blueprint'
+import CtaCarousel from '@/Components/CMS/Webpage/CarouselCta/Blueprint'
+import CarouselImageBackgroundIrisBlueprint from "@/Components/CMS/Webpage/CarouselImageBackground/Blueprint"
+import BluprintBestseller from "@/Components/CMS/Webpage/Products1/BluprintBestseller"
+import CtaImageBackroundIris from "@/Components/CMS/Webpage/CtaImageBackround/Blueprint"
 
 import Cta4Blueprint from "@/Components/CMS/Webpage/Cta4/Blueprint"
 import { blueprint as SeeAlso1Blueprint  } from "@/Components/CMS/Webpage/SeeAlso1/Blueprint"
 import { blueprint as LuigiTrends1Blueprint  } from "@/Components/CMS/Webpage/LuigiTrends1/Blueprint"
 import { blueprint as LuigiLastSeen1  } from "@/Components/CMS/Webpage/LuigiLastSeen1/Blueprint"
 import { blueprint as LuigiItemAlternatives1  } from "@/Components/CMS/Webpage/LuigiItemAlternatives1/Blueprint"
+import { blueprint as RecommendersCustomerRecentlyBought  } from "@/Components/CMS/Webpage/RecomendationRecentlyBought1/Blueprint"
+
 
 
 export const getBlueprint = (componentName: string, data?: object) => {
@@ -79,6 +85,9 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		// products list
 		"products-1": ProductsList1Blueprint.blueprint,
 
+		//BestSeller
+		"bestseller-1": BluprintBestseller.blueprint,
+
 		// product
 		"product-1": Product1Blueprint.blueprint,
 
@@ -89,6 +98,7 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"luigi-trends-1": () => LuigiTrends1Blueprint(data).blueprint,
 		"luigi-last-seen-1": () => LuigiLastSeen1(data).blueprint,
 		"luigi-item-alternatives-1": () => LuigiItemAlternatives1(data).blueprint,
+		'recommendation-customer-recently-bought-1': () => RecommendersCustomerRecentlyBought(data).blueprint,
 
 		// misc
 		"banner": WowsbarBannerBlueprint.blueprint,
@@ -97,6 +107,7 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"cta1": CTABlueprint.blueprint,
 		"cta2": CTA2Blueprint.blueprint,
 		"cta3": CTA3Blueprint.blueprint,
+		"cta-image-background" : CtaImageBackroundIris.blueprint,
 		"text-column": TextColumn.blueprint,
 		"iframe": IframeBlueprint.blueprint,
 		"images": ImageBlueprint.blueprint,
@@ -117,6 +128,8 @@ export const getBlueprint = (componentName: string, data?: object) => {
 		"collections-1": CollectionBluprint.blueprint,
 		"user-subscribe": UserSubscribe.blueprint,
 		"cta4": Cta4Blueprint.blueprint,
+		'carousel-cta' : CtaCarousel.blueprint,
+		'carousel-image-background' : CarouselImageBackgroundIrisBlueprint.blueprint
 	}
 
 	const blueprint = components[componentName]

@@ -113,6 +113,7 @@ const saveLink = (data: NavigationLink) => {
 }
 
 const saveSubnavTitle = (data: { label: string; link?: any }) => {
+  console.log('sss',data)
   const subnav = props.modelValue.subnavs?.[parentIdx.value]
   if (!subnav) return
   subnav.title = data.label

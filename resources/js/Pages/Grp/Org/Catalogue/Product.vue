@@ -5,7 +5,8 @@ import {
     faBox, faBullhorn, faCameraRetro, faCube, faFolder,
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
-    faFolderTree, faBrowser, faLanguage,faFolders
+    faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
+    faFolderDownload
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -31,6 +32,7 @@ import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
 import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vue'
 import { routeType } from '@/types/route'
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
+import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
 
 
 library.add(
@@ -50,7 +52,9 @@ library.add(
     faMinus,
     faBrowser,
     faLanguage,
-    faFolderTree
+    faPaperclip,
+    faFolderTree,
+    faFolderDownload
 )
 
 const props = defineProps<{
@@ -71,6 +75,7 @@ const props = defineProps<{
     history?: {}
     stocks?: {}
     images?: {}
+    attachments?: {}
     master : boolean
     mini_breadcrumbs? : any[]
     masterRoute?: routeType
@@ -113,6 +118,7 @@ const component = computed(() => {
         stocks: TableOrgStocks,
         images: TradeUnitImagesManagement,
         translation: ProductTranslation,
+        attachments : AttachmentManagement
     }
     console.log(currentTab.value)
     return components[currentTab.value]
@@ -138,7 +144,6 @@ function masterProductRoute() {
 }
 
 
-
 </script>
 
 <template>
@@ -162,7 +167,7 @@ function masterProductRoute() {
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-    <div v-if="mini_breadcrumbs.length != 0" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+    <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
@@ -172,7 +177,7 @@ function masterProductRoute() {
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
                         <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
-                        <span class="truncate max-w-[150px]">{{ item.label || '-' }}</span>
+                        <span class="">{{ item.label || '-' }}</span>
                     </component>
                 </div>
             </template>

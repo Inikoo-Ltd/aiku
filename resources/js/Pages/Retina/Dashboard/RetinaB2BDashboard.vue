@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUser, faBuilding, faEnvelope, faPhone } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Tooltip from 'primevue/tooltip'
+import EmailSubscribetion from '@/Components/EmailSubscribetion.vue'
 
 library.add(faUser, faBuilding, faEnvelope, faPhone)
 
@@ -19,38 +20,51 @@ console.log('RetinaB2BDashboard', props)
         <!-- Customer Contact Information -->
         <div v-if="data?.customer" class="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h2 class="text-lg font-semibold text-gray-900 mb-3">{{ trans("Customer Information") }}</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div v-if="data.customer.contact_name" class="flex items-center">
-                    <FontAwesomeIcon 
-                        icon="fas fa-user" 
-                        class="text-gray-600 mr-2 w-4 h-4"
-                        v-tooltip="trans('Contact Name')"
-                    />
-                    <span class="text-gray-900">{{ data.customer.contact_name }}</span>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Left Column: Customer Information -->
+                <div class="space-y-3 text-sm">
+                    <div v-if="data.customer.contact_name" class="flex items-center">
+                        <FontAwesomeIcon 
+                            icon="fas fa-user" 
+                            class="text-gray-600 mr-2 w-4 h-4"
+                            v-tooltip="trans('Contact Name')"
+                        />
+                        <span class="text-gray-900">{{ data.customer.contact_name }}</span>
+                    </div>
+                    <div v-if="data.customer.company_name" class="flex items-center">
+                        <FontAwesomeIcon 
+                            icon="fas fa-building" 
+                            class="text-gray-600 mr-2 w-4 h-4"
+                            v-tooltip="trans('Company Name')"
+                        />
+                        <span class="text-gray-900">{{ data.customer.company_name }}</span>
+                    </div>
+                    <div v-if="data.customer.email" class="flex items-center">
+                        <FontAwesomeIcon 
+                            icon="fas fa-envelope" 
+                            class="text-gray-600 mr-2 w-4 h-4"
+                            v-tooltip="trans('Email')"
+                        />
+                        <span class="text-gray-900">{{ data.customer.email }}</span>
+                    </div>
+                    <div v-if="data.customer.phone" class="flex items-center">
+                        <FontAwesomeIcon 
+                            icon="fas fa-phone" 
+                            class="text-gray-600 mr-2 w-4 h-4"
+                            v-tooltip="trans('Phone')"
+                        />
+                        <span class="text-gray-900">{{ data.customer.phone }}</span>
+                    </div>
                 </div>
-                <div v-if="data.customer.company_name" class="flex items-center">
-                    <FontAwesomeIcon 
-                        icon="fas fa-building" 
-                        class="text-gray-600 mr-2 w-4 h-4"
-                        v-tooltip="trans('Company Name')"
+
+                <!-- Right Column: Email Subscriptions -->
+                <div class="flex justify-start lg:justify-end">
+                    <EmailSubscribetion 
+                        v-if="data?.customer?.email_subscriptions"
+                        :emailSubscriptions="data.customer.email_subscriptions"
+                        containerClass="p-3 bg-white rounded-md border border-gray-200 w-full max-w-sm"
                     />
-                    <span class="text-gray-900">{{ data.customer.company_name }}</span>
-                </div>
-                <div v-if="data.customer.email" class="flex items-center">
-                    <FontAwesomeIcon 
-                        icon="fas fa-envelope" 
-                        class="text-gray-600 mr-2 w-4 h-4"
-                        v-tooltip="trans('Email')"
-                    />
-                    <span class="text-gray-900">{{ data.customer.email }}</span>
-                </div>
-                <div v-if="data.customer.phone" class="flex items-center">
-                    <FontAwesomeIcon 
-                        icon="fas fa-phone" 
-                        class="text-gray-600 mr-2 w-4 h-4"
-                        v-tooltip="trans('Phone')"
-                    />
-                    <span class="text-gray-900">{{ data.customer.phone }}</span>
                 </div>
             </div>
         </div>

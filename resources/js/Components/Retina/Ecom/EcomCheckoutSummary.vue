@@ -5,7 +5,7 @@ import { faClipboard, faDollarSign, faPencil } from "@fal"
 import OrderSummary from "@/Components/Summary/OrderSummary.vue"
 import { trans } from "laravel-vue-i18n"
 import { inject, ref } from "vue"
-import { AddressManagement } from "@/types/PureComponent/Address"
+import { Address, AddressManagement } from "@/types/PureComponent/Address"
 import Modal from "@/Components/Utils/Modal.vue"
 import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 
@@ -21,6 +21,7 @@ const props = defineProps<{
     balance?: string
     address_management?: AddressManagement
     is_unable_dispatch?: boolean
+    contact_address?: Address | null
 }>()
 
 const locale = inject('locale', {})
@@ -30,7 +31,7 @@ const isModalShippingAddress = ref(false)
 </script>
 
 <template>
-    <div class="py-4 grid grid-cols-3 px-4 ">
+    <div class="py-4 grid grid-cols-2 md:grid-cols-3 gap-y-6 px-4">
         <!-- Section: Billing Address -->
         <div class="">
             <div class="font-semibold">
@@ -70,7 +71,7 @@ const isModalShippingAddress = ref(false)
         </div>
 
         <!-- Section: balance, charges, shipping, tax -->
-        <div>
+        <div class="col-span-2 md:col-span-1">
             <div class="border-b border-gray-200 pb-0.5 flex justify-between pl-1.5 pr-4 mb-1.5">
                 <div class="">{{ trans("Current balance") }}:</div>
                 <div>
@@ -99,7 +100,19 @@ const isModalShippingAddress = ref(false)
                 :updateRoute="address_management.address_update_route"
                 @submitted="() => (isModalShippingAddress = false)"
                 closeButton
-            />
+                :copyAddress="contact_address"
+            >
+                <template #copy_address="{ address, isEqual }">
+                    <div v-if="isEqual" class="text-gray-500 text-sm">
+                        {{ trans("Same as the contact address") }}
+                        <FontAwesomeIcon v-if="isEqual" v-tooltip="trans('Same as contact address')" icon="fal fa-check" class="text-green-500" fixed-width aria-hidden="true" />
+                    </div>
+
+                    <div v-else class="underline text-sm text-gray-500 hover:text-blue-700 cursor-pointer">
+                        {{ trans("Copy from contact address") }}
+                    </div>
+                </template>
+            </AddressEditModal>
         </Modal>
     </div>
 </template>

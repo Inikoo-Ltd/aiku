@@ -11,6 +11,7 @@ namespace App\Actions\Web\Webpage\UI;
 use App\Actions\OrgAction;
 use App\Actions\Web\Website\GetWebsiteWorkshopHeader;
 use App\Actions\Web\Website\GetWebsiteWorkshopMenu;
+use App\Actions\Web\Website\GetWebsiteWorkshopSidebar;
 use App\Models\Web\Website;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -34,6 +35,7 @@ class ShowHeaderPreview extends OrgAction
             [
                 'header' => GetWebsiteWorkshopHeader::run($website),
                 'navigation' => GetWebsiteWorkshopMenu::run($website),
+                'sidebar' => GetWebsiteWorkshopSidebar::run($website),
                 'layout' => Arr::get($website->published_layout, 'theme'),
             ]
         );

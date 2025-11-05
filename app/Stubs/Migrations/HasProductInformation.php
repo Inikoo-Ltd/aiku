@@ -15,6 +15,8 @@ trait HasProductInformation
     public function addProductInformationFields(Blueprint $table): void
     {
         $table->text('cpnp_number')->nullable()->index();
+        $table->text('scpn_number')->nullable()->index();
+        $table->text('ufi_number')->nullable()->index();
         $table->string('country_of_origin')->nullable()->index();
         $table->string('tariff_code')->nullable()->index();
         $table->string('duty_rate')->nullable()->index();
@@ -26,7 +28,10 @@ trait HasProductInformation
     {
         return [
             'cpnp_number',
+            'scpn_number',
+            'ufi_number',
             'country_of_origin',
+            'origin_country_id',
             'tariff_code',
             'duty_rate',
             'hts_us',

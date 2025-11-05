@@ -49,6 +49,10 @@ class UpdateOrganisation extends OrgAction
             data_set($modelData, "settings.invoice_export.attach_isdoc_to_pdf", Arr::pull($modelData, 'attach_isdoc_to_pdf'));
         }
 
+        if (Arr::has($modelData, 'show_tax_liability_date')) {
+            data_set($modelData, "settings.invoicing.show_tax_liability_date", Arr::pull($modelData, 'show_tax_liability_date'));
+        }
+
 
         if (Arr::has($modelData, 'address')) {
             $addressData = Arr::get($modelData, 'address');
@@ -103,28 +107,29 @@ class UpdateOrganisation extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'name'                    => ['sometimes', 'required', 'string', 'max:255'],
-            'ui_name'                 => ['sometimes', 'required', 'string', 'max:32'],
-            'contact_name'            => ['sometimes', 'string', 'max:255'],
-            'google_client_id'        => ['sometimes', 'string'],
-            'google_client_secret'    => ['sometimes', 'string'],
-            'show_omega'              => ['sometimes', 'boolean'],
-            'attach_isdoc_to_pdf'     => ['sometimes', 'boolean'],
-            'google_drive_folder_key' => ['sometimes', 'string'],
-            'address'                 => ['sometimes', 'required', new ValidAddress()],
-            'language_id'             => ['sometimes', 'exists:languages,id'],
-            'timezone_id'             => ['sometimes', 'exists:timezones,id'],
-            'currency_id'             => ['sometimes', 'exists:currencies,id'],
-            'email'                   => ['sometimes', 'nullable', 'email'],
-            'phone'                   => ['sometimes', 'nullable', new Phone()],
-            'forbidden_dispatch_countries'          => ['sometimes', 'array', 'nullable'],
-            'logo'                    => [
+            'name'                         => ['sometimes', 'required', 'string', 'max:255'],
+            'ui_name'                      => ['sometimes', 'required', 'string', 'max:32'],
+            'contact_name'                 => ['sometimes', 'string', 'max:255'],
+            'google_client_id'             => ['sometimes', 'string'],
+            'google_client_secret'         => ['sometimes', 'string'],
+            'show_omega'                   => ['sometimes', 'boolean'],
+            'attach_isdoc_to_pdf'          => ['sometimes', 'boolean'],
+            'show_tax_liability_date'      => ['sometimes', 'boolean'],
+            'google_drive_folder_key'      => ['sometimes', 'string'],
+            'address'                      => ['sometimes', 'required', new ValidAddress()],
+            'language_id'                  => ['sometimes', 'exists:languages,id'],
+            'timezone_id'                  => ['sometimes', 'exists:timezones,id'],
+            'currency_id'                  => ['sometimes', 'exists:currencies,id'],
+            'email'                        => ['sometimes', 'nullable', 'email'],
+            'phone'                        => ['sometimes', 'nullable', new Phone()],
+            'forbidden_dispatch_countries' => ['sometimes', 'array', 'nullable'],
+            'logo'                         => [
                 'sometimes',
                 'nullable',
                 File::image()
                     ->max(12 * 1024)
             ],
-            'colour'                  => ['sometimes', 'string'],
+            'colour'                       => ['sometimes', 'string'],
         ];
 
         if (!$this->strict) {

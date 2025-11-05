@@ -30,7 +30,7 @@ return new class () extends Migration {
             $table->foreign('shop_id')->references('id')->on('shops');
             $table->unsignedInteger('customer_id')->index();
             $table->foreign('customer_id')->references('id')->on('customers');
-            $table->string('type');
+            $table->string('type')->index();
             $table->string('reference')->index()->collation('und_ns')->nullable();
             $table->string('status')->index()->default(PaymentStatusEnum::IN_PROCESS->value);
             $table->string('state')->index()->default(PaymentStateEnum::IN_PROCESS->value);

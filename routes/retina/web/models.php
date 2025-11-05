@@ -18,6 +18,7 @@ use App\Actions\Dropshipping\Ebay\Product\StoreNewProductToCurrentEbay;
 use App\Actions\Dropshipping\Magento\Orders\GetRetinaOrdersFromMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfoliosToMagento;
 use App\Actions\Dropshipping\Magento\Product\SyncronisePortfolioToMagento;
+use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
 use App\Actions\Dropshipping\Shopify\ResetShopifyChannel;
 use App\Actions\Dropshipping\Tiktok\Product\GetProductsFromTiktokApi;
 use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
@@ -29,13 +30,15 @@ use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByBank;
 use App\Actions\Retina\Accounting\Payment\PlaceOrderPayByCashOnDelivery;
-use App\Actions\Retina\Accounting\TopUp\PdfTopupPdf;
 use App\Actions\Retina\Accounting\TopUp\StoreRetinaTopUp;
+use App\Actions\Retina\CRM\DeleteRetinaBackInStockReminder;
 use App\Actions\Retina\CRM\DeleteRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\DeleteRetinaFavourite;
+use App\Actions\Retina\CRM\StoreRetinaBackInStockReminder;
 use App\Actions\Retina\CRM\StoreRetinaCustomerClient;
 use App\Actions\Retina\CRM\StoreRetinaFavourite;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerAddress;
+use App\Actions\Retina\CRM\UpdateRetinaCustomerComms;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerDeliveryAddress;
 use App\Actions\Retina\CRM\UpdateRetinaCustomerSettings;
 use App\Actions\Retina\Dropshipping\ApiToken\DeleteCustomerAccessToken;
@@ -63,6 +66,8 @@ use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfoliosFromProductCa
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfoliosFromProductCategoryToAllChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToAllChannels;
 use App\Actions\Retina\Dropshipping\Portfolio\StoreRetinaPortfolioToMultiChannels;
+use App\Actions\Retina\Dropshipping\Portfolio\UnlinkAndDeleteBulkRetinaPortfolio;
+use App\Actions\Retina\Dropshipping\Portfolio\UnlinkRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Portfolio\UpdateRetinaPortfolio;
 use App\Actions\Retina\Dropshipping\Product\StoreRetinaProductManual;
 use App\Actions\Retina\Ebay\CreateRetinaNewAllPortfoliosToEbay;
@@ -70,6 +75,7 @@ use App\Actions\Retina\Ebay\CreateRetinaNewBulkPortfoliosToEbay;
 use App\Actions\Retina\Ebay\MatchRetinaBulkNewProductToCurrentEbay;
 use App\Actions\Retina\Ebay\MatchRetinaPortfolioToCurrentEbayProduct;
 use App\Actions\Retina\Ebay\StoreRetinaNewProductToCurrentEbay;
+use App\Actions\Retina\Ebay\UpdateAndUploadRetinaPortfolioToCurrentEbay;
 use App\Actions\Retina\Ecom\Basket\RetinaDeleteBasketTransaction;
 use App\Actions\Retina\Ecom\Basket\RetinaEcomUpdateTransaction;
 use App\Actions\Retina\Fulfilment\Dropshipping\Channel\Manual\StoreRetinaFulfilmentManualPlatform;
@@ -141,7 +147,6 @@ Route::post('place-order-pay-by-bank', PlaceOrderPayByBank::class)->name('place_
 Route::post('place-order-pay-by-cash-on-delivery', PlaceOrderPayByCashOnDelivery::class)->name('place_order_pay_by_cash_on_delivery');
 
 Route::post('top-up-payment-api-point', StoreTopUpPaymentApiPoint::class)->name('top_up_payment_api_point.store');
-Route::get('top-up-pdf-export', PdfTopupPdf::class)->name('top_up_pdf.export');
 
 Route::patch('/profile', UpdateRetinaProfile::class)->name('profile.update');
 Route::patch('/settings', UpdateRetinaCustomerSettings::class)->name('settings.update');
@@ -150,6 +155,18 @@ Route::name('fulfilment-transaction.')->prefix('fulfilment_transaction/{fulfilme
     Route::patch('', UpdateRetinaFulfilmentTransaction::class)->name('update');
     Route::delete('', DeleteRetinaFulfilmentTransaction::class)->name('delete');
 });
+
+Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->group(function () {
+    Route::patch('update', UpdateRetinaCustomerComms::class)->name('update');
+});
+
+
+Route::post('favourite/{product:id}', StoreRetinaFavourite::class)->name('favourites.store');
+Route::delete('un-favourite/{product:id}', DeleteRetinaFavourite::class)->name('favourites.delete');
+
+Route::post('remind-back-in-stock/{product:id}', StoreRetinaBackInStockReminder::class)->name('remind_back_in_stock.store')->withoutScopedBindings();
+Route::delete('remind-back-in-stock/{product:id}', DeleteRetinaBackInStockReminder::class)->name('remind_back_in_stock.delete')->withoutScopedBindings();
+
 
 Route::post('pallet-return', StoreRetinaPalletReturn::class)->name('pallet-return.store');
 Route::post('pallet-return/stored-items', [StoreRetinaPalletReturn::class, 'withStoredItems'])->name('pallet-return-stored-items.store');
@@ -256,6 +273,7 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
+    Route::post('sync-shopify-portfolio', CheckShopifyPortfolios::class)->name('portfolio_shopify_sync');
 
     Route::patch('update', UpdateRetinaCustomerSalesChannel::class)->name('update');
     Route::post('client', StoreRetinaCustomerClient::class)->name('customer-client.store');
@@ -279,6 +297,8 @@ Route::delete('{token}/access-token', DeleteCustomerAccessToken::class)->name('a
 
 
 Route::name('dropshipping.')->prefix('dropshipping')->group(function () {
+    Route::post('{customerSalesChannel:id}/bulk-unlink', UnlinkAndDeleteBulkRetinaPortfolio::class)->name('bulk.unlink');
+
     Route::post('shopify-user/{shopifyUser:id}/products', StoreRetinaProductShopify::class)->name('shopify_user.product.store')->withoutScopedBindings();
 
     Route::post('{customerSalesChannel:id}/shopify-batch-upload', CreateRetinaNewBulkPortfoliosToShopify::class)->name('shopify.batch_upload')->withoutScopedBindings();
@@ -333,6 +353,7 @@ Route::name('top-up.')->prefix('top-up')->group(function () {
 });
 
 Route::delete('portfolio/{portfolio:id}', DeleteRetinaPortfolio::class)->name('portfolio.delete');
+Route::delete('portfolio/{portfolio:id}/unlink', UnlinkRetinaPortfolio::class)->name('portfolio.unlink');
 Route::patch('portfolio/{portfolio:id}', UpdateRetinaPortfolio::class)->name('portfolio.update');
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-shopify-product', MatchRetinaPortfolioToCurrentShopifyProduct::class)->name('portfolio.match_to_existing_shopify_product');
@@ -343,6 +364,7 @@ Route::post('portfolio/{portfolio:id}/store-new-woo-product', StoreRetinaNewProd
 
 Route::post('portfolio/{portfolio:id}/match-to-existing-ebay-product', MatchRetinaPortfolioToCurrentEbayProduct::class)->name('portfolio.match_to_existing_ebay_product');
 Route::post('portfolio/{portfolio:id}/store-new-ebay-product', StoreRetinaNewProductToCurrentEbay::class)->name('portfolio.store_new_ebay_product');
+Route::post('portfolio/{portfolio:id}/update-new-ebay-product', UpdateAndUploadRetinaPortfolioToCurrentEbay::class)->name('portfolio.update_new_ebay_product');
 
 Route::post('portfolio/product-category/{productCategory:id}/store', StoreRetinaPortfoliosFromProductCategoryToAllChannels::class)->name('portfolio.store_from_product_category')->withoutScopedBindings();
 Route::post('portfolio/all-channels/store', StoreRetinaPortfolioToAllChannels::class)->name('portfolio.store_to_all_channels');
@@ -355,8 +377,9 @@ Route::name('mit_saved_card.')->prefix('mit-saved-card')->group(function () {
 
 Route::name('product.')->prefix('product')->group(function () {
     Route::post('{product:id}/favourite', StoreRetinaFavourite::class)->name('favourite');
-    Route::delete('{favourite:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite');
+    Route::delete('{product:id}/unfavourite', DeleteRetinaFavourite::class)->name('unfavourite');
     Route::post('{product:id}/add-to-basket', StoreRetinaEcomBasketTransaction::class)->name('add-to-basket');
+
 });
 
 Route::patch('/locale/{locale}', UpdateIrisLocale::class)->name('locale.update');

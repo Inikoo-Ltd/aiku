@@ -78,8 +78,8 @@ class UpdateMasterCollection extends GrpAction
                 new IUnique(
                     table: 'master_collections',
                     extraConditions: [
-                        ['column' => 'group_id', 'value' => $this->group->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'master_shop_id', 'value' => $this->masterCollection->master_shop_id],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->masterCollection->id, 'operator' => '!=']
 
                     ]

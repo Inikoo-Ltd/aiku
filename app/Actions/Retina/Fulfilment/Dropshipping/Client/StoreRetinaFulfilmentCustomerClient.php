@@ -13,7 +13,6 @@ use App\Actions\Dropshipping\CustomerClient\StoreCustomerClient;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerClient;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Http\RedirectResponse;
@@ -25,7 +24,6 @@ class StoreRetinaFulfilmentCustomerClient extends RetinaAction
     use WithModelAddressActions;
     use WithNoStrictRules;
 
-    protected Customer $customer;
     /**
      * @var \App\Models\Dropshipping\CustomerSalesChannel
      */

@@ -11,7 +11,6 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use Exception;
 use Illuminate\Console\Command;
@@ -21,9 +20,6 @@ use Sentry;
 class SaveShopifyProductData extends RetinaAction
 {
     use WithActionUpdate;
-
-    public string $jobQueue = 'shopify';
-    public int $jobBackoff = 5;
 
 
     public function handle(Portfolio $portfolio, array $productData = []): ?array
@@ -145,8 +141,6 @@ class SaveShopifyProductData extends RetinaAction
 
 
             if (!empty($response['errors']) || !isset($response['body'])) {
-                $errorMessage = 'Error in API response: '.json_encode($response['errors'] ?? []);
-                Sentry::captureMessage("Product data retrieval failed: ".$errorMessage);
 
                 return null;
             }
@@ -159,11 +153,7 @@ class SaveShopifyProductData extends RetinaAction
 
             if (isset($body['data']['product'])) {
                 $productData = $body['data']['product'];
-            } else {
-                Sentry::captureMessage("Product data not found in response B");
-
             }
-
 
             $sku = Arr::get($productData, 'variants.edges.0.node.sku');
 
@@ -184,10 +174,7 @@ class SaveShopifyProductData extends RetinaAction
 
             // Format the response to match the expected structure
             return $this->formatProductResponse($productData);
-        } catch (Exception $e) {
-            dd($e);
-            Sentry::captureException($e);
-
+        } catch (Exception) {
             return null;
         }
     }

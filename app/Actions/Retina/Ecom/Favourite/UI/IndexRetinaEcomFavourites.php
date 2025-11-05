@@ -55,7 +55,7 @@ class IndexRetinaEcomFavourites extends RetinaAction
         foreach ($transactions as $transaction) {
             // Use product ID as key to match with favorites data (products.id)
             $productId = $transaction->asset?->product?->id;
-            
+
             if ($productId) {
                 $basketTransactions[$productId] = [
                     'id' => $transaction->id,

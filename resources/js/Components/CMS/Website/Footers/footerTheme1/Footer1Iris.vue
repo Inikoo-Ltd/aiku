@@ -117,7 +117,7 @@ const getValueColumn4Transleted = (value: string) => {
             </div> -->
             <div>
                 <component v-if="modelValue?.logo?.source" :is="'span'" rel="noopener noreferrer"
-                    class="block w-fit h-auto pt-3">
+                    class="mx-auto md:mx-0 block w-fit h-auto pt-3">
                     <Image :style="getStyles(modelValue.logo.properties, screenType)" :alt="modelValue?.logo?.alt"
                         :imageCover="true" :src="modelValue?.logo?.source">
                     </Image>
@@ -149,7 +149,7 @@ const getValueColumn4Transleted = (value: string) => {
         </div>
 
 
-        <div class=" grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-3 md:gap-8">
             <!--  column 1 -->
             <div class="md:px-0 grid gap-y-3 md:gap-y-6 h-fit">
                 <div class="md:px-0 grid gap-y-3 md:gap-y-6 h-fit">
@@ -388,7 +388,6 @@ const getValueColumn4Transleted = (value: string) => {
 
                             <Button
                                 @click.prevent="onSubmitSubscribe"
-                                xtype="submit"
                                 :label="trans('Subscribe')"
                                 :loading="isLoadingSubmit"
                                 full

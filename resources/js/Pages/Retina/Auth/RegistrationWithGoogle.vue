@@ -21,6 +21,7 @@ library.add(faEnvelope, faAsterisk, faUser, faPhone, faBuilding, faGlobe)
 // defineOptions({ layout: RetinaShowIris })
 const props = defineProps<{
 	countriesAddressData: [],
+    requiresPhoneNumber: boolean,
 	polls: [],
 	registerRoute: {
 		name: string,
@@ -155,6 +156,7 @@ provide('registrationWarning', registrationWarning)
 								:countriesAddressData
 								:polls
 								:form
+								:requiresPhoneNumber="props.requiresPhoneNumber"
 							/>
 							
 							<!-- Opt in newsletter -->

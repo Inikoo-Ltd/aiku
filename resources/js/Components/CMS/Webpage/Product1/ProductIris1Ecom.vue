@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { faCube, faLink, faHeart } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle } from "@fas"
+import { faCircle, faHeart as fasHeart, faDotCircle, faPlus, faMinus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, onMounted, computed } from "vue"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
-import { useLocaleStore } from '@/Stores/locale'
+import { useLocaleStore } from "@/Stores/locale"
 import ProductContentsIris from "./ProductContentIris.vue"
 import InformationSideProduct from "./InformationSideProduct.vue"
 import Image from "@/Components/Image.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import { router, Link } from "@inertiajs/vue3"
-import { Image as ImageTS } from '@/types/Image'
+import { Image as ImageTS } from "@/types/Image"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
@@ -21,8 +21,15 @@ import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import ButtonAddToBasket from "@/Components/Iris/Products/ButtonAddToBasket.vue"
 import { faEnvelope } from "@far"
 import { faEnvelopeCircleCheck } from "@fortawesome/free-solid-svg-icons"
+import EcomAddToBasketv2 from "@/Components/Iris/Products/EcomAddToBasketv2.vue"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
+import axios from "axios"
+import { ulid } from "ulid"
+import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
+import Product from "@/Pages/Grp/Org/Catalogue/Product.vue"
+import ProductPrices from "./ProductPrices.vue"
 
-library.add(faCube, faLink)
+library.add(faCube, faLink, faPlus, faMinus)
 
 interface ProductResource {
     id: number
@@ -49,10 +56,9 @@ const props = withDefaults(defineProps<{
     fieldValue: any
     webpageData?: any
     blockData?: object
-    screenType: 'mobile' | 'tablet' | 'desktop'
-}>(), {
-})
-const layout = inject('layout', {})
+    screenType: "mobile" | "tablet" | "desktop"
+}>(), {})
+const layout = inject("layout", {})
 const currency = layout?.iris?.currency
 const locale = useLocaleStore()
 const isFavorite = ref(false)
@@ -60,12 +66,15 @@ const contentRef = ref<Element | null>(null)
 const expanded = ref(false)
 const showButton = ref(false)
 const isLoadingRemindBackInStock = ref(false)
+const customerData = ref(null)
+const keyCustomer = ref(ulid())
+
 
 // Section: Add to Favourites
 const isLoadingFavourite = ref(false)
 const onAddFavourite = (product: ProductResource) => {
     router.post(
-        route('iris.models.favourites.store', {
+        route("iris.models.favourites.store", {
             product: product.id
         }),
         {
@@ -74,12 +83,13 @@ const onAddFavourite = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ["iris"],
             onStart: () => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, 'is_favourite', true)
+                set(customerData.value, "is_favourite", true)
+                layout.reload_handle()
             },
             onError: errors => {
                 notify({
@@ -90,25 +100,26 @@ const onAddFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-            },
+            }
         }
     )
 }
 
 const onUnselectFavourite = (product: ProductResource) => {
     router.delete(
-        route('iris.models.favourites.delete', {
+        route("iris.models.favourites.delete", {
             product: product.id
         }),
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ["iris"],
             onStart: () => {
                 isLoadingFavourite.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, 'is_favourite', false)
+                set(customerData.value, "is_favourite", false)
+
             },
             onError: errors => {
                 notify({
@@ -119,14 +130,14 @@ const onUnselectFavourite = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingFavourite.value = false
-            },
+            }
         }
     )
 }
 
 const onAddBackInStock = (product: ProductResource) => {
     router.post(
-          route('iris.models.remind_back_in_stock.store', {
+        route("iris.models.remind_back_in_stock.store", {
             product: product.id
         }),
         {
@@ -135,12 +146,12 @@ const onAddBackInStock = (product: ProductResource) => {
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ["iris"],
             onStart: () => {
                 isLoadingRemindBackInStock.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, 'is_back_in_stock', true)
+                set(props.fieldValue.product, "is_back_in_stock", true)
             },
             onError: errors => {
                 notify({
@@ -151,25 +162,25 @@ const onAddBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
-            },
+            }
         }
     )
 }
 
 const onUnselectBackInStock = (product: ProductResource) => {
     router.delete(
-        route('iris.models.remind_back_in_stock.delete', {
+        route("iris.models.remind_back_in_stock.delete", {
             product: product.id
         }),
         {
             preserveScroll: true,
             preserveState: true,
-            only: ['iris'],
+            only: ["iris"],
             onStart: () => {
                 isLoadingRemindBackInStock.value = true
             },
             onSuccess: () => {
-                set(props.fieldValue.product, 'is_back_in_stock', false)
+                set(props.fieldValue.product, "is_back_in_stock", false)
             },
             onError: errors => {
                 notify({
@@ -180,9 +191,34 @@ const onUnselectBackInStock = (product: ProductResource) => {
             },
             onFinish: () => {
                 isLoadingRemindBackInStock.value = false
-            },
+            }
         }
     )
+}
+
+const getOrderingProduct = async () => {
+    isLoadingRemindBackInStock.value = true
+
+    try {
+        const url = route("iris.json.product.ecom_ordering_data", { product: props.fieldValue.product.id })
+        const response = await axios.get(url, {
+            params: {},
+        })
+
+        // Update the local state
+        keyCustomer.value = ulid()
+        customerData.value = response.data
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: trans("Failed to remove the product from remind back in stock"),
+            type: "error",
+        })
+        console.error(error)
+        return null
+    } finally {
+        isLoadingRemindBackInStock.value = false
+    }
 }
 
 
@@ -193,6 +229,8 @@ onMounted(() => {
         }
     })
 
+    if (layout?.iris?.is_logged_in) getOrderingProduct()
+
     // Luigi: last_seen recommendations
     if (props.fieldValue?.product?.luigi_identity) {
         window?.dataLayer?.push({
@@ -200,7 +238,7 @@ onMounted(() => {
             ecommerce: {
                 items: [
                     {
-                        item_id: props.fieldValue?.product?.luigi_identity,
+                        item_id: props.fieldValue?.product?.luigi_identity
                     }
                 ]
             }
@@ -208,9 +246,12 @@ onMounted(() => {
     }
 })
 
+
 const toggleExpanded = () => {
     expanded.value = !expanded.value
 }
+
+
 
 
 const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldValue.product.images :
@@ -219,7 +260,7 @@ const imagesSetup = ref(isArray(props.fieldValue.product.images) ? props.fieldVa
         .map(item => ({
             label: item.label,
             column: item.column_in_db,
-            images: item.images,
+            images: item.images
         }))
 )
 
@@ -248,6 +289,34 @@ const validImages = computed(() => {
     // berarti array of string/url
     return imagesSetup.value
 })
+
+const profitMargin = computed(() => {
+    const price = props.fieldValue?.product?.price
+    const rrp = props.fieldValue?.product?.rrp
+    if (!price || !rrp || rrp === 0) return 0
+    return Math.round(((rrp - price) / rrp) * 100)
+})
+
+
+const popoverHover = ref(false)
+const popoverTimeout = ref()
+
+const hoverPopover = (e: any, open: boolean): void => {
+    popoverHover.value = true
+    if (!open) {
+        e.target.parentNode.click()
+    }
+}
+
+const closePopover = (close: any): void => {
+    popoverHover.value = false
+    if (popoverTimeout.value) clearTimeout(popoverTimeout.value)
+    popoverTimeout.value = setTimeout(() => {
+        if (!popoverHover.value) {
+            close()
+        }
+    }, 100)
+}
 
 </script>
 
@@ -280,14 +349,14 @@ const validImages = computed(() => {
                     <div class="w-full">
                         <h1 class="!text-3xl font-bold">
                             <span v-if="Number(fieldValue.product.units) > 1">{{ Number(fieldValue.product.units)
-                            }}x</span> {{ fieldValue.product.name }}
+                                }}x</span> {{ fieldValue.product.name }}
                         </h1>
 
                         <div class="flex flex-wrap gap-x-10 text-sm font-medium text-gray-600 mt-1 mb-1">
-                            <div>Product code: {{ fieldValue.product.code }}</div>
+                            <div>{{ trans("Product code") }}: {{ fieldValue.product.code }}</div>
                             <!-- <div class="flex items-center gap-[1px]">
                             </div> -->
-                        </div>  
+                        </div>
 
                         <div v-if="layout?.iris?.is_logged_in" class="flex items-center justify-between">
                             <!-- Stock info -->
@@ -296,23 +365,26 @@ const validImages = computed(() => {
                                     :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                                 <span>
                                     {{
-                                        fieldValue.product.stock > 0
+                                        customerData?.stock > 0
                                             ? trans("In stock") +
-                                            ` (${fieldValue.product.stock} ` +
-                                    trans("available") +
-                                    `)`
-                                    : trans("Out Of Stock")
+                                            ` (${customerData?.stock} ` +
+                                            trans("available") +
+                                            `)`
+                                            : trans("Out Of Stock")
                                     }}
                                 </span>
                             </div>
 
                             <!-- Remind me button absolute -->
                             <button v-if="fieldValue.product.stock <= 0 && layout?.app?.environment === 'local'"
-                                 @click="() => fieldValue.product.is_back_in_stock ? onUnselectBackInStock(fieldValue.product) :  onAddBackInStock(fieldValue.product)"
+                                @click="() => fieldValue.product.is_back_in_stock ? onUnselectBackInStock(fieldValue.product) : onAddBackInStock(fieldValue.product)"
                                 class="absolute right-0 bottom-2 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-200 hover:border-gray-400">
                                 <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                                <FontAwesomeIcon v-else :icon="fieldValue.product.is_back_in_stock  ?  faEnvelopeCircleCheck : faEnvelope" :class="[fieldValue.product.is_back_in_stock  ? 'text-green-600' :'text-gray-600']" />
-                                <span>{{ fieldValue.product.is_back_in_stock ?  trans('will be notified when in Stock') :  trans("Remind me") }}</span>
+                                <FontAwesomeIcon v-else
+                                    :icon="fieldValue.product.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
+                                    :class="[fieldValue.product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
+                                <span>{{ fieldValue.product.is_back_in_stock ? trans("will be notified when in Stock") :
+                                    trans("Remind me") }}</span>
                             </button>
                         </div>
 
@@ -325,9 +397,9 @@ const validImages = computed(() => {
                                 <LoadingIcon />
                             </div>
                             <div v-else
-                                @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
+                                @click="() => customerData?.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)"
                                 class="cursor-pointer top-2 right-2 group text-2xl ">
-                                <FontAwesomeIcon v-if="fieldValue.product.is_favourite" :icon="fasHeart" fixed-width
+                                <FontAwesomeIcon v-if="customerData?.is_favourite" :icon="fasHeart" fixed-width
                                     class="text-pink-500" />
                                 <span v-else class="">
                                     <FontAwesomeIcon :icon="fasHeart" fixed-width
@@ -340,47 +412,30 @@ const validImages = computed(() => {
                     </div>
                 </div>
 
-                <!-- Section: Price, RRP -->
-                <div v-if="layout?.iris?.is_logged_in" class="flex flex-wrap gap-x-4 items-end mb-3">
-                    <div class="font-semibold text-2xl leading-none flex-grow min-w-0">
-                        {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-                        <span class="text-gray-500 text-base font-normal">
-                            ({{ locale.currencyFormat(currency?.code,
-                                (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/{{
-                                fieldValue.product.unit }})
-                        </span>
-                    </div>
-
-                    <div v-if="fieldValue.product.rrp"
-                        class="text-sm xtext-gray-800 xfont-semibold text-right xpl-4 text-gray-500">
-                        <span class="whitespace-nowrap ">RRP:</span>
-                        <span class=" text-base font-normal">
-                            {{ locale.currencyFormat(currency?.code,
-                                (fieldValue.product.rrp / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit
-                            }}
-                        </span>
-                    </div>
-                </div>
+                
+               <ProductPrices :field-value="fieldValue" />
 
                 <!-- Section: Button add to cart -->
                 <div class="relative flex gap-2 mb-6">
-                    <div v-if="layout?.iris?.is_logged_in" class="w-full">
-                        <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
+                    <div v-if="layout?.iris?.is_logged_in && customerData" class="w-full">
+                        <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
+                        <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product"
+                            :customerData="customerData" :key="keyCustomer" />
 
                         <div v-else>
                             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
                         </div>
                     </div>
 
-                    <Link v-else :href="urlLoginWithRedirect()"
+                    <LinkIris v-else :href="urlLoginWithRedirect()"
                         class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-                    {{ trans("Login or Register for Wholesale Prices") }}
-                    </Link>
+                        {{ trans("Login or Register for Wholesale Prices") }}
+                    </LinkIris>
                 </div>
 
-                <div class="text-sm" :style="getStyles(fieldValue?.description?.description_title, screenType)">
+                <!-- <div class="text-sm" :style="getStyles(fieldValue?.description?.description_title, screenType)">
                     <div>{{ fieldValue.product.description_title }}</div>
-                </div>
+                </div> -->
 
                 <div class="text-sm" :style="getStyles(fieldValue?.description?.description_content, screenType)">
                     <div v-html="fieldValue.product.description"></div>
@@ -391,7 +446,7 @@ const validImages = computed(() => {
                     <div v-if="fieldValue?.paymentData?.length > 0"
                         class="items-center gap-3  border-gray-400 font-bold text-gray-800 py-2"
                         :style="getStyles(fieldValue?.information_style?.title)">
-                        Secure Payments:
+                        {{ trans("Secure Payments") }}:
                         <div class="flex flex-wrap items-center gap-6 border-gray-400 font-bold text-gray-800 py-2">
                             <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code"
                                 :src="logo.image" :alt="logo.code" class="h-4 px-1" />
@@ -408,7 +463,7 @@ const validImages = computed(() => {
                 :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
 
             <button v-if="showButton" @click="toggleExpanded" class="mt-1 text-xs underline focus:outline-none">
-                {{ expanded ? 'Show Less' : 'Read More' }}
+                {{ expanded ? trans("Show Less") : trans("Read More") }}
             </button>
         </div>
         <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
@@ -422,28 +477,14 @@ const validImages = computed(() => {
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
             <div v-if="layout?.iris?.is_logged_in">
-                <div class="text-lg font-semibold">
-                    {{ locale.currencyFormat(currency?.code, fieldValue.product.price || 0) }}
-                    <span class="text-sm text-gray-400 xtext-base font-normal">
-                        ({{ locale.currencyFormat(currency?.code,
-                            (fieldValue.product.price / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit
-                        }})
-                    </span>
-                </div>
-                <div v-if="fieldValue.product.rrp" class="text-xs xtext-gray-600 font-semibold mt-1">
-                    <span>RRP: {{ locale.currencyFormat(currency?.code, fieldValue.product.rrp || 0) }}</span>
-                    <span class="text-gray-400 xtext-base font-normal">
-                        ({{ locale.currencyFormat(currency?.code,
-                            (fieldValue.product.rrp / fieldValue.product.units).toFixed(2)) }}/{{ fieldValue.product.unit }})
-                    </span>
-                </div>
+               <ProductPrices :field-value="fieldValue" />
             </div>
 
             <!-- Favorite Icon -->
             <div v-if="layout?.retina?.type != 'dropshipping' && layout.iris?.is_logged_in" class="mt-1">
                 <FontAwesomeIcon :icon="faHeart" class="text-xl cursor-pointer transition-colors duration-300"
                     :class="{ 'text-red-500': isFavorite, 'text-gray-400 hover:text-red-500': !isFavorite }"
-                    @click="() => fieldValue.product.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
+                    @click="() => customerData?.is_favourite ? onUnselectFavourite(fieldValue.product) : onAddFavourite(fieldValue.product)" />
             </div>
         </div>
 
@@ -461,10 +502,23 @@ const validImages = computed(() => {
         </div>
 
         <div class="mt-6 flex flex-col gap-2">
-            <ButtonAddToBasket :product="fieldValue.product" />
+            <!-- <ButtonAddToBasket :product="fieldValue.product" /> -->
+            <div v-if="layout?.iris?.is_logged_in" class="w-full">
+                <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
+                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
+
+                <div v-else>
+                    <Button :label="trans('Out of stock')" type="tertiary" disabled full />
+                </div>
+            </div>
+
+            <LinkIris v-else :href="urlLoginWithRedirect()"
+                class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+                {{ trans("Login or Register for Wholesale Prices") }}
+            </LinkIris>
         </div>
 
-        <div class="text-xs font-medium py-3">
+        <div class="mt-4 text-xs font-medium py-3">
             <div v-html="fieldValue.product.description"></div>
         </div>
 

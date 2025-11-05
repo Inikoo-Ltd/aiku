@@ -10,6 +10,7 @@ import { faCube, faLink } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import LinkIris from "@/Components/Iris/LinkIris.vue"
 
 library.add(faCube, faLink)
 
@@ -42,11 +43,13 @@ const layout: any = inject("layout", {})
                 <section v-html="fieldValue.title"></section>
                 <section v-html="fieldValue.text"></section>
                 <div class="flex justify-center">
-                    <a :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
-                        typeof="button">
-                        <Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
+                    <LinkIris :href="fieldValue?.button?.link?.href" :target="fieldValue?.button?.link?.target"
+                        typeof="button" :type="fieldValue?.button?.link?.type" :canonical_url="fieldValue?.button?.link?.canonical_url">
+                        <template #default>
+                            <Button :injectStyle="getStyles(fieldValue?.button?.container?.properties, screenType)"
                             :label="fieldValue?.button?.text" />
-                    </a>
+                        </template>
+                    </LinkIris>
                 </div>
             </div>
         </div>

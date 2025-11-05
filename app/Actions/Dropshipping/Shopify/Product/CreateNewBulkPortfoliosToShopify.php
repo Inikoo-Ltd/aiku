@@ -11,7 +11,9 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Dropshipping\Portfolio;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateNewBulkPortfoliosToShopify extends OrgAction
@@ -23,22 +25,26 @@ class CreateNewBulkPortfoliosToShopify extends OrgAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $attributes): void
     {
-
-        $portfolios = $customerSalesChannel
-            ->portfolios()
+        $portfoliosIds = DB::table('portfolios')
+            ->select('id')
+            ->where('customer_sales_channel_id', $customerSalesChannel->id)
             ->where('status', true)
             ->whereIn('id', Arr::get($attributes, 'portfolios'))
             ->get();
 
-        foreach ($portfolios as $portfolio) {
-            StoreNewProductToCurrentShopify::dispatch($portfolio, []);
+        /** @var \App\Models\Dropshipping\Portfolio $portfolio */
+        foreach ($portfoliosIds as $portfoliosId) {
+            $portfolio = Portfolio::find($portfoliosId->id);
+            if ($portfolio) {
+                StoreNewProductToCurrentShopify::dispatch($portfolio);
+            }
         }
     }
 
     public function rules(): array
     {
         return [
-            'portfolios' => ['required', 'array'],
+            'portfolios'   => ['required', 'array'],
             'portfolios.*' => ['required', 'integer'],
         ];
     }

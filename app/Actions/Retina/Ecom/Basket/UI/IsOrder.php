@@ -25,6 +25,9 @@ trait IsOrder
 
     public function getOrderBoxStats(Order $order): array
     {
+
+        $taxCategory = $order->taxCategory;
+
         $payAmount   = $order->total_amount - $order->payment_amount;
         $roundedDiff = round($payAmount, 2);
 
@@ -54,11 +57,8 @@ trait IsOrder
                 $routeDownload = null;
             } else {
                 $routeShow = [
-                    'name'       => 'grp.org.accounting.invoices.show',
-                    'parameters' => [
-                        'organisation' => $order->organisation->slug,
-                        'invoice'      => $invoice->slug,
-                    ]
+                    'name'       => request()->route()->getName() . '.invoices.show',
+                    'parameters' => array_merge(request()->route()->originalParameters(), ['invoice' => $invoice->slug])
                 ];
 
                 $routeDownload = [
@@ -94,11 +94,8 @@ trait IsOrder
                 $routeDownload = null;
             } else {
                 $routeShow = [
-                    'name'       => 'grp.org.accounting.invoices.show',
-                    'parameters' => [
-                        'organisation' => $order->organisation->slug,
-                        'invoice'      => $invoice->slug,
-                    ]
+                    'name'       => request()->route()->getName() . '.invoices.show',
+                    'parameters' => array_merge(request()->route()->originalParameters(), ['invoice' => $invoice->slug])
                 ];
 
                 $routeDownload = [
@@ -181,7 +178,7 @@ trait IsOrder
                 ]
             ),
             'customer_channel' => $customerChannel,
-            'invoice'          => $invoiceData,   //todo vika delete this
+            // 'invoice'          => $invoiceData,   //todo vika delete this
             'invoices'          => $invoicesData,
 
 
@@ -255,7 +252,7 @@ trait IsOrder
                         'price_total' => $order->net_amount
                     ],
                     [
-                        'label'       => __('Tax 20%'),
+                        'label'       => __('Tax').' ('.$taxCategory->name.')',
                         'information' => '',
                         'price_total' => $order->tax_amount
                     ]

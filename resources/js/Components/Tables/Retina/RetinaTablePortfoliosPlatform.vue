@@ -44,7 +44,7 @@ import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import PureInput from "@/Components/Pure/PureInput.vue"
 import axios from "axios"
 import {routeType} from "@/types/route";
-import {Message} from "primevue"
+import {InputText, Message} from "primevue"
 
 library.add(faHandshake, faHandshakeSlash, faHandPointer, fadExclamationTriangle, faSyncAlt, faConciergeBell, faGarage, faExclamationTriangle, faPencil, faSearch, faThLarge, faListUl, faStar, faFilter, falStar, faTrashAlt, faCheck, faExclamationCircle, faClone, faLink, faScrewdriver, faTools)
 
@@ -281,8 +281,6 @@ const filteredPortfolios = computed(() => {
 const selectedVariant = ref<Product | null>(null)
 const onSubmitVariant = () => {
 
-    console.log(selectedVariant.value)
-
     /* selectedVariant.value = null
     selectedPortfolio.value = null */
 
@@ -384,6 +382,50 @@ const onDisableCheckbox = (item) => {
 }
 
 
+const listErrorProducts = ref({
+
+})
+
+// Section: Modal Error Product (i.e Ebay title too long)
+const selectedErrorProduct = ref(null)
+const isOpenModalErrorProduct = ref(false)
+const isLoadingSubmitErrorTitle = ref(false)
+const submitErrorProduct = (sel) => {
+    // Section: Submit
+    router.post(
+        route('retina.models.portfolio.update_new_ebay_product', {
+            portfolio: sel.product.id
+        }),
+        {
+            title: sel.product.new_name
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => {
+                isLoadingSubmitErrorTitle.value = true
+            },
+            onSuccess: () => {
+                notify({
+                    title: trans("Success"),
+                    text: trans("Successfully submit the data"),
+                    type: "success"
+                })
+                isOpenModalErrorProduct.value = false
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Try again or contact administrator"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingSubmitErrorTitle.value = false
+            },
+        }
+    )
+}
 </script>
 
 <template>
@@ -683,6 +725,7 @@ const onDisableCheckbox = (item) => {
 
         <!-- Column: Actions 2 (Modal shopify) -->
         <template #cell(create_new)="{ item }">
+            <!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
             <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
                  class="flex gap-x-2 items-center">
                 <ButtonWithLink
@@ -702,6 +745,18 @@ const onDisableCheckbox = (item) => {
                     :bindToLink="{
                         preserveScroll: true,
                     }"
+                    @success="(a) => {
+                        // console.log('zvvcvc', a)
+                    }"
+                    @error="(e) => {
+                        // console.log('aaaaaaaaaaaa', e, item)
+                        selectedErrorProduct = {
+                            product: item,
+                            error: e
+                        }
+                        isOpenModalErrorProduct = true
+                        set(listErrorProducts, [`x${item.id}`], e)
+                    }"
                 />
             </div>
         </template>
@@ -714,6 +769,9 @@ const onDisableCheckbox = (item) => {
 					}" size="xs" :bindToLink="{
 						preserveScroll: true,
 					}"/>
+        </template>
+        <template #cell(message)="{item}">
+            <span :class="item.message === 'OK' ? 'text-green-500' : 'text-red-500'">{{item.message}}</span>
         </template>
     </Table>
 
@@ -759,9 +817,13 @@ const onDisableCheckbox = (item) => {
                                                          fixed-width aria-hidden="true"/>
                                     </Transition>
                                     <slot name="product" :item="item">
-                                        <Image v-if="item.images?.src" :src="item.images?.src"
+<!--                                        <Image v-if="item.images?.src" :src="item.images?.src"
                                                class="w-16 h-16 overflow-hidden mx-auto md:mx-0 mb-4 md:mb-0" imageCover
-                                               :alt="item.name"/>
+                                               :alt="item.name"/>-->
+                                        <div
+                                            class="min-h-3 h-auto max-h-9 min-w-9 w-auto max-w-9 border border-gray-300 rounded">
+                                            <img :src="item.images?.[0]?.src" class="shadow"/>
+                                        </div>
                                         <div class="flex flex-col justify-between">
                                             <div class="w-fit" xclick="() => selectProduct(item)">
                                                 <div v-tooltip="trans('Name')"
@@ -780,7 +842,7 @@ const onDisableCheckbox = (item) => {
                                                      class="w-fit text-xs text-gray-400 italic">{{ item.gross_weight }}
                                                 </div>
                                             </div>
-                                            <div v-if="!item.no_price" xclick="() => selectProduct(item)"
+                                            <div v-if="!item.no_price && item.price" xclick="() => selectProduct(item)"
                                                  v-tooltip="trans('Price')" class="w-fit text-xs text-gray-x500">
                                                 {{
                                                     locale?.currencyFormat(item.currency_code || 'usd', item.price || 0)
@@ -808,5 +870,46 @@ const onDisableCheckbox = (item) => {
             </div>
         </div>
     </Modal>
+
+    <Modal :isOpen="isOpenModalErrorProduct" width="w-full max-w-lg h-full max-h-[570px]" @close="isOpenModalErrorProduct = false">
+        <div>
+            <div class="text-xl font-semibold text-center">
+                {{ trans("Error Product") }}
+            </div>
+
+            <div v-if="selectedErrorProduct?.error?.title" av-for="error in selectedErrorProduct?.error_response ?? []" class="mt-6">
+                <label for="error-product-input" class="block text-sm font-semibold">{{ trans("Title") }}</label>
+                <div class="errorShake rounded">
+                    <InputText
+                        :modelValue="get(selectedErrorProduct, ['product', 'new_name'], selectedErrorProduct?.product?.name)"
+                        @update:modelValue="(value) => set(selectedErrorProduct, ['product', 'new_name'], value)"
+                        fluid
+                        inputId="error-product-input"
+                        size="small"
+                        :disabled="isLoadingSubmitErrorTitle"
+                    />
+                </div>
+
+                <div class="text-xs opacity-60 mt-1">
+                    {{ trans("Characters") }}: {{ get(selectedErrorProduct, ['product', 'new_name'], selectedErrorProduct?.product?.name)?.length }}
+                </div>
+
+                <div class="mt-4 text-xs italic text-red-500">
+                    *{{selectedErrorProduct?.error?.title}}
+                </div>
+            </div>
+
+            <div class="mt-3">
+                <Button
+                    @click="() => submitErrorProduct(selectedErrorProduct)"
+                    :label="trans('Try again')"
+                    full
+                    :loading="isLoadingSubmitErrorTitle"
+                />
+            </div>
+
+        </div>
+    </Modal>
+
 </template>
 

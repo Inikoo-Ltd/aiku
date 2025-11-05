@@ -106,72 +106,59 @@ class ShowMasterFamily extends GrpAction
         return Inertia::render(
             'Masters/MasterFamily',
             [
-                'title'       => __('family'),
-                'breadcrumbs' => $this->getBreadcrumbs(
+                'title'                 => __('family'),
+                'breadcrumbs'           => $this->getBreadcrumbs(
                     $masterFamily,
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'navigation'  => [
+                'navigation'            => [
                     'previous' => $this->getPrevious($masterFamily, $request),
                     'next'     => $this->getNext($masterFamily, $request),
                 ],
-                'mini_breadcrumbs' => array_filter(
+                'mini_breadcrumbs'      => array_filter(
                     [
-                        [
-                            'label' => $masterFamily->masterDepartment->name,
-                            'to'    => [
+                        $masterFamily->master_department_id ? [
+                            'label'   => $masterFamily->masterDepartment->name,
+                            'to'      => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show',
                                 'parameters' => [
-                                    'masterShop'         => $masterFamily->masterShop->slug,
-                                    'masterDepartment'   => $masterFamily->masterDepartment->slug
+                                    'masterShop'       => $masterFamily->masterShop->slug,
+                                    'masterDepartment' => $masterFamily->masterDepartment->slug
                                 ]
                             ],
                             'tooltip' => 'Master Department',
-                            'icon' => ['fal', 'folder-tree']
-                        ],
+                            'icon'    => ['fal', 'folder-tree']
+                        ] : [],
                         $masterFamily->master_sub_department_id ? [
-                            'label' => $masterFamily->masterSubDepartment->code,
-                            'to'    => [
+                            'label'   => $masterFamily->masterSubDepartment->code,
+                            'to'      => [
                                 'name'       => 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.show',
                                 'parameters' => [
-                                    'masterShop'         => $masterFamily->masterShop->slug,
-                                    'masterDepartment'   => $masterFamily->masterDepartment->slug,
+                                    'masterShop'          => $masterFamily->masterShop->slug,
+                                    'masterDepartment'    => $masterFamily->masterDepartment->slug,
                                     'masterSubDepartment' => $masterFamily->masterSubDepartment->slug
                                 ]
                             ],
                             'tooltip' => __('Master Sub-Department'),
-                            'icon' => ['fal', 'folder-tree']
+                            'icon'    => ['fal', 'folder-tree']
                         ] : [],
-                        [
-                            'label' => $masterFamily->name,
-                            'to'    => [
-                                'name'       => $masterFamily->master_sub_department_id ? 'grp.masters.master_shops.show.master_departments.show.master_sub_departments.master_families.show' : 'grp.masters.master_shops.show.master_departments.show.master_families.show',
-                                'parameters' =>  $masterFamily->master_sub_department_id ? [
-                                    'masterShop'         => $masterFamily->masterShop->slug,
-                                    'masterDepartment'   => $masterFamily->masterDepartment->slug,
-                                    'masterSubDepartment'   => $masterFamily->masterSubDepartment->slug,
-                                    'masterFamily' => $masterFamily->slug,
-                                ] : [
-                                    'masterShop'         => $masterFamily->masterShop->slug,
-                                    'masterDepartment'   => $masterFamily->masterDepartment->slug,
-                                    'masterFamily' => $masterFamily->slug,
-                                ]
-                            ],
+                          [
+                            'label'   => $masterFamily->name,
                             'tooltip' => 'Master Family',
-                            'icon' => ['fal', 'folder-tree']
+                            'icon'    => ['fal', 'folder-tree']
                         ]
                     ],
                 ),
-                'familyId'      => $masterFamily->id,
-                'currency' => $masterFamily->group->currency,
-                'storeProductRoute' => [
-                        'name'       => 'grp.models.master_family.store-assets',
-                        'parameters' => [
-                            'masterFamily' => $masterFamily->id,
-                        ]
+                'familyId'              => $masterFamily->id,
+                'currency'              => $masterFamily->group->currency,
+                'storeProductRoute'     => [
+                    'name'       => 'grp.models.master_family.store-assets',
+                    'parameters' => [
+                        'masterFamily' => $masterFamily->id,
+                    ]
                 ],
-                'pageHead'    => [
+                'pageHead'              => [
                     'title'         => $masterFamily->name,
                     'model'         => __('Master Family'),
                     'icon'          => [
@@ -205,24 +192,24 @@ class ShowMasterFamily extends GrpAction
                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)
 
                 ],
-                'tabs'        => [
+                'tabs'                  => [
                     'current'    => $this->tab,
                     'navigation' => MasterFamilyTabsEnum::navigation()
                 ],
                 'masterProductCategory' => $masterFamily->id,
-                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
+                'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterFamily->masterShop, 'shops')),
 
                 MasterFamilyTabsEnum::SHOWCASE->value => $this->tab == MasterFamilyTabsEnum::SHOWCASE->value ?
-             fn () => GetMasterProductCategoryShowcase::run($masterFamily)
-             : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterFamily)),
+                    fn () => GetMasterProductCategoryShowcase::run($masterFamily)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryShowcase::run($masterFamily)),
 
-            MasterFamilyTabsEnum::FAMILIES->value => $this->tab == MasterFamilyTabsEnum::FAMILIES->value ?
-            fn () => FamiliesResource::collection(IndexFamilies::run($masterFamily))
-            : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($masterFamily))),
+                MasterFamilyTabsEnum::FAMILIES->value => $this->tab == MasterFamilyTabsEnum::FAMILIES->value ?
+                    fn () => FamiliesResource::collection(IndexFamilies::run($masterFamily))
+                    : Inertia::lazy(fn () => FamiliesResource::collection(IndexFamilies::run($masterFamily))),
 
-            MasterFamilyTabsEnum::IMAGES->value => $this->tab == MasterFamilyTabsEnum::IMAGES->value ?
-            fn () =>  GetMasterProductCategoryImages::run($masterFamily)
-            : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterFamily)),
+                MasterFamilyTabsEnum::IMAGES->value => $this->tab == MasterFamilyTabsEnum::IMAGES->value ?
+                    fn () => GetMasterProductCategoryImages::run($masterFamily)
+                    : Inertia::lazy(fn () => GetMasterProductCategoryImages::run($masterFamily)),
 
                 // FamilyTabsEnum::CUSTOMERS->value => $this->tab == FamilyTabsEnum::CUSTOMERS->value ?
                 //     fn () => CustomersResource::collection(IndexCustomers::run(parent : $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
@@ -236,7 +223,7 @@ class ShowMasterFamily extends GrpAction
         )
             // ->table(IndexCustomers::make()->tableStructure(parent: $masterFamily->shop, prefix: FamilyTabsEnum::CUSTOMERS->value))
             ->table(IndexMailshots::make()->tableStructure($masterFamily))
-            ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales:false));
+            ->table(IndexFamilies::make()->tableStructure(parent: $masterFamily, prefix: MasterFamilyTabsEnum::FAMILIES->value, sales: false));
     }
 
 

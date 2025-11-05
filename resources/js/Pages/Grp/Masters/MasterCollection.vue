@@ -27,6 +27,7 @@ import { faPlus } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import TableCollections from '@/Components/Tables/Grp/Org/Catalogue/TableCollections.vue'
 import TableHistories from '@/Components/Tables/Grp/Helpers/TableHistories.vue'
+import TableMasterCollections from '@/Components/Tables/Grp/Goods/TableMasterCollections.vue'
 library.add(faPlus)
 
 const props = defineProps<{
@@ -69,7 +70,7 @@ const component = computed(() => {
         showcase: MasterCollectionShowcase,
         families: TableFamilies,
         products: TableProducts,
-        collections: TableCollections,
+        collections: TableMasterCollections,
         shop_collections: TableCollections,
         history: TableHistories
     }

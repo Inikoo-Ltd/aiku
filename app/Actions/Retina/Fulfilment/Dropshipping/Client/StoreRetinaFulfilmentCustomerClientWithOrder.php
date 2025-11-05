@@ -14,7 +14,6 @@ use App\Actions\Retina\Fulfilment\PalletReturn\StoreRetinaPlatformPalletReturn;
 use App\Actions\RetinaAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithModelAddressActions;
-use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\PalletReturn;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +25,6 @@ class StoreRetinaFulfilmentCustomerClientWithOrder extends RetinaAction
     use WithModelAddressActions;
     use WithNoStrictRules;
 
-    protected Customer $customer;
     /**
      * @var \App\Models\Dropshipping\CustomerSalesChannel
      */

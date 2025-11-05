@@ -18,25 +18,17 @@ import {
 	faBars,
 	faThLarge,
 	faList,
-	faPaintBrushAlt,
+	faPaintBrushAlt, faEllipsisHAlt
 } from "@fas"
 import { faHeart, faLowVision } from "@far"
 import { notify } from "@kyvg/vue3-notification"
+import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
+import Blueprint from "./Blueprint"
+import { get, set } from "lodash"
 // import SideEditor from "@/Components/Workshop/SideEditor/SideEditor.vue"
 // import Blueprint from "./Blueprint"
 
-library.add(
-	faChevronRight,
-	faSignOutAlt,
-	faShoppingCart,
-	faHeart,
-	faSearch,
-	faChevronDown,
-	faTimes,
-	faPlusCircle,
-	faBars,
-	faLowVision
-)
+library.add( faChevronRight, faEllipsisHAlt, faSignOutAlt, faShoppingCart, faHeart, faSearch, faChevronDown, faTimes, faPlusCircle, faBars, faLowVision )
 
 const props = defineProps<{
 	data: {
@@ -46,6 +38,7 @@ const props = defineProps<{
 		}
 	}
 	autosaveRoute: routeType
+	uploadImageRoute: routeType
 	webBlockTypes: {
 		data: Array<any>
 	}
@@ -59,23 +52,21 @@ const selectedTab = ref(props.data ? 0 : 0)
 
 const tabs = [
 	//{ label: 'Templates', icon: faThLarge, tooltip: 'template' },
-	{ label: 'Menu', icon: faList, tooltip: 'menu' },
-	// { label: 'Settings', icon: faPaintBrushAlt, tooltip: 'setting' }
+	{ label: 'Appearance', icon: faPaintBrushAlt, tooltip: 'Appearance' },
+	{ label: 'List elements', icon: faList, tooltip: 'List elements' },
+	{ label: 'Additional Items', icon: faEllipsisHAlt, tooltip: 'Additional Items' },
 ]
 
-function changeTab(index: Number) {
+function changeTab(index: number) {
 	selectedTab.value = index
 }
 
 const computedTabs = computed(() => {
 	return props.data
 		? tabs
-		: [tabs[0]]
+		: [tabs[1]]
 })
 
-const onPickBlock = (value: object) => {
-	autoSave(value)
-}
 
 let controller: AbortController | null = null
 const autoSave = async (value) => {
@@ -127,17 +118,38 @@ const autoSave = async (value) => {
 				<WebBlockListDnd :webBlockTypes="webBlockTypes" @pick-block="onPickBlock"
 					:selectedWeblock="data.code" />
 			</TabPanel> -->
-			<TabPanel v-if="data">
-				<!-- need fix this components edit drawer -->
-				<SetMenuListWorkshopForSidebar :data="data" :autosaveRoute="autosaveRoute" @auto-save="() => autoSave(data)" />
-			</TabPanel>
-			<!-- <TabPanel  v-if="data">
+
+			<!-- Panel: Appearance -->
+			<TabPanel  v-if="data">
 				<SideEditor
-					v-model="data.data.fieldValue"
+					av-model="data.data.fieldValue"
+					:modelValue="get(data, ['data', 'fieldValue'], {})"
 					:blueprint="Blueprint.blueprint"
-					@update:modelValue="(e) => { data.data.fieldValue = e , autoSave(data)}"
-					:uploadImageRoute="null" />
-			</TabPanel> -->
+					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e), autoSave(data) }"
+					:uploadImageRoute
+				/>
+			</TabPanel>
+			
+			<!-- Panel: Menu List -->
+			<TabPanel v-if="data">
+				<SetMenuListWorkshopForSidebar
+					:data="data"
+					:autosaveRoute="autosaveRoute"
+					@auto-save="() => autoSave(data)"
+					:uploadImageRoute
+				/>
+			</TabPanel>
+			
+			<!-- Panel: Additional Items -->
+			<TabPanel v-if="data">
+				<SideEditor
+					key="others_tab"
+					:modelValue="get(data, ['data', 'fieldValue'], {})"
+					:blueprint="Blueprint.blueprint_additional_items"
+					@update:modelValue="(e) => { set(data, ['data', 'fieldValue'], e), autoSave(data) }"
+					:uploadImageRoute
+				/>
+			</TabPanel>
 		</TabPanels>
 	</TabGroup>
 </template>

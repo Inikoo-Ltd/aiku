@@ -47,9 +47,9 @@ use Spatie\Translatable\HasTranslations;
  * @property int|null $image_id
  * @property MasterCollectionStateEnum $state
  * @property MasterCollectionProductStatusEnum $products_status
+ * @property bool $status
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, Collection> $childrenCollections
- * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $departments
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
@@ -60,10 +60,11 @@ use Spatie\Translatable\HasTranslations;
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
  * @property-read \App\Models\Masters\MasterCollectionOrderingStats|null $orderingStats
  * @property-read Model|\Eloquent $parent
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $parentMasterDepartments
+ * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $parentMasterSubDepartments
  * @property-read \App\Models\Masters\MasterCollectionSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Masters\MasterCollectionStats|null $stats
- * @property-read LaravelCollection<int, \App\Models\Masters\MasterProductCategory> $subDepartments
  * @property-read mixed $translations
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @method static \Illuminate\Database\Eloquent\Builder<static>|MasterCollection newModelQuery()
@@ -174,14 +175,14 @@ class MasterCollection extends Model implements Auditable, HasMedia
             ->withTimestamps();
     }
 
-    public function departments(): MorphToMany
+    public function parentMasterDepartments(): MorphToMany
     {
         return $this->morphedByMany(MasterProductCategory::class, 'model', 'model_has_master_collections')
             ->wherePivot('type', 'master_department')
             ->withTimestamps();
     }
 
-    public function subDepartments(): MorphToMany
+    public function parentMasterSubDepartments(): MorphToMany
     {
         return $this->morphedByMany(MasterProductCategory::class, 'model', 'model_has_master_collections')
             ->wherePivot('type', 'master_sub_department')

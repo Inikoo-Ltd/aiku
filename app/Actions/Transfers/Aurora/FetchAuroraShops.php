@@ -64,10 +64,11 @@ class FetchAuroraShops extends FetchAuroraAction
                     if (!$shop->taxNumber) {
                         StoreTaxNumber::run(
                             owner: $shop,
-                            modelData: $shopData['tax_number']
+                            modelData: $shopData['tax_number'],
+                            strict:false
                         );
                     } else {
-                        UpdateTaxNumber::run($shop->taxNumber, $shopData['tax_number']);
+                        UpdateTaxNumber::run($shop->taxNumber, $shopData['tax_number'], false);
                     }
                 } elseif ($shop->taxNumber) {
                     DeleteTaxNumber::run($shop->taxNumber);
@@ -104,7 +105,8 @@ class FetchAuroraShops extends FetchAuroraAction
                 if ($shopData['tax_number']) {
                     StoreTaxNumber::run(
                         owner: $shop,
-                        modelData: $shopData['tax_number']
+                        modelData: $shopData['tax_number'],
+                        strict:false
                     );
                 }
             }

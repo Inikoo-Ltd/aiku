@@ -1,20 +1,20 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 
-import SwitchLanguage from "@/Components/Iris/SwitchLanguage.vue"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { inject } from 'vue'
+import { inject, computed, watch } from 'vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-import { getStyles } from '@/Composables/styles'
+import { getStyles, useDynamicCssVars } from '@/Composables/styles'
 import { checkVisible, textReplaceVariables, dummyIrisVariables } from '@/Composables/Workshop'
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus)
 
 interface ModelTopbar1 {
+    screenType?: "mobile" | "tablet" | "desktop"
     greeting: {
         text: string
     }
@@ -34,19 +34,32 @@ interface ModelTopbar1 {
     }
 }
 
+const props = defineProps<{
+    screenType: "desktop" | "mobile" | "tablet"
+}>()
+
 const emits = defineEmits<{
     (e: 'setPanelActive', value: string | number): void
 }>()
 
 const model = defineModel<ModelTopbar1>()
-const active = ref()
-
 const isLoggedIn = inject('isPreviewLoggedIn', false)
-
-
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout', {})
 
+
+
+const buttonClass = ref(getStyles(model.value?.button?.container?.properties, props.screenType, false))
+const buttonHoverClass = ref(getStyles(model.value?.button?.hover?.container?.properties, props.screenType,false))
+
+watch(
+  () => model.value?.button,
+  () => {
+    buttonClass.value = getStyles(model.value?.button?.container?.properties, props.screenType,false)
+    buttonHoverClass.value = getStyles(model.value?.button?.hover?.container?.properties, props.screenType,false)
+  },
+  { deep: true }
+)
 
 </script>
 
@@ -77,19 +90,19 @@ const layout = inject('layout', {})
                 v-if="checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping'"
                 v-tooltip="trans('My account')" url="/app/dashboard">
                 <template #label>
-                    <span class="text-white"> {{ trans('My account') }}</span>
+                    <span class="text-white button"> {{ trans('My account') }}</span>
                 </template>
             </Button>
 
             <!-- Section: Profile -->
             <Button v-if="checkVisible(model?.profile?.visible || null, isLoggedIn)"
-                v-tooltip="trans('Profile')"  icon="fal fa-user" type="transparent">
+                v-tooltip="trans('Profile')"  icon="fal fa-user" type="transparent" class="button">
                  <template #icon>
-                    <FontAwesomeIcon icon="fal fa-user" :style="{ color: 'white' }" fixed-width
+                    <FontAwesomeIcon icon="fal fa-user" class="button" fixed-width
                         aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span class="text-white"
+                    <span class="text-white button"
                         v-html="textReplaceVariables(model?.profile?.text, layout.iris_variables)" />
                 </template>
             </Button>
@@ -97,15 +110,15 @@ const layout = inject('layout', {})
             <!-- Section: Favourite -->
             <Button
                 v-if="checkVisible(model?.favourite?.visible || null, isLoggedIn) && layout.retina?.type !== 'dropshipping'"
-                v-tooltip="trans('Favourites')"  icon="fal fa-heart" :type="'transparent'">
+                v-tooltip="trans('Favourites')"  icon="fal fa-heart" :type="'transparent'" class="button">
                  <template #icon>
-                    <FontAwesomeIcon icon="fal fa-heart" :style="{ color: 'white' }" fixed-width
-                        aria-hidden="true" />
+                    <FontAwesomeIcon icon="fal fa-heart" fixed-width
+                        aria-hidden="true" class="button"/>
                 </template>
                 <template #label>
                     <span v-if="model?.favourite?.text === `{{ favourites_count }}`"
-                        v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" />
-                    <span v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`">
+                        v-html="textReplaceVariables(model?.favourite?.text, layout.iris_variables)" class="button"/>
+                    <span v-else-if="model?.favourite?.text === `{{ favourites_count }} favourites`" class="button">
                         {{ layout.iris_variables?.favourites_count }} {{ layout.iris_variables?.favourites_count > 1 ?
                             trans("favourites") : trans("favourite") }}
                     </span>
@@ -124,15 +137,14 @@ const layout = inject('layout', {})
 
             <!-- Section: Register -->
             <Button v-if="checkVisible(model?.register?.visible || null, isLoggedIn)" 
-                icon="fal fa-user-plus" type="transparent">
+                icon="fal fa-user-plus" type="transparent" class="button">
                 <template #icon>
-                    <FontAwesomeIcon icon="fal fa-user-plus" :style="{ color: 'white' }" fixed-width
+                    <FontAwesomeIcon icon="fal fa-user-plus" class="button" fixed-width
                         aria-hidden="true" />
                 </template>
 
                 <template #label>
-
-                    <span class="text-white">
+                    <span class="text-white button">
                         {{ trans("Register") }}
                     </span>
                 </template>
@@ -140,13 +152,13 @@ const layout = inject('layout', {})
 
             <!-- Section: Login -->
             <Button v-if="checkVisible(model?.login?.visible || null, isLoggedIn)" 
-                icon="fal fa-sign-in" type="transparent" >
+                icon="fal fa-sign-in" type="transparent" class="button" >
                 <template #icon>
-                    <FontAwesomeIcon icon="fal fa-sign-in" :style="{ color: 'white' }" fixed-width
+                    <FontAwesomeIcon icon="fal fa-sign-in" :style="{ color: 'white' }" class="button" fixed-width
                         aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span class="text-white">
+                    <span class="text-white button">
                         {{ trans("Login") }}
                     </span>
                 </template>
@@ -154,13 +166,13 @@ const layout = inject('layout', {})
 
             <!-- Section: Logout -->
             <Button v-if="checkVisible(model?.logout?.visible || null, isLoggedIn)" 
-                 icon="fal fa-sign-out" type="transparent">
+                 icon="fal fa-sign-out" type="transparent" class="button">
                 <template #icon>
-                    <FontAwesomeIcon icon="fal fa-sign-out" :style="{ color: 'white' }" fixed-width
+                    <FontAwesomeIcon icon="fal fa-sign-out" class="button" fixed-width
                         aria-hidden="true" />
                 </template>
                 <template #label>
-                    <span class="text-white">
+                    <span class="text-white button">
                         {{ trans("Logout") }}
                     </span>
                 </template>
@@ -169,8 +181,18 @@ const layout = inject('layout', {})
     </div>
 </template>
 
-<style>
+<style lang="scss" scoped>
+.button {
+  background: v-bind('buttonClass?.background || null') !important;
+  color: v-bind('buttonClass?.color || null') !important;
+  font-family: v-bind('buttonClass?.fontFamily || null') !important;
+  font-size: v-bind('buttonClass?.fontSize || null') !important;
 
-
-
+  &:hover {
+    background: v-bind('buttonHoverClass?.background || null') !important;
+    color: v-bind('buttonHoverClass?.color || null') !important;
+    font-family: v-bind('buttonHoverClass?.fontFamily || null') !important;
+    font-size: v-bind('buttonHoverClass?.fontSize || null') !important;
+  }
+}
 </style>

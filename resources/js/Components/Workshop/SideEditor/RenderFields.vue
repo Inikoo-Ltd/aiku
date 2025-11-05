@@ -39,6 +39,23 @@ const valueForField = computed(() => {
   const rawVal = get(modelValue.value, props.blueprint.key)
   const useIn = props.blueprint.useIn
 
+
+  if (!Array.isArray(useIn) || useIn.length === 0) {
+    return rawVal
+  }
+
+  if (!isPlainObject(rawVal)) {
+    return rawVal
+  }
+
+  const view = currentView.value!
+  return rawVal?.[view] ?? rawVal?.desktop
+})
+
+/* const valueForField = computed(() => {
+  const rawVal = get(modelValue.value, props.blueprint.key)
+  const useIn = props.blueprint.useIn
+
   if (!Array.isArray(useIn) || useIn.length === 0) {
     return rawVal
   }
@@ -48,7 +65,8 @@ const valueForField = computed(() => {
   }
 
   return rawVal?.[currentView.value!]
-})
+}) */
+
 
 const onPropertyUpdate = (newVal: any, path?: any) => {
   const rawKey = Array.isArray(path) ? path : props.blueprint.key

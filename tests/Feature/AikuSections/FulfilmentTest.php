@@ -537,12 +537,13 @@ test('update rental', function (Rental $rental) {
 
 
 test('create second rental product to fulfilment shop', function (Fulfilment $fulfilment) {
+
     $rental = StoreRental::make()->action(
         $fulfilment->shop,
         [
             'price' => 200,
             'unit'  => RentalUnitEnum::WEEK->value,
-            'code'  => 'R00002',
+            'code'  => 'R00002_bis',
             'name'  => 'Rental Asset B',
         ]
     );

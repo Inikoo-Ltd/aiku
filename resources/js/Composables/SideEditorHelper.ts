@@ -12,7 +12,7 @@ import Background from '@/Components/CMS/Fields/Background.vue'
 import ButtonProperties from '@/Components/CMS/Fields/ButtonProperties.vue'
 import UploadImage from '@/Components/Pure/UploadImage.vue'
 import Payments from '@/Components/CMS/Fields/Payment.vue'
-import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorForm.vue"
+/* import Editor from "@/Components/Forms/Fields/BubleTextEditor/EditorForm.vue" */
 import socialMedia from '@/Components/CMS/Fields/SocialMedia.vue'
 import Script from '@/Components/CMS/Fields/Script.vue'
 import SelectLayout from '@/Components/CMS/Fields/SelectLayout.vue'
@@ -30,6 +30,7 @@ import Shadow from '@/Components/CMS/Fields/Shadow.vue'
 import ColumnComponentPicker from '@/Components/CMS/Fields/ColumnComponentPicker.vue'
 import Disclosure from '@/Components/CMS/Fields/Disclosure.vue'
 import ArrayEdit from '@/Components/CMS/Fields/ArrayEdit/LabelAndOrderArray.vue'
+import ArrayEditDrawer from '@/Components/CMS/Fields/ArrayEditDrawer/LabelAndOrderArray.vue'
 import InputNumber from 'primevue/inputnumber';
 import fontFamily from "@/Components/Workshop/Properties/TextFontFamily.vue"
 import { set } from 'lodash-es'
@@ -41,12 +42,15 @@ import TextInputSwitch from '@/Components/CMS/Fields/TextInputSwitch.vue'
 import TimelineArray from '@/Components/CMS/Fields/TimelineArray.vue'
 import IconPickerBox from '@/Components/CMS/Fields/IconPickerBox.vue'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
-import ToggleSwitch from 'primevue/toggleswitch';
+// import ToggleSwitch from 'primevue/toggleswitch';
+import ToggleSwitch from '@/Components/Pure/Toggle.vue';
 import MinMaxPrice from '@/Components/Workshop/Properties/MinMaxPrice.vue'
 import VideoSettings from '@/Components/Workshop/Properties/VideoSettings.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import SelectProducts from '@/Components/Workshop/Properties/SelectProducts.vue'
 import Countdown from '@/Components/CMS/Fields/Countdown.vue'
+import UploadImageCropped from '@/Components/Workshop/Properties/UploadImageCropped.vue'
+import ShowBlockInResponsive from '@/Components/CMS/Fields/ShowBlockInResponsive.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -55,7 +59,6 @@ export const getComponent = (componentName: string) => {
         'editorhtml': SideEditorInputHTML,
         'upload_image': UploadImage, //done
         'payment_templates': Payments, //done
-        'editor': Editor, //done
         'socialMedia': socialMedia, //done
         "VisibleLoggedIn": ButtonVisibleLoggedIn, //done
        /*  "properties": PanelProperties, */
@@ -93,7 +96,10 @@ export const getComponent = (componentName: string) => {
         'video-settings' : VideoSettings,
         'selectquery' : PureMultiselectInfiniteScroll,
         'select_product' : SelectProducts,
-        'countdown': Countdown
+        'countdown': Countdown,
+        "array-data-drawer" : ArrayEditDrawer,
+        "image-cropped" : UploadImageCropped,
+        'visibility' : ShowBlockInResponsive
     }
     return components[componentName] ?? NotFoundComponents
 }

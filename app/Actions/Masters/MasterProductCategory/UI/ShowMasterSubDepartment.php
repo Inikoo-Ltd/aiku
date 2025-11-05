@@ -103,7 +103,7 @@ class ShowMasterSubDepartment extends GrpAction
                                 ]
                             ],
                             'tooltip' => __('Master Sub-Department'),
-                            'icon' => ['fal', 'folder-tree']
+                            'icon' => ['fal', 'folder-download']
                         ],
                     ],
                 ),
@@ -111,7 +111,7 @@ class ShowMasterSubDepartment extends GrpAction
                     'title'   => $masterSubDepartment->name,
                     'model'   => __('master sub-department'),
                     'icon'    => [
-                        'icon'  => ['fal', 'fa-folder-tree'],
+                        'icon'  => ['fal', 'fa-folder-download'],
                         'title' => __('Master sub-department')
                     ],
                     'actions' => [

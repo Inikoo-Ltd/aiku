@@ -236,7 +236,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
                 {{ pallet.reference }}
             </component>
 
-            <div v-if="pallet.customer_reference" v-tooltip="trans('Customer\'s reference')"
+            <div v-if="pallet.customer_reference" v-tooltip="trans(`Customer's reference`)"
                  class="mt-1 space-x-1.5 whitespace-nowrap">
                 <span class="text-gray-400 text-sm">({{ pallet.customer_reference }})</span>
             </div>
@@ -290,7 +290,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
                 <Column field="reference" :header="trans('SKU')" class="">
                     <template #body="{ data }">
                         <div class="whitespace-nowrap">{{ data.reference }}
-                            <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="trans('New added Customer\'s SKU')" icon="fas fa-star" size="xs" class="text-indigo-500" fixed-width aria-hidden="true" />
+                            <FontAwesomeIcon v-if="data.type === 'new_item'" v-tooltip="trans(`New added Customer's SKU`)" icon="fas fa-star" size="xs" class="text-indigo-500" fixed-width aria-hidden="true" />
                         </div>
                     </template>
                 </Column>
@@ -496,7 +496,7 @@ const edit_block = (audit_type: string, is_edit: boolean, keep_is_edit: boolean)
             >
                 <template #default="{ openModal }">
                     <Button @click="openModal" type="dashed" icon="fas fa-plus" fuxll
-                            :label="trans('Customer\'s SKU')" />
+                            :label="trans(`Customer's SKU`)" />
                 </template>
 
                 <template #modal="{ form, sendToServer, closeModal }">

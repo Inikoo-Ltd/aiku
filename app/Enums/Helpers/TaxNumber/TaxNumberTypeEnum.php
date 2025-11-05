@@ -18,4 +18,5 @@ enum TaxNumberTypeEnum: string
     case EU_VAT = 'eu-vat';
     case GB_VAT = 'gb-vat';
     case OTHER  = 'other';
+    case UNKNOWN = 'unknown';
 }

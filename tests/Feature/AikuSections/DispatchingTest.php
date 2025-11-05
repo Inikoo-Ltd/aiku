@@ -31,7 +31,7 @@ use App\Actions\HumanResources\Employee\StoreEmployee;
 use App\Actions\Inventory\Location\StoreLocation;
 use App\Actions\Inventory\LocationOrgStock\StoreLocationOrgStock;
 use App\Actions\Inventory\OrgStock\StoreOrgStock;
-use App\Actions\Ordering\Order\SubmitOrder;
+use App\Actions\Ordering\Order\UpdateState\SubmitOrder;
 use App\Actions\Ordering\Transaction\StoreTransaction;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -49,6 +49,7 @@ use App\Models\Helpers\Address;
 use App\Models\HumanResources\Employee;
 use App\Models\Inventory\Location;
 use App\Models\Ordering\Transaction;
+use Illuminate\Support\Str;
 
 beforeAll(function () {
     loadDB();
@@ -77,7 +78,10 @@ beforeEach(function () {
         $this->orde = SubmitOrder::make()->action($this->order);
     }
 
-    $this->employee = StoreEmployee::make()->action($this->organisation, Employee::factory()->definition());
+    $employeeData = Employee::factory()->definition();
+    $employeeData['worker_number'] .= Str::random(6);
+
+    $this->employee = StoreEmployee::make()->action($this->organisation, $employeeData);
 });
 
 test('create shipper', function () {

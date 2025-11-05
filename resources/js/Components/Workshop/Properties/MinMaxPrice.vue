@@ -3,6 +3,7 @@ import { computed, toRefs, inject } from 'vue'
 import Slider from 'primevue/slider'
 import PureInputNumber from '@/Components/Pure/PureInputNumber.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
+import { trans } from 'laravel-vue-i18n'
 
 const props = withDefaults(defineProps<{
   modelValue: Record<string, any> | null,
@@ -55,22 +56,21 @@ console.log(layout)
   <div class="space-y-4">
     <!-- Label Min-Max di atas Slider -->
     <div class="flex justify-between text-sm text-gray-600 font-medium">
-      <span>Min</span>
-      <span>Max</span>
+      <span>{{ trans('Min') }}</span>
+      <span>{{ trans('Max') }}</span>
     </div>
 
     <!-- Slider -->
     <Slider v-model="rangeValue" :min="minVal" :max="maxVal" :range="true" class="w-full my-2" />
 
-    <!-- Input Angka -->
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block mb-1 text-sm text-gray-600">Min Price</label>
+        <label class="block mb-1 text-sm text-gray-600">{{ trans('Min') }}</label>
         <PureInputNumber :model-value="modelValue?.[minKey]" :min="minVal" class="w-full" placeholder="Min" :suffix="layout?.iris?.currency?.symbol || '€'"
           @update:modelValue="val => updateSingleField(minKey, val)" />
       </div>
       <div>
-        <label class="block mb-1 text-sm text-gray-600">Max Price</label>
+        <label class="block mb-1 text-sm text-gray-600">{{ trans('Max') }}</label>
         <PureInputNumber :model-value="modelValue?.[maxKey]" :max="maxVal" class="w-full" placeholder="Max" :suffix="layout?.iris?.currency?.symbol || '€'"
           @update:modelValue="val => updateSingleField(maxKey, val)" />
       </div>

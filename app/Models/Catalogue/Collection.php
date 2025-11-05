@@ -56,7 +56,6 @@ use Spatie\Sluggable\SlugOptions;
  * @property CollectionProductsStatusEnum $products_status
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $departments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $families
  * @property-read Group $group
  * @property-read \App\Models\Helpers\Media|null $image
@@ -65,13 +64,14 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read \App\Models\Catalogue\CollectionsOrderingStats|null $orderingStats
  * @property-read Organisation $organisation
  * @property-read Model|\Eloquent $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $parentDepartments
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Shop> $parentShops
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $parentSubDepartments
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Product> $products
  * @property-read \App\Models\Catalogue\CollectionSalesIntervals|null $salesIntervals
  * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \App\Models\Catalogue\Shop|null $shop
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\Shop> $shops
  * @property-read \App\Models\Catalogue\CollectionStats|null $stats
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Catalogue\ProductCategory> $subDepartments
  * @property-read \App\Models\Helpers\UniversalSearch|null $universalSearch
  * @property-read Webpage|null $webpage
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Collection newModelQuery()
@@ -139,19 +139,19 @@ class Collection extends Model implements Auditable, HasMedia
         return $this->hasOne(CollectionsOrderingStats::class);
     }
 
-    public function shops(): MorphToMany
+    public function parentShops(): MorphToMany
     {
         return $this->morphedByMany(Shop::class, 'model', 'model_has_collections')->withTimestamps();
     }
 
-    public function departments(): MorphToMany
+    public function parentDepartments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
             ->wherePivot('type', 'department')
             ->withTimestamps();
     }
 
-    public function subDepartments(): MorphToMany
+    public function parentSubDepartments(): MorphToMany
     {
         return $this->morphedByMany(ProductCategory::class, 'model', 'model_has_collections')
             ->wherePivot('type', 'sub_department')

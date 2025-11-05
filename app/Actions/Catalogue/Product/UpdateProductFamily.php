@@ -19,6 +19,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateProductsWithNoFamily;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateProductsWithNoFamily;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Models\Catalogue\ProductCategory;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Catalogue\Product;
@@ -52,6 +53,9 @@ class UpdateProductFamily extends OrgAction
         if (Arr::has($changes, 'family_id')) {
             FamilyHydrateProducts::dispatch($product->family);
             BreakProductInWebpagesCache::make()->breakCache($product->family->webpage);
+            if ($product->webpage) {
+                UpdateWebpageCanonicalUrl::dispatch($product->webpage, false)->delay(2);
+            }
 
 
             foreach ($product->family->collections as $collection) {
@@ -72,6 +76,9 @@ class UpdateProductFamily extends OrgAction
         }
 
         if (Arr::has($changes, 'department_id')) {
+            if ($product->webpage) {
+                UpdateWebpageCanonicalUrl::dispatch($product->webpage, false)->delay(2);
+            }
             if ($product->department_id) {
                 BreakProductInWebpagesCache::make()->breakCache($product->department->webpage);
                 DepartmentHydrateProducts::dispatch($product->department);
@@ -83,6 +90,9 @@ class UpdateProductFamily extends OrgAction
         }
 
         if (Arr::has($changes, 'sub_department_id')) {
+            if ($product->webpage) {
+                UpdateWebpageCanonicalUrl::dispatch($product->webpage, false)->delay(2);
+            }
             if ($product->sub_department_id) {
                 BreakProductInWebpagesCache::make()->breakCache($product->subDepartment->webpage);
                 SubDepartmentHydrateProducts::dispatch($product->subDepartment);

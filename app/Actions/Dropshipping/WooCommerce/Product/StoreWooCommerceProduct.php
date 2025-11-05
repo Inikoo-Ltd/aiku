@@ -8,10 +8,14 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Product\ProductStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
@@ -30,6 +34,10 @@ class StoreWooCommerceProduct extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
     {
+        $logs = StorePlatformPortfolioLog::run($portfolio, [
+            'type'   => PlatformPortfolioLogsTypeEnum::UPLOAD
+        ]);
+
         try {
             /** @var Product $product */
             $product = $portfolio->item;
@@ -58,16 +66,18 @@ class StoreWooCommerceProduct extends RetinaAction
                 'stock_status' => Arr::get($product, 'stock_status', 'instock'),
                 'attributes' => Arr::get($product, 'attributes', []),
                 'sku' => $portfolio->sku,
-                'weight' => (string)$product->gross_weight,
+                'weight' => (string) ($product->gross_weight / 100),
                 'status' => $this->mapProductStateToWooCommerce($product->status->value)
             ];
 
-            $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
+            $availableSku = $wooCommerceUser->getWooCommerceProducts([
+                'sku' => $portfolio->sku
+            ]);
 
-            if (Arr::get($result, 'code') === 'product_invalid_sku') {
-                $wooCommerceProduct['sku'] = Arr::get($result, 'data.unique_sku') . '-' . rand(0, 99);
-
+            if (blank($availableSku)) {
                 $result = $wooCommerceUser->createWooCommerceProduct($wooCommerceProduct);
+            } else {
+                $result = Arr::get($availableSku, '0');
             }
 
             UpdatePortfolio::run($portfolio, [
@@ -77,13 +87,28 @@ class StoreWooCommerceProduct extends RetinaAction
 
             CheckWooPortfolio::run($portfolio, []);
 
+            $portfolio->refresh();
+
+            if ($portfolio->platform_status) {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+            }
+
             return $result;
         } catch (\Exception $e) {
-            Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
+            // Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
 
             UpdatePortfolio::run($portfolio, [
                 'errors_response' => [$e->getMessage()]
             ]);
+
+            if ($logs) {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                    'response' => $e->getMessage()
+                ]);
+            }
 
             return null;
         }

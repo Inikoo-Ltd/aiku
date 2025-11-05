@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import BrowserView from '@/Components/Pure/BrowserView.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import InputSwitch from 'primevue/inputswitch'
@@ -10,11 +10,15 @@ import {
   faUserSlash,
   faDesktop,
   faTabletAlt,
-  faMobileAlt
+  faMobileAlt,
+  faGlobe, faLink, faSearch, faFragile
 } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
+import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
+import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
+import { trans } from "laravel-vue-i18n"
 
-library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt)
+library.add(faUser, faUserSlash, faDesktop, faTabletAlt, faMobileAlt, faGlobe, faLink, faSearch, faFragile)
 
 const props = defineProps<{
   data: {
@@ -30,7 +34,14 @@ const props = defineProps<{
     layout: {
       web_blocks?: any[]
     }
-  }
+    luigi_data: {
+      last_reindexed: string
+      luigisbox_tracker_id: string
+      luigisbox_private_key: string
+      luigisbox_lbx_code: string
+    }
+  },
+  
 }>()
 
 const filterBlock = ref<Boolean>(true)
@@ -62,7 +73,13 @@ const screenModeOptions = [
   { label: 'Mobile', value: 'mobile', icon: ['fal', 'mobile-alt'] }
 ]
 
+// Section: Button reindex website search
+const isAbleReindex = computed(() => {
+  const lastReindexed30Minutes = new Date(props.data?.luigi_data.last_reindexed)
+  lastReindexed30Minutes.setMinutes(lastReindexed30Minutes.getMinutes() + 30)
 
+  return lastReindexed30Minutes < new Date()
+})
 </script>
 
 <template>
@@ -110,8 +127,58 @@ const screenModeOptions = [
       </div>
 
       <!-- Right Panel (Optional) -->
-      <div class="hidden xl:block">
+      <div class="hidden xl:flex justify-end w-full">
         <!-- Optional sidebar -->
+        <div class="w-64 border border-gray-300 rounded-md p-2 h-fit">
+          <div class="space-y-2">
+            <ModalConfirmationDelete
+              :description="trans('Purge all cached files. Purging your cache may slow your website temporarily')"
+              :title="trans('Break cache')" :noLabel="trans('Confirm')" noIcon="" :routeDelete="{
+                name: 'grp.models.webpage.break_cache',
+                parameters: {
+                  webpage: data?.id
+                },
+                method: 'post'
+              }">
+              <template #default="{ changeModel }">
+                <ButtonWithLink @click="changeModel" :icon="faFragile" type="tertiary" :label="trans('Break cache')"
+                  full>
+                </ButtonWithLink>
+              </template>
+            </ModalConfirmationDelete>
+
+            <ButtonWithLink v-if="data?.luigi_data?.luigisbox_tracker_id" s
+              v-tooltip="isAbleReindex ? '' : trans('You can reindex again at :date', { date: useFormatTime(new Date(dateAdd30MinutesLastReindex), { formatTime: 'hm' }) })"
+              :disabled="!isAbleReindex" :routeTarget="{
+                name: 'grp.models.webpage_luigi.reindex',
+                parameters: {
+                  webpage: data?.id
+                }
+              }" icon="fal fa-search" method="post"
+              :type="!isAbleReindex || data?.luigi_data?.luigisbox_private_key ? 'tertiary' : 'warning'" full>
+              <template #label>
+                <span class="text-xs">
+                  {{ trans('Reindex Webpage Search') }}
+                </span>
+              </template>
+              <template v-if="isAbleReindex" #iconRight>
+                <!-- <div v-if="data?.luigi_data?.luigisbox_private_key"
+                  v-tooltip="trans('This will reindexing the product that will appear in the search feature')"
+                  class="text-gray-400 hover:text-gray-700">
+                  <FontAwesomeIcon icon="fal fa-info-circle" class="" fixed-width aria-hidden="true" />
+                </div>
+                <div v-else v-tooltip="trans('Please input Luigi Private Key do start reindexing')"
+                  class="text-amber-500">
+                  <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                </div> -->
+                <div v-if="!data?.luigi_data?.luigisbox_private_key" v-tooltip="trans('Please input Luigi Private Key do start reindexing')"
+                  class="text-amber-500">
+                  <FontAwesomeIcon icon="fal fa-exclamation-triangle" class="" fixed-width aria-hidden="true" />
+                </div>
+              </template>
+            </ButtonWithLink>
+          </div>
+        </div>
       </div>
     </div>
   </div>

@@ -23,7 +23,6 @@ use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\UI\Web\WebpageTabsEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
-use App\Enums\Web\Webpage\WebpageTypeEnum;
 use App\Http\Resources\Helpers\SnapshotResource;
 use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Web\ExternalLinksResource;
@@ -217,11 +216,11 @@ class ShowWebpage extends OrgAction
             ];
         } else {
             $actions[] = [
-                'type'  => 'button',
-                'style' => 'edit',
-                'icon'  => ["fal", "fa-folder"],
+                'type'    => 'button',
+                'style'   => 'edit',
+                'icon'    => ["fal", "fa-folder"],
                 'tooltip' => __('See Family'),
-                'route' => [
+                'route'   => [
                     'name'       => 'grp.org.shops.show.catalogue.families.show',
                     'parameters' => [
                         'organisation' => $webpage->organisation->slug,
@@ -231,40 +230,6 @@ class ShowWebpage extends OrgAction
                 ]
             ];
         }
-
-
-        if ($this->canEdit) {
-            if ($webpage->shop->type == ShopTypeEnum::FULFILMENT) {
-                $workshopRoute = [
-                    'name'       => 'grp.org.fulfilments.show.web.webpages.show.blueprint.show',
-                    'parameters' => [
-                        'organisation' => $webpage->organisation->slug,
-                        'fulfilment'   => $webpage->shop?->fulfilment->slug,
-                        'website'      => $webpage->website->slug,
-                        'webpage'      => $webpage->slug
-                    ]
-                ];
-            } else {
-                $workshopRoute = [
-                    'name'       => 'grp.org.shops.show.web.webpages.show.blueprint.show',
-                    'parameters' => [
-                        'organisation' => $webpage->organisation->slug,
-                        'shop'         => $webpage->shop->slug,
-                        'website'      => $webpage->website->slug,
-                        'webpage'      => $webpage->slug
-                    ]
-                ];
-            }
-
-            /*  $actions[] = [
-                 'type'    => 'button',
-                 'style'   => 'edit',
-                 'icon'    => ["fal", "fa-object-group"],
-                 'tooltip' => __('Blueprint'),
-                 'route'   => $workshopRoute
-             ]; */
-        }
-
 
         return $actions;
     }
@@ -290,7 +255,8 @@ class ShowWebpage extends OrgAction
                     ]
                 ]
             ];
-        } elseif (in_array($webpage->type, [WebpageTypeEnum::STOREFRONT, WebpageTypeEnum::CONTENT])) {
+        }
+        /* elseif (in_array($webpage->type, [WebpageTypeEnum::STOREFRONT, WebpageTypeEnum::CONTENT])) {
             $actions[] = [
                 'type'  => 'button',
                 'style' => 'create',
@@ -303,7 +269,7 @@ class ShowWebpage extends OrgAction
                     ]
                 ]
             ];
-        }
+        } */
 
         return $actions;
     }
@@ -312,14 +278,12 @@ class ShowWebpage extends OrgAction
     {
         $subNavigation = $this->getWebpageNavigation($webpage->website);
 
-
         $actions = $this->getModelActions($webpage);
 
 
         $actions = array_merge($actions, $this->createRedirectAction($webpage));
         $actions = array_merge($actions, $this->workshopActions($request));
         $actions = array_merge($actions, $this->getTypeSpecificActions($webpage));
-
 
         $subNavigationRoot = '';
 
@@ -345,12 +309,13 @@ class ShowWebpage extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
 
-                'tabs'        => [
+                'tabs'                  => [
                     'current'    => $this->tab,
                     'navigation' => WebpageTabsEnum::navigation()
                 ],
-                'root_active' => $subNavigationRoot,
-                'webpage_url'   => $webpage->getUrl(),
+                'root_active'           => $subNavigationRoot,
+                'webpage_url'           => $webpage->getUrl(),
+                'webpage_canonical_url' => $webpage->canonical_url,
 
                 WebpageTabsEnum::SHOWCASE->value => $this->tab == WebpageTabsEnum::SHOWCASE->value ?
                     fn () => WebpageResource::make($webpage)->getArray()
@@ -390,9 +355,9 @@ class ShowWebpage extends OrgAction
                     fn () => RedirectsResource::collection(IndexRedirects::run($webpage))
                     : Inertia::lazy(fn () => RedirectsResource::collection(IndexRedirects::run($webpage))),
 
-                // WebpageTabsEnum::LABELED_SNAPSHOTS->value => $this->tab == WebpageTabsEnum::LABELED_SNAPSHOTS->value ?
-                //     fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true))
-                //     : Inertia::lazy(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true)))
+                WebpageTabsEnum::LABELED_SNAPSHOTS->value => $this->tab == WebpageTabsEnum::LABELED_SNAPSHOTS->value ?
+                    fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true))
+                    : Inertia::lazy(fn () => SnapshotResource::collection(IndexSnapshots::run(parent: $webpage, withLabel: true)))
 
 
             ]
@@ -406,19 +371,19 @@ class ShowWebpage extends OrgAction
                 prefix: 'snapshots'
             )
         )
-        // ->table(
-        //     IndexSnapshots::make()->tableStructure(
-        //         parent: $webpage,
-        //         withLabel: true,
-        //         prefix: WebpageTabsEnum::LABELED_SNAPSHOTS->value
-        //     )
-        // )
-        ->table(
-            IndexRedirects::make()->tableStructure(
-                parent: $webpage,
-                prefix: WebpageTabsEnum::REDIRECTS->value
+            ->table(
+                IndexSnapshots::make()->tableStructure(
+                    parent: $webpage,
+                    withLabel: true,
+                    prefix: WebpageTabsEnum::LABELED_SNAPSHOTS->value
+                )
             )
-        )
+            ->table(
+                IndexRedirects::make()->tableStructure(
+                    parent: $webpage,
+                    prefix: WebpageTabsEnum::REDIRECTS->value
+                )
+            )
             ->table(
                 IndexHistory::make()->tableStructure(
                     prefix: WebpageTabsEnum::CHANGELOG->value

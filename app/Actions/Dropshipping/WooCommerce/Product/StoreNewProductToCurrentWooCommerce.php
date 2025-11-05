@@ -13,12 +13,11 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class StoreNewProductToCurrentWooCommerce extends OrgAction
 {
     use AsAction;
-    use WithAttributes;
+
 
     /**
      * @throws \Exception
@@ -28,6 +27,9 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction
         StoreWooCommerceProduct::run($wooCommerceUser, $portfolio);
     }
 
+    /**
+     * @throws \Exception
+     */
     public function asController(Portfolio $portfolio, ActionRequest $request): void
     {
         /** @var WooCommerceUser $wooCommerceUser */

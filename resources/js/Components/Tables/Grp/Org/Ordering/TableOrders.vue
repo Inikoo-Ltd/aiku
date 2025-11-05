@@ -20,6 +20,7 @@ import { RouteParams } from "@/types/route-params";
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import NotesDisplay from "@/Components/NotesDisplay.vue";
+import Button from "@/Components/Elements/Buttons/Button.vue"
 
 library.add(faStar, faSeedling, faPaperPlane, faWarehouse, faHandsHelping, faBox, faTasks, faShippingFast, faTimesCircle);
 
@@ -83,7 +84,6 @@ function organisationRoute(order: Order) {
 
 function customerRoute(order: Order) {
   let routeCurr = route().current();
-  console.log(routeCurr);
   switch (routeCurr) {
     case "grp.overview.ordering.orders.index":
     case "grp.org.overview.orders_in_basket.index":
@@ -148,7 +148,7 @@ function customerRoute(order: Order) {
         <Link :href="orderRoute(order) as unknown as string" class="primaryLink">
         {{ order["reference"] }}
         </Link>
-        
+
         <FontAwesomeIcon v-if="order.is_premium_dispatch" v-tooltip="trans('Premium dispatch')" icon="fas fa-star"
           class="text-yellow-500" fixed-width aria-hidden="true" />
         <FontAwesomeIcon v-if="order.has_extra_packing" v-tooltip="trans('Extra packing')" icon="fas fa-box-heart"
@@ -156,15 +156,26 @@ function customerRoute(order: Order) {
         <!-- <FontAwesomeIcon v-if="order.has_insurance" v-tooltip="trans('Insurance')" :icon="faShieldAlt"
           class="text-yellow-500" fixed-width aria-hidden="true" /> -->
         <NotesDisplay :item="order" reference-field="reference" />
+        
+        <a v-if="JSON.parse(order.tracking_urls || '{}')?.[0]"
+            :href="JSON.parse(order.tracking_urls || '{}')[0]"
+            class="underline whitespace-nowrap"
+            target="_blank"
+        >
+            <Button size="xxs" :label="trans('Open tracking')" type="tertiary" iconRight="fal fa-external-link-alt" />
+        </a>
       </div>
 
 
     </template>
 
     <template #cell(customer_name)="{ item: order }">
-      <Link :href="customerRoute(order)" class="secondaryLink">
+      <Link v-if="order.customer_slug" :href="customerRoute(order)" class="secondaryLink">
       {{ order["customer_name"] }}
       </Link>
+        <div v-else>
+            {{ order["customer_name"] }}
+        </div>
     </template>
 
 

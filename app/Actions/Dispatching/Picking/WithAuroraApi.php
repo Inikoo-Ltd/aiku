@@ -33,7 +33,7 @@ trait WithAuroraApi
         return Arr::get($organisation->source, 'url').'/api/stock';
     }
 
-    public function getApiToken(Organisation $organisation): string
+    public function getApiToken(Organisation $organisation): ?string
     {
         return config('app.aurora.api_keys.'.$organisation->id);
     }

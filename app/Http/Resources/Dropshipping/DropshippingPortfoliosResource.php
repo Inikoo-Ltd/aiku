@@ -151,6 +151,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'updated_at'            => $this->updated_at,
             'platform_product_id'   => $this->platform_product_id,
             'upload_warning'        => $this->upload_warning,
+            'message'               => $this->platform_status ? 'OK' : Arr::get($this->errors_response, 'message', ''),
             'shopify_product_data'  => Arr::get($this->data, 'shopify_product', []),
             'platform_product_data' => match ($this->platform->type) {
                 PlatformTypeEnum::WOOCOMMERCE => Arr::get($this->data, 'woo_product', []),
@@ -169,6 +170,13 @@ class DropshippingPortfoliosResource extends JsonResource
             'delete_portfolio' => [
                 'method'     => 'delete',
                 'name'       => 'retina.models.portfolio.delete',
+                'parameters' => [
+                    'portfolio' => $this->id
+                ]
+            ],
+            'unlink_portfolio' => [
+                'method'     => 'delete',
+                'name'       => 'retina.models.portfolio.unlink',
                 'parameters' => [
                     'portfolio' => $this->id
                 ]

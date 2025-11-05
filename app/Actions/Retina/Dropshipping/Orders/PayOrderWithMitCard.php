@@ -19,6 +19,7 @@ use App\Enums\Accounting\Payment\PaymentTypeEnum;
 use App\Enums\Accounting\PaymentAccount\PaymentAccountTypeEnum;
 use App\Enums\Accounting\PaymentAccountShop\PaymentAccountShopStateEnum;
 use App\Models\Accounting\MitSavedCard;
+use App\Models\Accounting\PaymentAccountShop;
 use App\Models\Ordering\Order;
 use Checkout\CheckoutApiException;
 use Checkout\CheckoutSdk;
@@ -33,18 +34,17 @@ class PayOrderWithMitCard
     use WithCheckoutCom;
     use CalculatesPaymentWithBalance;
 
+
     /**
      * @throws \Checkout\CheckoutArgumentException
-     * @throws \Laravel\Octane\Exceptions\DdException
      */
     public function handle(Order $order, MitSavedCard $mitSavedCard): array
     {
-
         if ($mitSavedCard->state != 'success') {
             return [];
         }
 
-
+        /** @var PaymentAccountShop $paymentAccountShop */
         $paymentAccountShop = $order->shop->paymentAccountShops()
             ->where('type', PaymentAccountTypeEnum::CHECKOUT)
             ->where('state', PaymentAccountShopStateEnum::ACTIVE)->first();
@@ -78,7 +78,6 @@ class PayOrderWithMitCard
         $channelID = $paymentAccountShop->getCheckoutComChannel();
 
 
-
         $request                        = new PaymentRequest();
         $request->source                = [
             'type' => 'id',
@@ -93,6 +92,13 @@ class PayOrderWithMitCard
         $request->previous_payment_id = $mitSavedCard->token;
         $request->processing          = [
             'merchant_initiated_reason' => 'delayed_charge'
+        ];
+
+        $request->metadata = [
+            'origin'      => 'aiku',
+            'operation'   => 'mit',
+            'order_id'    => $order->id,
+            'environment' => app()->environment()
         ];
 
         try {
@@ -132,7 +138,6 @@ class PayOrderWithMitCard
                 'error_details'    => $error_details,
                 'http_status_code' => $http_status_code,
             ];
-
         }
 
         return $result;
@@ -140,9 +145,9 @@ class PayOrderWithMitCard
 
     public string $commandSignature = 'test_pay';
 
+
     /**
      * @throws \Checkout\CheckoutArgumentException
-     * @throws \Laravel\Octane\Exceptions\DdException
      */
     public function asCommand(): int
     {

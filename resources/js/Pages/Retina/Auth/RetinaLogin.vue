@@ -33,15 +33,50 @@ const isOpenMenuMobile = ref(false)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
 const isLoading = ref(false)
-
-const submit = () => {
+const listLoginError = ref(null)
+const submit = async () => {
     isLoading.value = true
-    form.post(route('retina.login.store', {
-        ref: route().params?.['ref']
-    }), {
-        onError: () => isLoading.value = false,
-        onFinish: () => form.reset('password'),
-    })
+    try {
+        const response = await axios.post(
+            route('retina.login.store', {
+                ref: route().params?.['ref']
+            }),
+            { 
+                username: form.username,
+                password: form.password,
+                remember: form.remember,
+            }
+        )
+
+        console.log('Response axios:', response.data)
+        form.reset('password')
+
+        if (response.data) {
+            window.location.href = `${response.data}`
+        } else {
+            window.location.href = `/app/dashboard`
+        }
+    } catch (error: any) {
+        form.reset('password')
+        // console.log('er', error.response.data)
+        isLoading.value = false
+        listLoginError.value = error.response.data
+        // notify({
+        //     title: trans("Something went wrong"),
+        //     text: error.message || trans("Please try again or contact administrator"),
+        //     type: 'error'
+        // })
+    }
+
+    // form.post(route('retina.login.store', {
+    //     ref: route().params?.['ref']
+    // }), {
+    //     onSuccess: (e) => {
+    //         console.log('eeeeeeeee', e)
+    //     },
+    //     onError: () => isLoading.value = false,
+    //     onFinish: () => form.reset('password'),
+    // })
 }
 
 const inputUsername = ref(null)
@@ -122,10 +157,10 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                             v-model="form.username" ref="inputUsername" id="username" name="username"
                             :autofocus="true" autocomplete="username" required :placeholder="trans('username')"
                             @keydown.enter="submit"
-                            @update:modelValue="form.clearErrors('username')"
-                            :class="form.errors.username ? 'errorShake' : ''"
+                            @update:modelValue="() => (form.clearErrors('username'), listLoginError = null)"
+                            :class="listLoginError?.errors?.username ? 'errorShake' : ''"
                         />
-                        <p v-if="form.errors.username" class="mt-2 text-sm text-red-600" id="email-error">{{ form.errors.username }}</p>
+                        <p v-if="listLoginError?.errors?.username" class="mt-2 text-sm text-red-600" id="email-error">{{ listLoginError?.errors?.username[0] }}</p>
                     </div>
                 </div>
 
@@ -136,7 +171,8 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                     </label>
                     <div class="mt-1">
                         <LoginPassword :showProcessing="false" id="password" name="password" :form="form"
-                            fieldName="password" @keydown.enter="submit" placeholder="********" />
+                            fieldName="password" @keydown.enter="submit" placeholder="********"
+                        />
                         <div class="flex justify-between mt-2">
                             <div class="flex items-center justify-between cursor-pointer">
                                 <Checkbox name="remember-me" id="remember-me" v-model:checked="form.remember" />
@@ -151,9 +187,10 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
                     </div>
                 </div>
 
-                <ValidationErrors />
+                <!-- <ValidationErrors /> -->
+                <p v-if="listLoginError?.message" class="mt-2 text-sm text-red-600 italic" id="email-error">*{{ listLoginError?.message }}</p>
 
-                <!-- Submit Button -->
+                <!-- Button: Sign in -->
                 <div class="w-full">
                     <button
                         @click.prevent="submit"

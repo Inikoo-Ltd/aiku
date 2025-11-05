@@ -19,6 +19,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamiliesWithNoDepartment;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamiliesWithNoDepartment;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\Organisation;
@@ -56,6 +57,9 @@ class UpdateFamilyDepartment extends OrgAction
         if (Arr::has($changes, 'department_id')) {
             DepartmentHydrateProducts::dispatch($family->department);
             ProductCategoryHydrateFamilies::dispatch($family->department);
+            if ($family->webpage) {
+                UpdateWebpageCanonicalUrl::dispatch($family->webpage)->delay(2);
+            }
             if ($oldDepartment) {
                 DepartmentHydrateProducts::dispatch($oldDepartment);
                 ProductCategoryHydrateFamilies::dispatch($oldDepartment);
@@ -66,9 +70,23 @@ class UpdateFamilyDepartment extends OrgAction
             }
         }
 
-        if (Arr::has($changes, 'sub_department_id') && $oldSubDepartment) {
-            ProductCategoryHydrateFamilies::dispatch($oldSubDepartment);
-            SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
+
+
+        if (Arr::has($changes, 'sub_department_id')) {
+
+            if ($family->subDepartment) {
+                ProductCategoryHydrateFamilies::dispatch($family->subDepartment);
+                SubDepartmentHydrateProducts::dispatch($family->subDepartment);
+            }
+
+            if ($family->webpage) {
+                UpdateWebpageCanonicalUrl::dispatch($family->webpage)->delay(2);
+            }
+            if ($oldSubDepartment) {
+                ProductCategoryHydrateFamilies::dispatch($oldSubDepartment);
+                SubDepartmentHydrateProducts::dispatch($oldSubDepartment);
+            }
+
         }
 
         return $family;

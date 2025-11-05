@@ -22,11 +22,13 @@ import Pagination from '@/Components/Table/Pagination.vue'
 import TableFilterSearch from '@/Components/Table/TableFilterSearch.vue'
 import TableWrapper from '@/Components/Table/TableWrapper.vue'
 import HeaderCell from '@/Components/Table/HeaderCell.vue'
+import Image from '@/Components/Image.vue'
 
 // Product Components
 import RecordCounter from './RecordCounter.vue'
 import ProductCard from './ProductCard.vue'
 import EmptyState from './EmptyState.vue'
+import ProductRenderEcom from '@/Components/CMS/Webpage/Products1/ProductRenderEcom.vue'
 
 
 import { clone } from 'lodash-es'
@@ -197,12 +199,13 @@ const hasData = computed(() => {
 /**
  * Get existing transaction for a product
  */
-const getExistingTransaction = (product: Product) => {
+/* const getExistingTransaction = (product: Product) => {
     if (!props.basketTransactions || !product.id) {
         return null
     }
     return props.basketTransactions[product.id] || null
-}
+} */
+console.log('basketTransactions', props.basketTransactions)
 
 // ============================================================================
 // SEARCH & FILTER FUNCTIONS
@@ -492,6 +495,16 @@ const toggleFavorite = (product: Product): void => {
         )
     }
 }
+
+const getDataHasInBasket = (item: Product) => {
+        return {
+                id: item?.id,
+                quantity_ordered: item.quantity_ordered || 0,
+                quantity_ordered_new: item.quantity_ordered_new || 0,
+                asset_id: item?.asset_id
+            }
+    }
+
 </script>
 
 <template>
@@ -515,7 +528,8 @@ const toggleFavorite = (product: Product): void => {
                 </div>
 
                 <div>
-                    <slot v-for="column in queryBuilderProps.columns.filter(item => item.sortable)":name="`header(${column.key})`" :header="column">
+                    <slot v-for="column in queryBuilderProps.columns.filter(item => item.sortable)"
+                        :name="`header(${column.key})`" :header="column">
                         <HeaderCell :key="`table-${name}-header-${column.key}`" :cell="header(column.key)"
                             :type="columnsType[column.key]" :column="column" :resource="compResourceData">
                         </HeaderCell>
@@ -530,11 +544,22 @@ const toggleFavorite = (product: Product): void => {
                 <!-- Product Cards -->
                 <div v-for="(item, index) in compResourceData" :key="`product-${index}`">
                     <slot name="card" :item="item">
-                        <ProductCard 
+                        <!-- <ProductCard 
                             :product="item" 
                             :existing-transaction="getExistingTransaction(item)"
                             @toggle-favorite="toggleFavorite" 
-                        />
+                        /> -->
+                        <ProductRenderEcom :product="item" :key="index" :hasInBasket="item"
+                            :dettach-to-favourite-route="{ name: 'retina.models.product.unfavourite' }"
+                            :attach-to-favourite-route="{ name: 'retina.models.product.favourite' }"
+                            :add-to-basket-route="{ name: 'retina.models.product.add-to-basket' }"
+                            :updateBasketQuantityRoute="{ name: 'retina.models.transaction.update', method: 'patch' }"
+                            @after-on-unselect-favourite="() => router.reload()">
+                            <template #image="{ product }">
+                                <Image :src="product?.image?.source" alt="product image"
+                                    :style="{ objectFit: 'contain' }" />
+                            </template>
+                        </ProductRenderEcom>
                     </slot>
                 </div>
 

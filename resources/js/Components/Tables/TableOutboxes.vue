@@ -49,6 +49,14 @@ function outboxRoute(outbox: Outbox) {
                 'grp.org.shops.show.dashboard.comms.outboxes.show',
                 [outbox.organisation_slug, outbox.shop_slug, outbox.slug])
         case 'grp.org.shops.show.dashboard.comms.outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.cold_email_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.customer_notification_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.marketing_notification_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.marketing_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.newsletter_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.push_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.test_outboxes.index':
+        case 'grp.org.shops.show.dashboard.comms.user_notification_outboxes.index':
         return route(
                 'grp.org.shops.show.dashboard.comms.outboxes.show',
                 [route().params['organisation'], route().params['shop'], outbox.slug])

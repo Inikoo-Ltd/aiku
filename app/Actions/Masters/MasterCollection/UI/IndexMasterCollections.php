@@ -38,7 +38,7 @@ class IndexMasterCollections extends OrgAction
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
                 $query->whereStartWith('master_collections.code', $value)
-                    ->orWhereStartWith('master_collections.description', $value);
+                    ->orWhereStartWith('master_collections.name', $value);
             });
         });
 
@@ -47,17 +47,32 @@ class IndexMasterCollections extends OrgAction
         }
 
         $queryBuilder = QueryBuilder::for(MasterCollection::class);
+        $queryBuilder->leftjoin('master_collection_stats', 'master_collections.id', 'master_collection_stats.master_collection_id');
+
         $queryBuilder->select(
             [
                 'master_collections.id',
                 'master_collections.code',
-                'master_collections.description',
                 'master_collections.slug',
-                'master_collections.state',
                 'master_collections.products_status',
                 'master_collections.data',
+                'master_collections.name',
+                'master_collections.status',
+                'master_collection_stats.number_current_master_families',
+                'master_collection_stats.number_current_master_products',
+                'master_collection_stats.number_current_master_collections',
             ]
-        );
+        )
+            ->selectRaw(
+                '(
+        SELECT concat(string_agg(master_product_categories.slug,\',\'),\'|\',string_agg(master_product_categories.type,\',\'),\'|\',string_agg(master_product_categories.code,\',\'),\'|\',string_agg(master_product_categories.name,\',\')) FROM model_has_master_collections
+        left join master_product_categories on model_has_master_collections.model_id = master_product_categories.id
+        WHERE model_has_master_collections.master_collection_id = master_collections.id
+   
+        AND model_has_master_collections.model_type = ?
+    ) as parents_data',
+                ['MasterProductCategory',]
+            );
 
         if ($parent instanceof MasterShop) {
             $queryBuilder->where('master_collections.master_shop_id', $parent->id);
@@ -74,7 +89,16 @@ class IndexMasterCollections extends OrgAction
 
         return $queryBuilder
             ->defaultSort('master_collections.code')
-            ->allowedSorts(['code', 'description'])
+            ->allowedSorts(
+                [
+                    'status',
+                    'code',
+                    'name',
+                    'number_current_master_families',
+                    'number_current_master_products',
+                    'number_current_master_collections'
+                ]
+            )
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -96,10 +120,14 @@ class IndexMasterCollections extends OrgAction
                     ],
                 );
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'description', label: __('description'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'state', label: __('state'), canBeHidden: false)
-                ->defaultSort('code');
+            $table
+                ->column(key: 'status_icon', label: '', canBeHidden: false, type: 'icon');
+            $table->column(key: 'parents', label: __('Parents'), canBeHidden: false);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
+            $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);
+            $table->column(key: 'number_current_master_collections', label: __('Collections'), canBeHidden: false, sortable: true);
         };
     }
 
@@ -110,7 +138,7 @@ class IndexMasterCollections extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $masterCollections, ActionRequest $request): Response
     {
-        $title = __('master collections');
+        $title = __('Master collections');
 
         $icon          = '';
         $model         = null;
@@ -136,6 +164,7 @@ class IndexMasterCollections extends OrgAction
         if ($this->parent instanceof MasterShop) {
             $subNavigation = $this->getMasterShopNavigation($this->parent);
         }
+
         return Inertia::render(
             'Masters/MasterCollections',
             [

@@ -26,6 +26,9 @@ const props = defineProps<{
 
 const options = [
     "Arial",
+    "Avenir",
+    "Bunya",
+    "Cardinal",
     "Comfortaa",
     "Lobster",
     "Laila",
@@ -33,6 +36,7 @@ const options = [
     "Playfair",
     "Raleway",
     "Roman Melikhov",
+    "Shoemaker",
     "Source Sans Pro",
     "Quicksand",
     "Times New Roman",

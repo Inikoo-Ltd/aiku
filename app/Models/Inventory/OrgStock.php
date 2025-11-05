@@ -67,6 +67,9 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $picking_dropshipping_location_id
  * @property int|null $packed_in Number of trade units usually packed together
  * @property bool $is_single_trade_unit Indicates if the org stock has a single trade unit
+ * @property string $quantity_in_submitted_orders
+ * @property string $quantity_to_be_picked
+ * @property string $quantity_available
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \App\Models\Inventory\OrgStockIntervals|null $intervals

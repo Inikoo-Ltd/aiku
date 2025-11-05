@@ -32,8 +32,8 @@ import {
     faTransporter,
     faRulerTriangle,
     faRulerCombined,
-    faAtom,
-    faFileInvoice,
+    faAtom, faBan, faSnooze,
+    faFileInvoice, faInboxIn,
     faPaperPlane,
     faDraftingCompass, faExternalLinkAlt,
     faCheck,
@@ -49,8 +49,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
+import { setColorStyleRoot } from "@/Composables/useApp"
 
-library.add(faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faFileInvoice, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
+library.add(faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faBan, faSnooze, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
 
 provide("layout", useLayoutStore())
 provide("locale", useLocaleStore())
@@ -118,23 +119,10 @@ const onRefreshPage = () => {
     window.location.reload()
 }
 
-const setColorStyleRoot = () => {
-
-    const root = document.documentElement
-    root.style.setProperty('--grp-color-primary', layout?.app?.theme?.[0])
-    root.style.setProperty('--grp-color-secondary', layout?.app?.theme?.[2])
-    
-    root.style.setProperty('--theme-color-0', layout?.app?.theme?.[0])  // var(--theme-color-0)
-    root.style.setProperty('--theme-color-1', layout?.app?.theme?.[1])
-    root.style.setProperty('--theme-color-2', layout?.app?.theme?.[2])
-    root.style.setProperty('--theme-color-3', layout?.app?.theme?.[3])
-    root.style.setProperty('--theme-color-4', layout?.app?.theme?.[4])
-    root.style.setProperty('--theme-color-5', layout?.app?.theme?.[5])
-}
 
 onMounted(() => {
     onCheckAppVersion()
-    setColorStyleRoot()
+    setColorStyleRoot(layout?.app?.theme)
 })
 </script>
 
@@ -147,7 +135,7 @@ onMounted(() => {
 
         <!-- Section: Breadcrumbs -->
         <Breadcrumbs
-            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out"
+            class="bg-white fixed z-[19] transition-all duration-200 ease-in-out px-4"
             :class="[
                 layout.leftSidebar.show ? 'left-0 md:left-48 w-screen sm:w-full md:w-[calc(100%-144px)] lg:w-[calc(100%-192px)]' : 'left-0 md:left-12 w-screen sm:w-full md:w-[calc(100%-36px)] lg:w-[calc(100%-48px)]',
                 layout.app.environment === 'staging' ? 'top-11 lg:top-16' : 'top-11 lg:top-10'
@@ -167,7 +155,7 @@ onMounted(() => {
 
         <!-- Main Content -->
         <main
-            class="h-full relative flex flex-col pt-[76px] md:pt-[63px] lg:pt-20 xl:pt-16 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
+            class="h-full relative flex flex-col pt-[36px] md:pt-[33px] lg:pt-10 xl:xpt-10 pb-6 md:pb-24 text-gray-700 transition-all duration-200 ease-in-out"
             :class="[
                 layout.leftSidebar.show ? 'ml-0 md:ml-48' : 'ml-0 md:ml-12',
                 layout.app.environment === 'staging' ? 'mt-6' : ''

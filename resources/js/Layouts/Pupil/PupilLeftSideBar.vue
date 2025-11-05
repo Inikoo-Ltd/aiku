@@ -7,16 +7,10 @@
 <script setup lang="ts">
 
 import PupilLeftSidebarNavigation from "@/Layouts/Pupil/PupilLeftSidebarNavigation.vue"
-// import { Popover, PopoverButton, PopoverPanel } from '@headlessui/vue'
-
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faChevronLeft } from "@far"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { ref, inject } from "vue"
-// import { router } from '@inertiajs/vue3'
-// import { trans } from "laravel-vue-i18n"
-// import Button from "@/Components/Elements/Buttons/Button.vue"
-// import NavigationSimple from '@/Layouts/Grp/NavigationSimple.vue'
+import { inject } from "vue"
 library.add(faChevronLeft)
 
 const layout = inject('layout')
@@ -30,21 +24,6 @@ const handleToggleLeftBar = () => {
 const isStaging = layout.app.environment === 'staging'
 
 
-// const logoutData = {
-//     label: 'Logout',
-//     tooltip: 'Logout the app',
-//     icon: 'fal fa-sign-out-alt',
-// }
-// const isLoadingLogout = ref(false)
-// const onLogoutAuth = () => {
-
-//     router.post(route('retina.logout'), {},
-//     {
-//         onStart: () => isLoadingLogout.value = true,
-//         onError: () => isLoadingLogout.value = false,
-//     })
-
-// }
 
 </script>
 
@@ -83,31 +62,7 @@ const isStaging = layout.app.environment === 'staging'
                 <PupilLeftSidebarNavigation />
             </div>
 
-            <!-- Section: Logout -->
-            <!-- <div class="absolute left-0 bottom-[88px] w-full mx-auto">
-                <Popover class="relative w-10/12 mx-auto" v-slot="{ open }">
-                    <PopoverButton class="flex w-full focus:outline-none focus:ring-0 focus:border-none">
-                        <div class="w-full rounded-md" :class="[open ? 'bg-white/25' : '']">
-                            <NavigationSimple :nav="logoutData" />
-                        </div>
-                    </PopoverButton>
 
-                    <transition enter-active-class="transition duration-200 ease-out" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition duration-150 ease-in" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95" >
-                        <PopoverPanel class="absolute -top-3 left-1/2 -translate-y-full bg-white rounded-md px-4 py-3 border border-gray-200 shadow">
-                            <div class="min-w-32 flex flex-col justify-center gap-y-2">
-                                <div class="whitespace-nowrap text-gray-500 text-xs">Are you sure want to logout?</div>
-                                <div class="mx-auto">
-                                    <Button @click="onLogoutAuth()" :loading="isLoadingLogout" :label="trans('Yes, logout')" type="red" />
-                                </div>
-                            </div>
-                        </PopoverPanel>
-                    </transition>
-                </Popover>
-            </div> -->
-
-        <!-- <div class="absolute bottom-[68px] w-full">
-            <LeftSidebarBottomNav />
-        </div> -->
     </div>
 </template>
 

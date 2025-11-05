@@ -10,12 +10,14 @@ namespace App\Actions\Catalogue\Product\UI;
 
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
 use App\Actions\Traits\HasBucketImages;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Http\Resources\Catalogue\ProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Goods\TradeUnit;
 use Lorisleiva\Actions\Concerns\AsObject;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\Inventory\OrgStock\Json\GetOrgStocksInProduct;
+use App\Actions\Traits\HasBucketAttachment;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Inventory\OrgStocksResource;
 
@@ -23,9 +25,15 @@ class GetProductShowcase
 {
     use AsObject;
     use HasBucketImages;
+    use HasBucketAttachment;
 
     public function handle(Product $product): array
     {
+        $webpageUrl = null;
+        if ($product->webpage && $product->webpage->state == WebpageStateEnum::LIVE) {
+            $webpageUrl = $product->webpage->canonical_url;
+        }
+
         $tradeUnits = $product->tradeUnits;
 
 
@@ -116,6 +124,9 @@ class GetProductShowcase
                 ],
             ],
             'images' => $this->getImagesData($product),
+            'attachment_box' =>  $this->getAttachmentData($product),
+            'webpage_url' => $webpageUrl
+
         ];
     }
 

@@ -25,8 +25,9 @@ class GetWebBlockSeeAlso
     /**
      * Handle building "See Also" web block data.
      *
-     * @param Webpage $webpage
-     * @param array<string,mixed> $webBlock
+     * @param  Webpage  $webpage
+     * @param  array<string,mixed>  $webBlock
+     *
      * @return array<string,mixed>
      */
     public function handle(Webpage $webpage, array $webBlock): array
@@ -34,29 +35,30 @@ class GetWebBlockSeeAlso
         $settingsPath = 'web_block.layout.data.fieldValue.settings.products_data';
 
         // Products selected manually
-        $products = Arr::get($webBlock, "{$settingsPath}.products", []);
+        $products = Arr::get($webBlock, "$settingsPath.products", []);
 
-        // Ensure type exists but don’t overwrite if already set
+        // Ensure the type exists but don’t overwrite if already set
         $luigiTrackerId = data_get($webpage->website, 'settings.luigisbox.tracker_id');
-        if (!Arr::has($webBlock, "{$settingsPath}.type")) {
+        if (!Arr::has($webBlock, "$settingsPath.type")) {
             if ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
-                data_set($webBlock, "{$settingsPath}.type", "current-family");
+                data_set($webBlock, "$settingsPath.type", "current-family");
             } elseif ($luigiTrackerId) {
-                data_set($webBlock, "{$settingsPath}.type", "luigi-trends");
+                data_set($webBlock, "$settingsPath.type", "luigi-trends");
             }
         }
 
 
         // Section: Another Family
         $dataOtherFamilyToWorkshop = null;
-        $idOtherFamily = (int) Arr::get($webBlock, "{$settingsPath}.other_family.id");
+        $idOtherFamily             = (int)Arr::get($webBlock, "$settingsPath.other_family.id");
+        /** ProductCategory $modelOtherFamily */
         if ($idOtherFamily > 0 && ($modelOtherFamily = ProductCategory::find($idOtherFamily))) {
             $dataOtherFamilyToWorkshop = [
-                'id'    => $idOtherFamily,
-                'slug'  => $modelOtherFamily->slug,
-                'name'  => $modelOtherFamily->name,
-                'code'  => $modelOtherFamily->code,
-                'title' => $modelOtherFamily->title,
+                'id'     => $idOtherFamily,
+                'slug'   => $modelOtherFamily->slug,
+                'name'   => $modelOtherFamily->name,
+                'code'   => $modelOtherFamily->code,
+                'title'  => $modelOtherFamily->webpage?->title,
                 'option' => ProductsWebpageResource::collection(
                     $modelOtherFamily->getProducts()
                         // ->where('stock', '>', 0)
@@ -66,16 +68,16 @@ class GetWebBlockSeeAlso
             ];
         }
 
-        // Merge manually-selected products with database values
+        // Merge manually selected products with database values
         $ids = collect($products)
             ->pluck('id')
             ->filter(fn ($id) => is_numeric($id))
-            ->map(fn ($id) => (int) $id)
+            ->map(fn ($id) => (int)$id)
             ->values()
             ->all();
 
         $productsModel = Product::with(['images']) // eager-load to prevent N+1
-            ->whereIn('id', $ids)
+        ->whereIn('id', $ids)
             ->get();
 
         $productOverwrite = collect(
@@ -88,26 +90,37 @@ class GetWebBlockSeeAlso
                 : $product;
         });
 
-        // Section: Current Family (if product page)
-        $family = $webpage->model;
+
+        $family                  = null;
         $productsInCurrentFamily = null;
 
-        if ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
-            $family = $webpage->model->family;
-            $productsInCurrentFamily = [
-                'id'    => $family->id,
-                'slug'  => $family->slug,
-                'name'  => $family->name,
-                'option' => ProductsWebpageResource::collection(
-                    $family->getProducts()->sortByDesc('id')->take(6)
-                )->resolve(),
-            ];
+        if ($webpage->sub_type == WebpageSubTypeEnum::FAMILY) {
+            $family = $webpage->model;
+        } elseif ($webpage->sub_type == WebpageSubTypeEnum::PRODUCT) {
+            /** @var Product $product */
+            $product = $webpage->model;
+
+            $family = $product->family;
+            if ($family) {
+                $productsInCurrentFamily = [
+                    'id'     => $family->id,
+                    'slug'   => $family->slug,
+                    'name'   => $family->name,
+                    'option' => ProductsWebpageResource::collection(
+                        $family->getProducts()->sortByDesc('id')->take(6)
+                    )->resolve(),
+                ];
+            }
         }
 
-        // Section: Top Products in family
-        $topProducts = ProductsWebpageResource::collection(
-            GetTopProductsInProductCategory::run($family)
-        )->resolve();
+        $topProducts = null;
+
+        if ($family) {
+            // Section: Top Products in the family
+            $topProducts = ProductsWebpageResource::collection(
+                GetTopProductsInProductCategory::run($family)
+            )->resolve();
+        }
 
         // Set final data back into webBlock
         data_set(

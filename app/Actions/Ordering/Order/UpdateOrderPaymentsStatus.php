@@ -13,6 +13,7 @@ use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Accounting\Payment\PaymentStatusEnum;
 use App\Enums\Ordering\Order\OrderPayDetailedStatusEnum;
 use App\Enums\Ordering\Order\OrderPayStatusEnum;
+use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Accounting\Payment;
 use App\Models\Ordering\Order;
 use Carbon\Carbon;
@@ -21,6 +22,7 @@ use Illuminate\Support\Arr;
 class UpdateOrderPaymentsStatus extends OrgAction
 {
     use WithHydrateCommand;
+    use HasOrderHydrators;
 
     public string $commandSignature = 'orders:set_payments {organisations?*} {--S|shop= shop slug} {--s|slug=}';
 
@@ -36,19 +38,20 @@ class UpdateOrderPaymentsStatus extends OrgAction
         $payStatus             = OrderPayStatusEnum::UNPAID;
         $payDetailedStatus     = OrderPayDetailedStatusEnum::UNPAID;
         /** @var Payment $payment */
-        foreach (
-            $order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment
-        ) {
+        foreach ($order->payments()->where('payments.status', PaymentStatusEnum::SUCCESS)->get() as $payment) {
             $runningPaymentsAmount += $payment->amount;
         }
-        if ($runningPaymentsAmount >= $order->total_amount) {
+        $runningPaymentsAmount = round($runningPaymentsAmount, 2);
+        $totalAmount =  $order->total_amount;
+
+        if ($runningPaymentsAmount >= $totalAmount) {
             $payStatus = OrderPayStatusEnum::PAID;
         }
 
 
-        if ($runningPaymentsAmount > $order->total_amount) {
+        if ($runningPaymentsAmount > $totalAmount) {
             $payDetailedStatus = OrderPayDetailedStatusEnum::OVERPAID;
-        } elseif ($runningPaymentsAmount == $order->total_amount) {
+        } elseif ($runningPaymentsAmount == $totalAmount) {
             $payDetailedStatus = OrderPayDetailedStatusEnum::PAID;
         } elseif ($runningPaymentsAmount > 0) {
             $payDetailedStatus = OrderPayDetailedStatusEnum::PARTIALLY_PAID;
@@ -73,7 +76,10 @@ class UpdateOrderPaymentsStatus extends OrgAction
                 'pay_status'          => $payStatus,
             ]
         );
-
+        $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
+        if ($order->status == OrderStateEnum::SUBMITTED && Arr::has($changes, 'pay_status')) {
+            $this->orderHandlingHydrators($order, $order->state);
+        }
 
         return $order;
     }

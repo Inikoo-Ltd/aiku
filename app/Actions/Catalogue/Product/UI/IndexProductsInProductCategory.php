@@ -275,6 +275,7 @@ class IndexProductsInProductCategory extends OrgAction
                     'subNavigation' => $subNavigation,
                 ],
                 'editable_table'               => true,
+                'shop_id'                      => $this->shop->id,
                 'currencies'                   => $productCategory->shop->currency,
                 'data'                         => ProductsResource::collection($products),
                 'tabs'                         => [

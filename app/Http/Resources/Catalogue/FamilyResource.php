@@ -19,7 +19,7 @@ class FamilyResource extends JsonResource
         $family = $this->resource;
 
 
-        $urlMaster                              = null;
+        $urlMaster = null;
         if ($family->master_product_category_id) {
             $urlMaster = [
                 'name'       => 'grp.helpers.redirect_master_product_category',
@@ -30,32 +30,32 @@ class FamilyResource extends JsonResource
         }
 
         return [
-            'slug'            => $family->slug,
-            'id'              => $family->id,
-            'image_id'        => $family->image_id,
-            'code'            => $family->code,
-            'show_in_website' => $family->show_in_website,
-            'name'            => $family->name,
-            'department_name' => $family->parent?->name ?? null,
-            'department_id'   => $family->parent?->id ?? null,
-            'state' => [
-                        'value' => $family->state->value ?? null,
-                        'label' => $family->state->labels()[$family->state->value] ?? ucfirst($family->state->value),
-                        'icon'  => $family->state->stateIcon()[$family->state->value]['icon'] ?? null,
-                        'class' => $family->state->stateIcon()[$family->state->value]['class'] ?? null,
-                    ],
-            'description'     => $family->description,
-            'image'           => $family->imageSources(720, 480),
-            'created_at'      => $family->created_at,
-            'updated_at'      => $family->updated_at,
-            'type'            => $family->type,
-            'follow_master'   => $family->follow_master,
-            'url_master'       => $urlMaster,
-            'is_name_reviewed' => $family->is_name_reviewed,
+            'slug'                          => $family->slug,
+            'id'                            => $family->id,
+            'image_id'                      => $family->image_id,
+            'code'                          => $family->code,
+            'show_in_website'               => $family->show_in_website,
+            'name'                          => $family->name,
+            'department_name'               => $family->parent?->name ?? null,
+            'department_id'                 => $family->parent?->id ?? null,
+            'state'                         => [
+                'value' => $family->state->value ?? null,
+                'label' => $family->state->labels()[$family->state->value] ?? ucfirst($family->state->value),
+                'icon'  => $family->state->stateIcon()[$family->state->value]['icon'] ?? null,
+                'class' => $family->state->stateIcon()[$family->state->value]['class'] ?? null,
+            ],
+            'description'                   => $family->description,
+            'image'                         => $family->imageSources(720, 480),
+            'created_at'                    => $family->created_at,
+            'updated_at'                    => $family->updated_at,
+            'type'                          => $family->type,
+            'follow_master'                 => $family->follow_master,
+            'url_master'                    => $urlMaster,
+            'is_name_reviewed'              => $family->is_name_reviewed,
             'is_description_title_reviewed' => $family->is_description_title_reviewed,
-            'is_description_reviewed' => $family->is_description_reviewed,
+            'is_description_reviewed'       => $family->is_description_reviewed,
             'is_description_extra_reviewed' => $family->is_description_extra_reviewed,
-            'products' => ProductResource::collection($family->getProducts())->toArray(request())
+            'products'                      => ProductResource::collection($family->getProducts())->toArray(request())
         ];
     }
 }

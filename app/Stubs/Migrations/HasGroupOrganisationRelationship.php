@@ -17,7 +17,7 @@ trait HasGroupOrganisationRelationship
 
         $table->unsignedSmallInteger('group_id')->index();
         $table->foreign('group_id')->references('id')->on('groups')->nullOnDelete();
-        $table->unsignedSmallInteger('organisation_id');
+        $table->unsignedSmallInteger('organisation_id')->index();
         $table->foreign('organisation_id')->references('id')->on('organisations')->nullOnDelete();
 
         return $table;

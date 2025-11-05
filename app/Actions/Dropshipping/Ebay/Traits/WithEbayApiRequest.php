@@ -18,15 +18,245 @@ use Illuminate\Support\Facades\Log;
 trait WithEbayApiRequest
 {
     /**
+     * Fields that require user action to fix
+     */
+    public const array ACTIONABLE_FIELDS = [
+        'sku',
+        'title',
+        'description',
+        'price',
+        'quantity',
+        'availableQuantity',
+        'categoryId',
+        'imageUrls',
+        'aspects',
+        'brand',
+        'mpn',
+        'upc',
+        'ean',
+        'isbn',
+        'condition',
+        'conditionDescription',
+        'format',
+        'listingPolicies',
+        'fulfillmentPolicyId',
+        'paymentPolicyId',
+        'returnPolicyId',
+        'merchantLocationKey',
+        'pricingSummary',
+    ];
+
+    public function sanitizeForEbay($text): string
+    {
+        // Remove or replace problematic keywords
+        $problematic = [
+            'includes' => 'contains',
+            'include' => 'contain',
+            'javascript' => '',
+            '.cookie' => '',
+            'cookie(' => '',
+            'replace(' => '',
+            'IFRAME' => '',
+            'META' => '',
+            'base href' => '',
+        ];
+
+        $text = str_ireplace(array_keys($problematic), array_values($problematic), $text);
+
+        return preg_replace('/\b(includes?|javascript)\b/i', '', $text);
+    }
+
+    /**
+     * Check if error requires user action
+     */
+    public static function isActionableError($errorResponse): bool
+    {
+        if (empty($errorResponse)) {
+            return false;
+        }
+
+        $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
+
+        if (!isset($errors['errors']) || !is_array($errors['errors'])) {
+            return false;
+        }
+
+        foreach ($errors['errors'] as $error) {
+            // Check if error has parameters with field names
+            if (isset($error['parameters']) && is_array($error['parameters'])) {
+                foreach ($error['parameters'] as $param) {
+                    if (isset($param['name']) && in_array($param['name'], self::ACTIONABLE_FIELDS)) {
+                        return true;
+                    }
+                }
+            }
+
+            // Check inputRefIds for field references (e.g., "$.product.title")
+            if (isset($error['inputRefIds']) && is_array($error['inputRefIds'])) {
+                foreach ($error['inputRefIds'] as $inputRef) {
+                    foreach (self::ACTIONABLE_FIELDS as $field) {
+                        if (str_contains(strtolower($inputRef), strtolower($field))) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            // Check error category - REQUEST errors often need user action
+            if (isset($error['category']) && $error['category'] === 'REQUEST') {
+                // Check if message mentions any actionable fields
+                $message = strtolower($error['message'] ?? '');
+                foreach (self::ACTIONABLE_FIELDS as $field) {
+                    if (str_contains($message, strtolower($field))) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get user-friendly error messages for display
+     */
+    public static function getDisplayErrors($errorResponse): ?array
+    {
+        if (!self::isActionableError($errorResponse)) {
+            return null;
+        }
+
+        $errors = is_string($errorResponse) ? json_decode($errorResponse, true) : $errorResponse;
+        $displayErrors = [];
+
+        foreach ($errors['errors'] as $error) {
+            $fieldName = null;
+            $errorMessage = $error['message'] ?? 'Unknown error';
+
+            // Extract field name from parameters
+            if (isset($error['parameters'])) {
+                foreach ($error['parameters'] as $param) {
+                    if (isset($param['name']) && in_array($param['name'], self::ACTIONABLE_FIELDS)) {
+                        $fieldName = $param['name'];
+                        break;
+                    }
+                }
+            }
+
+            // Extract field name from inputRefIds
+            if (!$fieldName && isset($error['inputRefIds'])) {
+                foreach ($error['inputRefIds'] as $inputRef) {
+                    // Parse field name from JSON path like "$.product.title"
+                    if (preg_match('/\$\.(?:\w+\.)*(\w+)/', $inputRef, $matches)) {
+                        $possibleField = $matches[1];
+                        if (in_array($possibleField, self::ACTIONABLE_FIELDS)) {
+                            $fieldName = $possibleField;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // Try to extract field from error message
+            if (!$fieldName) {
+                foreach (self::ACTIONABLE_FIELDS as $field) {
+                    if (stripos($errorMessage, $field) !== false) {
+                        $fieldName = $field;
+                        break;
+                    }
+                }
+            }
+
+            if ($fieldName) {
+                if (!isset($displayErrors[$fieldName])) {
+                    $displayErrors[$fieldName] = [];
+                }
+                $displayErrors[$fieldName][] = $errorMessage;
+            }
+        }
+
+        return !empty($displayErrors) ? $displayErrors : null;
+    }
+
+    public function extractProductAttributes($product, $categoryAspects)
+    {
+        $attributes = [];
+
+        // Get required aspects from category
+        $requiredAspects = collect($categoryAspects['aspects'] ?? [])
+            ->filter(fn ($aspect) => $aspect['aspectConstraint']['aspectRequired'] ?? false);
+
+        foreach ($requiredAspects as $aspect) {
+            $aspectName = $aspect['localizedAspectName'];
+
+            // Map your product data to eBay aspects
+            switch ($aspectName) {
+                case 'Style':
+                    // Try to get from product attributes or use default
+                    $attributes['Style'] = $product->style ??
+                        $product->attributes['style'] ??
+                        ['Not Specified'];
+                    break;
+                case 'Brand':
+                    $attributes['Brand'] = [$product->shop?->name ?? 'Unbranded'];
+                    break;
+                case 'Department':
+                    $attributes['Department'] = ['Unisex Adults'];
+                    break;
+                    // Add more mappings as needed
+                default:
+                    // Use generic mapping or default value
+                    $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
+            }
+        }
+
+        return $attributes;
+    }
+
+    public function getDefaultValueForAspect($aspect)
+    {
+        // Return first recommended value or "Not Specified"
+        return $aspect['aspectValues'][0]['localizedValue'] ?? ['Not Specified'];
+    }
+
+    public function parseMissingAspects($errorMessage)
+    {
+        // Extract aspect name from error message
+        preg_match('/item specific (\w+)/', $errorMessage, $matches);
+        return $matches[1] ?? null;
+    }
+
+    public function getItemAspectsForCategory($categoryId)
+    {
+        try {
+            $endpoint = "/commerce/taxonomy/v1/category_tree/3/get_item_aspects_for_category";
+            return $this->makeEbayRequest('get', $endpoint, [
+                'category_id' => $categoryId
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to get eBay category aspects', [
+                'category_id' => $categoryId,
+                'error' => $e->getMessage()
+            ]);
+
+            return ['aspects' => []]; // Return empty aspects on failure
+        }
+    }
+
+    /**
      * eBay API configuration
      */
     protected function getEbayConfig(): array
     {
+        $shopSlug = null;
+        if (isset($this->customer)) {
+            $shopSlug = $this->customer->shop?->slug;
+        }
 
         return [
             'client_id' => config('services.ebay.client_id'),
             'client_secret' => config('services.ebay.client_secret'),
-            'redirect_uri' => config('services.ebay.redirect_uri'),
+            'redirect_uri' => $shopSlug === 'dse' ? config('services.ebay.redirect_uri_es') : config('services.ebay.redirect_uri'),
             'sandbox' => config('services.ebay.sandbox'),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
             'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token')
@@ -163,10 +393,8 @@ trait WithEbayApiRequest
                 return $tokenData;
             }
 
-            throw new EbayApiException('Failed to refresh token: ' . $response->body());
         } catch (Exception $e) {
             Log::error('eBay Token Refresh Error: ' . $e->getMessage());
-            throw $e;
         }
     }
 
@@ -189,8 +417,6 @@ trait WithEbayApiRequest
             $tokenData = $this->refreshEbayToken();
             return $tokenData['access_token'];
         }
-
-        throw new EbayApiException('No valid access token available. Please re-authenticate with eBay.');
     }
 
     /**
@@ -267,12 +493,13 @@ trait WithEbayApiRequest
                 if ($response->successful()) {
                     return $response->json();
                 }
+            } else {
+                return $response->json();
             }
 
-            throw new EbayApiException('eBay API request failed: ' . $response->body());
         } catch (Exception $e) {
-            Log::error('eBay API Request Error: ' . $e->getMessage());
-            throw $e;
+            Log::error('eBay Token Error: ' . $e->getMessage());
+            return [$e->getMessage()];
         }
     }
 
@@ -476,21 +703,37 @@ trait WithEbayApiRequest
         }
     }
 
+
+
     /**
      * Update offer by offer ID
      */
-    public function updateOffer($offerId, array $productData)
+    public function updateOffer($offerId, array $offerData)
     {
         try {
-            $endpoint = "/sell/inventory/v1/offer/$offerId";
-            return $this->makeEbayRequest('put', $endpoint, array_merge($productData, [
+            $data = [
+                "sku" => Arr::get($offerData, 'sku'),
+                "marketplaceId" => "EBAY_GB",
+                "format" => "FIXED_PRICE",
+                "listingDescription" => Arr::get($offerData, 'description'),
+                "availableQuantity" => Arr::get($offerData, 'quantity', 1),
+                "pricingSummary" => [
+                    "price" => [
+                        "value" => Arr::get($offerData, 'price', 0),
+                        "currency" => Arr::get($offerData, 'currency', 'GBP')
+                    ]
+                ],
                 "listingPolicies" => [
                     "fulfillmentPolicyId" => Arr::get($this->settings, 'defaults.main_fulfilment_policy_id'),
                     "paymentPolicyId" => Arr::get($this->settings, 'defaults.main_payment_policy_id'),
                     "returnPolicyId" => Arr::get($this->settings, 'defaults.main_return_policy_id'),
                 ],
+                "categoryId" => Arr::get($offerData, 'category_id'),
                 "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key')
-            ]));
+            ];
+
+            $endpoint = "/sell/inventory/v1/offer/$offerId";
+            return $this->makeEbayRequest('put', $endpoint, $data);
         } catch (Exception $e) {
             Log::error('Get eBay Offer Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
@@ -507,6 +750,20 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('delete', $endpoint);
         } catch (Exception $e) {
             Log::error('Delete eBay Product Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Delete offer from eBay
+     */
+    public function withdrawOffer($offerId)
+    {
+        try {
+            $endpoint = "/sell/inventory/v1/offer/$offerId/withdraw";
+            return $this->makeEbayRequest('post', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Delete eBay Offer Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
@@ -566,7 +823,7 @@ trait WithEbayApiRequest
 
             $fulfillment = [
                 'lineItems' => $fulfillmentData['line_items'],
-                'shippedDate' => $fulfillmentData['shipped_date'] ?? now()->toISOString(),
+                'shippedDate' => now()->toISOString(),
                 'shippingCarrierCode' => $fulfillmentData['carrier_code'] ?? 'USPS',
                 'trackingNumber' => $fulfillmentData['tracking_number'] ?? null
             ];
@@ -574,6 +831,7 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
             Log::error('Fulfill eBay Order Error: ' . $e->getMessage());
+            \Sentry::captureMessage($e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
@@ -722,7 +980,7 @@ trait WithEbayApiRequest
                     "optionType" => "DOMESTIC",
                     "shippingServices" => [
                         [
-                            "buyerResponsibleForShipping" => "true",
+                            "buyerResponsibleForShipping" => "false",
                             "freeShipping" => "true",
                             "shippingCarrierCode" => "RoyalMail",
                             "shippingServiceCode" => "UK_RoyalMailNextDay"
@@ -902,6 +1160,23 @@ trait WithEbayApiRequest
 
     /**
      * Get user's eBay category suggestions
+     */
+    public function searchAvailableProducts($keyword)
+    {
+        try {
+            $endpoint = "/buy/browse/v1/item_summary/search";
+            return $this->makeEbayRequest('get', $endpoint, [], [
+                'q' => $keyword,
+                'limit' => 10
+            ]);
+        } catch (Exception $e) {
+            Log::error('Get Category Suggestions Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay category suggestions
      *
      */
     public function getUser($data = [], $queryParams = [])
@@ -937,10 +1212,8 @@ trait WithEbayApiRequest
                 }
             }
 
-            throw new EbayApiException('eBay API request failed: ' . $response->body());
         } catch (Exception $e) {
             Log::error('eBay API Request Error: ' . $e->getMessage());
-            throw $e;
         }
     }
 }

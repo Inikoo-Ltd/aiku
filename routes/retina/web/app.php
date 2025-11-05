@@ -18,6 +18,10 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
         ->name("sysadmin.")
         ->group(__DIR__."/customer_account/sysadmin.php");
 
+    Route::prefix("email")
+        ->name("email.")
+        ->group(__DIR__."/customer_account/email.php");
+
     Route::prefix("fulfilment")
         ->name("fulfilment.")
         ->group(__DIR__."/fulfilment/fulfilment_app.php");
@@ -69,5 +73,7 @@ Route::middleware(["retina-auth:retina", 'retina-prepare-account'])->group(funct
 
 
 });
+
+
 require __DIR__."/retina_auth.php";
 require __DIR__."/retina_webhooks.php";

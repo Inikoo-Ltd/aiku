@@ -5,6 +5,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { ref, computed, onMounted } from "vue"
 import Dialog from 'primevue/dialog'
 import Tag from '@/Components/Tag.vue'
+import { trans } from "laravel-vue-i18n"
 
 library.add(faChevronDown)
 
@@ -84,7 +85,7 @@ const selectOption = (val: string) => {
         <template v-else-if="form[fieldName]">
           {{ (props.options.find(o => o.value === form[fieldName]) || {}).label || form[fieldName] }}
         </template>
-        <span v-else class="text-gray-400">{{ fieldData.placeholder ?? 'Select an option' }}</span>
+        <span v-else class="text-gray-400">{{ fieldData.placeholder ?? trans('Select an option') }}</span>
       </div>
       <FontAwesomeIcon icon="fas fa-chevron-down" class="text-gray-500" />
     </div>
@@ -97,14 +98,14 @@ const selectOption = (val: string) => {
     <Dialog
       v-model:visible="showModal"
       modal
-      header="Select Options"
+      :header="trans('Select printer')"
       :style="{ width: '35rem' }"
     >
     <div class="py-2">
       <input
         v-model="searchQuery"
         type="text"
-        placeholder="Search..."
+        :placeholder="trans('Search...')"
         class="w-full p-2 mb-3 border rounded-md"
       />
 
@@ -142,7 +143,7 @@ const selectOption = (val: string) => {
           class="px-4 py-2 bg-gray-200 rounded-md hover:bg-gray-300"
           @click="closeModal"
         >
-          Close
+          {{ trans("Close") }}
         </button>
       </template>
     </Dialog>

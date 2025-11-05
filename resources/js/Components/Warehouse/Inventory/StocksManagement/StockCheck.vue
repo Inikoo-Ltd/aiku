@@ -73,26 +73,26 @@ const submitCheckStock = () => {
         <div @click="() => emits('onClickBackground')" class="cursor-pointer fixed inset-0 bg-black/40 z-30" />
         <div class="relative bg-white z-40 xpy-2 xpx-3 space-y-1">
             <div class="text-center">Stock check</div>
-            <div v-for="(forrrmm, idx) in form.stockCheck" class="grid grid-cols-7 gap-x-3 items-center gap-2">
+            <div v-for="(form, idx) in form.stockCheck" class="grid grid-cols-7 gap-x-3 items-center gap-2">
                 <div class="col-span-4 flex items-center gap-x-2">
-                    {{ forrrmm.name }}
+                    {{ form.name }}
                 </div>
                 <div v-tooltip="trans('Last audit :date', { date: useFormatTime(new Date()) })" class="text-right">
                     0
                     <FontAwesomeIcon icon="fal fa-clock" class="text-gray-400" fixed-width aria-hidden="true" />
                 </div>
                 <div class="col-span-2 text-right flex items-center justify-end gap-x-1">
-                    <div v-if="forrrmm.stock != part_locations[idx].stock">
-                        <span v-if="forrrmm.stock > part_locations[idx].stock" class="text-green-600">
-                            +{{ forrrmm.stock - part_locations[idx].stock }}
+                    <div v-if="form.stock != part_locations[idx].stock">
+                        <span v-if="form.stock > part_locations[idx].stock" class="text-green-600">
+                            +{{ form.stock - part_locations[idx].stock }}
                         </span>
                         <span v-else class="text-red-500">
-                            -{{ part_locations[idx].stock - forrrmm.stock }}
+                            -{{ part_locations[idx].stock - form.stock }}
                         </span>
                     </div>
-                    <div v-else @click="() => forrrmm.isAudited = !forrrmm.isAudited" class="cursor-pointer" :class="forrrmm.isAudited ? 'text-green-500' : 'text-gray-400 hover:text-green-500'">
+                    <div v-else @click="() => form.isAudited = !form.isAudited" class="cursor-pointer" :class="form.isAudited ? 'text-green-500' : 'text-gray-400 hover:text-green-500'">
                         <FontAwesomeIcon
-                            :icon="forrrmm.isAudited ? 'fas fa-dot-circle' : 'fal fa-dot-circle'"
+                            :icon="form.isAudited ? 'fas fa-dot-circle' : 'fal fa-dot-circle'"
                             fixed-width
                             aria-hidden="true"
                         />
@@ -100,10 +100,10 @@ const submitCheckStock = () => {
 
                     <div class="w-14">
                         <InputNumber
-                            :modelValue="forrrmm.stock"
-                            @input="e => forrrmm.stock = e.value"
+                            :modelValue="form.stock"
+                            @input="(event: { value: any }) => form.stock = event.value"
                             :min="0"
-                            :disabled="forrrmm.isAudited"
+                            :disabled="form.isAudited"
                             :step="1"
                             size="small"
                             fluid

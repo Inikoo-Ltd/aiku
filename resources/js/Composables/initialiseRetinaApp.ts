@@ -8,10 +8,11 @@ import { useLayoutStore } from "@/Stores/retinaLayout"
 import { useLocaleStore } from "@/Stores/locale"
 import { router, usePage } from "@inertiajs/vue3"
 import { loadLanguageAsync } from "laravel-vue-i18n"
-import { watchEffect } from "vue"
+import { watch, watchEffect } from "vue"
 import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js"
 import { useEchoRetinaWebsite } from "@/Stores/echo-retina-website.js"
 import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
+import { initialiseIrisVarnishCustomerData, initialiseLogUser } from '@/Composables/initialiseIrisVarnish'
 
 
 export const initialiseRetinaApp = () => {
@@ -24,23 +25,21 @@ export const initialiseRetinaApp = () => {
 
 
 
-    const storageLayout = JSON.parse(localStorage.getItem(`layout_${usePage().props.retina?.type}`) || '{}')  // Get layout from localStorage
+    const storageLayout = JSON.parse(localStorage.getItem(`layout_${usePage().props?.retina?.type}`) || '{}')  // Get layout from localStorage
     layout.currentPlatform = storageLayout.currentPlatform
 
     if (usePage().props?.auth?.user) {
-        layout.user = usePage().props.auth.user
-        echoCustomer.subscribe(usePage().props.auth.user.customer_id)
+        layout.user = usePage().props?.auth?.user
+        echoCustomer.subscribe(usePage().props?.auth?.user?.customer_id)
         // Echo: Personal
-        echoPersonal.subscribe(usePage().props.auth.user.id)
+        echoPersonal.subscribe(usePage().props?.auth?.user?.id)
 
     }
     
     router.on('navigate', (event) => {
         // To see Vue filename in console (component.vue)
         if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
-            window.component = {
-                vue: usePage().component
-            }
+            window.component.vue = usePage().component
         }
         
         layout.currentParams = route().routeParams  // current params
@@ -50,7 +49,7 @@ export const initialiseRetinaApp = () => {
         if (layout.currentParams?.customerSalesChannel && layout.currentParams?.customerSalesChannel !== layout.currentPlatform) {
             layout.currentPlatform = layout.currentParams.customerSalesChannel
 
-            localStorage.setItem(`layout_${usePage().props.retina?.type}`, JSON.stringify({
+            localStorage.setItem(`layout_${usePage().props?.retina?.type}`, JSON.stringify({
                 ...storageLayout,
                 currentPlatform: layout.currentPlatform
             }))
@@ -67,7 +66,7 @@ export const initialiseRetinaApp = () => {
     })
 
     // Echo: Website wide websocket
-    echoWebsite.subscribe(usePage().props.iris.website.id)  // Websockets: notification
+    echoWebsite.subscribe(usePage().props?.iris?.website?.id)  // Websockets: notification
 
     if (usePage().props?.iris?.locale) {
         loadLanguageAsync(usePage().props?.iris?.locale)
@@ -100,15 +99,14 @@ export const initialiseRetinaApp = () => {
 
 
         // Set data of Locale (Language)
-        if (usePage().props.layout?.customer) {
-            layout.customer = usePage().props.layout.customer
-        }
+        // if (usePage().props.layout?.customer) {
+        //     layout.customer = usePage().props.layout.customer
+        // }
 
         if (usePage().props.app) {
             layout.app = usePage().props.app
         }
 
-        layout.app.name = "retina"
 
         // Set App Environment
         if (usePage().props?.environment) {
@@ -121,28 +119,43 @@ export const initialiseRetinaApp = () => {
         }
 
 
-        if (usePage().props.auth?.user) {
-            layout.user = usePage().props.auth.user
-             if(usePage().props.auth?.customerSalesChannels) {
-                layout.user.customerSalesChannels = usePage().props.auth?.customerSalesChannels
-             }
-        }
+        // if (usePage().props.auth?.user) {
+        //     layout.user = usePage().props.auth.user
+        //      if(usePage().props.auth?.customerSalesChannels) {
+        //         layout.user.customerSalesChannels = usePage().props.auth?.customerSalesChannels
+        //      }
+        // }
+
+        // Set User data
+        // if (usePage().props?.auth?.user) {
+        //     layout.user = usePage().props?.auth
+        // }
 
 
         if (usePage().props.retina) {
             layout.retina = usePage().props.retina
         }
 
-        if (usePage().props.iris) {
-            layout.iris = usePage().props.iris
-            layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
-        }
 
         if (usePage().props.auth?.user?.avatar_thumbnail) {
             layout.avatar_thumbnail = usePage().props.auth.user.avatar_thumbnail
         }
 
+        layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
+        layout.log_user = () => initialiseLogUser(layout)
+
     })
+
+    watch(() => usePage().props.iris, (newVal) => {
+        layout.iris = {
+            ...layout.iris,
+            ...newVal
+        }            // layout.iris_variables = usePage().props.iris?.variables  // To support component Iris
+    }, {
+        immediate: true,
+    })
+    
+    layout.app.name = "retina"
 
     return layout
 }

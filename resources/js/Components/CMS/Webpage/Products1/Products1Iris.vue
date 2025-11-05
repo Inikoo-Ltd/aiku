@@ -55,16 +55,16 @@ const props = defineProps<{
     blockData?: Object
     screenType: "mobile" | "tablet" | "desktop"
 }>();
-console.log(props)
+
 const categoryId = props.fieldValue.model_id
 const layout = inject("layout", retinaLayoutStructure);
 const products = ref<any[]>(
-  props.fieldValue?.products?.meta?.last_page == 1
-    ? [
-        ...(props.fieldValue?.products?.data ?? []),
-        ...(props.fieldValue?.products_out_of_stock?.data ?? [])
-      ]
-    : [...(props.fieldValue?.products?.data ?? [])]
+    props.fieldValue?.products?.meta?.last_page == 1
+        ? [
+            ...(props.fieldValue?.products?.data ?? []),
+            ...(props.fieldValue?.products_out_of_stock?.data ?? [])
+        ]
+        : [...(props.fieldValue?.products?.data ?? [])]
 );
 
 const loadingInitial = ref(false);
@@ -88,7 +88,7 @@ const getRoutes = () => {
         return {
             iris: {
                 route_products: {
-                    name: "iris.json.product_category.products.index",
+                    name: "iris.json.product_category.in_stock_products.index",
                     parameters: { productCategory: props.fieldValue.model_id }
                 },
                 route_out_of_stock_products: {
@@ -101,7 +101,7 @@ const getRoutes = () => {
         return {
             iris: {
                 route_products: {
-                    name: "iris.json.collection.products.index",
+                    name: "iris.json.collection.in_stock_products.index",
                     parameters: { collection: props.fieldValue.model_id }
                 },
                 route_out_of_stock_products: {
@@ -280,10 +280,11 @@ onMounted(() => {
         isAscending.value = !sortParam.startsWith("-");
     }
 
-    if (layout?.iris?.is_logged_in){
+    if (layout?.iris?.is_logged_in) {
         fetchProductHasPortfolio();
+        fetchProducts()
     }
-       
+
 
 
     /* debFetchProducts() */
@@ -434,6 +435,10 @@ const responsiveGridClass = computed(() => {
 //     });
 // };
 
+
+const search_sort_class = ref(getStyles(props.fieldValue?.search_sort?.sort?.properties, props.screenType, false))
+const placeholder_class = ref(getStyles(props.fieldValue?.search_sort?.search?.placeholder?.properties, props.screenType, false))
+const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?.properties, props.screenType, false))
 </script>
 
 <template>
@@ -442,14 +447,14 @@ const responsiveGridClass = computed(() => {
             <template #icon>
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500" />
             </template>
-        </ConfirmDialog> -->
+</ConfirmDialog> -->
         <div class="flex flex-col lg:flex-row" :style="{
             ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
             ...getStyles(fieldValue.container?.properties, screenType)
         }">
 
             <!-- Sidebar Filters for Desktop -->
-            <transition name="slide-fade">
+            <transition v-if="!props.fieldValue?.settings?.is_hide_filter" name="slide-fade">
                 <aside v-show="!isMobile && showAside" class="w-68 p-4 transition-all duration-300 ease-in-out">
                     <FilterProducts v-model="filter" :productCategory="props.fieldValue.model_id" />
                 </aside>
@@ -461,24 +466,38 @@ const responsiveGridClass = computed(() => {
                 <!-- Search & Sort -->
                 <div class="px-4 xpt-4 mb-2 flex flex-col md:flex-row justify-between items-center gap-4">
                     <div class="flex items-center w-full md:w-1/3 gap-2">
-                        
-                        <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
-                            aria-label="Open Filters" />
 
-                        <!-- Sidebar Toggle for Desktop -->
-                        <div v-else class="">
-                            <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
-                                aria-label="Open Filters" />
+                        <template v-if="!props.fieldValue?.settings?.is_hide_filter">
+                            <Button v-if="isMobile" :icon="faFilter" @click="showFilters = true" class="!p-3 !w-auto"
+                                aria-label="Open Filters"
+                                :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
+                            <!-- Sidebar Toggle for Desktop -->
+                            <div v-else class="">
+                                <Button :icon="faFilter" @click="showAside = !showAside" class="!p-3 !w-auto"
+                                    aria-label="Open Filters"
+                                    :injectStyle="getStyles(fieldValue?.filter?.button?.properties, screenType)" />
+                            </div>
+                        </template>
+                        <div class="w-full">
+                            <PureInput v-model="q" @keyup.enter="handleSearch" type="text"
+                                placeholder="Search products..." :clear="true" :isLoading="loadingInitial"
+                                :prefix="{ icon: faSearch, label: '' }" class="search-input ring-0">
+                                <template #prefix>
+                                    <div class="pl-3 whitespace-nowrap text-gray-400">
+                                        <FontAwesomeIcon :icon='faSearch' class="icon-search" fixed-width
+                                            aria-hidden='true' />
+                                    </div>
+                                </template>
+                            </PureInput>
                         </div>
-                        <PureInput v-model="q" @keyup.enter="handleSearch" type="text" placeholder="Search products..."
-                            :clear="true" :isLoading="loadingInitial" :prefix="{ icon: faSearch, label: '' }" />
+
                     </div>
 
                     <!-- Sort Tabs -->
                     <div class="flex items-center space-x-6 overflow-x-auto mt-2 md:mt-0 border-b border-gray-300">
 
                         <button v-for="option in sortOptions" :key="option.value" @click="toggleSort(option.value)"
-                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
+                            class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1 sort-button" :class="[
                                 'pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1',
                                 sortKey === option.value
                                     ? `border-b-2 text-[${layout?.app?.theme?.[0] || '#1F2937'}] border-[${layout?.app?.theme?.[0] || '#1F2937'}]`
@@ -504,10 +523,7 @@ const responsiveGridClass = computed(() => {
                     </div>
 
                     <div>
-                        <ButtonAddCategoryToPortfolio
-                            :products
-                            :categoryId
-                        />
+                        <ButtonAddCategoryToPortfolio :products :categoryId />
                     </div>
                 </div>
 
@@ -527,7 +543,7 @@ const responsiveGridClass = computed(() => {
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border p-3 relative rounded bg-white">
-                            <ProductRender :product="product" :key="index"
+                            <ProductRender :product="product" :key="index" :bestSeller="fieldValue.bestseller"
                                 :productHasPortfolio="productHasPortfolio.list[product.id]" />
                         </div>
                     </template>
@@ -577,4 +593,52 @@ const responsiveGridClass = computed(() => {
 aside {
     transition: all 0.3s ease;
 }
+
+
+
+.sort-button{
+   color: v-bind('search_sort_class?.color || null') !important;
+   font-family: v-bind('search_sort_class?.fontFamily || null') !important;
+   font-size: v-bind('search_sort_class?.fontSize || null') !important;
+   font-style: v-bind('search_sort_class?.fontStyle || null') !important;
+}
+
+.icon-search{
+     color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
+}
+
+.search-input {
+    color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
+
+    border-top: v-bind('search_class?.borderTop || null') !important;
+    border-bottom: v-bind('search_class?.borderBottom || null') !important;
+    border-left: v-bind('search_class?.borderLeft || null') !important;
+    border-right: v-bind('search_class?.borderRight || null') !important;
+
+    border-top-left-radius: v-bind('search_class?.borderTopLeftRadius || null') !important;
+    border-top-right-radius: v-bind('search_class?.borderTopRightRadius || null') !important;
+    border-bottom-left-radius: v-bind('search_class?.borderBottomLeftRadius || null') !important;
+    border-bottom-right-radius: v-bind('search_class?.borderBottomRightRadius || null') !important;
+
+  :deep(input) {
+    color: v-bind('search_class?.color || null') !important;
+    font-family: v-bind('search_class?.fontFamily || null') !important;
+    font-size: v-bind('search_class?.fontSize || null') !important;
+    font-style: v-bind('search_class?.fontStyle || null') !important;
+  }
+
+  :deep(input::placeholder) {
+    color: v-bind('placeholder_class?.color || "#999"') !important;
+    font-family: v-bind('placeholder_class?.fontFamily || "inherit"') !important;
+    font-size: v-bind('placeholder_class?.fontSize || null') !important;
+    font-style: v-bind('placeholder_class?.fontStyle || null') !important;
+  }
+}
+
 </style>

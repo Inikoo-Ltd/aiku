@@ -231,6 +231,23 @@ class EditShop extends OrgAction
                                     'label' => __('Require approval'),
                                     'value' => Arr::get($shop->settings, 'registration.require_approval', false),
                                 ],
+                                'required_phone_number' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Require phone number'),
+                                    'value' => Arr::get($shop->settings, 'registration.require_phone_number', false),
+                                ],
+
+                                'marketing_opt_in_label' => [
+                                    'type'  => 'input',
+                                    'label' => __('Marketing opt-in label'),
+                                    'placeholder'   => 'Opt in to our newsletter for updates and offers.',
+                                    'value' => Arr::get($shop->settings, 'registration.marketing_opt_in_label', ''),
+                                ],
+                                'marketing_opt_in_default' => [
+                                    'type'  => 'toggle',
+                                    'label' => __('Marketing opt-in set as checked'),
+                                    'value' => Arr::get($shop->settings, 'registration.marketing_opt_in_default', false),
+                                ],
                             ],
                         ],
                         [

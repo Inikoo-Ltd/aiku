@@ -18,14 +18,14 @@ use App\Actions\Discounts\Offer\UpdateOffer;
 use App\Actions\Discounts\OfferCampaign\HydrateOfferCampaigns;
 use App\Actions\Discounts\OfferCampaign\Search\ReindexOfferCampaignSearch;
 use App\Actions\Discounts\OfferCampaign\UpdateOfferCampaign;
-use App\Actions\Discounts\OfferComponent\StoreOfferComponent;
-use App\Actions\Discounts\OfferComponent\UpdateOfferComponent;
+use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
+use App\Actions\Discounts\OfferAllowance\UpdateOfferAllowance;
 use App\Enums\Analytics\AikuSection\AikuSectionEnum;
 use App\Models\Analytics\AikuScopedSection;
 use App\Models\Catalogue\Shop;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
-use App\Models\Discounts\OfferComponent;
+use App\Models\Discounts\OfferAllowance;
 use Inertia\Testing\AssertableInertia;
 
 use function Pest\Laravel\actingAs;
@@ -108,17 +108,17 @@ test('update offer', function ($offer) {
     expect($offer->name)->toBe('New Name A');
 })->depends('create offer');
 
-test('create offer component', function (Offer $offer) {
-    $offerComponent = StoreOfferComponent::make()->action($offer, $offer->shop, OfferComponent::factory()->definition());
-    $this->assertModelExists($offerComponent);
+test('create offer allowance', function (Offer $offer) {
+    $offerAllowance = StoreOfferAllowance::make()->action($offer, $offer->shop, OfferAllowance::factory()->definition());
+    $this->assertModelExists($offerAllowance);
 
-    return $offerComponent;
+    return $offerAllowance;
 })->depends('create offer');
 
-test('update offer component', function ($offerComponent) {
-    $offerComponent = UpdateOfferComponent::make()->action($offerComponent, OfferComponent::factory()->definition());
-    $this->assertModelExists($offerComponent);
-})->depends('create offer component');
+test('update offer allowance', function ($offerAllowance) {
+    $offerAllowance = UpdateOfferAllowance::make()->action($offerAllowance, OfferAllowance::factory()->definition());
+    $this->assertModelExists($offerAllowance);
+})->depends('create offer allowance');
 
 test('UI Discount Dashboard', function () {
     $response = get(route('grp.org.shops.show.discounts.dashboard', [$this->organisation->slug, $this->shop->slug]));

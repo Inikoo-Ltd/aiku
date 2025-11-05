@@ -71,13 +71,6 @@ class ProductRecordSearch
                         'amount'     => $product->price,
                         'tooltip'    => __('Price')
                     ],
-                    [
-                        'type'           => 'number',
-                        'label'          => __('Quantity') . ': ',
-                        'number'         => $product->available_quantity,
-                        'afterLabel'     => __('pcs'),
-                        'tooltip'        => __('Quantity')
-                    ],
                 ],
             ]
         ];

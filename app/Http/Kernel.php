@@ -9,20 +9,19 @@
 namespace App\Http;
 
 use App\Http\Middleware\AddSentryBrowserProfilingHeader;
+use App\Http\Middleware\AddVaryHeader;
 use App\Http\Middleware\ApiBindGroupInstance;
 use App\Http\Middleware\CorneaAuthenticate;
 use App\Http\Middleware\DisableSSR;
 use App\Http\Middleware\DetectIrisWebsite;
 use App\Http\Middleware\HandleCorneaInertiaRequests;
-use App\Http\Middleware\HandleInertiaCrossToIris;
-use App\Http\Middleware\HandleInertiaCrossToRetina;
 use App\Http\Middleware\HandlePupilInertiaRequests;
 use App\Http\Middleware\RetinaPreparingAccount;
 use App\Http\Middleware\SameSiteSession;
 use App\Http\Middleware\SetHanAsAppScope;
 use App\Http\Middleware\Authenticate;
 use App\Http\Middleware\BindGroupInstance;
-use App\Http\Middleware\CaptureTrafficSource;
+use App\Http\Middleware\CaptureTrafficSourceMiddleWare;
 use App\Http\Middleware\CheckWebsiteState;
 use App\Http\Middleware\DetectWebsite;
 use App\Http\Middleware\HandleAikuPublicInertiaRequests;
@@ -171,6 +170,7 @@ class Kernel extends HttpKernel
         'iris'        => [
             DetectIrisWebsite::class,
             CheckWebsiteState::class,
+            AddVaryHeader::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
@@ -178,30 +178,29 @@ class Kernel extends HttpKernel
             VerifyCsrfToken::class,
             SubstituteBindings::class,
             SetWebUserLocale::class,
-            HandleInertiaCrossToRetina::class,
             HandleIrisInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            LogWebUserRequestMiddleware::class,
+            //LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
-            CaptureTrafficSource::class,
+            //CaptureTrafficSourceMiddleWare::class,
         ],
         'retina'      => [
             DisableSSR::class,
             DetectWebsite::class,
             CheckWebsiteState::class,
+            AddVaryHeader::class,
             EncryptCookies::class,
             AddQueuedCookiesToResponse::class,
             StartSession::class,
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,
             SubstituteBindings::class,
-            HandleInertiaCrossToIris::class,
             SetWebUserLocale::class,
             HandleRetinaInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
-            LogWebUserRequestMiddleware::class,
+            //LogWebUserRequestMiddleware::class,
             InspectorOctaneMiddleware::class,
-            CaptureTrafficSource::class,
+            //CaptureTrafficSourceMiddleWare::class,
         ],
         'pupil'       => [
             DisableSSR::class,

@@ -58,7 +58,7 @@ class MatchAssetsToMaster extends OrgAction
 
     public function getCommandSignature(): string
     {
-        return 'products:match_to_master';
+        return 'assets:match_to_master';
     }
 
     public function asCommand(Command $command): int
@@ -69,14 +69,14 @@ class MatchAssetsToMaster extends OrgAction
         $count = 0;
         $matchedCount = 0;
 
-        $totalCount = Asset::count();
+        $totalCount = Asset::whereNull('master_asset_id')->count();
 
         $bar = $command->getOutput()->createProgressBar($totalCount);
         $bar->setFormat(' %current%/%max% [%bar%] %percent:3s%% %elapsed:6s%/%estimated:-6s% %memory:6s%');
         $bar->start();
 
 
-        Asset::chunk(
+        Asset::whereNull('master_asset_id')->chunk(
             $chunkSize,
             function ($assets) use (&$count, &$matchedCount, $bar, $command) {
                 foreach ($assets as $asset) {

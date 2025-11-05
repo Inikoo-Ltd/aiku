@@ -1,26 +1,39 @@
-<script setup lang="ts">
-/*
-* Author: Vika Aqordi
-* Created on: 18-02-2025-09h-16m
-* Github: https://github.com/aqordeon
-* Copyright: 2025
-*/
-import Table from '@/Components/Table/Table.vue'
-import { RouteParams } from "@/types/route-params";
-import { Link, router } from "@inertiajs/vue3";
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt, faFolders, faFolderTree, faGameConsoleHandheld } from "@fal";
-import { faPlay } from "@fas";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+<!--
+  - Author: Raul Perusquia <raul@inikoo.com>
+  - Created: Mon, 20 Mar 2023 23:18:59 Malaysia Time, Kuala Lumpur, Malaysia
+  - Copyright (c) 2023, Raul A Perusquia Flores
+  -->
 
-library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree);
+<script setup lang="ts">
+import { Link } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import { routeType } from "@/types/route"
+import Icon from "@/Components/Icon.vue"
+import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faFolders, faFolderTree } from "@fal"
+import { faPlay,faTimesCircle, faCheckCircle  as fasCheckCircle} from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { RouteParams } from "@/types/route-params"
+import { trans } from "laravel-vue-i18n"
+import { remove as loRemove } from 'lodash-es'
+import { ref } from 'vue'
+import Button from "@/Components/Elements/Buttons/Button.vue"
+
+
+library.add(fasCheckCircle,faTimesCircle,faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree)
 
 defineProps<{
-    data: {
-
-    }
+    data: {}
     tab?: string
+    routes: {
+        indexWebpage: routeType
+        dataList: routeType
+        submitAttach: routeType
+        detach: routeType
+    }
+    website_domain?: string
 }>()
+
 
 function collectionRoute(collection: {}) {
     const currentRoute = route().current();
@@ -33,17 +46,30 @@ function collectionRoute(collection: {}) {
                 collection.slug
             ]);
     } 
-    // The empty case for "grp.org.shops.show.catalogue.families.show.collection.index" is omitted as it had no implementation
 }
 
+function parentRoute(slug: string) {
 
+    return route(
+        "grp.helpers.redirect_collections_in_product_category",
+        [
+            slug
+        ]
+    )
+
+}
+
+const isLoadingDetach = ref<string[]>([])
 </script>
 
 <template>
     <Table :resource="data" :name="tab" class="mt-5">
-            <template #cell(code)="{ item: collection }">
-             <div class="flex items-center gap-2">
-                <Link :href="(collectionRoute(collection) as string)" class="primaryLink">
+        <template #cell(state_icon)="{ item: collection }">
+            <Icon :data="collection.state_icon" />
+        </template>
+        <template #cell(code)="{ item: collection }">
+            <div class="flex items-center gap-2">
+                <Link :href="collectionRoute(collection) as string" class="primaryLink">
                     {{ collection["code"] }}
                 </Link>
 
@@ -62,6 +88,26 @@ function collectionRoute(collection: {}) {
                     />
                 </template>
             </div>
+        </template>
+
+        <template #cell(parents)="{ item: collection }">
+            <template v-for="(parent, index) in collection.parents_data" :key="index">
+                <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" />
+                <FontAwesomeIcon v-else-if="parent.type === 'subdepartment'" :icon="faFolders" class="mr-1" v-tooltip="trans('Sub Department')" />
+                <Link :href="parentRoute(parent.slug) as string" class="secondaryLink">
+                    {{ parent.code && parent.code.length > 16 ? parent.code.substring(0, 16) + "..." : parent.code }}
+                </Link>
+            </template>
+        </template>
+
+         <template #cell(actions)="{ item }">
+            <Link v-if="routes?.detach?.name" as="button"
+                :href="route(routes.detach.name, { ...routes.detach.parameters, collection : item.id })"
+                :method="routes.detach.method" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
+                @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
+            <Button icon="fal fa-times" type="negative" size="xs"
+                :loading="isLoadingDetach.includes('detach' + item.id)" />
+            </Link>
         </template>
     </Table>
 </template>

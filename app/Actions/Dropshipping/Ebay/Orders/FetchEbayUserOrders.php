@@ -15,12 +15,10 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 
 class FetchEbayUserOrders extends OrgAction
 {
     use AsAction;
-    use WithAttributes;
     use WithActionUpdate;
 
     /**

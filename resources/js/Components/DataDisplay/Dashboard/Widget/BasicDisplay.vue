@@ -233,6 +233,7 @@ const setChartOptions = () => ({
 			<!-- v-tooltip="printLabelByType(widget?.value)" -->
 			<!-- Render CountUp if widget.type is 'number' -->
 			<template v-if="widget?.type === 'number'">
+                <template v-if="widget?.currency_symbol">{{ widget.currency_symbol }}</template>
 				<template v-if="widget?.route">
 					<Link :href="NumberDashboard(widget.route)">
 						<CountUp
@@ -247,6 +248,7 @@ const setChartOptions = () => ({
 				</template>
 				<template v-else>
 					<CountUp
+                        class="inline-block"
 						:endVal="widget?.value"
 						:duration="1.5"
 						:scrollSpyOnce="true"
@@ -321,7 +323,7 @@ const setChartOptions = () => ({
 				</template>
 				<template v-else>
 					<CountUp
-						class="primaryLink inline-block"
+						class="inline-block"
 						v-if="visual.type === 'number'"
 						:endVal="visual.value"
 						:duration="1.5"
@@ -383,16 +385,16 @@ const setChartOptions = () => ({
 					gridTemplateColumns: `repeat(${widget.tabs?.length <= 2 ? widget.tabs.length : 2}, 1fr)`
 				}"
 			>
-				<div 
+				<div
 					v-for="(column, index) in widget.tabs"
-					:key="index" 
+					:key="index"
 					class="text-center"
 				>
 					<div class=" text-2xl font-bold">
 						{{ locale.number(column.label) }}
 					</div>
 					<div class=" text-sm">
-					
+
 						{{ useLocaleStore().currencyFormat( widget.currency_code, column.information.label) }}
 					</div>
 				</div>

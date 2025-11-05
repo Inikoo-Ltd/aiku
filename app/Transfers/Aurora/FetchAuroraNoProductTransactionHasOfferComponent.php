@@ -22,13 +22,13 @@ class FetchAuroraNoProductTransactionHasOfferComponent extends FetchAurora
         }
 
         if ($this->auroraModelData->{'Deal Component Key'} == '0') {
-            $offerComponent = $order->shop->offerComponents()->where('is_discretionary', true)->first();
+            $offerAllowance = $order->shop->offerAllowances()->where('is_discretionary', true)->first();
         } else {
-            $offerComponent = $this->parseOfferComponent($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Key'});
+            $offerAllowance = $this->parseOfferAllowance($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Key'});
         }
 
         $data = [];
-        if (!$offerComponent) {
+        if (!$offerAllowance) {
 
 
             $data           = [
@@ -37,20 +37,20 @@ class FetchAuroraNoProductTransactionHasOfferComponent extends FetchAurora
                     'aurora_deal_component_key' => $this->auroraModelData->{'Deal Component Key'},
                 ]
             ];
-            $offerComponent = $order->shop->offerComponents()->where('is_discretionary', true)->first();
+            $offerAllowance = $order->shop->offerAllowances()->where('is_discretionary', true)->first();
 
 
 
         }
 
-        if ($offerComponent->shop_id != $order->shop_id) {
-            print 'Offer Component '.$offerComponent->id.' does not belong to the same shop as the order '.$order->id."\n";
+        if ($offerAllowance->shop_id != $order->shop_id) {
+            print 'Offer Component '.$offerAllowance->id.' does not belong to the same shop as the order '.$order->id."\n";
             dd($this->auroraModelData);
         }
 
 
         $this->parsedData['transaction']     = $transaction;
-        $this->parsedData['offer_component'] = $offerComponent;
+        $this->parsedData['offer_allowance'] = $offerAllowance;
 
         $fractionDiscount = $this->auroraModelData->{'Fraction Discount'};
         if ($fractionDiscount > 1) {
@@ -68,7 +68,7 @@ class FetchAuroraNoProductTransactionHasOfferComponent extends FetchAurora
 
         $this->parsedData['transaction_has_offer_component'] = [
             'source_alt_id'      => $this->organisation->id.':'.$this->auroraModelData->{'Order No Product Transaction Deal Key'},
-            'offer_component_id' => $offerComponent->id,
+            'offer_allowance_id' => $offerAllowance->id,
             'discounted_amount'  => $this->auroraModelData->{'Amount Discount'},
             'info'               => $this->auroraModelData->{'Deal Info'},
             'is_pinned'          => $this->auroraModelData->{'Order No Product Transaction Deal Pinned'} == 'Yes',

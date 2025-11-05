@@ -46,6 +46,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $public_notes
  * @property mixed $shipping_notes
  * @property mixed $to_be_paid_by
+ * @property mixed $has_insurance
+ * @property mixed $tracking
+ * @property mixed $tracking_urls
+ * @property mixed $combined_label_url
  *
  */
 class OrdersResource extends JsonResource
@@ -67,7 +71,6 @@ class OrdersResource extends JsonResource
             $payDetailedStatus        = $this->pay_detailed_status ? $this->pay_detailed_status->labels()[$this->pay_detailed_status->value] : '';
             $payDetailedStatusTooltip = $payDetailedStatus;
         }
-
 
         return [
             'slug'                        => $this->slug,
@@ -102,6 +105,9 @@ class OrdersResource extends JsonResource
             'internal_notes'              => $this->internal_notes,
             'public_notes'                => $this->public_notes,
             'shipping_notes'              => $this->shipping_notes,
+            'tracking'                    => $this->tracking,
+            'tracking_urls'               => $this->tracking_urls,
+            'combined_label_url'          => $this->combined_label_url
         ];
     }
 }

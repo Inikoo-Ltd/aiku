@@ -17,9 +17,10 @@ enum PlatformTabsEnum: string
     use EnumHelperTrait;
     use HasTabs;
 
-    case SHOWCASE      = 'showcase';
-    case CHANNELS      = 'channels';
-    case PRODUCTS      = 'products';
+    case SHOWCASE   = 'showcase';
+    case CHANNELS   = 'channels';
+    case CUSTOMERS  = 'customers';
+    case PRODUCTS   = 'products';
 
     public function blueprint(): array
     {
@@ -31,6 +32,10 @@ enum PlatformTabsEnum: string
             PlatformTabsEnum::PRODUCTS => [
                 'title' => __('Portfolios'),
                 'icon'  => 'fal fa-cube',
+            ],
+            PlatformTabsEnum::CUSTOMERS => [
+                'title' => __('Customers'),
+                'icon'  => 'fal fa-users',
             ],
             PlatformTabsEnum::CHANNELS => [
                 'title' => __('Channels'),

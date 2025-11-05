@@ -80,11 +80,13 @@ class IndexPaymentAccountShops extends OrgAction
                 'payment_accounts.slug as payment_account_slug',
                 'payment_accounts.code as payment_account_code',
                 'payment_accounts.name as payment_account_name',
-
+                'payment_account_shop.activated_at',
+                'payment_account_shop.state as state',
+                'payment_account_shop.show_in_checkout',
                 'payment_account_shop_stats.number_payments',
                 'payment_account_shop_stats.amount_successfully_paid',
             ])
-            ->allowedSorts(['shop_code', 'shop_name', 'number_payments', 'amount_successfully_paid', 'payment_account_code', 'payment_account_name'])
+            ->allowedSorts(['shop_code', 'shop_name', 'number_payments', 'amount_successfully_paid', 'payment_account_code', 'payment_account_name','activated_at'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -108,15 +110,20 @@ class IndexPaymentAccountShops extends OrgAction
                     ]
                 );
 
+            $table->column(key: 'state', label: '', canBeHidden: false, type: 'icon');
+            $table->column(key: 'show_in_checkout', label: '', canBeHidden: false, type: 'icon');
+
             if ($parent instanceof PaymentAccount) {
-                $table->column(key: 'shop_name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'shop_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             } else {
-                $table->column(key: 'payment_account_name', label: __('name'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'payment_account_name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true);
             }
 
 
-            $table->column(key: 'number_payments', label: __('payments'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'amount_successfully_paid', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
+            $table
+                ->column(key: 'activated_at', label: __('Since'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
+                ->column(key: 'number_payments', label: __('Payments'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'amount_successfully_paid', label: __('Amount'), canBeHidden: false, sortable: true, searchable: true, type: 'number')
                 ->defaultSort('id');
         };
     }

@@ -206,7 +206,7 @@ class IndexSubDepartmentWebpages extends OrgAction
                 'pageHead'    => [
                     'title'         => __('sub department webpages'),
                     'icon'          => [
-                        'icon'  => ['fal', 'fa-browser'],
+                        'icon'  => ['fal', 'fa-folder-download'],
                         'title' => __('Webpage')
                     ],
                     'subNavigation' => $subNavigation,

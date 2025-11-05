@@ -37,6 +37,7 @@ class GetOrderProducts extends OrgAction
         $queryBuilder = QueryBuilder::for(Product::class);
         $queryBuilder->leftJoin('transactions', function ($join) use ($order) {
             $join->on('transactions.model_id', '=', 'products.id')
+                ->where('transactions.model_type', 'Product')
                 ->where('transactions.order_id', $order->id)
                 ->whereNull('transactions.deleted_at');
         });

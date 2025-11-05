@@ -13,6 +13,7 @@ use App\Actions\Helpers\Media\UI\IndexAttachments;
 use App\Actions\HumanResources\WithEmployeeSubNavigation;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Actions\WithActionButtons;
+use App\Actions\Traits\Authorisations\WithHumanResourcesAuthorisation;
 use App\Actions\UI\HumanResources\ShowHumanResourcesDashboard;
 use App\Enums\UI\HumanResources\EmployeeTabsEnum;
 use App\Http\Resources\Helpers\Attachment\AttachmentsResource;
@@ -28,6 +29,7 @@ class ShowEmployee extends OrgAction
 {
     use WithActionButtons;
     use WithEmployeeSubNavigation;
+    use WithHumanResourcesAuthorisation;
 
 
     public function handle(Employee $employee): Employee

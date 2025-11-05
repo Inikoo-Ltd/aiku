@@ -9,12 +9,13 @@
 namespace App\Actions\Web\Webpage\Iris;
 
 use App\Actions\Web\Webpage\WithIrisGetWebpageWebBlocks;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Webpage;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
-use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,7 +25,14 @@ class ShowIrisWebpage
     use WithIrisGetWebpageWebBlocks;
 
 
-    public function getWebpageData($webpageID, array $parentPaths): array
+    public function getCanonicalUrl($webpageID): ?string
+    {
+        $webpageData = DB::table('webpages')->select('canonical_url')->where('id', $webpageID)->first();
+
+        return $webpageData?->canonical_url;
+    }
+
+    public function getWebpageData($webpageID, array $parentPaths, bool $loggedIn): array
     {
         $webpage = Webpage::find($webpageID);
         if (!$webpage) {
@@ -40,28 +48,43 @@ class ShowIrisWebpage
         $webBlocks  = $this->getIrisWebBlocks(
             webpage: $webpage,
             webBlocks: Arr::get($webPageLayout, 'web_blocks', []),
-            isLoggedIn: auth()->check()
+            isLoggedIn: $loggedIn
         );
         $webpageImg = [];
         if ($webpage->seoImage) {
             $webpageImg = $webpage->imageSources(1200, 1200, 'seoImage');
         }
 
+
         return [
-            'status'      => 'ok',
-            'breadcrumbs' => $this->getIrisBreadcrumbs(
+            'status'       => 'ok',
+            'webpage_id'   => $webpage->id,
+            'breadcrumbs'  => $this->getIrisBreadcrumbs(
                 webpage: $webpage,
                 parentPaths: $parentPaths
             ),
-            'webpage'     => $webpage,
-            'webpage_img' => $webpageImg,
-            'web_blocks'  => $webBlocks,
+            'webpage_data' => [
+                'seo_data'      => $webpage->seo_data,
+                'title'         => $webpage->title,
+                'description'   => $webpage->description,
+                'canonical_url' => $webpage->canonical_url,
+
+            ],
+            'webpage_img'  => $webpageImg,
+            'web_blocks'   => $webBlocks,
         ];
     }
 
 
-    public function handle(?string $path, array $parentPaths, ActionRequest $request): array
+    public function handle(?string $path, array $parentPaths, ActionRequest $request): string|array
     {
+        $xLoggedStatus = $request->header('X-Logged-Status');
+        if ($xLoggedStatus !== null) {
+            $loggedIn = $xLoggedStatus === 'In';
+        } else {
+            $loggedIn = auth()->check();
+        }
+
         if (config('iris.cache.webpage_path.ttl') == 0) {
             $webpageID = $this->getWebpageID($request->get('website'), $path);
         } else {
@@ -78,12 +101,36 @@ class ShowIrisWebpage
 
 
         if (config('iris.cache.webpage.ttl') == 0) {
-            $webpageData = $this->getWebpageData($webpageID, $parentPaths);
+            $canonicalUrl = $this->getCanonicalUrl($webpageID);
         } else {
-            $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.(auth()->check() ? 'in' : 'out').'_'.$webpageID;
+            $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_canonicals_'.$webpageID;
 
-            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths) {
-                return $this->getWebpageData($webpageID, $parentPaths);
+            $canonicalUrl = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID) {
+                return $this->getCanonicalUrl($webpageID);
+            });
+        }
+
+
+        if (!empty($canonicalUrl)) {
+            // Use current URL without query parameters for canonical comparison
+            $currentUrl = rtrim($request->url(), '/');
+
+            // Normalize canonical URL to current environment and strip any query parameters
+            $canonNoQuery    = explode('?', $canonicalUrl, 2)[0];
+            $normalizedCanon = $this->getEnvironmentUrl(rtrim($canonNoQuery, '/'));
+
+            if ($normalizedCanon !== $currentUrl) {
+                return $this->getEnvironmentUrl($canonicalUrl);
+            }
+        }
+
+        if (config('iris.cache.webpage.ttl') == 0) {
+            $webpageData = $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
+        } else {
+            $key = config('iris.cache.webpage.prefix').'_'.$request->get('website')->id.'_'.($loggedIn ? 'in' : 'out').'_'.$webpageID;
+
+            $webpageData = cache()->remember($key, config('iris.cache.webpage.ttl'), function () use ($webpageID, $parentPaths, $loggedIn) {
+                return $this->getWebpageData($webpageID, $parentPaths, $loggedIn);
             });
         }
 
@@ -95,38 +142,87 @@ class ShowIrisWebpage
     }
 
 
-    public function asController(ActionRequest $request, string $path = null): array
+    public function getEnvironmentUrl($url)
+    {
+        $environment = app()->environment();
+
+
+        if ($environment == 'local') {
+            $localDomain = match (request()->website->shop->type) {
+                ShopTypeEnum::FULFILMENT => 'fulfilment.test',
+                ShopTypeEnum::DROPSHIPPING => 'ds.test',
+                default => 'ecom.test'
+            };
+
+
+            return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain), '');
+        } elseif ($environment == 'staging') {
+            return replaceUrlSubdomain($url, 'canary');
+        }
+
+        return $url;
+    }
+
+    public function asController(ActionRequest $request, string $path = null): string|array
     {
         return $this->handle($path, [], $request);
     }
 
-    public function deep1(ActionRequest $request, string $parentPath1, string $path): array
+    public function deep1(ActionRequest $request, string $parentPath1, string $path): string|array
     {
         return $this->handle($path, [$parentPath1], $request);
     }
 
-    public function deep2(ActionRequest $request, string $parentPath1, string $parentPath2, string $path = null): array
+    public function deep2(ActionRequest $request, string $parentPath1, string $parentPath2, string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2], $request);
     }
 
-    public function deep3(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $path = null): array
+    public function deep3(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2, $parentPath3], $request);
     }
 
-    public function deep4(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $parentPath4, string $path = null): array
+    public function deep4(ActionRequest $request, string $parentPath1, string $parentPath2, string $parentPath3, string $parentPath4, string $path = null): string|array
     {
         return $this->handle($path, [$parentPath1, $parentPath2, $parentPath3, $parentPath4], $request);
     }
 
 
-    public function htmlResponse($webpageData): Response
+    public function htmlResponse($webpageData): \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\Response
     {
-        return Inertia::render(
+        if (is_string($webpageData)) {
+            $queryParameters = Arr::except(request()->query(), [
+                'favicons',
+                'website',
+                'domain',
+                'currency_data',
+                'shop_type'
+            ]);
+            $queryString     = http_build_query($queryParameters);
+
+            if ($queryString) {
+                $webpageData = $webpageData.'?'.$queryString;
+            }
+
+            return redirect()->to($webpageData, 301)
+                ->withHeaders([
+                    'x-original-referer' => request()->headers->get('referer', '')
+                ]);
+        }
+
+
+        $response = Inertia::render(
             'IrisWebpage',
             $webpageData
-        );
+        )->toResponse(request());
+
+        $response->header('X-AIKU-WEBSITE', (string)request()->website->id);
+        if (isset($webpageData['webpage_id'])) {
+            $response->header('X-AIKU-WEBPAGE', (string)$webpageData['webpage_id']);
+        }
+
+        return $response;
     }
 
 
@@ -135,7 +231,11 @@ class ShowIrisWebpage
         if ($path === null) {
             $webpageID = $website->storefront_id;
         } else {
-            $webpageID = DB::table('webpages')->where('website_id', $website->id)->where('url', $path)->value('id');
+            $webpageID = DB::table('webpages')->where('website_id', $website->id)
+                ->whereRaw("lower(url) = lower(?)", [$path])
+                ->where('state', '=', WebpageStateEnum::LIVE)
+                ->whereNull('deleted_at')
+                ->value('id');
         }
 
 
@@ -167,7 +267,7 @@ class ShowIrisWebpage
             ]
         ];
 
-        $runningUrl = '/';
+
         foreach ($parentPaths as $parentPath) {
             /** @var Webpage $parentWebpage */
             $parentWebpage = $this->getPathWebpage($webpage, $parentPath);
@@ -178,13 +278,11 @@ class ShowIrisWebpage
                     [
                         'type'   => 'simple',
                         'simple' => [
-                            'label' => $parentWebpage->breadcrumb_label,
-                            'url'   => $runningUrl.$parentWebpage->url
+                            'label' => $parentWebpage->breadcrumb_label ?? $webpage->title ?? $webpage->code,
+                            'url'   => $this->getEnvironmentUrl($parentWebpage->canonical_url)
                         ]
 
                     ];
-
-                $runningUrl .= $parentWebpage->url.'/';
             }
         }
 
@@ -192,8 +290,8 @@ class ShowIrisWebpage
             $breadcrumbs[] = [
                 'type'   => 'simple',
                 'simple' => [
-                    'label' => $webpage->breadcrumb_label ?? $webpage->title,
-                    'url'   => $runningUrl.$webpage->url
+                    'label' => $webpage->breadcrumb_label ?? $webpage->title ?? $webpage->code,
+                    'url'   => $this->getEnvironmentUrl($webpage->canonical_url)
                 ]
 
             ];

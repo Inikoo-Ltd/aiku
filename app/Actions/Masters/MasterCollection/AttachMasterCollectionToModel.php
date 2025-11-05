@@ -8,38 +8,75 @@
 
 namespace App\Actions\Masters\MasterCollection;
 
+use App\Actions\Catalogue\Collection\AttachCollectionToModel;
 use App\Actions\GrpAction;
+use App\Actions\Masters\MasterCollection\Hydrators\MasterCollectionHydrateParents;
 use App\Actions\Masters\MasterProductCategory\Hydrators\MasterProductCategoryHydrateMasterCollections;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use App\Models\Masters\MasterCollection;
 use App\Models\Masters\MasterProductCategory;
 use App\Models\Masters\MasterShop;
 
 class AttachMasterCollectionToModel extends GrpAction
 {
-    public function handle(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection): MasterCollection
+    public function handle(MasterShop|MasterProductCategory $parent, MasterCollection $masterCollection, bool $attachChildren = true): MasterCollection
     {
         if ($parent instanceof MasterProductCategory) {
-            if ($parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
+            // Avoid attaching if already linked
+            $alreadyAttached = $parent->masterCollections()->where('master_collections.id', $masterCollection->id)->exists();
+
+            if (!$alreadyAttached && $parent->type == MasterProductCategoryTypeEnum::DEPARTMENT) {
                 $parent->masterCollections()->attach($masterCollection->id, [
                     'type' => 'master_department',
                 ]);
+
+                if ($attachChildren) {
+                    foreach ($masterCollection->childrenCollections as $collection) {
+                        $shopModel = $parent->productCategories()->where('type', ProductCategoryTypeEnum::DEPARTMENT)->where('shop_id', $collection->shop_id)->first();
+                        if ($shopModel) {
+                            AttachCollectionToModel::run($shopModel, $collection);
+                        }
+                    }
+                }
             }
 
-            if ($parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            if (!$alreadyAttached && $parent->type == MasterProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $parent->masterCollections()->attach($masterCollection->id, [
                     'type' => 'master_sub_department',
                 ]);
+
+                if ($attachChildren) {
+                    foreach ($masterCollection->childrenCollections as $collection) {
+                        $shopModel = $parent->productCategories()->where('type', ProductCategoryTypeEnum::SUB_DEPARTMENT)->where('shop_id', $collection->shop_id)->first();
+                        if ($shopModel) {
+                            AttachCollectionToModel::run($shopModel, $collection);
+                        }
+                    }
+                }
             }
 
             MasterProductCategoryHydrateMasterCollections::dispatch($parent);
         }
         if ($parent instanceof MasterShop) {
-            $parent->masterCollections()->attach($masterCollection->id, [
-                'type' => 'master_shop',
-            ]);
+            // Avoid attaching if already linked
+            $alreadyAttached = $parent->masterCollections()->where('master_collections.id', $masterCollection->id)->exists();
+
+            if (!$alreadyAttached) {
+                $parent->masterCollections()->attach($masterCollection->id, [
+                    'type' => 'master_shop',
+                ]);
+
+                if ($attachChildren) {
+                    foreach ($masterCollection->childrenCollections as $collection) {
+                        AttachCollectionToModel::run($collection->shop, $collection);
+                    }
+                }
+            }
         }
 
+
+        MasterCollectionHydrateParents::run($masterCollection);
 
         return $masterCollection;
     }

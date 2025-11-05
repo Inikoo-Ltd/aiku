@@ -10,7 +10,7 @@ import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
 import { faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSkull } from '@fal'
-import { onMounted, provide, ref, watch } from 'vue'
+import { onBeforeMount, onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
 import RetinaLayoutDs from "./RetinaLayoutDs.vue"
@@ -26,13 +26,17 @@ import { confetti } from '@tsparticles/confetti'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faExclamationTriangle, faCheckCircle as fasCheckCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote } from "@fal"
 import { faExclamationTriangle as fasExclamationTriangle, faCheckCircle, faExclamationCircle, faInfo, faCircle } from '@fas'
+import { faEnvelopeCircleCheck } from '@fortawesome/free-solid-svg-icons'
+
 import Modal from "@/Components/Utils/Modal.vue"
 import { trans } from "laravel-vue-i18n"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import { faSearch, faBell, faPlus } from '@far'
 import { faExclamationTriangle as fadExclamationTriangle } from '@fad'
+import { initialiseIrisVarnish } from "@/Composables/initialiseIrisVarnish"
+import { setColorStyleRoot } from "@/Composables/useApp"
 
-library.add(fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote)
+library.add(faEnvelopeCircleCheck, fasExclamationTriangle, faExclamationTriangle, faTimesCircle, faExternalLink, faSeedling, faSkull, fasCheckCircle, faExclamationCircle, faInfo, faCircle, faInfoCircle, faBox, faHandsHelping, faChair, faTrashAlt, faCopy, faStickyNote)
 library.add(fadExclamationTriangle, faCheckCircle, faNarwhal, falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faSearch, faBell, faPlus)
 
 
@@ -48,10 +52,11 @@ interface Notification {
 provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
 initialiseRetinaApp()
-
 const layout = useLayoutStore()
 
-
+onBeforeMount(() => {
+    initialiseIrisVarnish(useLayoutStore)
+})
 
 // Flash: Confetti
 const defaults = {
@@ -183,9 +188,21 @@ const hideSuperchatWidget = () => {
 
 onMounted(() => {
     // if (layout.iris?.is_have_gtm) {
-        hideSuperchatWidget()
+    setColorStyleRoot(layout?.app?.theme)
+    hideSuperchatWidget()
     // }
 })
+
+
+watch(
+  () => usePage().url,
+  (newUrl, oldUrl) => {
+    if (layout.iris?.is_logged_in) {
+      layout?.log_user()
+    }
+  },
+  { immediate: true }
+)
 
 
 const getTextColorDependsOnStatus = (status: string) => {

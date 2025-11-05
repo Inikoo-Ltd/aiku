@@ -1,3 +1,5 @@
+import { trans } from "laravel-vue-i18n"
+
 export default {
 	blueprint: [
 		{
@@ -28,6 +30,7 @@ export default {
 		},
         {
 			name: "Navigation",
+			information: trans('This will apply for all the navigation items'),
 			key: ["navigation_container", "properties"],
 			replaceForm: [
 				{
@@ -56,5 +59,20 @@ export default {
 				},
 			],
 		},
+		{
+			name: "hover",
+			key: ['hover',"container", "properties"],
+			replaceForm: [
+				{
+					key: ["background"],
+					label: "Background",
+					type: "background",
+				},
+				{
+					key: ["text"],
+					type: "textProperty",
+				},
+			],
+		}
 	],
 }

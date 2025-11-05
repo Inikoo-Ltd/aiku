@@ -10,7 +10,7 @@ namespace App\Stubs\Migrations;
 
 use App\Enums\Discounts\Offer\OfferStateEnum;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignStateEnum;
-use App\Enums\Discounts\OfferComponent\OfferComponentStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use Illuminate\Database\Schema\Blueprint;
 
 trait HasDiscountsStats
@@ -39,12 +39,12 @@ trait HasDiscountsStats
         return $table;
     }
 
-    public function offerComponentsStats(Blueprint $table): Blueprint
+    public function offerAllowancesStats(Blueprint $table): Blueprint
     {
 
         $table->unsignedInteger('number_offer_components')->default(0);
         $table->unsignedInteger('number_current_offer_components')->default(0);
-        foreach (OfferComponentStateEnum::cases() as $case) {
+        foreach (OfferAllowanceStateEnum::cases() as $case) {
             $table->unsignedInteger('number_offer_components_state_'.$case->snake())->default(0);
         }
 

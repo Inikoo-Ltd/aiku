@@ -92,13 +92,10 @@ class IndexOrders extends OrgAction
 
         if (class_basename($parent) == 'Shop') {
             $query->where('orders.shop_id', $parent->id);
-            $shop = $parent;
         } elseif (class_basename($parent) == 'Customer') {
             $query->where('orders.customer_id', $parent->id);
-            $shop = $parent->shop;
         } else {
             $query->where('orders.customer_client_id', $parent->id);
-            $shop = $parent->shop;
         }
 
         $query->leftJoin('customers', 'orders.customer_id', '=', 'customers.id');
@@ -108,96 +105,42 @@ class IndexOrders extends OrgAction
         $query->leftJoin('shops', 'orders.shop_id', '=', 'shops.id');
 
         if ($this->bucket == 'creating' || $this->bucket == OrdersBacklogTabsEnum::IN_BASKET->value) {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->where('orders.state', OrderStateEnum::CREATING);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_PAID->value) {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
-
-
             $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
-                ->where('orders.pay_status', OrderPayStatusEnum::PAID);
+                ->whereIn('orders.pay_status', [OrderPayStatusEnum::PAID, OrderPayStatusEnum::NO_NEED]);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::SUBMITTED_UNPAID->value) {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
-
-
             $query->where('orders.state', OrderStateEnum::SUBMITTED->value)
-                ->where('orders.pay_status', '!=', OrderPayStatusEnum::PAID);
-        } elseif ($this->bucket == OrdersBacklogTabsEnum::PICKING->value) {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
+                ->whereIn('orders.pay_status', [OrderPayStatusEnum::UNPAID, OrderPayStatusEnum::UNKNOWN]);
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::IN_WAREHOUSE->value) {
+            $query->where('orders.state', OrderStateEnum::IN_WAREHOUSE);
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::HANDLING->value) {
             $query->where('orders.state', OrderStateEnum::HANDLING);
-        } elseif ($this->bucket == OrdersBacklogTabsEnum::BLOCKED->value) {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::HANDLING_BLOCKED->value) {
             $query->where('orders.state', OrderStateEnum::HANDLING_BLOCKED);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::PACKED->value) {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->where('orders.state', OrderStateEnum::PACKED);
-        } elseif ($this->bucket == OrdersBacklogTabsEnum::PACKED_DONE->value) {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
+        } elseif ($this->bucket == OrdersBacklogTabsEnum::FINALISED->value) {
             $query->where('orders.state', OrderStateEnum::FINALISED);
         } elseif ($this->bucket == OrdersBacklogTabsEnum::DISPATCHED_TODAY->value) {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->whereDate('dispatched_at', Carbon::today());
         } elseif ($this->bucket == 'submitted') {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->where('orders.state', OrderStateEnum::SUBMITTED);
         } elseif ($this->bucket == 'in_warehouse') {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->where('orders.state', OrderStateEnum::IN_WAREHOUSE);
         } elseif ($this->bucket == 'handling') {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
-
             $query->where('orders.state', OrderStateEnum::HANDLING);
         } elseif ($this->bucket == 'handling_blocked') {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->where('orders.state', OrderStateEnum::HANDLING_BLOCKED);
         } elseif ($this->bucket == 'packed') {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->where('orders.state', OrderStateEnum::PACKED);
         } elseif ($this->bucket == 'finalised') {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->where('orders.state', OrderStateEnum::FINALISED);
         } elseif ($this->bucket == 'dispatched') {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->where('orders.state', OrderStateEnum::DISPATCHED);
         } elseif ($this->bucket == 'cancelled') {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->where('orders.state', OrderStateEnum::CANCELLED);
         } elseif ($this->bucket == 'dispatched_today') {
-            if ($shop->type == ShopTypeEnum::DROPSHIPPING) { // tmp stuff until we migrate from aurora
-                $query->whereNull('orders.source_id');
-            }
             $query->where('orders.state', OrderStateEnum::DISPATCHED)
                 ->where('dispatched_at', Carbon::today());
         } elseif ($this->bucket == 'all') {
@@ -211,6 +154,21 @@ class IndexOrders extends OrgAction
             }
         }
 
+
+        //
+        //        $query->leftJoin('delivery_note_order', 'orders.id', '=', 'delivery_note_order.order_id')
+        //            ->leftJoin('delivery_notes', 'delivery_notes.id', '=', 'delivery_note_order.delivery_note_id')
+        //            ->leftJoin('model_has_shipments', function ($join) {
+        //                $join->on('delivery_notes.id', '=', 'model_has_shipments.model_id')
+        //                    ->where('model_has_shipments.model_type', '=', 'DeliveryNote');
+        //            })
+        //            ->leftJoin('shipments', 'model_has_shipments.shipment_id', '=', 'shipments.id');
+
+
+        $shipmentsExpr =
+            "(SELECT COALESCE(jsonb_agg(jsonb_build_object('id', shipments_sub.id, 'tracking', shipments_sub.tracking, 'tracking_urls', shipments_sub.tracking_urls, 'combined_label_url', shipments_sub.combined_label_url)), '[]'::jsonb) FROM (SELECT s.id, s.tracking, s.tracking_urls, s.combined_label_url FROM delivery_note_order dno JOIN model_has_shipments mhs ON mhs.model_id = dno.delivery_note_id AND mhs.model_type = 'DeliveryNote' JOIN shipments s ON s.id = mhs.shipment_id WHERE dno.order_id = orders.id) AS shipments_sub)";
+
+        $shipmentsSelect = \DB::raw($shipmentsExpr.' as shipments_json');
 
         return $query->defaultSort('-orders.date')
             ->select([
@@ -245,7 +203,11 @@ class IndexOrders extends OrgAction
                 'orders.internal_notes',
                 'orders.public_notes',
                 'orders.shipping_notes',
-                'orders.to_be_paid_by'
+                'orders.to_be_paid_by',
+                //                'shipments.tracking_urls as tracking_urls',
+                //                'shipments.tracking as tracking',
+                //                'shipments.combined_label_url as combined_label_url',
+                $shipmentsSelect,
             ])
             ->leftJoin('order_stats', 'orders.id', 'order_stats.order_id')
             ->allowedSorts(['id', 'reference', 'date', 'net_amount', 'customer_name', 'pay_detailed_status']) // Ensure `id` is the first sort column

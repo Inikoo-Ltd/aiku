@@ -83,7 +83,9 @@ class CalculateOrderTotalAmounts extends OrgAction
             OrderStateEnum::CREATING,
             OrderStateEnum::SUBMITTED,
             OrderStateEnum::IN_WAREHOUSE,
+            OrderStateEnum::PACKED,
         ])) {
+
             $calculateCharges = false;
             if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'number_item_transactions'])) {
                 CalculateOrderDiscounts::run($order);

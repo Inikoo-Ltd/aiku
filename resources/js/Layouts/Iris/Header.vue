@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { getIrisComponent } from "@/Composables/getIrisComponents";
 import { routeType } from "@/types/route";
-import { inject, provide, computed } from "vue";
+import { inject, provide, computed, ref } from "vue";
 import { notify } from "@kyvg/vue3-notification";
 import { trans } from "laravel-vue-i18n";
 import axios from "axios";
 import MobileHeader from "@/Components/CMS/Website/Headers/MobileHeader.vue";
 import { getStyles } from "@/Composables/styles";
+import { set } from "lodash-es"
+import { router } from "@inertiajs/vue3"
 
 const props = defineProps<{
   data: {
@@ -27,31 +29,49 @@ const props = defineProps<{
 
 const layout = inject("layout", {});
 const isLoggedIn = computed(() => {
-  return layout.iris?.user_auth ? true : false;
+  return layout.iris?.is_logged_in;
 })
 provide("isPreviewLoggedIn", isLoggedIn);
 
-const onLogoutAuth = async () => {
-  try {
-    if (route().has("iris.logout")) {
-      await axios.post(route("iris.logout"));
-      window.location.reload();
-    } else {
-      await axios.post(route("retina.logout"));
-      window.location.reload();
-    }
-  } catch (e) {
-    console.error("error onLogoutAuth", e);
-    notify({
-      title: trans("Something went wrong"),
-      text: trans("Failed to logout"),
-      type: "error"
-    });
-  }
-};
+const isLoadingLogout = ref(false)
+const onClickLogout = () => {
+    router.post(
+        '/app/logout',
+        {
+            
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            onStart: () => { 
+                isLoadingLogout.value = true
+            },
+            onSuccess: () => {
+                set(layout, ['iris', 'is_logged_in'], false)
+                if (typeof window !== "undefined") {
+                    let storageIris = JSON.parse(localStorage.getItem('iris') || '{}')  // Get layout from localStorage
+                    localStorage.setItem('iris', JSON.stringify({
+                        ...storageIris,
+                        is_logged_in: false
+                    }))
+                }
+            },
+            onError: errors => {
+                notify({
+                    title: trans("Something went wrong"),
+                    text: trans("Failed to logout"),
+                    type: "error"
+                })
+            },
+            onFinish: () => {
+                isLoadingLogout.value = false
+            },
+        }
+    )
+}
 
 
-provide("onLogout", onLogoutAuth);
+provide("onLogout", onClickLogout);
 
 </script>
 

@@ -6,7 +6,7 @@ import Tabs from "@/Components/Navigation/Tabs.vue"
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { capitalize } from "@/Composables/capitalize"
 import { useTabChange } from "@/Composables/tab-change"
-import { computed, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { PageHeading as PageHeadingTypes } from "@/types/PageHeading"
 import { routeType } from '@/types/route'
 import Dialog from 'primevue/dialog'
@@ -17,6 +17,7 @@ import PureInput from '@/Components/Pure/PureInput.vue'
 import { trans } from 'laravel-vue-i18n'
 import axios from 'axios'
 import { ulid } from 'ulid'
+import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
 
 
 const props = defineProps<{
@@ -36,10 +37,13 @@ const props = defineProps<{
         submit_route: routeType
     }
     is_orphan_products?: boolean
+    attachments?: Record<string, any>
+    shop_id?: number
 }>()
 
-console.log(props)
 
+const layout = inject<string>('layout')
+console.log('layout', layout)
 // Current tab state
 const currentTab = ref(props.tabs.current)
 const isOpenModalEditProducts = ref(false)
@@ -54,7 +58,8 @@ const form = useForm({
 const component = computed(() => {
     const mapping: Record<string, any> = {
         index: TableProducts,
-        sales: TableProducts
+        sales: TableProducts,
+        attachments: AttachmentManagement
     }
     return mapping[currentTab.value]
 })
@@ -118,18 +123,19 @@ const onSaveEditBulkProduct = async () => {
 
     try {
         // Payload sekali request
-        const payload: Record<string, any> = {}
+         const payload = []
         compSelectedProductsId.value.forEach((productId) => {
-            payload[productId] = {
+            payload.push({
                 price: form.price,
                 rrp: form.rrp,
                 unit: form.unit,
-            }
+                id: productId
+            }) 
         })
 
         await router.patch(
-            route("grp.models.product.bulk_update"),
-            payload,
+            route("grp.models.product.bulk_update", { shop : props.shop_id }),
+            {products : payload},
             {
                 preserveScroll: true,
                 onError: (errors) => {
@@ -147,10 +153,16 @@ const onSaveEditBulkProduct = async () => {
         loadingSave.value = false
     }
 }
+
+const onCancelEditBulkProduct = () => {
+    isOpenModalEditProducts.value = false
+    rowErrors.value = {}
+    selectedProductsId.value = {}
+    router.reload({ preserveScroll: true })
+}
 </script>
 
 <template>
-
     <Head :title="capitalize(title)" />
 
     <PageHeading :data="pageHead">
@@ -207,7 +219,7 @@ const onSaveEditBulkProduct = async () => {
                 </div>
 
                 <div class="flex justify-end gap-2 mt-4">
-                    <Button type="tertiary" label="Cancel" @click="isOpenModalEditProducts = false" />
+                    <Button type="tertiary" label="Cancel" @click="onCancelEditBulkProduct" />
                     <Button type="save" @click="onSaveEditBulkProduct" :loading="loadingSave"/>
                 </div>
             </form>

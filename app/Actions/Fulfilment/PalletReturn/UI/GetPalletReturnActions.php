@@ -79,7 +79,7 @@ class GetPalletReturnActions
         } else {
             $isDisabled = false;
             if ($palletReturn->pallets()->count() < 1) {
-                $tooltipSubmit = __('Select Customer\'s SKU before submit');
+                $tooltipSubmit = __("Select Customer's SKU before submit");
                 $isDisabled    = true;
             } else {
                 $tooltipSubmit = __('Submit');
@@ -344,27 +344,27 @@ class GetPalletReturnActions
 
     public function addPdf(PalletReturn $palletReturn, array $actions): array
     {
+
         if (!in_array($palletReturn->state, [
             PalletReturnStateEnum::IN_PROCESS,
             PalletReturnStateEnum::SUBMITTED
         ])) {
-            $actions = array_merge(
-                [
-                    'type'   => 'button',
-                    'style'  => 'tertiary',
-                    'label'  => 'PDF',
-                    'target' => '_blank',
-                    'icon'   => 'fal fa-file-pdf',
-                    'key'    => 'action',
-                    'route'  => [
-                        'name'       => 'grp.models.pallet-return.pdf',
-                        'parameters' => [
-                            'palletReturn' => $palletReturn->id
-                        ]
+
+            $actions[] = [
+                'type'   => 'button',
+                'style'  => 'tertiary',
+                'label'  => 'PDF',
+                'target' => '_blank',
+                'icon'   => 'fal fa-file-pdf',
+                'key'    => 'action',
+                'route'  => [
+                    'name'       => 'grp.models.pallet-return.pdf',
+                    'parameters' => [
+                        'palletReturn' => $palletReturn->id
                     ]
-                ],
-                $actions
-            );
+                ]
+            ];
+
         }
 
         return $actions;

@@ -12,11 +12,15 @@ use App\Actions\CRM\WebUser\AuthoriseWebUserWithLegacyPassword;
 use App\Actions\CRM\WebUser\LogWebUserLogin;
 use App\Actions\SysAdmin\User\LogUserFailLogin;
 use App\Actions\Traits\WithLogin;
+use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\CRM\WebUser\WebUserAuthTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\CRM\WebUser;
+use App\Models\Web\Webpage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Validation\ValidationException;
@@ -31,7 +35,7 @@ class RetinaLogin
     /**
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function handle(ActionRequest $request): RedirectResponse
+    public function handle(ActionRequest $request): array | RedirectResponse
     {
         $this->ensureIsNotRateLimited($request);
 
@@ -100,15 +104,10 @@ class RetinaLogin
 
         RateLimiter::clear($this->throttleKey($request));
 
-        $retinaHome = 'app/dashboard';
-        if ($ref = $request->get('ref')) {
-            $retinaHome = $ref;
-        }
-
-        return $this->postProcessRetinaLogin($request, $retinaHome);
+        return $this->postProcessRetinaLogin($request);
     }
 
-    public function postProcessRetinaLogin($request, $retinaHome): RedirectResponse
+    public function postProcessRetinaLogin($request): array | RedirectResponse
     {
         RateLimiter::clear($this->throttleKey($request));
 
@@ -125,6 +124,8 @@ class RetinaLogin
 
         $request->session()->regenerate();
         Session::put('reloadLayout', '1');
+        Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
+
 
 
         $language = $webUser->language;
@@ -132,7 +133,18 @@ class RetinaLogin
             app()->setLocale($language->code);
         }
 
-        return redirect()->intended($retinaHome);
+        $retinaHome = '';
+        $webpage_key = request()->get('ref');
+        if ($webpage_key && is_numeric($webpage_key)) {
+            $webpage = Webpage::where('id', $webpage_key)->where('website_id', $request->get('website')->id)
+                ->where('state', WebpageStateEnum::LIVE)->first();
+            if ($webpage) {
+                $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
+            }
+        }
+
+        return [$retinaHome];
+
     }
 
 }

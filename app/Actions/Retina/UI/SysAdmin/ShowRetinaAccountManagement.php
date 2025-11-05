@@ -11,6 +11,7 @@ namespace App\Actions\Retina\UI\SysAdmin;
 use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use Inertia\Inertia;
@@ -85,15 +86,24 @@ class ShowRetinaAccountManagement extends RetinaAction
                                             'countriesAddressData' => GetAddressData::run()
                                         ]
                                     ],
-//                                    'delivery_address' => [
-//                                        'type'    => 'delivery_address',
-//                                        'label'   => __('Delivery Address'),
-//                                        'value'   => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray(),
-//                                        'options' => [
-//                                            'use_billing_address' => $customer->address_id === $customer->delivery_address_id,
-//                                            'countriesAddressData' => GetAddressData::run()
-//                                        ]
-//                                    ],
+                                    'delivery_address'         => [
+                                        'hidden' => $customer->shop->type == ShopTypeEnum::DROPSHIPPING,
+                                        'type'    => 'delivery_address',
+                                        'label'   => __('Delivery Address'),
+                                        'noSaveButton'  => true,
+                                        'options' => [
+                                            'same_as_contact' => [
+                                                'label'         => __('Same as contact address'),
+                                                'key_payload'   => 'delivery_address_id',
+                                                'payload'       => $customer->address_id
+                                            ],
+                                            'countriesAddressData'    => GetAddressData::run()
+                                        ],
+                                        'value'   => [
+                                            'is_same_as_contact'    => $customer->delivery_address_id == $customer->address_id,
+                                            'address'               => AddressFormFieldsResource::make($customer->deliveryAddress)->getArray()
+                                        ],
+                                    ],
                                     'tax_number'      => [
                                         'type'    => 'tax_number',
                                         'label'   => __('Tax number'),

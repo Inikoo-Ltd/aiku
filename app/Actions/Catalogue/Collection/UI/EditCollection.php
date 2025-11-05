@@ -100,27 +100,36 @@ class EditCollection extends OrgAction
                             'fields' => [
                                 'code' => [
                                     'type'  => 'input',
-                                    'label' => __('code'),
+                                    'label' => __('Code'),
                                     'value' => $collection->code
                                 ],
                                 'name' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $collection->name
                                 ],
                                 'description_title' => [
                                     'type'  => 'input',
-                                    'label' => __('description title'),
+                                    'label' => __('Description title'),
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
                                     'value' => $collection->description_title
                                 ],
                                 'description' => [
                                     'type'  => 'textarea',
-                                    'label' => __('description'),
+                                    'label' => __('Description'),
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
                                     'value' => $collection->description
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textarea',
                                     'label' => __('Extra description'),
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
                                     'value' => $collection->description_extra
                                 ],
                             ]

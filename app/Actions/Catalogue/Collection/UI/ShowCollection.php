@@ -93,7 +93,7 @@ class ShowCollection extends OrgAction
     public function htmlResponse(Collection $collection, ActionRequest $request): Response
     {
         $title      = $collection->code;
-        $model      = __('collection');
+        $model      = __('Collection');
         $icon       = [
             'icon'  => ['fal', 'fa-cube'],
             'title' => __('Collection')
@@ -129,6 +129,17 @@ class ShowCollection extends OrgAction
         } else {
             $iconRight = $collection->state->stateIcon()[$collection->state->value];
         }
+
+        $urlMaster = null;
+        if ($collection->master_collection_id) {
+            $urlMaster = [
+                'name'       => 'grp.helpers.redirect_master_collection',
+                'parameters' => [
+                    $collection->master_collection_id
+                ]
+            ];
+        }
+
 
         return Inertia::render(
             'Org/Catalogue/Collection',
@@ -182,17 +193,16 @@ class ShowCollection extends OrgAction
                                     'method'     => 'post'
                                 ]
                             ],
-                        $this->canEdit ? [
+                       /*  $this->canEdit ? [
                             'type'  => 'button',
                             'style' => 'edit',
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
                             ]
-                        ] : false,
-
+                        ] : false, */
                     ],
-                ],
+            ],
                 'routes'      => [
                     'departments' => [
                         'dataList'     => [
@@ -287,6 +297,7 @@ class ShowCollection extends OrgAction
                     'current'    => $this->tab,
                     'navigation' => CollectionTabsEnum::navigation($collection)
                 ],
+                'url_master'    => $urlMaster,
 
                 CollectionTabsEnum::SHOWCASE->value => $this->tab == CollectionTabsEnum::SHOWCASE->value ?
                     fn () => GetCollectionShowcase::run($collection)

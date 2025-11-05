@@ -9,7 +9,8 @@ import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { router, usePage } from "@inertiajs/vue3"
 import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
-import { useLocaleStore } from "../Stores/locale"
+import { useLocaleStore } from "@/Stores/locale"
+import { initialiseIrisVarnishCustomerData, initialiseLogUser } from '@/Composables/initialiseIrisVarnish'
 
 
 export const initialiseIrisApp = () => {
@@ -19,16 +20,15 @@ export const initialiseIrisApp = () => {
     console.log('Init Iris: ', usePage().props)
 
     router.on('navigate', (event) => {
-        // To see Vue filename in console (component.vue)
+        // To see Vue filename in the console (component.vue)
         if (import.meta.env.VITE_APP_ENV === 'local' && usePage().component) {
             window.component = {
                 vue: usePage().component
             }
         }
 
-        console.log('on nav')
         layout.currentParams = route().routeParams  // current params
-        layout.currentQuery = route().v().query  // current query
+        layout.currentQuery = route().queryParams  // current query
         layout.currentRoute = route().current()  // current route
     })
 
@@ -38,8 +38,10 @@ export const initialiseIrisApp = () => {
         loadLanguageAsync(usePage().props.localeData?.language?.code)
     }
 
+
+
     watchEffect(() => {
-        // Set currency to used by global
+        // Set currency to use by global
         if (usePage().props.iris?.currency) {       
             locale.currencyInertia = usePage().props.iris?.currency
         }
@@ -59,22 +61,25 @@ export const initialiseIrisApp = () => {
             layout.user = usePage().props?.auth
         }
 
-        if (usePage().props.iris?.variables) {
-            // Will deprecated, use variables via props.iris instead
-            layout.iris_variables = usePage().props.iris?.variables
-        }
+        // if (irisData?.variables) {✅
+        //     // Will deprecate, use variables via props.iris instead
+        //     layout.iris_variables = irisData?.variables
+        // }
 
         if (usePage().props.iris) {
-            layout.iris = usePage().props.iris
+            layout.iris = {
+                ...layout.iris,
+                ...usePage().props.iris
+            }
         }
         
         if (usePage().props.retina) {
             layout.retina = usePage().props.retina
         }
 
-        if (usePage().props?.user_auth) {
-            layout.user_auth = usePage().props?.user_auth
-        }
+        layout.reload_handle = () => initialiseIrisVarnishCustomerData(layout)
+        layout.log_user = () => initialiseLogUser(layout)
+
 
         // Set data of Locale (Language)
         // if (usePage().props.localeData) {

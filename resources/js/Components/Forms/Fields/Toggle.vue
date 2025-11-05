@@ -18,6 +18,7 @@ const props = defineProps<{
         copyButton: boolean
         maxLength?: number
         noIcon?: boolean
+        suffixImage?: string
     }
 }>()
 
@@ -86,6 +87,10 @@ watch(value, (newValue) => {
                 </template>
             </span>
         </Switch>
+
+        <slot v-if="fieldData.suffixImage" name="suffix-image">
+            <img :src="fieldData.suffixImage" class="inline-block h-8 w-8 ml-2  object-cover" />
+        </slot>
 
         <p v-if="get(form, ['errors', `${fieldName}`])" class="mt-2 text-sm text-red-600" :id="`${fieldName}-error`">
             {{ form.errors[fieldName] }}

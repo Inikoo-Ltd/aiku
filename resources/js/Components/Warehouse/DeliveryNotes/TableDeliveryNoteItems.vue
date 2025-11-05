@@ -51,6 +51,18 @@ function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
             return route(
                 "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
                 [route().params["organisation"], route().params["warehouse"], deliveryNoteItem.org_stock_slug])
+        case "grp.org.shops.show.ordering.orders.show.delivery-note":
+        if (deliveryNoteItem.org_stock_slug) {
+            return route(
+                'grp.org.shops.show.catalogue.products.all_products.show',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    deliveryNoteItem.org_stock_slug,
+                ]
+            )
+        }
+        return "";
         default:
             return "";
     }
@@ -310,7 +322,6 @@ onMounted(() => {
                                         ({{ trans("Unknown") }})
                                     </span>
                                     <span
-                                        v-tooltip="trans('Total stock is :quantity in location :location_code', {quantity: locale.number(findLocation(itemValue.locations, proxyItem.hehe)?.quantity), location_code: findLocation(itemValue.locations, proxyItem.hehe)?.location_code})"
                                         class="whitespace-nowrap py-0.5 text-gray-400 tabular-nums border border-gray-300 rounded px-1">
                                         <FontAwesomeIcon icon="fal fa-inventory" class="mr-1" fixed-width
                                             aria-hidden="true" />

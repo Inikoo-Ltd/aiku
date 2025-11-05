@@ -11,6 +11,7 @@ namespace App\Actions\Masters\MasterShop;
 use App\Actions\HydrateModel;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateInvoiceIntervals;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterAssets;
+use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterCollections;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterDepartments;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamilies;
 use App\Actions\Masters\MasterShop\Hydrators\MasterShopHydrateMasterFamiliesWithNoDepartment;
@@ -47,6 +48,7 @@ class HydrateMasterShop extends HydrateModel
         MasterShopHydrateRegistrationIntervals::run($masterShop->id);
         MasterShopHydrateOrderInBasketAtCreatedIntervals::run($masterShop->id);
         MasterShopHydrateOrderInBasketAtCustomerUpdateIntervals::run($masterShop->id);
+        MasterShopHydrateMasterCollections::run($masterShop);
     }
 
 

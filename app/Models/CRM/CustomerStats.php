@@ -140,6 +140,35 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_customer_sales_channels_platform_type_amazon
  * @property int $number_customer_sales_channels_platform_type_magento
  * @property int $number_customer_sales_channels_platform_type_wix
+ * @property string|null $historic_clv_amount
+ * @property string|null $historic_clv_amount_org_currency
+ * @property string|null $historic_clv_amount_grp_currency
+ * @property string|null $predicted_clv_amount
+ * @property string|null $predicted_clv_amount_org_currency
+ * @property string|null $predicted_clv_amount_grp_currency
+ * @property string|null $total_clv_amount
+ * @property string|null $total_clv_amount_org_currency
+ * @property string|null $total_clv_amount_grp_currency
+ * @property float|null $churn_interval in days
+ * @property float|null $churn_risk_prediction
+ * @property float|null $average_time_between_orders
+ * @property string|null $average_order_value
+ * @property string|null $expected_date_of_next_order
+ * @property string $revenue_amount
+ * @property string $revenue_amount_org_currency
+ * @property string $revenue_amount_grp_currency
+ * @property string $lost_revenue_out_of_stock_amount
+ * @property string $lost_revenue_out_of_stock_amount_org_currency
+ * @property string $lost_revenue_out_of_stock_amount_grp_currency
+ * @property string $lost_revenue_replacements_amount
+ * @property string $lost_revenue_replacements_amount_org_currency
+ * @property string $lost_revenue_replacements_amount_grp_currency
+ * @property string $lost_revenue_compensations_amount
+ * @property string $lost_revenue_compensations_amount_org_currency
+ * @property string $lost_revenue_compensations_amount_grp_currency
+ * @property string $lost_revenue_other_amount
+ * @property string $lost_revenue_other_amount_org_currency
+ * @property string $lost_revenue_other_amount_grp_currency
  * @property-read \App\Models\CRM\Customer $customer
  * @method static Builder<static>|CustomerStats newModelQuery()
  * @method static Builder<static>|CustomerStats newQuery()

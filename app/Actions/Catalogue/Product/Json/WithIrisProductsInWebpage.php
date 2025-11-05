@@ -8,7 +8,7 @@
 
 namespace App\Actions\Catalogue\Product\Json;
 
-use App\Http\Resources\Catalogue\IrisProductsInWebpageResource;
+use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Models\Catalogue\Product;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -82,7 +82,7 @@ trait WithIrisProductsInWebpage
         });
     }
 
-    public function getBaseQuery(string $stockMode): QueryBuilder
+    public function getBaseQuery(string $stockMode, bool $topSeller = false): QueryBuilder
     {
         $customer = request()->user()?->customer;
         $queryBuilder = QueryBuilder::for(Product::class);
@@ -93,6 +93,10 @@ trait WithIrisProductsInWebpage
             $queryBuilder->where('products.available_quantity', '>', 0);
         } elseif ($stockMode == 'out_of_stock') {
             $queryBuilder->where('products.available_quantity', '<=', 0);
+        }
+
+        if ($topSeller) {
+            $queryBuilder->whereNotNull('products.top_seller');
         }
 
         $queryBuilder->join('model_has_trade_units', function ($join) {
@@ -119,7 +123,7 @@ trait WithIrisProductsInWebpage
 
     public function jsonResponse(LengthAwarePaginator $products): AnonymousResourceCollection
     {
-        return IrisProductsInWebpageResource::collection($products);
+        return IrisAuthenticatedProductsInWebpageResource::collection($products);
     }
 
     public function getAllowedFilters(): array
@@ -154,7 +158,11 @@ trait WithIrisProductsInWebpage
             'products.unit',
             'products.top_seller',
             'products.web_images',
-            'webpages.url'
+            'webpages.url',
+            'webpages.canonical_url',
+            'webpages.website_id',
+            'webpages.id as webpage_id',
+
         ];
 
         $customer = request()->user()?->customer;
@@ -173,7 +181,8 @@ trait WithIrisProductsInWebpage
             'available_quantity',
             'code',
             'name',
-            'rrp'
+            'rrp',
+            'margin'
         ];
     }
 

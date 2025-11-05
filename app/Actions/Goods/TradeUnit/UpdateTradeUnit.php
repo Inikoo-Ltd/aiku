@@ -15,6 +15,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateGrossWeightFromTradeUn
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Goods\Stock\Hydrators\StockHydrateGrossWeightFromTradeUnits;
 use App\Actions\Goods\TradeUnitFamily\Hydrators\TradeUnitFamilyHydrateTradeUnits;
+use App\Models\Helpers\Country;
 use App\Stubs\Migrations\HasDangerousGoodsFields;
 use App\Actions\GrpAction;
 use App\Actions\Helpers\Brand\AttachBrandToModel;
@@ -44,6 +45,19 @@ class UpdateTradeUnit extends GrpAction
 
     public function handle(TradeUnit $tradeUnit, array $modelData): TradeUnit
     {
+        if (Arr::has($modelData, 'origin_country_id')) {
+            if (Arr::get($modelData, 'origin_country_id') == null) {
+                data_set($modelData, 'country_of_origin', null);
+            } else {
+                $country = Country::find(Arr::get($modelData, 'origin_country_id'));
+                if ($country) {
+                    data_set($modelData, 'country_of_origin', $country->iso3, false);
+                } else {
+                    data_set($modelData, 'country_of_origin', null, false);
+                }
+            }
+        }
+
         if (Arr::has($modelData, 'name_i8n')) {
             UpdateTradeUnitTranslationsFromUpdate::make()->action($tradeUnit, [
                 'translations' => [
@@ -206,8 +220,12 @@ class UpdateTradeUnit extends GrpAction
             'pictogram_health'             => ['sometimes', 'boolean'],
             'pictogram_oxidising'          => ['sometimes', 'boolean'],
             'pictogram_danger'             => ['sometimes', 'boolean'],
+
+
+
             'cpnp_number'                  => ['sometimes', 'nullable', 'string'],
-            'country_of_origin'            => ['sometimes', 'nullable', 'string'],
+            'ufi_number'                  => ['sometimes', 'nullable', 'string'],
+            'scpn_number'                  => ['sometimes', 'nullable', 'string'],
             'tariff_code'                  => ['sometimes', 'nullable', 'string'],
             'duty_rate'                    => ['sometimes', 'nullable', 'string'],
             'hts_us'                       => ['sometimes', 'nullable', 'string'],
@@ -218,7 +236,9 @@ class UpdateTradeUnit extends GrpAction
             'description_extra_i8n'        => ['sometimes', 'array'],
             'tags'                         => ['sometimes', 'array'],
             'brands'                       => ['sometimes'],
-            'trade_unit_family_id'         => ['sometimes']
+            'trade_unit_family_id'         => ['sometimes'],
+            'country_of_origin'            => ['sometimes', 'nullable', 'string'],
+            'origin_country_id'            => ['sometimes', 'nullable', 'exists:countries,id'],
         ];
 
         if (!$this->strict) {
@@ -227,21 +247,30 @@ class UpdateTradeUnit extends GrpAction
             $rules['marketing_weight'] = ['sometimes', 'nullable', 'numeric'];
 
 
-            //            unset($rules['marketing_dimensions']);
-            //            unset($rules['gross_weight']);
-            //            unset($rules['net_weight']);
-            //            unset($rules['marketing_weight']);
-
-
-            $rules                     = $this->noStrictUpdateRules($rules);
+            $rules = $this->noStrictUpdateRules($rules);
         }
 
         return $rules;
     }
 
-    public function jsonResponse(TradeUnit $tradeUnit)
+    public function jsonResponse(TradeUnit $tradeUnit): TradeUnitResource|\Illuminate\Http\Resources\Json\JsonResource
     {
         return TradeUnitResource::make($tradeUnit);
+    }
+
+
+    public function prepareForValidation(): void
+    {
+        if ($this->has('origin_country_id')) {
+            if (is_string($this->get('origin_country_id'))) {
+                $countryId = (int)$this->get('origin_country_id');
+                $this->set('origin_country_id', value: $countryId);
+            } else {
+                $this->set('origin_country_id', Arr::get($this->get('origin_country_id'), 'id'));
+            }
+        }
+
+
     }
 
     public function action(TradeUnit $tradeUnit, array $modelData, int $hydratorsDelay = 0, bool $strict = true, bool $audit = true): TradeUnit

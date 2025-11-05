@@ -5,6 +5,7 @@ import { faStar, faCircle } from "@fas"
 import { faChevronCircleLeft, faChevronCircleRight } from '@far'
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { getStyles } from "@/Composables/styles"
+import { trans } from 'laravel-vue-i18n'
 
 library.add(faCube, faLink, faStar, faCircle, faChevronCircleLeft, faChevronCircleRight)
 
@@ -51,7 +52,7 @@ const layout: any = inject("layout", {})
         </transition>
         <button @click="toggleShowExtra"
           class="text-sm text-gray-800 font-semibold hover:underline focus:outline-none transition-colors py-4">
-          {{ showExtra ? 'Show Less' : 'Read More' }}
+          {{ showExtra ? trans("Show Less") : trans("Read More") }}
         </button>
       </div>
 

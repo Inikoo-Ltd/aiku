@@ -16,7 +16,7 @@ use App\Models\Catalogue\HistoricAsset;
 use App\Models\CRM\Customer;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
-use App\Models\Discounts\OfferComponent;
+use App\Models\Discounts\OfferAllowance;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Catalogue\Shop;
 use App\Models\Helpers\Feedback;
@@ -92,8 +92,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Invoice|null $invoice
  * @property-read Model|\Eloquent|null $model
  * @property-read Collection<int, Offer> $offer
+ * @property-read Collection<int, OfferAllowance> $offerAllowances
  * @property-read Collection<int, OfferCampaign> $offerCampaign
- * @property-read Collection<int, OfferComponent> $offerComponents
  * @property-read \App\Models\Ordering\Order|null $order
  * @property-read \App\Models\SysAdmin\Organisation $organisation
  * @property-read Shop $shop
@@ -186,17 +186,17 @@ class Transaction extends Model
 
     public function offerCampaign(): BelongsToMany
     {
-        return $this->belongsToMany(OfferCampaign::class, 'transaction_has_offer_components');
+        return $this->belongsToMany(OfferCampaign::class, 'transaction_has_offer_allowances');
     }
 
     public function offer(): BelongsToMany
     {
-        return $this->belongsToMany(Offer::class, 'transaction_has_offer_components');
+        return $this->belongsToMany(Offer::class, 'transaction_has_offer_allowances');
     }
 
-    public function offerComponents(): BelongsToMany
+    public function offerAllowances(): BelongsToMany
     {
-        return $this->belongsToMany(OfferComponent::class, 'transaction_has_offer_components');
+        return $this->belongsToMany(OfferAllowance::class, 'transaction_has_offer_allowances');
     }
 
     public function deliveryNoteItemTODELETE(): HasOne

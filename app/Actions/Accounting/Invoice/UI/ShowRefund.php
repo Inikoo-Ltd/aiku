@@ -30,8 +30,12 @@ use App\Http\Resources\History\HistoryResource;
 use App\Http\Resources\Sales\OrderResource;
 use App\Models\Accounting\Invoice;
 use App\Models\Catalogue\Shop;
+use App\Models\CRM\Customer;
+use App\Models\Dropshipping\CustomerClient;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Fulfilment\Fulfilment;
 use App\Models\Fulfilment\FulfilmentCustomer;
+use App\Models\Ordering\Order;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Inertia\Inertia;
@@ -78,7 +82,40 @@ class ShowRefund extends OrgAction
     }
 
     /** @noinspection PhpUnusedParameterInspection */
+    public function inInvoiceInOrderInShop(Organisation $organisation, Shop $shop, Order $order, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
+
+        return $this->handle($refund);
+    }
+    /** @noinspection PhpUnusedParameterInspection */
     public function inInvoiceInShop(Organisation $organisation, Shop $shop, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
+
+        return $this->handle($refund);
+    }
+
+    /** @noinspection PhpUnusedParameterInspection */
+    public function inInvoiceinOrderInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, Order $order, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
+
+        return $this->handle($refund);
+    }
+
+    public function InInvoiceinOrderInCustomerClientInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, CustomerClient $customerClient, Order $order, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
+    {
+        $this->parent = $shop;
+        $this->initialisationFromShop($shop, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
+
+        return $this->handle($refund);
+    }
+
+    public function InInvoiceinOrderInPlatformInCustomerInShop(Organisation $organisation, Shop $shop, Customer $customer, CustomerSalesChannel $customerSalesChannel, Order $order, Invoice $invoice, Invoice $refund, ActionRequest $request): Invoice
     {
         $this->parent = $shop;
         $this->initialisationFromShop($shop, $request)->withTab($refund->in_process ? RefundInProcessTabsEnum::values() : RefundTabsEnum::values());
@@ -269,16 +306,16 @@ class ShowRefund extends OrgAction
                     $refund->organisation->slug,
                     $refund->originalInvoice->slug
                 ]
-            ] : [],
-            'original_order' => $refund->originalInvoice->order ? OrderResource::make($refund->originalInvoice->order) : null,
-            'original_order_route' => $refund->originalInvoice->order ? [
+            ] : null,
+            'original_order' => $refund->originalInvoice?->order ? OrderResource::make($refund->originalInvoice->order) : null,
+            'original_order_route' => $refund->originalInvoice?->order ? [
                 'name' => 'grp.org.shops.show.ordering.orders.show',
                 'parameters' => [
                     $refund->originalInvoice->order->organisation->slug,
                     $refund->originalInvoice->order->shop->slug,
                     $refund->originalInvoice->order->slug
                 ]
-            ] : [],
+            ] : null,
             'invoice_refund'   => RefundResource::make($refund),
 
 

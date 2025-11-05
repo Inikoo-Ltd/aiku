@@ -8,11 +8,11 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\Packing\StorePacking;
 use App\Actions\Dispatching\PickingSession\AutoFinishPackingPickingSession;
-use App\Actions\Ordering\Order\UpdateOrderStateToPacked;
+use App\Actions\Ordering\Order\UpdateState\UpdateOrderStateToPacked;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -23,6 +23,7 @@ use Lorisleiva\Actions\ActionRequest;
 class SetDeliveryNoteStateAsPacked extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
     private DeliveryNote $deliveryNote;
     protected User $user;
@@ -32,6 +33,8 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        $oldState = $deliveryNote->state;
+
         data_set($modelData, 'packed_at', now());
         data_set($modelData, 'packer_user_id', $this->user->id);
         data_set($modelData, 'state', DeliveryNoteStateEnum::PACKED->value);
@@ -41,7 +44,7 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
         }
         $defaultParcel = [
             [
-                'weight' => $deliveryNote->effective_weight / 1000,
+                'weight'     => $deliveryNote->effective_weight / 1000,
                 'dimensions' => [5, 5, 5]
             ]
         ];
@@ -60,8 +63,9 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
             }
         }
 
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
+
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::PACKED);
 
         return $deliveryNote;
     }
@@ -72,7 +76,7 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
      */
     public function asController(DeliveryNote $deliveryNote, ActionRequest $request): DeliveryNote
     {
-        $this->user = $request->user();
+        $this->user         = $request->user();
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, $request);
 
@@ -84,7 +88,7 @@ class SetDeliveryNoteStateAsPacked extends OrgAction
      */
     public function action(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
-        $this->user = $user;
+        $this->user         = $user;
         $this->deliveryNote = $deliveryNote;
         $this->initialisationFromShop($deliveryNote->shop, []);
 

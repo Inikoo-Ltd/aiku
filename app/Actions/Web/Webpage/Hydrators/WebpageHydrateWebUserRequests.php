@@ -26,7 +26,10 @@ class WebpageHydrateWebUserRequests implements ShouldBeUnique
 
     public function handle(int $webpageID): void
     {
-        $webpage = Webpage::findOrFail($webpageID);
+        $webpage = Webpage::find($webpageID);
+        if (!$webpage) {
+            return;
+        }
         $stats = [
             'number_web_user_requests' => $webpage->webUserRequests()->count(),
         ];

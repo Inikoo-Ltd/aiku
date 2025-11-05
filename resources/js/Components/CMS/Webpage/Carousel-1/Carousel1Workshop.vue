@@ -1,142 +1,241 @@
 <script setup lang="ts">
-import { Swiper, SwiperSlide } from 'swiper/vue'
-import 'swiper/css'
-import 'swiper/css/pagination'
-import 'swiper/css/navigation'
-
-import { Pagination, Autoplay } from 'swiper/modules'
-import { getStyles } from '@/Composables/styles'
-import { faImage } from '@fas'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import Carousel from 'primevue/carousel'
 import Image from '@/Components/Image.vue'
 import { ulid } from 'ulid'
-import { inject, ref, watch } from 'vue'
+import { inject, ref, watch, computed, nextTick } from 'vue'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faImage } from '@fal'
+import { getStyles } from '@/Composables/styles'
 import Blueprint from './Blueprint'
+import CardBlueprint from './CardBlueprint'
+import { sendMessageToParent } from "@/Composables/Workshop"
+import EditorV2 from '@/Components/Forms/Fields/BubleTextEditor/EditorV2.vue'
 
 const props = defineProps<{
-    modelValue: any
-    webpageData?: any
-    blockData?: Object
-    screenType: 'mobile' | 'tablet' | 'desktop'
+  modelValue: any
+  webpageData?: any
+  blockData?: Object
+  screenType: 'mobile' | 'tablet' | 'desktop',
+  indexBlock: number
 }>()
 
-const emits = defineEmits<{
-    (e: 'autoSave'): void
-}>()
+const emits = defineEmits<{ (e: 'autoSave'): void }>()
 
 const keySwiper = ref(ulid())
+const layout: any = inject("layout", {})
+const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
+const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
+const imageSettings = {
+  key: ["image", "source"],
+  stencilProps: {
+    aspectRatio: [1, 4 / 3, 16 / 9],
+    movable: true,
+    scalable: true,
+    resizable: true,
+  },
+}
 
-const activeEditorIndex = ref<number | null>(null)
+const hasCards = computed(() =>
+  Array.isArray(props.modelValue?.carousel_data?.cards) &&
+  props.modelValue.carousel_data.cards.length > 0
+)
 
-// Swiper will be re-rendered if this key changes
+const slidesPerView = computed(() =>
+  props.modelValue?.carousel_data?.carousel_setting?.slidesPerView?.[props.screenType] || 1
+)
+
+const isLooping = computed(() => {
+  const settingsLoop = props.modelValue?.carousel_data?.carousel_setting?.loop || false
+  return settingsLoop && props.modelValue.carousel_data.cards.length > slidesPerView.value
+})
+
+const screenType = computed(() => props.screenType)
+const cardStyle = ref(getStyles(props.modelValue?.carousel_data?.card_container?.properties, props.screenType, false))
+const ImageContainer = ref(getStyles(props.modelValue.carousel_data.card_container?.container_image, props.screenType, false))
+
+// Auto select aspect ratio based on slidesPerView
+const selectedAspectRatio = computed(() => {
+  if (!hasCards.value) return 1
+  if (slidesPerView.value === 1) return 1
+  if (slidesPerView.value <= 3) return 4 / 3
+  return 16 / 9
+})
+
+const spaceBetween = ref(((props.modelValue?.carousel_data?.carousel_setting?.spaceBetween || 0) / 2) + 'px')
+
+const refreshCarousel = async (delay = 100) => {
+  await new Promise(resolve => setTimeout(resolve, delay))
+  keySwiper.value = ulid()
+  await nextTick()
+}
+
+// Watch for settings or screen changes
 watch(
-    () => props.modelValue.carousel_data.carousel_setting,
-    () => {
-        keySwiper.value = ulid()
-    },
-    { deep: true }
+  () => [props.modelValue?.carousel_data?.carousel_setting, props.screenType],
+  () => refreshCarousel(),
+  { deep: true }
+)
+
+// Watch for card container property changes
+watch(
+  () => props.modelValue?.carousel_data?.card_container,
+  async () => {
+    cardStyle.value = getStyles(props.modelValue?.carousel_data?.card_container?.properties, props.screenType, false)
+    ImageContainer.value = getStyles(props.modelValue.carousel_data.card_container?.container_image, props.screenType, false)
+    await refreshCarousel(200)
+  },
+  { deep: true }
+)
+
+watch(
+  () => props.modelValue?.carousel_data?.carousel_setting?.spaceBetween,
+  (newVal) => {
+    spaceBetween.value = ((newVal || 0) / 2) + 'px'
+    refreshCarousel()
+  },
+  { immediate: true, deep: true }
 )
 
 
-const layout: any = inject("layout", {})
-const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || []
-const getHref = (item: any) => !!item?.link?.href
+
+const responsiveOptions = computed(() => {
+  const settings = props.modelValue?.carousel_data?.carousel_setting || {}
+  return [
+    {
+      breakpoint: '1200px',
+      numVisible: settings.slidesPerView?.desktop || 4,
+      numScroll: 1
+    },
+    {
+      breakpoint: '992px',
+      numVisible: settings.slidesPerView?.tablet || 2,
+      numScroll: 1
+    },
+    {
+      breakpoint: '576px',
+      numVisible: settings.slidesPerView?.mobile || 1,
+      numScroll: 1
+    }
+  ]
+})
+
+
 </script>
 
 <template>
-  <div id="carousel">
-    <div
-      :style="{
-        ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
-        ...getStyles(modelValue?.container?.properties, screenType)
-      }"
-    >
-      <Swiper
-        :key="keySwiper"
-        class="touch-pan-x touch-pan-y"
-        direction="horizontal"
-        :passiveListeners="true"
-        :simulateTouch="false"
-        :touchStartPreventDefault="false"
-        :touchRatio="1"
-        :touchAngle="30"
-        :loop="modelValue?.carousel_data?.carousel_setting?.loop"
-        :autoplay="modelValue?.carousel_data?.carousel_setting?.autoplay"
-        :pagination="{ clickable: true }"
-        :spaceBetween="modelValue?.carousel_data?.carousel_setting?.spaceBetween || 0"
-        :slidesPerView="modelValue?.carousel_data?.carousel_setting?.slidesPerView?.desktop"
-        :breakpoints="{
-          0:    { slidesPerView: modelValue?.carousel_data?.carousel_setting?.slidesPerView?.mobile },
-          640:  { slidesPerView: modelValue?.carousel_data?.carousel_setting?.slidesPerView?.mobile },
-          768:  { slidesPerView: modelValue?.carousel_data?.carousel_setting?.slidesPerView?.tablet },
-          1024: { slidesPerView: modelValue?.carousel_data?.carousel_setting?.slidesPerView?.desktop }
-        }"
-        :modules="[Pagination, Autoplay]"
+  <div id="carousel" class="relative">
+    <div :key="keySwiper" :data-refresh="refreshTrigger" :style="{
+      ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
+      ...getStyles(modelValue?.container?.properties, props.screenType)
+    }">
+      <Carousel
+        v-if="hasCards"
+        :value="modelValue.carousel_data.cards"
+        :numVisible="slidesPerView"
+        :circular="isLooping"
+        :autoplayInterval="0"
+        :numScroll="1"
+        :responsiveOptions="responsiveOptions"
+        class="w-full"
+        :showNavigators="modelValue?.carousel_data?.cards?.length > slidesPerView"
+        :contentClass="'gap-3'"
       >
-        <SwiperSlide
-          v-for="(card, index) in modelValue.carousel_data.cards"
-          :key="index"
-          class="flex flex-col"
-          :style="{  height: '100%' , overflow : 'auto', ...getStyles(modelValue?.carousel_data?.card_container?.properties, screenType)}"
-        >
-          <component
-            :is="getHref(card) ? 'a' : 'div'"
-            :href="card?.link?.href"
-            :target="card?.link?.target"
-            class="flex-1 flex flex-col"
-          >
-            <div
-              class="flex justify-center overflow-visible"
-              :style="getStyles(modelValue?.carousel_data?.card_container?.container_image, screenType)"
-            >
-              <div
-                :class="[
-                  !card?.image?.source && 'w-full  flex items-center justify-center overflow-auto',
-                  'overflow-hidden'
-                ]"
-                :style="getStyles(modelValue?.carousel_data?.card_container?.image_properties, screenType)"
-              >
-                <Image
-                  v-if="card?.image?.source"
-                  :src="card.image.source"
-                  :alt="card.image.alt || `image-${index}`"
-                  :style="getStyles(card?.image?.properties, screenType)"
-                />
-                <FontAwesomeIcon
-                  v-else
-                  :icon="faImage"
-                  class="text-gray-400 text-4xl"
-                />
-              </div>
-            </div>
+        <template #item="{ data, index }">
+            <div class="space-card">
+               <div class="card flex flex-col h-full">
+                  <div class="flex flex-1 flex-col">
+                    <!-- Image Container -->
+                    <div class="flex justify-center overflow-visible"
+                      :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)" @click.stop="() => {
+                        sendMessageToParent('activeBlock', indexBlock)
+                        sendMessageToParent('activeChildBlock', bKeys[2])
+                        sendMessageToParent('activeChildBlockArray', index)
+                        sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
+                      }"
+                      @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })">
+                      <div class="overflow-hidden w-full flex items-center justify-center "
+                        :style="{...getStyles(modelValue.carousel_data.card_container?.image_properties, screenType) }">
+                        <Image v-if="data?.image?.source" :src="data.image.source" :alt="data.image.alt || `image-${index}`"
+                          :class="'image-container'" class="w-full h-full flex justify-center items-center" />
+                        <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
+                          <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
+                        </div>
+                      </div>
+                    </div>
 
-            <div
-              v-if="modelValue?.carousel_data?.carousel_setting?.use_text"
-              class="p-4 flex-1 flex flex-col justify-between"
-            >
-              <div v-html="card.text" />
+                    <!-- Text Content -->
+                    <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
+                      class="p-4 flex flex-col flex-1 justify-between">
+                      <div  class="text-center leading-relaxed" >
+                      <EditorV2 v-model="data.text" @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
+                        @update:modelValue="() => emits('autoSave')"  :uploadImageRoute="{
+                          name: webpageData.images_upload_route.name,
+                          parameters: {
+                            ...webpageData.images_upload_route.parameters,
+                            modelHasWebBlocks: blockData?.id,
+                          },
+                        }" />
+                        </div> 
+                    </div>
+                  </div>
+                </div>
             </div>
-          </component>
-        </SwiperSlide>
-      </Swiper>
+        </template>
+      </Carousel>
     </div>
   </div>
 </template>
 
-
-<style scoped lang="scss">
-:deep(.swiper-pagination-bullet) {
-    background-color: #d1d5db !important; // Tailwind's gray-300
-    opacity: 1;
-    transition: background-color 0.3s ease;
+<style scoped>
+:deep(.p-carousel-indicator-list) {
+  display: none;
 }
 
-
-:deep(.swiper-pagination-bullet-active) {
-    background: #4b5563 !important;
+:deep(.space-card) {
+  margin-left: v-bind(spaceBetween);
+  margin-right: v-bind(spaceBetween);
 }
 
-.swiper {
-    touch-action: pan-y;
+.card {
+  background: v-bind('cardStyle?.background || "transparent"') !important;
+
+  padding-top: v-bind('cardStyle?.paddingTop || "0px"') !important;
+  padding-right: v-bind('cardStyle?.paddingRight || "0px"') !important;
+  padding-bottom: v-bind('cardStyle?.paddingBottom || "0px"') !important;
+  padding-left: v-bind('cardStyle?.paddingLeft || "0px"') !important;
+
+  margin-top: v-bind('cardStyle?.marginTop || "0px"') !important;
+  margin-right: v-bind('cardStyle?.marginRight || "0px"') !important;
+  margin-bottom: v-bind('cardStyle?.marginBottom || "0px"') !important;
+  margin-left: v-bind('cardStyle?.marginLeft || "0px"') !important;
+
+  border-top-left-radius: v-bind('cardStyle?.borderTopLeftRadius || "0px"') !important;
+  border-top-right-radius: v-bind('cardStyle?.borderTopRightRadius || "0px"') !important;
+  border-bottom-left-radius: v-bind('cardStyle?.borderBottomLeftRadius || "0px"') !important;
+  border-bottom-right-radius: v-bind('cardStyle?.borderBottomRightRadius || "0px"') !important;
+
+  border-top: v-bind('cardStyle?.borderTop || "0px solid transparent"') !important;
+  border-bottom: v-bind('cardStyle?.borderBottom || "0px solid transparent"') !important;
+  border-left: v-bind('cardStyle?.borderLeft || "0px solid transparent"') !important;
+  border-right: v-bind('cardStyle?.borderRight || "0px solid transparent"') !important;
+}
+
+.image-container {
+  justify-content: v-bind('ImageContainer?.justifyContent || "center"') !important;
+  ;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.p-carousel-item-list{
+  gap : 20px
 }
 </style>

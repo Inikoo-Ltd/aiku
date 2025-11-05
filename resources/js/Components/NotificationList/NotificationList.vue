@@ -11,6 +11,7 @@ import axios from "axios"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from 'laravel-vue-i18n'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import { useTruncate } from "@/Composables/useTruncate"
 
 library.add(faEnvelope, faEnvelopeOpenText)
 
@@ -19,7 +20,7 @@ const props = defineProps<{
 }>()
 
 const layout = inject('layout', layoutStructure)
-// console.log('ewew', layout.user.notifications)
+// console.log('ewew', layout.notifications)
 
 
 // Method: set all notifications to read = true
@@ -31,7 +32,7 @@ const setAllToRead = async () => {
             route('grp.models.notifications.all.read')
         )
 
-        layout.user.notifications.map(notif => notif.read = true)  // Manipulation data in FE
+        layout.notifications.map(notif => notif.read = true)  // Manipulation data in FE
     } catch (error: any) {
         console.log(error)
         notify({
@@ -47,7 +48,7 @@ const setAllToRead = async () => {
 // Method: set selected notification to read = true
 const setNotificationToRead = async (notifId: string) => {
     // props.close()
-    if (layout.user.notifications.find(notif => notif.id === notifId && !notif.read)){
+    if (layout.notifications.find(notif => notif.id === notifId && !notif.read)){
         // console.log('inside')
         try {
             const response = await axios.patch(
@@ -68,7 +69,7 @@ const setNotificationToRead = async (notifId: string) => {
 let timer: ReturnType<typeof setTimeout> | null = null
 onMounted(async () => {
     timer = setTimeout(async () => {
-        layout.user.notifications.map(notif => setNotificationToRead(notif.id))
+        layout?.notifications?.map(notif => setNotificationToRead(notif.id))
         timer = null
     }, 2500)
 })
@@ -82,41 +83,35 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="flex items-center flex-col w-full overflow-auto min-h-11 max-h-96">
-        <div @click="() => layout.user.notifications.every(notif => notif.read) ? false : setAllToRead()"
-            class="place-self-end  text-sm select-none"
-            :class="layout.user.notifications.every(notif => notif.read) ? 'text-gray-400 cursor-not-allowed' : 'text-indigo-500 hover:text-indigo-500 cursor-pointer'"    
-        >
+        <div @click="() => layout?.notifications?.every((notif: any) => notif.read) ? false : setAllToRead()"
+            class="place-self-end text-sm select-none"
+            :class="layout?.notifications?.every((notif:any) => notif.read) ? 'text-gray-400 cursor-not-allowed' : 'underline text-indigo-500 hover:text-indigo-700 cursor-pointer'">
             <LoadingIcon v-if="isLoading" />
             {{ trans('Marks all as read') }}
         </div>
-        
-        <ul v-if="layout.user.notifications.length" role="list" class="w-full divide-y divide-gray-100 overflow-y-auto">
-            <li v-for="notif in layout.user.notifications" :key="notif.id"
+
+        <ul v-if="layout.notifications.length" role="list" class="w-full divide-y divide-gray-100 overflow-y-auto">
+            <li v-for="notif in layout.notifications" :key="notif.id"
                 class="relative flex justify-between gap-x-6 px-1 py-2 hover:bg-gray-50 sm:px-2">
                 <Transition name="spin-to-down">
-                    <FontAwesomeIcon
-                        :key="notif.id + notif.read"
-                        :icon="notif.read ? ['fal', 'envelope-open-text'] : ['fal', 'envelope']"
-                        class='text-3xl m-auto'
-                        :class="notif.read ? 'text-gray-300' : 'text-gray-400'"
-                        fixed-width
-                        aria-hidden='true'
-                    />
+                    <FontAwesomeIcon :key="notif.id + notif.read"
+                        :icon="notif.read ? ['fal', 'envelope-open-text'] : ['fal', 'envelope']" class='text-3xl m-auto'
+                        :class="notif.read ? 'text-gray-300' : 'text-gray-400'" fixed-width aria-hidden='true' />
                 </Transition>
+                
                 <div class="min-w-0 flex-auto relative">
                     <div class="text-sm font-semibold leading-6" :class="[notif.read ? 'text-gray-400' : '']">
-                        <component
-                            :is="notif.route ? Link : 'div'"
-                            :href="notif.route"
-                            @success="() => (notif.read ?? setNotificationToRead(notif.id), props.close())"
-                        >
-                            <span class="absolute inset-x-0 -top-px bottom-0"></span>
-                            {{ notif.title }}
+                        <component :is="notif.route ? Link : 'div'" :href="notif.route"
+                            @success="() => (notif.read ?? setNotificationToRead(notif.id), props.close())">
+                            <!-- <span class="absolute inset-x-0 -top-px bottom-0"></span> -->
+                            {{ useTruncate(notif.title, 34) }}
                         </component>
                     </div>
+
                     <span class="text-[10px] text-gray-500 absolute top-0 right-0 mt-1 mr-1">
                         {{ useFormatTime(notif.created_at) }}
                     </span>
+
                     <p :class="['mt-1 flex text-xs leading-5 truncate', notif.read ? 'text-gray-400' : 'text-gray-500']">
                         {{ notif.body }}
                     </p>
@@ -129,7 +124,8 @@ onBeforeUnmount(() => {
         </div>
 
         <div class="flex w-full justify-center border-t border-gray-200 mt-3 pt-3">
-            <div @click="() => (close(), layout.stackedComponents.push({ component: Profile, data: { currentTab: 'notifications' }}))" class="cursor-pointer px-2 text-gray-400 hover:text-gray-500 font-semibold">
+            <div @click="() => (close(), layout.stackedComponents.push({ component: Profile, data: { currentTab: 'notifications' }}))"
+                class="cursor-pointer px-2 text-gray-500 hover:text-gray-700 font-semibold">
                 {{ trans('Show all notification') }}
             </div>
         </div>

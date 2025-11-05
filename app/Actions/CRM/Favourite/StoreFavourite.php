@@ -37,6 +37,8 @@ class StoreFavourite extends OrgAction
                 );
             } else {
                 $this->update($favourite, ['unfavourited_at' => null, 'current_favourite_id' => $favourite->id]);
+
+
             }
 
         } else {
@@ -52,12 +54,11 @@ class StoreFavourite extends OrgAction
             /** @var Favourite $favourite */
             $favourite = $customer->favourites()->create($modelData);
 
-            CustomerHydrateFavourites::run($customer);
-            ProductHydrateCustomersWhoFavourited::dispatch($product);
-            ProductHydrateCustomersWhoFavouritedInCategories::dispatch($product);
         }
 
-
+        CustomerHydrateFavourites::run($customer);
+        ProductHydrateCustomersWhoFavourited::dispatch($product);
+        ProductHydrateCustomersWhoFavouritedInCategories::dispatch($product);
         return $favourite;
     }
 
@@ -84,6 +85,9 @@ class StoreFavourite extends OrgAction
     }
 
 
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
     public function action(Customer $customer, Product $product, array $modelData, int $hydratorsDelay = 0, bool $strict = true): Favourite
     {
         $this->asAction       = true;

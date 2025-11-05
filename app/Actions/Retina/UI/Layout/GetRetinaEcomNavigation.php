@@ -125,6 +125,20 @@ class GetRetinaEcomNavigation
             ]
         ];
 
+        if (app()->environment('local')) {
+            $groupNavigation['back-in-stocks'] = [
+                'label'   => __('Back In Stocks'),
+                'icon'    => ['fas', 'fa-envelope-circle-check'],
+                'root'    => 'retina.ecom.back_in_stock.',
+                'route'   => [
+                    'name' => 'retina.ecom.back_in_stock.index'
+                ],
+                'topMenu' => [
+
+                ]
+            ];
+        }
+
         $groupNavigation['invoices'] = [
             'label' => __('Invoices'),
             'icon'  => ['fal', 'fa-file-invoice-dollar'],
@@ -164,6 +178,29 @@ class GetRetinaEcomNavigation
                     ],
 
 
+                ]
+            ]
+        ];
+
+
+        $groupNavigation['marketing'] = [
+            'label'   => __('manage email'),
+            'icon'    => ['fal', 'fa-envelope'],
+            'root'    => 'retina.email.',
+            'route'   => [
+                'name' => 'retina.email.settings.edit'
+            ],
+            'topMenu' => [
+                'subSections' => [
+                    [
+                        'label' => __('email'),
+                        'icon'  => ['fal', 'fa-cog'],
+                        'root'  => 'retina.email.settings.',
+                        'route' => [
+                            'name' => 'retina.email.settings.edit',
+
+                        ]
+                    ]
                 ]
             ]
         ];

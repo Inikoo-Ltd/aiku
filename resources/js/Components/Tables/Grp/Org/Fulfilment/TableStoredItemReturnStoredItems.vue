@@ -265,7 +265,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                 </div>
                                 <div v-if="palletReturn.state === 'picking'"
                                     @xxclick="() => pallet_stored_item.picked_quantity = pallet_stored_item.quantity_in_pallet"
-                                    v-tooltip="trans('Total Customer\'s SKU in this pallet')"
+                                    v-tooltip="trans(`Total Customer's SKU in this pallet`)"
                                     class="text-gray-400 tabular-nums xcursor-pointer xhover:text-gray-600">
                                     {{ trans("Stocks in pallet") }}: {{ pallet_stored_item.quantity_in_pallet }}
                                 </div>
@@ -312,7 +312,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                                 />
 
                                 <div v-if="palletReturn.state === 'in_process'" v-tooltip="trans('Available quantity')" class="text-base">{{ pallet_stored_item.available_quantity }}</div>
-                                <!-- <div v-else-if="palletReturn.state === 'picking'" v-tooltip="trans('Quantity of Customer\'s SKU that should be picked')" class="text-base">{{ pallet_stored_item.selected_quantity }}</div> -->
+                                <!-- <div v-else-if="palletReturn.state === 'picking'" v-tooltip="trans(`Quantity of Customer's SKU that should be picked`)" class="text-base">{{ pallet_stored_item.selected_quantity }}</div> -->
     
                                 <!-- Button: input number (in_process) -->
                                 <NumberWithButtonSave
@@ -500,7 +500,7 @@ const onUndoPick = async (routeTarget: routeType, pallet_stored_item: any, loadi
                             v-tooltip="trans('Check the row to edit')"
                         />
 
-                        <p v-if="proxyItem.error_quantity" class="mt-1 text-left text-xs text-red-500 italic">*{{ trans('Quantity can\'t empty') }}</p>
+                        <p v-if="proxyItem.error_quantity" class="mt-1 text-left text-xs text-red-500 italic">*{{ trans(`Quantity can't empty`) }}</p>
                     </template>
                     
                     <div v-else class="py-3">{{ item.data.quantity }}</div>

@@ -32,6 +32,7 @@ import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import TableProducts from "@/Components/Tables/Grp/Org/Catalogue/TableProducts.vue";
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from 'primevue/breadcrumb'
+import AttachmentManagement from "@/Components/Goods/AttachmentManagement.vue";
 
 library.add(faChartLine, faCheckCircle, faFolderTree, faFolder, faCube, faShoppingCart, faFileInvoice, faStickyNote,
     faMoneyBillWave, faFolderOpen, faAtom, faFolderTree
@@ -51,6 +52,7 @@ const props = defineProps<{
     trade_units?: {}
     images?: {}
     mini_breadcrumbs?: any[]
+    attachments?: {}
 
 }>();
 
@@ -65,6 +67,7 @@ const component = computed(() => {
         products: TableProducts,
         images: TradeUnitImagesManagement,
         trade_units: TableTradeUnits,
+        attachments : AttachmentManagement
     };
     return components[currentTab.value];
 
@@ -78,18 +81,17 @@ console.log(props)
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead"/>
     <Tabs :current="currentTab" :navigation="tabs['navigation']" @update:tab="handleTabUpdate"/>
-    <div v-if="mini_breadcrumbs.length != 0" class="bg-white shadow-sm rounded px-4 py-2 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+      <div v-if="mini_breadcrumbs.length != 0" class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb  :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
-                    <!-- Breadcrumb link or text -->
                     <component :is="item.to ? Link : 'span'" :href="route(item.to.name,item.to.parameters)" v-tooltip="item.tooltip"
                         :title="item.title" class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
                         <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
-                        <span class="truncate max-w-[150px]">{{ item.label || '-' }}</span>
+                        <span class="">{{ item.label || '-' }}</span>
                     </component>
                 </div>
             </template>

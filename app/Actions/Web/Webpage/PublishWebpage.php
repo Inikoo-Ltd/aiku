@@ -14,6 +14,7 @@ use App\Actions\Helpers\Snapshot\UpdateSnapshot;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiData;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Helpers\Snapshot;
@@ -98,7 +99,7 @@ class PublishWebpage extends OrgAction
         $webpage->update($updateData);
 
         BreakWebpageCache::run($webpage);
-        ReindexWebpageLuigiData::dispatch($webpage);
+        ReindexWebpageLuigiData::dispatch($webpage)->delay(60 * 15);
 
         return $webpage;
     }

@@ -22,9 +22,6 @@ class StoreShopifyProductVariant extends RetinaAction
 {
     use WithActionUpdate;
 
-    public string $jobQueue = 'shopify';
-    public int $jobBackoff = 5;
-
 
     /** level 1: upload includes price
      *  level 0: match excludes price

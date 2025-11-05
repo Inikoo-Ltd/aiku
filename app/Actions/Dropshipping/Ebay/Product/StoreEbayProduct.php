@@ -9,9 +9,13 @@
 
 namespace App\Actions\Dropshipping\Ebay\Product;
 
+use App\Actions\Dropshipping\Portfolio\Logs\StorePlatformPortfolioLog;
+use App\Actions\Dropshipping\Portfolio\Logs\UpdatePlatformPortfolioLog;
 use App\Actions\Dropshipping\Portfolio\UpdatePortfolio;
 use App\Actions\Helpers\Images\GetImgProxyUrl;
 use App\Actions\RetinaAction;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsStatusEnum;
+use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Events\UploadProductToEbayProgressEvent;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\EbayUser;
@@ -20,7 +24,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Sentry;
 
 class StoreEbayProduct extends RetinaAction
 {
@@ -32,9 +35,62 @@ class StoreEbayProduct extends RetinaAction
      */
     public function handle(EbayUser $ebayUser, Portfolio $portfolio)
     {
+        $logs = StorePlatformPortfolioLog::run($portfolio, [
+            'type'   => PlatformPortfolioLogsTypeEnum::UPLOAD
+        ]);
+
         try {
             /** @var Product $product */
             $product = $portfolio->item;
+
+            $handleError = function ($result) use ($portfolio, $ebayUser, $logs) {
+                if (isset($result['error']) || isset($result['errors'])) {
+                    $params = '';
+                    if (isset($result['errors'])) {
+                        $errorMessage = $result;
+
+                        $params = Arr::get($result['errors'], '0.parameters.0.name');
+
+                        if (isset($errorMessage['errors'][0]['message'])) {
+                            $errorMessage = $errorMessage['errors'][0]['message'];
+                        }
+                    } else {
+                        $errorMessage = $result['error'];
+                    }
+
+                    if (is_string($errorMessage) && str_contains($errorMessage, 'eBay API request failed:')) {
+                        $jsonPart = str_replace('eBay API request failed: ', '', $errorMessage);
+                        $decoded = json_decode($jsonPart, true);
+
+                        if (isset($decoded['errors'][0]['message'])) {
+                            $errorMessage = $decoded['errors'][0]['message'];
+                        }
+                    }
+
+                    $displayError = $ebayUser->getDisplayErrors($errorMessage) ?? $errorMessage;
+
+                    UpdatePlatformPortfolioLog::run($logs, [
+                        'status' => PlatformPortfolioLogsStatusEnum::FAIL,
+                        'response' => $displayError
+                    ]);
+
+                    UpdatePortfolio::make()->action($portfolio, [
+                        'upload_warning' => $displayError,
+                        'errors_response' => [
+                            'params' => $params,
+                            'message' => $displayError
+                        ]
+                    ]);
+
+                    if (! blank($params)) {
+                        throw ValidationException::withMessages(['title' => $displayError]);
+                    }
+
+                    return $displayError;
+                }
+
+                return false;
+            };
 
             $images = [];
             if (app()->isProduction()) {
@@ -49,10 +105,52 @@ class StoreEbayProduct extends RetinaAction
                 'imageUrls' => $images
             ];
 
-            $descriptions = $portfolio->customer_description;
+            $descriptions = mb_substr(strip_tags($portfolio->customer_description), 0, 4000);
+            $decoded = html_entity_decode($descriptions, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            $noTags = strip_tags($decoded);
+            $clean = preg_replace('/[^A-Za-z0-9.,;\'"!? \n-]/', ' ', $noTags);
+            $clean = preg_replace('/\s+/', ' ', trim($clean));
+            $descriptions = str_replace('(', '', str_replace(')', '', str_replace('.', ' ', $clean)));
 
             if (!$descriptions) {
                 $descriptions = $portfolio->item->name;
+            }
+
+            $categories = $ebayUser->getCategorySuggestions($product->department->name);
+
+            $categoryId = Arr::get($categories, 'categorySuggestions.0.category.categoryId');
+            if (! $categoryId) {
+                $categories = $ebayUser->searchAvailableProducts($product->department->name);
+
+                if ($handleError($categories)) {
+                    return;
+                }
+
+                $categoryId = Arr::get($categories, 'itemSummaries.0.categories.0.categoryId');
+            }
+
+            if ($handleError($categories)) {
+                return;
+            }
+
+            $categoryAspects = $ebayUser->getItemAspectsForCategory($categoryId);
+            $productAttributes = $ebayUser->extractProductAttributes($product, $categoryAspects);
+
+            $brand = $product->getBrand();
+
+            $aspects = [
+                'aspects' => [
+                    'Type' => ['Other'],
+                    'Brand' => [$brand?->name ?? $product->shop?->name]
+                ]
+            ];
+
+            if ($product->barcode) {
+                $aspects['aspects']['EAN'] = [$product->barcode];
+            }
+
+            if (!blank($productAttributes)) {
+                $aspects['aspects'] = array_merge($aspects['aspects'], $productAttributes);
             }
 
             $inventoryItem = [
@@ -66,56 +164,39 @@ class StoreEbayProduct extends RetinaAction
                 'product' => [
                     'title' => $portfolio->customer_product_name,
                     'description' => $descriptions,
-                    'aspects' =>  [
-                        'Brand' => [
-                            'AncientWisdom'
-                        ],
-                        'Type' => [
-                            $product->department->name.'/'.$product->family->name
-                        ],
-                    ],
+                    ...$aspects,
                     'brand' => 'AncientWisdom',
                     'mpn' => $product->code,
                     ...$imageUrls
                 ]
             ];
 
-            $handleError = function ($result) use ($portfolio, $ebayUser) {
-                if (isset($result['error'])) {
-                    $errorMessage = $result['error'];
-
-                    if (is_string($errorMessage) && str_contains($errorMessage, 'eBay API request failed:')) {
-                        $jsonPart = str_replace('eBay API request failed: ', '', $errorMessage);
-                        $decoded = json_decode($jsonPart, true);
-
-                        if (isset($decoded['errors'][0]['message'])) {
-                            $errorMessage = $decoded['errors'][0]['message'];
-                        }
-                    }
-
-                    UpdatePortfolio::make()->action($portfolio, ['upload_warning' => $errorMessage]);
-
-                    return $errorMessage;
-                }
-                return false;
-            };
-
-            $productResult = $ebayUser->storeProduct($inventoryItem);
-
-            if ($handleError($productResult)) {
-                throw ValidationException::withMessages(['message' => $handleError($productResult)]);
-            }
-
-            $categories = $ebayUser->getCategorySuggestions($product->family->name);
-            if ($handleError($categories)) {
-                throw ValidationException::withMessages(['message' => $handleError($categories)]);
-            }
-
             $offerExist = $ebayUser->getOffers([
                 'sku' => Arr::get($inventoryItem, 'sku')
             ]);
+
+            if (Arr::get($offerExist, 'offers.0.status', '') !== "PUBLISHED") {
+                $productResult = $ebayUser->storeProduct($inventoryItem);
+
+                if ($handleError($productResult)) {
+                    return;
+                }
+            }
+
             if (Arr::get($offerExist, 'offers.0')) {
                 $offer = Arr::get($offerExist, 'offers.0');
+
+                $ebayUser->updateOffer(
+                    Arr::get($offer, 'offerId'),
+                    [
+                        'sku' => Arr::get($inventoryItem, 'sku'),
+                        'description' => Arr::get($inventoryItem, 'product.description'),
+                        'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
+                        'price' => $portfolio->customer_price,
+                        'currency' => $portfolio->shop->currency->code,
+                        'category_id' => $categoryId
+                    ]
+                );
             } else {
                 $offer = $ebayUser->storeOffer([
                     'sku' => Arr::get($inventoryItem, 'sku'),
@@ -123,37 +204,40 @@ class StoreEbayProduct extends RetinaAction
                     'quantity' => Arr::get($inventoryItem, 'availability.shipToLocationAvailability.quantity'),
                     'price' => $portfolio->customer_price,
                     'currency' => $portfolio->shop->currency->code,
-                    'category_id' => Arr::get($categories, 'categorySuggestions.0.category.categoryId')
+                    'category_id' => $categoryId
                 ]);
             }
 
             if ($handleError($offer)) {
-                throw ValidationException::withMessages(['message' => $handleError($offer)]);
+                return;
             }
 
             $publishedOffer = $ebayUser->publishListing(Arr::get($offer, 'offerId'));
 
             if ($handleError($publishedOffer)) {
-                throw ValidationException::withMessages(['message' => $handleError($publishedOffer)]);
+                return;
             }
 
             $portfolio = UpdatePortfolio::run($portfolio, [
                 'platform_product_id' => Arr::get($offer, 'offerId'),
                 'platform_product_variant_id' => Arr::get($publishedOffer, 'listingId'),
                 'upload_warning' => null,
+                'errors_response' => []
             ]);
 
             CheckEbayPortfolio::run($portfolio);
 
+            $portfolio->refresh();
+
+            if ($portfolio->platform_status) {
+                UpdatePlatformPortfolioLog::run($logs, [
+                    'status' => PlatformPortfolioLogsStatusEnum::OK
+                ]);
+            }
+
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
         } catch (\Exception $e) {
-            $portfolio = UpdatePortfolio::run($portfolio, [
-                'errors_response' => [$e->getMessage()]
-            ]);
-
             UploadProductToEbayProgressEvent::dispatch($ebayUser, $portfolio);
-
-            Sentry::captureMessage("Failed to upload product due to: " . $e->getMessage());
             throw $e;
         }
     }

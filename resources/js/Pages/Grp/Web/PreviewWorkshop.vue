@@ -16,11 +16,10 @@ import "@/../css/Iris/editor.css"
 import { getStyles } from "@/Composables/styles";
 import { Root as RootWebpage } from '@/types/webpageTypes'
 import ButtonPreviewLogin from '@/Components/Workshop/Tools/ButtonPreviewLogin.vue';
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes } from "@fal"
+import { faSearch } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { Sidebar } from 'primevue';
-library.add(faTimes)
+library.add(faTimes, faSearch)
 
 defineOptions({ layout: WebPreview })
 const props = defineProps<{
@@ -40,9 +39,8 @@ const props = defineProps<{
     sidebar: {}
 }>()
 
-// console.log(props.sidebar);
 
-const isOpenMenuMobile = inject('isOpenMenuMobile')
+const isOpenMenuMobile = inject('isOpenMenuMobile', ref(false))
 const layout: any = inject("layout", {});
 const isPreviewLoggedIn = ref(false)
 const { mode } = route().params;
@@ -89,19 +87,16 @@ onMounted(() => {
         if (event.data.key === 'reload') {
             router.reload({
                 only: ['footer', 'header', 'webpage', 'navigation', 'sidebar'],
-                onSuccess: () => {
-                    if (props.webpage) data.value = props.webpage
-                }
             });
         }
     });
     checkScreenType()
     window.addEventListener('resize', checkScreenType)
-    if (props.sidebar) {
+
+    if (props.sidebar && route().current()?.includes('sidebar')) {
         isOpenMenuMobile.value = true
     }
 });
-
 
 
 const checkScreenType = () => {
@@ -146,6 +141,7 @@ watch(isPreviewLoggedIn, (value) => {
                     :loginMode="isPreviewLoggedIn"
                     @update:model-value="updateData(header.data)"
                     :screenType="screenType"
+                    :sidebar
                 />
             </div>
 
@@ -162,7 +158,6 @@ watch(isPreviewLoggedIn, (value) => {
 
             <!-- Footer -->
             <component v-if="footer?.data?.data"
-
                 :is="isPreviewMode || route().current() == 'grp.websites.preview' || route().current() == 'grp.org.shops.show.web.webpages.snapshot.preview' ? getIrisComponent(footer.data.code) : getComponent(footer.data.code)"
                 v-model="footer.data.data.fieldValue" @update:model-value="updateData(footer.data)" />
         </div>

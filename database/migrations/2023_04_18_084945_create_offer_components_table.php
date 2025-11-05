@@ -6,7 +6,7 @@
  * Copyright (c) 2023, Raul A Perusquia Flores
  */
 
-use App\Enums\Discounts\OfferComponent\OfferComponentStateEnum;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Stubs\Migrations\HasGroupOrganisationRelationship;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -25,7 +25,7 @@ return new class () extends Migration {
             $table->foreign('offer_campaign_id')->references('id')->on('offer_campaigns');
             $table->unsignedInteger('offer_id')->index();
             $table->foreign('offer_id')->references('id')->on('offers');
-            $table->string('state')->default(OfferComponentStateEnum::IN_PROCESS->value)->index();
+            $table->string('state')->default(OfferAllowanceStateEnum::IN_PROCESS->value)->index();
             $table->boolean('status')->default(false)->index();
             $table->string('slug')->unique()->collation('und_ns');
             $table->string('code');

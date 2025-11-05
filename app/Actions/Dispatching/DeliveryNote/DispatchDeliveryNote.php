@@ -8,13 +8,10 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
-use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateDeliveryNotes;
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Comms\Email\SendDispatchedReplacementOrderEmailToCustomer;
-use App\Actions\Ordering\Order\DispatchOrderFromDeliveryNote;
+use App\Actions\Ordering\Order\UpdateState\DispatchOrderFromDeliveryNote;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
-use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -26,12 +23,14 @@ use Lorisleiva\Actions\ActionRequest;
 class DispatchDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
     /**
      * @throws \Throwable
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        $oldState = $deliveryNote->state;
         $deliveryNote = DB::transaction(function () use ($deliveryNote) {
             data_set($modelData, 'dispatched_at', now());
             data_set($modelData, 'state', DeliveryNoteStateEnum::DISPATCHED->value);
@@ -59,16 +58,13 @@ class DispatchDeliveryNote extends OrgAction
 
 
 
-            OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-                ->delay($this->hydratorsDelay);
+
 
 
             return $deliveryNote;
         });
 
-        GroupHydrateDeliveryNotes::dispatch($deliveryNote->group)->delay($this->hydratorsDelay);
-        OrganisationHydrateDeliveryNotes::dispatch($deliveryNote->organisation)->delay($this->hydratorsDelay);
-        ShopHydrateDeliveryNotes::dispatch($deliveryNote->shop)->delay($this->hydratorsDelay);
+
 
         return $deliveryNote;
     }

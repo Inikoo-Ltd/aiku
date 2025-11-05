@@ -185,13 +185,13 @@ class IndexProductsInCatalogue extends OrgAction
                     ]
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon')
-                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'units', label: __('units'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'units', label: __('Units'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true, searchable: true);
             if ($bucket != 'discontinued') {
-                $table->column(key: 'available_quantity', label: __('stock'), canBeHidden: false, sortable: true, searchable: true);
+                $table->column(key: 'available_quantity', label: __('Stock'), canBeHidden: false, sortable: true, searchable: true);
             }
         };
     }

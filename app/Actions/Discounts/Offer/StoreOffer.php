@@ -10,6 +10,7 @@ namespace App\Actions\Discounts\Offer;
 
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateOffers;
 use App\Actions\Discounts\Offer\Search\OfferRecordSearch;
+use App\Actions\Discounts\OfferAllowance\StoreOfferAllowance;
 use App\Actions\Discounts\OfferCampaign\Hydrators\OfferCampaignHydrateOffers;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
@@ -25,6 +26,7 @@ use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
 use App\Models\Helpers\Query;
 use App\Rules\IUnique;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -40,10 +42,15 @@ class StoreOffer extends OrgAction
     {
 
         $modelData = $this->prepareOfferData($offerCampaign, $trigger, $modelData);
-        $offer = DB::transaction(function () use ($offerCampaign, $modelData) {
+        $allowances = Arr::pull($modelData, 'allowances', []);
+        $offer = DB::transaction(function () use ($offerCampaign, $modelData, $allowances) {
             /** @var Offer $offer */
             $offer = $offerCampaign->offers()->create($modelData);
             $offer->stats()->create();
+            foreach ($allowances as $allowanceData) {
+                data_set($allowanceData, 'code', $offer->id);
+                StoreOfferAllowance::run($offer, $allowanceData);
+            }
 
             return $offer;
         });
@@ -74,11 +81,12 @@ class StoreOffer extends OrgAction
             'name'         => ['required', 'max:250', 'string'],
             'data'         => ['sometimes', 'required'],
             'settings'     => ['sometimes', 'required'],
-            'allowances'   => ['sometimes', 'required'],
+            'trigger_data' => ['sometimes', 'required'],
             'start_at'     => ['sometimes', 'date'],
             'end_at'       => ['sometimes', 'nullable', 'date'],
             'type'         => ['required', 'string'],
             'trigger_type' => ['sometimes', Rule::in(['Order'])],
+            'allowances'   => ['sometimes', 'nullable', 'array'],
         ];
         if (!$this->strict) {
             $rules['start_at']  = ['sometimes', 'nullable', 'date'];

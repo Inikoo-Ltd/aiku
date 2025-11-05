@@ -11,6 +11,8 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel;
 use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydrateCustomers;
 use App\Actions\Catalogue\ShopPlatformStats\ShopPlatformStatsHydrateCustomerSalesChannel;
 use App\Actions\Dropshipping\Platform\Hydrators\PlatformHydrateCustomers;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewChannels;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomers;
 use App\Actions\OrgAction;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
@@ -34,11 +36,18 @@ class StoreCustomerSalesChannel extends OrgAction
         $modelData['organisation_id']   = $customer->organisation_id;
         $modelData['shop_id']           = $customer->shop_id;
         $modelData['platform_id']       = $platform->id;
+
+        /** @var CustomerSalesChannel $customerSalesChannel */
         $customerSalesChannel           = $customer->customerSalesChannels()->create($modelData);
 
         PlatformHydrateCustomers::dispatch($platform)->delay($this->hydratorsDelay);
         ShopPlatformStatsHydrateCustomers::dispatch($customer->shop, $platform)->delay($this->hydratorsDelay);
         ShopPlatformStatsHydrateCustomerSalesChannel::dispatch($customer->shop, $platform)->delay($this->hydratorsDelay);
+
+        if ($customer->shop && $platform->id) {
+            ShopHydratePlatformSalesIntervalsNewChannels::dispatch($customer->shop, $platform->id)->delay($this->hydratorsDelay);
+            ShopHydratePlatformSalesIntervalsNewCustomers::dispatch($customer->shop, $platform->id)->delay($this->hydratorsDelay);
+        }
 
         return $customerSalesChannel;
     }

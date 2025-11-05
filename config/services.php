@@ -44,7 +44,8 @@ return [
         'client_id' => env('EBAY_CLIENT_ID'),
         'client_secret' => env('EBAY_CLIENT_SECRET'),
         'sandbox' => env('EBAY_SANDBOX', true),
-        'redirect_uri' => env('EBAY_REDIRECT_URI')
+        'redirect_uri' => env('EBAY_REDIRECT_URI'),
+        'redirect_uri_es' => env('EBAY_REDIRECT_URI_ES'),
     ],
     'amazon' => [
         'client_id' => env('AMAZON_CLIENT_ID'),

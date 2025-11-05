@@ -13,18 +13,22 @@ trait CalculatesPaymentWithBalance
     /**
      * Calculate payment amounts using customer balance.
      *
-     * @param float $totalAmount The total amount to pay
-     * @param float $balance The customer's balance
+     * @param  float  $totalAmount  The total amount to pay
+     * @param  float  $balance  The customer's balance
+     *
      * @return array Returns an array with 'by_balance' and 'by_other' payment amounts
      */
     protected function calculatePaymentWithBalance(float $totalAmount, float $balance): array
     {
-        $toPay = (float) max($totalAmount, 0.0);
+        if ($balance < 0) {
+            $balance = 0;
+        }
+
+        $toPay = (float)max($totalAmount, 0.0);
 
         $toPay = round($toPay, 2);
 
         $payFloatWithBalance = min($toPay, $balance);
-
 
 
         $remainingBalance = $toPay - $payFloatWithBalance;
@@ -32,8 +36,8 @@ trait CalculatesPaymentWithBalance
 
         return [
             'by_balance' => $payFloatWithBalance,
-            'by_other' => $remainingBalance,
-            'total' => $toPay
+            'by_other'   => $remainingBalance,
+            'total'      => $toPay
         ];
     }
 }

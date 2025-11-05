@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Collection;
 
+use App\Actions\Catalogue\Collection\Hydrators\CollectionHydrateParents;
 use App\Actions\Catalogue\ProductCategory\Hydrators\ProductCategoryHydrateCollections;
 use App\Actions\OrgAction;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
@@ -20,13 +21,16 @@ class AttachCollectionToModel extends OrgAction
     public function handle(Shop|ProductCategory $parent, Collection $collection): Collection
     {
         if ($parent instanceof ProductCategory) {
-            if ($parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
+            // Avoid attaching if already linked
+            $alreadyAttached = $parent->collections()->where('collections.id', $collection->id)->exists();
+
+            if (!$alreadyAttached && $parent->type == ProductCategoryTypeEnum::DEPARTMENT) {
                 $parent->collections()->attach($collection->id, [
                     'type' => 'department',
                 ]);
             }
 
-            if ($parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
+            if (!$alreadyAttached && $parent->type == ProductCategoryTypeEnum::SUB_DEPARTMENT) {
                 $parent->collections()->attach($collection->id, [
                     'type' => 'sub_department',
                 ]);
@@ -35,11 +39,17 @@ class AttachCollectionToModel extends OrgAction
             ProductCategoryHydrateCollections::dispatch($parent);
         }
         if ($parent instanceof Shop) {
-            $parent->collections()->attach($collection->id, [
-                'type' => 'shop',
-            ]);
+            // Avoid attaching if already linked
+            $alreadyAttached = $parent->collections()->where('collections.id', $collection->id)->exists();
+
+            if (!$alreadyAttached) {
+                $parent->collections()->attach($collection->id, [
+                    'type' => 'shop',
+                ]);
+            }
         }
 
+        CollectionHydrateParents::run($collection);
 
         return $collection;
     }

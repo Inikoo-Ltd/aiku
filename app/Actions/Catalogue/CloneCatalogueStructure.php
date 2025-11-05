@@ -303,11 +303,6 @@ class CloneCatalogueStructure
                     ]
                 );
 
-
-                if ($department->description) {
-                    data_set($dataToUpdate, 'description', $department->description);
-                }
-
                 $foundDepartment = UpdateProductCategory::make()->action(
                     $foundDepartment,
                     $dataToUpdate
@@ -315,13 +310,20 @@ class CloneCatalogueStructure
             }
         }
         if ($foundDepartment && !$foundDepartment->webpage) {
-            $webpage = StoreProductCategoryWebpage::make()->action($foundDepartment);
-            PublishWebpage::make()->action(
-                $webpage,
-                [
-                    'comment' => 'Published after cloning',
-                ]
-            );
+
+
+            try {
+                $webpage = StoreProductCategoryWebpage::make()->action($foundDepartment);
+                PublishWebpage::make()->action(
+                    $webpage,
+                    [
+                        'comment' => 'Published after cloning',
+                    ]
+                );
+            } catch (\Throwable $e) {
+                print $foundDepartment->slug.' '.$e->getMessage()."\n";
+            }
+
         }
 
         if ($foundDepartment) {
@@ -362,18 +364,14 @@ class CloneCatalogueStructure
                 createChildren: false
             );
 
-            print "Creating master product category " . $department->name . "\n";
-
+            print "Creating master product category ".$department->name."\n";
         } else {
             $foundMasterDepartment = MasterProductCategory::find($foundMasterDepartmentData->id);
 
             $dataToUpdate = [
                 'code' => $department->code,
-                'name' => $department->name,
             ];
-            if ($department->description) {
-                data_set($dataToUpdate, 'description', $department->description);
-            }
+
 
             $foundMasterDepartment = UpdateMasterProductCategory::make()->action(
                 $foundMasterDepartment,
@@ -467,13 +465,17 @@ class CloneCatalogueStructure
 
 
         if (!$foundSubDepartment->webpage) {
-            $webpage = StoreProductCategoryWebpage::make()->action($foundSubDepartment);
-            PublishWebpage::make()->action(
-                $webpage,
-                [
-                    'comment' => 'Published after cloning',
-                ]
-            );
+            try {
+                $webpage = StoreProductCategoryWebpage::make()->action($foundSubDepartment);
+                PublishWebpage::make()->action(
+                    $webpage,
+                    [
+                        'comment' => 'Published after cloning',
+                    ]
+                );
+            } catch (\Throwable $e) {
+                print $foundSubDepartment->slug.' '.$e->getMessage()."\n";
+            }
         }
 
 
@@ -513,16 +515,13 @@ class CloneCatalogueStructure
                 ],
                 createChildren: false
             );
-            print "Creating master sub department " . $toSubDepartment->name . "\n";
+            print "Creating master sub department ".$toSubDepartment->name."\n";
         } else {
             $foundMasterSubDepartment = MasterProductCategory::find($foundMasterSubDepartmentData->id);
             $dataToUpdate             = [
-                'code' => $toSubDepartment->code,
-                'name' => $toSubDepartment->name,
+                'code' => $toSubDepartment->code
             ];
-            if ($toSubDepartment->description) {
-                data_set($dataToUpdate, 'description', $toSubDepartment->description);
-            }
+
             $toSubDepartment = UpdateMasterProductCategory::make()->action(
                 $foundMasterSubDepartment,
                 $dataToUpdate

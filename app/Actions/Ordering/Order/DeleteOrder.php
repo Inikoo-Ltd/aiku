@@ -21,8 +21,9 @@ class DeleteOrder extends OrgAction
 {
     use WithOrderingEditAuthorisation;
     use WithActionUpdate;
+    use HasOrderHydrators;
 
-    public string $commandSignature = 'cancel:order {id}';
+    public string $commandSignature = 'cancel:delete {id}';
 
     /**
      * @throws \Illuminate\Validation\ValidationException
@@ -34,6 +35,8 @@ class DeleteOrder extends OrgAction
 
             $order = $this->update($order, $deletedData, ['data']);
             $order->transactions()->delete();
+            $this->orderHandlingHydrators($order, $order->state);
+
 
             return $order;
         }

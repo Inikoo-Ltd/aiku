@@ -41,6 +41,7 @@ class IndexRefundInProcessTransactions extends OrgAction
         $commonSelect = [
             'historic_assets.code',
             'historic_assets.name',
+            'assets.id',
             'assets.slug',
             'assets.price',
             DB::raw($refund->id.' as refund_id'),

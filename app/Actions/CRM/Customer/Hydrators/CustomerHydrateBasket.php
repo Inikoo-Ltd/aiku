@@ -13,6 +13,7 @@ namespace App\Actions\CRM\Customer\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\CRM\Customer;
+use App\Models\Ordering\Order;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -33,6 +34,7 @@ class CustomerHydrateBasket implements ShouldBeUnique
             return;
         }
 
+        /** @var Order $order */
         $order = $customer->orders()->where('state', OrderStateEnum::CREATING->value)->first();
 
         $stats = [

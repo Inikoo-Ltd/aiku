@@ -38,7 +38,12 @@ library.add(
 );
 
 const props = defineProps<{
-    deliveryNote: Number
+    deliveryNote: {
+        delivery_note_reference: any
+        delivery_note_id: any
+        delivery_note_state: any
+        state: any
+    }
 }>()
 
 const emits = defineEmits<{
@@ -51,7 +56,7 @@ const isLoading = ref(true)
 const locale = inject('locale', aikuLocaleStructure)
 
 const pageHead = {
-    title: props.deliveryNote.delivery_note_reference,
+    title: props?.deliveryNote?.delivery_note_reference,
     model: "Delivery Note",
     icon: {
         icon: "fal fa-truck",
@@ -69,7 +74,7 @@ const onDeleteParcel = (index: number) => {
 
 const onSubmitParcels = () => {
     router.patch(route('grp.models.delivery_note.update', {
-        deliveryNote: props.deliveryNote.delivery_note_id
+        deliveryNote: props?.deliveryNote?.delivery_note_id
     }), {
         parcels: parcelsCopy.value,
     }, {
@@ -293,9 +298,9 @@ onMounted(() => {
                 <div
                     v-if="['packed', 'dispatched', 'finalised'].includes(data.delivery_note?.state) && props.deliveryNote">
                     <ShipmentSection
-                        :shipments="shipments?.shipment.shipments"
-                        :shipments_routes="shipments.shipment.shipments_routes"
-                        :address="data.delivery_note.address"
+                        :shipments="shipments?.shipment?.shipments"
+                        :shipments_routes="shipments?.shipment?.shipments_routes"
+                        :address="data?.delivery_note?.address"
                         @addSuccsess="getDataShipment()"
                         @editAddressSuccsess="getDataDeliveryNote()"
                         @deleteSuccsess="getDataShipment()"

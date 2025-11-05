@@ -10,6 +10,7 @@ namespace App\Actions\Catalogue\Product;
 
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateAvailableQuantity;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBarcodeFromTradeUnit;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateBrandsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavourited;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoFavouritedInCategories;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateCustomersWhoReminded;
@@ -21,6 +22,7 @@ use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingDimensionFrom
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingWeightFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateProductVariants;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTagsFromTradeUnits;
 use App\Actions\Catalogue\Product\Hydrators\ProductHydrateTradeUnitsFields;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Actions\Traits\ModelHydrateSingleTradeUnits;
@@ -59,6 +61,8 @@ class HydrateProducts
         ProductHydrateImages::run($product);
         ProductHydrateTradeUnitsFields::run($product);
         ModelHydrateSingleTradeUnits::run($product);
+        ProductHydrateBrandsFromTradeUnits::run($product);
+        ProductHydrateTagsFromTradeUnits::run($product);
     }
 
 }

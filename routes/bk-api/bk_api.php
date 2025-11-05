@@ -28,7 +28,7 @@ use App\Actions\Transfers\Aurora\Api\ProcessAuroraLocation;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraMailshot;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOffer;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOfferCampaign;
-use App\Actions\Transfers\Aurora\Api\ProcessAuroraOfferComponent;
+use App\Actions\Transfers\Aurora\Api\ProcessAuroraOfferAllowance;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOrder;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraOrgStockMovement;
 use App\Actions\Transfers\Aurora\Api\ProcessAuroraPayment;
@@ -69,7 +69,7 @@ Route::name('bk_api.')->group(function () {
             Route::post('location', ProcessAuroraLocation::class)->name('location');
             Route::post('mailshot', ProcessAuroraMailshot::class)->name('mailshot');
             Route::post('offer-campaign', ProcessAuroraOfferCampaign::class)->name('offer_campaign');
-            Route::post('offer-component', ProcessAuroraOfferComponent::class)->name('offer_component');
+            Route::post('offer-component', ProcessAuroraOfferAllowance::class)->name('offer_component');
             Route::post('offer', ProcessAuroraOffer::class)->name('offer');
             Route::post('order', ProcessAuroraOrder::class)->name('order');
             Route::post('org-stock-movement', ProcessAuroraOrgStockMovement::class)->name('org_stock_movement');

@@ -29,7 +29,8 @@ class IndexCreditTransactions extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('credit_transactions.amount', $value)
+                // Cast credit_transactions.amount as char so it is searchable using ILIKE function on PSQL
+                $query->whereRaw("credit_transactions.amount::text ILIKE ?", ["%{$value}%"])
                     ->orWhereAnyWordStartWith('credit_transactions.type', $value);
             });
         });

@@ -42,6 +42,7 @@ use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
+use App\Models\Dispatching\Box;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Packing;
 use App\Models\Dispatching\Picking;
@@ -146,6 +147,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read LaravelCollection<int, Artefact> $artefacts
  * @property-read LaravelCollection<int, Asset> $assets
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
+ * @property-read LaravelCollection<int, Box> $boxes
  * @property-read \App\Models\SysAdmin\OrganisationCatalogueStats|null $catalogueStats
  * @property-read LaravelCollection<int, Charge> $charges
  * @property-read LaravelCollection<int, CustomerClient> $clients
@@ -873,6 +875,11 @@ class Organisation extends Model implements HasMedia, Auditable
     public function webUserRequests(): HasMany
     {
         return $this->hasMany(WebUserRequest::class);
+    }
+
+    public function boxes(): HasMany
+    {
+        return $this->hasMany(Box::class);
     }
 
 

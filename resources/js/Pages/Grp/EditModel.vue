@@ -54,6 +54,11 @@ import {
     faBoxes,
     faAtom,
     faMoneyBill,
+    faTags,
+    faUserTag,
+    faBookOpen,
+    faNotesMedical,
+    faBiohazard
 } from "@fal"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import { faExclamationTriangle } from "@fas"
@@ -63,6 +68,11 @@ import axios from "axios"
 import Message from 'primevue/message';
 
 library.add(
+    faTags,
+    faBiohazard,
+    faUserTag,
+    faBookOpen,
+    faNotesMedical,
     faOctopusDeploy,
     faExclamationTriangle,
     faAtom,
@@ -132,6 +142,7 @@ const props = defineProps<{
                 title: string
                 subtitle?: string
                 information?: string // Tooltip information
+                warning?: string // Warning information
                 icon: string
                 fields: {
                     // FieldData
@@ -184,7 +195,7 @@ const handleIntersection = (element: Element, index: number) => (entries) => {
 
 const switchTab = (key: string) => {
     currentTab.value = key
-    console.log(key)
+    // console.log(key)
 
     // Update URL with query parameter
     router.visit('', {
@@ -328,6 +339,9 @@ const getSeverity = (type?: string) => {
                             <span class="truncate">{{ sectionData.label }}</span>
                             <FontAwesomeIcon v-if="sectionData.information" v-tooltip="sectionData.information"
                                 icon="fal fa-info-circle" class="ml-1 text-gray-400 hover:text-gray-700" fixed-width
+                                aria-hidden="true" />
+                            <FontAwesomeIcon v-if="sectionData.warning" v-tooltip="sectionData.warning"
+                                icon="fas fa-exclamation-triangle" class="ml-1 text-amber-500 hover:text-amber-600" fixed-width
                                 aria-hidden="true" />
                             <!-- {{ tabActive }} -- {{ key == currentTab }} -->
                         </div>

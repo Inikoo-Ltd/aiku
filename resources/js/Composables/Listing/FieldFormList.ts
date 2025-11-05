@@ -61,6 +61,8 @@ import ListSelectorFrom from '@/Components/Forms/Fields/ListSelectorFrom.vue'
 import BrandsTradeUnit from '@/Components/Forms/Fields/BrandsTradeUnit.vue'
 import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/MultiselectTagsInfiniteScroll.vue'
 import InputDimensions from '@/Components/Forms/Fields/InputDimensions.vue'
+import WrapperEmailSubscribetion from '@/Components/Forms/Fields/WrapperEmailSubscribetion.vue'
+import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -73,6 +75,7 @@ export const componentsList: {[key: string]: Component} = {
     'date_radio': DateRadio,
     'select': Select,
     'address': Address,
+    'delivery_address': AddressDelivery,
     'radio': Radio,
     'country': Country,
     'currency': Currency,
@@ -123,7 +126,9 @@ export const componentsList: {[key: string]: Component} = {
     'brands-trade-unit' : BrandsTradeUnit,
     'multiselect-tags' : MultiselectTagsInfiniteScroll,
     'input-dimension' : InputDimensions,
-    'invoice_serial_references' : invoiceSerialReferences
+    'invoice_serial_references' : invoiceSerialReferences,
+
+    'email_subscriptions': WrapperEmailSubscribetion
 }
 
 export const getComponent = (componentName: string) => {

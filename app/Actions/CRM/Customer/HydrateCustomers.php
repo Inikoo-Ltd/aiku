@@ -10,6 +10,7 @@ namespace App\Actions\CRM\Customer;
 
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateBasket;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClients;
+use App\Actions\CRM\Customer\Hydrators\CustomerHydrateClv;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateCreditTransactions;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateCustomerSalesChannels;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
@@ -20,6 +21,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
 use App\Actions\Fulfilment\FulfilmentCustomer\HydrateFulfilmentCustomer;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Models\CRM\Customer;
 
 class HydrateCustomers
@@ -40,12 +42,14 @@ class HydrateCustomers
         CustomerHydrateClients::run($customer);
         CustomerHydrateOrders::run($customer);
         CustomerHydrateInvoices::run($customer);
-        CustomerHydrateDeliveryNotes::run($customer);
+        CustomerHydrateDeliveryNotes::run($customer->id, DeliveryNoteTypeEnum::ORDER);
+        CustomerHydrateDeliveryNotes::run($customer->id, DeliveryNoteTypeEnum::REPLACEMENT);
         CustomerHydrateTopUps::run($customer);
         CustomerHydrateCreditTransactions::run($customer);
         CustomerHydrateBasket::run($customer);
         CustomerHydrateExclusiveProducts::run($customer);
         CustomerHydrateCustomerSalesChannels::run($customer->id);
+        CustomerHydrateClv::run($customer->id);
 
         if ($customer->fulfilmentCustomer) {
             HydrateFulfilmentCustomer::run($customer->fulfilmentCustomer);

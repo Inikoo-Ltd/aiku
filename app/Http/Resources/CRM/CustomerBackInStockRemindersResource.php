@@ -11,6 +11,8 @@ namespace App\Http\Resources\CRM;
 
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Models\Helpers\Media;
+use App\Http\Resources\Helpers\ImageResource;
 
 /**
  * @property string $ulid
@@ -29,12 +31,50 @@ class CustomerBackInStockRemindersResource extends JsonResource
 
     public function toArray($request): array
     {
+        $url = '';
+        if ($this->parent_url) {
+            $url = $this->parent_url.'/';
+        }
+        $url = '/'.$url.$this->url;
+
+        $favourite = false;
+        if ($request->user()) {
+            $customer = $request->user()->customer;
+            if ($customer) {
+                $favourite = $customer->favourites()?->where('product_id', $this->id)->first();
+            }
+        }
+
+
+
+
+        $media = null;
+        if ($this->image_id) {
+            $media = Media::find($this->image_id);
+        }
+
         return [
-            'id'                     => $this->id,
-            'slug'                   => $this->slug,
-            'name'                   => $this->name,
-            'description'            => $this->description,
-            'price'                  => $this->price,
+            'id'                    => $this->id,
+            'image_id'              => $this->image_id,
+            'image'                 => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'code'                  => $this->code,
+            'name'                  => $this->name,
+            'stock'                 => $this->available_quantity,
+            'price'                 => $this->price,
+            'rrp'                   => $this->rrp,
+            'state'                 => $this->state,
+            'status'                => $this->status,
+            'created_at'            => $this->created_at,
+            'updated_at'            => $this->updated_at,
+            'units'                 => $this->units,
+            'unit'                  => $this->unit,
+            'url'                   => $url,
+            'web_images'            => $this->web_images,
+            'transaction_id'        => $this->transaction_id ?? null,
+            'product_slug'          => $this->slug,
+            // 'quantity_ordered' => (int) $this->quantity_ordered ?? 0,
+            // 'quantity_ordered_new' => (int) $this->quantity_ordered ?? 0,  // To editable in Frontend
+            'is_favourite'          => $favourite && !$favourite->unfavourited_at ?? false,
         ];
     }
 }

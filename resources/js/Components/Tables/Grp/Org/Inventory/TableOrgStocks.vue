@@ -26,7 +26,7 @@ defineProps<{
 const locale = inject("locale", aikuLocaleStructure)
 const layout = inject("layout", {})
 
-function stockRoute(orgStock: OrgStock) {
+function orgStockRoute(orgStock: OrgStock) {
     const current = route().current()
     console.log(current)
 
@@ -71,6 +71,13 @@ function stockRoute(orgStock: OrgStock) {
                 orgStock.slug
             ]
         )
+    }else{
+      return route(
+            "grp.helpers.redirect_org_stock",
+            [
+                orgStock.id
+            ]
+        )
     }
 }
 
@@ -92,7 +99,7 @@ function stockFamilyRoute(stock: Stock) {
             <Icon :data="stock.state"></Icon>
         </template>
         <template #cell(code)="{ item: stock }">
-            <Link :href="stockRoute(stock) as string" class="primaryLink">
+            <Link :href="orgStockRoute(stock) as string" class="primaryLink">
                 {{ stock["code"] }}
             </Link>
         </template>

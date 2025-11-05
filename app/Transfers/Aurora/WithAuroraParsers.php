@@ -92,7 +92,7 @@ use App\Models\CRM\Prospect;
 use App\Models\CRM\WebUser;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
-use App\Models\Discounts\OfferComponent;
+use App\Models\Discounts\OfferAllowance;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\Shipper;
 use App\Models\Dropshipping\CustomerClient;
@@ -905,19 +905,19 @@ trait WithAuroraParsers
         return $offerCampaign;
     }
 
-    public function parseOfferComponent($sourceId): ?OfferComponent
+    public function parseOfferAllowance($sourceId): ?OfferAllowance
     {
         if (!$sourceId) {
             return null;
         }
 
-        $offerComponent = OfferComponent::withTrashed()->where('source_id', $sourceId)->first();
-        if (!$offerComponent) {
+        $offerAllowance = OfferAllowance::withTrashed()->where('source_id', $sourceId)->first();
+        if (!$offerAllowance) {
             $sourceData     = explode(':', $sourceId);
-            $offerComponent = FetchAuroraOfferComponents::run($this->organisationSource, $sourceData[1]);
+            $offerAllowance = FetchAuroraOfferComponents::run($this->organisationSource, $sourceData[1]);
         }
 
-        return $offerComponent;
+        return $offerAllowance;
     }
 
 

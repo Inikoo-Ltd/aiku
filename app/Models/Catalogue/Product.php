@@ -25,6 +25,7 @@ use App\Models\Inventory\OrgStock;
 use App\Models\Masters\MasterAsset;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
+use App\Models\Traits\HasAttachments;
 use App\Models\Traits\HasHistory;
 use App\Models\Traits\HasImage;
 use App\Models\Traits\HasUniversalSearch;
@@ -134,7 +135,7 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $hts_us
  * @property string|null $marketing_ingredients
  * @property string|null $price_updated_at
- * @property string|null $available_quantity_updated_at
+ * @property \Illuminate\Support\Carbon|null $available_quantity_updated_at
  * @property string|null $images_updated_at
  * @property string|null $unit_price price per unit
  * @property array<array-key, mixed>|null $name_i8n
@@ -161,16 +162,21 @@ use Spatie\Translatable\HasTranslations;
  * @property string|null $back_in_stock_since
  * @property string|null $estimated_back_in_stock_at
  * @property int|null $estimated_to_be_delivered_quantity
+ * @property int|null $origin_country_id
+ * @property string|null $ufi_number
+ * @property string|null $scpn_number
  * @property-read Media|null $art1Image
  * @property-read Media|null $art2Image
  * @property-read Media|null $art3Image
  * @property-read Media|null $art4Image
  * @property-read Media|null $art5Image
  * @property-read \App\Models\Catalogue\Asset|null $asset
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $attachments
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Media|null $backImage
  * @property-read LaravelCollection<int, BackInStockReminder> $backInStockReminders
  * @property-read Media|null $bottomImage
+ * @property-read LaravelCollection<int, Brand> $brands
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $containedByCollections
  * @property-read LaravelCollection<int, ModelHasContent> $contents
@@ -201,6 +207,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read Media|null $sizeComparisonImage
  * @property-read \App\Models\Catalogue\ProductStats|null $stats
  * @property-read \App\Models\Catalogue\ProductCategory|null $subDepartment
+ * @property-read LaravelCollection<int, Tag> $tags
  * @property-read Media|null $threeQuarterImage
  * @property-read Media|null $topImage
  * @property-read LaravelCollection<int, TradeUnit> $tradeUnits
@@ -231,6 +238,7 @@ class Product extends Model implements Auditable, HasMedia
     use HasFactory;
     use HasImage;
     use HasTranslations;
+    use HasAttachments;
 
     protected $guarded = [];
 
@@ -238,20 +246,24 @@ class Product extends Model implements Auditable, HasMedia
 
 
     protected $casts = [
-        'variant_ratio'          => 'decimal:3',
-        'price'                  => 'decimal:2',
-        'rrp'                    => 'decimal:2',
-        'data'                   => 'array',
-        'settings'               => 'array',
-        'web_images'             => 'array',
-        'marketing_dimensions'   => 'array',
-        'variant_is_visible'     => 'boolean',
-        'state'                  => ProductStateEnum::class,
-        'status'                 => ProductStatusEnum::class,
-        'trade_config'           => ProductTradeConfigEnum::class,
-        'unit_relationship_type' => ProductUnitRelationshipType::class,
-        'fetched_at'             => 'datetime',
-        'last_fetched_at'        => 'datetime'
+        'variant_ratio'                 => 'decimal:3',
+        'price'                         => 'decimal:2',
+        'rrp'                           => 'decimal:2',
+        'data'                          => 'array',
+        'settings'                      => 'array',
+        'web_images'                    => 'array',
+        'marketing_dimensions'          => 'array',
+        'variant_is_visible'            => 'boolean',
+        'state'                         => ProductStateEnum::class,
+        'status'                        => ProductStatusEnum::class,
+        'trade_config'                  => ProductTradeConfigEnum::class,
+        'unit_relationship_type'        => ProductUnitRelationshipType::class,
+        'fetched_at'                    => 'datetime',
+        'last_fetched_at'               => 'datetime',
+        'available_quantity_updated_at' => 'datetime',
+        'cpnp_number'                   => 'string',
+        'ufi_number'                    => 'string',
+        'scpn_number'                   => 'string',
     ];
 
     protected $attributes = [
@@ -325,6 +337,16 @@ class Product extends Model implements Auditable, HasMedia
     public function tradeUnits(): MorphToMany
     {
         return $this->morphToMany(TradeUnit::class, 'model', 'model_has_trade_units')->withPivot(['quantity', 'notes'])->withTimestamps();
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
+    }
+
+    public function brands(): MorphToMany
+    {
+        return $this->morphToMany(Brand::class, 'model', 'model_has_brands');
     }
 
     public function productVariants(): HasMany
@@ -424,7 +446,7 @@ class Product extends Model implements Auditable, HasMedia
 
     public function getLuigiIdentity(): string
     {
-        return $this->group_id . ':' . $this->organisation_id . ':' . $this->shop_id . ':' . $this->webpage?->website?->id . ':' . $this->webpage?->id;
+        return $this->group_id.':'.$this->organisation_id.':'.$this->shop_id.':'.$this->webpage?->website?->id.':'.$this->webpage?->id;
     }
 
     public function frontImage(): HasOne

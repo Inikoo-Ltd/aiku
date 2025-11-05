@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import PureInput from "@/Components/Pure/PureInput.vue"
 import { set, get, debounce } from 'lodash-es'
-import { checkVAT, countries } from 'jsvat-next';
-import { ref, computed, watch } from "vue"
+import { checkVAT, countries } from "jsvat-next"
+import { ref, computed, watch ,inject} from "vue"
 import { faExclamationCircle, faCheckCircle } from '@fas'
 import { faCopy } from '@fal'
 import { faSpinnerThird } from '@fad'
@@ -10,9 +10,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useFormatTime } from '@/Composables/useFormatTime'
-import Popover from 'primevue/popover'
-import { inject } from "vue"
-import { Tooltip } from 'floating-vue' 
+import { Tooltip } from 'floating-vue'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 
 const props = defineProps<{
@@ -23,7 +21,6 @@ const props = defineProps<{
     fieldData?: any
 }>()
 
-// console.log(props);
 
 const emits = defineEmits()
 
@@ -202,25 +199,28 @@ const validateVAT = (vatInput: any) => {
     }
 
     const validation = checkVAT(vatNumber, countries);
+    console.log(validation)
     vatValidationResult.value = validation.isValid ? trans("Valid tax number") : trans("Invalid tax number");
+
 
 
     // Handle invalid VAT
     if (!validation.isValid) {
-        const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
-        set(registrationWarning.value, ['tax_number'], messageWarning);
-        set(props.form, ['errors', props.fieldName], messageWarning);
+        // const messageWarning = '🤔 ' + trans('Tax number looks invalid. Are you sure you want to save it?')
+        // set(registrationWarning.value, ['tax_number'], messageWarning);
+        // set(props.form, ['errors', props.fieldName], messageWarning);
         // props.form.reset();
         return updateFormValue(validation);;
     }
 
     // Valid VAT and no mismatch, update the form value
     updateFormValue(validation);
-        set(props.form, ['errors', props.fieldName], '');
+        // set(props.form, ['errors', props.fieldName], '');
         // props.form.clearErrors(props.fieldName)
 };
 
 const debouncedValidation = debounce((newValue: any) => {
+
     validateVAT(newValue)
 }, 500)
 
@@ -235,15 +235,15 @@ const updateFormValue = (newValue) => {
 };
 
 const updateVat = (newInputValue: string) => {
-    // Set form as dirty when user starts typing
+    // Set form as dirty when the user starts typing
     isFormDirty.value = true
 
-    // Update the value ref with the new input while preserving structure
+    // Update the value ref with the new input while preserving the structure
     value.value = setActualValue(value.value, newInputValue)
     debouncedValidation(value.value)
 }
 
-// Watch for changes in fieldData to reset dirty state and show validation status
+// Watch for changes in fieldData to reset the dirty state and show validation status
 watch(
     () => props.fieldData,
     (newFieldData, oldFieldData) => {

@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\OrgAction;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
@@ -18,12 +19,15 @@ use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 
-class CheckShopifyPortfolios
+class CheckShopifyPortfolios extends OrgAction
 {
     use AsAction;
 
+    public string $jobQueue = 'shopify';
 
     private array $tableData = [];
 
@@ -51,7 +55,11 @@ class CheckShopifyPortfolios
         foreach ($query->orderBy('status')->get() as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);
             if ($portfolio) {
-                $portfolio = CheckShopifyPortfolio::run($portfolio);
+                try {
+                    $portfolio = CheckShopifyPortfolio::run($portfolio);
+                } catch (\Exception $e) {
+                    Sentry::captureException($e);
+                }
 
 
                 if ($command) {
@@ -71,6 +79,19 @@ class CheckShopifyPortfolios
     public function getCommandSignature(): string
     {
         return 'shopify:check_portfolios {parent_type} {parent_slug}';
+    }
+
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): void
+    {
+        $this->initialisation($customerSalesChannel->organisation, $request);
+
+        CheckShopifyPortfolios::dispatch($customerSalesChannel);
+
+        $request->session()->flash('modal', [
+            'status'      => 'success',
+            'title'       => __('Success!'),
+            'description' => __('We already run the sync in background please wait.'),
+        ]);
     }
 
     public function asCommand(Command $command): void

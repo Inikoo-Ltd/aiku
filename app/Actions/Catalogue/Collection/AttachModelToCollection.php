@@ -22,13 +22,25 @@ class AttachModelToCollection extends OrgAction
     {
 
         if ($model instanceof Product) {
-            $collection->products()->attach($model->id);
+            // Avoid attaching if already linked
+            $alreadyAttached = $collection->products()->where('products.id', $model->id)->exists();
+            if (!$alreadyAttached) {
+                $collection->products()->attach($model->id);
+            }
             CollectionHydrateProducts::dispatch($collection);
         } elseif ($model instanceof Collection) {
-            $collection->collections()->attach($model->id);
+            // Avoid attaching if already linked
+            $alreadyAttached = $collection->collections()->where('collections.id', $model->id)->exists();
+            if (!$alreadyAttached) {
+                $collection->collections()->attach($model->id);
+            }
             CollectionHydrateCollections::dispatch($collection);
         } else {
-            $collection->families()->attach($model->id);
+            // Avoid attaching if already linked
+            $alreadyAttached = $collection->families()->where('product_categories.id', $model->id)->exists();
+            if (!$alreadyAttached) {
+                $collection->families()->attach($model->id);
+            }
             CollectionHydrateFamilies::dispatch($collection);
         }
 

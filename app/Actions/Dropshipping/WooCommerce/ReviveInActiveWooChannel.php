@@ -19,9 +19,9 @@ class ReviveInActiveWooChannel
     use asAction;
     use WithActionUpdate;
 
-    public string $commandSignature = 'PingActiveWooChannel:Check';
+    public string $commandSignature = 'woo:revive_in_active_channel';
 
-    public function asCommand()
+    public function asCommand(): void
     {
         $this->handle();
     }
@@ -35,6 +35,7 @@ class ReviveInActiveWooChannel
             ->where('platform_status', false)
             ->get();
 
+        /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
             if ($customerSalesChannel->user) {
                 CheckWooChannel::run($customerSalesChannel->user);

@@ -9,7 +9,8 @@
 
 namespace App\Http\Resources\Catalogue;
 
-use App\Models\Catalogue\Product;
+use App\Actions\Helpers\Images\GetPictureSources;
+use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -40,7 +41,18 @@ class LastOrderedProductsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $product = Product::find($this->id)->first();
+        $imageSources = null;
+        $thumbnailImageSources = null;
+        $media        = Media::find($this->image_id);
+        if ($media) {
+            $image        = $media->getImage()->resize(400, 400);
+            $imageSources = GetPictureSources::run($image);
+
+            $imageThumbnail        = $media->getImage()->resize(64, 64);
+            $thumbnailImageSources = GetPictureSources::run($imageThumbnail);
+        }
+
+
         return [
             'id'                        => $this->id,
             'slug'                      => $this->slug,
@@ -48,10 +60,15 @@ class LastOrderedProductsResource extends JsonResource
             'historic_id'               => $this->current_historic_asset_id,
             'code'                      => $this->code,
             'name'                      => $this->name,
-            'image_thumbnail'           => $product->imageSources(64, 64),
+            'image_thumbnail'           => $thumbnailImageSources,
+            'image'                     => $imageSources,
             'state'                     => $this->state,
             'available_quantity'        => $this->available_quantity,
             'price'                     => $this->price,
+            'submitted_at'              => $this->submitted_at,
+            'customer_contact_name'     => $this->customer_contact_name,
+            'customer_name'             => $this->customer_name,
+            'customer_country_code'     => $this->customer_country_code,
         ];
     }
 }

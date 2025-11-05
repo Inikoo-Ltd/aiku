@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import IrisSidebarMenu from '@/Components/IrisSidebarMenu.vue'
+import IrisSidebar from '@/Components/IrisSidebar.vue'
 import { getStyles } from "@/Composables/styles";
 import { Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -7,7 +7,8 @@ import Image from "@/Components/Image.vue"
 import { inject, watch, ref, onMounted } from 'vue';
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle, faUserCircle } from "@fas";
-import { faBaby, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
+import OverlayBadge from 'primevue/overlaybadge';
+import { faBaby, faShoppingCart as falShoppingCart, faCactus, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faUserCircle as falUserCircle, faBars } from "@fal";
 import {
     faBackpack,
     faTruckLoading,
@@ -33,12 +34,15 @@ import {
 import { faLambda } from "@fad";
 import LuigiSearch from "@/Components/CMS/LuigiSearch.vue"
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
-import { checkScreenType } from '@/Composables/useWindowSize'
 import { computed } from 'vue'
+import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LuigiSearchMobile from '../../LuigiSearchMobile.vue'
+import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
+import { trans } from 'laravel-vue-i18n'
 
 // Add icons to the library
 library.add(
-    faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone, faBars,
+    faTimesCircle, faUser, faCactus, faBaby, falShoppingCart, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone, faBars,
     faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faUserCircle,
     faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock, falUserCircle
 );
@@ -55,13 +59,14 @@ const props = defineProps<{
         }
     },
     menuData: Object
-    productCategories : Array<any>
+    productCategories: Array<any>
     screenType?: 'mobile' | 'tablet' | 'desktop'
 }>()
 
 console.log('-- Header data', props)
 const layout = inject('layout', retinaLayoutStructure)
 const isLoggedIn = inject('isPreviewLoggedIn', false)
+// const isLoggedIn = false
 const sidebarMenu = inject('sidebarMenu', null) // come from layout PreviewLayout
 const computedSelectedSidebarData = computed(() => {
     return sidebarMenu?.value || layout.iris?.sidebar
@@ -130,7 +135,7 @@ watch(computedSelectedSidebarData,
         if (newValue) {
             const navigationBottomData = newValue?.data?.fieldValue?.navigation_bottom;
             const navigationData = newValue?.data?.fieldValue?.navigation;
-            
+
             // console.log('navigationBottomData', navigationBottomData);
             // Process navigation_bottom data
             if (navigationBottomData) {
@@ -141,7 +146,7 @@ watch(computedSelectedSidebarData,
                 customMenusBottom.value = [];
             }
             // console.log('navigationData 111', customMenusBottom.value);
-            
+
             // Process navigation data
             if (navigationData) {
                 const convertedTop = convertToDepartmentStructure(navigationData);
@@ -157,48 +162,74 @@ watch(computedSelectedSidebarData,
     { immediate: true, deep: true } // Add options for immediate and deep watching
 );
 
-const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
-
-onMounted(() => {
-    screenType.value = checkScreenType()
-})
+const screenType = inject('screenType', 'desktop')
+console.log('sss',layout)
 </script>
 
 <template>
     <div class="block md:hidden p-3">
-        <div class="flex justify-between items-center">
-            <!-- Section: Hamburger mobile -->
-            <IrisSidebarMenu
-                :header="headerData"
-                :menu="menuData"
-                :productCategories="productCategories"
-                :custom-menus-bottom="customMenusBottom"
-                :custom-menus-top="customMenusTop"
-                :screenType
-            />
+        <div class="grid grid-cols-3 items-center justify-between">
+            <!-- Section: Hamburger & Search -->
+            <div class="flex items-center gap-x-2 w-fit">
+                <!-- Hamburger Sidebar -->
+                <IrisSidebar :header="headerData" :menu="menuData" :productCategories="productCategories"
+                    :custom-menus-bottom="customMenusBottom" :custom-menus-top="customMenusTop" :screenType="screenType"
+                    :sidebarLogo="computedSelectedSidebarData?.data?.fieldValue?.sidebar_logo"
+                    :sidebar="computedSelectedSidebarData" />
 
-            <!-- Section: Logo  -->
-            <div class="w-full px-4 mb-1">
-                <component :is="true ? Link : 'div'" :href="'/'" class="block w-full h-[65px] rounded">
-                    <Image  v-if="headerData.logo?.image?.source"  :src="headerData.logo?.image?.source" alt="logo" :imageCover="true"
-                        :style="{ objectFit: 'contain' }" />
+                <!-- Search Bar -->
+                <LuigiSearchMobile v-if="layout.iris?.luigisbox_tracker_id" id="luigi_mobile" :style="{
+                    ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
+                }" />
+            </div>
+
+            <!-- Section: Logo -->
+            <div class="xcol-span-2 flex justify-end items-center w-full" :class="!isLoggedIn ?  layout.retina?.type == 'b2b' ? 'justify-end' :'justify-center' : 'justify-end'">
+                <component :is="LinkIris" :href="'/'" class="block h-fit max-h-[50px] w-full max-w-32">
+                    <Image v-if="headerData.logo?.image?.source" :src="headerData.logo?.image?.source" alt="logo"
+                        class="w-full h-auto object-contain" />
                 </component>
             </div>
 
             <!-- Section: Profile -->
-            <div class="flex items-center cursor-pointer">
-                <Link href="/app/profile" v-if="isLoggedIn">
-                    <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon ? headerData?.mobile?.profile?.icon : faUser"
-                    :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
-                </Link>
+            <div class="xcol-span-2 flex items-center justify-end gap-x-2 w-full mr-3">
+                <!-- Not Logged In -->
+                <LinkIris v-if="!isLoggedIn" :href="urlLoginWithRedirect()" class="px-1">
+                    <FontAwesomeIcon icon="fal fa-sign-in" fixed-width aria-hidden="true"
+                        :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
+                </LinkIris>
+
+                <!-- Logged In -->
+                <template v-else>
+                    <OverlayBadge v-if="layout.retina?.type == 'b2b'"  :value="layout?.iris_variables?.cart_count">
+                        <LinkIris href="/app/basket" class="px-1">
+                            <FontAwesomeIcon icon="fal fa-shopping-cart" fixed-width aria-hidden="true"
+                                :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
+                        </LinkIris>
+                    </OverlayBadge>
+
+                    <LinkIris v-else href="/app/dashboard" class="px-1">
+                        <img
+                            src="/art/dashboard.png"
+                            :style="{
+                                ...getStyles(headerData?.mobile?.profile?.container?.properties, screenType),
+                                height: '1.05em',
+                                verticalAlign: 'middle'
+                            }"
+                            :alt="trans('Dashboard icon')"
+                        />
+                    </LinkIris>
+
+                    <LinkIris href="/app/profile" class="px-1">
+                        <FontAwesomeIcon :icon="headerData?.mobile?.profile?.icon || 'fal fa-user-circle'" fixed-width
+                            aria-hidden="true"
+                            :style="getStyles(headerData?.mobile?.profile?.container?.properties, screenType)" />
+                    </LinkIris>
+                </template>
             </div>
         </div>
-
-        <!-- Search Bar -->
-        <div v-if="layout.iris?.luigisbox_tracker_id" class="relative justify-self-center w-full">
-            <LuigiSearch id="luigi_mobile" />
-        </div>
     </div>
+
 </template>
 
 <style scoped></style>

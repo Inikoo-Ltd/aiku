@@ -9,12 +9,6 @@
 namespace App\Console;
 
 use App\Actions\CRM\WebUserPasswordReset\PurgeWebUserPasswordReset;
-use App\Actions\Dropshipping\Ebay\Orders\FetchEbayOrders;
-use App\Actions\Dropshipping\Ebay\Orders\FetchWooOrders;
-use App\Actions\Dropshipping\Shopify\Product\CheckShopifyPortfolios;
-use App\Actions\Dropshipping\WooCommerce\PingActiveWooChannel;
-use App\Actions\Dropshipping\WooCommerce\Product\UpdateInventoryInWooPortfolio;
-use App\Actions\Dropshipping\WooCommerce\ReviveInActiveWooChannel;
 use App\Actions\Fulfilment\ConsolidateRecurringBills;
 use App\Actions\Fulfilment\FulfilmentCustomer\Hydrators\FulfilmentCustomersHydrateStatus;
 use App\Actions\Fulfilment\UpdateCurrentRecurringBillsTemporalAggregates;
@@ -76,9 +70,10 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'SaveDataFeeds',
         );
 
-        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'FetchOrdersInBasket',
-        );
+        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')
+            ->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'FetchOrdersInBasket',
+            );
 
         $schedule->command('fetch:stock_locations aw')->dailyAt('2:30')
             ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
@@ -112,30 +107,41 @@ class Kernel extends ConsoleKernel
             );
 
 
-        $schedule->job(FetchEbayOrders::makeJob())->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('fetch:ebay-orders')->everyFiveMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchEbayOrders',
         );
 
-        $schedule->job(FetchWooOrders::makeJob())->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('fetch:woo-orders')->everyThirtyMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
         );
 
-        $schedule->job(PingActiveWooChannel::makeJob())->everySixHours()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('woo:ping_active_channel')->everySixHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'PingActiveWooChannel',
         );
 
-        $schedule->job(ReviveInActiveWooChannel::makeJob())->daily()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('woo:revive_in_active_channel')->daily()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'ReviveInActiveWooChannel',
         );
 
-        $schedule->job(UpdateInventoryInWooPortfolio::makeJob())->hourly()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('ebay:ping')->daily()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'CheckAllEbayChannels',
+        );
+
+        $schedule->command('woo:update-inventory')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateWooStockInventories',
         );
 
-        /*$schedule->job(CheckShopifyPortfolios::makeJob())->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'CheckShopifyPortfolios',
-        );*/
+        $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'UpdateInventoryInShopifyPortfolio',
+        );
 
+        $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'CheckShopifyPortfolios',
+        );
+
+        $schedule->command('platform-logs:delete')->daily()->sentryMonitor(
+            monitorSlug: 'PlatformDeletePortfolioLogs',
+        );
 
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');
@@ -153,7 +159,6 @@ class Kernel extends ConsoleKernel
         $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'ConsolidateRecurringBills',
         );
-
     }
 
 

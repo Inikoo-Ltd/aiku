@@ -15,11 +15,13 @@ use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Masters\MasterProductResource;
 use App\Models\Masters\MasterAsset;
 use Lorisleiva\Actions\Concerns\AsObject;
+use App\Actions\Traits\HasBucketAttachment;
 
 class GetMasterProductShowcase
 {
     use AsObject;
     use HasBucketImages;
+    use HasBucketAttachment;
 
     public function handle(MasterAsset $masterAsset): array
     {
@@ -41,6 +43,7 @@ class GetMasterProductShowcase
             'properties' => $properties,
             'masterProduct' => MasterProductResource::make($masterAsset)->toArray(request()),
             'images' => $this->getImagesData($masterAsset),
+            /* 'attachment_box'=>  $this->getAttachmentData($masterAsset), */
         ];
     }
 

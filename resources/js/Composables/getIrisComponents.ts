@@ -45,6 +45,8 @@ import CTAVideo1Iris from '@/Components/CMS/Webpage/CtaVideo1/CtaVideo1Iris.vue'
 import Video1Iris from '@/Components/CMS/Webpage/Video/Video1Iris.vue'
 import families1Iris from '@/Components/CMS/Webpage/Families1/FamiliesIris1.vue'
 import BlogIris from '@/Components/CMS/Webpage/Blog/BlogIris.vue'
+import CarouselCtaIris from '@/Components/CMS/Webpage/CarouselCta/CarouselCtaIris.vue'
+import CarouselImageBackgroundIris from '@/Components/CMS/Webpage/CarouselImageBackground/CarouselImageBackgroundIris.vue'
 
 import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
 
@@ -59,6 +61,9 @@ import AnnouncementInformation1 from '@/Components/Websites/Announcement/Templat
 import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo1.vue'
 import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
 import AnnouncementInformation2TransitionText from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue'
+
+import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
+import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
 
 
 const components = (shop_type?: string): Record<string, Component> => {
@@ -109,8 +114,10 @@ const components = (shop_type?: string): Record<string, Component> => {
         'luigi-trends-1' : LuigiTrends1Iris,
         'luigi-last-seen-1' : LuigiLastSeen1Iris,
         'luigi-item-alternatives-1' : LuigiItemAlternatives1Iris,
+        'recommendation-customer-recently-bought-1': RecommendationCustomerRecentlyBought1Iris,
 
 
+        "cta-image-background" : CtaImageBackroundIris,
         'banner': WowsbarBannerIris,
         'bento-grid-1': BentoGridIris,
         'bricks': GalleryIris,
@@ -137,7 +144,9 @@ const components = (shop_type?: string): Record<string, Component> => {
         'video-1'  : Video1Iris,
         "user-subscribe": UserSubscribeIris,
         "cta4" : Cta4,
-        "blog" : BlogIris
+        "blog" : BlogIris,
+        'carousel-cta' : CarouselCtaIris,
+        'carousel-image-background' : CarouselImageBackgroundIris,
     }
 }
 

@@ -70,7 +70,19 @@ class IndexRetinaTopUp extends RetinaAction
                 'title'       => __('Top ups'),
                 'pageHead'    => [
                     'title' => __('Top ups'),
-                    'icon'  => 'fal fa-shopping-basket'
+                    'icon'  => 'fal fa-shopping-basket',
+                    'actions'      => [
+                        [
+                            'type'  => 'button',
+                            'style' => 'primary',
+                            'label' => __('Download PDF'),
+                            'target' => '_blank',
+                            'route' => [
+                                'name'       => 'retina.top_up.top_up_pdf.export',
+                                'parameters' => []
+                            ],
+                        ]
+                    ]
                 ],
 
                 'data' => RetinaTopUpResources::collection($topups)

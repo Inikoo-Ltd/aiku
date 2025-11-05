@@ -9,6 +9,7 @@
 namespace App\Actions\Inventory\OrgStock\UI;
 
 use App\Actions\Goods\TradeUnit\UI\GetTradeUnitShowcase;
+use App\Http\Resources\Inventory\LocationOrgStocksResource;
 use App\Http\Resources\Inventory\OrgStockResource;
 use App\Models\Goods\TradeUnit;
 use App\Models\Inventory\LocationOrgStock;
@@ -20,26 +21,27 @@ class GetOrgStockShowcase
 {
     use AsObject;
 
-    public function handle(Warehouse $warehouse, OrgStock $orgStock)
+    public function handle(Warehouse $warehouse, OrgStock $orgStock): \Illuminate\Support\Collection
     {
         $orgStock->load('locationOrgStocks');
         $dataTradeUnits = [];
         if ($orgStock->tradeUnits) {
             $dataTradeUnits = $this->getDataTradeUnit($orgStock->tradeUnits);
         }
+
         return collect(
             [
-                'trade_units' => $dataTradeUnits,
-                'stock_data' => $this->stockData($warehouse, $orgStock),
-                'contactCard'              => OrgStockResource::make($orgStock)->getArray(),
-                'locationRoute'            => [
+                'trade_units'               => $dataTradeUnits,
+                'stock_data'                => $this->orgStockData($orgStock),
+                'contactCard'               => OrgStockResource::make($orgStock)->getArray(),
+                'locationRoute'             => [
                     'name'       => 'grp.org.warehouses.show.infrastructure.locations.index',
                     'parameters' => [
                         'organisation' => $warehouse->organisation->slug,
                         'warehouse'    => $warehouse->slug
                     ]
                 ],
-                'associateLocationRoute'  => [
+                'associateLocationRoute'    => [
                     'method'     => 'post',
                     'name'       => 'grp.models.org_stock.location.store',
                     'parameters' => [
@@ -47,123 +49,93 @@ class GetOrgStockShowcase
                     ]
                 ],
                 'disassociateLocationRoute' => [
-                    'method'    => 'delete',
-                    'name'      => 'grp.models.location_org_stock.delete',
+                    'method' => 'delete',
+                    'name'   => 'grp.models.location_org_stock.delete',
                 ],
-                'auditRoute' => [
-                    'method'    => 'patch',
-                    'name'      => 'grp.models.location_org_stock.audit',
+                'auditRoute'                => [
+                    'method' => 'patch',
+                    'name'   => 'grp.models.location_org_stock.audit',
                 ],
-                'moveLocationRoute' => [
-                    'method'    => 'patch',
-                    'name'      => 'grp.models.location_org_stock.move',
+                'moveLocationRoute'         => [
+                    'method' => 'patch',
+                    'name'   => 'grp.models.location_org_stock.move',
                 ],
-                'stocks_management' => [
-                    'routes'    => [
-                        'fetch_locations'               => [
-                            'name'  => 'xxxxxxxxxxxxxxxxxx',
+                'stocks_management'         => [
+                    'routes'         => [
+                        'fetch_locations'         => [
+                            'name'       => 'xxxxxxxxxxxxxxxxxx',
                             'parameters' => []
                         ],  // TODO: Artha, fetch locations list in the warehouse
-                        'submit_audit_stocks'           => [
-                            'name'  => 'xxxxxxxxxxxxxxxxxx',
+                        'submit_audit_stocks'     => [
+                            'name'       => 'xxxxxxxxxxxxxxxxxx',
                             'parameters' => []
                         ],  // TODO: Artha, submit audit stocks
-                        'update_stocks_locations'      => [
-                            'name'  => 'xxxxxxxxxxxxxxxxxx',
+                        'update_stocks_locations' => [
+                            'name'       => 'xxxxxxxxxxxxxxxxxx',
                             'parameters' => []
                         ],  // TODO: Artha, attach and detach the stocks to locations
                     ],
-                    'summary' => [
-                        'current_on_hand_stock' => [
-                            'icon_state'    => [
-                                'icon'          => 'fal fa-inventory',
-                                'tooltip'       => __("Stock in locations"),
+                    'summary'        => [
+                        'quantity_in_locations'        => [
+                            'icon_state' => [
+                                'icon'    => 'fal fa-inventory',
+                                'tooltip' => __("Stock in locations"),
                             ],
-                            'value'         => 2150  // TODO: Artha
+                            'value'      => $orgStock->quantity_in_locations,
                         ],
-                        'part_current_stock_ordered_paid' => [
-                            'icon_state'    => [
-                                'icon'          => 'fas fa-shopping-cart',
-                                'tooltip'       => __("Reserved paid parts in process by customer services"),
+                        'quantity_in_submitted_orders' => [
+                            'icon_state' => [
+                                'icon'    => 'fas fa-shopping-cart',
+                                'tooltip' => __("Reserved paid parts in process by customer services"),
                             ],
-                            'value'         => 2150  // TODO: Artha
+                            'value'      => $orgStock->quantity_in_submitted_orders
                         ],
-                        'current_stock_in_process' => [
-                            'icon_state'    => [
-                                'icon'          => 'fas fa-shopping-basket',
-                                'tooltip'       => __("Parts been picked"),
+                        'quantity_to_be_picked'        => [
+                            'icon_state' => [
+                                'icon'    => 'fas fa-shopping-basket',
+                                'tooltip' => __("Parts been picked"),
                             ],
-                            'value'         => 2150  // TODO: Artha
+                            'value'      => $orgStock->quantity_to_be_picked
                         ],
-                        'current_stock_available' => [
-                            'icon_state'    => [
-                                'icon'          => 'fal fa-dot-circle',
-                                'class'         => 'animate-pulse text-green-500',
-                                'tooltip'       => __("Stock available for sale"),
+                        'quantity_available'           => [
+                            'icon_state' => [
+                                'icon'    => 'fal fa-dot-circle',
+                                'class'   => 'animate-pulse text-green-500',
+                                'tooltip' => __("Stock available for sale"),
                             ],
-                            'value'         => 2150  // TODO: Artha
+                            'value'      => $orgStock->quantity_available
                         ],
                     ],
-                    'locations'     => [
+                    'locations'      => LocationOrgStocksResource::collection($orgStock->locationOrgStocks),
 
-                    ],
-                    'part_locations' => [  // TODO: Artha all of this
-                        [
-                            'id' => 1,
-                            'name' => 'E1',
-                            'last_audit' => now(),
-                            'stock' => 45,
-                            'isAudited' => true
-                        ],
-                        [
-                            'id' => 44,
-                            'name' => 'GV-88',
-                            'last_audit' => now(),
-                            'stock' => 7,
-                            'isAudited' => true
-                        ],
-                        [
-                            'id' => 2,
-                            'name' => 'Loc 30-KBN',
-                            'last_audit' => now(),
-                            'stock' => 30,
-                            'isAudited' => false
-                        ],
-                        [
-                            'id' => 5,
-                            'name' => 'Xyz 564',
-                            'last_audit' => now(),
-                            'stock' => 12,
-                            'isAudited' => false
-                        ],
-                    ]
+
                 ]
             ]
         );
     }
 
-    public function stockData(Warehouse $warehouse, OrgStock $orgStock): array
+    public function orgStockData(OrgStock $orgStock): array
     {
         $locationData = $orgStock->locationOrgStocks->map(function (LocationOrgStock $locationOrgStock) {
             return [
-                'id' => $locationOrgStock->id,
-                'name' => $locationOrgStock->location->code,
+                'id'        => $locationOrgStock->id,
+                'name'      => $locationOrgStock->location->code,
                 'lastAudit' => $locationOrgStock->audited_at,
-                'stock' => $locationOrgStock->quantity,
+                'stock'     => $locationOrgStock->quantity,
                 'isAudited' => !is_null($locationOrgStock->audited_at)
             ];
         })->toArray();
 
         return [
             'stock_in_locations' => $orgStock->quantity_in_locations,
-            'stock_in_process' => $orgStock->stats->number_stock_deliveries_state_in_process,
-            'stock_in_picked' => $orgStock->stats->number_stock_deliveries_state_ready_to_ship,
-            'stock_available' => $orgStock->quantity_in_locations -
+            'stock_in_process'   => $orgStock->stats->number_stock_deliveries_state_in_process,
+            'stock_in_picked'    => $orgStock->stats->number_stock_deliveries_state_ready_to_ship,
+            'stock_available'    => $orgStock->quantity_in_locations -
                 ($orgStock->stats->number_stock_deliveries_state_in_process +
                     $orgStock->stats->number_stock_deliveries_state_ready_to_ship),
-            'stock_value' => $orgStock->value_in_locations,
-            'current_cost' => $orgStock->unit_cost,
-            'locations' => $locationData
+            'stock_value'        => $orgStock->value_in_locations,
+            'current_cost'       => $orgStock->unit_cost,
+            'locations'          => $locationData
         ];
     }
 

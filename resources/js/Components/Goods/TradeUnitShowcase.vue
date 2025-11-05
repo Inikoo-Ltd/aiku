@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { notify } from "@kyvg/vue3-notification"
 import { ref, computed, watch } from "vue"
 import {
 	faTrash as falTrash,
@@ -14,14 +13,16 @@ import {
 	faChevronUp,
 	faBox,
 	faVideo,
+	faFileCheck, 
+	faFilePdf, 
+	faFileWord
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
-import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
-import { router } from "@inertiajs/vue3"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { faImage } from "@far"
 import ProductSummary from "@/Components/Product/ProductSummary.vue"
+import AttachmentCard from "@/Components/AttachmentCard.vue"
 
 library.add(
 	faCircle,
@@ -55,8 +56,10 @@ const props = defineProps<{
 			title: string
 			save_route: routeType
 		}
+		attachment_box?: { public?: string, private: string }
 	}
 }>()
+
 
 const imagesSetup = ref(
 	props.data.images
@@ -76,18 +79,18 @@ const images = computed(() => props.data?.tradeUnit?.data?.images ?? [])
 
 
 const validImages = computed(() =>
-  imagesSetup.value
-    .filter(item => item.images) // only keep if images exist
-    .flatMap(item => {
-      const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
-      return images.map(img => ({
-        source: img,
-        thumbnail: img
-      }))
-    })
+	imagesSetup.value
+		.filter(item => item.images) // only keep if images exist
+		.flatMap(item => {
+			const images = Array.isArray(item.images) ? item.images : [item.images] // normalize to array
+			return images.map(img => ({
+				source: img,
+				thumbnail: img
+			}))
+		})
 )
 
-
+console.log(props.data)
 
 </script>
 
@@ -112,6 +115,10 @@ const validImages = computed(() =>
 			</div>
 		</div>
 		<!-- tradeUnit Summary -->
-		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr" :type="'trade_unit'" :video="videoSetup.url" />
+		<ProductSummary :data="data.tradeUnit" :gpsr="data.gpsr"  :properties="data.properties" :type="'trade_unit'" :video="videoSetup.url" />
+
+		<div>
+			<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
+		</div>
 	</div>
 </template>

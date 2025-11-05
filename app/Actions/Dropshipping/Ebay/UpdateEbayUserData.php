@@ -13,7 +13,9 @@ use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
+use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\EbayUser;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -25,6 +27,8 @@ class UpdateEbayUserData extends OrgAction
     use WithActionUpdate;
 
     public $queue = 'long-running';
+
+    public $commandSignature = 'update:ebay {customerSalesChannel}';
 
     public function handle(EbayUser $ebayUser): EbayUser
     {
@@ -69,5 +73,12 @@ class UpdateEbayUserData extends OrgAction
         $ebayUser->refresh();
 
         return $ebayUser;
+    }
+
+    public function asCommand(Command $command)
+    {
+        $customerSalesChannel = CustomerSalesChannel::where('slug', $command->argument('customerSalesChannel'))->first();
+
+        $this->handle($customerSalesChannel->user);
     }
 }

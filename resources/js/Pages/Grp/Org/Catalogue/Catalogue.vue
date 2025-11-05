@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { Head } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { faCubes, faSeedling } from "@fal"
+import { faCubes, faFolderDownload, faSeedling } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle, faExclamationTriangle } from "@fas"
 
@@ -24,7 +24,7 @@ import { routeType } from "@/types/route"
 import { Image as ImageProxy } from "@/types/Image"
 import StatsBox from "@/Components/Stats/StatsBox.vue"
 
-library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt, faExclamationTriangle)
+library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faFireAlt, faExclamationTriangle, faFolderDownload)
 
 const props = defineProps<{
     pageHead: PageHeadingTS
@@ -130,6 +130,7 @@ const isLoadingMeta = ref<string | null>(null)
             <StatsBox
                 v-for="(stat, idxStat) in stats"
                 :stat="stat"
+                :key="idxStat"
             >
             </StatsBox>
         </dl>

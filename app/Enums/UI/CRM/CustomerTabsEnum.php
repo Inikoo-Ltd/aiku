@@ -20,7 +20,6 @@ enum CustomerTabsEnum: string
     case HISTORY             = 'history';
     case TIMELINE            = 'timeline';
     case ATTACHMENTS         = 'attachments';
-    // case DISPATCHED_EMAILS   = 'dispatched_emails';
     case CREDIT_TRANSACTIONS = 'credit_transactions';
     case PAYMENTS            = 'payments';
     case FAVOURITES          = 'favourites';

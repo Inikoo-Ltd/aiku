@@ -12,21 +12,20 @@ use App\Actions\CRM\Favourite\StoreFavourite;
 use App\Actions\RetinaAction;
 use App\Models\Catalogue\Product;
 use App\Models\CRM\Customer;
-use App\Models\CRM\Favourite;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreRetinaFavourite extends RetinaAction
 {
-    public function handle(Customer $customer, Product $product): Favourite
+    public function handle(Customer $customer, Product $product): void
     {
-        return StoreFavourite::make()->action($customer, $product, []);
+        StoreFavourite::make()->action($customer, $product, []);
     }
 
-    public function asController(Product $product, ActionRequest $request): Favourite
+    public function asController(Product $product, ActionRequest $request): void
     {
         $this->initialisation($request);
 
-        return $this->handle($this->customer, $product);
+        $this->handle($this->customer, $product);
     }
 
 }

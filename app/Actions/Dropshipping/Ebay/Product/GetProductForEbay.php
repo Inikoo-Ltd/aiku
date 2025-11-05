@@ -29,7 +29,13 @@ class GetProductForEbay
         return [
             'id' => Arr::get($product, 'sku'),
             'name' => Arr::get($product, 'product.title'),
-            'images' => Arr::get($product, 'product.imageUrls.0')
+            'slug' => Arr::get($product, 'sku'),
+            'code' => Arr::get($product, 'sku'),
+            'images' => [
+                [
+                    'src' => Arr::get($product, 'product.imageUrls.0')
+                ]
+            ]
         ];
     }
 
@@ -40,7 +46,7 @@ class GetProductForEbay
             $products = [$product];
         } else {
             $rawProducts = $ebayUser->getProducts();
-            $products = Arr::get($rawProducts, 'inventoryItems');
+            $products = Arr::get($rawProducts, 'inventoryItems', []);
         }
 
         return array_map([$this, 'transformToStandardFormat'], $products);

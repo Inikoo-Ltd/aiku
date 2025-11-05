@@ -125,10 +125,15 @@ class IndexProspects extends OrgAction
                     'label'    => __('State'),
                     'elements' => array_merge_recursive(
                         ProspectStateEnum::labels(),
-                        ProspectStateEnum::count($parent)
+                        ProspectStateEnum::count($parent, $scope)
                     ),
-                    'engine'   => function ($query, $elements) {
+                    'engine'   => function ($query, $elements) use ($scope) {
                         $query->whereIn('prospects.state', $elements);
+                        if ($scope == 'opt_in') {
+                            $query->where('prospects.is_opt_in', true);
+                        } elseif ($scope == 'opt_out') {
+                            $query->where('prospects.is_opt_in', false);
+                        }
                     }
                 ]
             ];
@@ -182,6 +187,10 @@ class IndexProspects extends OrgAction
             $queryBuilder->where('prospects.state', ProspectStateEnum::FAIL);
         } elseif ($scope == 'success') {
             $queryBuilder->where('prospects.state', ProspectStateEnum::SUCCESS);
+        } elseif ($scope == 'opt_in') {
+            $queryBuilder->where('prospects.is_opt_in', true);
+        } elseif ($scope == 'opt_out') {
+            $queryBuilder->where('prospects.is_opt_in', false);
         }
 
         return $queryBuilder
@@ -253,6 +262,10 @@ class IndexProspects extends OrgAction
 
     public function htmlResponse(LengthAwarePaginator $prospects, ActionRequest $request): Response
     {
+
+        $shop = $request->route()->parameters()['shop'];
+        $subNavigation = $this->getSubNavigation($shop, $request);
+
         $navigation = ProspectsTabsEnum::navigation();
         if (!($this->parent instanceof Shop)) {
             unset($navigation[ProspectsTabsEnum::CONTACTED->value]);
@@ -277,7 +290,7 @@ class IndexProspects extends OrgAction
                 ],
             ];
         }
-        $subNavigation = $this->getSubNavigation($request);
+
 
 
         if ($this->parent instanceof Group) {
@@ -298,6 +311,15 @@ class IndexProspects extends OrgAction
             ProspectsTabsEnum::PROSPECTS->value => $this->tab == ProspectsTabsEnum::PROSPECTS->value ?
                 fn () => ProspectsResource::collection($prospects)
                 : Inertia::lazy(fn () => ProspectsResource::collection($prospects)),
+
+            ProspectsTabsEnum::OPT_IN->value => $this->tab == ProspectsTabsEnum::OPT_IN->value ?
+                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_IN->value, scope: 'opt_in'))
+                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_IN->value, scope: 'opt_in'))),
+
+            ProspectsTabsEnum::OPT_OUT->value => $this->tab == ProspectsTabsEnum::OPT_OUT->value ?
+                fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_OUT->value, scope: 'opt_out'))
+                : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_OUT->value, scope: 'opt_out'))),
+
             ProspectsTabsEnum::CONTACTED->value => $this->tab == ProspectsTabsEnum::CONTACTED->value ?
                 fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
                 : Inertia::lazy(fn () => ProspectsResource::collection(IndexProspects::run(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))),
@@ -322,10 +344,10 @@ class IndexProspects extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters(),
                 ),
-                'title'              => __('prospects'),
+                'title'              => __('Prospects'),
                 'pageHead'           => array_filter([
                     'icon'          => ['fal', 'fa-user-plus'],
-                    'title'         => __('prospects'),
+                    'title'         => __('Prospects'),
                     'actions'       => [
                         $this->canEdit ? [
                             'type'    => 'buttonGroup',
@@ -335,7 +357,7 @@ class IndexProspects extends OrgAction
                                     [
                                         'style' => 'primary',
                                         'icon'  => ['fal', 'fa-upload'],
-                                        'label' => 'upload',
+                                        'label' => 'Upload',
                                         'route' => [
                                             'name'       => 'grp.org.models.shop.prospects.upload',
                                             'parameters' => $this->parent->id
@@ -405,6 +427,8 @@ class IndexProspects extends OrgAction
             ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::CONTACTED->value, scope: 'contacted'))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::FAILED->value, scope: 'fail'))
             ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::SUCCESS->value, scope: 'success'))
+            ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_IN->value, scope: 'opt_in'))
+            ->table($this->tableStructure(parent: $this->parent, prefix: ProspectsTabsEnum::OPT_OUT->value, scope: 'opt_out'))
             ->table(IndexHistory::make()->tableStructure(prefix: ProspectsTabsEnum::HISTORY->value));
     }
 

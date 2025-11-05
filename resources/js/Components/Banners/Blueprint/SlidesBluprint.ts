@@ -69,6 +69,9 @@ export default {
                     value: ["layout", "centralStage", "style", "fontFamily"],
                     options: [
                         "Arial",
+                        "Avenir",
+                        "Bunya",
+                        "Cardinal",
                         "Comfortaa",
                         "Lobster",
                         "Laila",
@@ -76,6 +79,7 @@ export default {
                         "Playfair",
                         "Raleway",
                         "Roman Melikhov",
+                        "Shoemaker",
                         "Source Sans Pro",
                         "Quicksand",
                         "Times New Roman",

@@ -3,7 +3,7 @@ import { ref } from "vue";
 import Popover from "primevue/popover";
 import { library, icon } from "@fortawesome/fontawesome-svg-core";
 import { faGalaxy, faTimesCircle } from "@fas";
-import { faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faBars } from "@fal";
+import { faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse, faTruck, faTag, faPhone, faBars, faHeart } from "@fal";
 import {
   faBackpack,
   faTruckLoading,
@@ -24,7 +24,8 @@ import {
   faGlobe,
   faPercent,
   faPoundSign,
-  faClock
+  faClock,
+  faMedal,
 } from "@far";
 import { faLambda } from "@fad";
 
@@ -32,7 +33,7 @@ import { faLambda } from "@fad";
 library.add(
   faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,
   faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faBars,
-  faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock
+  faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock, faHeart
 );
 
 const props = withDefaults(
@@ -53,7 +54,7 @@ const _popover = ref();
 const allIcons = props.listType === "extend"
   ? [...[faTimesCircle, faUser, faCactus, faBaby, faObjectGroup, faGalaxy, faLambda, faBackpack, faHouse, faTruck, faTag, faPhone,
     faTruckLoading, faTruckMoving, faTruckContainer, faUserRegular, faWarehouse, faWarehouseAlt, faShippingFast, faInventory, faBars,
-    faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock], ...props.iconList]
+    faDollyFlatbedAlt, faBoxes, faShoppingCart, faBadgePercent, faChevronRight, faCaretRight, faPhoneAlt, faGlobe, faPercent, faPoundSign, faClock, faHeart], ...props.iconList]
   : props.iconList;
 
 const emits = defineEmits<{
@@ -118,11 +119,11 @@ defineExpose({
 
   <Popover ref="_popover">
     <div class="w-full max-w-[25rem]">
-      <div class="grid grid-cols-4 gap-4 h-32 overflow-y-auto">
+      <div class="grid grid-cols-4 gap-2 h-44 overflow-y-auto">
         <div
           v-for="(iconData, index) in allIcons"
           :key="index"
-          class="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-100 cursor-pointer transition duration-300"
+          class="flex flex-col items-center justify-center p-2 rounded-lg hover:bg-gray-200 cursor-pointer"
           @click="() => onChangeIcon(iconData)"
         >
           <span v-html="renderIcon(iconData)" class="text-gray-700 text-lg"></span>

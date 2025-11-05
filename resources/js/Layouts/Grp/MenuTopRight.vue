@@ -103,7 +103,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                         <template #button>
                             <div tabindex="-1" class="relative text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500">
                                 <FontAwesomeIcon aria-hidden="true" icon="fa-regular fa-bell" size="lg" />
-                                <FontAwesomeIcon v-if="layout?.user?.notifications?.some(notif => !notif.read)" icon='fas fa-circle' class='animate-pulse text-blue-500 absolute top-[1px] -right-0.5 text-[6px]' fixed-width aria-hidden='true' />
+                                <FontAwesomeIcon v-if="layout?.notifications?.some(notif => !notif.read)" icon='fas fa-circle' class='animate-pulse text-blue-500 absolute top-[1px] -right-0.5 text-[6px]' fixed-width aria-hidden='true' />
                             </div>
                         </template>
                         <template #content="{ close }">
@@ -118,7 +118,7 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
                 <div @click="layout.stackedComponents.push({ component: Profile})"
                     class="flex max-w-xs overflow-hidden items-center rounded-full bg-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer">
                     <span class="sr-only">{{ trans("Open user menu") }}</span>
-                    <Image class="h-8 w-8 rounded-full" :src="layout.user.avatar_thumbnail" alt="" />
+                    <Image class="h-8 w-8 rounded-full" :src="layout.avatar_thumbnail" alt="" />
                 </div>
             </div>
         </div>

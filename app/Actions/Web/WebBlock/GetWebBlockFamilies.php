@@ -10,6 +10,7 @@ namespace App\Actions\Web\WebBlock;
 
 use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
+use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Enums\Web\Webpage\WebpageSubTypeEnum;
 use App\Http\Resources\Web\WebBlockCollectionResource;
 use App\Http\Resources\Web\WebBlockFamiliesResource;
@@ -31,12 +32,15 @@ class GetWebBlockFamilies
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', '=', 'ProductCategory');
                 })
-                ->select(['product_categories.code','product_categories.web_images', 'name', 'image_id', 'webpages.url', 'title'])
+                ->select(['product_categories.code', 'product_categories.web_images', 'name', 'image_id', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT ? 'product_categories.department_id' : 'product_categories.sub_department_id', $webpage->model_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
                 ->whereIn('product_categories.state', [ProductCategoryStateEnum::ACTIVE, ProductCategoryStateEnum::DISCONTINUING])
                 ->where('show_in_website', true)
+                ->whereNotNull('webpages.id')
+                ->where('webpages.state', WebpageStateEnum::LIVE->value)
+
                 ->whereNull('product_categories.deleted_at')
                 ->get();
         } elseif ($webpage->model instanceof Collection) {
@@ -49,7 +53,7 @@ class GetWebBlockFamilies
                     $join->on('product_categories.id', '=', 'webpages.model_id')
                         ->where('webpages.model_type', '=', 'ProductCategory');
                 })
-                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id',  'product_categories.web_images' , 'webpages.url','webpages.url', 'title'])
+                ->select(['product_categories.code', 'product_categories.name', 'product_categories.image_id', 'product_categories.web_images', 'webpages.url', 'webpages.url', 'webpages.canonical_url', 'title'])
                 ->selectRaw('\''.request()->path().'\' as parent_url')
                 ->where('collection_has_models.collection_id', $webpage->model_id)
                 ->where('product_categories.type', ProductCategoryTypeEnum::FAMILY)
@@ -63,16 +67,16 @@ class GetWebBlockFamilies
 
         $productRoute = [
             'workshop' => [
-                'name' => 'grp.json.product_category.products.index',
+                'name'       => 'grp.json.product_category.products.index',
                 'parameters' => [$webpage->model->slug],
             ],
-            'iris' => [
-                'name' => 'iris.json.product_category.products.index',
+            'iris'     => [
+                'name'       => 'iris.json.product_category.products.index',
                 'parameters' => [$webpage->model->slug],
             ],
         ];
 
-        $permissions =  [];
+        $permissions = [];
 
         if ($webpage->sub_type == WebpageSubTypeEnum::DEPARTMENT) {
             $permissions = ['hidden'];

@@ -11,20 +11,29 @@ namespace App\Actions\Retina\CRM;
 use App\Actions\CRM\Favourite\UnFavourite;
 use App\Actions\RetinaAction;
 use App\Models\CRM\Favourite;
+use App\Models\CRM\Customer;
 use Lorisleiva\Actions\ActionRequest;
+use App\Actions\Traits\WithActionUpdate;
+use App\Models\Catalogue\Product;
 
 class DeleteRetinaFavourite extends RetinaAction
 {
-    public function handle(Favourite $favourite): void
+    use WithActionUpdate;
+
+    public function handle(Customer $customer, Product $product): void
     {
-        UnFavourite::make()->action($favourite, []);
+        /** @var Favourite $favourite */
+        $favourite = $customer->favourites()->where('product_id', $product->id)->first();
+        if ($favourite) {
+            UnFavourite::make()->action($favourite, []);
+        }
     }
 
-    public function asController(Favourite $favourite, ActionRequest $request): void
+    public function asController(Product $product, ActionRequest $request): void
     {
         $this->initialisation($request);
 
-        $this->handle($favourite);
+        $this->handle($this->customer, $product);
     }
 
 }

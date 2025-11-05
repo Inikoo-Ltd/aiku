@@ -38,15 +38,13 @@ class UpdateMasterAsset extends OrgAction
     {
 
         if (Arr::has($modelData, 'master_family_id')) {
-            $masterDepartmentID = null;
+
             $masterFamily = null;
             if ($modelData['master_family_id']) {
                 $masterFamily = MasterProductCategory::where('id', $modelData['master_family_id'])->first();
             }
 
-            if ($masterFamily) {
-                $masterDepartmentID = $masterFamily->master_department_id;
-            }
+            $masterDepartmentID = $masterFamily?->master_department_id;
             data_set($modelData, 'master_department_id', $masterDepartmentID);
         }
         if (Arr::has($modelData, 'name_i8n')) {
@@ -108,7 +106,7 @@ class UpdateMasterAsset extends OrgAction
                     table: 'master_assets',
                     extraConditions: [
                         ['column' => 'group_id', 'value' => $this->group->id],
-                        ['column' => 'deleted_at', 'operator' => 'notNull'],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                         ['column' => 'id', 'value' => $this->masterAsset->id, 'operator' => '!=']
                     ]
                 ),
@@ -119,6 +117,7 @@ class UpdateMasterAsset extends OrgAction
             'description_title' => ['sometimes', 'nullable', 'max:255'],
             'description_extra' => ['sometimes', 'nullable', 'max:65500'],
             'rrp'              => ['sometimes', 'required', 'numeric'],
+            'unit'             => ['sometimes', 'string'],
             'data'             => ['sometimes', 'array'],
             'status'           => ['sometimes', 'required', 'boolean'],
             'master_family_id' => [

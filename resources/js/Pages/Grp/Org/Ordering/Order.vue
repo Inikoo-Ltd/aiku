@@ -63,7 +63,8 @@ import {
     faPaperclip,
     faMapMarkerAlt,
     faPlus,
-    faEllipsisH
+    faEllipsisH,
+    faCopy,faParachuteBox
 } from "@fal"
 import { Currency } from "@/types/LayoutRules"
 import TableInvoices from "@/Components/Tables/Grp/Org/Accounting/TableInvoices.vue"
@@ -80,8 +81,9 @@ import Icon from "@/Components/Icon.vue"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import { ToggleSwitch } from "primevue"
+import AddressEditModal from "@/Components/Utils/AddressEditModal.vue"
 
-library.add(fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus)
+library.add(faParachuteBox,fadExclamationTriangle, faExclamationTriangle, faDollarSign, faIdCardAlt, faShippingFast, faIdCard, faEnvelope, faPhone, faWeight, faStickyNote, faExclamation, faTruck, faFilePdf, faPaperclip, faSpinnerThird, faMapMarkerAlt, faUndo, faStar, faShieldAlt, faPlus, faCopy)
 
 interface UploadSection {
     title: {
@@ -101,7 +103,7 @@ const props = defineProps<{
     tabs: TSTabs
 
     products?: TableTS
-
+    shop_type: 'b2b' | 'dropshipping'
     data?: {
         data: {
             state: string
@@ -222,6 +224,7 @@ const props = defineProps<{
     attachmentRoutes?: {}
     address_update_route?: routeType
     addresses?: {}
+    contact_address?: Address | null
     upload_excel: UploadSection
     proforma_invoice: {
         check_list: {
@@ -372,15 +375,6 @@ const openModal = (action: any) => {
 }
 
 function onClickPayInvoice() {
-    // const pay = props.box_stats.products.payment.pay_amount
-    // const state = props.data.data?.state
-
-    // if (pay > 0 && state === "creating") {
-    //     isOpenModalPayment.value = false
-    // } else {
-    //     isOpenModalPayment.value = true
-    //     fetchPaymentMethod()
-    // }
 
     isOpenModalPayment.value = true
     fetchPaymentMethod()
@@ -389,15 +383,7 @@ function onClickPayInvoice() {
 const isOpenModalRefund = ref(false)
 
 function onClickPayRefund() {
-    // const pay = props.box_stats.products.payment.pay_amount
-    // const state = props.data.data?.state
 
-    // if (pay < 0 && state === "creating") {
-    //     isOpenModalRefund.value = false
-    // } else {
-    //     isOpenModalRefund.value = true
-    //     fetchPaymentMethod()
-    // }
 
     isOpenModalRefund.value = true
     fetchPaymentMethod()
@@ -409,7 +395,7 @@ const last_payment = computed(() => {
     return Array.isArray(props.box_stats.payments) && props.box_stats.payments.length > 0 ? props.box_stats.payments[props.box_stats.payments.length - 1] : null
 })
 
-// console.log("props.box_stats.payments", router)
+
 const generateRouteDeliveryNote = (slug: string) => {
     if (!slug) return ''
 
@@ -588,7 +574,7 @@ const compSelectedDeck = computed(() => {
 })
 // const onClickProforma = async () => {
 //     const aaa = ;
-    
+
 //     // Section: Submit
 //     const url = route(props.proforma_invoice.route_download_pdf.name, {...props.proforma_invoice.route_download_pdf.parameters, ...aaa})
 //     console.log('url', url)
@@ -616,6 +602,24 @@ const compSelectedDeck = computed(() => {
 const isShowProforma = computed(() => {
     return props.proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)
 })
+
+// Function: Copy to clipboard
+const copyToClipboard = async (text: string, label: string) => {
+    try {
+        await navigator.clipboard.writeText(text)
+        notify({
+            title: trans("Copied!"),
+            text: trans(`:label copied to clipboard`, { label: label }),
+            type: "success"
+        })
+    } catch (error) {
+        notify({
+            title: trans("Failed"),
+            text: trans("Failed to copy to clipboard"),
+            type: "error"
+        })
+    }
+}
 </script>
 
 <template>
@@ -628,7 +632,7 @@ const isShowProforma = computed(() => {
     </ConfirmDialog>
 
     <PageHeading :data="pageHead">
-        <template #button-add-products="{ action }">
+        <template #button-add-product="{ action }">
             <div class="relative">
                 <Button :style="action.style" :label="action.label" :icon="action.icon" @click="() => openModal(action)"
                     :key="`ActionButton${action.label}${action.style}`" :tooltip="action.tooltip" />
@@ -653,24 +657,25 @@ const isShowProforma = computed(() => {
         </template>
 
 
-        <template #otherBefore v-if="!props.readonly && layout?.app?.environment === 'local'">
-            <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents"
-                class="flex gap-2">
-                <Button :style="'secondary'" :icon="faPlus" :label="'Product'" tooltip="put a new Product"
-                    @click="(e) => { if (_refComponents) _refComponents.openModal() }" />
-                <Button v-if="
+       <!-- <template #otherBefore v-if="!props.readonly && layout?.app?.environment === 'local'">
+           <div v-if="data?.data?.state != 'creating' && currentTab === 'transactions' && _refComponents"
+               class="flex gap-2">
+               <Button :style="'secondary'" :icon="faPlus" :label="trans('Product')" :tooltip="trans('Add a product')"
+                   @click="(e) => { if (_refComponents) _refComponents.openModal() }" />
+               <Button v-if="
                     Object.keys(_refComponents.createNewQty).length > 0 ||
                     _refComponents.rowsArray().some(item => typeof item.id === 'string' && item.id.startsWith('new'))
                 " type="save" label="Save all changes" :loading="_refComponents.loadingsaveModify"
-                    @click="() => _refComponents.onSave()" />
+                   @click="() => _refComponents.onSave()" />
             </div>
-        </template>
+        </template> -->
 
         <template #other>
 
 
             <div v-if="!props.readonly || isShowProforma" class="flex">
-                <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach" icon="upload" />
+                <Button v-if="currentTab === 'attachments'" @click="() => isModalUploadOpen = true" label="Attach"
+                    icon="upload" />
 
                 <div>
                     <!-- Button: icon ellipsis -->
@@ -697,7 +702,8 @@ const isShowProforma = computed(() => {
                             <!-- Button: Add Notes -->
                             <Popover v-if="!notes?.note_list?.some(item => !!(item?.note?.trim()))">
                                 <template #button="{ open }">
-                                    <Button icon="fal fa-sticky-note" type="tertiary" full :label="trans('Add notes')" />
+                                    <Button icon="fal fa-sticky-note" type="tertiary" full
+                                        :label="trans('Add notes')" />
                                 </template>
                                 <template #content="{ close: closed }">
                                     <div class="w-[350px]">
@@ -737,11 +743,8 @@ const isShowProforma = computed(() => {
 
                             <Button
                                 v-if="proforma_invoice && !props.box_stats?.invoices?.length && ['submitted', 'in_warehouse', 'handling', 'handling_blocked', 'packed'].includes(props.data?.data?.state)"
-                                @click="() => isOpenModalProforma = true"
-                                type="tertiary"
-                                :label="trans('Proforma Invoice')"
-                                icon="fal fa-download"
-                            />
+                                @click="() => isOpenModalProforma = true" type="tertiary"
+                                :label="trans('Proforma Invoice')" icon="fal fa-download" />
 
                         </div>
                     </PopoverPrimevue>
@@ -762,8 +765,8 @@ const isShowProforma = computed(() => {
                 icon="fas fa-star" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
             <FontAwesomeIcon v-if="data?.data.has_extra_packing" v-tooltip="trans('Extra packing')"
                 icon="fas fa-box-heart" class="text-yellow-500 animate-bounce" fixed-width aria-hidden="true" />
-            <FontAwesomeIcon v-if="data?.data.has_insurance" v-tooltip="trans('Insurance')"
-                icon="fas fa-shield-alt" class="text-yellow-500" fixed-width aria-hidden="true" />
+            <FontAwesomeIcon v-if="data?.data.has_insurance" v-tooltip="trans('Insurance')" icon="fas fa-shield-alt"
+                class="text-yellow-500" fixed-width aria-hidden="true" />
         </template>
     </PageHeading>
 
@@ -792,6 +795,7 @@ const isShowProforma = computed(() => {
 
     <div v-if="currentTab != 'products'"
         class="grid grid-cols-2 lg:grid-cols-3 divide-x divide-gray-300 border-b border-gray-200">
+        <!-- start: Order Section -->
         <BoxStatPallet class=" py-2 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
                 <div class="font-semibold xmb-2 text-base">
@@ -799,59 +803,80 @@ const isShowProforma = computed(() => {
                 </div>
 
                 <div class="space-y-0.5 pl-1">
-                    <!-- Field: Reference Number -->
-                    <Link as="a" v-if="box_stats?.customer.reference"
-                        :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
-                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer primaryLink">
-                    <div v-tooltip="trans('Customer')" class="flex-none">
-                        <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
-                    </div>
-                    <dd class="text-sm text-gray-500">#{{ box_stats?.customer.reference }}</dd>
-                    </Link>
-
-                    <!-- Field: Customer -->
-                    <Link as="a" v-if="!box_stats?.customer.reference"
-                        :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
-                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-                    <div v-tooltip="trans('Contact name')" class="flex-none">
-                        <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
-                            aria-hidden="true" />
-                    </div>
-                    <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
-                    </Link>
 
                     <!-- Field: Client -->
-                    <Link as="a" v-if="box_stats?.customer_client"
-                        :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
-                        class="pl-1 flex items-center w-fit flex-none gap-x-2 cursor-pointer secondaryLink">
-                    <div v-tooltip="trans('Customer client')" class="flex-none">
-                        <FontAwesomeIcon icon="fal fa-users" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <div v-if="box_stats?.customer_client"
+                         class="pl-1 pb-2 flex items-center w-full gap-x-2">
+                        <div v-tooltip="trans('Customer client')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-parachute-box" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </div>
+                        <Link as="a" v-tooltip="trans('Customer client')"
+                              :href="box_stats?.customer_client?.route?.name ? route(box_stats?.customer_client.route.name, box_stats?.customer_client.route.parameters) : '#'"
+                              class="text-sm text-gray-500 cursor-pointer secondaryLink">
+                            {{ box_stats?.customer_client.contact_name }}
+                        </Link>
+                        <button @click="copyToClipboard(box_stats?.customer_client.contact_name, 'Customer client')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                        </button>
                     </div>
-                    <dd class="text-sm text-gray-500">{{ box_stats?.customer_client.contact_name }}</dd>
-                    </Link>
+
+
+
+
+
+
+                    <!-- Field: Reference Number -->
+                    <div v-if="box_stats?.customer.reference || box_stats?.customer.name"
+                        class="pl-1 flex items-center w-full gap-x-2">
+                        <div v-tooltip="trans('Customer')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-user" class="text-gray-400" fixed-width aria-hidden="true" />
+                        </div>
+                        <Link as="a"
+                            :href="box_stats?.customer?.route?.name ? route(box_stats?.customer.route.name, box_stats?.customer.route.parameters) : '#'"
+                            class="text-sm text-gray-500 cursor-pointer primaryLink">
+                            {{ box_stats?.customer.name }} ({{ box_stats?.customer.reference }})
+                        </Link>
+
+                    </div>
+
+
+
 
                     <!-- Field: Contact name -->
                     <dl v-else-if="box_stats?.customer.contact_name"
-                        class="pl-1 flex items-center w-fit flex-none gap-x-2">
+                        class="pl-1 flex items-center w-full gap-x-2">
                         <dt v-tooltip="trans('Contact name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-id-card-alt" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.contact_name }}</dd>
+                        <button @click="copyToClipboard(box_stats?.customer.contact_name, 'Contact name')"
+                            class="text-gray-400 hover:text-gray-600 transition-colors"
+                            v-tooltip="trans('Copy to clipboard')">
+                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                        </button>
                     </dl>
 
                     <!-- Field: Company name -->
-                    <dl v-if="box_stats?.customer.company_name" class="pl-1 flex items-center w-full flex-none gap-x-2">
+                    <dl v-if="box_stats?.customer.company_name && box_stats?.customer.company_name!=box_stats?.customer.name"
+                        class="pl-1 flex items-center w-full gap-x-2">
                         <dt v-tooltip="trans('Company name')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-building" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
                         <dd class="text-sm text-gray-500">{{ box_stats?.customer.company_name }}</dd>
+                        <button @click="copyToClipboard(box_stats?.customer.company_name, 'Company name')"
+                            class="text-gray-400 hover:text-gray-600 transition-colors"
+                            v-tooltip="trans('Copy to clipboard')">
+                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                        </button>
                     </dl>
 
                     <!-- Field: Email -->
-                    <dl v-if="box_stats?.customer.email" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                        <dt v-tooltip="trans('Email')" class="flex-none">
+                    <dl v-if="box_stats?.customer.email" class="pl-1 flex items-center w-full gap-x-2">
+                        <dt v-tooltip="trans('Customer email')" class="flex-none">
                             <FontAwesomeIcon icon="fal fa-envelope" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
@@ -859,25 +884,36 @@ const isShowProforma = computed(() => {
                             class="text-sm text-gray-500 hover:text-gray-700 truncate">{{
                             box_stats?.customer.email
                             }}</a>
+                        <button @click="copyToClipboard(box_stats?.customer.email, 'Email')"
+                            class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                            v-tooltip="trans('Copy to clipboard')">
+                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                        </button>
                     </dl>
 
                     <!-- Field: Phone -->
-                    <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full flex-none gap-x-2">
-                        <dt v-tooltip="trans('Phone')" class="flex-none">
-                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width aria-hidden="true" />
+                    <dl v-if="box_stats?.customer.phone" class="pl-1 flex items-center w-full gap-x-2">
+                        <dt v-tooltip="trans('Cuatomer phone')" class="flex-none">
+                            <FontAwesomeIcon icon="fal fa-phone" class="text-gray-400" fixed-width
+                                aria-hidden="true" />
                         </dt>
                         <a :href="`tel:${box_stats?.customer.phone}`" v-tooltip="'Click to make a phone call'"
                             class="text-sm text-gray-500 hover:text-gray-700">{{ box_stats?.customer.phone }}</a>
+                        <button @click="copyToClipboard(box_stats?.customer.phone, 'Phone')"
+                            class="text-gray-400 hover:text-gray-600 transition-colors"
+                            v-tooltip="trans('Copy to clipboard')">
+                            <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                        </button>
                     </dl>
 
                     <!-- Field: Billing Address -->
                     <dl v-if="box_stats?.customer?.addresses?.billing?.formatted_address !== box_stats?.customer?.addresses?.delivery?.formatted_address"
-                        class="pl-1 flex items w-full flex-none gap-x-2">
-                        <dt v-tooltip="trans('Billing address')" class="flex-none">
+                        class="pl-1 flex items-start w-full flex-none gap-x-2">
+                        <dt v-tooltip="trans('Billing address')" class="flex-none pt-2">
                             <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
                                 aria-hidden="true" />
                         </dt>
-                        <dd class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52"
+                        <dd class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52"
                             v-html="box_stats?.customer.addresses.billing.formatted_address">
                         </dd>
                     </dl>
@@ -891,7 +927,7 @@ const isShowProforma = computed(() => {
                         <span class="text-sm text-gray-500">Collection</span>
                     </div>
 
-                    <div class="pl-2">
+                    <div class="pl-1.5">
                         <div v-if="isCollection" class="w-full">
                             <span class="block mb-1">{{ trans("Collection by:") }}</span>
                             <div class="flex space-x-4">
@@ -916,14 +952,14 @@ const isShowProforma = computed(() => {
 
                         <!-- Field: Shipping Address -->
                         <dl v-if="box_stats?.customer?.addresses?.delivery?.formatted_address !== box_stats?.customer?.addresses?.billing?.formatted_address && !isCollection"
-                            class="mt-2 pt-1 flex items w-full flex-none gap-x-2">
-                            <dt v-tooltip="trans('Shipping address')" class="flex-none">
+                            class="mt-2 pt-1 flex items-start w-full flex-none gap-x-2">
+                            <dt v-tooltip="trans('Shipping address')" class="flex-none pt-2">
                                 <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
                             <dd
-                                class=" text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
-                                <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
+                                class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded min-w-52">
+                                <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
                                     @click="() => isModalAddress = true"
                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
@@ -934,33 +970,43 @@ const isShowProforma = computed(() => {
 
                         <!-- Field: Billing Address -->
                         <dl v-if="box_stats?.customer?.addresses?.delivery?.formatted_address === box_stats?.customer?.addresses?.billing?.formatted_address && !isCollection"
-                            class="mt-2 flex items w-full flex-none gap-x-2">
-                            <dt v-tooltip="trans('Shipping address and Billing address')" class="flex-none">
+                            class="mt-2 flex items-start w-full flex-none gap-x-2">
+                            <dt v-tooltip="trans('Shipping address and Billing address')"
+                                class="flex-none flex flex-col gap-y-2 pt-2">
                                 <FontAwesomeIcon icon="fal fa-shipping-fast" class="text-gray-400" fixed-width
+                                    aria-hidden="true" />
+                                <FontAwesomeIcon icon="fal fa-dollar-sign" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
                             <dd
-                                class="flex text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
-                                <span v-html="box_stats?.customer.addresses.delivery.formatted_address"></span>
+                                class="flex-1 text-gray-500 text-xs relative px-2.5 py-2 ring-1 ring-gray-300 rounded bg-gray-50">
+                                <div v-html="box_stats?.customer.addresses.delivery.formatted_address"></div>
                                 <div v-if="!props.readonly && props.data?.data?.state !== 'dispatched'"
                                     @click="() => isModalAddress = true"
                                     class="whitespace-nowrap select-none text-gray-500 hover:text-blue-600 underline cursor-pointer">
                                     <span>{{ trans("Edit") }}</span>
                                 </div>
                             </dd>
+                            <button
+                                @click="copyToClipboard(box_stats?.customer.addresses.delivery.formatted_address.replace(/<[^>]*>/g, ''), 'Address')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0 pt-2"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </dl>
                     </div>
 
                 </div>
             </div>
         </BoxStatPallet>
+        <!-- end: Order Section -->
 
         <!-- Box: Payment/Invoices/Delivery Notes  -->
         <BoxStatPallet class="py-4 px-3" icon="fal fa-user">
             <div class="text-xs md:text-sm">
 
 
-                <div class="xspace-y-0.5 pl-1">
+                <div class=" pl-1">
                     <!-- Field: Billing -->
                     <dl class="relative flex items-start w-full flex-none gap-x-1">
                         <dt class="flex-none pt-0.5 pl-1">
@@ -1039,25 +1085,27 @@ const isShowProforma = computed(() => {
 
 
                     <!-- Field: Invoices -->
-                    <div v-if="props.box_stats?.invoices?.length" class="pl-1 mt-1 flex items-start w-full flex-none justify-between gap-x-1">
+                    <div v-if="props.box_stats?.invoices?.length"
+                        class="pl-1 mt-1 flex items-start w-full flex-none justify-between gap-x-1">
                         <div v-tooltip="trans('Invoices')" class="flex-none mt-1">
                             <FontAwesomeIcon icon="fal fa-file-invoice-dollar" fixed-width aria-hidden="true"
                                 class="text-gray-500" />
                         </div>
 
                         <ul class="w-full list-inside list-disc">
-                            <li v-for="(invoice, index) in box_stats?.invoices" :key="index" class="flex justify-between">
-                                <div
-                                    class="flex items-center gap-3 gap-x-1.5  cursor-pointer">
-                                    <Link
-                                        :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)" class="text-gray-500 secondaryLink" v-tooltip="trans('Invoice')">
-                                        {{ invoice?.reference }}
+                            <li v-for="(invoice, index) in box_stats?.invoices" :key="index"
+                                class="flex justify-between">
+                                <div class="flex items-center gap-3 gap-x-1.5  cursor-pointer">
+                                    <Link :href="route(invoice?.routes?.show?.name, invoice?.routes?.show.parameters)"
+                                        class="text-gray-500 secondaryLink" v-tooltip="trans('Invoice')">
+                                    {{ invoice?.reference }}
                                     </Link>
                                 </div>
 
                                 <a v-if="invoice?.routes?.download?.name"
                                     :href="route(invoice?.routes?.download?.name, invoice?.routes?.download.parameters)"
-                                    as="a" target="_blank" class="flex items-center text-gray-400 hover:text-orange-600">
+                                    as="a" target="_blank"
+                                    class="flex items-center text-gray-400 hover:text-orange-600">
                                     <FontAwesomeIcon :icon="faFilePdf" fixed-width aria-hidden="true" />
                                 </a>
                             </li>
@@ -1154,17 +1202,29 @@ const isShowProforma = computed(() => {
             :routesProductsListModification="routes.products_list_modification" />
     </div>
 
-    <ModalProductList
-        v-model="isModalProductListOpen"
-        :fetchRoute="routes.products_list"
-        :action="currentAction"
-        :current="currentTab"
-        v-model:currentTab="currentTab"
-        :typeModel="'order'"
-    />
+    <ModalProductList v-model="isModalProductListOpen" :fetchRoute="routes.products_list" :action="currentAction"
+        :current="currentTab" v-model:currentTab="currentTab" :typeModel="'order'" />
 
-    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-5xl">
-        <DeliveryAddressManagementModal :address_modal_title="delivery_address_management.address_modal_title"
+    <!-- Section: address edit -->
+    <Modal :isOpen="isModalAddress" @onClose="() => (isModalAddress = false)" width="w-full max-w-xl">
+        <AddressEditModal v-if="props.shop_type === 'b2b'" :addresses="delivery_address_management.addresses"
+            :address="box_stats?.customer.addresses.delivery"
+            :updateRoute="delivery_address_management.address_update_route" @submitted="() => (isModalAddress = false)"
+            closeButton :copyAddress="contact_address">
+            <template #copy_address="{ address, isEqual }">
+                <div v-if="isEqual" class="text-gray-500 text-sm">
+                    {{ trans("Same as the contact address") }}
+                    <FontAwesomeIcon v-if="isEqual" v-tooltip="trans('Same as contact address')" icon="fal fa-check"
+                        class="text-green-500" fixed-width aria-hidden="true" />
+                </div>
+
+                <div v-else class="underline text-sm text-gray-500 hover:text-blue-700 cursor-pointer">
+                    {{ trans("Copy from contact address") }}
+                </div>
+            </template>
+        </AddressEditModal>
+
+        <DeliveryAddressManagementModal v-else :address_modal_title="delivery_address_management.address_modal_title"
             :addresses="delivery_address_management.addresses"
             :updateRoute="delivery_address_management.address_update_route" keyPayloadEdit="address"
             @onDone="() => (isModalAddress = false)" />
@@ -1295,7 +1355,8 @@ const isShowProforma = computed(() => {
     </Modal>
 
     <!-- Modal: Proforma -->
-    <Modal v-if="proforma_invoice" :isOpen="isOpenModalProforma" @onClose="isOpenModalProforma = false" width="w-full max-w-lg">
+    <Modal v-if="proforma_invoice" :isOpen="isOpenModalProforma" @onClose="isOpenModalProforma = false"
+        width="w-full max-w-lg">
         <div class="isolate bg-white px-6 lg:px-8">
             <div class="mx-auto max-w-2xl text-center mb-4">
                 <h2 class="text-lg font-bold tracking-tight sm:text-2xl">
@@ -1311,18 +1372,9 @@ const isShowProforma = computed(() => {
                 </div>
             </div>
 
-            <a
-                aclick="() => onClickProforma()"
-                :href="compSelectedDeck"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="w-full block mt-6"
-                xdownload
-            >
-                <Button
-                    full
-                    :label="trans('Download Proforma Invoice')"
-                />
+            <a aclick="() => onClickProforma()" :href="compSelectedDeck" target="_blank" rel="noopener noreferrer"
+                class="w-full block mt-6" xdownload>
+                <Button full :label="trans('Download Proforma Invoice')" />
             </a>
         </div>
     </Modal>

@@ -27,9 +27,9 @@ const props = withDefaults(defineProps<{
 	props_selectquery?: any
 }>(), {})
 
+
 const emit = defineEmits(['update:modelValue'])
 
-// Menggunakan computed untuk menetapkan nilai default jika modelValue kosong
 const localModel = computed({
 	get: () => {
 		return props.modelValue ?? (props.defaultValue 
@@ -37,7 +37,7 @@ const localModel = computed({
 			: { type: 'internal', href: null, workshop: null, id: null, target: "_self", url: null, data: {} })
 	},
 	set: (newValue) => {
-		emit('update:modelValue', newValue) // 🔥 Emit perubahan ke modelValue
+		emit('update:modelValue', newValue)
 	}
 })
 
@@ -112,7 +112,7 @@ function getRoute() {
 							size="small" 
 							:value="option.value" 
 						/>
-						<label :for="`${option.value}${indexOption}`" class="cursor-pointer">{{ option.label }}</label>
+						<label @click="() => set(localModel, 'type', option.value)" class="cursor-pointer">{{ option.label }}</label>
 					</div>
 				</div>
 			</div>
@@ -125,11 +125,11 @@ function getRoute() {
 			<PureInput
 				v-if="localModel?.type == 'external'"
 				v-model="localModel.href"
-				placeholder="www.anotherwebsite.com/page"
+				placeholder="https://www.anotherwebsite.com/page"
 				v-bind="props_input"
 				@update:modelValue="(e) => {
 					set(localModel, 'href', e)
-					emit('update:modelValue', localModel) // 🔥 Emit setiap perubahan
+					emit('update:modelValue', localModel) 
 				}"
 			/>
 
@@ -140,19 +140,26 @@ function getRoute() {
 				:value="localModel"
 				:closeOnSelect="true" 
 				:searchable="true"
-				label="href" 
+				label="path" 
 				:canClear="true"
 				:clearOnSearch="true"
 				:onChange="(e) => { 
 					set(localModel, 'url', e?.url)
 					set(localModel, 'href', e?.href)
+					set(localModel, 'canonical_url', e?.canonical_url)
 					set(localModel, 'id', e?.id)
 					set(localModel, 'workshop', e?.workshop)
-					emit('update:modelValue', localModel) // 🔥 Emit setiap perubahan
+					emit('update:modelValue', localModel)
 				}"
 				:urlRoute="getRoute()" 
 				v-bind="props_selectquery"
-			/>
+			>
+			<template #singlelabel="{ value }">
+				<div class="flex items-center justify-start w-full px-2 text-gray-800  truncate">
+					{{ value?.path || value?.canonical_url || value?.href }}
+				</div>
+			</template>
+		</SelectQuery>
 		</div>
 	</div>
 </template>

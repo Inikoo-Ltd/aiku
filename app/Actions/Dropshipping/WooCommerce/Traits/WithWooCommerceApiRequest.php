@@ -47,6 +47,15 @@ trait WithWooCommerceApiRequest
      */
     protected int $cacheDuration = 60;
 
+
+    public int $timeOut = 30;
+
+
+    public function setTimeout(int $timeOut): void
+    {
+        $this->timeOut = $timeOut;
+    }
+
     /**
      * Initialize the WooCommerce API credentials
      *
@@ -98,12 +107,12 @@ trait WithWooCommerceApiRequest
         }
 
         try {
-            $response = Http::timeout(30)
+            $response = Http::timeout($this->timeOut)
                 ->withHeaders([
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
                 ])
-                ->connectTimeout(30)
+                ->connectTimeout($this->timeOut)
                 ->withBasicAuth(
                     $this->woocommerceConsumerKey,
                     $this->woocommerceConsumerSecret
@@ -135,9 +144,9 @@ trait WithWooCommerceApiRequest
                     'response' => $response->body(),
                 ]);
 
-                Sentry::captureMessage($response->body());
+                // Sentry::captureMessage($response->body());
 
-                return $response->json();
+                return [$response->body()];
             }
         } catch (ConnectionException $e) {
             Log::error('WooCommerce API Connection Error', [
@@ -146,9 +155,11 @@ trait WithWooCommerceApiRequest
                 'error' => $e->getMessage()
             ]);
 
-            Sentry::captureMessage($e->getMessage());
+            // Sentry::captureMessage($e->getMessage());
 
-            return [];
+            return [
+                ['message' => 'WooCommerce API Connection Error: ' . $e->getMessage()],
+            ];
         }
     }
 
@@ -535,19 +546,17 @@ trait WithWooCommerceApiRequest
         return $this->makeWooCommerceRequest('GET', 'webhooks');
     }
 
-    public function checkConnection(): bool
+    public function checkConnection(): array|null
     {
         try {
             if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {
                 $this->initWooCommerceApi();
             }
 
-            $response = $this->makeWooCommerceRequest('GET', 'system_status');
-
-            return !empty($response);
+            return $this->makeWooCommerceRequest('GET', 'system_status');
         } catch (\Exception $e) {
-            \Sentry::captureMessage($e->getMessage());
-            return false;
+
+            return [$e->getMessage()];
         }
     }
 

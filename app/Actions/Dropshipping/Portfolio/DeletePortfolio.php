@@ -13,6 +13,7 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydratePortfolios;
 use App\Actions\Dropshipping\Amazon\Product\DeleteAmazonProduct;
 use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Actions\Dropshipping\Magento\Product\DeleteProductFromMagento;
+use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewPortfolios;
 use App\Actions\Dropshipping\Shopify\Product\DeactivateShopifyProduct;
 use App\Actions\Dropshipping\WooCommerce\Product\DeleteProductFromWooCommerce;
 use App\Actions\OrgAction;
@@ -51,6 +52,10 @@ class DeletePortfolio extends OrgAction
         ShopHydratePortfolios::dispatch($customerSalesChannel->shop)->delay($this->hydratorsDelay);
         CustomerHydratePortfolios::dispatch($customerSalesChannel->customer)->delay($this->hydratorsDelay);
         CustomerSalesChannelsHydratePortfolios::dispatch($customerSalesChannel)->delay($this->hydratorsDelay);
+
+        if ($portfolio->shop && $portfolio->platform->id) {
+            ShopHydratePlatformSalesIntervalsNewPortfolios::dispatch($portfolio->shop, $portfolio->platform->id)->delay($this->hydratorsDelay);
+        }
     }
 
     public function authorize(ActionRequest $request): bool

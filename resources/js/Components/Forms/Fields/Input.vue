@@ -14,6 +14,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { set, get } from 'lodash-es'
 library.add(faExclamationCircle, faCheckCircle, faSpinnerThird, faCopy)
 import { ref, watch } from "vue"
+import { trans } from "laravel-vue-i18n"
 
 const props = defineProps<{
     form: any
@@ -30,7 +31,7 @@ const props = defineProps<{
 
 const emits = defineEmits()
 
-console.log("Input.vue", props)
+
 const setFormValue = (data: Object, fieldName: String) => {
     if (Array.isArray(fieldName)) {
         return getNestedValue(data, fieldName)
@@ -97,8 +98,8 @@ const updateFormValue = (newValue) => {
 
         <!-- Counter: Letters and Words -->
         <div v-if="props.options?.counter"
-            class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start">
-            <p class="">{{ trans('Letters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
+            class="grid grid-flow-col text-xs italic text-gray-500 mt-2 space-x-12 justify-start tabular-nums">
+            <p class="">{{ trans('Characters') }}: {{ form[fieldName]?.length ?? 0 }}</p>
             <p class="">
                 {{ trans('Words') }}: {{ form[fieldName]?.trim().split(/\s+/).filter(Boolean).length ?? 0 }}
             </p>

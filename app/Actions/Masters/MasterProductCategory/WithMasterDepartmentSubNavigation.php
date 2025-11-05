@@ -37,7 +37,7 @@ trait WithMasterDepartmentSubNavigation
                     'parameters' => [$masterDepartment->masterShop->slug, $masterDepartment->slug]
                 ],
                 'leftIcon' => [
-                    'icon'    => ['fal', 'fa-dot-circle'],
+                    'icon'    => ['fal', 'fa-folder-download'],
                     'tooltip' => __('Master sub-departments')
                 ]
             ],
@@ -74,7 +74,7 @@ trait WithMasterDepartmentSubNavigation
                 ],
                 'leftIcon' => [
                     'icon'    => ['fal', 'fa-album-collection'],
-                    'tooltip' => __('master collections')
+                    'tooltip' => __('Master collections')
                 ]
             ],
 

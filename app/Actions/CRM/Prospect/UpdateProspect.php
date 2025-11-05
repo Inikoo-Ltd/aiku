@@ -18,11 +18,10 @@ use App\Actions\Traits\WithProcessContactNameComponents;
 use App\Actions\Traits\WithProspectPrepareForValidation;
 use App\Enums\CRM\Prospect\ProspectContactedStateEnum;
 use App\Enums\CRM\Prospect\ProspectFailStatusEnum;
+use App\Enums\CRM\Prospect\ProspectStateEnum;
 use App\Enums\CRM\Prospect\ProspectSuccessStatusEnum;
 use App\Http\Resources\Lead\ProspectResource;
-use App\Models\Catalogue\Shop;
 use App\Models\CRM\Prospect;
-use App\Models\SysAdmin\Organisation;
 use App\Rules\IUnique;
 use App\Rules\Phone;
 use App\Rules\ValidAddress;
@@ -38,7 +37,7 @@ class UpdateProspect extends OrgAction
 
     private Prospect $prospect;
 
-    public function handle(Prospect $prospect, array $modelData): Prospect
+    public function handle(Prospect $prospect, array $modelData, bool $updateAurora = true): Prospect
     {
         $addressData = Arr::get($modelData, 'address');
         Arr::forget($modelData, 'address');
@@ -56,7 +55,7 @@ class UpdateProspect extends OrgAction
             data_set($modelData, 'location', $prospect->address->getLocation());
         }
 
-        if (Arr::has($modelData, 'contact_name')) {
+        if (Arr::get($modelData, 'contact_name')) {
             data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
         }
 
@@ -64,20 +63,32 @@ class UpdateProspect extends OrgAction
         $changes  = Arr::except($prospect->getChanges(), ['updated_at', 'last_fetched_at']);
 
 
-        if (count($changes) > 0) {
+        if (Arr::hasAny($changes, ['name', 'contact_name', 'email', 'company_name', 'state'])) {
             ProspectRecordSearch::dispatch($prospect);
+        }
 
-            if (count(array_intersect(array_keys($changes), [
+
+        if (Arr::hasAny($changes, [
+            'state',
+            'contacted_state',
+            'fail_status',
+            'success_status',
+        ])) {
+            OrganisationHydrateProspects::dispatch($prospect->organisation)->delay($this->hydratorsDelay);
+            ShopHydrateProspects::dispatch($prospect->shop)->delay($this->hydratorsDelay);
+        }
+
+
+        if (Arr::hasAny($changes, [
+                'email',
+                'company_name',
+                'contact_name',
                 'state',
-                'contacted_state',
-                'fail_status',
                 'success_status',
-            ]))) {
-                OrganisationHydrateProspects::dispatch($prospect->organisation)->delay($this->hydratorsDelay);
-                ShopHydrateProspects::dispatch($prospect->shop)->delay($this->hydratorsDelay);
-
-            }
-
+                'fail_status'
+            ])
+            && $prospect->shop->is_aiku && $updateAurora) {
+            SaveProspectInAurora::run($prospect);
         }
 
 
@@ -96,10 +107,15 @@ class UpdateProspect extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'contacted_state'   => ['sometimes', Rule::enum(ProspectContactedStateEnum::class)],
-            'fail_status'       => ['sometimes', 'nullable', Rule::enum(ProspectFailStatusEnum::class)],
-            'success_status'    => ['sometimes', 'nullable', Rule::enum(ProspectSuccessStatusEnum::class)],
-            'dont_contact_me'   => ['sometimes', 'boolean'],
+            'state'                  => ['sometimes', Rule::enum(ProspectStateEnum::class)],
+            'contacted_state'        => ['sometimes', Rule::enum(ProspectContactedStateEnum::class)],
+            'fail_status'            => ['sometimes', 'nullable', Rule::enum(ProspectFailStatusEnum::class)],
+            'success_status'         => ['sometimes', 'nullable', Rule::enum(ProspectSuccessStatusEnum::class)],
+            'dont_contact_me'        => ['sometimes', 'boolean'],
+            'can_contact_by_email'   => ['sometimes', 'boolean'],
+            'can_contact_by_phone'   => ['sometimes', 'boolean'],
+            'can_contact_by_address' => ['sometimes', 'boolean'],
+
             'last_contacted_at' => 'sometimes|nullable|date',
             'contact_name'      => ['sometimes', 'nullable', 'string', 'max:255'],
             'company_name'      => ['sometimes', 'nullable', 'string', 'max:255'],
@@ -146,17 +162,20 @@ class UpdateProspect extends OrgAction
         ];
 
         if (!$this->strict) {
+            $rules['phone']           = ['sometimes', 'nullable', 'string', 'max:255'];
+            $rules['contact_website'] = ['sometimes', 'nullable', 'string', 'max:255'];
             $rules['last_fetched_at'] = ['sometimes', 'date'];
+            $rules['customer_id']     = ['sometimes', 'nullable', 'integer'];
         }
 
 
         return $rules;
     }
 
-    public function asController(Organisation $organisation, Shop $shop, Prospect $prospect, ActionRequest $request): Prospect
+    public function asController(Prospect $prospect, ActionRequest $request): Prospect
     {
-        $this->initialisationFromShop($prospect->shop, $request);
         $this->prospect = $prospect;
+        $this->initialisationFromShop($prospect->shop, $request);
 
         return $this->handle($prospect, $this->validatedData);
     }

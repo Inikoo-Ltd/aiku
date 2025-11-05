@@ -12,6 +12,7 @@ import {
     faUser,
     faBrowser,
     faPlus, faMinus,
+    faFolderDownload,
 } from "@fal"
 import { faExclamationTriangle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
@@ -43,7 +44,9 @@ library.add(
     faProjectDiagram,
     faUser,
     faMoneyBillWave,
-    faBrowser, faExclamationTriangle
+    faBrowser, 
+    faExclamationTriangle,
+    faFolderDownload
 )
 
 
@@ -104,12 +107,13 @@ const showDialog = ref(false);
 
         <template #afterTitle>
            <div class="whitespace-nowrap">
-            <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
-                <FontAwesomeIcon
-                    :icon="faOctopusDeploy"
-                    color="#4B0082"
-                />
-            </Link>
+                <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master family'" :class="'opacity-70 hover:opacity-100'">
+                    <FontAwesomeIcon
+                        :icon="faOctopusDeploy"
+                        color="#4B0082"
+                        fixed-width
+                    />
+                </Link>
             </div>
         </template>
     </PageHeading>
@@ -120,7 +124,7 @@ const showDialog = ref(false);
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
-  <div v-if="mini_breadcrumbs.length != 0" class="bg-white shadow-sm rounded px-4 py-1 mx-4 mt-2 w-fit border border-gray-200 overflow-x-auto">
+  <div v-if="mini_breadcrumbs.length != 0"  class="bg-white  px-4 py-2  w-full  border-gray-200 border-b overflow-x-auto">
         <Breadcrumb  :model="mini_breadcrumbs">
             <template #item="{ item, index }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
@@ -131,7 +135,7 @@ const showDialog = ref(false);
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
                         <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
-                        <span class="truncate max-w-[150px]">{{ item.label || '-' }}</span>
+                        <span class="">{{ item.label || '-' }}</span>
                     </component>
                 </div>
             </template>

@@ -76,13 +76,17 @@ use App\Actions\CRM\Customer\UpdateBalanceCustomer;
 use App\Actions\CRM\Customer\UpdateCustomer;
 use App\Actions\CRM\Customer\UpdateCustomerAddress;
 use App\Actions\CRM\Customer\UpdateCustomerDeliveryAddress;
+use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\CRM\Poll\DeletePoll;
 use App\Actions\CRM\Poll\StorePoll;
 use App\Actions\CRM\Poll\UpdatePoll;
 use App\Actions\CRM\Prospect\ImportShopProspects;
+use App\Actions\CRM\Prospect\UpdateProspect;
 use App\Actions\CRM\WebUser\DeleteWebUser;
 use App\Actions\CRM\WebUser\StoreWebUser;
 use App\Actions\CRM\WebUser\UpdateWebUser;
+use App\Actions\Dispatching\Box\StoreBox;
+use App\Actions\Dispatching\Box\UpdateBox;
 use App\Actions\Dispatching\Printer\PrintShipmentLabel;
 use App\Actions\Dispatching\Shipment\DeleteShipment;
 use App\Actions\Dispatching\Shipment\DetachShipmentFromPalletReturn;
@@ -222,6 +226,7 @@ use App\Actions\HumanResources\Workplace\UpdateWorkplace;
 use App\Actions\Masters\MasterAsset\DeleteImageFromMasterProduct;
 use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
+use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
 use App\Actions\Masters\MasterAsset\UploadImagesToMasterProduct;
@@ -230,7 +235,7 @@ use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
 use App\Actions\Masters\MasterCollection\DeleteMasterCollection;
 use App\Actions\Masters\MasterCollection\DetachMasterCollectionFromModel;
-use App\Actions\Masters\MasterCollection\DetachModelFromMasterCollection;
+use App\Actions\Masters\MasterCollection\DetachMasterModelFromMasterCollection;
 use App\Actions\Masters\MasterCollection\StoreMasterCollection;
 use App\Actions\Masters\MasterProductCategory\AttachMasterFamiliesToMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\DeleteImageFromMasterProductCategory;
@@ -313,19 +318,22 @@ use App\Actions\Web\ModelHasWebBlocks\UploadImagesToModelHasWebBlocks;
 use App\Actions\Web\Redirect\StoreRedirect;
 use App\Actions\Web\Redirect\StoreRedirectFromWebsite;
 use App\Actions\Web\Redirect\UpdateRedirect;
+use App\Actions\Web\Webpage\BreakWebpageCache;
 use App\Actions\Web\Webpage\DeleteWebpage;
+use App\Actions\Web\Webpage\Luigi\ReindexWebpageLuigiAsync;
 use App\Actions\Web\Webpage\PublishWebpage;
 use App\Actions\Web\Webpage\ReorderWebBlocks;
 use App\Actions\Web\Webpage\SetWebpageAsOffline;
 use App\Actions\Web\Webpage\SetWebpageAsOnline;
 use App\Actions\Web\Webpage\StoreWebpage;
 use App\Actions\Web\Webpage\UpdateWebpage;
+use App\Actions\Web\Webpage\WebpageWorkshopCheckWebBlock;
 use App\Actions\Web\Website\AutosaveWebsiteMarginal;
 use App\Actions\Web\Website\BreakWebsiteCache;
 use App\Actions\Web\Website\LaunchWebsite;
+use App\Actions\Web\Website\Luigi\ReindexWebsiteLuigiAsync;
 use App\Actions\Web\Website\PublishWebsiteMarginal;
 use App\Actions\Web\Website\PublishWebsiteProductTemplate;
-use App\Actions\Web\Website\ReindexWebsiteLuigiAsync;
 use App\Actions\Web\Website\StoreWebsite;
 use App\Actions\Web\Website\UpdateWebsite;
 use App\Actions\Web\Website\UploadImagesToWebsite;
@@ -413,7 +421,7 @@ Route::prefix('master-product-category/{masterProductCategory:id}')->name('maste
 
 Route::prefix('master-collection/{masterCollection:id}')->name('master_collection.')->group(function () {
     Route::post('attach-models', AttachModelsToMasterCollection::class)->name('attach-models');
-    Route::delete('detach-models', DetachModelFromMasterCollection::class)->name('detach-models');
+    Route::delete('detach-models', DetachMasterModelFromMasterCollection::class)->name('detach-models');
     Route::delete('delete', DeleteMasterCollection::class)->name('delete');
     Route::post('attach-parents', AttachMultipleParentsToAMasterCollection::class)->name('attach_parents');
 });
@@ -428,6 +436,7 @@ Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(fun
     Route::post('upload-images', UploadImagesToMasterProduct::class)->name('upload_images');
     Route::delete('delete-images/{media:id}', DeleteImageFromMasterProduct::class)->name('delete_images')->withoutScopedBindings();
 });
+Route::patch('master-asset/bulk-update', UpdateBulkMasterProduct::class)->name('master_asset.bulk_update');
 
 Route::prefix('department/{productCategory:id}')->name('department.')->group(function () {
     Route::post('sub-department', StoreSubDepartment::class)->name('sub_department.store');
@@ -483,6 +492,10 @@ Route::name('org.')->prefix('org/{organisation:id}')->group(function () {
     Route::patch('shop/{shop:id}', UpdateShop::class)->name('shop.update')->withoutScopedBindings();
     Route::post('fulfilment', StoreFulfilmentFromUI::class)->name('fulfilment.store');
 
+    Route::prefix('boxes')->name('boxes.')->group(function () {
+        Route::post('/', StoreBox::class)->name('store');
+        Route::patch('{box:id}', UpdateBox::class)->name('update')->withoutScopedBindings();
+    });
 
     Route::prefix('fulfilment/{fulfilment:id}/rentals')->name('fulfilment.rentals.')->group(function () {
         Route::post('/', StoreRental::class)->name('store');
@@ -548,12 +561,14 @@ Route::name('product.')->prefix('product')->group(function () {
     Route::post('/product/', StoreProduct::class)->name('store');
     Route::patch('/{product:id}/offline', SetProductOffline::class)->name('offline');
     Route::patch('/{product:id}/update', UpdateProduct::class)->name('update');
-    Route::patch('bulk-update', UpdateBulkProduct::class)->name('bulk_update');
+    Route::patch('/{shop:id}/bulk-update', UpdateBulkProduct::class)->name('bulk_update');
     Route::delete('/{product:id}/delete', DeleteProduct::class)->name('delete');
     Route::patch('/{product:id}/move-family', MoveFamilyProductToOtherFamily::class)->name('move_family');
     Route::post('/{product:id}/content', [StoreModelHasContent::class, 'inProduct'])->name('content.store');
     Route::post('{product:id}/images', UploadImagesToProduct::class)->name('images.store')->withoutScopedBindings();
     Route::patch('{product:id}/update_images', UpdateProductImages::class)->name('images.update_images')->withoutScopedBindings();
+    Route::post('{product:id}/attachment/attach', [AttachAttachmentToModel::class, 'inProduct'])->name('attachment.attach');
+    Route::delete('{product:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inProduct'])->name('attachment.detach')->withoutScopedBindings();
 });
 
 Route::name('pallet-delivery.')->prefix('pallet-delivery/{palletDelivery:id}')->group(function () {
@@ -805,6 +820,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
     Route::post('images/header', [UploadImagesToWebsite::class, 'header'])->name('header.images.store');
     Route::post('images/footer', [UploadImagesToWebsite::class, 'footer'])->name('footer.images.store');
     Route::post('images/favicon', [UploadImagesToWebsite::class, 'favicon'])->name('favicon.images.store');
+    Route::post('images/sidebar', [UploadImagesToWebsite::class, 'sidebar'])->name('sidebar.images.store');
 
 
     Route::post('/banner', StoreBanner::class)->name('banner.store');
@@ -812,6 +828,7 @@ Route::name('website.')->prefix('website/{website:id}')->group(function () {
 
 Route::name('webpage.')->prefix('webpage/{webpage:id}')->group(function () {
     Route::patch('', UpdateWebpage::class)->name('update')->withoutScopedBindings();
+    Route::patch('web-block-check', WebpageWorkshopCheckWebBlock::class)->name('web_block_check');
     Route::patch('delete', DeleteWebpage::class)->name('delete');
     Route::patch('set-online', SetWebpageAsOnline::class)->name('set_online');
     Route::patch('set-offline', SetWebpageAsOffline::class)->name('set_offline');
@@ -1014,9 +1031,13 @@ Route::name('poll.')->prefix('poll')->group(function () {
     Route::delete('{poll:id}/delete', DeletePoll::class)->name('delete')->withoutScopedBindings();
 });
 
+Route::post('webpage/{webpage:id}/break-cache', BreakWebpageCache::class)->name('webpage.break_cache')->withoutScopedBindings();
+
 Route::post('website/{website:id}/break-cache', BreakWebsiteCache::class)->name('website.break_cache')->withoutScopedBindings();
 Route::post('website/{website:id}/redirect', StoreRedirectFromWebsite::class)->name('website.redirect.store')->withoutScopedBindings();
 Route::post('website/{website:id}/reindex-luigi', ReindexWebsiteLuigiAsync::class)->name('website_luigi.reindex')->withoutScopedBindings();
+
+Route::post('webpage/{webpage:id}/reindex-luigi', ReindexWebpageLuigiAsync::class)->name('webpage_luigi.reindex')->withoutScopedBindings();
 
 
 Route::delete('/shipment/{shipment:id}', DeleteShipment::class)->name('shipment.delete');
@@ -1034,7 +1055,18 @@ Route::name('trade_unit_family.')->prefix('trade-unit-family')->group(function (
     Route::post('store', StoreTradeUnitFamily::class)->name('store')->withoutScopedBindings();
     Route::patch('{tradeUnitFamily:id}/update', UpdateTradeUnitFamily::class)->name('update')->withoutScopedBindings();
     Route::post('{tradeUnitFamily:id}/attach-trade-units', AttachTradeUnitsToTradeUnitFamily::class)->name('attach_trade_units')->withoutScopedBindings();
+    Route::post('{tradeUnitFamily:id}/attachment/attach', [AttachAttachmentToModel::class, 'inTradeUnitFamily'])->name('attachment.attach');
+    Route::delete('{tradeUnitFamily:id}/attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inTradeUnitFamily'])->name('attachment.detach')->withoutScopedBindings();
 });
+
+Route::prefix('customer-comms/{customerComms:id}')->name('customer_comms.')->group(function () {
+    Route::patch('update', UpdateCustomerComms::class)->name('update');
+});
+
+Route::prefix('prospect/{prospect:id}')->name('prospect.')->group(function () {
+    Route::patch('update', UpdateProspect::class)->name('update');
+});
+
 
 require __DIR__ . "/models/inventory/warehouse.php";
 require __DIR__ . "/models/inventory/location_org_stock.php";

@@ -17,6 +17,7 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateFamiliesWithNoDepartment;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamiliesWithNoDepartment;
 use App\Actions\Traits\Authorisations\WithCatalogueEditAuthorisation;
 use App\Actions\Traits\WithActionUpdate;
+use App\Actions\Web\Webpage\UpdateWebpageCanonicalUrl;
 use App\Models\Catalogue\ProductCategory;
 use App\Enums\Catalogue\ProductCategory\ProductCategoryTypeEnum;
 use Illuminate\Support\Arr;
@@ -52,6 +53,9 @@ class UpdateFamilySubDepartment extends OrgAction
 
 
         if (Arr::has($changes, 'department_id')) {
+            if ($family->webpage) {
+                UpdateWebpageCanonicalUrl::dispatch($family->webpage)->delay(2);
+            }
             DepartmentHydrateProducts::dispatch($family->department);
             ProductCategoryHydrateFamilies::dispatch($family->department);
             if ($oldDepartment) {
@@ -65,6 +69,9 @@ class UpdateFamilySubDepartment extends OrgAction
         }
 
         if (Arr::has($changes, 'sub_department_id')) {
+            if ($family->webpage) {
+                UpdateWebpageCanonicalUrl::dispatch($family->webpage)->delay(2);
+            }
             ProductCategoryHydrateFamilies::dispatch($newSubDepartmentId);
             SubDepartmentHydrateProducts::dispatch($newSubDepartmentId);
             if ($oldSubDepartment) {

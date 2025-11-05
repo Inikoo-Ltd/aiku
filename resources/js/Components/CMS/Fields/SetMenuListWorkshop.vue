@@ -22,7 +22,6 @@ const props = defineProps<{
             }
         }
     }
-    autosaveRoute: routeType
 }>()
 
 const emits = defineEmits<{
@@ -55,17 +54,17 @@ const debouncedSendUpdate = debounce(() => autoSave(), 1000, {
 })
 
 const addNavigation = () => {
-    props.data.data.fieldValue.navigation.push({
+    props?.data?.data?.fieldValue?.navigation?.push({
         label: "New Navigation",
         id: ulid(),
         type: "single",
     })
-    console.log(props.data.data.fieldValue.navigation);
+    console.log(props?.data?.data?.fieldValue?.navigation);
     debouncedSendUpdate()
 }
 
 const deleteNavigation = (index: Number) => {
-    props.data.data.fieldValue.navigation.splice(index, 1)
+    props?.data?.data?.fieldValue?.navigation?.splice(index, 1)
     debouncedSendUpdate()
 }
 
@@ -127,7 +126,7 @@ const autoSave = async (event) => {
     <!-- Drawer for Menu Editing -->
     <Drawer 
         v-model:visible="visibleDrawer" 
-        :header="data.data?.fieldValue.navigation[selectedMenu]?.label"
+        :header="data?.data?.fieldValue?.navigation?.[selectedMenu]?.label"
         position="right" 
         :pt="{ root: { style: 'width: 40vw' } }"
     >

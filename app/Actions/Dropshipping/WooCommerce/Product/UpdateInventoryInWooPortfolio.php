@@ -8,49 +8,95 @@
 
 namespace App\Actions\Dropshipping\WooCommerce\Product;
 
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
+use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\Portfolio;
-use App\Models\Dropshipping\WooCommerceUser;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class UpdateInventoryInWooPortfolio
 {
     use AsAction;
 
-    public string $commandSignature  = 'woo:update-inventory';
+    public string $commandSignature = 'woo:update-inventory';
+
 
     public function handle(): void
     {
-        $platform = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
+        $platform              = Platform::where('type', PlatformTypeEnum::WOOCOMMERCE)->first();
         $customerSalesChannels = CustomerSalesChannel::where('platform_id', $platform->id)->get();
 
-        $productData = [];
+        /** @var CustomerSalesChannel $customerSalesChannel */
         foreach ($customerSalesChannels as $customerSalesChannel) {
-            $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
-                ->whereNotNull('platform_product_id')
-                ->get();
 
-            foreach ($portfolios as $portfolio) {
-                $product = $portfolio->item;
 
-                $productData['update'][] =
-                        [
-                            "id" => $portfolio->platform_product_id,
-                            "stock_quantity" => $product->available_quantity,
-                        ];
+            if ($customerSalesChannel->ban_stock_update_util && $customerSalesChannel->ban_stock_update_util->gt(now())) {
+                continue;
             }
 
+            if ($customerSalesChannel->status != CustomerSalesChannelStatusEnum::OPEN) {
+                continue;
+            }
 
-            /** @var WooCommerceUser $wooCommerceUser */
+            /** @var \App\Models\Dropshipping\WooCommerceUser $wooCommerceUser */
             $wooCommerceUser = $customerSalesChannel->user;
 
-            if (! blank($productData) && $wooCommerceUser) {
-                BulkUpdateWooPortfolio::dispatch($wooCommerceUser, $productData);
+            if (!$wooCommerceUser) {
+                $customerSalesChannel->update([
+                    'ban_stock_update_util' => now()->addHours(3),
+                ]);
+                continue;
             }
+
+            $wooCommerceUser->setTimeout(60);
+            $result = $wooCommerceUser->checkConnection();
+            if ($result && Arr::has($result, 'environment')) {
+
+                $customerSalesChannel->update([
+                    'ban_stock_update_util' => null
+                ]);
+
+                $portfolios = Portfolio::where('customer_sales_channel_id', $customerSalesChannel->id)
+                    ->whereNotNull('platform_product_id')
+                    ->where('item_type', 'Product')
+                    ->where('platform_status', true)
+                    ->get();
+
+                /** @var Portfolio $portfolio */
+                foreach ($portfolios as $portfolio) {
+                    if ($this->checkIfApplicable($portfolio)) {
+                        UpdateWooPortfolio::dispatch($portfolio->id);
+                    }
+
+                }
+            }
+
         }
     }
+
+    public function checkIfApplicable(Portfolio $portfolio): bool
+    {
+        $applicable = false;
+
+
+
+        if (!$portfolio->stock_last_updated_at) {
+            $applicable = true;
+        } else {
+            /** @var Product $product */
+            $product = $portfolio->item;
+
+            if (!$product->available_quantity_updated_at || $product->available_quantity_updated_at->gt($portfolio->stock_last_updated_at)) {
+                $applicable = true;
+            }
+        }
+
+        return $applicable;
+    }
+
 
     public function asCommand(): void
     {

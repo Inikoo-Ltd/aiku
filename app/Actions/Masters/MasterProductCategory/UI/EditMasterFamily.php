@@ -99,8 +99,7 @@ class EditMasterFamily extends OrgAction
                     'actions' => [
                         [
                             'type'  => 'button',
-                            'style' => 'cancel',
-                            'label' => __('Cancel'),
+                            'style' => 'exitEdit',
                             'route' => [
                                 'name'       => preg_replace('/edit$/', 'show', $request->route()->getName()),
                                 'parameters' => array_values($request->route()->originalParameters())
@@ -127,22 +126,31 @@ class EditMasterFamily extends OrgAction
                             'fields' => [
                                 'name' => [
                                     'type'  => 'input',
-                                    'label' => __('name'),
+                                    'label' => __('Name'),
                                     'value' => $masterProductCategory->name
                                 ],
                                 'description_title' => [
                                     'type'  => 'input',
-                                    'label' => __('description title'),
+                                    'label' => __('Description title'),
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
                                     'value' => $masterProductCategory->description_title
                                 ],
                                 'description' => [
                                     'type'  => 'textEditor',
-                                    'label' => __('description'),
+                                    'label' => __('Description'),
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
                                     'value' => $masterProductCategory->description
                                 ],
                                 'description_extra' => [
                                     'type'  => 'textEditor',
                                     'label' => __('Extra description'),
+                                    'options'   => [
+                                        'counter'   => true,
+                                    ],
                                     'value' => $masterProductCategory->description_extra
                                 ],
                             ]

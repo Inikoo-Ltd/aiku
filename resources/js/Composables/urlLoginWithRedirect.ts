@@ -4,6 +4,8 @@
  * Copyright (c) 2025, Raul A Perusquia Flores
  */
 
+import { usePage } from "@inertiajs/vue3"
+
 // SSR-safe utility to generate login URL with optional redirect back to current page
 // Usage: import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 // Then call urlLoginWithRedirect() to get a string URL.
@@ -15,10 +17,8 @@ export function urlLoginWithRedirect(): string {
 
   // Build redirect only on the client where a window exists and not on auth pages
   if (typeof window !== 'undefined' && !isAuthRoute) {
-    const path = window.location?.pathname ?? ''
-    const search = window.location?.search ?? ''
-    const ref = `${encodeURIComponent(path)}${search ? encodeURIComponent(search) : ''}`
-    return `/app/login?ref=${ref}`
+    const webpage_key = usePage()?.props?.webpage_id ? `ref=${usePage().props.webpage_id}` : ''
+    return `/app/login?${webpage_key}`
   }
 
   return '/app/login'

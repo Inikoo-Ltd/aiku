@@ -22,14 +22,21 @@ class FetchAuroraProspect extends FetchAurora
      */
     protected function parseModel(): void
     {
+        $shop = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Prospect Store Key'});
+
+
+        if ($shop->is_aiku) {
+            return;
+        }
+
+
         $customerId = null;
         if ($this->auroraModelData->{'Prospect Customer Key'}) {
-            $customer = $this->parseCustomer(
+            $customer   = $this->parseCustomer(
                 $this->organisation->id.':'.
                 $this->auroraModelData->{'Prospect Customer Key'}
             );
             $customerId = $customer?->id;
-
         }
         $lastContacted = null;
         if ($this->parseDatetime($this->auroraModelData->{'Prospect Last Contacted Date'})) {
@@ -94,14 +101,14 @@ class FetchAuroraProspect extends FetchAurora
                 'source_id'         => $this->organisation->id.':'.$this->auroraModelData->{'Prospect Key'},
                 'customer_id'       => $customerId,
                 'address'           => $this->parseAddress(prefix: 'Prospect', auAddressData: $this->auroraModelData),
-                'fetched_at'      => now(),
-                'last_fetched_at' => now(),
+                'fetched_at'        => now(),
+                'last_fetched_at'   => now(),
             ];
         if ($this->parseDatetime($this->auroraModelData->{'Prospect Created Date'})) {
             $this->parsedData['prospect']['created_at'] = $this->auroraModelData->{'Prospect Created Date'};
         }
 
-        $this->parsedData['shop'] = $this->parseShop($this->organisation->id.':'.$this->auroraModelData->{'Prospect Store Key'});
+        $this->parsedData['shop'] = $shop;
     }
 
 

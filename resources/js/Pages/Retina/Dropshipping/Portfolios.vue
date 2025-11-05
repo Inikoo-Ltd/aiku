@@ -41,6 +41,9 @@ import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/Pla
 import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 import { useTruncate } from "@/Composables/useTruncate"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
+import Tabs from "@/Components/Navigation/Tabs.vue";
+import { useTabChange } from "@/Composables/tab-change";
+import TableRetinaPlatformPortfolioLogs from "@/Components/Tables/Retina/TableRetinaPlatformPortfolioLogs.vue";
 
 
 library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
@@ -51,6 +54,7 @@ const props = defineProps<{
     pageHead: PageHeadingTypes
     tabs: TSTabs
     download_route: any
+    grouped_portfolios: any
     content?: {
         portfolio_empty?: {
             title?: string,
@@ -61,6 +65,7 @@ const props = defineProps<{
         }
     }
     products: TableTS
+    logs: {}
     routes: {
         batch_upload: routeType
         batch_all: routeType
@@ -70,6 +75,7 @@ const props = defineProps<{
         duplicate: routeType
         addPortfolioRoute: routeType
         bulk_upload: routeType
+        bulk_unlink: routeType
         itemRoute: routeType
         updatePortfolioRoute: routeType
         batchDeletePortfolioRoute: routeType
@@ -87,7 +93,7 @@ const props = defineProps<{
     }
     is_platform_connected: boolean
     customer_sales_channel: CustomerSalesChannel
-    manual_channels: object
+    channels: object
     count_product_not_synced: number
 
     // inactive: {}
@@ -97,6 +103,7 @@ const props = defineProps<{
 const step = ref(props.step);
 const isPlatformManual = computed(() => props.platform_data.type === 'manual');
 const isOpenModalPortfolios = ref(false);
+const isOpenModalDownloadImages = ref(false);
 
 
 const isLoadingUpload = ref(false);
@@ -142,9 +149,9 @@ const onUploadToShopify = () => {
 };
 
 
-const downloadUrl = (type: string) => {
+const downloadUrl = (type: string, addParams: string = '') => {
     if (props.download_route?.[type]?.name) {
-        return route(props.download_route[type].name, props.download_route[type].parameters);
+        return route(props.download_route[type].name, {...props.download_route[type].parameters, ...{ids: addParams}});
     } else {
         return ''
     }
@@ -302,6 +309,7 @@ const submitPortfolioAction = async (action: any) => {
             params: method === "get" ? data : undefined
         })
 
+        debReloadPage()
         onSuccessEditCheckmark(action.label)
     } catch (error: any) {
         onFailedEditCheckmark(error)
@@ -310,16 +318,17 @@ const submitPortfolioAction = async (action: any) => {
     }
 }
 
+const currentTab = ref(props.tabs.current)
+const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
+
 const key = ulid()
 
 </script>
 
 <template>
-
     <Head :title="capitalize(title)"/>
     <PageHeading :data="pageHead">
 
-     
         <template #button-upload-to-shopify="{ action }">
             <Button @click="onUploadToShopify()" :style="action.style" :label="action.label" :loading="isLoadingUpload"
                     :disabled="!selectedData.products.length"
@@ -332,16 +341,16 @@ const key = ulid()
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
-                <a :href="downloadUrl('images') as string" target="_blank" rel="noopener">
+                <a v-if="props.product_count <= 200" :href="downloadUrl('images') as string" target="_blank" rel="noopener">
                     <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
                 </a>
-
+                <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')"
                     :icon="'fas fa-plus'"/>
 
-            <div class="rounded-md" v-if="manual_channels?.data?.length">
+            <div class="rounded-md" v-if="channels?.data?.length">
                 <!-- Section: Download button -->
                 <Button @click="(e) => _clone_popover?.toggle(e)" v-tooltip="trans('Open another options')"
                         :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length" class="!px-2 h-full"
@@ -353,7 +362,7 @@ const key = ulid()
                             {{ trans("Clone portfolio from channel:") }}
                         </div>
 
-                        <div v-for="(manual_channel, index) in manual_channels?.data" :key="index" class="flex flex-col gap-y-2 mb-1.5">
+                        <div v-for="(manual_channel, index) in channels?.data" :key="index" class="flex flex-col gap-y-2 mb-1.5">
                             <Button :loading="isLoadingClone" @click="() => onCloneManualPortfolio(manual_channel.id)"
                                 :label="(manual_channel.name || manual_channel.slug) + ' ('+manual_channel.number_portfolios+')'" full
                                 :style="'tertiary'"
@@ -375,7 +384,7 @@ const key = ulid()
             </div>
         </template>
     </PageHeading>
-
+    <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <!-- Section: Alert if platform not connected yet -->
     <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
         <div v-if="platform_data.type === 'shopify'" class="px-2 md:px-6">
@@ -391,7 +400,7 @@ const key = ulid()
     </div>
 
     <!-- Section: Alert if there is product not synced -->
-    <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual" severity="warn"
+    <Message v-if="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual && currentTab === 'products'" severity="warn"
              class="m-4 ">
         <div class="ml-2 font-normal flex flex-col items-center sm:flex-row justify-between w-full">
             <div>
@@ -424,6 +433,21 @@ const key = ulid()
 
                     <Button
                         v-if="selectedProducts.length > 0"
+                        v-tooltip="trans('Unlink & Delete Product :platform', { platform: props.platform_data?.name })"
+                        :type="'delete'"
+                        :label="trans('Unlink & Delete Product (:count)', { count: selectedProducts?.length })"
+                        :loading="loadingAction.includes('bulk-unlink')"
+                        @click="() => submitPortfolioAction({
+                            label : 'bulk-unlink',
+                            name : props.routes.bulk_unlink.name,
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'post',
+                        })"
+                        size="xs"
+                    />
+
+                    <Button
+                        v-if="selectedProducts.length > 0"
                         v-tooltip="trans('Upload as new product to the :platform', { platform: props.platform_data?.name })"
                         :type="'create'"
                         :label="trans('Create New Product (:count)', { count: selectedProducts?.length })"
@@ -440,6 +464,7 @@ const key = ulid()
 
                 <div>
                     <ButtonWithLink
+                        v-if="customer_sales_channel.type !== 'ebay'"
                         label="Upload all as new product"
                         size="xs"
                         :routeTarget="{
@@ -455,7 +480,7 @@ const key = ulid()
     </Message>
 
     <!-- retina.models.dropshipping.ebay.batch_upload -->
-    <div v-if="is_platform_connected || isPlatformManual">
+    <div v-if="(is_platform_connected || isPlatformManual) && currentTab === 'products'">
         <div v-if="props.product_count < 1"
             class="relative mx-auto flex max-w-3xl flex-col items-center px-6 text-center pt-20 lg:px-0">
             <h1 class="text-4xl font-bold tracking-tight lg:text-6xl">
@@ -497,6 +522,9 @@ const key = ulid()
                 :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>
         </div>
     </div>
+    <div v-else-if="currentTab === 'logs'">
+        <TableRetinaPlatformPortfolioLogs :data="logs" :tab="currentTab" />
+    </div>
 
     <Modal :isOpen="isOpenModalPortfolios" @onClose="isOpenModalPortfolios = false"
            width="w-full max-w-7xl max-h-[600px] md:max-h-[85vh] overflow-y-auto">
@@ -508,5 +536,22 @@ const key = ulid()
                                  @onDone="()=>{isOpenModalPortfolios = false, key = ulid()}" :platform_user_id
                                  :is_platform_connected
                                  :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
+    </Modal>
+
+    <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
+           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
+        <div class="mb-8">
+            <h3 class="text-center font-semibold">{{ trans('Images grouped by first letter from product code')}}</h3>
+        </div>
+        <div class="flex flex-col gap-2">
+            <div v-for="grouped in grouped_portfolios" class="flex justify-between gap-2">
+                <div class="my-auto">
+                    <span><b>{{grouped.char}}</b>: ({{grouped.count}}) images</span>
+                </div>
+                <a v-if="grouped.count > 0" :href="downloadUrl('images', grouped.ids) as string" rel="noopener">
+                    <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
+                </a>
+            </div>
+        </div>
     </Modal>
 </template>

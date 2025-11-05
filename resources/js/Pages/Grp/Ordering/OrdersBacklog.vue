@@ -26,9 +26,18 @@ const props = defineProps<{
     submitted_unpaid: {}
     picking: {}
     blocked: {}
-    packed: {}
     packed_done: {}
     dispatched_today: {}
+    finalise: {}
+    creating: {}
+    submitted: {}
+    in_warehouse: {}
+    handling: {}
+    handling_blocked: {}
+    packed: {}
+    finalised: {}
+    dispatched: {}
+    cancelled: {}
 }>()
 
 

@@ -19,7 +19,8 @@ import {
     faPencil,
     faArrowAltFromTop,
     faArrowAltFromBottom,
-    faReceipt
+    faReceipt,
+    faCopy
 } from "@fal"
 import {library} from "@fortawesome/fontawesome-svg-core"
 import {trans} from "laravel-vue-i18n"
@@ -31,7 +32,7 @@ import Tag from "@/Components/Tag.vue"
 import ModalRejected from "@/Components/Utils/ModalRejected.vue"
 import ButtonPrimeVue from "primevue/button"
 import ToggleSwitch from "primevue/toggleswitch"
-import {Link} from "@inertiajs/vue3"
+import {Link, router} from "@inertiajs/vue3"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
 import CountUp from "vue-countup-v3"
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
@@ -41,8 +42,12 @@ import { faExclamationCircle, faCheckCircle, faCheck, faTimes } from '@fas'
 import { faSpinnerThird } from '@fad'
 import { Tooltip } from 'floating-vue'
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import EmailSubscribetion from "@/Components/EmailSubscribetion.vue"
+import CustomerClv from "@/Components/CustomerCLV.vue"
+import { notify } from "@kyvg/vue3-notification"
+import CustomerSalesVsRefunds from "@/Components/CustomerSalesVsRefunds.vue";
 
-library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt)
+library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faCheck, faPencil, faExclamationCircle, faCheckCircle, faSpinnerThird, faReceipt, faCopy)
 
 interface Customer {
     slug: string
@@ -64,6 +69,11 @@ interface Customer {
     address: Address
     is_dropshipping: boolean
     email_subscriptions?: {
+        update_route: {
+            method: string
+            name: string
+            parameters: number[]
+        }
         suspended: {
             label: string
             is_suspended: boolean
@@ -73,6 +83,7 @@ interface Customer {
         subscriptions: {
             [key: string]: {
                 label: string
+                field: string
                 is_subscribed: boolean
                 unsubscribed_at: string | null
             }
@@ -97,7 +108,7 @@ const props = defineProps<{
             route_store: routeType
             route_increase: routeType
             route_decrease: routeType
-            increaase_reasons_options: {}[]
+            increase_reasons_options: {}[]
             decrease_reasons_options: {}[]
         }
         currency: {
@@ -106,6 +117,7 @@ const props = defineProps<{
         }
         type_options: {}
         tax_number: {}
+        stats: any
     },
     tab: string
     handleTabUpdate?: Function
@@ -116,7 +128,7 @@ const props = defineProps<{
 const locale = inject('locale', aikuLocaleStructure)
 const layout = inject('layout')
 
-console.log(layout);
+// console.log(layout);
 
 const isModalAddress = ref(false)
 const isModalUploadOpen = ref(false)
@@ -145,24 +157,6 @@ const links = ref([
 const isModalBalanceDecrease = ref(false)
 const isModalBalanceIncrease = ref(false)
 
-// Section: Email Subscriptions Local State
-const localIsSuspended = ref(props.data.customer.email_subscriptions?.suspended?.is_suspended ?? false)
-const isEditingEmailSubscriptions = ref(false)
-
-// Computed property for toggle switch value (inverted logic)
-const toggleSwitchValue = computed({
-    get: () => !localIsSuspended.value,
-    set: (value: boolean) => {
-        localIsSuspended.value = !value
-        // Here you can add API call to update the server
-        console.log('Email subscription suspended status changed to:', localIsSuspended.value)
-    }
-})
-
-// Function to toggle edit mode for email subscriptions
-const toggleEditEmailSubscriptions = () => {
-    isEditingEmailSubscriptions.value = !isEditingEmailSubscriptions.value
-}
 
 
 // Tax number validation helper functions
@@ -208,11 +202,29 @@ const getStatusText = (status: string, valid: boolean) => {
     }
     return trans('Pending')
 }
+
+// Function: Copy to clipboard
+const copyToClipboard = async (text: string, label: string) => {
+    try {
+        await navigator.clipboard.writeText(text)
+        notify({
+            title: trans("Copied!"),
+            text: trans(`:label copied to clipboard`, { label: label }),
+            type: "success"
+        })
+    } catch (error) {
+        notify({
+            title: trans("Failed"),
+            text: trans("Failed to copy to clipboard"),
+            type: "error"
+        })
+    }
+}
 </script>
 
 <template>
     <!-- Section: Stats box -->
-    <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-2 gap-8">
+    <div class="px-4 py-5 md:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 gap-8">
         <div v-if="data.require_approval && data.customer.status === 'pending_approval'"
             class="w-full max-w-md justify-self-end">
             <div class="p-5 border rounded-lg bg-white">
@@ -277,9 +289,14 @@ const getStatusText = (status: string, valid: boolean) => {
                                     aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.contact_name }}</dd>
+                            <button @click="copyToClipboard(data?.customer?.contact_name, 'Contact name')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </div>
 
-                        <!-- Field: Contact name -->
+                        <!-- Field: Company name -->
                         <div v-if="data?.customer?.company_name"
                             class="flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="trans('Company name')" class="flex-none">
@@ -288,6 +305,11 @@ const getStatusText = (status: string, valid: boolean) => {
                                     aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">{{ data?.customer?.company_name }}</dd>
+                            <button @click="copyToClipboard(data?.customer?.company_name, 'Company name')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </div>
 
                         <!-- Field: Created at -->
@@ -300,6 +322,11 @@ const getStatusText = (status: string, valid: boolean) => {
                             <dd class="text-gray-500">
                                 <time datetime="2023-01-31">{{ useFormatTime(data?.customer?.created_at) }}</time>
                             </dd>
+                            <button @click="copyToClipboard(useFormatTime(data?.customer?.created_at), 'Created at')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </div>
 
                         <!-- Field: Email -->
@@ -312,6 +339,11 @@ const getStatusText = (status: string, valid: boolean) => {
                             <dd class="text-gray-500">
                                 <a :href="`mailto:${data.customer.email}`">{{ data?.customer?.email }}</a>
                             </dd>
+                            <button @click="copyToClipboard(data?.customer?.email, 'Email')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </div>
 
                         <!-- Field: Phone -->
@@ -322,13 +354,19 @@ const getStatusText = (status: string, valid: boolean) => {
                                     aria-hidden="true" />
                             </dt>
                             <dd class="text-gray-500">
-                                <a :href="`tel:${data.customer.email}`">{{ data?.customer?.phone }}</a>
+                                <a :href="`tel:${data.customer.phone}`">{{ data?.customer?.phone }}</a>
                             </dd>
+                            <button @click="copyToClipboard(data?.customer?.phone, 'Phone')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
                         </div>
 
                         <!-- Field: Address -->
-                        <div v-if="data?.customer?.address" class="relative flex items w-full flex-none gap-x-4 px-6">
-                            <dt v-tooltip="'Address'" class="flex-none">
+                        <div v-if="data?.customer?.address"
+                            class="relative flex items-start w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="'Address'" class="flex-none pt-2">
                                 <FontAwesomeIcon icon="fal fa-map-marker-alt" class="text-gray-400" fixed-width
                                     aria-hidden="true" />
                             </dt>
@@ -361,7 +399,14 @@ const getStatusText = (status: string, valid: boolean) => {
                 <dd class="w-full text-gray-500">
                     <div class="space-y-2">
                         <!-- Tax Number Display -->
-                        <div class="text-gray-900 font-medium">{{ data.customer.tax_number.number }}</div>
+                        <div class="flex items-center gap-x-2">
+                            <div class="text-gray-900 font-medium">{{ data.customer.tax_number.number }}</div>
+                            <button @click="copyToClipboard(data.customer.tax_number.number, 'Tax Number')"
+                                class="text-gray-400 hover:text-gray-600 transition-colors"
+                                v-tooltip="trans('Copy to clipboard')">
+                                <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
+                            </button>
+                        </div>
 
                         <!-- Validation Status Display -->
                         <div class="p-3 bg-gray-50 rounded-lg border">
@@ -417,119 +462,63 @@ const getStatusText = (status: string, valid: boolean) => {
         </div>
 
 
-        <div class="justify-self-end ">
-            <div
-                class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
-                <div class="w-full flex justify-between items-center">
-                    <div>
-                        <div class="text-base">
-                            {{ trans("Balance") }}
-                        </div>
-                    </div>
-                    <div class="flex flex-col items-end">
-                        <div class="text-2xl font-bold">
-                            <CountUp :endVal="data.customer.balance" :decimalPlaces="2" :duration="1.5"
-                                :scrollSpyOnce="true" :options="{
-                                formattingFn: (value) =>
-                                    locale.currencyFormat(data.currency?.code, value),
-                            }" />
-                        </div>
-                        <div class="flex items-center">
-                            <div @click="() => isModalBalanceIncrease = true"
-                                v-tooltip="trans('Increase customer balance')"
-                                class="cursor-pointer text-gray-400 hover:text-indigo-600">
-                                <FontAwesomeIcon :icon="faArrowAltFromBottom" class="text-base"
-                                    tooltip="Decrease Balance" fixed-width aria-hidden="true" />
-                            </div>
-                            <span class="mx-2 text-gray-400">|</span>
-                            <div @click="() => isModalBalanceDecrease = true"
-                                v-tooltip="trans('Decrease customer balance')"
-                                class="cursor-pointer text-gray-400 hover:text-indigo-600">
-                                <FontAwesomeIcon :icon="faArrowAltFromTop" class="text-base" tooltip="Decrease Balance"
-                                    fixed-width aria-hidden="true" />
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div class="flex flex-col gap-4">
+                <CustomerClv  :data="data?.stats"
+                    :currencyCode="data.currency" />
+                <CustomerSalesVsRefunds :data="data?.stats" :currency-code="data.currency" />
+            </div>
+            <div class="justify-self-end ">
+                <div
+                    class="bg-indigo-50 border border-indigo-300 text-gray-700 flex flex-col justify-between px-4 py-5 sm:p-6 rounded-lg tabular-nums">
+                    <div class="w-full flex justify-between items-center">
+                        <div>
+                            <div class="text-base">
+                                {{ trans("Balance") }}
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"
-                    class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
-                    {{ trans("See all transactions list") }}
-                </div>
-            </div>
-
-            <div class="mt-4 w-64 border border-gray-300 rounded-md p-2">
-                <div v-for="(item, index) in links" :key="index" class="p-2">
-                    <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
-                        type="secondary" />
-                </div>
-            </div>
-
-            <!-- Email Subscriptions Section -->
-            <div v-if="data?.customer?.email_subscriptions && layout.app.environment === 'local'" class="mt-4 w-64 border border-gray-300 rounded-md p-3">
-                <h3 class="text-sm font-medium text-gray-900 mb-3">{{ trans("Email Subscriptions") }}</h3>
-
-                <!-- Suspended Status -->
-                <div v-if="data.customer.email_subscriptions.suspended" :class="`mb-3 flex items-center ${isEditingEmailSubscriptions ? 'justify-between' : 'justify-end'}`">
-                    <!-- Toggle Switch (only show when editing) -->
-                    <div v-if="isEditingEmailSubscriptions" class="flex items-center gap-3">
-                        <ToggleSwitch 
-                            v-model="toggleSwitchValue"
-                            :class="{
-                                'toggle-switch-active': !localIsSuspended,
-                                'toggle-switch-inactive': localIsSuspended
-                            }"
-                        />
-                        <span class="text-sm" :class="localIsSuspended ? 'text-red-600' : 'text-green-600'">
-                            {{ localIsSuspended ? trans('Suspended') : trans('Active') }}
-                        </span>
-                    </div>
-                    
-                    <!-- Status Display (only show when not editing) -->
-                    <!-- <div v-else class="flex items-center gap-2">
-                        <FontAwesomeIcon 
-                            :icon="localIsSuspended ? faTimes : faCheck"
-                            :class="localIsSuspended ? 'text-red-500' : 'text-green-500'"
-                            class="text-sm"
-                        />
-                        <span class="text-sm" :class="localIsSuspended ? 'text-red-600' : 'text-green-600'">
-                            {{ localIsSuspended ? trans('Suspended') : trans('Active') }}
-                        </span>
-                    </div> -->
-
-                    <!-- Edit Button -->
-                    <Button 
-                        @click="toggleEditEmailSubscriptions"
-                        :icon="isEditingEmailSubscriptions ? faTimes : faPencil"
-                        :type="isEditingEmailSubscriptions ? 'tertiary' : 'edit'"
-                        size="xs"
-                        :tooltip="isEditingEmailSubscriptions ? trans('Cancel Edit') : trans('Edit Email Subscriptions')"
-                        class="!p-0"
-                    />
-                </div>
-
-                <!-- Subscriptions List - Hidden when suspended -->
-                <div v-if="!localIsSuspended" class="space-y-2">
-                    <div v-for="(subscription, key) in data.customer.email_subscriptions.subscriptions" :key="key"
-                        class="flex items-center justify-between hover:bg-gray-50 rounded">
-                        <span class="text-sm text-gray-700">{{ subscription.label }}</span>
-                        <div class="flex items-center">
-                            <FontAwesomeIcon :icon="subscription.is_subscribed ? faCheck : faTimes"
-                                :class="subscription.is_subscribed ? 'text-green-500' : 'text-red-500'"
-                                class="text-sm" />
-                            <span class="ml-1 text-xs"
-                                :class="subscription.is_subscribed ? 'text-green-600' : 'text-red-600'">
-                                {{ subscription.is_subscribed ? trans('Subscribed') : trans('Unsubscribed') }}
-                            </span>
+                        <div class="flex flex-col items-end">
+                            <div class="text-2xl font-bold">
+                                <CountUp :endVal="data.customer.balance" :decimalPlaces="2" :duration="1.5"
+                                    :scrollSpyOnce="true" :options="{
+                                        formattingFn: (value) =>
+                                            locale.currencyFormat(data.currency?.code, value),
+                                    }" />
+                            </div>
+                            <div class="flex items-center">
+                                <div @click="() => isModalBalanceIncrease = true"
+                                    v-tooltip="trans('Increase customer balance')"
+                                    class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                                    <FontAwesomeIcon :icon="faArrowAltFromBottom" class="text-base"
+                                        tooltip="Decrease Balance" fixed-width aria-hidden="true" />
+                                </div>
+                                <span class="mx-2 text-gray-400">|</span>
+                                <div @click="() => isModalBalanceDecrease = true"
+                                    v-tooltip="trans('Decrease customer balance')"
+                                    class="cursor-pointer text-gray-400 hover:text-indigo-600">
+                                    <FontAwesomeIcon :icon="faArrowAltFromTop" class="text-base"
+                                        tooltip="Decrease Balance" fixed-width aria-hidden="true" />
+                                </div>
+                            </div>
                         </div>
                     </div>
+
+                    <div v-if="handleTabUpdate" @click="() => handleTabUpdate('credit_transactions')"
+                        class="w-fit text-xs text-gray-400 hover:text-gray-700 mt-2 italic underline cursor-pointer">
+                        {{ trans("See all transactions list") }}
+                    </div>
                 </div>
 
-                <!-- Message when suspended -->
-                <div v-if="localIsSuspended"
-                    class="mt-3 p-2 bg-red-50 rounded text-center">
-                    <span class="text-xs text-red-600">{{ trans('All email communications are suspended') }}</span>
+                <div class="mt-4 w-64 border border-gray-300 rounded-md p-2">
+                    <div v-for="(item, index) in links" :key="index" class="p-2">
+                        <ButtonWithLink :routeTarget="item.route_target" full :icon="item.icon" :label="item.label"
+                            type="secondary" />
+                    </div>
                 </div>
+
+                <!-- Email Subscriptions Section -->
+                <EmailSubscribetion v-if="data?.customer?.email_subscriptions"
+                    :emailSubscriptions="data.customer.email_subscriptions" />
             </div>
         </div>
     </div>
@@ -542,7 +531,7 @@ const getStatusText = (status: string, valid: boolean) => {
     <!-- Modal: Increase balance -->
     <Modal :isOpen="isModalBalanceIncrease" @onClose="() => (isModalBalanceIncrease = false)" width="max-w-2xl w-full">
         <CustomerDSBalanceIncrease v-model="isModalBalanceIncrease" :routeSubmit="data.balance.route_increase"
-            :options="data.balance.increaase_reasons_options" :currency="data.currency"
+            :options="data.balance.increase_reasons_options" :currency="data.currency"
             :types="data.balance.type_options" />
     </Modal>
 

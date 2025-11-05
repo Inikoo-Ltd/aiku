@@ -25,7 +25,8 @@ const props = defineProps<{
 const isBoxLoading = ref(false)
 const isLoadingMeta = ref<null | number>(null)
 const locale = inject('locale', aikuLocaleStructure)
-    
+
+const isLoadingMetaRight = ref(false)
 </script>
 
 <template>
@@ -60,15 +61,24 @@ const locale = inject('locale', aikuLocaleStructure)
         </dd>
 
         <!-- Meta right -->
-        <component v-if="stat.metaRight" :is="stat.metaRight?.route?.name ? Link : 'div'"
+        <component
+            v-if="stat.metaRight"
+            :is="stat.metaRight?.route?.name ? Link : 'div'"
             :href="stat.metaRight?.route?.name ? route(stat.metaRight?.route.name, stat.metaRight?.route.parameters) : ''"
             class="text-base rounded group/mr absolute top-6 right-5 px-2 flex gap-x-0.5 items-center font-normal"
+            :class="stat.metaRight?.route?.name ? 'cursor-pointer' : 'cursor-default'"
+            @click.prevent="false"
             :style="{
                 background: `color-mix(in srgb, white 90%, ${stat.color})`,
                 border: `1px solid ${stat.color}`,
                 color: `color-mix(in srgb, black 20%, ${stat.color})`
-            }" v-tooltip="stat.metaRight?.tooltip || stat.metaRight?.icon?.tooltip">
-            <Icon :data="stat.metaRight?.icon" class="opacity-100" />
+            }"
+            v-tooltip="stat.metaRight?.tooltip || stat.metaRight?.icon?.tooltip"
+            @start="isLoadingMetaRight = true"
+            @finish="isLoadingMetaRight = false"
+        >
+            <LoadingIcon v-if="isLoadingMetaRight" />
+            <Icon v-else :data="stat.metaRight?.icon" class="opacity-100" />
             <div class="group-hover/sub:text-gray-700">
                 {{ locale.number(stat.metaRight?.count) }}
             </div>
