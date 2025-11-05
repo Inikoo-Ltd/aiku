@@ -41,9 +41,9 @@ class StoreProductFromMasterProduct extends GrpAction
 
                 $shopProductData = isset($modelData['shop_products'][$shop->id]) ? $modelData['shop_products'][$shop->id] : [];
 
-                $createInShop = Arr::get($shopProductData, 'create_in_shop', false);
+                $createInShop = Arr::get($shopProductData, 'create_in_shop', 'No');
 
-                if (!$createInShop) {
+                if ($createInShop=='Yes') {
                     $price = $shopProductData['price'] ?? $masterAsset->price;
                     $rrp   = $shopProductData['rrp'];
 

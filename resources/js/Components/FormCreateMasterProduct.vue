@@ -213,7 +213,7 @@ const submitForm = async (redirect = true) => {
 
         finalDataTable[tableDataItem.id] = {
             price: price,
-            create_in_shop : create_in_shop,
+            create_in_shop : create_in_shop?'Yes':'No',
             rrp: rrp
         }
     }
