@@ -150,19 +150,19 @@ function roundDown2(num: number) {
             <table class="w-full border-collapse text-xs">
                 <thead>
                     <tr class="bg-gray-50 text-left font-medium text-gray-600 border-b border-gray-200">
-                        <th class="px-2 py-1">Shop</th>
-                        <th class="px-2 py-1 text-center">Stock</th>
+                        <th class="px-2 py-1">{{trans('Shop')}}</th>
+                        <th class="px-2 py-1 text-center">{{trans('Stock')}}</th>
                         <th class="px-2 py-1 text-center">
                             <div class="flex items-center justify-center gap-1">
-                                <span>Create Webpage?</span>
+                                <span>{{trans('Create Webpage?')}}</span>
                                 <input type="checkbox" v-model="allChecked" />
                             </div>
                         </th>
-                        <th class="px-2 py-1 text-center">Org cost</th>
-                        <th class="px-2 py-1">Price</th>
-                        <th class="px-2 py-1 text-center">Margin</th>
-                        <th class="px-2 py-1">Rrp</th>
-                        <th class="px-2 py-1 text-center">Rrp Margin</th>
+                        <th class="px-2 py-1 text-center">{{trans('Org cost')}}</th>
+                        <th class="px-2 py-1">{{trans('Price')}}</th>
+                        <th class="px-2 py-1 text-center">{{trans('Margin')}}</th>
+                        <th class="px-2 py-1">{{trans('Rrp')}}</th>
+                        <th class="px-2 py-1 text-center">{{trans('Rrp Margin')}}</th>
                     </tr>
                 </thead>
                 <tbody>
