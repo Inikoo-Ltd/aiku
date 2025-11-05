@@ -152,8 +152,9 @@ class ShowAnnouncementWorkshop extends OrgAction
                     'upload_image_route'     => [
                         'name'          => 'grp.models.shop.website.announcement.upload-images.store',
                         'parameters'    => [
-                            'shop' => $announcement->website->shop_id,
-                            'website' => $announcement->website_id
+                            'shop'          => $announcement->website->shop_id,
+                            'website'       => $announcement->website_id,
+                            'announcement'  => $announcement->id
                         ],
                         'method'    => 'post'
                     ],
