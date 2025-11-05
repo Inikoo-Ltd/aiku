@@ -259,7 +259,8 @@ trait WithEbayApiRequest
             'redirect_uri' => $shopSlug === 'dse' ? config('services.ebay.redirect_uri_es') : config('services.ebay.redirect_uri'),
             'sandbox' => config('services.ebay.sandbox'),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
-            'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token')
+            'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token'),
+            'shop' => $shopSlug
         ];
     }
 
