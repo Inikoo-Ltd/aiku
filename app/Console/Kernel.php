@@ -127,7 +127,10 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'CheckAllEbayChannels',
         );
 
-        $schedule->command('woo:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('woo:update-inventory')
+            ->hourly()
+            ->unlessBetween('5:00', '17:00')
+            ->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateWooStockInventories',
         );
 

@@ -63,10 +63,17 @@ class UpdateInventoryInWooPortfolio
                     ->where('platform_status', true)
                     ->get();
 
+
+                $first=true;
                 /** @var Portfolio $portfolio */
                 foreach ($portfolios as $portfolio) {
                     if ($this->checkIfApplicable($portfolio)) {
-                        UpdateWooPortfolio::dispatch($portfolio->id);
+                        if($first){
+                            UpdateWooPortfolio::run($portfolio->id);
+                            $first=false;
+                        }else{
+                            UpdateWooPortfolio::dispatch($portfolio->id);
+                        }
                     }
 
                 }

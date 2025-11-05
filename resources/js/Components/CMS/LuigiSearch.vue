@@ -58,8 +58,8 @@ const LBInitAutocompleteNew = async () => {
             RemoveFields: layout.iris.is_logged_in ? [] : ['formatted_price', 'price_amount', 'price'],
             Types: [
                 {
-                    name: "Products",
-                    heroName: "Top product",
+                    name: trans("Products"),
+                    heroName: trans("Top product"),
                     type: "item",
                     size: 7,
                     defaultFilters: {
@@ -67,43 +67,43 @@ const LBInitAutocompleteNew = async () => {
                     },
                 },
                 {
-                    name: "Queries",
+                    name: trans("Queries"),
                     type: "query",
                 },
                 {
-                    name: "Categories",
+                    name: trans("Categories"),
                     type: "category",
                 },
                 {
-                    name: "Articles",
+                    name: trans("Articles"),
                     type: "news",
                 },
                 {
-                    name: "Departments",
+                    name: trans("Departments"),
                     type: "department",
                 },
                 {
-                    name: "Sub Departments",
+                    name: trans("Sub Departments"),
                     type: "sub_department",
                 },
                 {
-                    name: "Brands",
+                    name: trans("Brands"),
                     type: "brand",
                 },
                 {
-                    name: "Collections",
+                    name: trans("Collections"),
                     type: "collection",
                 },
                 {
-                    name: "Tags",
+                    name: trans("Tags"),
                     type: "tag",
                 },
             ],
-            ShowAllTitle: 'View all results', // Show All Product: Button label
+            ShowAllTitle: trans('View all results'), // Show All Product: Button label
             ShowAllCallback: (q) => {  // Called when 'Show All Product' clicked
                 visitSearchPage()
             },
-            ShowBuyTitle: 'Detail', // Top Product: Button label
+            ShowBuyTitle: trans('Detail'), // Top Product: Button label
             Actions: [  // Action for Top Product 'Add To Basket'
                 {
                     forRow: function(row) {
