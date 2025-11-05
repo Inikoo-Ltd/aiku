@@ -20,6 +20,7 @@ import Accordion from 'primevue/accordion';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import ParentFieldSideEditor from '@/Components/Workshop/SideEditor/ParentFieldSideEditor.vue'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
+import { routeType } from '@/types/route'
 
 library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faChevronDown)
 
@@ -32,6 +33,7 @@ const props = defineProps<{
             type: string  // 'properties' || 'text' || 'background'
         }[]
     }[]
+    uploadImageRoute: routeType
 }>()
 
 const emits = defineEmits<{
@@ -55,7 +57,7 @@ onMounted(() => {
         :blueprint="blueprint ?? []"
         xblock="webpage.layout.web_blocks[openedBlockSideEditor]"
         xupdate:modelValue="() => sendBlockUpdate(webpage.layout.web_blocks[openedBlockSideEditor])"
-        xuploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: webpage.layout.web_blocks[openedBlockSideEditor].id } }"
+        :uploadImageRoute
     />
 
     <!-- <Accordion :value="openFieldWorkshop" @update:value="(e) => openFieldWorkshop = e">

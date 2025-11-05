@@ -85,6 +85,9 @@ const props = defineProps<{
         reset_route: routeType
         close_route: routeType
         activated_route: routeType
+        upload_image_route: routeType
+        start_route: routeType
+        delete_announcement_route: routeType
     }
     is_announcement_published: boolean
     is_announcement_active: string  // 'inactive' | 'active'
@@ -427,6 +430,7 @@ const onSectionSetting = () => {
             <div class="h-[calc(100vh-280px)] w-[450px] overflow-y-auto rounded-md shadow-lg">
                 <AnnouncementSideEditor
                     :blueprint="_component_template_Announcement?.fieldSideEditor"
+                    :uploadImageRoute="routes_list.upload_image_route"
                 />
             </div>
         </div>
