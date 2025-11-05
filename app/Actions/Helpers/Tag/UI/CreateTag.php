@@ -11,78 +11,97 @@
 namespace App\Actions\Helpers\Tag\UI;
 
 use App\Actions\OrgAction;
-use App\Actions\Traits\Authorisations\WithGoodsEditAuthorisation;
+use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Goods\TradeUnit;
+use App\Models\SysAdmin\Organisation;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
 class CreateTag extends OrgAction
 {
-    use WithGoodsEditAuthorisation;
-
-    protected TradeUnit $parent;
-
     public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): Response
     {
-        $this->parent = $tradeUnit;
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
         return $this->handle($tradeUnit, $request);
     }
 
-    public function handle(TradeUnit $parent, ActionRequest $request): Response
+    public function asController(Organisation $organisation, ActionRequest $request): Response
     {
-        $route = [];
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation, $request);
+    }
+
+    public function handle(Organisation|TradeUnit $parent, ActionRequest $request): Response
+    {
+        $route = [
+            'name'       => 'grp.org.tags.store',
+            'parameters' => [
+                'organisation' => $parent->slug
+            ]
+        ];
 
         if ($parent instanceof TradeUnit) {
             $route = [
                 'name'       => 'grp.models.trade-units.tags.store',
                 'parameters' => [
                     $parent->slug,
-                ]
+                ],
             ];
         }
+
+        $scopes = collect(TagScopeEnum::cases())->map(fn ($case) => [
+            'label' => $case->pretty(),
+            'value' => $case->value,
+        ])->toArray();
+
         return Inertia::render(
             'CreateModel',
             [
-                'title'    => __('New tag'),
+                'title'    => __('Create Tag'),
                 'icon'     =>
                     [
-                        'icon'  => ['fal', 'fa-box'],
-                        'title' => __('Tag')
+                        'icon'  => ['fal', 'fa-tags'],
+                        'title' => __('Tag'),
                     ],
                 'pageHead' => [
-                    'title'        => __('New Tag'),
+                    'title'        => __('Create Tag'),
                     'actions'      => [
                         [
                             'type'  => 'button',
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name'       => str_replace('create', 'index', $request->route()->getName()),
-                                'parameters' => array_values($request->route()->originalParameters())
+                                'name'       => str_replace('create', 'show', $request->route()->getName()),
+                                'parameters' => array_values($request->route()->originalParameters()),
                             ],
-                        ]
-                    ]
+                        ],
+                    ],
                 ],
                 'formData' => [
                     'blueprint' => [
                         [
-                            'title'  => __('New Tag'),
+                            'title'  => __('Create Tag'),
                             'fields' => [
                                 'name' => [
                                     'type'     => 'input',
-                                    'label'    => __('name'),
-                                    'required' => true
+                                    'label'    => __('Name'),
+                                    'required' => true,
                                 ],
-                            ]
-                        ]
+                                'scope' => [
+                                    'type'     => 'select',
+                                    'label'    => __('Scope'),
+                                    'required' => true,
+                                    'options'  => $scopes,
+                                ],
+                            ],
+                        ],
                     ],
                     'route' => $route,
                 ],
-
-            ]
+            ],
         );
     }
 }

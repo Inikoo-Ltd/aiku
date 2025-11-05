@@ -1,5 +1,4 @@
 <?php
-
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 23-05-2025, Bali, Indonesia
@@ -15,28 +14,54 @@ use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
-use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreTag extends OrgAction
 {
-    public function handle(Group|TradeUnit $parent, array $modelData): Tag
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): void
     {
+        $this->initialisationFromGroup($tradeUnit->group, $request);
+
+        $this->handle($tradeUnit, $this->validatedData);
+    }
+
+    public function asController(Organisation $organisation, ActionRequest $request): Tag
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation, $this->validatedData);
+    }
+
+    public function htmlResponse(Tag $tag): RedirectResponse
+    {
+        return Redirect::route('grp.org.tags.show', [$this->organisation->slug]);
+    }
+
+    public function handle(Organisation|TradeUnit $parent, array $modelData): Tag
+    {
+        if ($parent instanceof Organisation) {
+            data_set($modelData, 'organisation_id', $parent->id);
+        }
 
         if ($parent instanceof TradeUnit) {
-            $group = $parent->group;
             data_set($modelData, 'scope', TagScopeEnum::PRODUCT_PROPERTY);
-        } else {
-            $group = $parent;
+        }
+
+        if (!isset($modelData['scope'])) {
             data_set($modelData, 'scope', TagScopeEnum::OTHER);
         }
 
-        data_set($modelData, 'group_id', $group->id);
+        data_set($modelData, 'group_id', $parent->group->id);
 
-        $image = Arr::pull($modelData, 'image', null);
+        $image = Arr::pull($modelData, 'image');
+
         $tag = Tag::create($modelData);
+
         if ($image) {
             $imageData = [
                 'path'         => $image->getPathName(),
@@ -50,12 +75,15 @@ class StoreTag extends OrgAction
             );
         }
 
-        AttachTagsToModel::make()->handle(
-            $parent,
-            [
-                'tags_id' => [$tag->id]
-            ],
-        );
+
+        if ($parent instanceof TradeUnit) {
+            AttachTagsToModel::make()->handle(
+                $parent,
+                [
+                    'tags_id' => [$tag->id]
+                ],
+            );
+        }
 
         return $tag;
     }
@@ -63,21 +91,18 @@ class StoreTag extends OrgAction
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255', 'unique:tags,name'],
-            'image'                    => [
+            'name'  => ['required', 'string', 'max:255', 'unique:tags,name'],
+            'scope' => [
                 'sometimes',
                 'nullable',
-                File::image()
-                    ->max(12 * 1024)
+                'string',
+                'in:' . implode(',', array_column(TagScopeEnum::cases(), 'value')),
+            ],
+            'image' => [
+                'sometimes',
+                'nullable',
+                File::image()->max(12 * 1024),
             ],
         ];
     }
-
-    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request)
-    {
-        $this->initialisationFromGroup($tradeUnit->group, $request);
-
-        $this->handle($tradeUnit, $this->validatedData);
-    }
-
 }
