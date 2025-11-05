@@ -79,7 +79,8 @@ const component = computed(() => {
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-assign="{ action }">
-            <Button :icon="action.icon" :label="action.label" @click="showDialog = true" :style="action.style" />
+            <Button v-if="layout.app.environment === 'local'" :icon="action.icon" :label="action.label" @click="showDialog = true" :style="action.style" />
+            <div v-else></div>
         </template>
     </PageHeading>
 
