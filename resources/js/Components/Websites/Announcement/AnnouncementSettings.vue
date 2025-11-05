@@ -16,6 +16,8 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
+import axios from 'axios'
+import { notify } from '@kyvg/vue3-notification'
 library.add(faLink)
 
 const props = defineProps<{
@@ -82,7 +84,7 @@ onMounted(async () => {
     // Set default value target_users
     if(!get(announcementDataSettings.value, 'target_users.auth_state', false)) {
         set(announcementDataSettings.value, 'target_users', {
-            auth_state: 'all', // 'login' || 'logout'
+            auth_state: 'all', // 'logged_in' || 'logged_out'
         })
     }
 
@@ -108,11 +110,36 @@ onMounted(async () => {
 
 
 const settingsUser = ref({
-    authState: 'all', // 'logout' || 'all'
+    authState: 'all', // 'logged_out' || 'all'
 })
 
 const publishMessage = ref('')
 
+const onCheckActiveAnnouncements = async () => {
+    try {
+        // const response = await axios.post(
+        //     route(
+        //         props.imagesUploadRoute.name,
+        //         props.imagesUploadRoute.parameters
+        //     ),
+        //     { images: file }
+        // )
+        // if (response.status !== 200) {
+            
+        // }
+        // console.log('Response axios:', response.data)
+
+        if (props.onPublish) {
+            props.onPublish({ bodyToSend: { published_message: publishMessage.value } })
+        }
+    } catch (error: any) {
+        notify({
+            title: trans("Something went wrong"),
+            text: error.message || trans("Please try again or contact administrator"),
+            type: 'error'
+        })
+    }
+}
 </script>
 
 <template>
@@ -157,7 +184,7 @@ const publishMessage = ref('')
             <!-- Section: Target specific -->
             <div v-if="true && announcementDataSettings?.target_pages?.type == 'specific'" class="mt-2 space-y-4">
                 <div class="flex gap-x-4 items-center">
-                    <div>The announcement should</div>
+                    <div>{{ trans("The announcement should") }}</div>
                     <div class="w-24">
                         <Select
                             v-model="specificNew.will"
@@ -210,7 +237,7 @@ const publishMessage = ref('')
 
                 <!-- Section: Show URL list -->
                 <div>
-                    <div>Show ({{ announcementDataSettings.target_pages.specific.filter(item => item.will === 'show').length || 0 }}):</div>
+                    <div>{{ trans("Show") }} ({{ announcementDataSettings.target_pages.specific.filter(item => item.will === 'show').length || 0 }}):</div>
                     <TransitionGroup v-if="announcementDataSettings.target_pages.specific.length" name="list" tag="ul" class="bg-slate-200 px-2 py-2 rounded">
                         <template v-for="(spec, specIndex) in announcementDataSettings.target_pages.specific" :key="`${spec.will}${spec.when}${spec.url}`">
                             <li v-if="true || spec.will === 'show'" class="list-disc list-inside">
@@ -238,7 +265,7 @@ const publishMessage = ref('')
 
                 <!-- Section: Hide URL list -->
                 <div v-if="announcementDataSettings?.target_pages?.specific?.filter(item => item.will === 'hide').length">
-                    <div>Hide ({{ announcementDataSettings.target_pages.specific.filter(item => item.will === 'hide').length }}):</div>
+                    <div>{{ trans("Hide") }} ({{ announcementDataSettings.target_pages.specific.filter(item => item.will === 'hide').length }}):</div>
                     <TransitionGroup name="list" tag="ul" class="bg-slate-200 px-2 py-2 rounded">
                         <template v-for="(spec, specIndex) in announcementDataSettings.target_pages.specific" :key="`${spec.will}${spec.when}${spec.url}`">
                             <li v-if="spec.will === 'hide'" class="list-disc list-inside">
@@ -280,30 +307,30 @@ const publishMessage = ref('')
             
             <div class="flex items-center gap-x-3">
                 <input
-                    value="login"
+                    value="logged_in"
                     @input="(val: string) => set(announcementDataSettings, 'target_users.auth_state', val.target.value)"
-                    :checked="get(announcementDataSettings, 'target_users.auth_state', false) === 'login'"
-                    id="auth-login"
+                    :checked="get(announcementDataSettings, 'target_users.auth_state', false) === 'logged_in'"
+                    id="auth-logged_in"
                     name="input-auth-state"
                     type="radio"
                     class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                 />
-                <label for="auth-login" class="cursor-pointer block font-medium ">
+                <label for="auth-logged_in" class="cursor-pointer block font-medium ">
                     {{ trans("Visitor logged in") }}
                 </label>
             </div>
 
             <div class="flex items-center gap-x-3">
                 <input
-                    value="logout"
+                    value="logged_out"
                     @input="(val: string) => set(announcementDataSettings, 'target_users.auth_state', val.target.value)"
-                    :checked="get(announcementDataSettings, 'target_users.auth_state', false) === 'logout'"
-                    id="auth-logout"
+                    :checked="get(announcementDataSettings, 'target_users.auth_state', false) === 'logged_out'"
+                    id="auth-logged_out"
                     name="input-auth-state"
                     type="radio"
                     class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                 />
-                <label for="auth-logout" class="cursor-pointer block font-medium ">
+                <label for="auth-logged_out" class="cursor-pointer block font-medium ">
                     {{ trans("Visitor logged out") }}
                 </label>
 
@@ -313,14 +340,14 @@ const publishMessage = ref('')
 
     <!-- Section: Published -->
     <fieldset class="mb-6 bg-white px-7 pt-4 pb-7 border border-gray-200 rounded-xl">
-        <div class="text-xl font-semibold">Published</div>
+        <div class="text-xl font-semibold">{{ trans("Published") }}</div>
         <p class="text-sm/6 text-gray-600">
             {{ trans("Select how announcement will published") }}
         </p>
         <div class="grid grid-cols-1 h-fit gap-y-4 ">
             <!-- Section: Start date -->
             <fieldset class="">
-                <div class="text-sm/6 font-semibold ">Start date</div>
+                <div class="text-sm/6 font-semibold ">{{ trans("Start date") }}</div>
                 <div class="bg-gray-50 rounded p-4 border border-gray-200 space-y-6">
                     <div class="flex items-center gap-x-3">
                         <input
@@ -367,7 +394,7 @@ const publishMessage = ref('')
 
             <!-- Section: Finish date -->
             <fieldset class="">
-                <div class="text-sm/6 font-semibold ">Finish date</div>
+                <div class="text-sm/6 font-semibold ">{{ trans("Finish date") }}</div>
                 <div class="bg-gray-50 rounded p-4 border border-gray-200 space-y-6">
                     <div class="flex items-center gap-x-3">
                         <input
@@ -379,7 +406,7 @@ const publishMessage = ref('')
                             type="radio"
                             class="cursor-pointer h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-600"
                         />
-                        <label for="inp-finish-unlimited" class="block text-sm/6 font-medium cursor-pointer ">Until I deactivated</label>
+                        <label for="inp-finish-unlimited" class="block text-sm/6 font-medium cursor-pointer ">{{ trans("Until deactivated") }}</label>
                     </div>
                     
                     <div v-if="false" class="flex items-center gap-x-3">
@@ -423,13 +450,13 @@ const publishMessage = ref('')
             </fieldset>
 
             <Button
-                @click="() => onPublish({ bodyToSend: { published_message: publishMessage } })"
+                @click="() => onCheckActiveAnnouncements()"
                 label="Publish"
                 icon="fal fa-rocket-launch"
                 full
                 size="xl"
                 :disabled="!publishMessage || isLoadingPublish || !get(announcementData, 'template_code', false)"
-                v-tooltip="!get(announcementData, 'template_code', false) ? trans('Select template to publish') : !publishMessage ? trans('Fill the description') : ''"
+                v-tooltip="!get(announcementData, 'template_code', false) ? trans('Select template to publish') : !publishMessage ? trans('Enter the description') : ''"
             />
             
             <!-- <pre>{{announcementData.schedule_at}}</pre> -->
