@@ -26,7 +26,6 @@ class StoreProductFromMasterProduct extends GrpAction
      */
     public function handle(MasterAsset $masterAsset, array $modelData): void
     {
-
         if (!$masterAsset->masterFamily) {
             return;
         }
@@ -41,87 +40,91 @@ class StoreProductFromMasterProduct extends GrpAction
                 }
 
                 $shopProductData = isset($modelData['shop_products'][$shop->id]) ? $modelData['shop_products'][$shop->id] : [];
-                $price           = $shopProductData['price'] ?? $masterAsset->price;
-                $rrp             = $shopProductData['rrp'];
-                $createWebpage   = !isset($shopProductData['create_webpage']) || $shopProductData['create_webpage'];
 
-                $orgStocks = [];
+                $createInShop = Arr::get($shopProductData, 'create_in_shop', false);
+
+                if (!$createInShop) {
+                    $price = $shopProductData['price'] ?? $masterAsset->price;
+                    $rrp   = $shopProductData['rrp'];
+
+                    $orgStocks = [];
 
 
-                foreach ($masterAsset->stocks as $stock) {
-                    $stockOrgStock = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->first();
+                    foreach ($masterAsset->stocks as $stock) {
+                        $stockOrgStock = $stock->orgStocks()->where('organisation_id', $productCategory->organisation_id)->first();
 
 
-                    if (!$stockOrgStock) {
-                        $stockOrgStock = StoreOrgStock::make()->action(
-                            $productCategory->organisation,
-                            $stock,
-                            [
-                                'state' => OrgStockStateEnum::ACTIVE,
-                            ]
-                        );
+                        if (!$stockOrgStock) {
+                            $stockOrgStock = StoreOrgStock::make()->action(
+                                $productCategory->organisation,
+                                $stock,
+                                [
+                                    'state' => OrgStockStateEnum::ACTIVE,
+                                ]
+                            );
+                        }
+                        $orgStocks[$stockOrgStock->id] = [
+                            'quantity' => $stock->pivot->quantity,
+                        ];
                     }
-                    $orgStocks[$stockOrgStock->id] = [
-                        'quantity' => $stock->pivot->quantity,
+
+                    $data = [
+                        'code'              => $masterAsset->code,
+                        'name'              => $masterAsset->name,
+                        'description'       => $masterAsset->description,
+                        'description_title' => $masterAsset->description_title,
+                        'description_extra' => $masterAsset->description_extra,
+
+
+                        'price'             => $price,
+                        'rrp'               => $rrp,
+                        'unit'              => $masterAsset->unit,
+                        'units'             => $masterAsset->units,
+                        'is_main'           => true,
+                        'org_stocks'        => $orgStocks,
+                        'master_product_id' => $masterAsset->id,
+                        'state'             => ProductStateEnum::ACTIVE,
+                        'status'            => ProductStatusEnum::FOR_SALE,
+                        'is_for_sale'       => true,
                     ];
-                }
 
-                $data = [
-                    'code'              => $masterAsset->code,
-                    'name'              => $masterAsset->name,
-                    'description'       => $masterAsset->description,
-                    'description_title' => $masterAsset->description_title,
-                    'description_extra' => $masterAsset->description_extra,
+                    if (count($orgStocks) > 1) {
+                        data_set($data, 'gross_weight', $masterAsset->gross_weight);
+                        data_set($data, 'marketing_weight', $masterAsset->marketing_weight);
+                    }
 
 
-                    'price'             => $price,
-                    'rrp'               => $rrp,
-                    'unit'              => $masterAsset->unit,
-                    'units'             => $masterAsset->units,
-                    'is_main'           => true,
-                    'org_stocks'        => $orgStocks,
-                    'master_product_id' => $masterAsset->id,
-                    'state'             => ProductStateEnum::ACTIVE,
-                    'status'            => ProductStatusEnum::FOR_SALE,
-                    'is_for_sale'       => true,
-                ];
+                    $product = Product::where('shop_id', $shop->id)
+                        ->whereRaw("lower(code) = lower(?)", [$masterAsset->code])
+                        ->first();
 
-                if (count($orgStocks) > 1) {
-                    data_set($data, 'gross_weight', $masterAsset->gross_weight);
-                    data_set($data, 'marketing_weight', $masterAsset->marketing_weight);
-                }
+                    if ($product) {
+                        data_set($data, 'family_id', $productCategory->id);
+                        data_set($data, 'well_formatted_org_stocks', $orgStocks);
+                        data_forget($data, 'org_stocks');
 
 
-                $product = Product::where('shop_id', $shop->id)
-                    ->whereRaw("lower(code) = lower(?)", [$masterAsset->code])
-                    ->first();
+                        $this->updateFoundProduct($product, $data, true);
+                        continue;
+                    }
 
-                if ($product) {
-                    data_set($data, 'family_id', $productCategory->id);
-                    data_set($data, 'well_formatted_org_stocks', $orgStocks);
-                    data_forget($data, 'org_stocks');
+                    $product = StoreProduct::run($productCategory, $data);
+
+                    $product->refresh();
+                    CloneProductImagesFromTradeUnits::run($product);
+                    $product->refresh();
 
 
-                    $this->updateFoundProduct($product, $data, $createWebpage);
-                    continue;
-                }
-
-                $product = StoreProduct::run($productCategory, $data);
-
-                $product->refresh();
-                CloneProductImagesFromTradeUnits::run($product);
-                $product->refresh();
-
-                if ($createWebpage) {
                     $webpage = StoreProductWebpage::run($product);
                     PublishWebpage::make()->action($webpage, [
                         'comment' => 'first publish'
                     ]);
+
+                    TranslateCategoryModel::dispatch(
+                        $product,
+                        Arr::only($data, ['name', 'description', 'description_title', 'description_extra'])
+                    );
                 }
-                TranslateCategoryModel::dispatch(
-                    $product,
-                    Arr::only($data, ['name', 'description', 'description_title', 'description_extra'])
-                );
             }
         }
     }

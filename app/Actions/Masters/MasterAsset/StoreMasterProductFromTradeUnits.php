@@ -39,10 +39,9 @@ class StoreMasterProductFromTradeUnits extends GrpAction
      */
     public function handle(MasterProductCategory $parent, array $modelData): MasterAsset
     {
-        $tradeUnits = Arr::pull($modelData, 'trade_units', []);
+        $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
 
-        dd($shopProducts);
 
         if (!Arr::has($modelData, 'unit') && count($tradeUnits) == 1) {
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
@@ -50,22 +49,21 @@ class StoreMasterProductFromTradeUnits extends GrpAction
 
 
         $masterAsset = DB::transaction(function () use ($parent, $modelData, $tradeUnits, $shopProducts) {
-
-            $data        = [
-                'code'    => Arr::get($modelData, 'code'),
-                'name'    => Arr::get($modelData, 'name'),
-                'unit'    => Arr::get($modelData, 'unit'),
-                'description'             => Arr::get($modelData, 'description'),
-                'description_title'       => Arr::get($modelData, 'description_title'),
-                'description_extra'       => Arr::get($modelData, 'description_extra'),
-                'units'                   => Arr::get($modelData, 'units', 1),
-                'marketing_weight'        => Arr::get($modelData, 'marketing_weight', 0),
-                'gross_weight'            => Arr::get($modelData, 'gross_weight', 0),
-                'marketing_dimensions'    => Arr::get($modelData, 'marketing_dimensions', []),
-                'is_main' => true,
-                'type'    => MasterAssetTypeEnum::PRODUCT,
-                'trade_units'  => $tradeUnits,
-                'shop_products' => $shopProducts
+            $data = [
+                'code'                 => Arr::get($modelData, 'code'),
+                'name'                 => Arr::get($modelData, 'name'),
+                'unit'                 => Arr::get($modelData, 'unit'),
+                'description'          => Arr::get($modelData, 'description'),
+                'description_title'    => Arr::get($modelData, 'description_title'),
+                'description_extra'    => Arr::get($modelData, 'description_extra'),
+                'units'                => Arr::get($modelData, 'units', 1),
+                'marketing_weight'     => Arr::get($modelData, 'marketing_weight', 0),
+                'gross_weight'         => Arr::get($modelData, 'gross_weight', 0),
+                'marketing_dimensions' => Arr::get($modelData, 'marketing_dimensions', []),
+                'is_main'              => true,
+                'type'                 => MasterAssetTypeEnum::PRODUCT,
+                'trade_units'          => $tradeUnits,
+                'shop_products'        => $shopProducts
             ];
 
             $masterAsset = StoreMasterAsset::make()->action($parent, $data);
@@ -83,6 +81,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             }
 
             $masterAsset->refresh();
+
             return $masterAsset;
         });
 
@@ -96,7 +95,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     public function rules(): array
     {
         return [
-            'code'                     => [
+            'code'                   => [
                 'required',
                 'max:32',
                 new AlphaDashDot(),
@@ -131,18 +130,18 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'numeric',
                 'min:1'
             ],
-            'shop_products' => ['sometimes', 'array'],
-            'shop_products.*.price'       => [
+            'shop_products'          => ['sometimes', 'array'],
+            'shop_products.*.price'  => [
                 'required',
                 'numeric',
                 'min:0'
             ],
-            'shop_products.*.rrp'       => [
+            'shop_products.*.rrp'    => [
                 'required',
                 'numeric',
                 'min:0'
             ],
-            'image' => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"],
+            'image'                  => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"],
             'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'   => ['sometimes'],
         ];
@@ -172,10 +171,10 @@ class StoreMasterProductFromTradeUnits extends GrpAction
      */
     public function asController(MasterProductCategory $masterFamily, ActionRequest $request): MasterAsset
     {
-
         $this->masterFamily = $masterFamily;
 
         $this->initialisation($masterFamily->group, $request);
+
         return $this->handle($masterFamily, $this->validatedData);
     }
 }
