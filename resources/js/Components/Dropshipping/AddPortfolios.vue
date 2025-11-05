@@ -124,7 +124,6 @@ const selectedList = ref(filterList[0])
             </div>
         </div>
 
-            {{ props.routes.itemRoute.name }}
         <!-- 0: Select Product -->
         <KeepAlive>
             <ProductsSelector
