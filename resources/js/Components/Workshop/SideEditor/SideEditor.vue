@@ -32,7 +32,7 @@ const props = withDefaults(defineProps<{
     block?: {
         id: number
     }
-    panelOpen?: number|null
+    panelOpen?: number|null|string
 }>(), {
     panelOpen: null,
 })
