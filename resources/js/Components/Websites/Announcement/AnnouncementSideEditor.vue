@@ -7,7 +7,7 @@
 <script setup lang="ts">
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { inject, onMounted } from 'vue'
-import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faChevronDown } from '@fal'
+import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faChevronDown, faCaretDown, faCaretLeft } from '@fal'
 import { get } from 'lodash'
 
 import AccordionPanel from 'primevue/accordionpanel'
@@ -17,6 +17,9 @@ import AccordionContent from 'primevue/accordioncontent'
 import { getComponent, getFormValue, setFormValue } from '@/Composables/SideEditorHelper'
 import Icon from '@/Components/Icon.vue';
 import Accordion from 'primevue/accordion';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import ParentFieldSideEditor from '@/Components/Workshop/SideEditor/ParentFieldSideEditor.vue'
+import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 
 library.add(faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faChevronDown)
 
@@ -46,7 +49,16 @@ onMounted(() => {
 </script>
 
 <template>
-    <Accordion :value="openFieldWorkshop" @update:value="(e) => openFieldWorkshop = e">
+    <SideEditor
+        v-model="announcementData"
+        :panelOpen="openFieldWorkshop"
+        :blueprint="blueprint ?? []"
+        xblock="webpage.layout.web_blocks[openedBlockSideEditor]"
+        xupdate:modelValue="() => sendBlockUpdate(webpage.layout.web_blocks[openedBlockSideEditor])"
+        xuploadImageRoute="{ ...webpage.images_upload_route, parameters: { modelHasWebBlocks: webpage.layout.web_blocks[openedBlockSideEditor].id } }"
+    />
+
+    <!-- <Accordion :value="openFieldWorkshop" @update:value="(e) => openFieldWorkshop = e">
         <AccordionPanel v-for="(bprint, index) in blueprint" :key="index" :value="index">
             <AccordionHeader>
                 <div>
@@ -69,6 +81,6 @@ onMounted(() => {
                 </div>
             </AccordionContent>
         </AccordionPanel>
-    </Accordion>
+    </Accordion> -->
 
 </template>

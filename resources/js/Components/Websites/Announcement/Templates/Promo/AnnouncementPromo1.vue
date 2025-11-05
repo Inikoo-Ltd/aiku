@@ -52,36 +52,37 @@ const fieldSideEditor = [
             icon: "fal fa-rectangle-wide",
             tooltip: "Container"
         },
+        key: ['container_properties'],
         replaceForm: [
             {
-                key: ["container_properties","background"],
+                key: ["background"],
                 label : "Background",
                 type: "background",
             },
             {
-                key: ["container_properties","text"],
+                key: ["text"],
                 type: "textProperty",
             },
             {
-                key: ["container_properties","margin"],
+                key: ["margin"],
                 label : "Margin",
                 type: "margin",
                 useIn : ["desktop", "tablet", "mobile"],
             },
             {
-                key: ["container_properties","padding"],
+                key: ["padding"],
                 label : "Padding",
                 type: "padding",
                 useIn : ["desktop", "tablet", "mobile"],
             },
             {
-                key: ["container_properties","border"],
+                key: ["border"],
                 label : "Border",
                 type: "border",
                 useIn : ["desktop", "tablet", "mobile"],
             },
             {
-                key: ["container_properties","dimension"],
+                key: ["dimension"],
                 label:"Dimension",
                 type: "dimension",
                 useIn : ["desktop", "tablet", "mobile"],
@@ -94,9 +95,11 @@ const fieldSideEditor = [
             icon: "fal fa-text",
             tooltip: "Main title"
         },
+        key: ['fields', 'text_1'],
+        accordion_key: 1,
         replaceForm: [
             {
-                key: ['fields', 'text_1', 'text'],
+                key: ['text'],
                 type: "editorhtml",
                 props_data: {
                     toogle: [
@@ -114,9 +117,11 @@ const fieldSideEditor = [
             icon: "fal fa-hand-pointer",
             tooltip: "Main title"
         },
+        key: ['fields'],
+        accordion_key: 2,
         replaceForm: [
             {
-                key: ['fields', 'button_1'],
+                key: ['button_1'],
                 type: "button"
             }
         ]
@@ -395,16 +400,19 @@ defineExpose({
     
             </div>
 
-            <a
-                v-if="announcementData?.fields?.button_1?.text"
-                @click="() => (onClickClose(), onClickOpenFieldWorkshop(2))"
-                :href="announcementData?.fields.button_1.link.href || '#'"
-                :target="announcementData?.fields.button_1.link.target" 
-                v-html="announcementData?.fields.button_1.text"
-                class="mt-3 md:mt-0 inline-flex items-center announcement-component-editable"
-                :style="getStyles(announcementData?.fields.button_1?.container?.properties)"
-            >
-            </a>
+            <div class="relative">
+                <div v-if="isEditable"  @click="() => (onClickOpenFieldWorkshop(2))" class="absolute inset-0 announcement-component-editable " />
+                <a
+                    v-if="announcementData?.fields?.button_1?.text"
+                    @click="() => (onClickClose())"
+                    :href="announcementData?.fields.button_1.link.href || '#'"
+                    :target="announcementData?.fields.button_1.link.target"
+                    v-html="announcementData?.fields.button_1.text"
+                    class="mt-3 md:mt-0 inline-flex items-center announcement-component-editable"
+                    :style="getStyles(announcementData?.fields.button_1?.container?.properties)"
+                >
+                </a>
+            </div>
         </div>
     </div>
 
