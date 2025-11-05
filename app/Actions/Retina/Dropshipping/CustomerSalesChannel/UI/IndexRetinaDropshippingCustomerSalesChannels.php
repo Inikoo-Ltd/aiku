@@ -25,7 +25,7 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
 {
-    public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
+    public function handle(Customer $customer, $prefix = null, $showClosed = false): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -37,10 +37,11 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $globalGlobalClosed =  $showClosed ? CustomerSalesChannelStatusEnum::CLOSED : CustomerSalesChannelStatusEnum::OPEN;
         $query = QueryBuilder::for(CustomerSalesChannel::class);
         $query->leftjoin('platforms', 'customer_sales_channels.platform_id', 'platforms.id');
         $query->where('customer_sales_channels.customer_id', $customer->id);
-        $query->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN);
+        $query->where('customer_sales_channels.status',  $globalGlobalClosed);
 
         return $query
             ->defaultSort('customer_sales_channels.reference')
@@ -70,6 +71,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
     {
         $icon = ['fal', 'fa-user'];
         $title = $this->customer->name;
+        $hasClosedChannels = $this->customer->hasClosedChannels;
         $iconRight = [
             'icon' => ['fal', 'fa-user-friends'],
             'title' => $title
@@ -89,7 +91,17 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                     'afterTitle' => $afterTitle,
                     'iconRight' => $iconRight,
                     'icon' => $icon,
-                    'actions' => [
+                    'actions' => [ 
+                      $hasClosedChannels ? [
+                            'type' => 'button',
+                            'label' => __('Show Closed Channels'),
+                            'route' => [
+                                'name' => 'retina.dropshipping.customer_sales_channels.index',
+                                'parameters' => [
+                                    'closed' => true
+                                ], 
+                            ],
+                        ] : [],
                         [
                             'type' => 'button',
                             'style' => 'create',
@@ -131,8 +143,9 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
+        $showClosed = $request->boolean('closed', false);
 
-        return $this->handle($this->customer);
+        return $this->handle($this->customer, null, $showClosed);
     }
 
     public function getBreadcrumbs(): array

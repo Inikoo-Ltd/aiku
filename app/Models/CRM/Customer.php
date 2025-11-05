@@ -71,6 +71,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 
 /**
  * App\Models\CRM\Customer
@@ -274,6 +275,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function getHasClosedChannelsAttribute(): bool
+    {
+        return $this->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::CLOSED)->exists();
     }
 
     protected static function booted(): void
