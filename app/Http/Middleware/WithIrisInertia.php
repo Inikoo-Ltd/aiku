@@ -79,7 +79,7 @@ trait WithIrisInertia
                 $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
                 ['product_categories' => GetIrisProductCategoryNavigation::run($website)]
             ),
-            'announcements' => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get()),
+            'announcements' => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get())->toArray(request()),
             'shop'                 => [
                 'type' => $shop->type->value,
                 'id'   => $shop->id,

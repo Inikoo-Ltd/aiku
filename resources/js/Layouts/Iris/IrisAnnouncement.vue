@@ -28,13 +28,8 @@ provide("isPreviewLoggedIn", isLoggedIn)
 </script>
 
 <template>
-    <!-- Section: Topbar (login, logout) -->
     <component
-        v-if="data?.topBar?.data.fieldValue"
-        :is="getIrisAnnouncementComponent(data?.topBar.code)"
-        :fieldValue="data.topBar.data.fieldValue"
-        v-model="data.topBar.data.fieldValue"
+        :is="getIrisAnnouncementComponent(data?.template_code)"
+        :announcementData="data"
     />
-
-
 </template>

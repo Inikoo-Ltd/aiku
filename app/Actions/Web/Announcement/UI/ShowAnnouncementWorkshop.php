@@ -59,7 +59,7 @@ class ShowAnnouncementWorkshop extends OrgAction
 
                     'title'     => __('Workshop'),
                     'container' => [
-                        'icon'    => ['fal', 'fa-sign'],
+                        'icon'    => ['fal', 'fa-megaphone'],
                         'tooltip' => __('Announcement'),
                         'label'   => Str::possessive($announcement->name)
                     ],

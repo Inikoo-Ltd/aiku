@@ -30,7 +30,7 @@ provide('layout', layout)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
 
-const propsAnnouncement = usePage().props?.iris?.announcement
+const propsAnnouncements = usePage().props?.iris?.announcements
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const footer = usePage().props?.iris?.footer
@@ -126,10 +126,10 @@ console.log('handle', usePage().props)
         </Modal>
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
-
             <IrisAnnouncement
-                v-if="propsAnnouncement"
-                :data="propsAnnouncement"
+                v-if="propsAnnouncements?.length"
+                v-for="announcement in propsAnnouncements"
+                :data="announcement"
             />
 
             <!-- Section: Topbar, Header, Menu, Sidebar -->
