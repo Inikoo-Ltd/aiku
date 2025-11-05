@@ -8,9 +8,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Ordering\Order\UpdateState\InvoiceOrderFromDeliveryNoteFinalisation;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
@@ -22,17 +22,19 @@ use Lorisleiva\Actions\ActionRequest;
 class FinaliseDeliveryNote extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
     /**
      * @throws \Throwable
      */
     public function handle(DeliveryNote $deliveryNote): DeliveryNote
     {
+        $oldState = $deliveryNote->state;
         if ($deliveryNote->shipments->isEmpty() && !$deliveryNote->collection_address_id) {
             throw ValidationException::withMessages([
-                  'message' => [
-                            'delivery_note' => __('Shipment should be set before finalizing.'),
-                        ]
+                'message' => [
+                    'delivery_note' => __('Shipment should be set before finalizing.'),
+                ]
             ]);
         }
 
@@ -49,12 +51,10 @@ class FinaliseDeliveryNote extends OrgAction
             }
 
             return $this->update($deliveryNote, $modelData);
-
         });
 
-
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::FINALISED);
 
         return $deliveryNote;
     }

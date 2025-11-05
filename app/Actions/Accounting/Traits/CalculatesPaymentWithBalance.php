@@ -19,6 +19,11 @@ trait CalculatesPaymentWithBalance
      */
     protected function calculatePaymentWithBalance(float $totalAmount, float $balance): array
     {
+
+        if($balance < 0){
+            $balance = 0;
+        }
+
         $toPay = (float) max($totalAmount, 0.0);
 
         $toPay = round($toPay, 2);

@@ -28,7 +28,7 @@ class ReindexWebsiteLuigi
     {
         $accessToken = $this->getAccessToken($website);
         if (count($accessToken) < 2) {
-            Log::error('Luigi\'s Box access token is not configured properly');
+            Log::error('Luigis Box access token is not configured properly');
 
             return;
         }

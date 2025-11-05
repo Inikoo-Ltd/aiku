@@ -196,7 +196,7 @@ class IndexInvoices extends OrgAction
             }
 
 
-            $table->column(key: 'reference', label: __('reference'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'reference', label: __('Reference'), canBeHidden: false, sortable: true, searchable: true);
             if ($parent instanceof Organisation) {
                 $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'customer_company', label: __('Company'), canBeHidden: false, sortable: true, searchable: true);

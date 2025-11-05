@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import Carousel from 'primevue/carousel'
 import Image from '@/Components/Image.vue'
-import { inject, ref, computed } from 'vue'
+import { inject, ref, computed, watch, nextTick } from 'vue'
 import { getStyles } from '@/Composables/styles'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
@@ -53,8 +53,6 @@ const isLooping = computed(() => {
 const cardStyle = ref(getStyles(props.fieldValue?.carousel_data?.card_container?.properties, props.screenType, false))
 
 
-
-
 const responsiveOptions = computed(() => {
   const settings = props.fieldValue?.carousel_data?.carousel_setting || {}
   return [
@@ -63,6 +61,41 @@ const responsiveOptions = computed(() => {
     { breakpoint: '576px', numVisible: settings.slidesPerView?.mobile || 1, numScroll: 1 }
   ]
 })
+
+
+const refreshCarousel = async (delay = 100) => {
+  await new Promise(resolve => setTimeout(resolve, delay))
+  refreshTrigger.value++
+  await nextTick()
+}
+
+
+watch(
+  () => [props.fieldValue?.carousel_data?.carousel_setting, props.screenType],
+  () => refreshCarousel(),
+  { deep: true }
+)
+
+
+watch(
+  () => props.fieldValue?.carousel_data?.card_container,
+  async () => {
+    cardStyle.value = getStyles(props.fieldValue?.carousel_data?.card_container?.properties, props.screenType, false)
+    await refreshCarousel(200)
+  },
+  { deep: true }
+)
+
+
+watch(
+  () => props.screenType,
+  async () => {
+    cardStyle.value = getStyles(props.fieldValue?.carousel_data?.card_container?.properties, props.screenType, false)
+    await refreshCarousel(200)
+  },
+  { deep: true }
+)
+
 </script>
 
 <template>

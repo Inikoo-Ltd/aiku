@@ -339,7 +339,7 @@ class ShowRetinaPalletDelivery extends RetinaAction
                 ],
                 'upload_stored_item' => [
                     'title' => [
-                        'label' => __('Upload Customer\'s SKU'),
+                        'label' => __("Upload Customer's SKU"),
                         'information' => __('The list of column file: customer_reference, notes, stored_items')
                     ],
                     'progressDescription'   => __('Adding stored item'),

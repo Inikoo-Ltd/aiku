@@ -9,9 +9,9 @@
 
 namespace App\Actions\Dispatching\DeliveryNote;
 
+use App\Actions\Catalogue\Shop\Hydrators\HasDeliveryNoteHydrators;
 use App\Actions\Dispatching\DeliveryNoteItem\UpdateDeliveryNoteItem;
 use App\Actions\OrgAction;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNoteItem\DeliveryNoteItemStateEnum;
@@ -24,11 +24,13 @@ use Lorisleiva\Actions\ActionRequest;
 class PickDeliveryNoteAsEmployee extends OrgAction
 {
     use WithActionUpdate;
+    use HasDeliveryNoteHydrators;
 
     private DeliveryNote $deliveryNote;
 
     public function handle(DeliveryNote $deliveryNote, User $user): DeliveryNote
     {
+        $oldState = $deliveryNote->state;
         $deliveryNote = UpdateDeliveryNote::make()->action($deliveryNote, [
             'picker_user_id' => $user->id,
         ]);
@@ -43,8 +45,10 @@ class PickDeliveryNoteAsEmployee extends OrgAction
         }
 
         $deliveryNote = $this->update($deliveryNote, $modelData);
-        OrganisationHydrateShopTypeDeliveryNotes::dispatch($deliveryNote->organisation, $deliveryNote->shop->type)
-            ->delay($this->hydratorsDelay);
+
+        $this->deliveryNoteHandlingHydrators($deliveryNote, $oldState);
+        $this->deliveryNoteHandlingHydrators($deliveryNote, DeliveryNoteStateEnum::HANDLING);
+
 
         return $deliveryNote;
     }

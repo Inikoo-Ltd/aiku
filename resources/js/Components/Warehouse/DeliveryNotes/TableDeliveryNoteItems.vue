@@ -51,6 +51,18 @@ function orgStockRoute(deliveryNoteItem: DeliverNoteItem) {
             return route(
                 "grp.org.warehouses.show.inventory.org_stocks.all_org_stocks.show",
                 [route().params["organisation"], route().params["warehouse"], deliveryNoteItem.org_stock_slug])
+        case "grp.org.shops.show.ordering.orders.show.delivery-note":
+        if (deliveryNoteItem.org_stock_slug) {
+            return route(
+                'grp.org.shops.show.catalogue.products.all_products.show',
+                [
+                    route().params['organisation'],
+                    route().params['shop'],
+                    deliveryNoteItem.org_stock_slug,
+                ]
+            )
+        }
+        return "";
         default:
             return "";
     }

@@ -236,7 +236,7 @@ class EditShop extends OrgAction
                                     'label' => __('Require phone number'),
                                     'value' => Arr::get($shop->settings, 'registration.require_phone_number', false),
                                 ],
-                                
+
                                 'marketing_opt_in_label' => [
                                     'type'  => 'input',
                                     'label' => __('Marketing opt-in label'),

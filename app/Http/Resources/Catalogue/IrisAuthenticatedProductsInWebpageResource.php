@@ -94,7 +94,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             $profit     = round($this->rrp - $this->price, 2);
         }
 
-        $units= (int) $this->units;
+        $units = (int) $this->units;
 
         return [
             'id'                   => $this->id,

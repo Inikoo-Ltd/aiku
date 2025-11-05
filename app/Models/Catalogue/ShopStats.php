@@ -157,6 +157,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $number_collections_products_status_normal
  * @property int $number_collections_products_status_discontinuing
  * @property int $number_collections_products_status_discontinued
+ * @property int $number_brands
+ * @property int $number_current_brands
+ * @property int $number_tags
+ * @property int $number_current_tags
  * @property-read \App\Models\Catalogue\Shop $shop
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dDepartment
  * @property-read \App\Models\Catalogue\ProductCategory|null $top1dFamily

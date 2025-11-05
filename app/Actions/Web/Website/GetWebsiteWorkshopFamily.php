@@ -37,7 +37,7 @@ class GetWebsiteWorkshopFamily
         $products = IrisProductsInWebpageResource::collection(
             GetIrisProductsInProductCategory::run(productCategory: $family, stockMode: 'all', topSeller: false)
         );
-       
+
         $topSeller = IrisProductsInWebpageResource::collection(
             GetIrisProductsInProductCategory::run(productCategory: $family, stockMode: 'all', topSeller: true)
         );

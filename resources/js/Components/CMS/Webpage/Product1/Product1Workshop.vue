@@ -314,16 +314,8 @@ const toggleExpanded = () => {
         <h2 class="text-xl font-bold mb-2">{{ modelValue.product.name }}</h2>
         <ImageProducts :images="validImages" :video="videoSetup?.url" />
         <div class="flex justify-between items-start gap-4 mt-4">
-            <div v-if="layout.iris?.is_logged_in">
-                <div class="text-lg font-semibold">
-                    {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.price || 0) }}
-                    <span class="text-xs text-gray-500 ml-1">
-                        ({{ formatNumber(modelValue.product.units) }}/{{ modelValue.product.unit }})
-                    </span>
-                </div>
-                <div class="text-xs text-gray-400 font-semibold mt-1">
-                    RRP: {{ locale.currencyFormat(modelValue.product.currency_code, modelValue.product.rrp || 0) }}
-                </div>
+             <div v-if="layout?.iris?.is_logged_in">
+               <ProductPrices :field-value="modelValue" />
             </div>
 
             <div class="mt-1">

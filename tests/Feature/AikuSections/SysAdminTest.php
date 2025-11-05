@@ -744,8 +744,9 @@ test('user status change', function (User $user) {
 test('delete guest', function (User $user) {
 
     /** @var Guest $guest */
-    $guest=$user->guests()->first();
-    $guest = DeleteGuest::make()->action($guest);;
+    $guest = $user->guests()->first();
+    $guest = DeleteGuest::make()->action($guest);
+    ;
     expect($guest->deleted_at)->toBeInstanceOf(Carbon::class);
 })->depends('update user password');
 

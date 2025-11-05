@@ -16,6 +16,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCreditTransac
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateCustomerBalances;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeletedInvoices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDeliveryNotesState;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDepartments;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateDispatchedEmails;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateFamilies;
@@ -66,7 +67,7 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateServices;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOrgStocks;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydratePurges;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateRedirects;
-use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotes;
+use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateShopTypeDeliveryNotesState;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateSpaces;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateStoredItemAudits;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateStoredItems;
@@ -82,6 +83,8 @@ use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUserReques
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateWebUsers;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
+use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
 use App\Enums\SysAdmin\Organisation\OrganisationTypeEnum;
 use App\Models\SysAdmin\Organisation;
 
@@ -98,7 +101,6 @@ class HydrateOrganisations extends HydrateModel
 
     public function handle(Organisation $organisation): void
     {
-
         OrganisationHydrateAudits::run($organisation);
         OrganisationHydrateEmployees::run($organisation);
         OrganisationHydrateShops::run($organisation);
@@ -108,7 +110,10 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateCustomers::run($organisation);
         OrganisationHydrateOrders::run($organisation);
         OrganisationHydratePurges::run($organisation);
-        OrganisationHydrateDeliveryNotes::run($organisation);
+        OrganisationHydrateDeliveryNotes::run($organisation->id, DeliveryNoteTypeEnum::ORDER);
+        OrganisationHydrateDeliveryNotes::run($organisation->id, DeliveryNoteTypeEnum::REPLACEMENT);
+        ;
+
         OrganisationHydratePurchaseOrders::run($organisation);
         OrganisationHydrateWebsites::run($organisation);
         OrganisationHydrateWebpages::run($organisation);
@@ -128,6 +133,8 @@ class HydrateOrganisations extends HydrateModel
         OrganisationHydrateCustomerBalances::run($organisation);
         OrganisationHydrateDispatchedEmails::run($organisation);
         OrganisationHydrateWebUsers::run($organisation);
+
+
 
         if ($organisation->type == OrganisationTypeEnum::SHOP) {
             OrganisationHydrateRegistrationIntervals::run($organisation);
@@ -182,14 +189,17 @@ class HydrateOrganisations extends HydrateModel
             OrganisationHydrateProductsWithNoFamily::run($organisation);
             OrganisationHydrateWebUserRequests::run($organisation->id);
 
-            foreach (ShopTypeEnum::cases() as $type) {
-                if ($type != ShopTypeEnum::FULFILMENT) {
-                    OrganisationHydrateShopTypeDeliveryNotes::run($organisation, $type);
-                }
-
+            foreach (DeliveryNoteStateEnum::cases() as $case) {
+                OrganisationHydrateDeliveryNotesState::run($organisation->id, $case);
             }
 
-
+            foreach (ShopTypeEnum::cases() as $type) {
+                if ($type != ShopTypeEnum::FULFILMENT) {
+                    foreach (DeliveryNoteStateEnum::cases() as $deliveryNoteState) {
+                        OrganisationHydrateShopTypeDeliveryNotesState::run($organisation->id, $type, $deliveryNoteState);
+                    }
+                }
+            }
         }
     }
 

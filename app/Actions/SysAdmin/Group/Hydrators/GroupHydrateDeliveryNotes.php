@@ -10,9 +10,7 @@ namespace App\Actions\SysAdmin\Group\Hydrators;
 
 use App\Actions\Traits\Hydrators\WithHydrateDeliveryNotes;
 use App\Actions\Traits\WithEnumStats;
-use App\Enums\Dispatching\DeliveryNote\DeliveryNoteStateEnum;
 use App\Enums\Dispatching\DeliveryNote\DeliveryNoteTypeEnum;
-use App\Models\Dispatching\DeliveryNote;
 use App\Models\SysAdmin\Group;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -26,41 +24,24 @@ class GroupHydrateDeliveryNotes implements ShouldBeUnique
 
     public string $jobQueue = 'low-priority';
 
-    public function getJobUniqueId(Group $group): string
+    public function getJobUniqueId(int $groupId, DeliveryNoteTypeEnum $type): string
     {
-        return $group->id;
+        return $groupId.'-'.$type->value;
     }
 
 
-    public function handle(Group $group): void
+    public function handle(int $groupId, DeliveryNoteTypeEnum $type): void
     {
-        $stats = $this->getDeliveryNotesStats($group);
+        $group = Group::find($groupId);
+        if (!$group) {
+            return;
+        }
 
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'delivery_notes',
-                field: 'type',
-                enum: DeliveryNoteTypeEnum::class,
-                models: DeliveryNote::class,
-                where: function ($q) use ($group) {
-                    $q->where('group_id', $group->id);
-                }
-            )
-        );
-
-        $stats = array_merge(
-            $stats,
-            $this->getEnumStats(
-                model: 'delivery_notes',
-                field: 'state',
-                enum: DeliveryNoteStateEnum::class,
-                models: DeliveryNote::class,
-                where: function ($q) use ($group) {
-                    $q->where('group_id', $group->id);
-                }
-            )
-        );
+        if ($type == DeliveryNoteTypeEnum::ORDER) {
+            $stats = $this->getStoreDeliveryNotesStats($group);
+        } else {
+            $stats = $this->getStoreReplacementsStats($group);
+        }
 
 
         $group->orderingStats()->update($stats);

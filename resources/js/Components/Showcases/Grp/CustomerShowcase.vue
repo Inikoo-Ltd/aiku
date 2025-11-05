@@ -209,7 +209,7 @@ const copyToClipboard = async (text: string, label: string) => {
         await navigator.clipboard.writeText(text)
         notify({
             title: trans("Copied!"),
-            text: trans(`${label} copied to clipboard`),
+            text: trans(`:label copied to clipboard`, { label: label }),
             type: "success"
         })
     } catch (error) {

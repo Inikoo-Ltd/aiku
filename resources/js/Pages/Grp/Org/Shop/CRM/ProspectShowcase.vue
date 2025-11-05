@@ -254,7 +254,7 @@ const contactPreferencesData = computed(() => {
             parameters: [props.data.update_route.parameters.prospect]
         },
         dont_contact_me: {
-            label: trans('Don\'t Contact Me'),
+            label: trans(`Don't Contact Me`),
             is_active: props.data.prospect.dont_contact_me || false,
             activated_at: props.data.prospect.dont_contact_me_at,
             reason: null

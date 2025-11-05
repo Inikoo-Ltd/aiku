@@ -59,7 +59,7 @@ class CustomersResource extends JsonResource
             'is_dropshipping'                 => $this->is_dropshipping,
             'contact_name'                    => $this->contact_name,
             'company_name'                    => $this->company_name,
-            'location'                        => $this->location,
+            'location'                        => is_string($this->location) ? json_decode($this->location, true) : $this->location,
             'created_at'                      => $this->created_at,
             'number_current_customer_clients' => $this->number_current_customer_clients,
             'number_current_portfolios'       => $this->number_current_portfolios,

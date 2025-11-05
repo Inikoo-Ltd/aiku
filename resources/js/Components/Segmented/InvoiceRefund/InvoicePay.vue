@@ -424,7 +424,7 @@ const compTooltipTotalToPay = computed(() => {
 
                 <div class="mt-6 mb-4 relative">
                     <div v-if="!(!!paymentData.payment_method)"
-                        @click="() => errorInvoicePayment.payment_method = trans('Payment method can\'t empty')"
+                        @click="() => errorInvoicePayment.payment_method = trans(`Payment method can't empty`)"
                         class="absolute inset-0"/>
                     <Button @click="() => onSubmitPayment()" :label="trans('Submit')"
                             :disabled="!(!!paymentData.payment_method)" :loading="isLoadingPayment" full/>
