@@ -180,6 +180,7 @@ class IndexAnnouncements extends OrgAction
 
         switch ($routeName) {
             case 'grp.org.shops.show.web.announcements.index':
+            case 'grp.org.shops.show.web.announcements.show':
                 /** @var Website $website */
                 $website = request()->route()->parameter('website');
 

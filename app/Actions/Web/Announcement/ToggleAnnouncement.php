@@ -12,6 +12,7 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Models\Announcement;
+use App\Models\Catalogue\Shop;
 use App\Models\Web\Website;
 use Lorisleiva\Actions\ActionRequest;
 
@@ -26,7 +27,7 @@ class ToggleAnnouncement extends OrgAction
         ]);
     }
 
-    public function asController(Website $website, Announcement $announcement, ActionRequest $request): void
+    public function asController(Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): void
     {
         $this->initialisation($website->organisation, $request);
         $status = $announcement->status === AnnouncementStatusEnum::ACTIVE ? AnnouncementStatusEnum::INACTIVE : AnnouncementStatusEnum::ACTIVE;

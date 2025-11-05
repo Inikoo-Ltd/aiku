@@ -11,6 +11,7 @@ namespace App\Actions\Web\Announcement;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Announcement;
+use App\Models\Catalogue\Shop;
 use App\Models\CRM\Customer;
 use App\Models\Web\Website;
 use Illuminate\Support\Arr;
@@ -43,7 +44,7 @@ class ResetAnnouncement extends OrgAction
         return true;
     }
 
-    public function asController(Website $website, Announcement $announcement, ActionRequest $request): void
+    public function asController(Shop $shop, Website $website, Announcement $announcement, ActionRequest $request): void
     {
         $this->scope    = 'website';
         $this->parent   = $website;
