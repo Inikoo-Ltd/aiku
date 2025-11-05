@@ -9,10 +9,15 @@ import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { sendMessageToParent } from "@/Composables/Workshop"
+import { faTimes } from "@fal"
 
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import "@/../css/Iris/editor.css"
 import { ulid } from "ulid"
+
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+library.add(faTimes);
 
 
 defineOptions({ layout: WebPreview })

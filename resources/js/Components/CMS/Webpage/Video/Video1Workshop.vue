@@ -30,7 +30,7 @@ const props = defineProps<{
 			};
 		};
 	};
-	indexBlock: number
+	indexBlock?: number
 	webpageData?: any;
 	blockData?: Object;
 	screenType: "mobile" | "tablet" | "desktop";

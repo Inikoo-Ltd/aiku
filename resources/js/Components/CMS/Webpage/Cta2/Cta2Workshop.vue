@@ -20,7 +20,7 @@ const props = defineProps<{
 	modelValue: any
 	webpageData?: any
 	blockData?: Object
-	indexBlock: Number
+	indexBlock?: Number
 	screenType: "mobile" | "tablet" | "desktop"
 }>()
 

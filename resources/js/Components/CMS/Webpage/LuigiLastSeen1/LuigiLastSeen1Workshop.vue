@@ -59,7 +59,7 @@ onMounted(()=> {
             <!-- <EditorV2
                 v-model="modelValue.title"
                 @focus="() => {
-                    sendMessageToParent('activeBlock', indexBlock)
+                    sendMessageToParent('activeBlock', indexBlock?)
                 }"
                 @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
                     name: webpageData.images_upload_route.name,

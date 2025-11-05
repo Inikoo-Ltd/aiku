@@ -15,9 +15,10 @@ use App\Http\Resources\Catalogue\TagsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\SysAdmin\Group;
+use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -31,7 +32,7 @@ class GetTags extends OrgAction
         return $this->handle($tradeUnit);
     }
 
-    public function handle(Model $parent, $prefix = null): Collection
+    public function handle(Group|Organisation|TradeUnit $parent, $prefix = null): Collection
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {

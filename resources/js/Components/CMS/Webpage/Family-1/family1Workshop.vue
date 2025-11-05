@@ -33,7 +33,7 @@ const props = defineProps<{
   }
   blockData?: Record<string, any>
   screenType: 'mobile' | 'tablet' | 'desktop'
-  indexBlock: number
+  indexBlock?: number
   update_route: {
     name: string
     parameters: Record<string, any>
