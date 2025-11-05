@@ -47,7 +47,7 @@ const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 		}">
 			<div class="grid w-full grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 min-h-[auto] md:min-h-[400px]">
 				<!-- 🖼️ Image Block -->
-				<div 
+				<!-- <div 
 					class="relative w-full cursor-pointer overflow-hidden order-1 md:order-2  md:aspect-auto" 
 					:class="!modelValue.image.source ? '' : ' h-[250px] sm:h-[300px] md:h-[400px]'"
 					@click.stop="() => {
@@ -64,6 +64,19 @@ const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 						class="absolute inset-0 w-full h-full object-cover" 
 						:imgAttributes="modelValue.image.attributes"
 					/>
+				</div> -->
+
+				<div class="relative w-full cursor-pointer overflow-hidden order-1 mx-auto md:order-2 md:aspect-auto flex justify-center items-center md:block"
+					:class="!modelValue.image.source ? '' : ' h-[250px] sm:h-[300px] md:h-[400px]'"
+					:style="getStyles(modelValue.image.properties, screenType)" @click.stop="() => {
+						sendMessageToParent('activeBlock', indexBlock)
+						sendMessageToParent('activeChildBlock', bKeys[0])
+					}" 
+					@dblclick.stop="() => sendMessageToParent('uploadImage', imageSettings)">
+					<Image :src="modelValue.image.source" :imageCover="true"
+						:alt="modelValue.image.alt || 'Image preview'"
+						class="w-full h-full object-cover md:absolute md:inset-0"
+						:imgAttributes="modelValue.image.attributes" />
 				</div>
 
 				<!-- 📝 Text & Button Block -->

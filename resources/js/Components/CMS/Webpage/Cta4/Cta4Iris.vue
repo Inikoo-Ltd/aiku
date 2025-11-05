@@ -34,19 +34,15 @@ const layout: any = inject("layout", {})
 		}">
 			<div class="grid w-full grid-cols-1 md:grid-cols-2 gap-2 md:gap-4 min-h-[auto] md:min-h-[400px]">
 				<!-- 🖼️ Image Block -->
-				<div 
-					class="relative w-full cursor-pointer overflow-hidden order-1 md:order-2  md:aspect-auto" 
+				<div class="relative w-full cursor-pointer overflow-hidden order-1 mx-auto md:order-2 md:aspect-auto flex justify-center items-center md:block"
 					:class="!fieldValue.image.source ? '' : ' h-[250px] sm:h-[300px] md:h-[400px]'"
-					:style="getStyles(fieldValue.image.properties, screenType)" 
-				>
-					<Image 
-						:src="fieldValue.image.source" 
-						:imageCover="true"
+					:style="getStyles(fieldValue.image.properties, screenType)">
+					<Image :src="fieldValue.image.source" :imageCover="true"
 						:alt="fieldValue.image.alt || 'Image preview'"
-						class="absolute inset-0 w-full h-full object-cover" 
-						:imgAttributes="fieldValue.image.attributes"
-					/>
+						class="w-full h-full object-cover md:absolute md:inset-0"
+						:imgAttributes="fieldValue.image.attributes" />
 				</div>
+
 
 				<!-- 📝 Text & Button Block -->
 				<div class="flex flex-col justify-center m-auto order-2 md:order-1"
