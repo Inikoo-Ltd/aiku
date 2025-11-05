@@ -77,16 +77,20 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 
 
         <template #cell(action)="{ item: customerSalesChannel, proxyItem }">
-
-
             <ModalConfirmationDelete
                 :routeDelete="customerSalesChannel.delete_route"
-                :title="trans('Are you sure you want to close this channel?') + ` ${customerSalesChannel.platform_name} (${customerSalesChannel.reference})`"
-                :description=customerSalesChannel.delete_msg
+                :title="trans('Are you sure you want to close this channel?')"
+                :description="customerSalesChannel.delete_msg"
                 isFullLoading
                 :noLabel="trans('Close')"
                 :noIcon="'fal fa-store-alt-slash'"
             >
+                <template #beforeTitle>
+                    <div class="text-center font-semibold text-xl mb-4">
+                        {{ `${customerSalesChannel.platform_name} (${customerSalesChannel.reference})` }}
+                    </div>
+                </template>
+                
                 <template #default="{ isOpenModal, changeModel }">
                     <Button
                         v-tooltip="trans('Close channel')"
