@@ -141,6 +141,10 @@ class StoreMasterProductFromTradeUnits extends GrpAction
                 'numeric',
                 'min:0'
             ],
+            'shop_products.*.create_in_shop'    => [
+                'required',
+                'string',
+            ],
             'image'                  => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"],
             'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'   => ['sometimes'],
@@ -171,6 +175,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
      */
     public function asController(MasterProductCategory $masterFamily, ActionRequest $request): MasterAsset
     {
+
         $this->masterFamily = $masterFamily;
 
         $this->initialisation($masterFamily->group, $request);
