@@ -10,6 +10,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { sendMessageToParent } from "@/Composables/Workshop"
 import { faTimes } from "@fal"
+import {debounce} from "lodash-es"
 
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import "@/../css/Iris/editor.css"
@@ -72,6 +73,14 @@ const updateData = (val: any) => {
   sendMessageToParent("autosave", JSON.parse(JSON.stringify(val)))
 }
 
+
+const debouncedSetWebpage = debounce((value: any) => {
+  data.value = value
+  // optionally trigger reload if needed:
+  // reloadPage(true)
+}, 1000)
+
+
 const handleMessage = (event: MessageEvent) => {
   const { key, value } = event.data
   if (key === "isPreviewLoggedIn") filterBlock.value = value
@@ -82,10 +91,7 @@ const handleMessage = (event: MessageEvent) => {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
   }
   if (key === "reload") reloadPage()
-  if (key === "setWebpage") {
-    data.value = value
-   /*  reloadPage(true) */
-  }
+  if (key === "setWebpage") debouncedSetWebpage(value)
 }
 
 const uploadImage = ()=>{

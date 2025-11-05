@@ -446,7 +446,7 @@ watch(
                     </div>
 
                     <!-- Sort Tabs -->
-                    <div class="flex xspace-x-6 overflow-x-auto mt-2 md:mt-0">
+                    <div class="flex xspace-x-6 w-full md:w-fit overflow-x-auto mt-2 md:mt-0">
                         <!-- <button @click="toggleNewArrivals"
                             class="pb-2 text-sm font-medium whitespace-nowrap flex items-center gap-1" :class="[
                             isNewArrivals
