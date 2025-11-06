@@ -127,19 +127,19 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'CheckAllEbayChannels',
         );
 
-        $schedule->command('woo:update-inventory')
-            ->hourly()
-            ->withoutOverlapping()->sentryMonitor(
-            monitorSlug: 'UpdateWooStockInventories',
-        );
-
-        $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
-            monitorSlug: 'UpdateInventoryInShopifyPortfolio',
-        );
-
-        $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
-            monitorSlug: 'CheckShopifyPortfolios',
-        );
+//        $schedule->command('woo:update-inventory')
+//            ->hourly()
+//            ->withoutOverlapping()->sentryMonitor(
+//            monitorSlug: 'UpdateWooStockInventories',
+//        );
+//
+//        $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
+//            monitorSlug: 'UpdateInventoryInShopifyPortfolio',
+//        );
+//
+//        $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+//            monitorSlug: 'CheckShopifyPortfolios',
+//        );
 
         $schedule->command('platform-logs:delete')->daily()->sentryMonitor(
             monitorSlug: 'PlatformDeletePortfolioLogs',
