@@ -14,4 +14,6 @@ export interface CreditTransaction {
   payment_type: string | null
   currency_code: string
   created_at: string // ISO date-time strings
+  order_slug: string | null // Maybe null
+  order_reference: string | null // Maybe null
 }

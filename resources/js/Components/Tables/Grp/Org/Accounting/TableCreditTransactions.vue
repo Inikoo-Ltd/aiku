@@ -18,7 +18,7 @@ import { ref, inject } from "vue";
 
 library.add(faUndo)
 
-defineProps<{
+const props = defineProps<{
     data: object,
     tab?: string
 }>();
@@ -31,9 +31,7 @@ const selectedTransaction = ref<CreditTransaction | null>(null)
 
 function paymentRoute(credit_transaction?: CreditTransaction) {
 
-  if(!credit_transaction?.payment_id) return '';
-
-    if(route().current()=='grp.org.shops.show.crm.customers.show'){
+    if(route().current()=='grp.org.shops.show.crm.customers.show' && credit_transaction?.payment_id){
         return route(
             "grp.org.shops.show.crm.customers.show.payments.show",
             {
@@ -45,6 +43,23 @@ function paymentRoute(credit_transaction?: CreditTransaction) {
         );
     }
 
+    return '';
+}
+
+function orderRoute(credit_transaction?: CreditTransaction){
+
+    if(route().current()=='grp.org.shops.show.crm.customers.show' && credit_transaction?.order_slug){
+        return route(
+            "grp.org.shops.show.crm.customers.show.orders.show", 
+            {
+                order: credit_transaction.order_slug,
+                organisation: (route().params as RouteParams).organisation,
+                shop: (route().params as RouteParams).shop,
+                customer: (route().params as RouteParams).customer
+            }
+        );
+    }
+    
     return '';
 }
 
@@ -99,6 +114,14 @@ function createRefundRoute(transaction: CreditTransaction) {
             </Link>
             <div v-else>
               {{ credit_transaction.payment_reference }}
+            </div>
+        </template>
+        <template #cell(order_reference)="{ item: credit_transaction }">
+            <Link v-if="credit_transaction?.order_slug" :href="(orderRoute(credit_transaction) as string)" class="primaryLink">
+                {{ credit_transaction.order_reference }}
+            </Link>
+            <div v-else>
+                {{ credit_transaction.order_reference }}
             </div>
         </template>
         <template #cell(actions)="{item}">
