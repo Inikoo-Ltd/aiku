@@ -60,7 +60,7 @@ const closePopover = (close: any): void => {
                         <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Retail') }}</span>
                         <div class="flex flex-wrap items-baseline gap-1">
                             <span class="text-base font-semibold">
-                                {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp || 0) }}
+                                {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp_per_unit || 0) }}
                             </span>
                             <span class="text-sm text-gray-500">/ {{ fieldValue.product.unit }}</span>
                             <span class="text-xs font-medium text-gray-400">({{ trans('exclude tax') }})</span>
@@ -70,15 +70,14 @@ const closePopover = (close: any): void => {
                     <!-- Profit -->
                     <div class="flex flex-col items-end text-right">
                         <div>
-                            <span class="text-sm font-medium text-gray-600 mb-1 flex justify-start">{{
-                                trans('Profit') }}</span>
+                            <span class="text-sm font-medium text-gray-600 mb-1 flex justify-start">{{trans('Profit') }}</span>
                             <div class="flex flex-wrap items-baseline justify-end gap-1">
                                 <span class="text-base font-semibold text-gray-700">
-                                    {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit ||
-                                        0) }}
+                                    {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit_per_unit ||
+                                        0) }}  <span class="text-sm text-gray-500">/ {{ fieldValue.product.unit }}</span>
                                 </span>
-                                <span v-tooltip="trans('Profit margin')" class="text-sm font-semibold">
-                                    ({{ profitMargin }}%)
+                                <span v-tooltip="trans('Profit margin')" class="text-sm">
+                                   {{trans('Margin') }}: ({{ profitMargin }}%)
                                 </span>
                             </div>
                         </div>

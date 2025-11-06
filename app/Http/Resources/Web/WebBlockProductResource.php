@@ -12,14 +12,20 @@ use App\Actions\Traits\HasBucketImages;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\Catalogue\TagResource;
 use App\Http\Resources\HasSelfCall;
+use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
 
+/**
+ * @property mixed $units
+ * @property mixed $rrp
+ */
 class WebBlockProductResource extends JsonResource
 {
     use HasSelfCall;
     use HasBucketImages;
+    use HasPriceMetrics;
 
 
     public function toArray($request): array
@@ -50,17 +56,7 @@ class WebBlockProductResource extends JsonResource
             'unit'              => $product->unit,
         ];
 
-        $margin     = '';
-        $rrpPerUnit = '';
-        $profit     = '';
-        $units = (int) $this->units;
-        if ($product->rrp > 0) {
-            $margin     = percentage(round((($product->rrp - $product->price) / $this->rrp) * 100, 1), 100);
-            $rrpPerUnit = round($product->rrp / $product->units, 2);
-            // $profit     = round(($product->price - $product->rrp) / $product->units, 2);
-            $profit     = round($product->rrp - $product->price, 2);
-        }
-
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
         return [
             'luigi_identity'    => $product->getLuigiIdentity(),
@@ -80,6 +76,7 @@ class WebBlockProductResource extends JsonResource
             'rrp_per_unit'      => $rrpPerUnit,
             'margin'            => $margin,
             'profit'            => $profit,
+            'profit_per_unit'   => $profitPerUnit,
             'price'             => $product->price,
             'status'            => $product->status,
             'state'             => $product->state,
