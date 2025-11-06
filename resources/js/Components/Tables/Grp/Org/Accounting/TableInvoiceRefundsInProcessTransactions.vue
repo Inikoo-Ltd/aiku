@@ -64,7 +64,7 @@ const onClickQuantity = (routeRefund: routeType, slugRefund: number, amount: For
             onError: (e) => {
                 notify({
                     title: trans("Something went wrong"),
-                    text: e.net_amount,
+                    text: e.net_amount || e.message,
                     type: "error",
                 })
             }
