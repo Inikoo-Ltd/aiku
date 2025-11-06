@@ -57,7 +57,7 @@ const closePopover = (close: any): void => {
                     @mouseleave="closePopover(close)">
                     <!-- Retail -->
                     <div class="flex flex-col text-left">
-                        <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Retail') }}   <span class="text-xs ml-1 font-medium text-gray-400">({{ trans('excluding tax') }})</span></span>
+                        <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Recomended Retail') }}   <span class="text-xs ml-1 font-medium text-gray-400">({{ trans('excluding tax') }})</span></span>
                         <div class="flex flex-wrap items-baseline gap-1">
                             <span class="text-base font-semibold">
                                 {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp_per_unit || 0) }}
@@ -150,7 +150,7 @@ const closePopover = (close: any): void => {
     <div v-if="layout?.iris?.is_logged_in" class="p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
         <div v-if="fieldValue.product.units === 1" class="flex justify-between">
             <div>
-                {{ trans("Price") }}:
+                {{ trans("Wholesale Price") }}:
                 <span class="font-semibold">
                     {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
                     <span class="text-xs text-gray-600"> / {{ fieldValue.product.unit }}</span>
@@ -159,10 +159,10 @@ const closePopover = (close: any): void => {
         </div>
         <div v-else>
             <div class="flex justify-between">
-                <div>
+                <div v-tooltip="trans('Wholesale Price')" class="flex items-center gap-1">
                     {{ trans("Price") }}:
                     <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
-                        fieldValue.product.price) }}</span>
+                        fieldValue.product.price) }}</span> / {{trans('Outer') }}
                 </div>
                 <div>
                     <span class="text-xs price_per_unit">
