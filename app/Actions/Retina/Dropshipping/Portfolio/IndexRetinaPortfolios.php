@@ -205,22 +205,25 @@ class IndexRetinaPortfolios extends RetinaAction
             };
         }
 
-        $actions = [
-            [
-                'type'  => 'button',
-                'style' => 'tertiary',
-                'tooltip' => __('This will automatically synced every day at 3:00 UTC'),
-                'label'   => __('Re-Sync'),
-                'icon' => ['fal', 'fa-tachometer-alt'],
-                'route' => [
-                    'method' => 'post',
-                    'name' => 'retina.models.customer_sales_channel.portfolio_shopify_sync',
-                    'parameters' => [
-                        'customerSalesChannel' => $this->customerSalesChannel->id
-                    ]
-                ],
-            ]
-        ];
+        $actions=[];
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $actions = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'tertiary',
+                    'tooltip' => __('This will automatically synced every day at 3:00 UTC'),
+                    'label'   => __('Re-Sync'),
+                    'icon'    => ['fal', 'fa-tachometer-alt'],
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'retina.models.customer_sales_channel.portfolio_shopify_sync',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                ]
+            ];
+        }
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
@@ -252,9 +255,11 @@ class IndexRetinaPortfolios extends RetinaAction
                         'label' => '@'.$this->customerSalesChannel->name,
                     ],
                     'icon'       => 'fal fa-cube',
-                    'actions'    => $actions,
-                ],
+                    'actions'    => $this->customerSalesChannel->status == CustomerSalesChannelStatusEnum::OPEN ? $actions : [],
 
+
+                ],
+                'is_closed' => $this->customerSalesChannel->status == CustomerSalesChannelStatusEnum::CLOSED,
                 'grouped_portfolios' => $groupedPortfolios,
 
                 'tabs'        => [
@@ -428,8 +433,10 @@ class IndexRetinaPortfolios extends RetinaAction
 
             $table->column(key: 'image', label:'', canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('Product'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'actions', label: '', canBeHidden: false);
-
+           
+           if ($this->customerSalesChannel->status !== CustomerSalesChannelStatusEnum::CLOSED) {
+                $table->column(key: 'actions', label: '', canBeHidden: false);
+            }
 
             if ($this->customerSalesChannel->platform->type !== PlatformTypeEnum::MANUAL) {
                 $table->column(key: 'status', label: __('Status'));

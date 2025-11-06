@@ -4,6 +4,7 @@ import { EditorContent } from '@tiptap/vue-3'
 
 const props = withDefaults(defineProps<{
   rows?: number
+  class?: string
 }>(), {
   rows: 3 // default 3 rows
 })
@@ -12,7 +13,7 @@ const model = defineModel()
 </script>
 
 <template>
-  <div>
+  <div :class="props?.class">
     <Editor v-model="model">
       <template #editor-content="{ editor }">
         <div

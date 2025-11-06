@@ -25,6 +25,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
 {
+
+    private $is_closed = false;
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -37,10 +39,11 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
+        $globalGlobalClosed =  $this->is_closed ? CustomerSalesChannelStatusEnum::CLOSED : CustomerSalesChannelStatusEnum::OPEN;
         $query = QueryBuilder::for(CustomerSalesChannel::class);
         $query->leftjoin('platforms', 'customer_sales_channels.platform_id', 'platforms.id');
         $query->where('customer_sales_channels.customer_id', $customer->id);
-        $query->where('customer_sales_channels.status', CustomerSalesChannelStatusEnum::OPEN);
+        $query->where('customer_sales_channels.status',  $globalGlobalClosed);
 
         return $query
             ->defaultSort('customer_sales_channels.reference')
@@ -70,6 +73,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
     {
         $icon = ['fal', 'fa-user'];
         $title = $this->customer->name;
+        $hasClosedChannels = $this->customer->hasClosedChannels;
         $iconRight = [
             'icon' => ['fal', 'fa-user-friends'],
             'title' => $title
@@ -123,16 +127,20 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                 ->column(key: 'number_portfolios', label: __('Products'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_customer_clients', label: __('Customers'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'action', label: __('Action'), canBeHidden: false)
                 ->defaultSort('reference');
+
+            if(!$this->is_closed) {
+                $table->column(key: 'action', label: __('Action'), canBeHidden: true);
+            }
         };
     }
 
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
+        $this->is_closed = $request->boolean('closed', false);
 
-        return $this->handle($this->customer);
+        return $this->handle($this->customer, null);
     }
 
     public function getBreadcrumbs(): array
