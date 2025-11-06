@@ -264,6 +264,7 @@ class AppServiceProvider extends ServiceProvider
                 'WebBlock'                      => 'App\Models\Web\WebBlock',
                 'WebBlockType'                  => 'App\Models\Web\WebBlockType',
                 'Banner'                        => 'App\Models\Web\Banner',
+                'Announcement'                  => 'App\Models\Announcement',
 
                 //Production
                 'Production'                    => 'App\Models\Production\Production',
