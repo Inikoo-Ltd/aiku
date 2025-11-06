@@ -71,14 +71,15 @@ const closePopover = (close: any): void => {
                     <div class="flex flex-col items-end text-right">
                         <div>
                             <span class="text-sm font-medium text-gray-600 mb-1 flex justify-start">
-                                <span v-tooltip="trans('Profit margin')" class="mr-3 text-sm font-medium text-gray-600">
+                                <span v-tooltip="trans('Profit margin')" class="mr-3 text-xs ml-1 font-medium text-gray-400">
                                    {{trans('Margin') }}: ({{ profitMargin }}%)
                                 </span> {{trans('Profit') }}</span>
                             <div class="flex flex-wrap items-baseline justify-end gap-1">
                                 <span class="text-base font-semibold text-gray-700">
                                     {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit_per_unit ||
-                                        0) }}  <span class="text-sm text-gray-500">/ {{ fieldValue.product.unit }}</span>
+                                        0) }}  
                                 </span>
+                                <span class="text-sm text-gray-500 ">/ {{ fieldValue.product.unit }}</span>
 
                             </div>
                         </div>
