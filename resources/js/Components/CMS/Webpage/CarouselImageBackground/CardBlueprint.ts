@@ -30,6 +30,9 @@ export default {
 			key: ["text"],
 			label: "Text",
 			type: "editorhtml",
+			props_data: {
+				class : "bg-gray-300 rounded-lg"
+			},
 		},
 		{
 			name : 'Link',
