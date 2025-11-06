@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Tag;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
@@ -29,6 +30,13 @@ class UpdateTag extends OrgAction
         return $this->handle($tag, $this->validatedData);
     }
 
+    public function inCustomer(Customer $customer, Tag $tag, ActionRequest $request): Tag
+    {
+        $this->initialisation($customer->organisation, $request);
+
+        return $this->handle($tag, $this->validatedData);
+    }
+
     public function asController(Organisation $organisation, Tag $tag, ActionRequest $request): Tag
     {
         $this->initialisation($organisation, $request);
@@ -36,8 +44,12 @@ class UpdateTag extends OrgAction
         return $this->handle($tag, $this->validatedData);
     }
 
-    public function htmlResponse(Tag $tag): RedirectResponse
+    public function htmlResponse(Tag $tag=null): RedirectResponse|null
     {
+        if (!$tag) {
+            return null;
+        }
+
         return Redirect::route('grp.org.tags.show', [$this->organisation->slug])->with('notification', [
             'status'  => 'success',
             'title'   => __('Success'),
