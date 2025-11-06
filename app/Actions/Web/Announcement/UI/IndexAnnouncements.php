@@ -107,7 +107,7 @@ class IndexAnnouncements extends OrgAction
                 ->column(key: 'status', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'name', label: __('name'), sortable: true)
                 ->column(key: 'publisher_name', label: __('publisher name'), sortable: true)
-                ->column(key: 'live_at', label: __('last live at'), sortable: true, type: 'date')
+                ->column(key: 'live_at', label: __('last live at'), sortable: true, type: 'date_hm')
                 ->column(key: 'show_pages', label: __('show pages'), sortable: true)
                 ->column(key: 'hide_pages', label: __('hide pages'), sortable: true)
                 ->defaultSort('-id');
@@ -146,17 +146,15 @@ class IndexAnnouncements extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('announcements'),
+                'title'       => __('Announcements'),
                 'pageHead'    => [
-                    'title'     => __('announcements'),
+                    'title'     => __('Announcements'),
                     'container' => $container,
-                    'iconRight' => [
-                        'title' => __('announcements'),
-                        'icon'  => 'fal fa-sign'
+                    'icon' => [
+                        'title' => __('Announcements'),
+                        'icon'  => 'fal fa-megaphone'
                     ],
                     'actions'   => $actions,
-
-
                 ],
 
                 'data' => AnnouncementsResource::collection($announcements),

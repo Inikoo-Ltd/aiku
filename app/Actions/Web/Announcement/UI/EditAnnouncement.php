@@ -37,7 +37,7 @@ class EditAnnouncement extends OrgAction
         $fields = [];
 
         $fields[] = [
-            'title'  => '',
+            'label' => __('Detail'),
             'fields' => [
                 'name' => [
                     'type'        => 'input',
@@ -56,9 +56,14 @@ class EditAnnouncement extends OrgAction
                     $request->route()->getName(),
                     $request->route()->originalParameters()
                 ),
-                'title'       => __('announcement'),
+                'title'       => __('Announcement'),
                 'pageHead'    => [
-                    'title'   => __('announcement'),
+                    'title'   => $announcement->name,
+                    'model' => __('Edit'),
+                    'icon'    => [
+                        'tooltip' => __('Edit'),
+                        'icon'    => 'fal fa-megaphone'
+                    ],
                     'actions' => [
                         [
                             'type'  => 'button',
