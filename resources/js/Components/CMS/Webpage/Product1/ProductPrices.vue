@@ -57,28 +57,29 @@ const closePopover = (close: any): void => {
                     @mouseleave="closePopover(close)">
                     <!-- Retail -->
                     <div class="flex flex-col text-left">
-                        <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Retail') }}</span>
+                        <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Retail') }}   <span class="text-xs ml-1 font-medium text-gray-400">({{ trans('excluding tax') }})</span></span>
                         <div class="flex flex-wrap items-baseline gap-1">
                             <span class="text-base font-semibold">
                                 {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp_per_unit || 0) }}
                             </span>
                             <span class="text-sm text-gray-500">/ {{ fieldValue.product.unit }}</span>
-                            <span class="text-xs font-medium text-gray-400">({{ trans('exclude tax') }})</span>
+
                         </div>
                     </div>
 
                     <!-- Profit -->
                     <div class="flex flex-col items-end text-right">
                         <div>
-                            <span class="text-sm font-medium text-gray-600 mb-1 flex justify-start">{{trans('Profit') }}</span>
+                            <span class="text-sm font-medium text-gray-600 mb-1 flex justify-start">
+                                <span v-tooltip="trans('Profit margin')" class="mr-3 text-sm font-medium text-gray-600">
+                                   {{trans('Margin') }}: ({{ profitMargin }}%)
+                                </span> {{trans('Profit') }}</span>
                             <div class="flex flex-wrap items-baseline justify-end gap-1">
                                 <span class="text-base font-semibold text-gray-700">
                                     {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit_per_unit ||
                                         0) }}  <span class="text-sm text-gray-500">/ {{ fieldValue.product.unit }}</span>
                                 </span>
-                                <span v-tooltip="trans('Profit margin')" class="text-sm">
-                                   {{trans('Margin') }}: ({{ profitMargin }}%)
-                                </span>
+
                             </div>
                         </div>
                     </div>
