@@ -85,7 +85,7 @@ class SubmitOrder extends OrgAction
 
 
         if ($order->customer_client_id) {
-            CustomerClientHydrateBasket::run($order->customerClient);
+            CustomerClientHydrateBasket::run($order->customer_client_id);
         } else {
             CustomerHydrateBasket::run($order->customer);
         }

@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\CustomerClient\Hydrators;
 use App\Actions\Traits\WithEnumStats;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Models\Dropshipping\CustomerClient;
+use App\Models\Ordering\Order;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -19,13 +20,19 @@ class CustomerClientHydrateBasket implements ShouldBeUnique
     use AsAction;
     use WithEnumStats;
 
-    public function getJobUniqueId(CustomerClient $customerClient): string
+    public function getJobUniqueId(int $customerClientID): string
     {
-        return $customerClient->id;
+        return $customerClientID;
     }
 
-    public function handle(CustomerClient $customerClient): void
+    public function handle(int $customerClientID): void
     {
+        $customerClient = CustomerClient::find($customerClientID);
+        if (!$customerClient) {
+            return;
+        }
+
+        /** @var Order $order */
         $order = $customerClient->orders()->where('state', OrderStateEnum::CREATING->value)->orderBy('date', 'desc')->first();
 
         $stats = [
