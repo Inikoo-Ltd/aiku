@@ -155,13 +155,31 @@ function roundDown2(num: number) {
                                 <input type="checkbox" v-model="allChecked" />
                             </div>
                         </th>
-                        <th class="px-2 py-1">{{ trans('Shop') }}</th>
-                        <th class="px-2 py-1 text-center">{{ trans('Stock') }}</th>
-                        <th class="px-2 py-1 text-center">{{ trans('Org cost') }}</th>
-                        <th class="px-2 py-1">{{ trans('Price') }}</th>
-                        <th class="px-2 py-1 text-center">{{ trans('Margin') }}</th>
-                        <th class="px-2 py-1">{{ trans('Rrp') }}</th>
-                        <th class="px-2 py-1 text-center">{{ trans('Rrp Margin') }}</th>
+                        <th class="px-2 py-1" colspan="10">
+                            <div class="grid grid-cols-10 items-center">
+                                <div class="px-2 py-1 col-span-2">
+                                    {{ trans('Shop') }}
+                                </div>
+                                <div class="px-2 py-1">
+                                    {{ trans('Stock') }} 
+                                </div>
+                                <div class="px-2 py-1">
+                                    {{ trans('Org cost') }} 
+                                </div>
+                                <div class="px-2 py-1 col-span-2">
+                                    {{ trans('Price') }} 
+                                </div>
+                                <div class="px-2 py-1">
+                                    {{ trans('Margin') }} 
+                                </div>
+                                <div class="px-2 py-1 col-span-2">
+                                    {{ trans('Rrp') }} 
+                                </div>
+                                <div class="px-2 py-1">
+                                    {{ trans('Rrp Margin') }} 
+                                </div>
+                            </div>
+                        </th>
                     </tr>
                 </thead>
 
@@ -176,32 +194,33 @@ function roundDown2(num: number) {
                         </td>
 
                         <!-- ✅ Rest of row disabled when create_in_shop = false -->
-                        <td colspan="7" class="p-0">
-                            <div class="grid grid-cols-7 items-center" :class="{
+                        <td colspan="10" class="p-0">
+                            <div class="grid grid-cols-10 items-center min-h-11" :class="{
                                 'pointer-events-none': !item.product.create_in_shop,
                             }">
                                 <!-- Shop name -->
-                                <div class="px-2 py-1 border-b border-gray-100 font-medium text-gray-700">
+                                <div class="px-2 flex items-center border-b border-gray-100 font-medium text-gray-700 col-span-2">
                                     {{ item.name }}
                                 </div>
 
                                 <!-- Stock -->
-                                <div class="px-2 py-1 border-b border-gray-100 text-center">
+                                <div class="px-2 flex items-center border-b border-gray-100 text-center">
                                     {{ item.product?.stock }}
                                 </div>
 
                                 <!-- Org Cost -->
-                                <div class="px-2 py-1 border-b border-gray-100 text-center">
-                                    {{ locale.currencyFormat(item.product?.shop_currency || currency,
+                                <div class="px-2 flex items-center border-b border-gray-100 text-center">
+                                    {{ locale.currencyFormat(item.product?.shop_currency ?? currency,
                                     item.product?.org_cost) }}
                                 </div>
 
                                 <!-- Price -->
-                                <div class="px-2 py-1 border-b w-48">
+                                <div class="px-2 py-1 col-span-2 force-xs border-b">
                                     <InputNumber v-model="item.product.price" mode="currency"
                                         :disabled="!item.product.create_in_shop"
-                                        :currency="item?.product?.shop_currency ? item.product.shop_currency : item.currency"
+                                        :currency="item?.product?.shop_currency ?? item.currency ?? currency"
                                         :step="0.25" :showButtons="true" inputClass="w-full text-xs"
+                                        :min="0"
                                         @input="emits('change', modelValue)" />
                                     <small v-if="form?.errors[`shop_products.${item.id}.price`]"
                                         class="text-red-500 flex items-center gap-1">
@@ -210,7 +229,7 @@ function roundDown2(num: number) {
                                 </div>
 
                                 <!-- Margin -->
-                                <div class="px-2 py-1 border-b border-gray-100 text-center">
+                                <div class="px-2 flex items-center border-b border-gray-100 text-center">
                                     <span :class="{
                                         'text-green-600 font-medium': getMargin(item) > 0,
                                         'text-red-600 font-medium': getMargin(item) < 0,
@@ -221,17 +240,18 @@ function roundDown2(num: number) {
                                 </div>
 
                                 <!-- RRP -->
-                                <div class="px-2 py-1 border-b w-48">
-                                    <div class="flex items-center gap-2">
+                                <div class="px-2 py-1 col-span-2 force-xs border-b">
+                                    <div class="flex items-center gap-2" style="font-size: 0.75rem !important">
                                         <InputNumber v-if="item.product?.useCustomRrp" v-model="item.product.rrp"
                                             mode="currency" :disabled="!item.product.create_in_shop"
-                                            :currency="item?.product?.shop_currency ? item.product?.shop_currency : item?.grp_currency"
+                                            :currency="item?.product?.shop_currency ?? item.currency ?? currency"
                                             :step="0.25" :showButtons="true" inputClass="w-full text-xs"
+                                            :min="0"
                                             @input="emits('change', modelValue)" />
 
                                         <span v-else class="text-gray-700 text-xs font-medium whitespace-nowrap">
                                             {{ locale.currencyFormat(
-                                                item?.product?.shop_currency || item.currency,
+                                                item?.product?.shop_currency ?? currency,
                                                 roundDown2(Number(item.product?.price) * 2.4)
                                             ) }}
                                         </span>
@@ -251,7 +271,7 @@ function roundDown2(num: number) {
                                 </div>
 
                                 <!-- RRP Margin -->
-                                <div class="px-2 py-1 border-b border-gray-100 text-center">
+                                <div class="px-2 flex items-center border-b border-gray-100 text-center">
                                     <span :class="{
                                         'text-green-600 font-medium': getRrpMargin(item) > 0,
                                         'text-red-600 font-medium': getRrpMargin(item) < 0,
@@ -273,3 +293,15 @@ function roundDown2(num: number) {
     </div>
 
 </template>
+<style>
+    div.force-xs{
+        input{
+            font-size:0.75rem;
+        }
+    }
+    div.grid.min-h-11{
+        div{
+            min-height: 100%;
+        }
+    }
+</style>
