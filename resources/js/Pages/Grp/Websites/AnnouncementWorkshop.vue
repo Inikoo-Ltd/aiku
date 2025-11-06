@@ -88,6 +88,7 @@ const props = defineProps<{
         upload_image_route: routeType
         start_route: routeType
         delete_announcement_route: routeType
+        fetch_active_announcements_route: routeType
     }
     is_announcement_published: boolean
     is_announcement_active: string  // 'inactive' | 'active'
@@ -164,8 +165,7 @@ const onPublish = (addData: { bodyToSend: {}}) => {
         text: 'xxx',
         ...additionalDataToSend
     }
-    // console.log('toto', _component_template_Announcement.value?.dataToPublish)
-    console.log('topub', toPublish)
+    
     router[props.routes_list.publish_route.method || 'patch'](
         route(props.routes_list.publish_route.name, props.routes_list.publish_route.parameters),
         toPublish,
@@ -505,6 +505,7 @@ const onSectionSetting = () => {
                 :domain="website.url"
                 :onPublish
                 :isLoadingPublish
+                :routes_list
             />
 
             <div v-if="isLoadingPublish" class="rounded-md bg-black/20 text-white text-[60px] absolute inset-0 flex items-center justify-center">

@@ -10,27 +10,37 @@ import { cloneDeep, get, remove, set } from 'lodash'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { useCopyText } from '@/Composables/useCopyText'
 import VueDatePicker from '@vuepic/vue-datepicker'
-import { usePage } from '@inertiajs/vue3'
-import { faLink } from '@fal'
+import { Link, usePage } from '@inertiajs/vue3'
+import { faLink, faExternalLinkAlt } from '@fal'
+import { faExclamationTriangle } from '@fas'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { trans } from 'laravel-vue-i18n'
 import { useFormatTime } from '@/Composables/useFormatTime'
 import PureTextarea from '@/Components/Pure/PureTextarea.vue'
 import axios from 'axios'
 import { notify } from '@kyvg/vue3-notification'
-library.add(faLink)
+import { layoutStructure } from '@/Composables/useLayoutStructure'
+library.add(faLink, faExternalLinkAlt, faExclamationTriangle)
 
 const props = defineProps<{
     // domain: string
     onPublish: Function
     isLoadingPublish: boolean
+    routes_list: {
+        fetch_active_announcements_route: {
+            name: string,
+            parameters: Record<string, any>
+        }
+    }
 }>()
 
 const emits = defineEmits<{
     (e: 'onMounted'): void
 }>()
 
+const layout = inject('layout', layoutStructure)
 const announcementData = inject('announcementData', {})
+
 // const announcementData.schedule_at = toRef(() => announcementData.schedule_at)
 const announcementScheduleFinishAt = toRef(() => announcementData.schedule_finish_at)
 const announcementDataSettings = toRef(() => announcementData.settings)
@@ -115,22 +125,36 @@ const settingsUser = ref({
 
 const publishMessage = ref('')
 
+const listActiveAnnouncements = ref([])
+const isLoadingCheckingActiveAnnouncements = ref(false)
 const onCheckActiveAnnouncements = async () => {
+    isLoadingCheckingActiveAnnouncements.value = true
     try {
-        // const response = await axios.post(
-        //     route(
-        //         props.imagesUploadRoute.name,
-        //         props.imagesUploadRoute.parameters
-        //     ),
-        //     { images: file }
-        // )
-        // if (response.status !== 200) {
+        const response = await axios.get(
+            route(
+                props.routes_list.fetch_active_announcements_route.name,
+                props.routes_list.fetch_active_announcements_route.parameters
+            )
+        )
+        if (response.status !== 200) {
             
-        // }
-        // console.log('Response axios:', response.data)
+        }
+        console.log('Response axio qqqqs:', response.data)
+        listActiveAnnouncements.value = (response.data.data || []).filter(
+            (item: any) => item.ulid !== announcementData.ulid
+        )
 
-        if (props.onPublish) {
-            props.onPublish({ bodyToSend: { published_message: publishMessage.value } })
+        if (listActiveAnnouncements.value.length) {
+            notify({
+                title: trans("Something went wrong"),
+                text: trans("Unable to publish, you have active announcements running."),
+                type: "error",
+            })
+        } else {
+            // Proceed to publish
+            if (props.onPublish) {
+                props.onPublish({ bodyToSend: { published_message: publishMessage.value } })
+            }
         }
     } catch (error: any) {
         notify({
@@ -139,6 +163,23 @@ const onCheckActiveAnnouncements = async () => {
             type: 'error'
         })
     }
+    isLoadingCheckingActiveAnnouncements.value = false
+}
+
+const onPublishAnyway = () => {
+    if (props.onPublish) {
+        listActiveAnnouncements.value = []
+        props.onPublish({ bodyToSend: { published_message: publishMessage.value } })
+    }
+}
+
+const routeAnnouncement = (announcement: { id: number, website_id: number }) => {
+    return route('grp.org.shops.show.web.announcements.show', {
+        organisation: layout.currentParams.organisation,
+        shop: layout.currentParams.shop,
+        website: layout.currentParams.website,
+        announcement: announcement.ulid
+    })
 }
 </script>
 
@@ -293,7 +334,7 @@ const onCheckActiveAnnouncements = async () => {
             <div class="flex items-center gap-x-3">
                 <input
                     value="all"
-                    @input="(val: string) => (console.log('========'), set(announcementDataSettings, 'target_users.auth_state', val.target.value))"
+                    @input="(val: string) => (set(announcementDataSettings, 'target_users.auth_state', val.target.value))"
                     :checked="get(announcementDataSettings, 'target_users.auth_state', false) === 'all'"
                     id="auth-both"
                     name="input-auth-state"
@@ -449,9 +490,31 @@ const onCheckActiveAnnouncements = async () => {
                 />
             </fieldset>
 
+            <!-- Section: List active announcements -->
+            <div v-if="listActiveAnnouncements.length" class="relative text-sm text-amber-700 bg-amber-50 border border-amber-300 rounded px-3 py-2">
+                <FontAwesomeIcon v-tooltip="trans('Warning')" icon="fas fa-exclamation-triangle" class="text-amber-700/50 absolute top-3 right-3 text-lg" fixed-width aria-hidden="true" />
+
+                <div class="font-medium">
+                    {{ trans("You have current :count active announcements:", { count: listActiveAnnouncements.length }) }}
+                </div>
+
+                <ul class="list-disc list-inside">
+                    <li class="group w-fit " v-for="announcement in listActiveAnnouncements" :key="announcement.id">
+                        <Link :href="routeAnnouncement(announcement)">
+                            <span class="underline cursor-pointer">{{ announcement.name }}</span>
+                            <FontAwesomeIcon icon="fal fa-external-link-alt" class="ml-1 opacity-50 group-hover:opacity-100" fixed-width aria-hidden="true" />
+                        </Link>
+                    </li>
+                </ul>
+
+                <div class="mt-2 italic opacity-80 text-xs">
+                    {{ trans("If you want to publish anyway, those active announcements will be set to inactive") }}. <span @click="onPublishAnyway" class="cursor-pointer underline font-medium opacity-80 hover:opacity-100">Publish anyway</span>
+                </div>
+            </div>
+
             <Button
                 @click="() => onCheckActiveAnnouncements()"
-                label="Publish"
+                :label="trans('Publish')"
                 icon="fal fa-rocket-launch"
                 full
                 size="xl"

@@ -165,6 +165,12 @@ class ShowAnnouncementWorkshop extends OrgAction
                             'website' => $announcement->website_id
                         ],
                         'method'    => 'delete'
+                    ],
+                    'fetch_active_announcements_route'  => [
+                        'name'       => 'grp.json.announcement_active.index',
+                        'parameters' => [
+                            'website' => $announcement->website->slug
+                        ],
                     ]
                 ],
                 'autoSaveRoute'     => [

@@ -136,11 +136,13 @@ console.log('handle', usePage().props)
         </Modal>
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
-            <IrisAnnouncement
-                v-if="propsAnnouncements?.length"
-                v-for="announcement in propsAnnouncements"
-                :data="announcement"
-            />
+            <template v-if="propsAnnouncements?.length">
+                <template v-for="announcement in propsAnnouncements">
+                    <IrisAnnouncement
+                        :data="announcement"
+                    />
+                </template>
+            </template>
 
             <!-- Section: Topbar, Header, Menu, Sidebar -->
             <IrisHeader
