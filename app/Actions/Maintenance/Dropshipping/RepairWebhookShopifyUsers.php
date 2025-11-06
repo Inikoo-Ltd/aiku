@@ -13,7 +13,6 @@ use App\Actions\Dropshipping\Shopify\Webhook\IndexShopifyUserWebhooks;
 use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
-use Illuminate\Console\Command;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairWebhookShopifyUsers
