@@ -66,7 +66,7 @@ class CallbackRetinaEbayUser extends OrgAction
                 $userData = $ebayUser->getUser();
 
                 if ($customerSalesChannel = CustomerSalesChannel::where('name', Arr::get($userData, 'username'))->first()) {
-                    $currentEbayUser = UpdateEbayUser::run($customerSalesChannel->user, [
+                    $currentEbayUser = UpdateEbayUser::run($customerSalesChannel, [
                         'settings' => [
                             'credentials' => [
                                 'ebay_access_token' => $tokenData['access_token'],
