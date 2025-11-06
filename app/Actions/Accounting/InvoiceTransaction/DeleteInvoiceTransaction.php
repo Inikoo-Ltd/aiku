@@ -9,7 +9,7 @@
 namespace App\Actions\Accounting\InvoiceTransaction;
 
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomers;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoices;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSales;
 use App\Actions\OrgAction;
 use App\Enums\DateIntervals\DateIntervalEnum;
@@ -24,7 +24,7 @@ class DeleteInvoiceTransaction extends OrgAction
         $intervals = DateIntervalEnum::allExceptHistorical();
 
         AssetHydrateSales::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
-        AssetHydrateInvoices::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
+        AssetHydrateInvoiceIntervals::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
         AssetHydrateInvoicedCustomers::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
 
 

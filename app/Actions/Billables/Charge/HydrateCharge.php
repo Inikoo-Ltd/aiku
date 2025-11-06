@@ -10,9 +10,10 @@
 namespace App\Actions\Billables\Charge;
 
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomers;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoices;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
 use App\Actions\HydrateModel;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Billables\Charge;
 
 class HydrateCharge extends HydrateModel
@@ -28,8 +29,7 @@ class HydrateCharge extends HydrateModel
 
     public function handle(Charge $charge): void
     {
-        AssetHydrateInvoices::run($charge->asset);
+        AssetHydrateInvoiceIntervals::run($charge->asset->id);
         AssetHydrateInvoicedCustomers::run($charge->asset);
-
     }
 }
