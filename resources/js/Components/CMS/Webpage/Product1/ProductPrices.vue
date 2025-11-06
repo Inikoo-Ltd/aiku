@@ -57,7 +57,7 @@ const closePopover = (close: any): void => {
                     @mouseleave="closePopover(close)">
                     <!-- Retail -->
                     <div class="flex flex-col text-left">
-                        <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Recommended Retail') }}   <span class="text-xs ml-1 font-medium text-gray-400">({{ trans('excluding tax') }})</span></span>
+                        <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Retail price') }}   <span class="text-xs ml-1 font-medium text-gray-400">({{ trans('excluding tax') }})</span></span>
                         <div class="flex flex-wrap items-baseline gap-1">
                             <span class="text-base font-semibold">
                                 {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp_per_unit || 0) }}
