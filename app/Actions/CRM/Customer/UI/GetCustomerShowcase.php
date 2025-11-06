@@ -8,6 +8,7 @@
 
 namespace App\Actions\CRM\Customer\UI;
 
+use App\Http\Resources\Catalogue\TagsResource;
 use App\Http\Resources\CRM\CustomerResource;
 use App\Models\CRM\Customer;
 use Illuminate\Support\Arr;
@@ -22,6 +23,49 @@ class GetCustomerShowcase
 
     public function handle(Customer $customer): array
     {
+        $tagRoute = [
+            'index_tag' => [
+                'name'       => 'grp.json.customer.tags.index',
+                'parameters' => [
+                    'customer' => $customer,
+                ]
+            ],
+            'store_tag' => [
+                'name'       => 'grp.models.customer.tags.store',
+                'parameters' => [
+                    'customer' => $customer->id,
+                ]
+            ],
+            'update_tag' => [
+                'name'       => 'grp.models.customer.tags.update',
+                'parameters' => [
+                    'customer' => $customer->id,
+                ],
+                'method'    => 'patch'
+            ],
+            'delete_tag' => [
+                'name'       => 'grp.models.customer.tags.delete',
+                'parameters' => [
+                    'customer' => $customer->id,
+                ],
+                'method'    => 'delete'
+            ],
+            'attach_tag' => [
+                'name'       => 'grp.models.customer.tags.attach',
+                'parameters' => [
+                    'customer' => $customer->id,
+                ],
+                'method'    => 'post'
+            ],
+            'detach_tag' => [
+                'name'       => 'grp.models.customer.tags.detach',
+                'parameters' => [
+                    'customer' => $customer->id,
+                ],
+                'method'    => 'delete'
+            ],
+        ];
+
         $webUser = $customer->webUsers()->first();
         $webUserRoute = null;
         if ($webUser) {
@@ -72,7 +116,10 @@ class GetCustomerShowcase
 
                 'type_options' => CreditTransactionTypeEnum::getOptions()
             ],
-            'editWebUser' => $webUserRoute
+            'editWebUser' => $webUserRoute,
+            'tag_routes' => $tagRoute,
+            'tags_selected_id' => $customer->tags->pluck('id')->toArray(),
+            'tags' =>  TagsResource::collection($customer->tags)->toArray(request()),
         ];
     }
 }

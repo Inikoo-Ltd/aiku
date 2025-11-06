@@ -843,6 +843,11 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::delete('attachment/{attachment:id}/detach', [DetachAttachmentFromModel::class, 'inCustomer'])->name('attachment.detach')->withoutScopedBindings();
     Route::post('order', [StoreOrder::class, 'inCustomer'])->name('order.store');
     Route::post('submitted-order', StoreSubmittedOrder::class)->name('submitted_order.store');
+    Route::post('tags/store', [StoreTag::class, 'inCustomer'])->name('tags.store');
+    Route::patch('tags/{tag:id}/update', [UpdateTag::class, 'inCustomer'])->name('tags.update');
+    Route::delete('tags/{tag:id}/delete', [DeleteTag::class, 'inCustomer'])->name('tags.delete');
+    Route::post('tags/attach', [AttachTagsToModel::class, 'inCustomer'])->name('tags.attach');
+    Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inCustomer'])->name('tags.detach');
 });
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {

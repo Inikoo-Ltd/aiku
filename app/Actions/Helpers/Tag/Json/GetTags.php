@@ -13,10 +13,10 @@ use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Group;
-use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -32,7 +32,14 @@ class GetTags extends OrgAction
         return $this->handle($tradeUnit);
     }
 
-    public function handle(Group|Organisation|TradeUnit $parent, $prefix = null): Collection
+    public function inCustomer(Customer $customer, ActionRequest $request): Collection
+    {
+        $this->initialisation($customer->organisation, $request);
+
+        return $this->handle($customer);
+    }
+
+    public function handle(Group|Customer|TradeUnit $parent, $prefix = null): Collection
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -50,6 +57,8 @@ class GetTags extends OrgAction
 
         if ($parent instanceof TradeUnit) {
             $queryBuilder->where('scope', TagScopeEnum::PRODUCT_PROPERTY);
+        } else {
+            $queryBuilder->whereNot('scope', TagScopeEnum::PRODUCT_PROPERTY);
         }
 
         $queryBuilder
