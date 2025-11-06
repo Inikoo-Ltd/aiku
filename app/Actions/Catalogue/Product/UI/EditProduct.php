@@ -309,19 +309,21 @@ class EditProduct extends OrgAction
                             'type'     => 'input_number',
                             'label'    => __('Price'),
                             'required' => true,
+                            'bind' => [
+                                'minFractionDigits' => 0,
+                                'maxFractionDigits' => 2,
+                            ],
                             'value'    => $product->price,
-                            /*  'bind'  => [
-                                 'suffix' => 'g'
-                             ] */
                         ],
                         'rrp'              => [
                             'type'     => 'input_number',
                             'label'    => __('RRP'),
                             'required' => true,
+                            'bind' => [
+                                'minFractionDigits' => 0,
+                                'maxFractionDigits' => 2,
+                            ],
                             'value'    => $product->rrp,
-                            /* 'bind'  => [
-                                'suffix' => 'g'
-                            ] */
                         ],
                         'cost_price_ratio' => [
                             'type'        => 'input_number',
