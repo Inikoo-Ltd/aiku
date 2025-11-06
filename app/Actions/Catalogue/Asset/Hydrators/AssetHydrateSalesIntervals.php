@@ -15,7 +15,7 @@ use App\Models\Catalogue\Asset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AssetHydrateSales implements ShouldBeUnique
+class AssetHydrateSalesIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;

@@ -9,7 +9,7 @@
 namespace App\Actions\Catalogue\Asset;
 
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateHistoricAssets;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSales;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateSalesIntervals;
 use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateAssets;
 use App\Actions\OrgAction;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateAssets;
@@ -67,7 +67,7 @@ class StoreAsset extends OrgAction
 
         AssetHydrateHistoricAssets::dispatch($asset)->delay($hydratorsDelay);
         ShopHydrateAssets::dispatch($asset->shop)->delay($hydratorsDelay);
-        AssetHydrateSales::dispatch($asset)->delay($hydratorsDelay);
+        AssetHydrateSalesIntervals::dispatch($asset)->delay($hydratorsDelay);
         OrganisationHydrateAssets::dispatch($asset->organisation)->delay($hydratorsDelay);
         GroupHydrateAssets::dispatch($asset->group)->delay($hydratorsDelay);
 
