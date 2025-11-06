@@ -62,19 +62,19 @@ jobs:
           commit: 'production'
           tag: ${{ steps.semver.outputs.next }}
           token: ${{ github.token }}
-      - name: New Relic Application Deployment Marker
-        uses: newrelic/deployment-marker-action@v2.3.0
-        with:
-          apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
-          guid: aiku
-          version: ${{ steps.semver.outputs.next }}
-          user: "${{ github.actor }}"
-      - name: Create Sentry release
-        uses: getsentry/action-release@v3
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
-        with:
-          environment: production
-          release: ${{ steps.semver.outputs.next }}
+#      - name: New Relic Application Deployment Marker
+#        uses: newrelic/deployment-marker-action@v2.3.0
+#        with:
+#          apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
+#          guid: aiku
+#          version: ${{ steps.semver.outputs.next }}
+#          user: "${{ github.actor }}"
+#      - name: Create Sentry release
+#        uses: getsentry/action-release@v3
+#        env:
+#          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+#          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+#          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
+#        with:
+#          environment: production
+#          release: ${{ steps.semver.outputs.next }}
