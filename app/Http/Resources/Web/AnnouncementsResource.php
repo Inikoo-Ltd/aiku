@@ -9,13 +9,14 @@
 namespace App\Http\Resources\Web;
 
 use App\Enums\Announcement\AnnouncementStatusEnum;
+use App\Models\Announcement;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class AnnouncementsResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $announcement = $this;
+        $announcement = Announcement::find($this->id);
 
         $extractedSettings = $announcement->extractSettings($announcement->settings);
 
@@ -28,6 +29,7 @@ class AnnouncementsResource extends JsonResource
             'status'                         => AnnouncementStatusenum::statusIcon()[$announcement->status->value],
             'show_pages'                     => $extractedSettings['show_pages'],
             'hide_pages'                     => $extractedSettings['hide_pages'],
+            'publisher_name'                 => $announcement->liveSnapshot?->publisher?->contact_name
         ];
     }
 }

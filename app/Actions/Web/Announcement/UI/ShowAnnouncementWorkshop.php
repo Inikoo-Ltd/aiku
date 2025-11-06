@@ -68,7 +68,7 @@ class ShowAnnouncementWorkshop extends OrgAction
                         'icon'  => ['fal', 'drafting-compass'],
                         'title' => __("Announcement's workshop")
                     ],
-                    'iconRight' => $announcement->status == AnnouncementStatusEnum::INACTIVE ? $announcement->state->stateIcon()[$announcement->state->value] : null,
+                    'iconRight' => $announcement->status == AnnouncementStatusEnum::INACTIVE ? $announcement->status->statusIcon()[$announcement->status->value] : null,
 
                     'actionActualMethod' => 'patch',
                     'actions'            => [

@@ -60,7 +60,7 @@ class ShowAnnouncement extends OrgAction
                         'icon'    => 'fal fa-megaphone'
                     ],
                     "model" => __('Announcement'),
-                    'iconRight' => $announcement->state->stateIcon()[$announcement->state->value],
+                    'iconRight' => $announcement->status->statusIcon()[$announcement->status->value],
                     'actions'   => [
                         [
                             'type'  => 'button',
