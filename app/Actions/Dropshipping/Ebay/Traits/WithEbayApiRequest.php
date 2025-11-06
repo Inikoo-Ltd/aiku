@@ -260,7 +260,9 @@ trait WithEbayApiRequest
             'sandbox' => config('services.ebay.sandbox'),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
             'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token'),
-            'shop' => $shopSlug
+            'shop' => $shopSlug,
+            'region' => $shopSlug === 'dse' ? 'ES' : 'GB',
+            'currency' => $shopSlug === 'dse' ? 'EUR' : 'GBP'
         ];
     }
 
@@ -618,16 +620,20 @@ trait WithEbayApiRequest
      */
     public function storeOffer($offerData)
     {
+        $config = $this->getEbayConfig();
+        $region = Arr::get($config, 'region');
+        $currency = Arr::get($config, 'currency');
+
         $data = [
             "sku" => Arr::get($offerData, 'sku'),
-            "marketplaceId" => "EBAY_GB",
+            "marketplaceId" => "EBAY_$region",
             "format" => "FIXED_PRICE",
             "listingDescription" => Arr::get($offerData, 'description'),
             "availableQuantity" => Arr::get($offerData, 'quantity', 1),
             "pricingSummary" => [
                 "price" => [
                     "value" => Arr::get($offerData, 'price', 0),
-                    "currency" => Arr::get($offerData, 'currency', 'GBP')
+                    "currency" => Arr::get($offerData, 'currency', $currency)
                 ]
             ],
             "listingPolicies" => [
@@ -712,16 +718,20 @@ trait WithEbayApiRequest
     public function updateOffer($offerId, array $offerData)
     {
         try {
+            $config = $this->getEbayConfig();
+            $region = Arr::get($config, 'region');
+            $currency = Arr::get($config, 'currency');
+
             $data = [
                 "sku" => Arr::get($offerData, 'sku'),
-                "marketplaceId" => "EBAY_GB",
+                "marketplaceId" => "EBAY_$region",
                 "format" => "FIXED_PRICE",
                 "listingDescription" => Arr::get($offerData, 'description'),
                 "availableQuantity" => Arr::get($offerData, 'quantity', 1),
                 "pricingSummary" => [
                     "price" => [
                         "value" => Arr::get($offerData, 'price', 0),
-                        "currency" => Arr::get($offerData, 'currency', 'GBP')
+                        "currency" => Arr::get($offerData, 'currency', $currency)
                     ]
                 ],
                 "listingPolicies" => [
@@ -874,16 +884,20 @@ trait WithEbayApiRequest
     public function createListing($sku, $listingData)
     {
         try {
+            $config = $this->getEbayConfig();
+            $region = Arr::get($config, 'region');
+            $currency = Arr::get($config, 'currency');
+
             $endpoint = "/sell/inventory/v1/offer";
 
             $offer = [
                 'sku' => $sku,
-                'marketplaceId' => $listingData['marketplace_id'] ?? 'EBAY_US',
+                'marketplaceId' => $listingData['marketplace_id'] ?? "EBAY_$region",
                 'format' => $listingData['format'] ?? 'FIXED_PRICE',
                 'pricingSummary' => [
                     'price' => [
                         'value' => $listingData['price'],
-                        'currency' => $listingData['currency'] ?? 'USD'
+                        'currency' => $listingData['currency'] ?? $currency
                     ]
                 ],
                 'listingDescription' => $listingData['description'] ?? '',
@@ -963,13 +977,17 @@ trait WithEbayApiRequest
      */
     public function createFulfilmentPolicy()
     {
+        $config = $this->getEbayConfig();
+        $region = Arr::get($config, 'region');
+        $currency = Arr::get($config, 'currency');
+
         $data = [
             "categoryTypes" => [
                 [
                     "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
                 ]
             ],
-            "marketplaceId" => "EBAY_GB",
+            "marketplaceId" => "EBAY_$region",
             "name" => "Domestic shipping",
             "handlingTime" => [
                 "unit"  => "DAY",
