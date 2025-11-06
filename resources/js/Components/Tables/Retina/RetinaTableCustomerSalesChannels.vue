@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-import { Link } from "@inertiajs/vue3"
+import { Link, router } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import type { Table as TableTS } from "@/types/Table"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
@@ -42,6 +42,10 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
         [customerSalesChannel.slug])
 }
 
+function syncCustomerSalesChannel(customerSalesChannel: CustomerSalesChannel) {
+   
+   const response = router.post(route('retina.dropshipping.platform.wc.check_status', [customerSalesChannel.slug]))
+}
 
 </script>
 <template>
@@ -77,31 +81,43 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 
 
         <template #cell(action)="{ item: customerSalesChannel, proxyItem }">
-            <ModalConfirmationDelete
-                :routeDelete="customerSalesChannel.delete_route"
-                :title="trans('Are you sure you want to close this channel?')"
-                :description="customerSalesChannel.delete_msg"
-                isFullLoading
-                :noLabel="trans('Close')"
-                :noIcon="'fal fa-store-alt-slash'"
-            >
-                <template #beforeTitle>
-                    <div class="text-center font-semibold text-xl mb-4">
-                        {{ `${customerSalesChannel.platform_name} (${customerSalesChannel.reference})` }}
-                    </div>
-                </template>
-                
-                <template #default="{ isOpenModal, changeModel }">
-                    <Button
-                        v-tooltip="trans('Close channel')"
-                        @click="() => changeModel()"
-                        type="negative"
-                        icon="fal fa-store-alt-slash"
-                        size="s"
-                        :key="1"
-                    />
-                </template>
-            </ModalConfirmationDelete>
+            <div class="flex items-center gap-2">
+                <Button
+                    v-if="customerSalesChannel.platform_code === 'woocommerce'"
+                    v-tooltip="trans('check down status')"
+                    @click="syncCustomerSalesChannel(customerSalesChannel)"
+                    type="secondary"
+                    icon="fal fa-sync-alt"
+                    size="s"
+                    :key="0"
+                    :loading="customerSalesChannel.is_syncing"
+                />
+                <ModalConfirmationDelete
+                    :routeDelete="customerSalesChannel.delete_route"
+                    :title="trans('Are you sure you want to close this channel?')"
+                    :description="customerSalesChannel.delete_msg"
+                    isFullLoading
+                    :noLabel="trans('Close')"
+                    :noIcon="'fal fa-store-alt-slash'"
+                >
+                    <template #beforeTitle>
+                        <div class="text-center font-semibold text-xl mb-4">
+                            {{ `${customerSalesChannel.platform_name} (${customerSalesChannel.reference})` }}
+                        </div>
+                    </template>
+                    
+                    <template #default="{ isOpenModal, changeModel }">
+                        <Button
+                            v-tooltip="trans('Close channel')"
+                            @click="() => changeModel()"
+                            type="negative"
+                            icon="fal fa-store-alt-slash"
+                            size="s"
+                            :key="1"
+                        />
+                    </template>
+                </ModalConfirmationDelete>
+            </div>
         </template>
     </Table>
 </template>

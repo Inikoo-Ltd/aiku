@@ -19,6 +19,7 @@ use App\Actions\Dropshipping\Tiktok\User\AuthenticateTiktokAccount;
 use App\Actions\Dropshipping\WooCommerce\AuthorizeRetinaWooCommerceUser;
 use App\Actions\Dropshipping\WooCommerce\Clients\GetRetinaCustomerClientFromWooCommerce;
 use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
+use App\Actions\Dropshipping\WooCommerce\CheckWooStatus;
 use App\Actions\Fulfilment\Pallet\DownloadDropshippingClientTemplate;
 use App\Actions\Ordering\Order\DownloadOrderTransactionsTemplate;
 use App\Actions\Retina\Accounting\MitSavedCard\UI\CreateMitSavedCard;
@@ -67,6 +68,7 @@ Route::prefix('platform')->as('platform.')->group(function () {
     Route::post('wc-user/authorize', AuthorizeRetinaWooCommerceUser::class)->name('wc.authorize');
     Route::post('wc-user/{customerSalesChannel}/test-connection', TestConnectionWooCommerceUser::class)->name('wc.test_connection');
     Route::delete('wc-user', DeleteShopifyUser::class)->name('wc.delete');
+    Route::post('wc-user/{customerSalesChannel}/check-status', CheckWooStatus::class)->name('wc.check_status');
 
     Route::post('ebay-user/authorize', AuthorizeRetinaEbayUser::class)->name('ebay.authorize');
     Route::get('ebay-user-callback', CallbackRetinaEbayUser::class)->name('ebay.callback');
