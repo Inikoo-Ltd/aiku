@@ -341,10 +341,10 @@ const key = ulid()
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
-                <a v-if="props.product_count <= 200" :href="downloadUrl('images') as string" target="_blank" rel="noopener">
+<!--                <a v-if="props.product_count <= 200" :href="downloadUrl('images') as string" target="_blank" rel="noopener">
                     <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
-                </a>
-                <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
+                </a>-->
+<!--                <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>-->
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')"
