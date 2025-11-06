@@ -87,9 +87,14 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 				<!-- Logo -->
 				<div>
 					<component v-if="fieldValue?.logo?.image?.source"
-						:is="fieldValue?.logo?.image?.source ? LinkIris : 'div'" :href="props.fieldValue?.logo?.link?.href"
-						:target="fieldValue?.logo?.link?.target || '_self'" rel="noopener noreferrer"
-						class="block w-full h-full" :canonical_url="props.fieldValue?.logo?.link?.canonical_url" :type="props.fieldValue?.logo?.link?.type">
+						:is="fieldValue?.logo?.image?.source ? LinkIris : 'div'"
+						:href="props.fieldValue?.logo?.link?.href ?? '#'"
+						:target="fieldValue?.logo?.link?.target || '_self'"
+						rel="noopener noreferrer"
+						class="block w-full h-full"
+						:canonical_url="props.fieldValue?.logo?.link?.canonical_url"
+						:type="props.fieldValue?.logo?.link?.type"
+					>
 						<Image :style="getStyles(fieldValue.logo.properties)"
 							:alt="fieldValue?.logo?.image?.alt || fieldValue?.logo?.alt" :imageCover="true"
 							:src="fieldValue?.logo?.image?.source" :imgAttributes="fieldValue?.logo.image?.attributes">
