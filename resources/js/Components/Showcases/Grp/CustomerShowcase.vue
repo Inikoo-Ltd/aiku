@@ -117,7 +117,10 @@ const props = defineProps<{
         }
         type_options: {}
         tax_number: {}
-        stats: any
+        stats: any,
+        tag_routes: Record<string, routeType>
+        tags: {}[]
+        tags_selected_id: number[]
     },
     tab: string
     handleTabUpdate?: Function
@@ -383,7 +386,21 @@ const copyToClipboard = async (text: string, label: string) => {
                             </dd>
                         </div>
 
-
+                        <div v-if="data.tags.length > 0" class="relative flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="'Tags'" class="flex-none pt-2">
+                                <FontAwesomeIcon icon="fal fa-tags" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="flex items-center gap-2 w-full">
+                                <span
+                                    v-for="tag in data.tags"
+                                    :key="tag.id"
+                                    v-tooltip="'tag'"
+                                    class="px-2 py-0.5 rounded-full text-xs bg-green-100 bg-green-50 border border-blue-100"
+                                >
+                                    {{ tag.name }}
+                                </span>
+                            </dd>
+                        </div>
                     </div>
 
 

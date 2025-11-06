@@ -29,7 +29,11 @@ import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector
 library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
-    fieldValue: {}
+    fieldValue: {
+        product: {
+            luigi_identity: string
+        }
+    }
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
@@ -65,7 +69,7 @@ const fetchRecommenders = async () => {
             [
                 {
                     "blacklisted_item_ids": [],
-                    "item_ids": [],
+                    "item_ids": props.fieldValue?.product?.luigi_identity ? [props.fieldValue.product.luigi_identity] : [],
                     "recommendation_type": "last_seen",
                     "recommender_client_identifier": "last_seen",
                     "size": 12,
@@ -83,8 +87,9 @@ const fetchRecommenders = async () => {
         if (response.status !== 200) {
             console.error('Error fetching recommenders:', response.statusText)
         }
-        RecommendationCollector(response.data[0])
+        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
         console.log('LLS1:', response.data)
+
         listProducts.value = response.data[0].hits
     } catch (error: any) {
         console.error('Error on fetching recommendations:', error)

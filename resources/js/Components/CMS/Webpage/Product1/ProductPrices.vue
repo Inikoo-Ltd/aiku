@@ -53,11 +53,11 @@ const closePopover = (close: any): void => {
     <Popover v-slot="{ open, close }">
         <PopoverButton style="width: 100%;">
             <div v-if="layout?.iris?.is_logged_in" class="border-y border-gray-200 p-1 mb-2 text-gray-800 tabular-nums">
-                <div class="grid grid-cols-2 gap-4 items-start" @mouseover="(e) => hoverPopover(e, open)"
+                <div class="grid grid-cols-6 gap-4 items-start" @mouseover="(e) => hoverPopover(e, open)"
                     @mouseleave="closePopover(close)">
                     <!-- Retail -->
-                    <div class="flex flex-col text-left">
-                        <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Recommended Retail') }}   <span class="text-xs ml-1 font-medium text-gray-400">({{ trans('excluding tax') }})</span></span>
+                    <div class="flex flex-col text-left col-span-4">
+                        <span class="text-sm font-medium text-gray-600 mb-1">{{ trans('Retail Price') }}   <span class="text-xs ml-1 font-medium text-gray-400">({{ trans('excluding tax') }})</span></span>
                         <div class="flex flex-wrap items-baseline gap-1">
                             <span class="text-base font-semibold">
                                 {{ locale.currencyFormat(currency?.code, fieldValue.product?.rrp_per_unit || 0) }}
@@ -68,16 +68,14 @@ const closePopover = (close: any): void => {
                     </div>
 
                     <!-- Profit -->
-                    <div class="flex flex-col items-end text-right">
+                    <div class="flex flex-col items-end text-right col-span-1 col-span-2 justify-end">
                         <div>
-                            <span class="text-sm font-medium text-gray-600 mb-1 flex justify-start">
+                            <span class="text-sm font-medium text-gray-600 mb-1 flex justify-end">
                                 <span v-tooltip="trans('Profit margin')" class="mr-3 text-xs ml-1 font-medium text-gray-400">
-                                   ({{ profitMargin }}%)
-                                </span> {{trans('Profit Margin') }}</span>
+                                </span> {{trans('Profit') }} ({{ profitMargin }}%)</span>
                             <div class="flex flex-wrap items-baseline justify-end gap-1">
                                 <span class="text-base font-semibold text-gray-700">
-                                    {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit_per_unit ||
-                                        0) }}  
+                                    {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit_per_unit || 0) }}  
                                 </span>
                                 <span class="text-sm text-gray-500 ">/ {{ fieldValue.product.unit }}</span>
 
@@ -152,7 +150,7 @@ const closePopover = (close: any): void => {
         <div v-if="fieldValue.product.units === 1" class="flex justify-between">
             <div>
                 {{ trans("Wholesale Price") }}:
-                <span class="font-semibold">
+                <span class="font-semibold text-green-600 text-xl">
                     {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
                     <span class="text-xs text-gray-600"> / {{ fieldValue.product.unit }}</span>
                 </span>
@@ -162,16 +160,16 @@ const closePopover = (close: any): void => {
             <div class="flex justify-between">
                 <div v-tooltip="trans('Wholesale Price')" class="flex items-center gap-1">
                     {{ trans("Price") }}:
-                    <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
-                        fieldValue.product.price) }}</span> / {{trans('Outer') }}
+                    <span class="font-semibold text-green-600 text-xl">{{ locale.currencyFormat(currency?.code,
+                        fieldValue.product.price) }}</span><span class="text-sm text-gray-500">/ {{trans('Outer') }}</span> 
                 </div>
                 <div>
                     <span class="text-xs price_per_unit">
-                        (<span>
+                        <span class="text-green-600 text-xl font-semibold">
                             {{ locale.currencyFormat(currency?.code, Number((fieldValue.product.price
                                 / fieldValue.product.units).toFixed(2) || 0).toFixed(2)) }}
-                            <span class="text-gray-600"> / {{ fieldValue.product.unit }}</span>
-                        </span>)
+                           </span>
+                            <span class="text-gray-600 text-sm"> / {{ fieldValue.product.unit }}</span>
                     </span>
                 </div>
             </div>

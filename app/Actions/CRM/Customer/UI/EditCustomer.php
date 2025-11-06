@@ -136,6 +136,59 @@ class EditCustomer extends OrgAction
                                     'value' => $customer->identity_document_number
                                 ],
                             ]
+                        ],
+                        [
+                            'title'  =>  __('Tags'),
+                            'label'  => __('Tags'),
+                            'fields' => [
+                                'tags' => [
+                                    'type'       => 'tags-customer',
+                                    'label'      => __('Tags'),
+                                    'value'      => $customer->tags->pluck('id')->toArray(),
+                                    'tag_routes' => [
+                                        'index_tag' => [
+                                            'name'       => 'grp.json.customer.tags.index',
+                                            'parameters' => [
+                                                'customer' => $customer,
+                                            ]
+                                        ],
+                                        'store_tag' => [
+                                            'name'       => 'grp.models.customer.tags.store',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
+                                            ]
+                                        ],
+                                        'update_tag' => [
+                                            'name'       => 'grp.models.customer.tags.update',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
+                                            ],
+                                            'method'    => 'patch'
+                                        ],
+                                        'delete_tag' => [
+                                            'name'       => 'grp.models.customer.tags.delete',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
+                                            ],
+                                            'method'    => 'delete'
+                                        ],
+                                        'attach_tag' => [
+                                            'name'       => 'grp.models.customer.tags.attach',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
+                                            ],
+                                            'method'    => 'post'
+                                        ],
+                                        'detach_tag' => [
+                                            'name'       => 'grp.models.customer.tags.detach',
+                                            'parameters' => [
+                                                'customer' => $customer->id,
+                                            ],
+                                            'method'    => 'delete'
+                                        ],
+                                    ],
+                                ],
+                            ]
                         ]
                     ],
                     'args'      => [

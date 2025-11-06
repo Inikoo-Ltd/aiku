@@ -14,6 +14,7 @@ use App\Actions\Web\WebBlock\GetWebBlockCollections;
 use App\Actions\Web\WebBlock\GetWebBlockDepartments;
 use App\Actions\Web\WebBlock\GetWebBlockFamilies;
 use App\Actions\Web\WebBlock\GetWebBlockFamily;
+use App\Actions\Web\WebBlock\GetWebBlockLuigiRecommendations;
 use App\Actions\Web\WebBlock\GetWebBlockProduct;
 use App\Actions\Web\WebBlock\GetWebBlockProducts;
 use App\Actions\Web\WebBlock\GetWebBlockSeeAlso;
@@ -47,6 +48,8 @@ trait WithFillIrisWebBlocks
             $parsedWebBlocks[$key] = GetWebBlockSeeAlso::run($webpage, $webBlock);
         } elseif (in_array($webBlockType, ['blog'])) {
             $parsedWebBlocks[$key] = GetWebBlockBlog::run($webpage, $webBlock);
+        } elseif (in_array($webBlockType, ['luigi-trends-1', 'luigi-last-seen-1', 'luigi-item-alternatives-1'])) {
+            $parsedWebBlocks[$key] = GetWebBlockLuigiRecommendations::run($webpage, $webBlock);
         } else {
             $parsedWebBlocks[$key] = $webBlock;
         }

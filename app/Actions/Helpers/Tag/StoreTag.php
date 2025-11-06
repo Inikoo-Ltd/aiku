@@ -12,6 +12,7 @@ namespace App\Actions\Helpers\Tag;
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
@@ -30,6 +31,13 @@ class StoreTag extends OrgAction
         $this->handle($tradeUnit, $this->validatedData);
     }
 
+    public function inCustomer(Customer $customer, ActionRequest $request): void
+    {
+        $this->initialisation($customer->organisation, $request);
+
+        $this->handle($customer, $this->validatedData);
+    }
+
     public function asController(Organisation $organisation, ActionRequest $request): Tag
     {
         $this->initialisation($organisation, $request);
@@ -37,15 +45,23 @@ class StoreTag extends OrgAction
         return $this->handle($organisation, $this->validatedData);
     }
 
-    public function htmlResponse(Tag $tag): RedirectResponse
+    public function htmlResponse(Tag $tag=null): RedirectResponse|null
     {
-        return Redirect::route('grp.org.tags.show', [$this->organisation->slug]);
+        if (!$tag) {
+            return null;
+        }
+
+        return Redirect::route('grp.org.tags.show', [$this->organisation->slug])->with('notification', [
+            'status'  => 'success',
+            'title'   => __('Success'),
+            'description' => __('Tag successfully created.'),
+        ]);
     }
 
-    public function handle(Organisation|TradeUnit $parent, array $modelData): Tag
+    public function handle(Organisation|Customer|TradeUnit $parent, array $modelData): Tag
     {
-        if ($parent instanceof Organisation) {
-            data_set($modelData, 'organisation_id', $parent->id);
+        if ($parent instanceof Customer) {
+            data_set($modelData, 'scope', TagScopeEnum::CUSTOMER);
         }
 
         if ($parent instanceof TradeUnit) {
@@ -76,13 +92,8 @@ class StoreTag extends OrgAction
         }
 
 
-        if ($parent instanceof TradeUnit) {
-            AttachTagsToModel::make()->handle(
-                $parent,
-                [
-                    'tags_id' => [$tag->id]
-                ],
-            );
+        if ($parent instanceof TradeUnit || $parent instanceof Customer) {
+            AttachTagsToModel::make()->handle($parent, ['tags_id' => [$tag->id]]);
         }
 
         return $tag;
