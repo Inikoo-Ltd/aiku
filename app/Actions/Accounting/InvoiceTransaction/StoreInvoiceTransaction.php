@@ -91,9 +91,9 @@ class StoreInvoiceTransaction extends OrgAction
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
 
         if ($invoiceTransaction->asset_id) {
-            AssetHydrateSalesIntervals::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay(1800);
+            AssetHydrateSalesIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
             AssetHydrateInvoiceIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
-            AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset, $intervalsExceptHistorical, [])->delay(1800);
+            AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset_id, $intervalsExceptHistorical, [])->delay(1800);
         }
 
         return $invoiceTransaction;

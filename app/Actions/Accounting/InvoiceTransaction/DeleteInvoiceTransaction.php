@@ -23,9 +23,9 @@ class DeleteInvoiceTransaction extends OrgAction
 
         $intervals = DateIntervalEnum::allExceptHistorical();
 
-        AssetHydrateSalesIntervals::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
-        AssetHydrateInvoiceIntervals::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
-        AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset, $intervals)->delay($this->hydratorsDelay);
+        AssetHydrateSalesIntervals::dispatch($invoiceTransaction->asset_id, $intervals)->delay($this->hydratorsDelay);
+        AssetHydrateInvoiceIntervals::dispatch($invoiceTransaction->asset_id, $intervals)->delay($this->hydratorsDelay);
+        AssetHydrateInvoicedCustomersIntervals::dispatch($invoiceTransaction->asset_id, $intervals)->delay($this->hydratorsDelay);
 
 
         return $invoiceTransaction;

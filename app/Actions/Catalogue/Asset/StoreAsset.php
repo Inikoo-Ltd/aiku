@@ -67,7 +67,7 @@ class StoreAsset extends OrgAction
 
         AssetHydrateHistoricAssets::dispatch($asset)->delay($hydratorsDelay);
         ShopHydrateAssets::dispatch($asset->shop)->delay($hydratorsDelay);
-        AssetHydrateSalesIntervals::dispatch($asset)->delay($hydratorsDelay);
+        AssetHydrateSalesIntervals::dispatch($asset->id)->delay($hydratorsDelay);
         OrganisationHydrateAssets::dispatch($asset->organisation)->delay($hydratorsDelay);
         GroupHydrateAssets::dispatch($asset->group)->delay($hydratorsDelay);
 
