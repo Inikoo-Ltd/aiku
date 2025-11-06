@@ -205,22 +205,25 @@ class IndexRetinaPortfolios extends RetinaAction
             };
         }
 
-        $actions = [
-            [
-                'type'  => 'button',
-                'style' => 'tertiary',
-                'tooltip' => __('This will automatically synced every day at 3:00 UTC'),
-                'label'   => __('Re-Sync'),
-                'icon' => ['fal', 'fa-tachometer-alt'],
-                'route' => [
-                    'method' => 'post',
-                    'name' => 'retina.models.customer_sales_channel.portfolio_shopify_sync',
-                    'parameters' => [
-                        'customerSalesChannel' => $this->customerSalesChannel->id
-                    ]
-                ],
-            ]
-        ];
+        $actions=[];
+        if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
+            $actions = [
+                [
+                    'type'    => 'button',
+                    'style'   => 'tertiary',
+                    'tooltip' => __('This will automatically synced every day at 3:00 UTC'),
+                    'label'   => __('Re-Sync'),
+                    'icon'    => ['fal', 'fa-tachometer-alt'],
+                    'route'   => [
+                        'method'     => 'post',
+                        'name'       => 'retina.models.customer_sales_channel.portfolio_shopify_sync',
+                        'parameters' => [
+                            'customerSalesChannel' => $this->customerSalesChannel->id
+                        ]
+                    ],
+                ]
+            ];
+        }
 
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::MANUAL) {
             $countProductsNotSync = 0;
