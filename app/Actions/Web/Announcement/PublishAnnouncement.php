@@ -34,6 +34,13 @@ class PublishAnnouncement extends OrgAction
 
     public function handle(Announcement $announcement, array $modelData): void
     {
+        Announcement::where('website_id', $announcement->website_id)
+            ->whereNot('id', $announcement->id)
+            ->where('status', AnnouncementStatusEnum::ACTIVE)
+            ->update([
+                'status' => AnnouncementStatusEnum::INACTIVE
+            ]);
+
         $firstCommit = false;
         if ($announcement->state == AnnouncementStateEnum::IN_PROCESS or $announcement->state == AnnouncementStateEnum::READY) {
             $firstCommit = true;
