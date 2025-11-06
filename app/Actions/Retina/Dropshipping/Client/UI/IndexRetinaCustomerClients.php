@@ -26,6 +26,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 
 class IndexRetinaCustomerClients extends RetinaAction
 {
@@ -104,8 +105,12 @@ class IndexRetinaCustomerClients extends RetinaAction
                 ->column(key: 'email', label: __('email'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'phone', label: __('phone'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'location', label: __('location'), canBeHidden: false, searchable: true)
-                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'action', label: '', canBeHidden: false, sortable: false, searchable: false);
+                ->column(key: 'created_at', label: __('since'), canBeHidden: false, sortable: true, searchable: true); 
+
+                 // Only add action column if sales channel is not closed
+            if ($this->customerSalesChannel->status !== CustomerSalesChannelStatusEnum::CLOSED) {
+                $table->column(key: 'action', label: '', canBeHidden: false, sortable: false, searchable: false);
+            }
         };
     }
 
@@ -204,7 +209,7 @@ class IndexRetinaCustomerClients extends RetinaAction
                     'afterTitle'    => [
                         'label'     => '@' . $this->customerSalesChannel->name,
                     ],
-                    'actions'    => $actions
+                    'actions'    => $this->customerSalesChannel->status !== CustomerSalesChannelStatusEnum::CLOSED ? $actions : []
                 ],
                 'data'        => CustomerClientResource::collection($customerClients),
                 'upload_spreadsheet' => $spreadsheetRoute,

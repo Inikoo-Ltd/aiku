@@ -64,6 +64,8 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             $platformStatus = false;
         }
 
+        $isShowActions = !($customerSalesChannel->status===CustomerSalesChannelStatusEnum::CLOSED);
+
         return Inertia::render($renderPage, [
             'title'                   => $title,
             'breadcrumbs'             => $this->getBreadcrumbs($customerSalesChannel),
@@ -77,7 +79,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                     'title'         => $title
                 ],
                 'actions' => [
-                    [
+                    $isShowActions ? [
                         'type'  => 'button',
                         'style' => 'edit',
                         'label' => __('Edit'),
@@ -88,7 +90,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
                             ],
                             'method'     => 'get'
                         ]
-                    ]
+                    ] : []
                 ]
 
             ],
