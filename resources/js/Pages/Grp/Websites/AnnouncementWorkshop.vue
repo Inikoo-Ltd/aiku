@@ -323,16 +323,6 @@ const onSectionSetting = () => {
 
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
-        <template #afterTitle="{ iconRight, afterTitle }">
-            <Icon :data="iconRight" />
-            <!-- <div
-                @click="() => onStopAnnouncement()"
-                class="text-red-500 hover:underline cursor-pointer font-normal text-base"
-            >
-                {{ trans("Stop now") }}
-            </div> -->
-        </template>
-
         <template v-if="announcementData.template_code" #other>
             <div class="flex gap-x-2 flex-wrap gap-y-1.5 justify-end">
                 <Button @click="onReset" label="Reset" v-tooltip="trans('Reset data to last publish') + ` (${useFormatTime(last_published_date || '', {formatTime: 'hm'})})`" :loading="isLoadingReset" :style="'negative'" :disabled="!is_announcement_dirty" icon="fal fa-undo-alt" />
@@ -350,7 +340,8 @@ const onSectionSetting = () => {
                             <FontAwesomeIcon v-else="!cancelTokenActivate" icon='fal fa-circle' size="sm" class='' fixed-width aria-hidden='true' />
                         </div>
 
-                        <div @click="onClickToggleActivate('active')"
+                        <div xclick="onClickToggleActivate('active')"
+                            @click="() => (selectedTab = 1, onSectionSetting())"
                             class="py-1.5 px-3 flex justify-center items-center gap-x-1 capitalize transition-all"
                             :class="[is_announcement_active === 'active' ? 'bg-green-600 text-green-100' : 'bg-gray-100/70 text-gray-400 hover:bg-green-200/70']">
                             {{ trans('Active') }}

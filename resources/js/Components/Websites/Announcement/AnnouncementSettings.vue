@@ -517,6 +517,7 @@ const routeAnnouncement = (announcement: { id: number, website_id: number }) => 
                 :label="trans('Publish')"
                 icon="fal fa-rocket-launch"
                 full
+                :loading="isLoadingCheckingActiveAnnouncements"
                 size="xl"
                 :disabled="!publishMessage || isLoadingPublish || !get(announcementData, 'template_code', false)"
                 v-tooltip="!get(announcementData, 'template_code', false) ? trans('Select template to publish') : !publishMessage ? trans('Enter the description') : ''"

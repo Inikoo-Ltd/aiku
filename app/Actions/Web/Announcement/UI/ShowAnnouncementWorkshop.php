@@ -10,6 +10,7 @@ namespace App\Actions\Web\Announcement\UI;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithWebEditAuthorisation;
+use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Http\Resources\Web\AnnouncementResource;
 use App\Models\Announcement;
@@ -63,11 +64,11 @@ class ShowAnnouncementWorkshop extends OrgAction
                         'tooltip' => __('Announcement'),
                         'label'   => Str::possessive($announcement->name)
                     ],
-                    'iconRight' =>
-                        [
-                            'icon'  => ['fal', 'drafting-compass'],
-                            'title' => __("Announcement's workshop")
-                        ],
+                    'icon' => [
+                        'icon'  => ['fal', 'drafting-compass'],
+                        'title' => __("Announcement's workshop")
+                    ],
+                    'iconRight' => $announcement->status == AnnouncementStatusEnum::INACTIVE ? $announcement->state->stateIcon()[$announcement->state->value] : null,
 
                     'actionActualMethod' => 'patch',
                     'actions'            => [
