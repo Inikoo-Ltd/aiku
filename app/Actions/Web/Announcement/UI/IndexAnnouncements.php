@@ -105,6 +105,9 @@ class IndexAnnouncements extends OrgAction
                 ->withExportLinks($exportLinks)
                 ->column(key: 'status', label: ['fal', 'fa-yin-yang'], type: 'icon')
                 ->column(key: 'name', label: __('name'), sortable: true)
+                ->column(key: 'live_at', label: __('live at'), sortable: true)
+                ->column(key: 'show_pages', label: __('show pages'), sortable: true)
+                ->column(key: 'hide_pages', label: __('hide pages'), sortable: true)
                 ->defaultSort('-id');
         };
     }
