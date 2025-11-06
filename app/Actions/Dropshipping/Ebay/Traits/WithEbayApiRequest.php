@@ -979,7 +979,6 @@ trait WithEbayApiRequest
     {
         $config = $this->getEbayConfig();
         $region = Arr::get($config, 'region');
-        $currency = Arr::get($config, 'currency');
 
         $data = [
             "categoryTypes" => [
@@ -1024,9 +1023,12 @@ trait WithEbayApiRequest
     public function getFulfilmentPolicies()
     {
         try {
+            $config = $this->getEbayConfig();
+            $region = Arr::get($config, 'region');
+
             $endpoint = "/sell/account/v1/fulfillment_policy";
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'marketplace_id' => 'EBAY_GB'
+                'marketplace_id' => "EBAY_$region"
             ]);
         } catch (Exception $e) {
             Log::error('Get Fulfilment Policy Error: ' . $e->getMessage());
@@ -1039,9 +1041,12 @@ trait WithEbayApiRequest
      */
     public function createPaymentPolicy()
     {
+        $config = $this->getEbayConfig();
+        $region = Arr::get($config, 'region');
+
         $data = [
             "name" => "minimal Payment Policy",
-            "marketplaceId" => "EBAY_GB",
+            "marketplaceId" => "EBAY_$region",
             "categoryTypes" => [
                 [
                     "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
@@ -1064,9 +1069,12 @@ trait WithEbayApiRequest
     public function getPaymentPolicies()
     {
         try {
+            $config = $this->getEbayConfig();
+            $region = Arr::get($config, 'region');
+
             $endpoint = "/sell/account/v1/payment_policy";
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'marketplace_id' => 'EBAY_GB'
+                'marketplace_id' => "EBAY_$region"
             ]);
         } catch (Exception $e) {
             Log::error('Get Payment Policy Error: ' . $e->getMessage());
@@ -1079,9 +1087,12 @@ trait WithEbayApiRequest
      */
     public function createReturnPolicy()
     {
+        $config = $this->getEbayConfig();
+        $region = Arr::get($config, 'region');
+
         $data = [
             "name" => "minimal return policy",
-            "marketplaceId" => "EBAY_GB",
+            "marketplaceId" => "EBAY_$region",
             "refundMethod" => "MONEY_BACK",
             "returnsAccepted" => true,
             "returnShippingCostPayer" => "SELLER",
@@ -1106,9 +1117,12 @@ trait WithEbayApiRequest
     public function getReturnPolicies()
     {
         try {
+            $config = $this->getEbayConfig();
+            $region = Arr::get($config, 'region');
+
             $endpoint = "/sell/account/v1/return_policy";
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'marketplace_id' => 'EBAY_GB'
+                'marketplace_id' => "EBAY_$region"
             ]);
         } catch (Exception $e) {
             Log::error('Get Return Policy Error: ' . $e->getMessage());
