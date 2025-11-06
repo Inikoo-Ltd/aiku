@@ -66,14 +66,14 @@ class Kernel extends ConsoleKernel
         );
 
 
-//        $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->sentryMonitor(
-//            monitorSlug: 'SaveDataFeeds',
-//        );
+        $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'SaveDataFeeds',
+        );
 
-//        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')
-//            ->withoutOverlapping()->sentryMonitor(
-//                monitorSlug: 'FetchOrdersInBasket',
-//            );
+        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')
+            ->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'FetchOrdersInBasket',
+            );
 
         $schedule->command('fetch:stock_locations aw')->dailyAt('2:30')
             ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
@@ -96,22 +96,22 @@ class Kernel extends ConsoleKernel
             );
 
 
-//        $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)->withoutOverlapping()
-//            ->timezone('UTC')->sentryMonitor(
-//                monitorSlug: 'FetchDispatchedEmails',
-//            );
-//
-//        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(11, 23)->timezone('UTC')->withoutOverlapping()
-//            ->sentryMonitor(
-//                monitorSlug: 'FetchEmailTrackingEvents',
-//            );
+        $schedule->command('fetch:dispatched_emails -w full -D 2 -N')->everySixHours(15)->withoutOverlapping()
+            ->timezone('UTC')->sentryMonitor(
+                monitorSlug: 'FetchDispatchedEmails',
+            );
+
+        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(11, 23)->timezone('UTC')->withoutOverlapping()
+            ->sentryMonitor(
+                monitorSlug: 'FetchEmailTrackingEvents',
+            );
 
 
-        $schedule->command('fetch:ebay-orders')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('fetch:ebay-orders')->everyFiveMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchEbayOrders',
         );
 
-        $schedule->command('fetch:woo-orders')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('fetch:woo-orders')->everyThirtyMinutes()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
         );
 
@@ -127,32 +127,32 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'CheckAllEbayChannels',
         );
 
-//        $schedule->command('woo:update-inventory')
-//            ->hourly()
-//            ->withoutOverlapping()->sentryMonitor(
-//            monitorSlug: 'UpdateWooStockInventories',
-//        );
-//
-//        $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
-//            monitorSlug: 'UpdateInventoryInShopifyPortfolio',
-//        );
-//
-//        $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
-//            monitorSlug: 'CheckShopifyPortfolios',
-//        );
-//
-//        $schedule->command('platform-logs:delete')->daily()->sentryMonitor(
-//            monitorSlug: 'PlatformDeletePortfolioLogs',
-//        );
+        $schedule->command('woo:update-inventory')
+            ->hourly()
+            ->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'UpdateWooStockInventories',
+        );
+
+        $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
+            monitorSlug: 'UpdateInventoryInShopifyPortfolio',
+        );
+
+        $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'CheckShopifyPortfolios',
+        );
+
+        $schedule->command('platform-logs:delete')->daily()->sentryMonitor(
+            monitorSlug: 'PlatformDeletePortfolioLogs',
+        );
 
         (new Schedule())->command('hydrate -s ful')->everyFourHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate -s sys')->everyTwoHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate:shops')->everyTwoHours('23:00')->timezone('UTC');
         (new Schedule())->command('hydrate:invoice_categories')->everyTwoHours('23:00')->timezone('UTC');
 
-//        $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
-//            monitorSlug: 'ProcessFetchStacks',
-//        );
+        $schedule->job(ProcessFetchStacks::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'ProcessFetchStacks',
+        );
 
         $schedule->job(SaveWebsitesSitemap::makeJob())->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'SaveWebsitesSitemap',
