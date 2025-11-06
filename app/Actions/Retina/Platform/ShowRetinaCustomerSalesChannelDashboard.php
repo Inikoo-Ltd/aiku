@@ -64,7 +64,7 @@ class ShowRetinaCustomerSalesChannelDashboard extends RetinaAction
             $platformStatus = false;
         }
 
-        $isShowActions = !($customerSalesChannel->status===CustomerSalesChannelStatusEnum::CLOSED);
+        $isShowActions = $customerSalesChannel->status != CustomerSalesChannelStatusEnum::CLOSED;
 
         return Inertia::render($renderPage, [
             'title'                   => $title,

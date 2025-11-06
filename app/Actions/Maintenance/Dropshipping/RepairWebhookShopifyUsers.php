@@ -14,7 +14,6 @@ use App\Actions\Dropshipping\Shopify\WithShopifyApi;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Dropshipping\ShopifyUser;
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 class RepairWebhookShopifyUsers
@@ -34,7 +33,7 @@ class RepairWebhookShopifyUsers
             $webhooksData = IndexShopifyUserWebhooks::run($shopifyUser);
 
 
-            if($webhooksData[0] and is_array($webhooksData[1])) {
+            if ($webhooksData[0] && is_array($webhooksData[1])) {
                 foreach ($webhooksData[1] as $webhook) {
                     if (in_array($webhook['topic'], ['PRODUCTS_DELETE', 'PRODUCTS_UPDATE'])) {
                         $webhookId = $webhook['id'];
@@ -52,10 +51,10 @@ class RepairWebhookShopifyUsers
         return 'repair:shopify_webhooks';
     }
 
-    public function asCommand(Command $command): void
+    public function asCommand(): void
     {
 
-        foreach (ShopifyUser::withTrashed()->orderBy('id','desc')->get() as $shopifyUser) {
+        foreach (ShopifyUser::withTrashed()->orderBy('id', 'desc')->get() as $shopifyUser) {
             $this->handle($shopifyUser);
         }
     }

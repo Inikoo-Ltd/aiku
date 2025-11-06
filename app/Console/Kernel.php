@@ -66,14 +66,14 @@ class Kernel extends ConsoleKernel
         );
 
 
-//        $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->sentryMonitor(
-//            monitorSlug: 'SaveDataFeeds',
-//        );
+        //        $schedule->command('data_feeds:save')->hourly()->timezone('UTC')->sentryMonitor(
+        //            monitorSlug: 'SaveDataFeeds',
+        //        );
 
-//        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')
-//            ->withoutOverlapping()->sentryMonitor(
-//                monitorSlug: 'FetchOrdersInBasket',
-//            );
+        //        $schedule->command('fetch:orders -w full -B')->everyFiveMinutes()->timezone('UTC')
+        //            ->withoutOverlapping()->sentryMonitor(
+        //                monitorSlug: 'FetchOrdersInBasket',
+        //            );
 
         $schedule->command('fetch:stock_locations aw')->dailyAt('2:30')
             ->timezone('UTC')->withoutOverlapping()->sentryMonitor(
@@ -127,16 +127,16 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'CheckAllEbayChannels',
         );
 
-//        $schedule->command('woo:update-inventory')
-//            ->hourly()
-//            ->withoutOverlapping()->sentryMonitor(
-//            monitorSlug: 'UpdateWooStockInventories',
-//        );
-//
-//        $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
-//            monitorSlug: 'UpdateInventoryInShopifyPortfolio',
-//        );
-//
+        //        $schedule->command('woo:update-inventory')
+        //            ->hourly()
+        //            ->withoutOverlapping()->sentryMonitor(
+        //            monitorSlug: 'UpdateWooStockInventories',
+        //        );
+        //
+        //        $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
+        //            monitorSlug: 'UpdateInventoryInShopifyPortfolio',
+        //        );
+        //
         $schedule->command('shopify:check_portfolios grp aw')->dailyAt('03:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'CheckShopifyPortfolios',
         );

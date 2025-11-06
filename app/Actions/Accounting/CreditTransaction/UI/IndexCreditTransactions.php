@@ -48,8 +48,8 @@ class IndexCreditTransactions extends OrgAction
         $query->leftJoin('payments', 'credit_transactions.payment_id', '=', 'payments.id');
         $query->leftJoin('currencies', 'credit_transactions.currency_id', '=', 'currencies.id');
         $query->leftJoin('model_has_payments', function ($join) {
-                $join->on('model_has_payments.payment_id', '=', 'payments.id')
-                    ->where('model_has_payments.model_type', '=', 'Order');
+            $join->on('model_has_payments.payment_id', '=', 'payments.id')
+                ->where('model_has_payments.model_type', '=', 'Order');
         });
         $query->leftJoin('orders', function ($join) {
             $join->on('model_has_payments.model_id', '=', 'orders.id');

@@ -25,8 +25,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
 {
+    private bool $isClosed = false;
 
-    private $is_closed = false;
     public function handle(Customer $customer, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
@@ -39,11 +39,11 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
 
-        $globalGlobalClosed =  $this->is_closed ? CustomerSalesChannelStatusEnum::CLOSED : CustomerSalesChannelStatusEnum::OPEN;
-        $query = QueryBuilder::for(CustomerSalesChannel::class);
+        $globalGlobalClosed = $this->isClosed ? CustomerSalesChannelStatusEnum::CLOSED : CustomerSalesChannelStatusEnum::OPEN;
+        $query              = QueryBuilder::for(CustomerSalesChannel::class);
         $query->leftjoin('platforms', 'customer_sales_channels.platform_id', 'platforms.id');
         $query->where('customer_sales_channels.customer_id', $customer->id);
-        $query->where('customer_sales_channels.status',  $globalGlobalClosed);
+        $query->where('customer_sales_channels.status', $globalGlobalClosed);
 
         return $query
             ->defaultSort('customer_sales_channels.reference')
@@ -71,11 +71,11 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
 
     public function htmlResponse(LengthAwarePaginator $platforms, ActionRequest $request): Response
     {
-        $icon = ['fal', 'fa-user'];
+        $icon  = ['fal', 'fa-user'];
         $title = $this->customer->name;
-        $hasClosedChannels = $this->customer->hasClosedChannels;
-        $iconRight = [
-            'icon' => ['fal', 'fa-user-friends'],
+
+        $iconRight  = [
+            'icon'  => ['fal', 'fa-user-friends'],
             'title' => $title
         ];
         $afterTitle = [
@@ -87,15 +87,15 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
             'Dropshipping/RetinaCustomerSalesChannels',
             [
                 'breadcrumbs' => $this->getBreadcrumbs(),
-                'title' => __('Sales Channels'),
-                'pageHead' => [
-                    'title' => $title,
+                'title'       => __('Sales Channels'),
+                'pageHead'    => [
+                    'title'      => $title,
                     'afterTitle' => $afterTitle,
-                    'iconRight' => $iconRight,
-                    'icon' => $icon,
-                    'actions' => [
+                    'iconRight'  => $iconRight,
+                    'icon'       => $icon,
+                    'actions'    => [
                         [
-                            'type' => 'button',
+                            'type'  => 'button',
                             'style' => 'create',
                             'label' => __('Add Sales Channel'),
                             'route' => [
@@ -104,7 +104,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                         ]
                     ]
                 ],
-                'data' => RetinaCustomerSalesChannelsResource::collection($platforms),
+                'data'        => RetinaCustomerSalesChannelsResource::collection($platforms),
             ]
         )->table($this->tableStructure());
     }
@@ -116,7 +116,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
             $table->withLabelRecord([__('channel'), __('channels')]);
             $table
@@ -129,8 +129,8 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                 ->column(key: 'number_orders', label: __('Orders'), canBeHidden: false, sortable: true, searchable: true)
                 ->defaultSort('reference');
 
-            if(!$this->is_closed) {
-                $table->column(key: 'action', label: __('Action'), canBeHidden: true);
+            if (!$this->isClosed) {
+                $table->column(key: 'action', label: __('Action'));
             }
         };
     }
@@ -138,22 +138,21 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
     public function asController(ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($request);
-        $this->is_closed = $request->boolean('closed', false);
+        $this->isClosed = $request->boolean('closed');
 
-        return $this->handle($this->customer, null);
+        return $this->handle($this->customer);
     }
 
     public function getBreadcrumbs(): array
     {
-
         return
             [
                 [
-                    'type' => 'simple',
+                    'type'   => 'simple',
                     'simple' => [
-                        'icon' => ['fal', 'fa-code-branch'],
+                        'icon'  => ['fal', 'fa-code-branch'],
                         'route' => [
-                            'name' => 'retina.dropshipping.customer_sales_channels.index',
+                            'name'       => 'retina.dropshipping.customer_sales_channels.index',
                             'parameters' => []
                         ],
                         'label' => __('Channels'),

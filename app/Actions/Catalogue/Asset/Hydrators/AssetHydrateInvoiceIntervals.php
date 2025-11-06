@@ -9,9 +9,7 @@
 
 namespace App\Actions\Catalogue\Asset\Hydrators;
 
-use App\Actions\Traits\Hydrators\WithHydrateIntervals;
 use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
-use App\Actions\Traits\WithEnumStats;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Catalogue\Asset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;

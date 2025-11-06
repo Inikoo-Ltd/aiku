@@ -25,9 +25,9 @@ class GetRedirectUrl
     public function handle(Request $request): string
     {
         $retinaHome = '';
-        
+
         $ref_page = request()->get('ref');  // '239984'
-        
+
         if ($ref_page && is_numeric($ref_page)) {
             $webpage = Webpage::where('id', $ref_page)->where('website_id', $request->get('website')->id)
                 ->where('state', WebpageStateEnum::LIVE)->first();
