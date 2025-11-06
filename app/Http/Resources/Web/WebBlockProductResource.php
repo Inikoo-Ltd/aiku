@@ -35,26 +35,32 @@ class WebBlockProductResource extends JsonResource
 
 
         $tradeUnits = $product->tradeUnits;
+        $ingredients=[];
+        $marketingWeights=[];
+        if($tradeUnits){
+            $tradeUnits->loadMissing(['ingredients']);
+            $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
+                return $tradeUnit->ingredients->pluck('name');
+            })->unique()->values()->all();
 
+            $marketingWeights=$tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all();
 
-        $tradeUnits->loadMissing(['ingredients']);
+        }
 
-        $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
-            return $tradeUnit->ingredients->pluck('name');
-        })->unique()->values()->all();
 
 
         $specifications = [
             'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
             'ingredients'       => $ingredients,
             'gross_weight'      => $product->gross_weight,
-            'marketing_weights' => $tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all(),
+            'marketing_weights' => $marketingWeights,
             'barcode'           => $product->barcode,
             'dimensions'        => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
             'cpnp'              => $product->cpnp_number,
             'net_weight'        => $product->marketing_weight,
             'unit'              => $product->unit,
         ];
+
 
         [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
