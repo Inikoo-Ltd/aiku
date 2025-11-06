@@ -161,7 +161,7 @@ const closePopover = (close: any): void => {
                 <div v-tooltip="trans('Wholesale Price')" class="flex items-center gap-1">
                     {{ trans("Price") }}:
                     <span class="font-semibold text-green-600 text-xl">{{ locale.currencyFormat(currency?.code,
-                        fieldValue.product.price) }}</span> / <span class="text-sm text-gray-500">{{trans('Outer') }}</span> 
+                        fieldValue.product.price) }}</span><span class="text-sm text-gray-500">/ {{trans('Outer') }}</span> 
                 </div>
                 <div>
                     <span class="text-xs price_per_unit">

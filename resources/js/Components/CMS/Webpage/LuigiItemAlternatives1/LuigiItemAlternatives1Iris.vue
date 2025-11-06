@@ -29,13 +29,15 @@ import { RecommendationCollector } from "@/Composables/Unique/LuigiDataCollector
 library.add(faChevronLeft, faChevronRight)
 
 const props = defineProps<{
-    fieldValue: {}
+    fieldValue: {
+        product: {
+            luigi_identity: string
+        }
+    }
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
-
-
 
 
 const slidesPerView = computed(() => {
@@ -67,7 +69,7 @@ const fetchRecommenders = async () => {
             [
                 {
                     "blacklisted_item_ids": [],
-                    "item_ids": [],
+                    "item_ids": props.fieldValue?.product?.luigi_identity ? [props.fieldValue.product.luigi_identity] : [],
                     "recommendation_type": "item_detail_alternatives",
                     "recommender_client_identifier": "item_detail_alternatives",
                     "size": 12,
@@ -87,7 +89,7 @@ const fetchRecommenders = async () => {
         }
 
         console.log('LIA1:', response.data)
-        RecommendationCollector(response.data[0])
+        RecommendationCollector(response.data[0], { product: props.fieldValue?.product })
 
         listProducts.value = response.data[0].hits
     } catch (error: any) {

@@ -58,6 +58,7 @@ const props = withDefaults(defineProps<{
     blockData?: object
     screenType: "mobile" | "tablet" | "desktop"
 }>(), {})
+
 const layout = inject("layout", {})
 const currency = layout?.iris?.currency
 const locale = useLocaleStore()

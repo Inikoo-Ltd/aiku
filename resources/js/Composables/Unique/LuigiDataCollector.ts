@@ -15,7 +15,7 @@ interface Response {
 }
 
 // Collector: recommendation list
-export const RecommendationCollector = (response: Response) => {
+export const RecommendationCollector = (response: Response, anyData?: {}) => {
     const listItems = response.hits.map((hit: any, index: number) => ({
         item_id: hit.url,
         item_name: hit.attributes.title,
@@ -23,7 +23,7 @@ export const RecommendationCollector = (response: Response) => {
         price: hit.attributes.price,
         type: hit.type,
     }))
-    const idItems = response.hits.map((hit: any) => hit.url)
+    // const idItems = response.hits.map((hit: any) => hit.url)
 
     const body = {
         event: "view_item_list",
@@ -32,7 +32,7 @@ export const RecommendationCollector = (response: Response) => {
             items: listItems,
             filters: {
                 "RecommenderClientId": response.recommender_client_identifier,
-                // "ItemIds": idItems,  // No longer needed, even written in docs
+                "ItemIds": anyData?.product?.luigi_identity ? [anyData?.product?.luigi_identity] : [],  // No longer needed, even written in docs
                 "Type": response.recommendation_type,
                 "RecommendationId": response.recommendation_id,
             }

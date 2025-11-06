@@ -386,7 +386,7 @@ const copyToClipboard = async (text: string, label: string) => {
                             </dd>
                         </div>
 
-                        <div v-if="!empty(data.tags)" class="relative flex items-center w-full flex-none gap-x-4 px-6">
+                        <div v-if="data.tags.length > 0" class="relative flex items-center w-full flex-none gap-x-4 px-6">
                             <dt v-tooltip="'Tags'" class="flex-none pt-2">
                                 <FontAwesomeIcon icon="fal fa-tags" class="text-gray-400" fixed-width aria-hidden="true" />
                             </dt>
