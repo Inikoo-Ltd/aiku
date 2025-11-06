@@ -15,6 +15,7 @@ import { faAsterisk } from "@fas"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { Checkbox } from "primevue"
 import FieldStandaloneRegistration from "./Field/FieldStandaloneRegistration.vue"
+import { getRefRedirect } from "@/Composables/Retina/useGetRedirectUrl"
 
 library.add(faEnvelope, faUser, faAsterisk, faInfoCircle, faPhone, faBuilding, faGlobe)
 
@@ -87,12 +88,13 @@ const submit = () => {
 			onFinish: () => {
 
 			},
-			onSuccess: () => {
+			onSuccess: async () => {
 				window.dataLayer = window.dataLayer || [];
 				window.dataLayer.push({
 					event: 'registrationSuccess'
 				})
-				router.get(route('retina.dashboard.show'))
+				// router.get(route('retina.dashboard.show'))
+				window.location.href = await getRefRedirect()
 			}
 		})
 	} else {
