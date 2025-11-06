@@ -6,11 +6,13 @@ use App\Enums\Announcement\AnnouncementStateEnum;
 use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Models\Helpers\Deployment;
 use App\Models\Helpers\Snapshot;
+use App\Models\Traits\HasImage;
 use App\Models\Web\Website;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Spatie\MediaLibrary\HasMedia;
 
 /**
  * App\Models\Announcement
@@ -27,9 +29,10 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Announcement query()
  * @mixin \Eloquent
  */
-class Announcement extends Model
+class Announcement extends Model implements HasMedia
 {
     use HasFactory;
+    use HasImage;
 
     protected $guarded = [];
 

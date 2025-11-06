@@ -154,7 +154,7 @@ class ShowAnnouncementWorkshop extends OrgAction
                         'parameters'    => [
                             'shop'          => $announcement->website->shop_id,
                             'website'       => $announcement->website_id,
-                            'announcement'  => $announcement->id
+                            'announcement'  => $announcement->id,
                         ],
                         'method'    => 'post'
                     ],
