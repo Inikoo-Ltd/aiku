@@ -184,7 +184,7 @@ onMounted(async () => {
       modal
       dismissable-mask
       :closable="false"
-      class="w-full max-w-3xl !bg-transparent !shadow-none border-0"
+      class="w-full max-w-3xl !bg-transparent !shadow-none !border-0 !border-transparent"
     >
       <div class="relative w-full flex flex-col items-center justify-center">
         <!-- Close Button -->
@@ -197,7 +197,7 @@ onMounted(async () => {
         </button> -->
 
         <!-- Image Viewer -->
-        <div v-if="!showVideoModal" class="block w-full h-[80vh] mb-1 rounded">
+        <div v-if="!showVideoModal" class="block w-full h-auto min-h-[400px] max-h-[80vh] mb-1 rounded">
           <Image
             :src="props.images[selectedIndex]?.source"
             :alt="`Image ${selectedIndex + 1}`"
