@@ -94,7 +94,7 @@ const onSubmitSubscribe = async () => {
 									id="email-address"
 									autocomplete="email"
 									required
-									class="pl-9 text-gray-700 flex-1 w-full min-w-0 rounded-md bg-white px-3 py-1.5 text-base  outline outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
+									class="pl-9 text-gray-700 flex-1 w-full min-w-0 rounded-md bg-white px-3 py-1.5 text-base  outline-1 -outline-offset-1 outline-gray-300 placeholder:text-gray-400 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600 sm:text-sm/6"
 									:placeholder="fieldValue?.value?.input?.placeholder"
 									:disabled="isLoadingSubmit"
 								/>

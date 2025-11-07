@@ -128,7 +128,7 @@ const locale = inject("locale", aikuLocaleStructure)
                     <div class="grid grid-cols-1 sm:hidden">
                         <!-- Use an "onChange" listener to redirect the user to the selected tab URL. -->
                         <select aria-label="Select a tab"
-                                class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pl-3 pr-8 text-base  outline outline-1 -outline-offset-1 outline-gray-300 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
+                                class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white py-2 pl-3 pr-8 text-base  outline-1 -outline-offset-1 outline-gray-300 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-600">
                             <option v-for="(tab, tabIdx) in paymentMethods" :key="tabIdx" :selected="currentTab === tabIdx">
                                 <FontAwesomeIcon :icon="tab.icon" class="" fixed-width aria-hidden="true" />
                                 {{ tab.label }}

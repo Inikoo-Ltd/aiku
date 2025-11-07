@@ -523,7 +523,7 @@ const layout = inject('layout', {})
                             id="email-address"
                             autocomplete="email"
                             required
-                            class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
+                            class="w-full min-w-0 rounded-md bg-white/5 px-3 py-1.5 text-base text-white outline-1 -outline-offset-1 outline-white/10 placeholder:text-gray-500 focus:outline focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500 md:w-56 md:text-sm/6"
                             :placeholder="modelValue?.subscribe?.placeholder ?? trans('Enter your email')"
                         />
                         <div class="mt-4 sm:ml-4 sm:mt-0 sm:shrink-0">
