@@ -16,11 +16,12 @@ use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class UpdateWooPortfolio
+class UpdateWooPortfolio  implements ShouldBeUnique
 {
     use AsAction;
 
