@@ -278,6 +278,7 @@ const submitForm = async (redirect = true) => {
 const selectorTab = [
     {
         label: trans("To do"),
+        search:true,
         routeFetch: {
             name: "grp.json.master-product-category.recommended-trade-units",
             parameters: { masterProductCategory: route().params["masterFamily"] },
@@ -285,6 +286,7 @@ const selectorTab = [
     },
     {
         label: trans("Done"),
+        search:true,
         routeFetch: {
             name: "grp.json.master-product-category.taken-trade-units",
             parameters: { masterProductCategory: route().params["masterFamily"] },

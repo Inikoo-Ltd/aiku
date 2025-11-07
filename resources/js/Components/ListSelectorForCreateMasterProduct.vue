@@ -18,8 +18,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faTrashAlt } from '@far'
-import { ulid } from 'ulid'
-import { data } from 'autoprefixer'
+import Toggle from './Pure/Toggle.vue'
 
 library.add(faCheckCircle, faTimes)
 
@@ -65,6 +64,8 @@ interface Portfolio {
 
 const layout = inject('layout', layoutStructure)
 const locale = inject('locale', null)
+
+const hideStockUnavailable = ref(false)
 
 const isLoadingFetch = ref(false)
 const showDialog = ref(false)
@@ -175,7 +176,7 @@ const selectAllProducts = () => {
 
 const changeTab = (index: number) => {
     activeTab.value = index
-    queryPortfolio.value = ''
+    /* queryPortfolio.value = '' */
     getPortfoliosList()
 }
 
@@ -221,7 +222,12 @@ const updateProduct = (updated: Portfolio) => {
     console.log("📤 Emitted updated modelValue:", [...committedProducts.value]);
 };
 
-
+const listData = computed(() => {
+    if (hideStockUnavailable.value) {
+        return list.value.filter(item => item.stock_available)
+    }
+    return list.value
+})
 
 
 defineExpose({
@@ -235,7 +241,6 @@ defineExpose({
 
 <template>
     <div>
-        <!-- Selected list -->
         <div class="">
             <div class="flex justify-between">
                 <div>
@@ -314,17 +319,30 @@ defineExpose({
 
                 <!-- Tabs -->
                 <div v-if="tabs?.length" class="flex gap-4 mb-4 border-b">
-                    <div v-for="(tab, index) in tabs" :key="index" @click="changeTab(index)"
-                        class="cursor-pointer px-4 py-2 -mb-px font-medium border-b-2" :class="activeTab === index
-                            ? 'text-indigo-600 border-indigo-600'
-                            : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'">
-                        {{ trans(tab.label) }}
-                    </div>
+                <div
+                    v-for="(tab, index) in tabs"
+                    :key="index"
+                    @click="changeTab(index)"
+                    class="cursor-pointer px-4 py-2 -mb-px font-medium border-b-2"
+                    :class="
+                    activeTab === index
+                        ? 'text-indigo-600 border-indigo-600'
+                        : 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300'
+                    "
+                >
+                    {{ trans(tab.label) }}
                 </div>
 
-                <!-- search -->
+                <div
+                    class="ml-auto cursor-pointer px-4 py-2 -mb-px font-medium border-b-2 text-gray-500 border-transparent"
+                >
+                   {{ trans("Hide out of stock")}}
+                   <Toggle v-model="hideStockUnavailable" />
+                </div>
+                </div>
+
+
                 <div class="mb-2">
-                    <!-- search -->
                     <div v-if="tabs?.length && tabs[activeTab]?.search" class="mb-2">
                         <PureInput v-model="queryPortfolio" @update:modelValue="() => debounceGetPortfoliosList()"
                             :placeholder="trans('Input to search')" />
@@ -361,13 +379,13 @@ defineExpose({
                             <div class="grid grid-cols-2 md:grid-cols-3 gap-3 pb-2">
                                 <template v-if="!isLoadingFetch">
                                     <template v-if="list.length > 0">
-                                        <div v-for="(item, index) in list" :key="index" @click="selectProduct(item)"
+                                        <div v-for="(item, index) in listData" :key="index" @click="selectProduct(item)"
                                             class="relative h-fit rounded cursor-pointer p-2 flex flex-col md:flex-row gap-x-2 border"
                                             :class="[
-                                                    compSelectedProduct.includes(item.id)
+                                                compSelectedProduct.includes(item.id)
                                                     ? 'bg-indigo-100 border-indigo-300'
                                                     : 'bg-white hover:bg-gray-200 border-gray-300',
-                                                    !item.stock_available
+                                                !item.stock_available
                                                     ? 'opacity-50 pointer-events-none cursor-not-allowed hover:bg-white'
                                                     : ''
                                             ]">
@@ -383,7 +401,7 @@ defineExpose({
                                                     imageCover :alt="item.name" />
                                                 <div class="flex flex-col justify-between w-full">
                                                     <div class="flex items-center gap-2">
-                                                        <div class="font-semibold leading-none mb-1">{{ item.name || 'no name' }}</div>
+                                                        <div class="font-semibold leading-none mb-1">{{ item.name || 'noname' }}</div>
                                                     </div>
                                                     <div v-if="!item.no_code" class="text-xs text-gray-400 italic">
                                                         {{ item.code || 'no code' }}
@@ -397,7 +415,7 @@ defineExpose({
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
                                                         {{ locale?.currencyFormat(item.currency_code || 'usd',
-                                                        item.price || 0) }}
+                                                            item.price || 0) }}
                                                     </div>
                                                     <template v-if="item.stock_available">
                                                         <NumberWithButtonSave
@@ -413,7 +431,8 @@ defineExpose({
                                                             }" noUndoButton noSaveButton parentClass="w-min" />
                                                     </template>
                                                     <template v-else>
-                                                        <span class="text-xs text-red-500 italic">Don't have stock</span>
+                                                        <span class="text-xs text-red-500 italic">Don't have
+                                                            stock</span>
                                                     </template>
                                                 </div>
                                             </slot>
@@ -428,7 +447,6 @@ defineExpose({
                             </div>
                         </div>
 
-                        <!-- pagination -->
                         <Pagination v-if="meta" :on-click="getPortfoliosList" :has-data="true" :meta="meta"
                             :per-page-options="[]" />
                     </div>
