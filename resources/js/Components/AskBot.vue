@@ -105,7 +105,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 				v-model="searchValue"
 				@keydown="(e) => handleKeyDown(e)"
 				type="text"
-				class="h-48 w-full border-none xborder xborder-dashed xborder-gray-300 bg-black/10 rounded-lg px-4 placeholder:text-gray-500 focus:ring focus:ring-pink-500 focus:outline-hidden sm:text-sm"
+				class="h-48 w-full border-none xborder xborder-dashed xborder-gray-300 bg-black/10 rounded-lg px-4 placeholder:text-gray-500 focus:ring-3 focus:ring-pink-500 focus:outline-hidden sm:text-sm"
 				:placeholder="trans('Ask Anything...')"
 			/>
 

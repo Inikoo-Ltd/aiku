@@ -38,7 +38,7 @@ const onChangeProperty = (index, data) => {
         <div v-if="modelValue?.length" v-for="(field, index) in modelValue" :key="index">
             <Disclosure v-slot="{ open }">
                 <DisclosureButton
-                    class="flex w-full mb-1 justify-between bg-gray-100 px-4 py-2 text-left text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-hidden focus-visible:ring focus-visible:ring-gray-500/75">
+                    class="flex w-full mb-1 justify-between bg-gray-100 px-4 py-2 text-left text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-hidden focus-visible:ring-3 focus-visible:ring-gray-500/75">
                     <span>{{ field?.name }}</span>
                 </DisclosureButton>
                 <DisclosurePanel class="px-4 pb-2 pt-4 text-sm text-gray-500">

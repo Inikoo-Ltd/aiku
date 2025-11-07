@@ -284,7 +284,7 @@ console.log(props)
                         <div class="flex items-center gap-2">
                             <div class="border-r border-gray-300 pr-2">
                                 <select v-model="selectedLang"
-                                    class="border border-gray-300 rounded px-2 py-1 text-xs focus:ring focus:ring-indigo-200 focus:border-indigo-400">
+                                    class="border border-gray-300 rounded px-2 py-1 text-xs focus:ring-3 focus:ring-indigo-200 focus:border-indigo-400">
                                     <!-- Null option -->
                                     <option :value="null">{{ trans('Master') }}</option>
 

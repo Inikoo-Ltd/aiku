@@ -90,7 +90,7 @@ const onChangeProperty = (index, data) => {
         <div v-for="(field, index) in modelValue" :key="index">
             <Disclosure v-slot="{ open }">
                 <DisclosureButton
-                    class="flex w-full mb-1 justify-between bg-gray-100 px-4 py-2 text-left text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-hidden focus-visible:ring focus-visible:ring-gray-500/75">
+                    class="flex w-full mb-1 justify-between bg-gray-100 px-4 py-2 text-left text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-hidden focus-visible:ring-3 focus-visible:ring-gray-500/75">
                     <span>{{ type == 'text' ? 'Text' : 'Image' }} {{ index + 1 }}</span>
                     <FontAwesomeIcon :icon="faTrash" class="text-red-500"
                         @click="(event) => deleteText(event, index)" />
