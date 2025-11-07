@@ -51,4 +51,13 @@ trait WithPassKeyAction
             ]);
         }
     }
+
+    public function deletePasskey(string $id)
+    {
+        auth()->user()->passkeys()->where('id', $id)->delete();
+        flash()->success('Passkey deleted successfully');
+
+        return redirect()->back();
+    }
 }
+
