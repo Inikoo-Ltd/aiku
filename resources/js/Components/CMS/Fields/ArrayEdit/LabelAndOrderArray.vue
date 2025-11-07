@@ -55,7 +55,7 @@ const isOpen = (index: number) => {
 };
 const setRaw = (next: any) => {
   if (isRef(injectedActive)) injectedActive.value = next;
-  else injectedActive = next;
+  else injectedActive.value = next;
 };
 const toggleActive = (index: number) => {
   const raw = readRaw();

@@ -8,17 +8,6 @@
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { inject, onMounted } from 'vue'
 import { faBrowser, faDraftingCompass, faRectangleWide, faStars, faBars, faText, faChevronDown, faCaretDown, faCaretLeft } from '@fal'
-import { get } from 'lodash'
-
-import AccordionPanel from 'primevue/accordionpanel'
-import AccordionHeader from 'primevue/accordionheader'
-import AccordionContent from 'primevue/accordioncontent'
-// import { getComponentProperties, getFormValue, setFormValue } from '@/Composables/useWorkshop';
-import { getComponent, getFormValue, setFormValue } from '@/Composables/SideEditorHelper'
-import Icon from '@/Components/Icon.vue';
-import Accordion from 'primevue/accordion';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import ParentFieldSideEditor from '@/Components/Workshop/SideEditor/ParentFieldSideEditor.vue'
 import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import { routeType } from '@/types/route'
 
