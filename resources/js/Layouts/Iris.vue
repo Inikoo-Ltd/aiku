@@ -24,6 +24,7 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
+import IrisRightsideBasket from '@/Components/Iris/Layout/IrisRightsideBasket.vue'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
@@ -166,9 +167,18 @@ console.log('handle', usePage().props)
                 </div>
             </div>
 
-            <main>
-                <div>
+            <main class="relative flex">
+                <!-- area konten / slot -->
+                <div class="flex-1 min-w-0">
                     <slot />
+                </div>
+
+                <!-- sidebar -->
+                <div
+                    class="sticky border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
+                    :class="layout.rightbasket?.show ? 'border-l-gray-300 max-w-sm' : 'border-transparent max-w-0'"
+                >
+                    <IrisRightsideBasket />
                 </div>
             </main>
 
