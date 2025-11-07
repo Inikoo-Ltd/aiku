@@ -226,6 +226,7 @@ use App\Actions\HumanResources\Workplace\UpdateWorkplace;
 use App\Actions\Masters\MasterAsset\DeleteImageFromMasterProduct;
 use App\Actions\Masters\MasterAsset\Json\GetTradeUnitDataForMasterProductCreation;
 use App\Actions\Masters\MasterAsset\StoreMasterProductFromTradeUnits;
+use App\Actions\Masters\MasterAsset\CloneMasterAssetToOtherShop;
 use App\Actions\Masters\MasterAsset\UpdateBulkMasterProduct;
 use App\Actions\Masters\MasterAsset\UpdateMasterAsset;
 use App\Actions\Masters\MasterAsset\UpdateMasterProductImages;
@@ -419,6 +420,7 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
 
 Route::prefix('master-family/{masterFamily:id}')->name('master_family.')->group(function () {
     Route::post('store-assets', StoreMasterProductFromTradeUnits::class)->name('store-assets');
+    Route::post('clone-to-other-store', CloneMasterAssetToOtherShop::class)->name('clone_to_other_store');
 });
 
 Route::prefix('master-asset/{masterAsset:id}')->name('master_asset.')->group(function () {

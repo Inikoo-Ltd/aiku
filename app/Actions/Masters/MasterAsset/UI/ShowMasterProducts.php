@@ -189,6 +189,7 @@ class ShowMasterProducts extends GrpAction
                             'key'   => 'assign',
                             'type'  => 'button',
                             'style' => 'create',
+                            'label' => __('Add to Other Shop'),
                             'route' => [
                                 'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
                                 'parameters' => $request->route()->originalParameters()
@@ -205,6 +206,7 @@ class ShowMasterProducts extends GrpAction
                         ] : false
                     ],
                 ],
+                'masterAsset'           => $masterAsset,
                 'currency'              => $masterAsset->group->currency,
                 'shopsData'             => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($masterAsset->masterShop, 'shops')),
                 'tabs'        => [
