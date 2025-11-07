@@ -205,7 +205,7 @@ class IndexRetinaPortfolios extends RetinaAction
             };
         }
 
-        $actions=[];
+        $actions = [];
         if ($this->customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
             $actions = [
                 [
@@ -433,8 +433,8 @@ class IndexRetinaPortfolios extends RetinaAction
 
             $table->column(key: 'image', label:'', canBeHidden: false, searchable: true);
             $table->column(key: 'name', label: __('Product'), canBeHidden: false, sortable: true, searchable: true);
-           
-           if ($this->customerSalesChannel->status !== CustomerSalesChannelStatusEnum::CLOSED) {
+
+            if ($this->customerSalesChannel->status !== CustomerSalesChannelStatusEnum::CLOSED) {
                 $table->column(key: 'actions', label: '', canBeHidden: false);
             }
 

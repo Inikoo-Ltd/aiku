@@ -64,15 +64,15 @@ class UpdateInventoryInWooPortfolio
                     ->get();
 
 
-                $first=true;
+                $first = true;
                 /** @var Portfolio $portfolio */
                 foreach ($portfolios as $portfolio) {
                     if ($this->checkIfApplicable($portfolio)) {
-                        if($first){
+                        if ($first) {
                             $wooCommerceUser->setTimeout(45);
                             UpdateWooPortfolio::run($portfolio->id);
-                            $first=false;
-                        }else{
+                            $first = false;
+                        } else {
                             // Add jitter to spread API calls and avoid bursts
                             $delaySeconds = random_int(1, 120);
                             UpdateWooPortfolio::dispatch($portfolio->id)->delay(now()->addSeconds($delaySeconds));
@@ -80,7 +80,7 @@ class UpdateInventoryInWooPortfolio
                     }
 
                 }
-            }else{
+            } else {
                 $customerSalesChannel->update([
                     'ban_stock_update_util' => now()->addHours(3),
                 ]);

@@ -151,6 +151,7 @@ use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
  * @property-read Collection<int, Product> $exclusiveProducts
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites
  * @property-read FulfilmentCustomer|null $fulfilmentCustomer
+ * @property-read bool $has_closed_channels
  * @property-read Group $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images

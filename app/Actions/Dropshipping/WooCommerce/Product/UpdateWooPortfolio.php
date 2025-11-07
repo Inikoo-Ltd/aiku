@@ -17,7 +17,6 @@ use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
@@ -45,7 +44,6 @@ class UpdateWooPortfolio
 
     public function handle(int $portfolioID): void
     {
-        return;
         $portfolio = Portfolio::find($portfolioID);
 
 
@@ -103,7 +101,18 @@ class UpdateWooPortfolio
                     'stock_last_updated_at' => now()
                 ]);
             } else {
-                $message = Arr::get($response, '0.message') ?? __('Unknown error');
+                $ban = true;
+
+                $rawMessage  = Arr::get($response, '0', 'Unknown error');
+                $messageData = json_decode($rawMessage, true);
+                if ($messageData) {
+                    $message = Arr::get($messageData, 'message');
+                    if (Arr::get($messageData, 'code') == 'rest_invalid_param' || Arr::get($messageData, 'code') == 'woocommerce_rest_product_invalid_id' || Arr::get($messageData, 'data.status') == 404 || Arr::get($messageData, 'data.status') == 400) {
+                        $ban = false;
+                    }
+                } else {
+                    $message = $rawMessage;
+                }
 
 
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
@@ -111,8 +120,7 @@ class UpdateWooPortfolio
                     'response' => 'E1: '.$message
                 ]);
 
-                // If the platform responded with a timeout, temporarily ban stock updates for this channel
-                if ($message && Str::contains(Str::lower($message), 'operation timed out')) {
+                if ($ban) {
                     $customerSalesChannel->update([
                         'ban_stock_update_util' => now()->addHours(3),
                     ]);

@@ -203,7 +203,7 @@ trait WithEbayApiRequest
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
-                    // Add more mappings as needed
+                // Add more mappings as needed
                 default:
                     // Use generic mapping or default value
                     $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
@@ -259,10 +259,7 @@ trait WithEbayApiRequest
             'redirect_uri' => $shopSlug === 'dse' ? config('services.ebay.redirect_uri_es') : config('services.ebay.redirect_uri'),
             'sandbox' => config('services.ebay.sandbox'),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
-            'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token'),
-            'shop' => $shopSlug,
-            'region' => $shopSlug === 'dse' ? 'ES' : 'GB',
-            'currency' => $shopSlug === 'dse' ? 'EUR' : 'GBP'
+            'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token')
         ];
     }
 
@@ -620,20 +617,16 @@ trait WithEbayApiRequest
      */
     public function storeOffer($offerData)
     {
-        $config = $this->getEbayConfig();
-        $region = Arr::get($config, 'region');
-        $currency = Arr::get($config, 'currency');
-
         $data = [
             "sku" => Arr::get($offerData, 'sku'),
-            "marketplaceId" => "EBAY_$region",
+            "marketplaceId" => "EBAY_GB",
             "format" => "FIXED_PRICE",
             "listingDescription" => Arr::get($offerData, 'description'),
             "availableQuantity" => Arr::get($offerData, 'quantity', 1),
             "pricingSummary" => [
                 "price" => [
                     "value" => Arr::get($offerData, 'price', 0),
-                    "currency" => Arr::get($offerData, 'currency', $currency)
+                    "currency" => Arr::get($offerData, 'currency', 'GBP')
                 ]
             ],
             "listingPolicies" => [
@@ -718,20 +711,16 @@ trait WithEbayApiRequest
     public function updateOffer($offerId, array $offerData)
     {
         try {
-            $config = $this->getEbayConfig();
-            $region = Arr::get($config, 'region');
-            $currency = Arr::get($config, 'currency');
-
             $data = [
                 "sku" => Arr::get($offerData, 'sku'),
-                "marketplaceId" => "EBAY_$region",
+                "marketplaceId" => "EBAY_GB",
                 "format" => "FIXED_PRICE",
                 "listingDescription" => Arr::get($offerData, 'description'),
                 "availableQuantity" => Arr::get($offerData, 'quantity', 1),
                 "pricingSummary" => [
                     "price" => [
                         "value" => Arr::get($offerData, 'price', 0),
-                        "currency" => Arr::get($offerData, 'currency', $currency)
+                        "currency" => Arr::get($offerData, 'currency', 'GBP')
                     ]
                 ],
                 "listingPolicies" => [
@@ -884,20 +873,16 @@ trait WithEbayApiRequest
     public function createListing($sku, $listingData)
     {
         try {
-            $config = $this->getEbayConfig();
-            $region = Arr::get($config, 'region');
-            $currency = Arr::get($config, 'currency');
-
             $endpoint = "/sell/inventory/v1/offer";
 
             $offer = [
                 'sku' => $sku,
-                'marketplaceId' => $listingData['marketplace_id'] ?? "EBAY_$region",
+                'marketplaceId' => $listingData['marketplace_id'] ?? 'EBAY_US',
                 'format' => $listingData['format'] ?? 'FIXED_PRICE',
                 'pricingSummary' => [
                     'price' => [
                         'value' => $listingData['price'],
-                        'currency' => $listingData['currency'] ?? $currency
+                        'currency' => $listingData['currency'] ?? 'USD'
                     ]
                 ],
                 'listingDescription' => $listingData['description'] ?? '',
@@ -977,16 +962,13 @@ trait WithEbayApiRequest
      */
     public function createFulfilmentPolicy()
     {
-        $config = $this->getEbayConfig();
-        $region = Arr::get($config, 'region');
-
         $data = [
             "categoryTypes" => [
                 [
                     "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
                 ]
             ],
-            "marketplaceId" => "EBAY_$region",
+            "marketplaceId" => "EBAY_GB",
             "name" => "Domestic shipping",
             "handlingTime" => [
                 "unit"  => "DAY",
@@ -1023,12 +1005,9 @@ trait WithEbayApiRequest
     public function getFulfilmentPolicies()
     {
         try {
-            $config = $this->getEbayConfig();
-            $region = Arr::get($config, 'region');
-
             $endpoint = "/sell/account/v1/fulfillment_policy";
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'marketplace_id' => "EBAY_$region"
+                'marketplace_id' => 'EBAY_GB'
             ]);
         } catch (Exception $e) {
             Log::error('Get Fulfilment Policy Error: ' . $e->getMessage());
@@ -1041,12 +1020,9 @@ trait WithEbayApiRequest
      */
     public function createPaymentPolicy()
     {
-        $config = $this->getEbayConfig();
-        $region = Arr::get($config, 'region');
-
         $data = [
             "name" => "minimal Payment Policy",
-            "marketplaceId" => "EBAY_$region",
+            "marketplaceId" => "EBAY_GB",
             "categoryTypes" => [
                 [
                     "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
@@ -1069,12 +1045,9 @@ trait WithEbayApiRequest
     public function getPaymentPolicies()
     {
         try {
-            $config = $this->getEbayConfig();
-            $region = Arr::get($config, 'region');
-
             $endpoint = "/sell/account/v1/payment_policy";
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'marketplace_id' => "EBAY_$region"
+                'marketplace_id' => 'EBAY_GB'
             ]);
         } catch (Exception $e) {
             Log::error('Get Payment Policy Error: ' . $e->getMessage());
@@ -1087,12 +1060,9 @@ trait WithEbayApiRequest
      */
     public function createReturnPolicy()
     {
-        $config = $this->getEbayConfig();
-        $region = Arr::get($config, 'region');
-
         $data = [
             "name" => "minimal return policy",
-            "marketplaceId" => "EBAY_$region",
+            "marketplaceId" => "EBAY_GB",
             "refundMethod" => "MONEY_BACK",
             "returnsAccepted" => true,
             "returnShippingCostPayer" => "SELLER",
@@ -1117,12 +1087,9 @@ trait WithEbayApiRequest
     public function getReturnPolicies()
     {
         try {
-            $config = $this->getEbayConfig();
-            $region = Arr::get($config, 'region');
-
             $endpoint = "/sell/account/v1/return_policy";
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'marketplace_id' => "EBAY_$region"
+                'marketplace_id' => 'EBAY_GB'
             ]);
         } catch (Exception $e) {
             Log::error('Get Return Policy Error: ' . $e->getMessage());

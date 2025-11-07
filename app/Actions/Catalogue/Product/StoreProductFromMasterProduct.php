@@ -43,7 +43,7 @@ class StoreProductFromMasterProduct extends GrpAction
 
                 $createInShop = Arr::get($shopProductData, 'create_in_shop', 'No');
 
-                if ($createInShop=='Yes') {
+                if ($createInShop == 'Yes') {
                     $price = $shopProductData['price'] ?? $masterAsset->price;
                     $rrp   = $shopProductData['rrp'];
 

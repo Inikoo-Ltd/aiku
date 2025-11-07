@@ -9,12 +9,9 @@
 
 namespace App\Actions\Web\WebBlock;
 
-use App\Enums\Goods\TradeUnit\TradeAttachmentScopeEnum;
-use App\Http\Resources\Helpers\Attachment\IrisAttachmentsResource;
 use App\Http\Resources\Web\WebBlockProductResource;
 use App\Models\Catalogue\Product;
 use App\Models\Web\Webpage;
-use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsObject;
 
 class GetWebBlockLuigiRecommendations
