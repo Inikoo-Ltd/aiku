@@ -1,11 +1,9 @@
 <?php
-
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
- *
 */
 
 namespace App\Actions\Helpers\Tag\UI;
@@ -30,14 +28,14 @@ class IndexTags extends OrgAction
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
-        return $this->handle($tradeUnit, $this->validatedData);
+        return $this->handle($tradeUnit);
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
     {
         $this->initialisation($organisation, $request);
 
-        return $this->handle($organisation, $request);
+        return $this->handle($organisation);
     }
 
     public function handle(Organisation|TradeUnit $parent, $prefix = null): LengthAwarePaginator
@@ -58,15 +56,11 @@ class IndexTags extends OrgAction
 
         if ($parent instanceof TradeUnit) {
             $queryBuilder->where('scope', TagScopeEnum::PRODUCT_PROPERTY);
-        } else {
-            $queryBuilder->whereNot('scope', TagScopeEnum::PRODUCT_PROPERTY);
         }
 
-        $queryBuilder
-            ->defaultSort('name')
-            ->select(['id', 'name', 'slug', 'scope']);
-
         return $queryBuilder
+            ->defaultSort('name')
+            ->select(['id', 'name', 'slug', 'scope'])
             ->allowedSorts(['name', 'scope'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())

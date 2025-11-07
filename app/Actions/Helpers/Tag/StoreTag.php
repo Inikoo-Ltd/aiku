@@ -1,11 +1,9 @@
 <?php
-
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 23-05-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
- *
 */
 
 namespace App\Actions\Helpers\Tag;
@@ -17,26 +15,24 @@ use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\Rules\File;
 use Lorisleiva\Actions\ActionRequest;
 
 class StoreTag extends OrgAction
 {
-    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): void
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): Tag
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);
 
-        $this->handle($tradeUnit, $this->validatedData);
+        return $this->handle($tradeUnit, $this->validatedData);
     }
 
-    public function inCustomer(Customer $customer, ActionRequest $request): void
+    public function inCustomer(Customer $customer, ActionRequest $request): Tag
     {
         $this->initialisation($customer->organisation, $request);
 
-        $this->handle($customer, $this->validatedData);
+        return $this->handle($customer, $this->validatedData);
     }
 
     public function asController(Organisation $organisation, ActionRequest $request): Tag
@@ -46,15 +42,11 @@ class StoreTag extends OrgAction
         return $this->handle($organisation, $this->validatedData);
     }
 
-    public function htmlResponse(Tag $tag = null): RedirectResponse|null
+    public function htmlResponse(): void
     {
-        if (!$tag) {
-            return null;
-        }
-
-        return Redirect::route('grp.org.tags.show', [$this->organisation->slug])->with('notification', [
+        request()->session()->flash('notification', [
             'status'  => 'success',
-            'title'   => __('Success'),
+            'title'   => __('Success!'),
             'description' => __('Tag successfully created.'),
         ]);
     }
@@ -62,15 +54,11 @@ class StoreTag extends OrgAction
     public function handle(Organisation|Customer|TradeUnit $parent, array $modelData): Tag
     {
         if ($parent instanceof Customer) {
-            data_set($modelData, 'scope', TagScopeEnum::CUSTOMER);
+            data_set($modelData, 'scope', TagScopeEnum::ADMIN_CUSTOMER);
         }
 
         if ($parent instanceof TradeUnit) {
             data_set($modelData, 'scope', TagScopeEnum::PRODUCT_PROPERTY);
-        }
-
-        if (!isset($modelData['scope'])) {
-            data_set($modelData, 'scope', TagScopeEnum::OTHER);
         }
 
         data_set($modelData, 'group_id', $parent->group->id);
@@ -92,7 +80,6 @@ class StoreTag extends OrgAction
             );
         }
 
-
         if ($parent instanceof TradeUnit || $parent instanceof Customer) {
             AttachTagsToModel::make()->handle($parent, ['tags_id' => [$tag->id]]);
         }
@@ -109,6 +96,11 @@ class StoreTag extends OrgAction
                 'nullable',
                 'string',
                 'in:' . implode(',', array_column(TagScopeEnum::cases(), 'value')),
+                function ($attribute, $value, $fail) {
+                    if ($value === TagScopeEnum::SYSTEM_CUSTOMER->value) {
+                        $fail(__("You can't create tag with system scope."));
+                    }
+                },
             ],
             'image' => [
                 'sometimes',

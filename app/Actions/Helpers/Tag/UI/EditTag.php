@@ -45,7 +45,6 @@ class EditTag extends OrgAction
     public function htmlResponse(Tag $tag, ActionRequest $request): Response
     {
         $scopes = collect(TagScopeEnum::cases())
-            ->filter(fn ($case) => $case !== TagScopeEnum::PRODUCT_PROPERTY)
             ->map(fn ($case) => [
                 'label' => $case->pretty(),
                 'value' => $case->value,
@@ -56,8 +55,8 @@ class EditTag extends OrgAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('Edit Tag'),
-                'pageHead'    => [
+                'title'    => __('Edit Tag'),
+                'pageHead' => [
                     'title'   => $tag->name,
                     'icon'    => [
                         'title' => __('Tags'),

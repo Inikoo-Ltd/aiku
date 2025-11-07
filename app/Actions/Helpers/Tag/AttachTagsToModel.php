@@ -1,11 +1,9 @@
 <?php
-
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 23-05-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
- *
 */
 
 namespace App\Actions\Helpers\Tag;
@@ -16,6 +14,7 @@ use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class AttachTagsToModel extends OrgAction
@@ -24,33 +23,71 @@ class AttachTagsToModel extends OrgAction
 
     public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): void
     {
-        $this->parent = $tradeUnit;
+        try {
+            $this->parent = $tradeUnit;
+            $this->initialisationFromGroup($tradeUnit->group, $request);
+            $this->handle($tradeUnit, $this->validatedData, true);
 
-        $this->initialisationFromGroup($tradeUnit->group, $request);
-
-        $this->handle($tradeUnit, $this->validatedData, true);
+            request()->session()->flash('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tags successfully attached.'),
+            ]);
+        } catch (ValidationException $e) {
+            request()->session()->flash('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function inCustomer(Customer $customer, ActionRequest $request): void
     {
-        $this->parent = $customer;
+        try {
+            $this->parent = $customer;
+            $this->initialisation($customer->organisation, $request);
+            $this->handle($customer, $this->validatedData, true);
 
-        $this->initialisation($customer->organisation, $request);
-
-        $this->handle($customer, $this->validatedData, true);
+            request()->session()->flash('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tags successfully attached.'),
+            ]);
+        } catch (ValidationException $e) {
+            request()->session()->flash('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function action(TradeUnit|Customer $parent, array $modelData): void
     {
-        $this->parent = $parent;
+        try {
+            $this->parent = $parent;
 
-        if ($parent instanceof TradeUnit) {
-            $this->initialisationFromGroup($parent->group, $modelData);
-        } else {
-            $this->initialisation($parent->organisation, $modelData);
+            if ($parent instanceof TradeUnit) {
+                $this->initialisationFromGroup($parent->group, $modelData);
+            } else {
+                $this->initialisation($parent->organisation, $modelData);
+            }
+
+            $this->handle($parent, $this->validatedData, true);
+
+            request()->session()->flash('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tags successfully attached.'),
+            ]);
+        } catch (ValidationException $e) {
+            request()->session()->flash('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
         }
-
-        $this->handle($parent, $this->validatedData, true);
     }
 
     public function handle(TradeUnit|Customer $model, array $modelData, $replace = false): void
@@ -86,8 +123,13 @@ class AttachTagsToModel extends OrgAction
 
                         if ($this->parent instanceof TradeUnit) {
                             $exist->where('scope', TagScopeEnum::PRODUCT_PROPERTY->value);
-                        } else {
-                            $exist->whereNot('scope', TagScopeEnum::PRODUCT_PROPERTY->value);
+                        }
+
+                        if ($this->parent instanceof Customer) {
+                            $exist->whereIn('scope', [
+                                TagScopeEnum::ADMIN_CUSTOMER->value,
+                                TagScopeEnum::USER_CUSTOMER->value,
+                            ]);
                         }
 
                         $exist = $exist->where('id', $value)->pluck('id')->toArray();

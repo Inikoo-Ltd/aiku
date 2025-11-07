@@ -1,5 +1,4 @@
 <?php
-
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
@@ -57,15 +56,15 @@ class GetTags extends OrgAction
 
         if ($parent instanceof TradeUnit) {
             $queryBuilder->where('scope', TagScopeEnum::PRODUCT_PROPERTY);
-        } else {
-            $queryBuilder->whereNot('scope', TagScopeEnum::PRODUCT_PROPERTY);
         }
 
-        $queryBuilder
-            ->defaultSort('name')
-            ->select(['id', 'name', 'slug', 'scope']);
+        if ($parent instanceof Customer) {
+            $queryBuilder->whereIn('scope', [TagScopeEnum::ADMIN_CUSTOMER, TagScopeEnum::USER_CUSTOMER]);
+        }
 
         return $queryBuilder
+            ->defaultSort('name')
+            ->select(['id', 'name', 'slug', 'scope'])
             ->allowedSorts(['tag_name'])
             ->allowedFilters([$globalSearch])
             ->get();
