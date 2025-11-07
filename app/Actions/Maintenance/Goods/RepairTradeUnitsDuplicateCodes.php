@@ -12,6 +12,7 @@
 
 namespace App\Actions\Maintenance\Goods;
 
+use App\Actions\Goods\TradeUnit\DeleteTradeUnit;
 use App\Models\Goods\TradeUnit;
 use App\Models\Goods\TradeUnitStats;
 use Illuminate\Console\Command;
@@ -70,7 +71,19 @@ class RepairTradeUnitsDuplicateCodes
                     $numberModels = DB::table('model_has_trade_units')->where('trade_unit_id', $row->id)->count();
                     $numberImages = DB::table('model_has_media')->where('model_type', 'TradeUnit')->where('model_id', $row->id)->count();
 
-                    $tradeInitStats=TradeUnitStats::where('trade_unit_id',$row->id)->first();
+                    $tradeInitStats = TradeUnitStats::where('trade_unit_id', $row->id)->first();
+
+                    if ($numberModels == 0 && $numberImages == 0 && $tradeInitStats->number_stocks == 0) {
+                        $tradeUnit = TradeUnit::where('id', $row->id)->first();
+                        DeleteTradeUnit::run(
+                            $tradeUnit,
+                            [
+                                'hard'  => true,
+                                'force' => true,
+                            ]
+                        );
+                    }
+
 
                     return [
                         'id'            => $row->id,
@@ -80,7 +93,7 @@ class RepairTradeUnitsDuplicateCodes
                         'deleted_at'    => $row->deleted_at,
                         'number_models' => $numberModels,
                         'number_images' => $numberImages,
-                        'number_stocks'=> $tradeInitStats->number_stocks,
+                        'number_stocks' => $tradeInitStats->number_stocks,
                     ];
                 })->values()->all();
             }
@@ -111,7 +124,7 @@ class RepairTradeUnitsDuplicateCodes
             $counter++;
             $command->line("<info>Code:</info> {$code}  <comment>(".count($rows).")</comment>");
             $command->table(
-                ['#', 'ID', 'Source ID', 'Name', 'Status', 'Models','Images','Stocks', 'Deleted at'],
+                ['#', 'ID', 'Source ID', 'Name', 'Status', 'Models', 'Images', 'Stocks', 'Deleted at'],
                 array_map(function ($r) use (&$counter) {
                     return [
                         $counter,

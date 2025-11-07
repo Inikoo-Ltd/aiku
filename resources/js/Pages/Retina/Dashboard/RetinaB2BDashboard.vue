@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { trans } from 'laravel-vue-i18n'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUser, faBuilding, faEnvelope, faPhone, faTags } from "@fas"
@@ -16,12 +16,16 @@ const props = defineProps<{
 
 console.log('RetinaB2BDashboard', props)
 
-const hasTags = ref(false)
 const showBanner = ref(true);
 
+const userCustomerTags = computed(() => {
+    return props.data?.customer?.tags?.filter((tag: any) => tag.scope === 'User Customer') || []
+})
+
+const hasTags = computed(() => userCustomerTags.value.length > 0)
+
 onMounted(() => {
-    hasTags.value = props.data.customer?.tags?.length > 0;
-    showBanner.value = !hasTags.value;
+    showBanner.value = !hasTags.value
 })
 </script>
 
@@ -66,7 +70,7 @@ onMounted(() => {
                         />
                         <span class="text-gray-900">{{ data.customer.phone }}</span>
                     </div>
-                    <div v-if="data.customer.tags?.length > 0" class="flex items-center">
+                    <div v-if="userCustomerTags.length > 0" class="flex items-center">
                         <FontAwesomeIcon
                             icon="fas fa-tags"
                             class="text-gray-600 mr-2 w-4 h-4"
@@ -74,7 +78,7 @@ onMounted(() => {
                         />
                         <div class="flex items-center gap-2 w-full">
                             <span
-                                v-for="tag in data.customer.tags"
+                                v-for="tag in userCustomerTags"
                                 :key="tag.id"
                                 class="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 px-2 py-0.5 rounded-full text-xs font-medium border transition-colors duration-200 ease-in-out"
                             >

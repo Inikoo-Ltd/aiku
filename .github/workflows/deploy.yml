@@ -69,12 +69,12 @@ jobs:
           guid: aiku
           version: ${{ steps.semver.outputs.next }}
           user: "${{ github.actor }}"
-      - name: Create Sentry release
-        uses: getsentry/action-release@v3
-        env:
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
-          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
-        with:
-          environment: production
-          release: ${{ steps.semver.outputs.next }}
+#      - name: Create Sentry release
+#        uses: getsentry/action-release@v3
+#        env:
+#          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+#          SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
+#          SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
+#        with:
+#          environment: production
+#          release: ${{ steps.semver.outputs.next }}
