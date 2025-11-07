@@ -561,6 +561,7 @@ window.addEventListener('beforeunload', () => {
 
 
 onMounted(() => {
+  layout.leftSidebar.show = false
   const handleMessage = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
@@ -649,7 +650,7 @@ const openWebsite = () => {
   </ConfirmDialog>
 
   <div class="flex">
-    <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[10]">
+    <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[20]">
       <!-- Sidebar Content -->
       <div v-show="!fullScreen">
         <WebpageSideEditor ref="_WebpageSideEditor" v-model="isModalBlockList" :webpage="data"

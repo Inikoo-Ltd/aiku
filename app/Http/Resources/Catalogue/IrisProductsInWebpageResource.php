@@ -75,7 +75,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'price'          => $this->price,
             'margin'         => $margin,
             'profit'         => $profit,
-            'profit_per_unit'         => $profitPerUnit,
+            'profit_per_unit' => $profitPerUnit,
             'rrp'            => $this->rrp,
             'rrp_per_unit'   => $rrpPerUnit,
             'state'          => $this->state,

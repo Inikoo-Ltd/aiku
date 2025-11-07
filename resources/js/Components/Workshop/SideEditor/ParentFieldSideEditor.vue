@@ -46,14 +46,10 @@ const hasCustomForm = computed(() =>
     Array.isArray(props.blueprint.replaceForm) && props.blueprint.replaceForm.length > 0
 )
 
-/* const onSaveWorkshopFromId: Function = inject('onSaveWorkshopFromId', (e?: number) => { console.log('onSaveWorkshopFromId not provided') })
-const side_editor_block_id = inject('side_editor_block_id', () => { console.log('side_editor_block_id not provided') }) */
 
 const onPropertyUpdate = (fieldKeys: string | string[], newVal: any) => {
     const setValue = setFormValue(modelValue.value || {}, fieldKeys, newVal)
-    // console.log('value from set ', setValue)
     emits('update:modelValue', setValue);
-    /* onSaveWorkshopFromId(side_editor_block_id, 'parentfieldsideeditor') */
 }
 
 const accordionKey = computed(() => {
