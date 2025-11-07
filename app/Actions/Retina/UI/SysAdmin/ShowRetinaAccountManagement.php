@@ -12,6 +12,7 @@ use App\Actions\Helpers\Country\UI\GetAddressData;
 use App\Actions\Retina\UI\Dashboard\ShowRetinaDashboard;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
 use Inertia\Inertia;
@@ -127,7 +128,11 @@ class ShowRetinaAccountManagement extends RetinaAction
                                 'tags' => [
                                     'type'  => 'retina-tags-customer',
                                     'label' => __('Interest'),
-                                    'value' =>  $customer->tags->pluck('id')->toArray(),
+                                    'value' => $customer
+                                        ->tags()
+                                        ->where('tags.scope', TagScopeEnum::USER_CUSTOMER->value)
+                                        ->pluck('tags.id')
+                                        ->toArray(),
                                     'tag_routes' => [
                                         'index_tag' => [
                                             'name'       => 'retina.json.customer.tags.index',
