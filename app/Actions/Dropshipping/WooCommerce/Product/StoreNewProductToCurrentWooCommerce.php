@@ -11,13 +11,21 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\OrgAction;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class StoreNewProductToCurrentWooCommerce extends OrgAction
+class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeUnique
 {
     use AsAction;
 
+    public string $jobQueue = 'woo';
+
+
+    public function getJobUniqueId(WooCommerceUser $wooCommerceUser, Portfolio $portfolio): string
+    {
+        return $portfolio->id;
+    }
 
     /**
      * @throws \Exception
