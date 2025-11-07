@@ -31,6 +31,13 @@ class DetachTagFromModel extends OrgAction
         $this->handle($customer, $tag);
     }
 
+    public function inRetina(Customer $customer, Tag $tag, ActionRequest $request): void
+    {
+        $this->initialisation($customer->organisation, $request);
+
+        $this->handle($customer, $tag);
+    }
+
     public function handle(Customer|TradeUnit $model, Tag $tag): void
     {
         $model->tags()->detach([$tag->id]);

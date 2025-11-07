@@ -25,6 +25,8 @@ use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Product\CreateNewBulkPortfolioToWooCommerce;
+use App\Actions\Helpers\Tag\AttachTagsToModel;
+use App\Actions\Helpers\Tag\DetachTagFromModel;
 use App\Actions\Iris\UpdateIrisLocale;
 use App\Actions\Retina\Accounting\MitSavedCard\DeleteMitSavedCard;
 use App\Actions\Retina\Accounting\MitSavedCard\SetAsDefaultRetinaMitSavedCard;
@@ -228,6 +230,9 @@ Route::name('customer.')->prefix('customer/{customer:id}')->group(function () {
     Route::name('order.')->prefix('order')->group(function () {
         Route::post('{platform:id}', StoreRetinaPlatformOrder::class)->name('platform.store');
     });
+
+    Route::post('tags/attach', [AttachTagsToModel::class, 'inRetina'])->name('tags.attach');
+    Route::delete('tags/{tag:id}/detach', [DetachTagFromModel::class, 'inRetina'])->name('tags.detach');
 });
 
 Route::name('order.')->prefix('order/{order:id}')->group(function () {
