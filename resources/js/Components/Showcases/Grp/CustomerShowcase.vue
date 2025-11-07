@@ -223,6 +223,21 @@ const copyToClipboard = async (text: string, label: string) => {
         })
     }
 }
+
+function tagColorClass(scope?: string) {
+    const normalized = (scope || '').toLowerCase()
+
+    switch (normalized) {
+        case 'system customer':
+            return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+        case 'admin customer':
+            return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+        case 'user customer':
+            return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+        default:
+            return 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
+    }
+}
 </script>
 
 <template>
@@ -394,8 +409,9 @@ const copyToClipboard = async (text: string, label: string) => {
                                 <span
                                     v-for="tag in data.tags"
                                     :key="tag.id"
-                                    v-tooltip="'tag'"
-                                    class="px-2 py-0.5 rounded-full text-xs bg-green-100 bg-green-50 border border-blue-100"
+                                    v-tooltip="tag.scope"
+                                    class="px-2 py-0.5 rounded-full text-xs font-medium border transition-colors duration-200 ease-in-out"
+                                    :class="tagColorClass(tag.scope)"
                                 >
                                     {{ tag.name }}
                                 </span>
