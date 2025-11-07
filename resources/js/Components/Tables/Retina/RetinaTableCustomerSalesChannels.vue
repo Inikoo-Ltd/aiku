@@ -12,6 +12,10 @@ import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import { trans } from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faSyncAlt } from "@fortawesome/free-solid-svg-icons"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faSyncAlt)
 
 defineProps<{
     data: TableTS,
@@ -42,9 +46,20 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
         [customerSalesChannel.slug])
 }
 
-function syncCustomerSalesChannel(customerSalesChannel: CustomerSalesChannel) {
-   
-   const response = router.post(route('retina.dropshipping.platform.wc.check_status', [customerSalesChannel.slug]))
+
+function checkCustomerSalesChannel(customerSalesChannel: CustomerSalesChannel) {
+    console.log(customerSalesChannel)
+   router.post(route('retina.dropshipping.platform.wc.check_status', [customerSalesChannel.slug]), {
+       onSuccess: async (response) => {
+           await router.push(route('retina.dropshipping.customer_sales_channels.index'))
+       },
+       onError: (errors) => {
+           console.error('Check status failed:', errors)
+       },
+       onFinish: () => {
+           // This runs regardless of success or error
+       }
+   })
 }
 
 </script>
@@ -82,16 +97,6 @@ function syncCustomerSalesChannel(customerSalesChannel: CustomerSalesChannel) {
 
         <template #cell(action)="{ item: customerSalesChannel, proxyItem }">
             <div class="flex items-center gap-2">
-                <Button
-                    v-if="customerSalesChannel.platform_code === 'woocommerce'"
-                    v-tooltip="trans('check down status')"
-                    @click="syncCustomerSalesChannel(customerSalesChannel)"
-                    type="secondary"
-                    icon="fal fa-sync-alt"
-                    size="s"
-                    :key="0"
-                    :loading="customerSalesChannel.is_syncing"
-                />
                 <ModalConfirmationDelete
                     :routeDelete="customerSalesChannel.delete_route"
                     :title="trans('Are you sure you want to close this channel?')"
@@ -105,7 +110,7 @@ function syncCustomerSalesChannel(customerSalesChannel: CustomerSalesChannel) {
                             {{ `${customerSalesChannel.platform_name} (${customerSalesChannel.reference})` }}
                         </div>
                     </template>
-                    
+
                     <template #default="{ isOpenModal, changeModel }">
                         <Button
                             v-tooltip="trans('Close channel')"
@@ -117,6 +122,22 @@ function syncCustomerSalesChannel(customerSalesChannel: CustomerSalesChannel) {
                         />
                     </template>
                 </ModalConfirmationDelete>
+
+                <Button
+                    v-if="customerSalesChannel.platform_code === 'woocommerce'"
+                    v-tooltip="trans('check down status')"
+                    @click="checkCustomerSalesChannel(customerSalesChannel)"
+                    type="secondary"
+                    size="s"
+                    class="hover:bg-gray-100 ring-1 ring-gray-200"
+                    :key="0"
+                >
+                    <FontAwesomeIcon icon="sync-alt" />
+                </Button>
+
+                <span class="text-red-500" v-if="customerSalesChannel.is_down && customerSalesChannel.platform_code === 'woocommerce'" v-tooltip="trans('Channel is down')">
+                    <FontAwesomeIcon icon="fal fa-exclamation-triangle" />
+                </span>
             </div>
         </template>
     </Table>

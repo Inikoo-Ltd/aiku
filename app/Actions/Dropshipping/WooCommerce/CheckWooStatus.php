@@ -9,23 +9,15 @@
 namespace App\Actions\Dropshipping\WooCommerce;
 
 use App\Actions\RetinaAction;
-use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
-use App\Actions\Traits\WithActionUpdate;
-use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Models\Dropshipping\WooCommerceUser;
-use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Carbon;
+use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 
 class CheckWooStatus extends RetinaAction
 {
-
-    public function handle($slug)
+    public function handle($slug):bool
     {
-
         $canConnectToPlatform = false;
 
         $customerSalesChannel = CustomerSalesChannel::where('slug', $slug)->firstOrFail();
@@ -37,22 +29,43 @@ class CheckWooStatus extends RetinaAction
             $canConnectToPlatform = true;
         }
 
-        if ($canConnectToPlatform) {
+        // If can't connect to platform or it means the channel is down
+        if (!$canConnectToPlatform) {
 
-            // $customerSalesChannel->update([
-            //     'is_down' => null,
-            //     'checked_as_down_at' => null,
-            //     'checked_as_down_days' => null,
-            //     'number_downside' => null,
-            // ]);
+            $now = Carbon::now();
+            $lastCheckedAt = $customerSalesChannel->checked_as_down_at;
+
+            // Check if this is a different day than the last check
+            $isDifferentDay = !$lastCheckedAt ||
+                              !Carbon::parse($lastCheckedAt)->isSameDay($now);
+
+            $customerSalesChannel->update([
+                'is_down' => true,
+                'checked_as_down_at' => now(),
+                'checked_as_down_days' => $isDifferentDay
+                    ? ($customerSalesChannel->checked_as_down_days ?? 0) + 1
+                    : ($customerSalesChannel->checked_as_down_days ?? 0),
+                'number_downside' => $customerSalesChannel->number_downside + 1,
+            ]);
+        } else {
+            // reset the counter
+            $customerSalesChannel->update([
+                'is_down' => false,
+                'checked_as_down_at' => null,
+                'checked_as_down_days' => null,
+                'number_downside' => null,
+            ]);
         }
-        
-        return [
-            "can_connect_to_platform" => $canConnectToPlatform,
-        ];
+
+        // after 30 days still down, close the channel
+        if ($customerSalesChannel->checked_as_down_days > 30) {
+            CloseCustomerSalesChannel::run($customerSalesChannel);
+        }
+
+        return $canConnectToPlatform;
     }
 
-    public function asController($slug, ActionRequest $request)
+    public function asController($slug)
     {
         return $this->handle($slug);
     }
