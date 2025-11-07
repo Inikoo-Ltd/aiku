@@ -261,9 +261,10 @@ function productRoute(product: Product) {
                  ]); */
         default:
             if (product.asset_id) {
-                return route(
-                    "grp.helpers.redirect_asset",
-                    [product.asset_id])
+                //todo fix this
+                // return route(
+                //     "grp.helpers.redirect_asset",
+                //     [product.asset_id])
             } else return ""
 
     }
@@ -291,9 +292,10 @@ function organisationRoute(invoice: Invoice) {
 
 function shopRoute(invoice: Invoice) {
     if (!invoice.organisation_slug || !invoice.shop_slug) {
-        return route(
-            "grp.helpers.redirect_asset",
-            [invoice.asset_id])
+        //todo fix this
+        // return route(
+        //     "grp.helpers.redirect_asset",
+        //     [invoice.asset_id])
     }
     if (route().current() == "grp.trade_units.units.show") {
 

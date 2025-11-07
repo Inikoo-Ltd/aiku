@@ -107,12 +107,9 @@ defineExpose({
 
 
 const productRoute = (item) => {
-    // console.log('id', item.id)
-    // if (route().current() === 'grp.org.shops.show.ordering.orders.show.invoices.show.refunds.show') {
-        return route('grp.helpers.redirect_asset', [item.id])
-    // }
+    //todo fix this
+     //   return route('grp.helpers.redirect_asset', [item.asset_id])
 
-    // return ''
 }
 </script>
 

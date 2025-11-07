@@ -26,9 +26,11 @@ function assetRedirectRoute(transaction: InvoiceTransaction) {
     if (route().current() == "retina.fulfilment.billing.invoices.show" || route().current() == "retina.dropshipping.invoices.show" || !transaction.asset_id) {
         return ""
     } else {
-        return route(
-            "grp.helpers.redirect_asset",
-            [transaction.asset_id])
+        //todo fix this
+
+        // return route(
+        //     "grp.helpers.redirect_asset",
+        //     [transaction.asset_id])
     }
 
 
