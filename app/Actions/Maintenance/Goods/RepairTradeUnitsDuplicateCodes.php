@@ -73,7 +73,7 @@ class RepairTradeUnitsDuplicateCodes
 
                     $tradeInitStats = TradeUnitStats::where('trade_unit_id', $row->id)->first();
 
-                    if ($numberModels == 0 && $numberImages == 0 && $tradeInitStats->number_stocks == 0) {
+                    if ($numberModels == 0 && $numberImages == 0) {
                         $tradeUnit = TradeUnit::where('id', $row->id)->first();
                         DeleteTradeUnit::run(
                             $tradeUnit,
