@@ -347,7 +347,7 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                                 ],
                             ],
-                            $shop->type == ShopTypeEnum::DROPSHIPPING ?
+
                             [
                                 "label"   => __("Announcements"),
                                 "tooltip" => __("Announcements"),
@@ -357,7 +357,7 @@ class GetShopNavigation
                                     "name"       => "grp.org.shops.show.web.announcements.index",
                                     "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                                 ],
-                            ] : [],
+                            ],
                             [
                                 "label"   => __("Analytics"),
                                 "tooltip" => __("Analytics"),
