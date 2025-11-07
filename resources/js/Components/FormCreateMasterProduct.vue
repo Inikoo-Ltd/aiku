@@ -8,7 +8,7 @@ import { ref, computed, inject } from "vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
-import ListSelector from "@/Components/ListSelector.vue";
+import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
 import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { routeType } from "@/types/route";
