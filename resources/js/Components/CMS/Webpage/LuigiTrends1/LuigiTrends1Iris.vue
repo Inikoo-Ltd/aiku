@@ -27,7 +27,11 @@ library.add(faChevronLeft, faChevronRight)
 
 
 const props = defineProps<{
-    fieldValue: {}
+    fieldValue: {
+        product: {
+            luigi_identity: string
+        }
+    }
     webpageData?: any
     blockData?: Object,
     screenType: 'mobile' | 'tablet' | 'desktop'

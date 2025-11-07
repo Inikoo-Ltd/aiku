@@ -17,7 +17,6 @@ import { useTabChange } from "@/Composables/tab-change";
 import ModelDetails from "@/Components/ModelDetails.vue";
 import Tabs from "@/Components/Navigation/Tabs.vue";
 import { capitalize } from "@/Composables/capitalize"
-import PaymentShowcase from './PaymentShowcase.vue';
 import { PageHeading as PageHeadingTS } from '@/types/PageHeading'
 import TopupShowcase from '@/Components/Accounting/TopupShowcase.vue'
 

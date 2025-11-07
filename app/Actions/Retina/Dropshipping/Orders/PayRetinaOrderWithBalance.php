@@ -23,6 +23,7 @@ use App\Models\Ordering\Order;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
+use Sentry;
 
 class PayRetinaOrderWithBalance extends RetinaAction
 {
@@ -32,7 +33,7 @@ class PayRetinaOrderWithBalance extends RetinaAction
     /**
      * @throws \Throwable
      */
-    public function handle(Order $order): array
+    public function handle(Order $order, bool $submitOrder = true): array
     {
         $warning = $this->getWarnings($order);
 
@@ -74,10 +75,11 @@ class PayRetinaOrderWithBalance extends RetinaAction
             'reference'               => 'cu-'.$customer->id.'-bal-'.Str::random(10),
             'amount'                  => $order->total_amount,
             'status'                  => PaymentStatusEnum::SUCCESS,
+            'state'                   => PaymentStateEnum::COMPLETED,
             'payment_account_shop_id' => $paymentAccountShop->id
         ];
 
-        $order = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData) {
+        $order = DB::transaction(function () use ($order, $customer, $paymentAccountShop, $paymentData, $submitOrder) {
             $payment = StorePayment::make()->action($customer, $paymentAccountShop->paymentAccount, $paymentData);
 
             AttachPaymentToOrder::make()->action($order, $payment, [
@@ -86,13 +88,27 @@ class PayRetinaOrderWithBalance extends RetinaAction
 
 
             $creditTransactionData = [
-                'amount'     => -$order->total_amount,
+                'amount'     => -$payment->amount,
                 'type'       => CreditTransactionTypeEnum::PAYMENT,
                 'payment_id' => $payment->id,
             ];
-            StoreCreditTransaction::make()->action($customer, $creditTransactionData);
+            $creditTransaction = StoreCreditTransaction::make()->action($customer, $creditTransactionData);
 
-            return SubmitOrder::run($order);
+            $paymentAmount = round(-$payment->amount, 2);
+            $creditTransactionAmount = round($creditTransaction->amount, 2);
+            $diff = $paymentAmount - $creditTransactionAmount;
+
+            if ($diff != 0) {
+                Sentry::captureMessage('Payment amount and credit transaction amount do not match Order:'.$order->id.
+                ' Payment amount:'.$paymentAmount.' Credit transaction amount:'.$creditTransactionAmount);
+            }
+
+
+            if ($submitOrder) {
+                return SubmitOrder::run($order);
+            }
+
+            return $order;
         });
 
         return [

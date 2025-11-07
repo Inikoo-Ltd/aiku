@@ -16,7 +16,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: 'mobile' | 'tablet' | 'desktop',
-  indexBlock: number
+  indexBlock?: number
 }>()
 
 const emits = defineEmits<{ (e: 'autoSave'): void }>()
@@ -25,6 +25,7 @@ const keySwiper = ref(ulid())
 const layout: any = inject("layout", {})
 const bKeys = Blueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
 const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
+const refreshTrigger = ref(0)
 const imageSettings = {
   key: ["image", "source"],
   stencilProps: {
@@ -61,11 +62,14 @@ const selectedAspectRatio = computed(() => {
   return 16 / 9
 })
 
+const spaceBetween = ref(((props.modelValue?.carousel_data?.carousel_setting?.spaceBetween || 0) / 2) + 'px')
+
 const refreshCarousel = async (delay = 100) => {
   await new Promise(resolve => setTimeout(resolve, delay))
   keySwiper.value = ulid()
   await nextTick()
 }
+
 
 // Watch for settings or screen changes
 watch(
@@ -83,6 +87,15 @@ watch(
     await refreshCarousel(200)
   },
   { deep: true }
+)
+
+watch(
+  () => props.modelValue?.carousel_data?.carousel_setting?.spaceBetween,
+  (newVal) => {
+    spaceBetween.value = ((newVal || 0) / 2) + 'px'
+    refreshCarousel()
+  },
+  { immediate: true, deep: true }
 )
 
 
@@ -107,11 +120,15 @@ const responsiveOptions = computed(() => {
     }
   ]
 })
+
+
+
+
 </script>
 
 <template>
   <div id="carousel" class="relative">
-    <div :key="keySwiper" :style="{
+    <div :key="keySwiper" :data-refresh="refreshTrigger" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
     }">
@@ -121,48 +138,52 @@ const responsiveOptions = computed(() => {
         :numVisible="slidesPerView"
         :circular="isLooping"
         :autoplayInterval="0"
+        :numScroll="1"
         :responsiveOptions="responsiveOptions"
         class="w-full"
         :showNavigators="modelValue?.carousel_data?.cards?.length > slidesPerView"
+        :contentClass="'gap-3'"
       >
         <template #item="{ data, index }">
-          <div class="card flex flex-col h-full">
-            <div class="flex flex-1 flex-col">
-              <!-- Image Container -->
-              <div class="flex justify-center overflow-visible"
-                :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)" @click.stop="() => {
-                  sendMessageToParent('activeBlock', indexBlock)
-                  sendMessageToParent('activeChildBlock', bKeys[2])
-                  sendMessageToParent('activeChildBlockArray', index)
-                  sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
-                }"
-                @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })">
-                <div class="overflow-hidden w-full flex items-center justify-center "
-                  :style="{ aspectRatio: selectedAspectRatio, ...getStyles(modelValue.carousel_data.card_container?.image_properties, screenType) }">
-                  <Image v-if="data?.image?.source" :src="data.image.source" :alt="data.image.alt || `image-${index}`"
-                    :class="'image-container'" class="w-full h-full flex justify-center items-center" />
-                  <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
-                    <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
+            <div class="space-card">
+               <div class="card flex flex-col h-full">
+                  <div class="flex flex-1 flex-col">
+                    <!-- Image Container -->
+                    <div class="flex justify-center overflow-visible"
+                      :style="getStyles(modelValue.carousel_data.card_container?.container_image, screenType)" @click.stop="() => {
+                        sendMessageToParent('activeBlock', indexBlock)
+                        sendMessageToParent('activeChildBlock', bKeys[2])
+                        sendMessageToParent('activeChildBlockArray', index)
+                        sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
+                      }"
+                      @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })">
+                      <div class="overflow-hidden w-full flex items-center justify-center "
+                        :style="{...getStyles(modelValue.carousel_data.card_container?.image_properties, screenType) }">
+                        <Image v-if="data?.image?.source" :src="data.image.source" :alt="data.image.alt || `image-${index}`"
+                          :class="'image-container'" class="w-full h-full flex justify-center items-center" />
+                        <div v-else class="flex items-center justify-center w-full h-full bg-gray-100">
+                          <FontAwesomeIcon :icon="faImage" class="text-gray-400 text-4xl" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Text Content -->
+                    <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
+                      class="p-4 flex flex-col flex-1 justify-between">
+                      <div  class="text-center leading-relaxed" >
+                      <EditorV2 v-model="data.text" @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
+                        @update:modelValue="() => emits('autoSave')"  :uploadImageRoute="{
+                          name: webpageData.images_upload_route.name,
+                          parameters: {
+                            ...webpageData.images_upload_route.parameters,
+                            modelHasWebBlocks: blockData?.id,
+                          },
+                        }" />
+                        </div> 
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- Text Content -->
-              <div v-if="modelValue.carousel_data.carousel_setting?.use_text"
-                class="p-4 flex flex-col flex-1 justify-between">
-                <div  class="text-center leading-relaxed" >
-                <EditorV2 v-model="data.text" @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
-                  @update:modelValue="() => emits('autoSave')"  :uploadImageRoute="{
-                    name: webpageData.images_upload_route.name,
-                    parameters: {
-                      ...webpageData.images_upload_route.parameters,
-                      modelHasWebBlocks: blockData?.id,
-                    },
-                  }" />
-                  </div> 
-              </div>
             </div>
-          </div>
         </template>
       </Carousel>
     </div>
@@ -172,6 +193,11 @@ const responsiveOptions = computed(() => {
 <style scoped>
 :deep(.p-carousel-indicator-list) {
   display: none;
+}
+
+:deep(.space-card) {
+  margin-left: v-bind(spaceBetween);
+  margin-right: v-bind(spaceBetween);
 }
 
 .card {
@@ -211,5 +237,9 @@ const responsiveOptions = computed(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.p-carousel-item-list{
+  gap : 20px
 }
 </style>

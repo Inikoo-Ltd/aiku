@@ -18,6 +18,19 @@ export default {
 			],
 		},
 		{
+			name: "Image Layout",
+			label: "Image",
+			key: ["image"],
+			replaceForm: [
+				{
+					key: ['container',"properties",'dimension'],
+					label: "Dimension",
+					type: "dimension",
+					useIn: ["desktop", "tablet", "mobile"],
+				}	
+			],
+		},
+		{
 			key: ['carousel_data',"cards"],
 			name: "Cards  Data",
 			type: "array-data",

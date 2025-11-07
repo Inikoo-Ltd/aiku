@@ -9,6 +9,7 @@
 namespace App\Http\Resources\CRM;
 
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
+use App\Http\Resources\Catalogue\TagsResource;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\AddressResource;
 use App\Http\Resources\Helpers\TaxNumberResource;
@@ -116,7 +117,8 @@ class CustomerResource extends JsonResource
                 ],
                 'subscriptions' => $subscriptions
 
-            ]
+            ],
+            'tags' => TagsResource::collection($customer->tags)->toArray(request())
         ];
     }
 }

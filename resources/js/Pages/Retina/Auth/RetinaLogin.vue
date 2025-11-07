@@ -15,6 +15,7 @@ import axios from 'axios'
 import Modal from '@/Components/Utils/Modal.vue'
 import ButtonWithLink from '@/Components/Elements/Buttons/ButtonWithLink.vue'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
+import { getRefRedirect } from '@/Composables/Retina/useGetRedirectUrl'
 
 defineOptions({ layout: RetinaShowIris })
 
@@ -93,6 +94,9 @@ interface GoogleLoginResponse {
 const registerAccount = ref(null)
 const isOpenModalRegistration = ref(false)
 const isLoadingGoogle = ref(false)
+
+
+
 const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
     // Section: Submit
@@ -103,12 +107,8 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
 
     console.log('Google login response:', data.data)
     if(data.status === 200) {
-
-
         if (data.data.logged_in) {
-
-
-            router.get(route('retina.dashboard.show'))
+            window.location.href = await getRefRedirect()
         } else {
             isOpenModalRegistration.value = true
             registerAccount.value = data.data.google_user

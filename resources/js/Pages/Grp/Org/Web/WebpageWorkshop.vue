@@ -40,7 +40,7 @@ import {
   faExclamationTriangle, faBrowser, faDraftingCompass, faRectangleWide,
   faStars, faTimes, faBars, faExternalLink, faExpandWide, faCompressWide,
   faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower, faSkull,
-  faEye,
+  faEye, 
   faUndo,
   faRedo,
   faChevronRight
@@ -52,7 +52,7 @@ import { faChevronLeft } from "@far";
 library.add(
   faBrowser, faDraftingCompass, faRectangleWide, faTimes, faStars,
   faBars, faHome, faSignIn, faHammer, faCheckCircle, faBroadcastTower,
-  faSkull, faEye
+  faSkull, faEye,
 );
 
 const props = defineProps<{
@@ -229,7 +229,7 @@ const debounceSaveWorkshop = (block) => {
       // Reload the preview
       data.value.layout = response.data.data.layout;
       saveState()
-      sendToIframe({ key: "reload", value: {} });
+      /* sendToIframe({ key: "reload", value: {} }); */
     } catch (error) {
       if (axios.isCancel?.(error) || error?.code === "ERR_CANCELED") {
         console.log(error)
@@ -561,6 +561,7 @@ window.addEventListener('beforeunload', () => {
 
 
 onMounted(() => {
+  layout.leftSidebar.show = false
   const handleMessage = (event: MessageEvent) => {
     if (event.origin !== window.location.origin) return;
     const { key, value } = event.data;
@@ -649,7 +650,7 @@ const openWebsite = () => {
   </ConfirmDialog>
 
   <div class="flex">
-    <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[10]">
+    <div class="hidden lg:flex lg:flex-col border-2 bg-gray-200 pl-3 py-1 relative z-[20]">
       <!-- Sidebar Content -->
       <div v-show="!fullScreen">
         <WebpageSideEditor ref="_WebpageSideEditor" v-model="isModalBlockList" :webpage="data"

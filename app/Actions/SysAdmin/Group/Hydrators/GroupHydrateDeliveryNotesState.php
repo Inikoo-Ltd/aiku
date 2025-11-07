@@ -36,7 +36,7 @@ class GroupHydrateDeliveryNotesState implements ShouldBeUnique
         $stats = $this->getDeliveryStateNotesStats($state, $group);
         if ($state == DeliveryNoteStateEnum::DISPATCHED) {
             $stats2 = $this->getDispatchedDeliveryNotesStats($group);
-            $stats2 = array_merge($stats2,$this->getDispatchedReplacementsStats($group));
+            $stats2 = array_merge($stats2, $this->getDispatchedReplacementsStats($group));
             $group->orderingStats()->update($stats2);
         }
 

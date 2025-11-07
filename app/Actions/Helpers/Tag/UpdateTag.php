@@ -1,63 +1,127 @@
 <?php
-
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
- *
 */
 
 namespace App\Actions\Helpers\Tag;
 
 use App\Actions\Helpers\Media\SaveModelImage;
 use App\Actions\OrgAction;
+use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\SysAdmin\Organisation;
 use Illuminate\Support\Arr;
 use Illuminate\Validation\Rules\File;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateTag extends OrgAction
 {
+    public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request): Tag
+    {
+        $this->initialisationFromGroup($tradeUnit->group, $request);
+
+        return $this->handle($tag, $this->validatedData);
+    }
+
+    public function inCustomer(Customer $customer, Tag $tag, ActionRequest $request): Tag
+    {
+        $this->initialisation($customer->organisation, $request);
+
+        return $this->handle($tag, $this->validatedData);
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    public function asController(Organisation $organisation, Tag $tag, ActionRequest $request): Tag
+    {
+        $this->initialisation($organisation, $request);
+
+        $this->validateTagScopeUpdate($tag, $this->validatedData);
+
+        return $this->handle($tag, $this->validatedData);
+    }
+
+    public function htmlResponse(): void
+    {
+        request()->session()->flash('notification', [
+            'status'  => 'success',
+            'title'   => __('Success!'),
+            'description' => __('Tag successfully updated.'),
+        ]);
+    }
+
     public function handle(Tag $tag, array $modelData): Tag
     {
-        $image = Arr::pull($modelData, 'image', null);
+        $image = Arr::pull($modelData, 'image');
+
         if ($image) {
             $imageData = [
                 'path'         => $image->getPathName(),
                 'originalName' => $image->getClientOriginalName(),
                 'extension'    => $image->getClientOriginalExtension(),
             ];
-            $tag     = SaveModelImage::run(
+
+            $tag = SaveModelImage::run(
                 model: $tag,
                 imageData: $imageData,
                 scope: 'image',
             );
         }
+
         $tag->update($modelData);
+
         return $tag;
     }
 
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'image'                    => [
+            'name'  => ['sometimes', 'required', 'string', 'max:255', 'unique:tags,name,' . request()->route('tag')->id],
+            'scope' => [
                 'sometimes',
                 'nullable',
-                File::image()
-                    ->max(12 * 1024)
+                'string',
+                'in:' . implode(',', array_column(TagScopeEnum::cases(), 'value')),
+                function ($attribute, $value, $fail) {
+                    if ($value === TagScopeEnum::SYSTEM_CUSTOMER->value) {
+                        $fail(__("You can't create tag with system scope."));
+                    }
+                },
+            ],
+            'image' => [
+                'sometimes',
+                'nullable',
+                File::image()->max(12 * 1024),
             ],
         ];
     }
 
-    public function inTradeUnit(TradeUnit $tradeUnit, Tag $tag, ActionRequest $request)
+    /**
+     * @throws ValidationException
+     */
+    protected function validateTagScopeUpdate(Tag $tag, array $modelData): void
     {
-        $this->initialisationFromGroup($tradeUnit->group, $request);
+        if (! isset($modelData['scope'])) {
+            return;
+        }
 
-        $this->handle($tag, $this->validatedData);
+        $newScope = $modelData['scope'];
+
+        if ($newScope !== $tag->scope) {
+            $hasRelations = $tag->customers()->exists() || $tag->tradeUnits()->exists();
+
+            if ($hasRelations) {
+                throw ValidationException::withMessages([
+                    'scope' => __("You can't change the scope of a tag that is already linked to customers or trade units."),
+                ]);
+            }
+        }
     }
-
-
 }

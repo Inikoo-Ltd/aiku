@@ -15,9 +15,6 @@ use App\Actions\Goods\TradeUnitFamily\UI\CreateTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\EditTradeUnitFamily;
 use App\Actions\Goods\TradeUnitFamily\UI\IndexTradeUnitFamilies;
 use App\Actions\Goods\TradeUnitFamily\UI\ShowTradeUnitFamily;
-use App\Actions\Helpers\Tag\UI\CreateTag;
-use App\Actions\Helpers\Tag\UI\EditTag;
-use App\Actions\Helpers\Tag\UI\IndexTags;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/dashboard', ShowTradeUnitsDashboard::class)->name('dashboard');
@@ -31,12 +28,6 @@ Route::prefix('units')->as('units.')->group(function () {
     Route::prefix('{tradeUnit:slug}')->group(function () {
         Route::get('', ShowTradeUnit::class)->name('show');
         Route::get('edit', EditTradeUnit::class)->name('edit');
-
-        Route::name('tags.')->prefix('tags')->group(function () {
-            Route::get('/', [IndexTags::class, 'inTradeUnit'])->name('index');
-            Route::get('create', [CreateTag::class, 'inTradeUnit'])->name('create');
-            Route::get('/{tag}/edit', [EditTag::class, 'inTradeUnit'])->name('edit');
-        });
     });
 });
 

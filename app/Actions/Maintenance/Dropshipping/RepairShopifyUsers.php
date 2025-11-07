@@ -8,7 +8,7 @@
 
 namespace App\Actions\Maintenance\Dropshipping;
 
-use App\Actions\Dropshipping\CustomerSalesChannel\DeleteCustomerSalesChannel;
+use App\Actions\Dropshipping\CustomerSalesChannel\CloseCustomerSalesChannel;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
@@ -79,7 +79,7 @@ class RepairShopifyUsers
             $state .= " ($strippedName) ".$otherShopifyUsers ? ' 🐦‍🔥' : '';
 
             if ($shopifyUser->customerSalesChannel) {
-                //DeleteCustomerSalesChannel::run($shopifyUser->customerSalesChannel);
+                //CloseCustomerSalesChannel::run($shopifyUser->customerSalesChannel);
             }
         } else {
             $name = preg_replace('/\.myshopify\.com$/', '', $strippedName);

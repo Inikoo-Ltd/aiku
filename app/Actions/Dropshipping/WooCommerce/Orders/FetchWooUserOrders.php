@@ -14,18 +14,25 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use App\Models\Helpers\Country;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class FetchWooUserOrders extends OrgAction
+class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
 {
     use AsAction;
     use WithAttributes;
     use WithActionUpdate;
 
+    public string $jobQueue = 'woo';
+
+    public function getJobUniqueId(WooCommerceUser $wooCommerceUser): string
+    {
+        return $wooCommerceUser->id;
+    }
 
     public string $commandSignature = 'fetch:woo-user-orders {slug}';
 

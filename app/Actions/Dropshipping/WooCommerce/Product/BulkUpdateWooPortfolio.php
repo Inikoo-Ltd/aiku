@@ -22,7 +22,7 @@ class BulkUpdateWooPortfolio
 {
     use AsAction;
 
-    public string $commandSignature = 'inventory-woo:update {customerSalesChannel}';
+    public string $commandSignature = 'inventory-woo:bulk_update {customerSalesChannel}';
 
     public function asCommand(Command $command): void
     {
@@ -33,6 +33,7 @@ class BulkUpdateWooPortfolio
 
     public function handle(WooCommerceUser $wooCommerceUser, Collection $portfolios): void
     {
+
         try {
             $productData = [];
             $logs = [];

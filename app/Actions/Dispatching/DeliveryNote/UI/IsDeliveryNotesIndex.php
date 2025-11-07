@@ -204,7 +204,8 @@ trait IsDeliveryNotesIndex
             } elseif ($parent instanceof Shop) {
                 $count = $parent->orderingStats->number_delivery_notes;
             } elseif ($parent instanceof Order) {
-                $count = $parent->stats->number_delivery_notes;
+                $noResults = __("No delivery notes has been created for this order");
+                $count = $parent->stats->number_delivery_notes ?? 0;
             }
 
 

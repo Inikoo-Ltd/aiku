@@ -38,6 +38,7 @@ use App\Models\Fulfilment\StoredItem;
 use App\Models\Goods\Stock;
 use App\Models\Helpers\Address;
 use App\Models\Helpers\Media;
+use App\Models\Helpers\Tag;
 use App\Models\Helpers\TaxNumber;
 use App\Models\Helpers\UniversalSearch;
 use App\Models\Ordering\Order;
@@ -61,6 +62,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -69,6 +71,7 @@ use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
+use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
 
 /**
  * App\Models\CRM\Customer
@@ -148,6 +151,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Product> $exclusiveProducts
  * @property-read Collection<int, \App\Models\CRM\Favourite> $favourites
  * @property-read FulfilmentCustomer|null $fulfilmentCustomer
+ * @property-read bool $has_closed_channels
  * @property-read Group $group
  * @property-read Media|null $image
  * @property-read MediaCollection<int, Media> $images
@@ -171,6 +175,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Collection<int, Stock> $stocks
  * @property-read Collection<int, StoredItem> $storedItems
  * @property-read Collection<int, SubscriptionEvent> $subscriptionEvents
+ * @property-read Collection<int, Tag> $tags
  * @property-read TaxNumber|null $taxNumber
  * @property-read TiktokUser|null $tiktokUser
  * @property-read Collection<int, \Laravel\Sanctum\PersonalAccessToken> $tokens
@@ -271,6 +276,11 @@ class Customer extends Model implements HasMedia, Auditable
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function getHasClosedChannelsAttribute(): bool
+    {
+        return $this->customerSalesChannels()->where('status', CustomerSalesChannelStatusEnum::CLOSED)->exists();
     }
 
     protected static function booted(): void
@@ -499,5 +509,10 @@ class Customer extends Model implements HasMedia, Auditable
     public function trafficSource(): BelongsTo
     {
         return $this->belongsTo(TrafficSource::class, 'traffic_source_id');
+    }
+
+    public function tags(): MorphToMany
+    {
+        return $this->morphToMany(Tag::class, 'model', 'model_has_tags')->withTimestamps();
     }
 }

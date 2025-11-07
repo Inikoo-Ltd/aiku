@@ -115,7 +115,7 @@ class FetchAuroraOrders extends FetchAuroraAction
         OrderHydrateTransactions::run($order);
 
         if ($order->customer_client_id) {
-            CustomerClientHydrateBasket::run($order->customerClient);
+            CustomerClientHydrateBasket::run($order->customer_client_id);
         } else {
             CustomerHydrateBasket::run($order->customer);
         }
@@ -380,7 +380,6 @@ class FetchAuroraOrders extends FetchAuroraAction
             $query->whereNull('aiku_all_id');
         } elseif ($this->onlyCancelled) {
             $query->where('Order State', 'Cancelled');
-            ;
         }
 
         if ($this->fromDays) {

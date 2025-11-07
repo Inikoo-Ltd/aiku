@@ -9,8 +9,8 @@
 
 namespace App\Actions\Billables\Charge;
 
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomers;
-use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoices;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomersIntervals;
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
 use App\Actions\HydrateModel;
 use App\Actions\Traits\Hydrators\WithHydrateCommand;
 use App\Models\Billables\Charge;
@@ -28,8 +28,7 @@ class HydrateCharge extends HydrateModel
 
     public function handle(Charge $charge): void
     {
-        AssetHydrateInvoices::run($charge->asset);
-        AssetHydrateInvoicedCustomers::run($charge->asset);
-
+        AssetHydrateInvoiceIntervals::run($charge->asset->id);
+        AssetHydrateInvoicedCustomersIntervals::run($charge->asset->id);
     }
 }

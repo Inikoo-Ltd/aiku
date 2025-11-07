@@ -31,7 +31,9 @@ class RefundInProcessTransactionsResource extends JsonResource
         $refundNetAmount = abs(InvoiceTransaction::where('invoice_id', $this->refund_id)->where('original_invoice_transaction_id', $this->id)->sum('net_amount'));
 
         return [
+            'id'                             => $this->id,
             'code'                           => $this->code,
+            'slug'                           => $this->slug,
             'name'                           => $this->name,
             'quantity'                       => $this->quantity,
             'net_amount'                     => $this->net_amount,

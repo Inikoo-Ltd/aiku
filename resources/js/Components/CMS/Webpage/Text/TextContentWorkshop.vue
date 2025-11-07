@@ -9,7 +9,7 @@ const props = defineProps<{
     modelValue: any
     webpageData?: any
     blockData?: Object,
-    indexBlock: number
+    indexBlock?: number
     screenType: 'mobile' | 'tablet' | 'desktop'
 }>()
 
@@ -37,7 +37,5 @@ const layout: any = inject("layout", {})
                 parameters: { modelHasWebBlocks: blockData.id }
             }" />
         </div>
-
     </div>
-
 </template>

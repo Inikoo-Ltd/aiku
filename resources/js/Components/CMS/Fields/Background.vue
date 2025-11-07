@@ -30,7 +30,11 @@ const localModel = computed({
 
 <template>
     <div>
-        <BackgroundProperty :modelValue="localModel" :uploadImageRoute="uploadRoutes" @update:modelValue="(val)=>emits('update:modelValue',val)" />
+        <BackgroundProperty 
+            :modelValue="localModel" 
+            :uploadImageRoute="uploadRoutes"
+             @update:modelValue="(val)=>emits('update:modelValue',val)" 
+        />
     </div>
 </template>
 

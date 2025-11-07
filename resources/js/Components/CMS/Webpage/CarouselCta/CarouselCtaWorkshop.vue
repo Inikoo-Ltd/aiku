@@ -14,7 +14,7 @@ const props = defineProps<{
     webpageData?: any
     blockData?: Object
     screenType: 'mobile' | 'tablet' | 'desktop'
-    indexBlock: number
+    indexBlock?: number
 }>()
 
 const emits = defineEmits<{
@@ -54,22 +54,27 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                     <div :style="{
                         ...getStyles(data.container?.properties, screenType),
                     }">
-                        <div class="grid grid-cols-1 md:grid-cols-2 w-full min-h-[250px] md:min-h-[400px]">
+                        <div class="grid grid-cols-1 md:grid-cols-2 w-full">
 
-                            <div class="relative w-full h-[250px] md:h-full cursor-pointer overflow-hidden" @click.stop="
+                            <div class="relative w-full cursor-pointer overflow-hidden h-[250px] md:h-[400px]"
+                            :style="getStyles(modelValue?.image?.container?.properties, screenType)"
+                             @click.stop="
                                 () => {
                                     sendMessageToParent('activeBlock', indexBlock)
                                     sendMessageToParent('activeChildBlock', bKeys[1])
                                     sendMessageToParent('activeChildBlockArray', index)
                                     sendMessageToParent('activeChildBlockArrayBlock', baKeys[0])
                                 }
-                            " @dblclick.stop="() => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })"
-                                :style="getStyles(data?.image?.container?.properties, screenType)">
+                            " 
+                            @dblclick.stop="
+                                () => sendMessageToParent('uploadImage', { ...imageSettings, key: ['carousel_data', 'cards', index, 'image', 'source'] })
+                            "
+                                >
                                 <Image :src="data.image.source" :imageCover="true"
                                     :alt="data.image.alt || 'Image preview'"
                                     class="absolute inset-0 w-full h-full object-cover"
                                     :imgAttributes="data.image.attributes"
-                                    :style="getStyles(data.image.properties, screenType)" />
+                                    />
                             </div>
 
                             <div class="flex flex-col justify-center m-auto p-4"
@@ -81,15 +86,20 @@ const baKeys = CardBlueprint?.blueprint?.map((b) => b?.key?.join("-")) || []
                                         sendMessageToParent('activeChildBlockArray', index)
                                     }
                                 ">
-                                    <EditorV2 v-if="data?.text" v-model="data.text"
+                                    <EditorV2 
+                                        v-if="data?.text" 
+                                        v-model="data.text"
                                         @focus="() => sendMessageToParent('activeChildBlock', bKeys[1])"
-                                        @update:data="() => emits('autoSave')" class="mb-6" :uploadImageRoute="{
+                                        @update:modelValue="(e) => { data.text = e, emits('autoSave')}" 
+                                        class="mb-6" 
+                                        :uploadImageRoute="{
                                             name: webpageData.images_upload_route.name,
                                             parameters: {
                                                 ...webpageData.images_upload_route.parameters,
                                                 modelHasWebBlocks: blockData?.id,
                                             },
-                                        }" />
+                                        }" 
+                                    />
 
                                     <div class="flex justify-center">
                                         <Button

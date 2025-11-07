@@ -34,9 +34,9 @@ class PayOrderWithMitCard
     use WithCheckoutCom;
     use CalculatesPaymentWithBalance;
 
+
     /**
      * @throws \Checkout\CheckoutArgumentException
-     * @throws \Laravel\Octane\Exceptions\DdException
      */
     public function handle(Order $order, MitSavedCard $mitSavedCard): array
     {
@@ -145,9 +145,9 @@ class PayOrderWithMitCard
 
     public string $commandSignature = 'test_pay';
 
+
     /**
      * @throws \Checkout\CheckoutArgumentException
-     * @throws \Laravel\Octane\Exceptions\DdException
      */
     public function asCommand(): int
     {

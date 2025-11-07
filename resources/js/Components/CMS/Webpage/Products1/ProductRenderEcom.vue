@@ -40,7 +40,7 @@ const props = withDefaults(defineProps<{
     detachBackInStockRoute?: routeType
     addToBasketRoute?: routeType
     updateBasketQuantityRoute?: routeType
-    bestSeller:any
+    bestSeller?:any
 
 }>(), {
     basketButton: true,

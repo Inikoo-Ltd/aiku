@@ -186,7 +186,7 @@ class ShowMasterFamily extends GrpAction
                             'type'    => 'button',
                             'style'   => 'create',
                             'tooltip' => __('Add a master product to this family'),
-                            'label'   => __('master product'),
+                            'label'   => __('Master Product'),
                         ],
                     ],
                     'subNavigation' => $this->getMasterFamilySubNavigation($masterFamily)

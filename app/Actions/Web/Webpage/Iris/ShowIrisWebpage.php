@@ -145,15 +145,16 @@ class ShowIrisWebpage
     public function getEnvironmentUrl($url)
     {
         $environment = app()->environment();
+        $website = request()->website ?? null;
 
+        if ($environment === 'local') {
+            $shopType = $website?->shop?->type ?? null;
 
-        if ($environment == 'local') {
-            $localDomain = match (request()->website->shop->type) {
+            $localDomain = match ($shopType) {
                 ShopTypeEnum::FULFILMENT => 'fulfilment.test',
                 ShopTypeEnum::DROPSHIPPING => 'ds.test',
-                default => 'ecom.test'
+                default => 'ecom.test',
             };
-
 
             return replaceUrlSubdomain(replaceUrlDomain($url, $localDomain), '');
         } elseif ($environment == 'staging') {
@@ -202,7 +203,7 @@ class ShowIrisWebpage
             $queryString     = http_build_query($queryParameters);
 
             if ($queryString) {
-                $webpageData = $webpageData.'?'.$queryString;
+                $webpageData = $webpageData . '?' . $queryString;
             }
 
             return redirect()->to($webpageData, 301)
@@ -304,5 +305,4 @@ class ShowIrisWebpage
 
         return $breadcrumbs;
     }
-
 }

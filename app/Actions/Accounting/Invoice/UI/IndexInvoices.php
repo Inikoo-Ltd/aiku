@@ -200,7 +200,7 @@ class IndexInvoices extends OrgAction
             if ($parent instanceof Organisation) {
                 $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
                 $table->column(key: 'customer_company', label: __('Company'), canBeHidden: false, sortable: true, searchable: true);
-            } elseif ($parent instanceof InvoiceCategory || $parent instanceof Shop) {
+            } elseif ($parent instanceof InvoiceCategory || $parent instanceof Shop || $parent instanceof Fulfilment) {
                 $table->column(key: 'customer_name', label: __('Customer'), canBeHidden: false, sortable: true, searchable: true);
             }
 

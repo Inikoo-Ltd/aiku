@@ -12,7 +12,6 @@ use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\Discounts\OfferAllowance;
-use App\Rules\IUnique;
 use Lorisleiva\Actions\ActionRequest;
 
 class UpdateOfferAllowance extends OrgAction
@@ -40,27 +39,6 @@ class UpdateOfferAllowance extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'code' => [
-                'sometimes',
-                new IUnique(
-                    table: 'offer_allowances',
-                    extraConditions: [
-                        [
-                            'column' => 'shop_id',
-                            'value'  => $this->shop->id,
-                        ],
-                        [
-                            'column'   => 'id',
-                            'operator' => '!=',
-                            'value'    => $this->offerAllowance->id
-                        ]
-                    ]
-                ),
-                'start_at' => ['sometimes', 'date'],
-                'end_at'   => ['sometimes', 'nullable', 'date'],
-                'max:64',
-                'alpha_dash'
-            ],
             'data' => ['sometimes', 'required']
         ];
 

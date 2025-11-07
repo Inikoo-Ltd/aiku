@@ -46,6 +46,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $public_notes
  * @property mixed $shipping_notes
  * @property mixed $to_be_paid_by
+ * @property mixed $has_insurance
+ * @property mixed $tracking
+ * @property mixed $tracking_urls
+ * @property mixed $combined_label_url
  *
  */
 class OrdersResource extends JsonResource

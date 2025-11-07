@@ -62,6 +62,10 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property array<array-key, mixed>|null $platform_possible_matches
  * @property string|null $platform_product_variant_id
  * @property int $number_platform_possible_matches
+ * @property bool $mark_for_update_stock
+ * @property \Illuminate\Support\Carbon|null $stock_last_updated_at
+ * @property string|null $stock_last_fail_updated_at
+ * @property int|null $last_stock_value
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read Customer $customer
@@ -93,6 +97,7 @@ class Portfolio extends Model implements Auditable
         'status'                          => 'boolean',
         'added_at'                        => 'datetime',
         'removed_at'                      => 'datetime',
+        'stock_last_updated_at'           => 'datetime',
         'platform_possible_matches'       => 'array',
     ];
 

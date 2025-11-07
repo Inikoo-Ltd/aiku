@@ -11,6 +11,7 @@
 namespace App\Models\Helpers;
 
 use App\Enums\Helpers\Tag\TagScopeEnum;
+use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Traits\HasImage;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +33,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int|null $image_id
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Customer> $customers
  * @property-read \App\Models\Helpers\Media|null $image
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
@@ -73,5 +75,10 @@ class Tag extends Model implements HasMedia
     public function tradeUnits(): MorphToMany
     {
         return $this->morphedByMany(TradeUnit::class, 'model', 'model_has_tags');
+    }
+
+    public function customers(): MorphToMany
+    {
+        return $this->morphedByMany(Customer::class, 'model', 'model_has_tags');
     }
 }

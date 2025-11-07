@@ -4,7 +4,6 @@ namespace App\Http\Resources\CRM;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-
 /**
  * @property mixed $reference
  * @property mixed $customer_name

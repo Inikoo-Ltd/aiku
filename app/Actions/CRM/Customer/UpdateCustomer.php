@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Shop\Hydrators\ShopHydrateCustomers;
 use App\Actions\CRM\Customer\Search\CustomerRecordSearch;
 use App\Actions\CRM\CustomerComms\UpdateCustomerComms;
 use App\Actions\Helpers\Address\UpdateAddress;
+use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Helpers\TaxNumber\DeleteTaxNumber;
 use App\Actions\Helpers\TaxNumber\StoreTaxNumber;
 use App\Actions\Helpers\TaxNumber\UpdateTaxNumber;
@@ -53,6 +54,7 @@ class UpdateCustomer extends OrgAction
     {
         if (Arr::has($modelData, 'contact_address')) {
             $contactAddressData = Arr::get($modelData, 'contact_address');
+
             Arr::forget($modelData, 'contact_address');
 
 
@@ -135,6 +137,12 @@ class UpdateCustomer extends OrgAction
 
         if (Arr::has($modelData, 'contact_name')) {
             data_set($modelData, 'contact_name_components', $this->processContactNameComponents(Arr::get($modelData, 'contact_name')));
+        }
+
+        if (Arr::has($modelData, 'tags')) {
+            AttachTagsToModel::make()->action($customer, [
+                'tags_id' => Arr::pull($modelData, 'tags')
+            ]);
         }
 
         $emailSubscriptionsData = Arr::pull($modelData, 'email_subscriptions', []);
@@ -233,7 +241,7 @@ class UpdateCustomer extends OrgAction
             'warehouse_internal_notes' => ['sometimes', 'nullable', 'string'],
             'warehouse_public_notes'   => ['sometimes', 'nullable', 'string'],
             'tax_number'               => ['sometimes', 'nullable', 'array'],
-
+            'tags'                     => ['sometimes', 'array'],
             'email_subscriptions'                                   => ['sometimes', 'array'],
             'email_subscriptions.is_subscribed_to_newsletter'       => ['sometimes', 'boolean'],
             'email_subscriptions.is_subscribed_to_marketing'        => ['sometimes', 'boolean'],

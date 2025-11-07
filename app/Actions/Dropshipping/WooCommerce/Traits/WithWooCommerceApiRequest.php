@@ -47,6 +47,15 @@ trait WithWooCommerceApiRequest
      */
     protected int $cacheDuration = 60;
 
+
+    public int $timeOut = 30;
+
+
+    public function setTimeout(int $timeOut): void
+    {
+        $this->timeOut = $timeOut;
+    }
+
     /**
      * Initialize the WooCommerce API credentials
      *
@@ -98,12 +107,12 @@ trait WithWooCommerceApiRequest
         }
 
         try {
-            $response = Http::timeout(30)
+            $response = Http::timeout($this->timeOut)
                 ->withHeaders([
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json'
                 ])
-                ->connectTimeout(30)
+                ->connectTimeout($this->timeOut)
                 ->withBasicAuth(
                     $this->woocommerceConsumerKey,
                     $this->woocommerceConsumerSecret
@@ -148,7 +157,9 @@ trait WithWooCommerceApiRequest
 
             // Sentry::captureMessage($e->getMessage());
 
-            return [];
+            return [
+                ['message' => 'WooCommerce API Connection Error: ' . $e->getMessage()],
+            ];
         }
     }
 
@@ -535,7 +546,7 @@ trait WithWooCommerceApiRequest
         return $this->makeWooCommerceRequest('GET', 'webhooks');
     }
 
-    public function checkConnection(): array
+    public function checkConnection(): array|null
     {
         try {
             if (!$this->woocommerceApiUrl || !$this->woocommerceConsumerKey || !$this->woocommerceConsumerSecret) {

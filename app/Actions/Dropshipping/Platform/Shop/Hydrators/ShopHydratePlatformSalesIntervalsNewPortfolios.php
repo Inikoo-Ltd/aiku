@@ -5,7 +5,6 @@ namespace App\Actions\Dropshipping\Platform\Shop\Hydrators;
 use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
 use App\Actions\Traits\WithIntervalsAggregators;
 use App\Enums\Catalogue\Shop\ShopTypeEnum;
-use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
 use App\Models\Dropshipping\Platform;
 use App\Models\Dropshipping\PlatformShopSalesIntervals;
@@ -32,11 +31,9 @@ class ShopHydratePlatformSalesIntervalsNewPortfolios implements ShouldBeUnique
             return;
         }
 
-        $queryBase = Portfolio::where('item_type', class_basename(Product::class))
-            ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
-            ->where('platform_id', $platformId)
-            ->where('products.shop_id', $shop->id)
-            ->selectRaw('count(distinct portfolios.item_id) as sum_aggregate');
+        $queryBase = Portfolio::where('platform_id', $platformId)
+            ->where('shop_id', $shop->id)
+            ->selectRaw('count(*) as sum_aggregate');
 
         $stats = $this->getIntervalsData(
             stats: [],

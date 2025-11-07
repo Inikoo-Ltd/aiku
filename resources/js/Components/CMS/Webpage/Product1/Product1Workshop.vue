@@ -28,7 +28,7 @@ const props = withDefaults(defineProps<{
   webpageData?: any
   blockData?: object
   templateEdit?: TemplateType
-  indexBlock : number
+  indexBlock? : number
   screenType: "mobile" | "tablet" | "desktop"
   currency: {
     code: string

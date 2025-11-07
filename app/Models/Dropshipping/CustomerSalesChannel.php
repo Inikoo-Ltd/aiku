@@ -71,6 +71,7 @@ use Illuminate\Auth\Authenticatable as AuthenticatableTrait;
  * @property bool $platform_status
  * @property int $number_portfolio_broken
  * @property int $ping_error_count
+ * @property \Illuminate\Support\Carbon|null $ban_stock_update_util
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Dropshipping\CustomerClient> $clients
  * @property-read Customer|null $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, PalletReturn> $fulfilmentOrders
@@ -103,18 +104,19 @@ class CustomerSalesChannel extends Model implements Authenticatable
     protected $guarded = [];
 
     protected $casts = [
-        'data'              => 'array',
-        'status'            => CustomerSalesChannelStatusEnum::class,
-        'state'             => CustomerSalesChannelStateEnum::class,
-        'connection_status' => CustomerSalesChannelConnectionStatusEnum::class,
-        'closed_at'         => 'datetime'
+        'data'                  => 'array',
+        'status'                => CustomerSalesChannelStatusEnum::class,
+        'state'                 => CustomerSalesChannelStateEnum::class,
+        'connection_status'     => CustomerSalesChannelConnectionStatusEnum::class,
+        'closed_at'             => 'datetime',
+        'ban_stock_update_util' => 'datetime',
     ];
 
     public function getSlugOptions(): SlugOptions
     {
         return SlugOptions::create()
             ->generateSlugsFrom(function () {
-                return Abbreviate::run($this->platform->type->value) . '-' . $this->reference;
+                return Abbreviate::run($this->platform->type->value).'-'.$this->reference;
             })
             ->saveSlugsTo('slug')
             ->slugsShouldBeNoLongerThan(128)

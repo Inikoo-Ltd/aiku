@@ -14,12 +14,9 @@ use App\Enums\Ordering\PlatformLogs\PlatformPortfolioLogsTypeEnum;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\PlatformPortfolioLogs;
 use Illuminate\Support\Arr;
-use Lorisleiva\Actions\ActionRequest;
 
 class StorePlatformPortfolioLog extends OrgAction
 {
-    private Portfolio $portfolio;
-
     public function handle(Portfolio $portfolio, array $modelData): PlatformPortfolioLogs
     {
         data_set($modelData, 'group_id', $portfolio->group_id);
@@ -42,41 +39,4 @@ class StorePlatformPortfolioLog extends OrgAction
         return PlatformPortfolioLogs::create($modelData);
     }
 
-    public function authorize(ActionRequest $request): bool
-    {
-        if ($this->asAction) {
-            return true;
-        }
-
-        return $request->user()->authTo("crm.{$this->shop->id}.edit");
-    }
-
-    public function rules(): array
-    {
-        return [
-            'type'     => ['sometimes', 'string'],
-            'status'   => ['sometimes', 'string'],
-            'response' => ['sometimes', 'nullable'],
-        ];
-    }
-
-    public function asController(Portfolio $portfolio, ActionRequest $request): PlatformPortfolioLogs
-    {
-        $this->initialisationFromShop($portfolio->shop, $request);
-
-        return $this->handle($portfolio, $this->validatedData);
-    }
-
-    public function action(Portfolio $portfolio, array $modelData, bool $strict = true, bool $audit = true): PlatformPortfolioLogs
-    {
-        $this->strict = $strict;
-        if (!$audit) {
-            PlatformPortfolioLogs::disableAuditing();
-        }
-        $this->asAction  = true;
-        $this->portfolio = $portfolio;
-        $this->initialisationFromShop($portfolio->shop, $modelData);
-
-        return $this->handle($portfolio, $this->validatedData);
-    }
 }

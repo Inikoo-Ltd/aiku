@@ -101,17 +101,17 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'FetchDispatchedEmails',
             );
 
-        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(11, 23)->timezone('UTC')->withoutOverlapping()
+        $schedule->command('fetch:email_tracking_events -N -D 2')->twiceDaily(4, 17)->timezone('UTC')->withoutOverlapping()
             ->sentryMonitor(
                 monitorSlug: 'FetchEmailTrackingEvents',
             );
 
 
-        $schedule->command('fetch:ebay-orders')->everyFiveMinutes()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('fetch:ebay-orders')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchEbayOrders',
         );
 
-        $schedule->command('fetch:woo-orders')->everyThirtyMinutes()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('fetch:woo-orders')->everyTwoHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'FetchWooOrders',
         );
 
@@ -127,11 +127,13 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'CheckAllEbayChannels',
         );
 
-        $schedule->command('woo:update-inventory')->everyTenMinutes()->withoutOverlapping()->sentryMonitor(
-            monitorSlug: 'UpdateWooStockInventories',
-        );
+        $schedule->command('woo:update-inventory')
+            ->hourly()
+            ->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'UpdateWooStockInventories',
+            );
 
-        $schedule->command('shopify:update-inventory')->hourly()->withoutOverlapping()->sentryMonitor(
+        $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateInventoryInShopifyPortfolio',
         );
 
@@ -159,7 +161,6 @@ class Kernel extends ConsoleKernel
         $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'ConsolidateRecurringBills',
         );
-
     }
 
 

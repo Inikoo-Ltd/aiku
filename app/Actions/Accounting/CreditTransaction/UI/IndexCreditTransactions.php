@@ -29,7 +29,8 @@ class IndexCreditTransactions extends OrgAction
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
-                $query->whereStartWith('credit_transactions.amount', $value)
+                // Cast credit_transactions.amount as char so it is searchable using ILIKE function on PSQL
+                $query->whereRaw("credit_transactions.amount::text ILIKE ?", ["%{$value}%"])
                     ->orWhereAnyWordStartWith('credit_transactions.type', $value);
             });
         });
@@ -46,6 +47,13 @@ class IndexCreditTransactions extends OrgAction
 
         $query->leftJoin('payments', 'credit_transactions.payment_id', '=', 'payments.id');
         $query->leftJoin('currencies', 'credit_transactions.currency_id', '=', 'currencies.id');
+        $query->leftJoin('model_has_payments', function ($join) {
+            $join->on('model_has_payments.payment_id', '=', 'payments.id')
+                ->where('model_has_payments.model_type', '=', 'Order');
+        });
+        $query->leftJoin('orders', function ($join) {
+            $join->on('model_has_payments.model_id', '=', 'orders.id');
+        });
 
         return $query->defaultSort('credit_transactions.id')
             ->select([
@@ -58,6 +66,8 @@ class IndexCreditTransactions extends OrgAction
                 'payments.id as payment_id',
                 'payments.type as payment_type',
                 'currencies.code as currency_code',
+                'orders.slug as order_slug',
+                'orders.reference as order_reference',
             ])
             ->allowedSorts(['amount', 'running_amount', 'type', 'created_at','payment_reference'])
             ->allowedFilters([$globalSearch])
@@ -92,10 +102,10 @@ class IndexCreditTransactions extends OrgAction
                     ]
                 );
 
-
             $table->column(key: 'created_at', label: __('Date'), canBeHidden: false, sortable: true, searchable: true, type: 'date_hm');
             $table->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'payment_reference', label: __('Payment'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'order_reference', label: __('Order'), canBeHidden: false, sortable: true, searchable: true);
             $table->column(key: 'amount', label: __('amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             $table->column(key: 'running_amount', label: __('running amount'), canBeHidden: false, sortable: true, searchable: true, type: 'currency');
             $table->column(key: 'actions', label: __('Actions'));

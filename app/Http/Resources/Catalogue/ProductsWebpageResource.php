@@ -10,6 +10,7 @@ namespace App\Http\Resources\Catalogue;
 
 use App\Http\Resources\HasSelfCall;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Traits\HasPriceMetrics;
 
 /**
  * @property mixed $slug
@@ -31,6 +32,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class ProductsWebpageResource extends JsonResource
 {
     use HasSelfCall;
+    use HasPriceMetrics;
 
     public function toArray($request): array
     {
@@ -40,6 +42,9 @@ class ProductsWebpageResource extends JsonResource
         } else {
             $webImages = $this->web_images;
         }
+
+
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
         return [
             'id'          => $this->id,
@@ -58,7 +63,12 @@ class ProductsWebpageResource extends JsonResource
             'status'      => $this->status,
             'rrp'         => $this->rrp,
             'web_images'  => $webImages,
-            'url'         => $this->webpage?->url
+            'url'         => $this->webpage?->url,
+            'margin'         => $margin,
+            'profit'         => $profit,
+            'profit_per_unit' => $profitPerUnit,
+            'rrp_per_unit'   => $rrpPerUnit,
+            'units'          => $units,
         ];
     }
 }

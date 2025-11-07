@@ -3,6 +3,7 @@ import { ref } from "vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { routeType } from "@/types/route"
 import Select from "primevue/select"
+import Button from "../Elements/Buttons/Button.vue"
 import { router } from '@inertiajs/vue3'
 
 // Mengontrol status modal
@@ -129,12 +130,13 @@ const onSubmit = () => {
 						class="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
 						Cancel
 					</button>
-					<button
+					<Button
 						type="button"
 						@click="onSubmit"
+						:disabled=" !amount || amount <= 0 || !increaseBalance"
 						class="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
 						Save
-					</button>
+					</Button>
 				</div>
 			</template>
 
@@ -182,12 +184,13 @@ const onSubmit = () => {
 						class="px-6 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition">
 						Cancel
 					</button>
-					<button
+					<Button
 						type="button"
 						@click="onSubmit"
+						:disabled=" !amount || amount <= 0 || !decreaseBalance"
 						class="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700 transition">
 						Save
-					</button>
+					</Button>
 				</div>
 			</template>
 
