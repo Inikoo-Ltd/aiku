@@ -346,7 +346,7 @@ function onDeleteFilesInList(categoryBox: any) {
 
                         <!-- Drag overlay -->
                         <div v-show="activeCategory === categoryBox.column_in_db && editable"
-                            class="absolute inset-0 bg-blue-200 bg-opacity-30 border-2 border-dashed border-blue-500 rounded-md pointer-events-none">
+                            class="absolute inset-0 bg-blue-200/30 border-2 border-dashed border-blue-500 rounded-md pointer-events-none">
                         </div>
                     </div>
 

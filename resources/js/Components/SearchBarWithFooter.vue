@@ -62,7 +62,7 @@ function onSelect(item) {
     <TransitionRoot :show="open" as="template" @after-leave="rawQuery = ''" appear>
         <Dialog as="div" class="relative z-10" @close="open = false">
             <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0" enter-to="opacity-100" leave="ease-in duration-200" leave-from="opacity-100" leave-to="opacity-0">
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-25 transition-opacity" />
+                <div class="fixed inset-0 bg-gray-500/25 transition-opacity" />
             </TransitionChild>
 
             <div class="fixed inset-0 z-10 overflow-y-auto p-4 sm:p-6 md:p-20">

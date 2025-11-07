@@ -553,7 +553,7 @@ const routeOrder = (order) => {
 
 	<!-- Account Information Modal -->
 	<div v-if="isAccountModalVisible"
-		class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50" :style="dynamicStyles">
+		class="fixed inset-0 bg-gray-600/50 flex items-center justify-center z-50" :style="dynamicStyles">
 		<div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
 			<!-- Modal Header -->
 			<div class="flex items-center justify-between p-6 border-b">

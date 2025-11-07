@@ -37,7 +37,7 @@ const layout: any = inject("layout", {})
 
 			<!-- Section 2: Content -->
 			<div 
-				class="flex items-center justify-center w-full md:w-2/3 lg:w-1/2 bg-white bg-opacity-90 backdrop-blur px-6 py-12 sm:px-12 lg:px-20">
+				class="flex items-center justify-center w-full md:w-2/3 lg:w-1/2 bg-white/90 backdrop-blur px-6 py-12 sm:px-12 lg:px-20">
 				<div v-html='fieldValue.text' />
 			</div>
 		</div>

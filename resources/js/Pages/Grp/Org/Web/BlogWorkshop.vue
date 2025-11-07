@@ -335,7 +335,7 @@ watch(currentView, (newVal) => {
 :deep(.loading-overlay) {
   position: absolute;
   inset: 0;
-  @apply flex items-center justify-center bg-white bg-opacity-80 z-[999];
+  @apply flex items-center justify-center bg-white/80 z-[999];
 }
 
 :deep(.spinner) {

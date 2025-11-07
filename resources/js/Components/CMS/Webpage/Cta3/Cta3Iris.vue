@@ -37,7 +37,7 @@ const layout: any = inject("layout", {})
 
 			<!-- Text + button overlay -->
 			<div :style="getStyles(fieldValue.container.properties?.block, screenType)"
-				class="relative z-10 w-full bg-white bg-opacity-80 p-6 backdrop-blur-sm sm:flex sm:flex-col sm:items-start lg:w-96 rounded-lg shadow-md">
+				class="relative z-10 w-full bg-white/80 p-6 backdrop-blur-sm sm:flex sm:flex-col sm:items-start lg:w-96 rounded-lg shadow-md">
 				<div class="text-center lg:text-left text-gray-700 pr-3 mb-4 w-full">
 					<div v-html="fieldValue.text" />
 				</div>

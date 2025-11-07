@@ -90,7 +90,7 @@ const onSubmitLayout = (layoutType: string) => {
               </div>
             </div>
           </div>
-          <div class="absolute inset-0 flex items-center justify-center bg-opacity-50 bg-black text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+          <div class="absolute inset-0 flex items-center justify-center bg-black/50 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
             <Button label="Select" @click="() => onSubmitLayout(layout.layout_type)"
               class="transition-colors bg-blue-500 hover:bg-blue-600" />
           </div>
