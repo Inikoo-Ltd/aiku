@@ -149,7 +149,7 @@ const closePopover = (close: any): void => {
     <div v-if="layout?.iris?.is_logged_in" class="p-1 px-0 mb-3 flex flex-col gap-1 text-gray-800 tabular-nums">
         <div v-if="fieldValue.product.units === 1" class="flex justify-between">
             <div>
-                {{ trans("Wholesale Price") }}:
+                {{ trans("Price") }}:
                 <span class="font-semibold text-green-600 text-xl">
                     {{ locale.currencyFormat(currency?.code, fieldValue.product.price) }}
                     <span class="text-xs text-gray-600"> / {{ fieldValue.product.unit }}</span>
