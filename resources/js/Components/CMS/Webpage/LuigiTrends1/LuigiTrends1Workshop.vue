@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
-import { sendMessageToParent } from "@/Composables/Workshop"
-
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 23-05-2025, Bali, Indonesia
@@ -45,7 +46,7 @@ class StoreTag extends OrgAction
         return $this->handle($organisation, $this->validatedData);
     }
 
-    public function htmlResponse(Tag $tag=null): RedirectResponse|null
+    public function htmlResponse(Tag $tag = null): RedirectResponse|null
     {
         if (!$tag) {
             return null;

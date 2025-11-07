@@ -35,15 +35,15 @@ class WebBlockProductResource extends JsonResource
 
 
         $tradeUnits = $product->tradeUnits;
-        $ingredients=[];
-        $marketingWeights=[];
-        if($tradeUnits){
+        $ingredients = [];
+        $marketingWeights = [];
+        if ($tradeUnits) {
             $tradeUnits->loadMissing(['ingredients']);
             $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
                 return $tradeUnit->ingredients->pluck('name');
             })->unique()->values()->all();
 
-            $marketingWeights=$tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all();
+            $marketingWeights = $tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all();
 
         }
 

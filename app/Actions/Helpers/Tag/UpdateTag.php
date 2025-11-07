@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
@@ -44,7 +45,7 @@ class UpdateTag extends OrgAction
         return $this->handle($tag, $this->validatedData);
     }
 
-    public function htmlResponse(Tag $tag=null): RedirectResponse|null
+    public function htmlResponse(Tag $tag = null): RedirectResponse|null
     {
         if (!$tag) {
             return null;

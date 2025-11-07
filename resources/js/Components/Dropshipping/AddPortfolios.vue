@@ -1,32 +1,31 @@
 <script setup lang="ts">
-import { trans } from 'laravel-vue-i18n'
-import Button from '../Elements/Buttons/Button.vue'
-import { notify } from '@kyvg/vue3-notification'
-import { router } from '@inertiajs/vue3'
-import { onMounted, ref, watch } from 'vue'
-import { routeType } from '@/types/route'
-// import axios from 'axios'
-import ProductsSelector from './ProductsSelector.vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { trans } from "laravel-vue-i18n"
+import Button from "../Elements/Buttons/Button.vue"
+import { notify } from "@kyvg/vue3-notification"
+import { router } from "@inertiajs/vue3"
+import { ref } from "vue"
+import { routeType } from "@/types/route"
+import ProductsSelector from "./ProductsSelector.vue"
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const props = defineProps<{
     step: {
         current: number
     }
     routes: {
-		syncAllRoute: routeType
-		addPortfolioRoute: routeType
-		bulk_upload: routeType
-		itemRoute: routeType
-		updatePortfolioRoute: routeType
-		batchDeletePortfolioRoute: routeType
-	}
+        syncAllRoute: routeType
+        addPortfolioRoute: routeType
+        bulk_upload: routeType
+        itemRoute: routeType
+        updatePortfolioRoute: routeType
+        batchDeletePortfolioRoute: routeType
+    }
     platform_data: {
-		id: number
-		code: string
-		name: string
-		type: string
-	}
+        id: number
+        code: string
+        name: string
+        type: string
+    }
     platform_user_id: number
 }>()
 
@@ -49,7 +48,7 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
             })
         },
         onSuccess: () => {
-            router.reload({only: ['pageHead', 'products']})
+            router.reload({ only: ["pageHead", "products"] })
             notify({
                 title: trans("Success!"),
                 text: trans("Successfully added portfolios"),
@@ -66,20 +65,20 @@ const onSubmitAddPortfolios = async (idProduct: number[]) => {
 const filterList = [
     {
         label: trans("Product"),
-        value: "product",
+        value: "product"
     },
-	{
-		label: trans("Department"),
-		value: "department",
-	},
-	{
-		label: trans("Sub-department"),
-		value: "sub_department",
-	},
-	{
-		label: trans("Family"),
-		value: "family",
-	}
+    {
+        label: trans("Department"),
+        value: "department"
+    },
+    {
+        label: trans("Sub-department"),
+        value: "sub_department"
+    },
+    {
+        label: trans("Family"),
+        value: "family"
+    }
 ]
 const selectedList = ref(filterList[0])
 
@@ -119,7 +118,7 @@ const selectedList = ref(filterList[0])
             <div class="relative">
             </div>
             <div class="col-span-2 mx-auto text-center text-2xl font-semibold pb-4">
-                {{ trans('Add products to your product') }}
+                {{ trans("Add products to your product") }}
                 <FontAwesomeIcon v-tooltip="trans(`Will added to My Products section`)" icon="fal fa-info-circle" class="text-lg text-gray-400 hover:text-gray-600" fixed-width aria-hidden="true" />
             </div>
         </div>
@@ -149,11 +148,11 @@ const selectedList = ref(filterList[0])
                 <template #afterInput>
                     <div class="flex gap-2 text-sm font-semibold text-gray-500 mt-2 max-w-sm">
                         <div v-for="list in filterList"
-                            @click="selectedList = list"
-                            class="whitespace-nowrap py-2 px-3 cursor-pointer rounded border "
-                            :class="selectedList.value === list.value ? 'bg-gray-700 text-white border-gray-400' : 'border-gray-300 hover:bg-gray-200'"
+                             @click="selectedList = list"
+                             class="whitespace-nowrap py-2 px-3 cursor-pointer rounded border "
+                             :class="selectedList.value === list.value ? 'bg-gray-700 text-white border-gray-400' : 'border-gray-300 hover:bg-gray-200'"
                         >
-                            {{ list.label}}
+                            {{ list.label }}
                         </div>
                     </div>
                 </template>

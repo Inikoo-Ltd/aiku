@@ -35,7 +35,7 @@ class AttachTagsToModel extends OrgAction
     {
         $this->parent = $customer;
 
-        $this->initialisation($customer->organisation,  $request);
+        $this->initialisation($customer->organisation, $request);
 
         $this->handle($customer, $this->validatedData, true);
     }
