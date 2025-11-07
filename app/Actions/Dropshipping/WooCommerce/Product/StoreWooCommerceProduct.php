@@ -34,6 +34,10 @@ class StoreWooCommerceProduct extends RetinaAction
      */
     public function handle(WooCommerceUser $wooCommerceUser, Portfolio $portfolio)
     {
+        if ($wooCommerceUser->customerSalesChannel->ban_stock_update_util && $wooCommerceUser->customerSalesChannel->ban_stock_update_util->gt(now())) {
+            return null;
+        }
+
         $logs = StorePlatformPortfolioLog::run($portfolio, [
             'type' => PlatformPortfolioLogsTypeEnum::UPLOAD
         ]);
@@ -92,6 +96,10 @@ class StoreWooCommerceProduct extends RetinaAction
                 UpdatePlatformPortfolioLog::run($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
+            } else {
+                $wooCommerceUser->customerSalesChannel->update([
+                    'ban_stock_update_util' => now()->addHours(),
+                ]);
             }
 
             return $result;
@@ -108,6 +116,10 @@ class StoreWooCommerceProduct extends RetinaAction
                     'response' => $e->getMessage()
                 ]);
             }
+            $wooCommerceUser->customerSalesChannel->update([
+                'ban_stock_update_util' => now()->addHours(),
+            ]);
+
 
             return null;
         }
