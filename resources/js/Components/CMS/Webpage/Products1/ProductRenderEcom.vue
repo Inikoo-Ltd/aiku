@@ -314,10 +314,10 @@ const profitMargin = computed(() => {
 
         <!-- Login Button for Non-Logged In Users -->
         <div v-if="!layout?.iris?.is_logged_in" class="px-3">
-            <Link :href="urlLoginWithRedirect()"
+            <a :href="urlLoginWithRedirect()"
                 class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
             {{ trans("Login or Register for Wholesale Prices") }}
-            </Link>
+            </a>
         </div>
     </div>
 </template>
