@@ -24,6 +24,8 @@ use Spatie\QueryBuilder\AllowedFilter;
 
 class GetTags extends OrgAction
 {
+    private bool $inRetina = false;
+
     public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): Collection
     {
         $this->initialisationFromGroup($tradeUnit->group, $request);
@@ -33,6 +35,14 @@ class GetTags extends OrgAction
 
     public function inCustomer(Customer $customer, ActionRequest $request): Collection
     {
+        $this->initialisation($customer->organisation, $request);
+
+        return $this->handle($customer);
+    }
+
+    public function inRetina(Customer $customer, ActionRequest $request): Collection
+    {
+        $this->inRetina = true;
         $this->initialisation($customer->organisation, $request);
 
         return $this->handle($customer);
@@ -58,8 +68,12 @@ class GetTags extends OrgAction
             $queryBuilder->where('scope', TagScopeEnum::PRODUCT_PROPERTY);
         }
 
-        if ($parent instanceof Customer) {
+        if ($parent instanceof Customer && !$this->inRetina) {
             $queryBuilder->whereIn('scope', [TagScopeEnum::ADMIN_CUSTOMER, TagScopeEnum::USER_CUSTOMER]);
+        }
+
+        if ($this->inRetina) {
+            $queryBuilder->where('scope', TagScopeEnum::USER_CUSTOMER);
         }
 
         return $queryBuilder

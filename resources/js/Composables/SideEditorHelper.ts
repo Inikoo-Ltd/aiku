@@ -50,6 +50,7 @@ import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfi
 import SelectProducts from '@/Components/Workshop/Properties/SelectProducts.vue'
 import UploadImageCropped from '@/Components/Workshop/Properties/UploadImageCropped.vue'
 import ShowBlockInResponsive from '@/Components/CMS/Fields/ShowBlockInResponsive.vue'
+import ResponsiveText from '@/Components/CMS/Fields/ResponsiveText.vue'
 
 // Field list of SideEditor
 export const getComponent = (componentName: string) => {
@@ -97,7 +98,8 @@ export const getComponent = (componentName: string) => {
         'select_product' : SelectProducts,
         "array-data-drawer" : ArrayEditDrawer,
         "image-cropped" : UploadImageCropped,
-        'visibility' : ShowBlockInResponsive
+        'visibility' : ShowBlockInResponsive,
+        'text-responesive': ResponsiveText,
     }
     return components[componentName] ?? NotFoundComponents
 }
