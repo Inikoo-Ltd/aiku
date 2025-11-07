@@ -12,6 +12,7 @@ use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetRetinaCustomerProductC
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetShopifyProducts;
 use App\Actions\Dropshipping\CustomerSalesChannel\Json\GetWooProducts;
 use App\Actions\Fulfilment\PalletReturn\Json\GetPalletsInReturnPalletWholePallets;
+use App\Actions\Helpers\Tag\Json\GetTags;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Iris\Json\GetRetinaFirstHitData;
 use App\Actions\Iris\RetinaLogWebUserRequest;
@@ -42,3 +43,5 @@ Route::get('customer-sales-channel/{customerSalesChannel:id}/ebay-products', Get
 Route::get('first-hit', GetRetinaFirstHitData::class)->name('first_hit');
 Route::get('ecom-customer-data', GetRetinaEcomCustomerData::class)->name('ecom_customer_data');
 Route::get('log-web-user-request', RetinaLogWebUserRequest::class)->name('hit');
+
+Route::get('customer/{customer:id}/tags', [GetTags::class, 'inRetina'])->name('customer.tags.index');

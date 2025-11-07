@@ -19,7 +19,8 @@ use Lorisleiva\Actions\ActionRequest;
 
 class AttachTagsToModel extends OrgAction
 {
-    protected TradeUnit|Customer $parent;
+    private TradeUnit|Customer $parent;
+    private bool $inRetina = false;
 
     public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): void
     {
@@ -45,6 +46,28 @@ class AttachTagsToModel extends OrgAction
     public function inCustomer(Customer $customer, ActionRequest $request): void
     {
         try {
+            $this->parent = $customer;
+            $this->initialisation($customer->organisation, $request);
+            $this->handle($customer, $this->validatedData, true);
+
+            request()->session()->flash('notification', [
+                'status'  => 'success',
+                'title'   => __('Success!'),
+                'description' => __('Tags successfully attached.'),
+            ]);
+        } catch (ValidationException $e) {
+            request()->session()->flash('notification', [
+                'status'  => 'error',
+                'title'   => __('Error!'),
+                'description' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    public function inRetina(Customer $customer, ActionRequest $request): void
+    {
+        try {
+            $this->inRetina = true;
             $this->parent = $customer;
             $this->initialisation($customer->organisation, $request);
             $this->handle($customer, $this->validatedData, true);
@@ -122,14 +145,15 @@ class AttachTagsToModel extends OrgAction
                         $exist = \DB::table('tags')->where('group_id', $this->group->id);
 
                         if ($this->parent instanceof TradeUnit) {
-                            $exist->where('scope', TagScopeEnum::PRODUCT_PROPERTY->value);
+                            $exist->where('scope', TagScopeEnum::PRODUCT_PROPERTY);
                         }
 
                         if ($this->parent instanceof Customer) {
-                            $exist->whereIn('scope', [
-                                TagScopeEnum::ADMIN_CUSTOMER->value,
-                                TagScopeEnum::USER_CUSTOMER->value,
-                            ]);
+                            $exist->whereIn('scope', [TagScopeEnum::ADMIN_CUSTOMER->value, TagScopeEnum::USER_CUSTOMER->value]);
+                        }
+
+                        if ($this->inRetina) {
+                            $exist->where('scope', TagScopeEnum::USER_CUSTOMER);
                         }
 
                         $exist = $exist->where('id', $value)->pluck('id')->toArray();
