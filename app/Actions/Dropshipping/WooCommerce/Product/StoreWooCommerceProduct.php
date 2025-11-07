@@ -112,9 +112,7 @@ class StoreWooCommerceProduct extends RetinaAction
                     'response' => $e->getMessage()
                 ]);
             }
-            $wooCommerceUser->customerSalesChannel->update([
-                'ban_stock_update_util' => now()->addMinutes(5)
-            ]);
+
 
 
             return null;
