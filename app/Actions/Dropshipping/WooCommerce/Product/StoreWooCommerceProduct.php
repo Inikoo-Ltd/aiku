@@ -96,10 +96,6 @@ class StoreWooCommerceProduct extends RetinaAction
                 UpdatePlatformPortfolioLog::run($logs, [
                     'status' => PlatformPortfolioLogsStatusEnum::OK
                 ]);
-            } else {
-                $wooCommerceUser->customerSalesChannel->update([
-                    'ban_stock_update_util' => now()->addHours(),
-                ]);
             }
 
             return $result;
@@ -117,7 +113,7 @@ class StoreWooCommerceProduct extends RetinaAction
                 ]);
             }
             $wooCommerceUser->customerSalesChannel->update([
-                'ban_stock_update_util' => now()->addHours(),
+                'ban_stock_update_util' => now()->addMinutes(5)
             ]);
 
 
