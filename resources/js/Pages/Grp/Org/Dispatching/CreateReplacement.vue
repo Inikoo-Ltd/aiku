@@ -269,7 +269,7 @@ const onCreateReplacement = (action: any) => {
             :closable="true" @close="showWarningMessage = false">
             <div class="flex items-start gap-3">
                 <!-- Icon -->
-                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 w-4 h-4 flex-shrink-0" />
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 w-4 h-4 shrink-0" />
 
                 <!-- Main Content -->
                 <div class="flex gap-2 flex-wrap items-center">

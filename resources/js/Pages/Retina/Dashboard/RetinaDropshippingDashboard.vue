@@ -214,7 +214,7 @@ const onSubmitCreateOrder = () => {
                             <ul role="list" class="divide-y divide-gray-100">
                                 <li v-for="channel in data.last_visited_channels" xkey="person.email" class="flex gap-x-4 px-3 py-2">
                                     <div v-html="ChannelLogo(channel.platform)" class="flex-grow size-8 overflow-hidden border border-gray-300 rounded-full"></div>
-                                    <div class="w-full xflex-shrink-0 justify-between flex items-center">
+                                    <div class="w-full xshrink-0 justify-between flex items-center">
                                         <div class="min-w-0">
                                             <p class="text-sm/6 font-semibold">
                                                 {{ channel.name }}

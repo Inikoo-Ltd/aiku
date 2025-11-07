@@ -36,7 +36,7 @@ const avatarUploaded = (file) => {
         <!-- Avatar Button: Small view -->
         <div class="mt-1 lg:hidden">
             <div class="flex items-center">
-                <div class="inline-block h-12 w-12 flex-shrink-0 overflow-hidden rounded-full" aria-hidden="true">
+                <div class="inline-block h-12 w-12 shrink-0 overflow-hidden rounded-full" aria-hidden="true">
                     <Image id="avatar_mobile" class="h-full w-full rounded-full" :src="temporaryAvatar" alt="" />
                 </div>
                 <div class="ml-5 rounded-md shadow-sm">

@@ -70,7 +70,7 @@ defineExpose({ hide });
             </button>
 
             <div v-show="opened" ref="tooltip" class="absolute z-10">
-                <div class="mt-2 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                <div class="mt-2 rounded-md shadow-lg bg-white ring-1 ring-black/5">
                     <slot />
                 </div>
             </div>

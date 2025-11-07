@@ -30,7 +30,7 @@ const layout = inject('layout', layoutStructure)
             layout.leftSidebar.show ? 'ml-6' : 'text-indigo-500',
         ]" :aria-current="navigation.slug === layout.currentModule ? 'page' : undefined">
         <div class="flex items-center gap-x-2">
-            <FontAwesomeIcon v-if="navigation.icon" aria-hidden="true" class="flex-shrink-0 h-4 w-4" :icon="navigation.icon" />
+            <FontAwesomeIcon v-if="navigation.icon" aria-hidden="true" class="shrink-0 h-4 w-4" :icon="navigation.icon" />
             <span class="capitalize leading-none whitespace-nowrap">
                 {{ navigation.name || navigation.label }}
             </span>

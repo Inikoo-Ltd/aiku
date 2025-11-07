@@ -256,7 +256,7 @@ const isLoadingVisitHistory = ref<string | null>(null)
                                 <thead class="">
                                     <tr class="bg-gray-200 rounded-t-xl">
                                         <th v-for="(header, index) in preview_template.header" :key="index"
-                                            class="text-center whitespace-nowrap overflow-ellipsis px-6 font-normal border-r border-gray-300 last:border-0"
+                                            class="text-center whitespace-nowrap text-ellipsis px-6 font-normal border-r border-gray-300 last:border-0"
                                         >
                                             {{ header }}
                                             <FontAwesomeIcon
@@ -369,7 +369,7 @@ const isLoadingVisitHistory = ref<string | null>(null)
                                             <template v-for="(header, index) in csvData[0]">
                                                 <Transition name="slide-to-up">
                                                     <th v-if="index != compIndexStoredItemInPreview || isIncludeStoreItems" :key="index"
-                                                        class="whitespace-nowrap overflow-ellipsis pl-3 pr-1"
+                                                        class="whitespace-nowrap text-ellipsis pl-3 pr-1"
                                                         :class="upload_spreadsheet?.required_fields?.length ? upload_spreadsheet?.required_fields.includes(header.trim().replace(/ /g,'_').toLowerCase()) ? 'bg-green-100' : 'bg-red-100 hover:bg-red-200' : 'bg-gray-100'"
                                                         v-tooltip="upload_spreadsheet?.required_fields?.includes(header.trim().replace(/ /g,'_').toLowerCase()) ? trans('Correct column') : trans('This column is not match, will not be processed.') + (upload_spreadsheet?.required_fields?.length > 0 ? (' Must be one of these:') + ' ' + upload_spreadsheet?.required_fields?.join(', ') : null)"
                                                     >

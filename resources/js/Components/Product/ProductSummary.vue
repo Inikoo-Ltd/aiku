@@ -591,7 +591,7 @@ console.log('product summary : ', props)
 										</h5>
 										<div class="flex gap-2 overflow-x-auto pb-2">
 											<div v-for="hazard in getActiveHazards()" :key="hazard.key"
-												class="flex-shrink-0 w-10 h-10 bg-white rounded border-2 border-red-200 p-1.5 shadow-sm"
+												class="shrink-0 w-10 h-10 bg-white rounded border-2 border-red-200 p-1.5 shadow-sm"
 												v-tooltip="hazard.name">
 												<img :src="getHazardIconPath(hazard.icon)" :alt="hazard.name"
 													class="w-full h-full object-contain">

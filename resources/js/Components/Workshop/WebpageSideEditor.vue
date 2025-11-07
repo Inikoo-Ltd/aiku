@@ -271,7 +271,7 @@ defineExpose({
                         <!-- Duplicate Block Button -->
                         <button v-if="getEditPermissions(element.web_block.layout.data)"
                           v-tooltip="trans('Duplicate this block')" @click.stop.prevent="duplicateBlock(element)"
-                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+                          class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded">
                           <FontAwesomeIcon :icon="faCopy" fixed-width />
                         </button>
 
@@ -279,13 +279,13 @@ defineExpose({
                         <button v-if="getHiddenPermissions(element.web_block.layout.data)"
                           v-tooltip="trans('Toggle visibility: hide/show the block from the page')"
                           @click.stop.prevent="setShowBlock($event, element)"
-                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+                          class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded">
                           <FontAwesomeIcon :icon="element.show ? 'fal fa-eye' : 'fal fa-eye-slash'" fixed-width />
                         </button>
 
                         <button v-if="getDeletePermissions(element.web_block.layout.data)"
                           @click="(event: any) => isLoadingDeleteBlock !== element.id && confirmDelete(event, element)"
-                          class="px-1 py-0.5 text-theme hover:text-opacity-80 text-xs bg-white/50 rounded">
+                          class="px-1 py-0.5 text-theme hover:opacity-80 text-xs bg-white/50 rounded">
                           <LoadingIcon v-if="isLoadingDeleteBlock === element.id" />
                           <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-500" fixed-width />
                         </button>

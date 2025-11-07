@@ -108,7 +108,7 @@ function countModelTypes(data) {
                 <TransitionChild as="template" enter="ease-out duration-300" enter-from="opacity-0 scale-95"
                     enter-to="opacity-100 scale-100" leave="ease-in duration-200" leave-from="opacity-100 scale-100"
                     leave-to="opacity-0 scale-95">
-                    <DialogPanel class="bg-white shadow-2xl mx-auto max-w-3xl h-[80vh] overflow-y-auto transform overflow-hidden rounded-xl ring-1 ring-black ring-opacity-5 transition-all">
+                    <DialogPanel class="bg-white shadow-2xl mx-auto max-w-3xl h-[80vh] overflow-y-auto transform overflow-hidden rounded-xl ring-1 ring-black/5 transition-all">
                         <!-- Section: Search input -->
                         <div class="relative border-b border-gray-300">
                             <FontAwesomeIcon class="pointer-events-none absolute top-3.5 left-4 h-5 w-5 text-gray-400"

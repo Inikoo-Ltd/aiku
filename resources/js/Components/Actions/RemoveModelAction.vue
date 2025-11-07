@@ -39,7 +39,7 @@ const props = defineProps<{
                         {{ action.text == null ? trans('This action will remove this model and all dependants') : action.text }}
                     </p>
                 </div>
-                <div class="mt-5 sm:ml-6 sm:mt-0 sm:flex sm:flex-shrink-0 sm:items-center">
+                <div class="mt-5 sm:ml-6 sm:mt-0 sm:flex sm:shrink-0 sm:items-center">
 
                     <Link :href="route(action.route.name,action.route.parameters)" method="delete"  as="button"  type="button" class="inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-2.5 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
                         <FontAwesomeIcon aria-hidden="true" icon="fal fa-trash-alt" class="-ml-0.5 mr-1 h-5 w-5" />

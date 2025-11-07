@@ -113,7 +113,7 @@ const showAll = () => {
             <Switch
                 @click="() => props.fieldData[props.blueprint.key].data.length == props.form[props.fieldName][props.blueprint.key].length ? showEdited() : showAll()"
                 :class="props.fieldData[props.blueprint.key].data.length == props.form[props.fieldName][props.blueprint.key].length ? '' : ''"
-                class="pr-1 relative inline-flex h-5 aspect-[2/1] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors bg-white ring-1 ring-slate-300 duration-200 shadow ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-opacity-75"
+                class="pr-1 relative inline-flex h-5 aspect-[2/1] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors bg-white ring-1 ring-slate-300 duration-200 shadow ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
             >
                 <!-- <span class="sr-only">Use setting</span> -->
                 <span aria-hidden="true" :class="props.fieldData[props.blueprint.key].data.length == props.form[props.fieldName][props.blueprint.key].length ? 'translate-x-5 bg-indigo-500' : 'translate-x-0 bg-slate-300'"
@@ -159,7 +159,7 @@ const showAll = () => {
 
     <div class="-mx-4 -my-2 sm:-mx-6 lg:-mx-8">
         <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-            <div class="overflow-visible shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
+            <div class="overflow-visible shadow ring-1 ring-black/5 sm:rounded-lg">
                 <table class="min-w-full divide-y divide-gray-300" :key="blueprint.key">
                     <thead class="bg-gray-50">
                         <tr>

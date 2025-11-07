@@ -283,7 +283,7 @@ const getSeverity = (type?: string) => {
             @close="showWarningMessage = false">
             <div class="flex items-start gap-3">
                 <!-- Icon -->
-                <FontAwesomeIcon v-if="warning.icon" :icon="warning.icon" class="w-4 h-4 flex-shrink-0 mt-0.5" :class="[
+                <FontAwesomeIcon v-if="warning.icon" :icon="warning.icon" class="w-4 h-4 shrink-0 mt-0.5" :class="[
                     getSeverity(warning.type) === 'warn' ? 'text-yellow-800' :
                         getSeverity(warning.type) === 'success' ? 'text-green-800' :
                             getSeverity(warning.type) === 'error' ? 'text-red-800' :
@@ -331,7 +331,7 @@ const getSeverity = (type?: string) => {
 									: { 'border-left': `4px solid transparent` },
 							]">
                             <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true"
-                                class="flex-shrink-0 -ml-1 mr-2 h-4 w-4" :class="[
+                                class="shrink-0 -ml-1 mr-2 h-4 w-4" :class="[
 									tabActive[key]
 										? 'text-gray-400 group-hover:text-gray-500'
 										: 'text-gray-400',
@@ -431,7 +431,7 @@ const getSeverity = (type?: string) => {
                     class="group font-medium" :aria-current="key === currentTab ? 'page' : undefined">
                     <div class="bg-gray-200 py-3 pl-5 flex items-center">
                         <FontAwesomeIcon v-if="sectionData.icon" aria-hidden="true" :icon="sectionData.icon"
-                            class="flex-shrink-0 mr-3 h-5 w-5"
+                            class="shrink-0 mr-3 h-5 w-5"
                             :class="[key === currentTab ? 'text-gray-400' : 'text-gray-500']" />
                         <span class="capitalize truncate">{{ sectionData.label }}</span>
                     </div>

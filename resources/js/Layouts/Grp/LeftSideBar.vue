@@ -101,7 +101,7 @@ const onLogoutAuth = () => {
                     }"
                     target="_blank"
                 >
-                    <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width :icon="helpData.icon" />
+                    <FontAwesomeIcon aria-hidden="true" class="shrink-0 h-4 w-4" fixed-width :icon="helpData.icon" />
                     
                     <Transition name="slide-to-left">
                         <span v-if="layout.leftSidebar.show" class="py-0.5 leading-none whitespace-nowrap "

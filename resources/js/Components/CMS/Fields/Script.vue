@@ -33,7 +33,7 @@ const applyCode = () => {
 </script>
 
 <template>
-    <div class="overflow-ellipsis max-w-72 overflow-hidden">
+    <div class="text-ellipsis max-w-72 overflow-hidden">
         <!-- <div class="flex justify-end mb-3">
             <Button label="Apply" type="save" size="xs" @click="applyCode" />
         </div> -->

@@ -340,7 +340,7 @@ const copyToClipboard = async (text: string, label: string) => {
                                 <a :href="`mailto:${data.customer.email}`">{{ data?.customer?.email }}</a>
                             </dd>
                             <button @click="copyToClipboard(data?.customer?.email, 'Email')"
-                                class="text-gray-400 hover:text-gray-600 transition-colors flex-shrink-0"
+                                class="text-gray-400 hover:text-gray-600 transition-colors shrink-0"
                                 v-tooltip="trans('Copy to clipboard')">
                                 <FontAwesomeIcon icon="fal fa-copy" fixed-width aria-hidden="true" />
                             </button>

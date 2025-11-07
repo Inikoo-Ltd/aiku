@@ -90,7 +90,7 @@ watch(
                     </div>
 
 
-                    <span class="ml-2 my-auto flex-shrink-0">
+                    <span class="ml-2 my-auto shrink-0">
                         <Popover v-if="data.locations.data[index].quantity != location.quantity">
                             <template #button="{ open, close }">
                                 <button class="h-6 my-auto align-bottom text-center" type="submit">

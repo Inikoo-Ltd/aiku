@@ -93,7 +93,7 @@ const navigationName = props.navKey.split('_')[0].slice(0, -1)  // shops_navigat
                                             layout.leftSidebar.show ? 'ml-6' : 'text-indigo-500',
                                         ]" :aria-current="navigationShopWarehouse.slug === layout.currentModule ? 'page' : undefined">
                                             <div class="flex items-center gap-x-2">
-                                                <FontAwesomeIcon v-if="navigationShopWarehouse.icon" aria-hidden="true" class="flex-shrink-0 h-4 w-4" :icon="navigationShopWarehouse.icon" />
+                                                <FontAwesomeIcon v-if="navigationShopWarehouse.icon" aria-hidden="true" class="shrink-0 h-4 w-4" :icon="navigationShopWarehouse.icon" />
                                                 <span class="capitalize leading-none whitespace-nowrap">
                                                     {{ navigationShopWarehouse.name }}
                                                 </span>

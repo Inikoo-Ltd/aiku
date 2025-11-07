@@ -403,7 +403,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         @dragend="(e)=> editable ? onEndDrag(e) : null">
                         <!-- Image + Info -->
                         <div class="flex items-center gap-3 min-w-0 flex-1">
-                            <div class="relative flex h-14 w-14 flex-shrink-0 items-center justify-center
+                            <div class="relative flex h-14 w-14 shrink-0 items-center justify-center
                overflow-hidden bg-gray-100 group-hover:bg-gray-50 transition">
                                 <Image v-if="item?.image" :src="item?.image"
                                     class="max-h-full max-w-full object-contain" />
@@ -441,7 +441,7 @@ function onDeleteFilesInList(categoryBox: any) {
                         </div>
 
                         <!-- Delete -->
-                        <button v-if="editable" @click="onDeleteFilesInList(item)" class="ml-2 flex-shrink-0 rounded-full p-1.5 
+                        <button v-if="editable" @click="onDeleteFilesInList(item)" class="ml-2 shrink-0 rounded-full p-1.5 
              text-gray-400 hover:text-red-600 hover:bg-red-50 transition" v-tooltip="trans('Delete')">
                             <FontAwesomeIcon icon="fal fa-trash-alt" class="text-sm text-red-400" />
                         </button>

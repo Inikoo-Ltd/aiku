@@ -764,7 +764,7 @@ const isModalUploadStoredItemOpen = ref(false)
             }"
         >
             <div class="flex">
-                <div class="flex-shrink-0">
+                <div class="shrink-0">
                     <font-awesome-icon :icon="['fad', 'exclamation-triangle']" class="h-5 w-5 text-amber-500"
                         aria-hidden="true"
                         :class="{

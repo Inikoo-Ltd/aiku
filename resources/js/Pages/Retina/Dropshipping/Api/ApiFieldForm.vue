@@ -135,7 +135,7 @@ defineExpose({
 
                 <!-- Button: Save -->
                 <template v-if="fieldData.noSaveButton" />
-                <span v-else class="ml-2 flex-shrink-0">
+                <span v-else class="ml-2 shrink-0">
                     <button v-if="!fieldData.verification" class="h-9 align-bottom text-center" :disabled="form.processing || !form.isDirty" type="submit">
                         <template v-if="form.isDirty">
                             <FontAwesomeIcon v-if="form.processing" icon='fad fa-spinner-third' class='text-2xl animate-spin' fixed-width aria-hidden='true' />

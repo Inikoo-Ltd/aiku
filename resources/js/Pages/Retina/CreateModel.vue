@@ -189,7 +189,7 @@ const onSelectSubmitChange = (value) => {
                                 : 'navigationSecond',
                             'cursor-pointer group border-l-4 px-3 py-2 flex items-center text-sm font-medium',
                         ]">
-                            <FontAwesomeIcon v-if="item.icon" aria-hidden="true" class="flex-shrink-0 -ml-1 mr-3 h-6 w-6"
+                            <FontAwesomeIcon v-if="item.icon" aria-hidden="true" class="shrink-0 -ml-1 mr-3 h-6 w-6"
                                 :class="[tabActive[key]
                                     ? 'text-gray-400 group-hover:text-gray-500'
                                     : 'text-gray-400',

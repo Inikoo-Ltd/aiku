@@ -75,7 +75,7 @@ const updateQuantity = (location : Datum) => {
                     <!-- Bind the quantity input to location.quantity -->
                         <PureInputNumber v-model="location.quantity" minValue="0" />
 
-                    <span class="ml-2 my-auto flex-shrink-0">
+                    <span class="ml-2 my-auto shrink-0">
                         <!-- Show button if quantity has changed -->
                         <button v-if="data.locations.data[index].quantity != location.quantity"
                             @click="updateQuantity(location)" class="h-9 align-bottom text-center" type="button">

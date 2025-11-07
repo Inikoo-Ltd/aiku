@@ -68,7 +68,7 @@ let filteredOptions = computed(() =>
     <Combobox by="value" v-model="form[fieldName]">
         <div class="relative mt-1">
             <div
-                class="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-700 focus-visible:ring-opacity-75 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-300 sm:text-sm">
+                class="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-700/75 focus-visible:ring-offset-2 focus-visible:ring-offset-teal-300 sm:text-sm">
                 <ComboboxInput class="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
                     :displayValue="(abcde) => abcde.slug" @change="query = $event.target.value" />
                 <ComboboxButton class="absolute inset-y-0 right-0 flex items-center pr-2">
@@ -80,7 +80,7 @@ let filteredOptions = computed(() =>
             <TransitionRoot leave="transition ease-in duration-100" leaveFrom="opacity-100" leaveTo="opacity-0"
                 @after-leave="query = ''">
                 <ComboboxOptions
-                    class="z-10 absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                    class="z-10 absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black/5 focus:outline-none sm:text-sm">
                     <div v-if="query == '' && optionsResult?.length == 0" class="py-2 pl-4 pr-4">Query is empty</div>
                     <div v-if="query != '' && optionsResult?.length == 0" class="py-2 pl-4 pr-4">No result found</div>
                     <!-- State: Loading and Not Found -->

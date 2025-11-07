@@ -107,7 +107,7 @@ const label = {
         <ScreenWarning v-if="layoutStore.app.environment === 'staging'" class="relative top-0" />
 
         <div class="px-0">
-            <div class="flex h-11 lg:h-10 flex-shrink-0">
+            <div class="flex h-11 lg:h-10 shrink-0">
                 <div class="flex items-center border-b border-gray-300">
                     <!-- Mobile: Hamburger -->
                     <button class="block md:hidden w-10 h-10 relative focus:outline-none" @click="$emit('sidebarOpen', !sidebarOpen)">
@@ -153,9 +153,9 @@ const label = {
                     <!-- Dropdown: TopBars -->
                     <Menu v-if="layoutStore.group || (layoutStore.organisations.data?.length > 1)" as="div" class="ml-2 relative text-left">
                         <MenuButton v-slot="{ open }"
-                                    class="inline-flex sm:min-w-32 sm:w-[184px] h-[26px] lg:h-8 overflow-ellipsis rounded border border-gray-300 w-full whitespace-nowrap justify-between items-center gap-x-2 px-2.5 py-2 text-xxs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+                                    class="inline-flex sm:min-w-32 sm:w-[184px] h-[26px] lg:h-8 text-ellipsis rounded border border-gray-300 w-full whitespace-nowrap justify-between items-center gap-x-2 px-2.5 py-2 text-xxs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
                                     :class="[!!(layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)) || !!layoutStore.agents.data?.find((item) => item.slug == layoutStore.currentParams?.organisation) ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'hover:bg-slate-200 text-slate-600']">
-                            <div class="flex items-center gap-x-1 w-full truncate overflow-ellipsis line-clamp-2">
+                            <div class="flex items-center gap-x-1 w-full truncate text-ellipsis line-clamp-2">
                                 <FontAwesomeIcon :icon="layoutStore.currentParams?.organisation
                                             ? layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)?.label
                                                 ? 'fal fa-building'

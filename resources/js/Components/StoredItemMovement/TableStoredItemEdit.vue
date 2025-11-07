@@ -115,7 +115,7 @@ defineExpose({
 <template>
     <div class="flex justify-between border-b border-gray-300 p-2">
         <div class="font-semibold">{{trans("Contain Pallet")}} :</div>
-        <div class="flex flex-shrink-0 gap-3">
+        <div class="flex shrink-0 gap-3">
             <Button v-if="!editable" type="edit" size="xs" @click="editable = true" />
             <Button v-if="editable" type="tertiary" label="Cancel" size="xs" @click="onCancel" />
             <Button v-if="editable" :type="editable && unlocatedPallet == 0 ? 'save' : 'disabled'" size="xs"
@@ -153,7 +153,7 @@ defineExpose({
     </div>
 
     <div v-if="editable && unlocatedPallet !== 0"
-        class="flex justify-start flex-shrink-0 gap-4 bg-yellow-100 rounded-md border p-2 border-yellow-500 my-2">
+        class="flex justify-start shrink-0 gap-4 bg-yellow-100 rounded-md border p-2 border-yellow-500 my-2">
         <font-awesome-icon :icon="['fal', 'exclamation-triangle']" class="text-yellow-600" />
         <span class="text-xs text-yellow-600">{{trans("You have to set all unlocated items")}}</span>
     </div>
@@ -205,7 +205,7 @@ defineExpose({
                                         <div class="py-2 font-medium">
                                            {{trans("Are you sure you want to delete this pallet?")}}
                                         </div>
-                                        <div class="flex  flex-shrink-0 gap-2 justify-end">
+                                        <div class="flex  shrink-0 gap-2 justify-end">
                                             <Button label="No" type="tertiary" size="xs" @click="() => closed()" />
                                             <Button label="Yes" size="xs" @click="() => { onDeleteRow(index); closed(); }" />
                                         </div>

@@ -61,8 +61,8 @@ const isLoadingNode = ref<string | boolean>(false)
                     @finish="() => isLoading = false"
                 >
                     <div class="flex items-center px-4 text-lg xl:px-6 font-medium gap-x-4" :class="[mode == 'compact' ? 'py-2' : node.sub_data?.length ? 'pt-4 md:pt-0 ' : 'py-4']">
-                        <LoadingIcon v-if="isLoading === 'node' + nodeIdx" :size="mode == 'compact' ? undefined : 'lg'" class="flex-shrink-0 text-gray-400" />
-                        <FontAwesomeIcon v-else-if="node.icon" :size="mode == 'compact' ? undefined : 'lg'" :icon="node.icon" class="flex-shrink-0 text-gray-400" aria-hidden="true" fixed-width />
+                        <LoadingIcon v-if="isLoading === 'node' + nodeIdx" :size="mode == 'compact' ? undefined : 'lg'" class="shrink-0 text-gray-400" />
+                        <FontAwesomeIcon v-else-if="node.icon" :size="mode == 'compact' ? undefined : 'lg'" :icon="node.icon" class="shrink-0 text-gray-400" aria-hidden="true" fixed-width />
                         <p class="md:leading-none md:text-sm lg:text-base inline font-medium text-gray-500 group-hover/node:text-gray-700">
                             <span class="hidden lg:inline">{{ node.name }}</span>
                             <span class="inline lg:hidden">{{ node.shortName ? node.shortName : node.name }}</span>
@@ -112,7 +112,7 @@ const isLoadingNode = ref<string | boolean>(false)
                         class="w-9 h-9 flex justify-center items-center specialBox"
                     >
                         <LoadingIcon v-if="isLoading === 'subLink' + nodeIdx" />
-                        <FontAwesomeIcon v-else-if="node.rightSubLink?.icon" :icon="node.rightSubLink.icon" class="flex-shrink-0 " aria-hidden="true" fixed-width />
+                        <FontAwesomeIcon v-else-if="node.rightSubLink?.icon" :icon="node.rightSubLink.icon" class="shrink-0 " aria-hidden="true" fixed-width />
                     </component>
                 </div>
 

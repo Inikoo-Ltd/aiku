@@ -42,7 +42,7 @@ const isStaging = layout.app.environment === 'staging'
     }">
         <ScreenWarning v-if="isStaging" />
 
-        <div class="mt-1 flex h-11 lg:h-10 flex-shrink-0 gap-x-2">
+        <div class="mt-1 flex h-11 lg:h-10 shrink-0 gap-x-2">
             <div class="flex">
                 <!-- Mobile: Hamburger -->
                 <button class="block md:hidden w-10 h-10 relative focus:outline-none"

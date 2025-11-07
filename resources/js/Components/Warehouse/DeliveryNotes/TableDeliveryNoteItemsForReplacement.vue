@@ -168,7 +168,7 @@ watch(() => props.triggerReplaceAll, (newValue) => {
 // Dynamic classes for input
 const getInputClasses = computed(() => {
     return (item: any) => {
-        const baseClasses = "w-full px-3 py-2 text-sm border rounded-l-md focus:outline-none focus:ring-2 focus:ring-opacity-50";
+        const baseClasses = "w-full px-3 py-2 text-sm border rounded-l-md focus:outline-none focus:ring-2 focus:ring-gray-300/50";
         const invalidClasses = "bg-red-50 border-red-500 text-red-900 placeholder-red-700 focus:ring-red-500 focus:border-red-500";
         const validClasses = "bg-white border-gray-300 text-gray-900 focus:ring-blue-500 focus:border-blue-500";
 
