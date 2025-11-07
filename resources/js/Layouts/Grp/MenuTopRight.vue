@@ -128,6 +128,6 @@ const isUserMac = navigator.platform.includes('Mac')  // To check the user's Ope
 
 <style scoped>
 .underline-gradient {
-    background-image: linear-gradient(90deg, #bae6fd, #a78bfa, theme('colors.pink.500'), #a78bfa, #bae6fd);
+    background-image: linear-gradient(90deg, #bae6fd, #a78bfa, var(--color-pink-500), #a78bfa, #bae6fd);
 }
 </style>
