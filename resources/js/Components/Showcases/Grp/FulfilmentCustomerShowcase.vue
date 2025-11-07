@@ -420,7 +420,7 @@ const isModalAddress = ref(false);
             </div>
             <!-- Icon Row -->
             <div class="flex items-center">
-              <button aria-label="Increase Balance" class="focus:outline-none">
+              <button aria-label="Increase Balance" class="focus:outline-hidden">
                 <FontAwesomeIcon
                   @click="openModalBalance('increase')"
                   :icon="faArrowAltFromBottom"
@@ -430,7 +430,7 @@ const isModalAddress = ref(false);
                   aria-hidden="true" />
               </button>
               <span class="mx-2 text-gray-400">|</span>
-              <button aria-label="Decrease Balance" class="focus:outline-none">
+              <button aria-label="Decrease Balance" class="focus:outline-hidden">
                 <FontAwesomeIcon
                   @click="openModalBalance('decrease')"
                   :icon="faArrowAltFromTop"

@@ -222,7 +222,7 @@ const onClickPlusButton = () => {
 				<!-- Button: Minus -->
 				<div
 					@click.stop="() => props.readonly || form.processing ? null : onClickMinusButton()"
-					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
+					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-hidden disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
 					:class="[
 						props.readonly || form.processing ? 'text-gray-400 ' : 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
 					]"	
@@ -263,7 +263,7 @@ const onClickPlusButton = () => {
 				<!-- Button: Plus -->
 				<div
 					@click.stop="() => props.readonly || form.processing ? null : onClickPlusButton()"
-					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
+					class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-hidden disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 rounded px-2.5 lg:px-1 py-2.5 lg:py-1.5 text-xs justify-self-center"
 					:class="[
 						props.readonly || form.processing ? 'text-gray-400 ' : 'cursor-pointer text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 '
 					]"	

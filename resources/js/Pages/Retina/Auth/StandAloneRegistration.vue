@@ -283,7 +283,7 @@ const is_error_tnc = ref(false)
 							<button
 								type="submit"
 								:disabled="isLoading"
-								class="w-full inline-flex justify-center items-center px-6 bg-black disabled:opacity-70 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+								class="w-full inline-flex justify-center items-center px-6 bg-black disabled:opacity-70 py-3 border border-transparent text-sm font-medium rounded-md shadow-sm text-white focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
 								<span v-if="isLoading" class="loader mr-2">
 									<LoadingIcon />
 								</span>

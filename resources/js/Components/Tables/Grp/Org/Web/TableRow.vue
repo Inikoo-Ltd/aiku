@@ -93,14 +93,14 @@ const closeModal = () => {
 					<button
 						@click="toggle"
 						title="Expand / Collapse"
-						class="p-2 text-gray-600 hover:text-gray-800 focus:outline-none transition-colors duration-150">
+						class="p-2 text-gray-600 hover:text-gray-800 focus:outline-hidden transition-colors duration-150">
 						<FontAwesomeIcon v-if="!isExpanded" icon="fal fa-chevron-right" size="sm" />
 						<FontAwesomeIcon v-else icon="fal fa-chevron-down" size="sm" />
 					</button>
 					<button
 						@click="openModal"
 						title="Add New Webpage"
-						class="ml-2 text-blue-500 hover:text-blue-600 focus:outline-none transition-colors duration-150">
+						class="ml-2 text-blue-500 hover:text-blue-600 focus:outline-hidden transition-colors duration-150">
 						<FontAwesomeIcon icon="fal fa-plus" size="sm" />
 					</button>
 				</div>

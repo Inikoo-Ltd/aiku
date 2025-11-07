@@ -116,7 +116,7 @@ const togglePopover = (event: Event, popoverRef: any) => {
       <div @click="(e) => togglePopover(e, _editop[index])"
            class="relative flex flex-col items-center border  bg-gray-200 border-gray-300 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 w-full p-4 m-2 transform hover:-translate-y-1">
         <button @click="(e) => deletePayment(e, index)"
-                class="absolute top-2 right-2 text-xs p-1 focus:outline-none"
+                class="absolute top-2 right-2 text-xs p-1 focus:outline-hidden"
                 aria-label="Delete">
           <FontAwesomeIcon :icon="['fas', 'times']" class="text-red-500 text-sm" />
         </button>

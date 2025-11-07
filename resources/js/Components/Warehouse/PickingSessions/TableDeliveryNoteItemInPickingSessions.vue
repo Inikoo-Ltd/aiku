@@ -642,7 +642,7 @@ onMounted(() => {
                         v-tooltip="location.quantity <= 0 ? 'Location has no stock' : ''"
                         :class="location.quantity <= 0 ? 'text-gray-400' : ''">
                         <Link :href="generateLocationRoute(location)"
-                            class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 focus:ring-0 focus:outline-none focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;">
+                            class="bg-gradient-to-t from-yellow-300/50 to-yellow-200/50 focus:ring-0 focus:outline-hidden focus:border-none bg-no-repeat [background-position:0%_100%] [background-size:100%_0.2em] motion-safe:transition-all motion-safe:duration-200 hover:[background-size:100%_100%] focus:[background-size:100%_100%] px-1;">
                         {{ location.location_code }}
                         </Link>
                     </span>

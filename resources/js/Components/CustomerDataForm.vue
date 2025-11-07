@@ -81,7 +81,7 @@ defineExpose({
             <select v-model="form.shipments_per_week"
               @change="form.clearErrors('shipments_per_week')"
               id="shipments-per-week" name="shipments_per_week" 
-              class="block w-full mt-1 py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="block w-full mt-1 py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
               :class="form.errors.shipments_per_week ? 'errorShake' : ''"
             >
               <option value="" disabled selected>Select shipments per week</option>

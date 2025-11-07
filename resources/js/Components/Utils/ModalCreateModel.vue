@@ -238,7 +238,7 @@ const onSelectSubmitChange = (value) => {
                             leave-from-class="transform scale-100 opacity-100"
                             leave-to-class="transform scale-95 opacity-0">
                             <MenuItems
-                                class="absolute top-[-90px] right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                class="absolute top-[-90px] right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden">
                                 <div class="px-1 py-1">
                                     <div v-for="(item, index) in formData.route">
                                         <MenuItem>

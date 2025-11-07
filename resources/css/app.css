@@ -8,7 +8,7 @@
 @layer utilities {
     /* .primaryLink {
         @apply bg-gradient-to-t from-yellow-300 to-yellow-200
-        focus:ring-0 focus:outline-none focus:border-none
+        focus:ring-0 focus:outline-hidden focus:border-none
         bg-no-repeat [background-position:0%_100%]
         [background-size:100%_0.2em]
         motion-safe:transition-all motion-safe:duration-200
@@ -18,7 +18,7 @@
 
     .secondaryLink {
         @apply bg-gradient-to-t from-gray-300 to-gray-200
-        focus:ring-0 focus:outline-none focus:border-none
+        focus:ring-0 focus:outline-hidden focus:border-none
         bg-no-repeat [background-position:0%_100%]
         [background-size:100%_0.2em]
         motion-safe:transition-all motion-safe:duration-200
@@ -31,7 +31,7 @@
         border-indigo-300 border-2 rounded-md
         text-indigo-500 hover:text-white
         cursor-pointer
-        focus:ring-0 focus:outline-none focus:border-none
+        focus:ring-0 focus:outline-hidden focus:border-none
         bg-no-repeat [background-position:0%_100%]
         [background-size:100%_0em]
         motion-safe:transition-all motion-safe:duration-100

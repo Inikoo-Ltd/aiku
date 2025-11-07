@@ -93,7 +93,7 @@ watch(() => props.data?.locations?.data?.length, (newLength) => {
             <div>
                 <MenuButton
                     @mouseover="activeMenu = null"
-                    class="inline-flex w-full justify-center rounded-md px-4 py-2 text-sm font-medium hover:bg-indigo-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75">
+                    class="inline-flex w-full justify-center rounded-md px-4 py-2 text-sm font-medium hover:bg-indigo-500 hover:text-white focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white/75">
                     <FontAwesomeIcon :icon="faPencil" />
                 </MenuButton>
             </div>
@@ -105,7 +105,7 @@ watch(() => props.data?.locations?.data?.length, (newLength) => {
                 <MenuItems
                     v-show="!activeMenu"
                     @mouseover="activeMenu = null"
-                    class="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg z-30 ring-1 ring-black/5 focus:outline-none">
+                    class="absolute right-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded-md bg-white shadow-lg z-30 ring-1 ring-black/5 focus:outline-hidden">
                     <div v-for="item in menu" class="px-1 py-1 border-b-1" :key="item.key">
                         <MenuItem>
                             <button @click="() => activeMenu = item"

@@ -1033,7 +1033,7 @@ onMounted(async () => {
 }
 
 :deep(.ProseMirror) {
-    @apply focus:outline-none px-0 py-0 min-h-[10px] relative;
+    @apply focus:outline-hidden px-0 py-0 min-h-[10px] relative;
 }
 
 :deep(.editor-class) {

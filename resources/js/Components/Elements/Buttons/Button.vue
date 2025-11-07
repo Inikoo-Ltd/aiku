@@ -56,21 +56,21 @@ else if (props.type == "tertiary" || props.style == "tertiary") styleClass = "bg
 else if (props.type == "transparent" || props.style == "transparent") styleClass = `bg-transparent ${ props.noHover ? "" : "hover:bg-gray-200/70" } text-gray-700  disabled:bg-gray-200/70`;
 else if (props.type == "exit" || props.style == "exit" || props.style == "exitEdit" || props.type == "edit" || props.style == "edit") styleClass = "buttonEdit";
 else if (props.type == "dashed" || props.style == "dashed") styleClass = "bg-transparent border border-dashed border-gray-400 text-gray-700 hover:bg-black/10";
-else if (props.type == "rainbow" || props.style == "rainbow") styleClass = "bg-indigo-500 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2";
+else if (props.type == "rainbow" || props.style == "rainbow") styleClass = "bg-indigo-500 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-gray-100 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2";
 
-else if (props.style == "delete" || props.style == "negative" || props.style == "cancel" || props.type == "delete" || props.type == "negative" || props.type == "cancel") styleClass = "border border-red-400 text-red-500 hover:text-red-600 hover:bg-red-100 disabled:border-red-200 disabled:bg-red-100 disabled:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2";
-else if (props.style == "positive" || props.type == "positive") styleClass = `${ props.noHover ? "cursor-default" : "hover:text-green-800 hover:bg-green-50 focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2" } border border-green-500 text-green-600 disabled:bg-green-200/75 `;
-else if (props.style == "warning" || props.type == "warning") styleClass = "border border-amber-500 text-amber-600 hover:text-amber-800 bg-amber-10 hover:bg-amber-200 disabled:bg-amber-300/75 focus:outline-none focus:ring-2 focus:ring-amber-600 focus:ring-offset-2";
+else if (props.style == "delete" || props.style == "negative" || props.style == "cancel" || props.type == "delete" || props.type == "negative" || props.type == "cancel") styleClass = "border border-red-400 text-red-500 hover:text-red-600 hover:bg-red-100 disabled:border-red-200 disabled:bg-red-100 disabled:text-red-300 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:ring-offset-2";
+else if (props.style == "positive" || props.type == "positive") styleClass = `${ props.noHover ? "cursor-default" : "hover:text-green-800 hover:bg-green-50 focus:outline-hidden focus:ring-2 focus:ring-green-600 focus:ring-offset-2" } border border-green-500 text-green-600 disabled:bg-green-200/75 `;
+else if (props.style == "warning" || props.type == "warning") styleClass = "border border-amber-500 text-amber-600 hover:text-amber-800 bg-amber-10 hover:bg-amber-200 disabled:bg-amber-300/75 focus:outline-hidden focus:ring-2 focus:ring-amber-600 focus:ring-offset-2";
 
 else if (props.style == "white" || props.type == "white") styleClass = "bg-white hover:bg-gray-300 text-gray-600";
-else if (props.style == "red" || props.type == "red") styleClass = "bg-red-500 hover:bg-red-600 border border-red-500 hover:border-red-600 text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:text-red-300 disabled:bg-red-600";
-else if (props.style == "green" || props.type == "green") styleClass = `bg-green-500 ${ props.noHover ? "" : "hover:bg-green-600" } border border-green-600  text-white focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2`;
-else if (props.style == "gray" || props.type == "gray") styleClass = "bg-gray-300 hover:bg-gray-400 border border-gray-500 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2";
-else if (props.style == "black" || props.type == "black") styleClass = "bg-gray-800 hover:bg-gray-700 disabled:bg-gray-600 border border-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-gray-800 focus:ring-offset-2";
-else if (props.style == "indigo" || props.type == "indigo") styleClass = "bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 border border-indigo-500 text-teal-50 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2";
-else if (props.style == "red_outline" || props.type == "red_outline") styleClass = "border border-red-400 text-red-500 hover:text-red-600 hover:bg-red-100 disabled:border-red-200 disabled:bg-red-100 disabled:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2";
+else if (props.style == "red" || props.type == "red") styleClass = "bg-red-500 hover:bg-red-600 border border-red-500 hover:border-red-600 text-white focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:text-red-300 disabled:bg-red-600";
+else if (props.style == "green" || props.type == "green") styleClass = `bg-green-500 ${ props.noHover ? "" : "hover:bg-green-600" } border border-green-600  text-white focus:outline-hidden focus:ring-2 focus:ring-green-600 focus:ring-offset-2`;
+else if (props.style == "gray" || props.type == "gray") styleClass = "bg-gray-300 hover:bg-gray-400 border border-gray-500 text-gray-700 focus:outline-hidden focus:ring-2 focus:ring-gray-400 focus:ring-offset-2";
+else if (props.style == "black" || props.type == "black") styleClass = "bg-gray-800 hover:bg-gray-700 disabled:bg-gray-600 border border-gray-900 text-white focus:outline-hidden focus:ring-2 focus:ring-gray-800 focus:ring-offset-2";
+else if (props.style == "indigo" || props.type == "indigo") styleClass = "bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-800 border border-indigo-500 text-teal-50 focus:outline-hidden focus:ring-2 focus:ring-gray-300 focus:ring-offset-2";
+else if (props.style == "red_outline" || props.type == "red_outline") styleClass = "border border-red-400 text-red-500 hover:text-red-600 hover:bg-red-100 disabled:border-red-200 disabled:bg-red-100 disabled:text-red-300 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:ring-offset-2";
 
-// else if (props.style == 'negative' || props.style == 'cancel') styleClass = 'border border-red-400 text-red-600 hover:text-red-800 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
+// else if (props.style == 'negative' || props.style == 'cancel') styleClass = 'border border-red-400 text-red-600 hover:text-red-800 hover:bg-red-100 focus:outline-hidden focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
 else if (props.style == "disabled" || props.type == "disabled") styleClass = "cursor-not-allowed border border-gray-300 bg-transparent text-gray-700 hover:bg-gray-200/70 disabled:cursor-not-allowed disabled:opacity-70";
 else styleClass = `buttonPrimary`;
 
@@ -159,7 +159,7 @@ const getActionIcon = (icon: any) => {
 
 <template>
   <button type="button"  :style="injectStyle ?? {}"
-          class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed"
+          class="leading-4 inline-flex items-center gap-x-2 font-medium focus:outline-hidden disabled:cursor-not-allowed"
           :class="[
             full ? 'w-full justify-center' : 'min-w-max',
             styleClass,

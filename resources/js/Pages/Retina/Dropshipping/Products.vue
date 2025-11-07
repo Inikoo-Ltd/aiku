@@ -327,7 +327,7 @@ const onClickGetStarted = () => {
                                     </div>
                                 </div>
                                 <div class="absolute top-1.5 right-2">
-                                    <input :checked="isSelected(item.id)" name="checkboxProduct" type="checkbox" class="cursor-pointer h-5 w-5  rounded border-stone-300 text-stone-800 shadow-sm focus:ring-0 focus:outline-none">
+                                    <input :checked="isSelected(item.id)" name="checkboxProduct" type="checkbox" class="cursor-pointer h-5 w-5  rounded border-stone-300 text-stone-800 shadow-sm focus:ring-0 focus:outline-hidden">
                                 </div>
                             </div>
                             <div class="py-4 px-6 h-full flex flex-col justify-between">

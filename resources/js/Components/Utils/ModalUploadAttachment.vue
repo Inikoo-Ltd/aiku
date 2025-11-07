@@ -219,7 +219,7 @@ onMounted(() => {
 						<div v-else-if="!isLoadingUpload" class="">
 							<label
 								for="fileInput"
-								class="absolute cursor-pointer rounded-md inset-0 focus-within:outline-none focus-within:ring-0 focus-within:ring-gray-400 focus-within:ring-offset-0">
+								class="absolute cursor-pointer rounded-md inset-0 focus-within:outline-hidden focus-within:ring-0 focus-within:ring-gray-400 focus-within:ring-offset-0">
 								<input
 									type="file"
 									name="file"

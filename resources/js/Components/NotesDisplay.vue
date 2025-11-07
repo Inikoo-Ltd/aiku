@@ -168,7 +168,7 @@ const closeNotesModal = () => {
         <!-- Individual Notes Icons - Show separate icon for each note type -->
         <template v-for="noteType in getAvailableNoteTypes" :key="noteType.type">
             <button @click="openNotesModal(noteType.type)" v-tooltip="`View ${noteType.title}`"
-                class="hover:opacity-80 transition-all duration-200 hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 rounded">
+                class="hover:opacity-80 transition-all duration-200 hover:scale-110 focus:outline-hidden focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 rounded">
                 <FontAwesomeIcon :icon="faStickyNote" class="text-sm cursor-pointer" fixed-width aria-hidden="true"
                     :style="{
                         color: useBasicColor(noteType.bgColor) || noteType.textColor || fallbackColor

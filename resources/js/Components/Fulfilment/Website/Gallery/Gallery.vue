@@ -102,7 +102,7 @@ const onUpload = (e) => {
                     <button
                         :style="selected ? { color: layout.app.theme[0], borderBottomColor: layout.app.theme[0] } : {}"
                         :class="[
-                            'whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-none mb-2',
+                            'whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-hidden mb-2',
                             selected
                                 ? `border-org-5s00 text-[${layout.app.theme[0]}]`
                                 : `border-transparent text-[${layout.app.theme[0]}] hover:border-[${layout.app.theme[0]}]`,
@@ -115,7 +115,7 @@ const onUpload = (e) => {
             <TabPanels class="mt-2">
                 <TabPanel v-for="(tab, idx) in tabsData" :key="idx" :class="[
                     'rounded-xl bg-white p-3 h-96 overflow-auto',
-                    'ring-white/60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2',
+                    'ring-white/60 ring-offset-2 ring-offset-blue-400 focus:outline-hidden focus:ring-2',
                 ]">
                     <component 
                         :is="getComponent(tab['key'])" 

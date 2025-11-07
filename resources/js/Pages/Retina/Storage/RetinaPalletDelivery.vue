@@ -398,7 +398,7 @@ const isModalUploadStoredItemOpen = ref(false)
                 </div>
 
                 <transition name="headlessui2">
-                    <MenuItems class="z-10 absolute right-0 p-1 mt-2 w-fit origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-none" >
+                    <MenuItems class="z-10 absolute right-0 p-1 mt-2 w-fit origin-top-right rounded-md bg-white shadow-lg ring-1 ring-indigo-500/50 focus:outline-hidden" >
                         <div @click="() => (isModalUploadPallet = true, close())" class="whitespace-nowrap px-3 py-1 rounded hover:bg-gray-200 cursor-pointer">
                             <FontAwesomeIcon icon='fal fa-upload' class='' fixed-width aria-hidden='true' />
                             {{ trans("Upload goods") }}

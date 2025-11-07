@@ -69,7 +69,7 @@ const filteredData = computed(() => {
 						v-model="searchQuery"
 						type="text"
 						placeholder="Search ..."
-						class="border border-gray-300 rounded appearance-none block w-full px-3 py-2 text-sm leading-none transition-all duration-300 placeholder:text-gray-400 placeholder:italic focus:border-gray-500 focus:ring-0 focus:outline-none" />
+						class="border border-gray-300 rounded appearance-none block w-full px-3 py-2 text-sm leading-none transition-all duration-300 placeholder:text-gray-400 placeholder:italic focus:border-gray-500 focus:ring-0 focus:outline-hidden" />
 				</IconField>
 			</div>
 		</div>

@@ -82,7 +82,7 @@
                   :placeholder="fieldData?.placeholder"
                   :pattern="props.fieldData?.rules?.pattern" 
                   style="border: 2px solid transparent; outline: none;" 
-                  class="block flex-1 py-1.5 pl-3 rounded-md focus:outline-none focus:border-none focus:ring-0 placeholder:text-gray-400 placeholder:text-sm"
+                  class="block flex-1 py-1.5 pl-3 rounded-md focus:outline-hidden focus:border-none focus:ring-0 placeholder:text-gray-400 placeholder:text-sm"
               />
               <span v-if="fieldData?.suffix" class="bg-gray-200 flex select-none items-center px-3 text-gray-500 sm:text-sm">
                   {{ fieldData?.suffix }}

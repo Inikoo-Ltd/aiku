@@ -44,7 +44,7 @@ const props = defineProps<{
             <div class="grid grid-cols-2 gap-x-3 gap-y-4 justify-around flex-wrap">
                 <RadioGroupOption as="template" v-for="(option, index) in fieldData.options" :key="option.value" :value="option.value" v-slot="{ active, checked }">
                     <div :class="[
-                        'relative flex cursor-pointer rounded-lg py-2 px-3 shadow-sm focus:outline-none',
+                        'relative flex cursor-pointer rounded-lg py-2 px-3 shadow-sm focus:outline-hidden',
                         checked ? 'bg-gray-100 ring-2 ring-indigo-600' : 'ring-1 ring-gray-300'
                     ]">
                     <!-- {{ compareObjects(form[fieldName], option) }} -->

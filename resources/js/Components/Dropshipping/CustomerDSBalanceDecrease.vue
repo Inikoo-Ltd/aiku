@@ -127,7 +127,7 @@ const onSubmitDecrease = () => {
                     name="privateNote"
                     rows="4"
                     :placeholder="trans('Add any private notes here...')"
-                    class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    class="w-full border border-gray-300 rounded-md p-3 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"></textarea>
             </div>
         </div>
 

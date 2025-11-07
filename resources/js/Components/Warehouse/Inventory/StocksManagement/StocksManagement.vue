@@ -313,17 +313,17 @@ const getQuestionTooltip = (locationId: number) => {
                                                 {{ trans('Location Note') }} - {{ loc.name }}
                                             </label>
                                             <textarea v-model="tempNotes[loc.id]"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                                                 rows="4"
                                                 :placeholder="trans('Enter note for this location...')"></textarea>
                                         </div>
                                         <div class="flex justify-end gap-2">
                                             <button @click="() => cancelNote(loc.id)"
-                                                class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                                                class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-hidden focus:ring-2 focus:ring-gray-500">
                                                 {{ trans('Cancel') }}
                                             </button>
                                             <!-- <button @click="() => saveNote(loc.id)"
-                                                class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
                                                 {{ trans('Save') }}
                                             </button> -->
                                         </div>
@@ -409,11 +409,11 @@ const getQuestionTooltip = (locationId: number) => {
                                     </div>
                                     <div class="flex justify-end gap-2">
                                         <button @click="() => cancelMinMaxStock(loc.id)"
-                                            class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                                            class="px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-hidden focus:ring-2 focus:ring-gray-500">
                                             {{ trans('Cancel') }}
                                         </button>
                                         <!-- <button @click="() => saveMinMaxStock(loc.id)"
-                                            class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            class="px-3 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500">
                                             {{ trans('Save') }}
                                         </button> -->
                                     </div>

@@ -110,7 +110,7 @@ const label = {
             <div class="flex h-11 lg:h-10 shrink-0">
                 <div class="flex items-center border-b border-gray-300">
                     <!-- Mobile: Hamburger -->
-                    <button class="block md:hidden w-10 h-10 relative focus:outline-none" @click="$emit('sidebarOpen', !sidebarOpen)">
+                    <button class="block md:hidden w-10 h-10 relative focus:outline-hidden" @click="$emit('sidebarOpen', !sidebarOpen)">
                         <span class="sr-only">Open sidebar</span>
                         <div class="block w-5 absolute left-1/2 top-1/2   transform  -translate-x-1/2 -translate-y-1/2">
                             <span aria-hidden="true" class="block absolute rounded-full h-0.5 w-5 bg-gray-900 transform transition duration-200 ease-in-out"
@@ -153,7 +153,7 @@ const label = {
                     <!-- Dropdown: TopBars -->
                     <Menu v-if="layoutStore.group || (layoutStore.organisations.data?.length > 1)" as="div" class="ml-2 relative text-left">
                         <MenuButton v-slot="{ open }"
-                                    class="inline-flex sm:min-w-32 sm:w-[184px] h-[26px] lg:h-8 text-ellipsis rounded border border-gray-300 w-full whitespace-nowrap justify-between items-center gap-x-2 px-2.5 py-2 text-xxs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+                                    class="inline-flex sm:min-w-32 sm:w-[184px] h-[26px] lg:h-8 text-ellipsis rounded border border-gray-300 w-full whitespace-nowrap justify-between items-center gap-x-2 px-2.5 py-2 text-xxs font-medium focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white/75"
                                     :class="[!!(layoutStore.organisations.data?.find((item) => item.slug == layoutStore.currentParams?.organisation)) || !!layoutStore.agents.data?.find((item) => item.slug == layoutStore.currentParams?.organisation) ? 'bg-slate-200 text-slate-600 hover:bg-slate-300' : 'hover:bg-slate-200 text-slate-600']">
                             <div class="flex items-center gap-x-1 w-full truncate text-ellipsis line-clamp-2">
                                 <FontAwesomeIcon :icon="layoutStore.currentParams?.organisation
@@ -186,7 +186,7 @@ const label = {
 
                         <transition>
                             <MenuItems
-                                class="px-1 py-1 space-y-2.5 min-w-24 w-fit max-w-96 absolute left-0 mt-2 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                class="px-1 py-1 space-y-2.5 min-w-24 w-fit max-w-96 absolute left-0 mt-2 origin-top-right rounded-lg bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden">
                                 <!-- Dropdown: Group -->
                                 <TopBarDropdownScope v-if="layoutStore.group" class=""
                                                      :menuItems="[{
@@ -277,7 +277,7 @@ const label = {
                                 />
 
                                 <transition>
-                                    <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y-0 divide-gray-400 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                    <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y-0 divide-gray-400 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden">
                                         <MenuPopoverList
                                             v-if="layoutStore.organisations.data?.find(organisation => organisation.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length || layoutStore.agents.data?.find(agent => agent.slug == layoutStore.currentParams.organisation)?.authorised_shops?.length"
                                             icon="fal fa-store-alt"
@@ -315,7 +315,7 @@ const label = {
                                 />
 
                                 <transition>
-                                    <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-none">
+                                    <MenuItems class="absolute left-0 mt-2 w-56 origin-top-right divide-y divide-gray-100 rounded bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden">
                                         <MenuPopoverList icon="fal fa-warehouse-alt" :navKey="'warehouse'" :closeMenu="closeMenu" />
                                     </MenuItems>
                                 </transition>

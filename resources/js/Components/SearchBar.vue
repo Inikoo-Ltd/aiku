@@ -140,7 +140,7 @@ function countModelTypes(data) {
                                 <button v-else as="button"
                                     @click="() => selectedTab = null"
                                     key="All"
-                                    class="min-w-28 w-min rounded py-2.5 px-2 text-sm leading-5 whitespace-nowrap ring-1 ring-slate-200 focus:ring-transparent focus:ring-offset-2 focus:ring-offset-slate-500 focus:outline-none focus:ring-2 transition-all"
+                                    class="min-w-28 w-min rounded py-2.5 px-2 text-sm leading-5 whitespace-nowrap ring-1 ring-slate-200 focus:ring-transparent focus:ring-offset-2 focus:ring-offset-slate-500 focus:outline-hidden focus:ring-2 transition-all"
                                     :class="[
                                         !selectedTab
                                             ? 'bg-indigo-600 text-white'
@@ -153,7 +153,7 @@ function countModelTypes(data) {
                                     <button v-for="(tabCount, tabName, tabIdx) in countModelTypes(resultsSearch)" as="button"
                                         @click="() => selectedTab = tabName"
                                         :key="tabName+tabIdx"
-                                        class="w-fit w rounded py-2.5 pl-7 pr-8 text-sm leading-5 whitespace-nowrap ring-1 ring-slate-200 focus:ring-transparent focus:ring-offset-2 focus:ring-offset-slate-500 focus:outline-none focus:ring-2 transition-all"
+                                        class="w-fit w rounded py-2.5 pl-7 pr-8 text-sm leading-5 whitespace-nowrap ring-1 ring-slate-200 focus:ring-transparent focus:ring-offset-2 focus:ring-offset-slate-500 focus:outline-hidden focus:ring-2 transition-all"
                                         :class="[
                                             tabName == selectedTab
                                                 ? 'bg-indigo-600 text-white'
@@ -193,7 +193,7 @@ function countModelTypes(data) {
                                 <template v-for="(result, resultIdx) in resultsSearch"
                                     :key="result.model_type + result.model_id">
                                     <li v-if="selectedTab ? result.model_type === selectedTab : true"
-                                        class="bg-white hover:bg-slate-100 border-l-4 border-transparent hover:border-yellow-500  pt-0 pb-0 pl-6 mr-6 transition-none ring-white/60 ring-offset-2 ring-offset-blue-400 focus:outline-none focus:ring-2 cursor-pointer"
+                                        class="bg-white hover:bg-slate-100 border-l-4 border-transparent hover:border-yellow-500  pt-0 pb-0 pl-6 mr-6 transition-none ring-white/60 ring-offset-2 ring-offset-blue-400 focus:outline-hidden focus:ring-2 cursor-pointer"
                                     >
                                         <!-- <SearchResultPallet v-if="result.model_type == 'Pallet'" :data="result.model" /> -->
                                         <!-- <SearchResultCustomer v-else-if="result.model_type == 'Customer'" :data="result.model" />

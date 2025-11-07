@@ -146,7 +146,7 @@ watch(() => props.modelValue, (newVal) => emitUpdate(newVal), { deep: true })
     <div>
       <h2 class="font-medium text-gray-800 text-lg mb-4">Navigation Title</h2>
       <div class="flex items-center gap-3">
-        <button type="button" class="border border-gray-300 rounded px-3 py-2 cursor-pointer hover:border-blue-500 transition focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button type="button" class="border border-gray-300 rounded px-3 py-2 cursor-pointer hover:border-blue-500 transition focus:outline-hidden focus:ring-2 focus:ring-blue-500">
           <IconPicker v-model="props.modelValue.icon" />
         </button>
         <input v-model="props.modelValue.label" type="text" placeholder="Enter Navigation Title"

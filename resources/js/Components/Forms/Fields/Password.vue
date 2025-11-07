@@ -51,7 +51,7 @@ defineExpose({
 
         </div>
             <button type="button" @click="showPassword = !showPassword"
-                class="w-min px-3 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
+                class="w-min px-3 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-gray-700 bg-gray-50 hover:bg-gray-100 focus:outline-hidden focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500">
                 <font-awesome-icon aria-hidden="true" class="h-5 w-5 text-gray-400"
                     :icon="showPassword ? 'fas fa-eye' : 'fas fa-eye-slash'" />
             </button>

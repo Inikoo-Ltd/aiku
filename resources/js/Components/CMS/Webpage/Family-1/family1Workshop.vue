@@ -85,7 +85,7 @@ watch(descriptionTitle, (val) => {
 
       <!-- Description Title -->
       <input v-model="descriptionTitle" type="text" placeholder="Family Description Title"
-        class="w-full appearance-none bg-transparent border-none p-0 m-0 text-[1.5rem] leading-[2rem] font-semibold text-gray-800 focus:outline-none focus:ring-0 shadow-none" />
+        class="w-full appearance-none bg-transparent border-none p-0 m-0 text-[1.5rem] leading-[2rem] font-semibold text-gray-800 focus:outline-hidden focus:ring-0 shadow-none" />
 
 
       <!-- Main Description Editor -->
@@ -107,7 +107,7 @@ watch(descriptionTitle, (val) => {
           </div>
         </transition>
         <button @click="toggleShowExtra"
-          class="text-sm text-gray-800 font-semibold hover:underline focus:outline-none transition-colors">
+          class="text-sm text-gray-800 font-semibold hover:underline focus:outline-hidden transition-colors">
           {{ showExtra ? trans("Show Less") : trans("Read More") }}
         </button>
       </div>

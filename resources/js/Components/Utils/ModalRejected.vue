@@ -129,7 +129,7 @@ const onReject = () => {
 					id="otherReason"
 					v-model="otherText"
 					placeholder="Enter your reason here..."
-					class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring focus:border-indigo-300" />
+					class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-hidden focus:ring focus:border-indigo-300" />
 			</div>
 
 			<div class="flex justify-end space-x-4 pt-4 border-t">

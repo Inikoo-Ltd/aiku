@@ -218,7 +218,7 @@ const onClickLogin = () => {
                     <div class="mt-1">
                         <input ref="inputContactName" id="contact_name" name="contact_name" :autofocus="true"
                             autocomplete="contact_name" required
-                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                     </div>
                 </div>
 
@@ -227,7 +227,7 @@ const onClickLogin = () => {
                     <div class="mt-1">
                         <input ref="inputUsername" id="username" name="username" :autofocus="true"
                             autocomplete="username" required
-                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                     </div>
                 </div>
 

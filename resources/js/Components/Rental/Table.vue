@@ -113,7 +113,7 @@ const showAll = () => {
             <Switch
                 @click="() => props.fieldData[props.blueprint.key].data.length == props.form[props.fieldName][props.blueprint.key].length ? showEdited() : showAll()"
                 :class="props.fieldData[props.blueprint.key].data.length == props.form[props.fieldName][props.blueprint.key].length ? '' : ''"
-                class="pr-1 relative inline-flex h-5 aspect-[2/1] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors bg-white ring-1 ring-slate-300 duration-200 shadow ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+                class="pr-1 relative inline-flex h-5 aspect-[2/1] shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors bg-white ring-1 ring-slate-300 duration-200 shadow ease-in-out focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white/75"
             >
                 <!-- <span class="sr-only">Use setting</span> -->
                 <span aria-hidden="true" :class="props.fieldData[props.blueprint.key].data.length == props.form[props.fieldName][props.blueprint.key].length ? 'translate-x-5 bg-indigo-500' : 'translate-x-0 bg-slate-300'"

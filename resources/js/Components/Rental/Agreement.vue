@@ -143,7 +143,7 @@ const onSavedAgreement = (updateAll: boolean) => {
                         <button
                             :style="selected ? { color: layout.app.theme[0], borderBottomColor: layout.app.theme[0] } : {}"
                             :class="[
-                                'whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-none',
+                                'whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-hidden',
                                 selected
                                     ? `text-[${layout.app.theme[0]}]`
                                     : `border-transparent text-[${layout.app.theme[0]}] hover:border-[${layout.app.theme[0]}]`,
@@ -192,7 +192,7 @@ const onSavedAgreement = (updateAll: boolean) => {
             </TabList>
 
             <TabPanels class="mt-2">
-                <TabPanel v-for="(tab, idx) in tabs" :key="idx" class="p-3 focus:outline-none">
+                <TabPanel v-for="(tab, idx) in tabs" :key="idx" class="p-3 focus:outline-hidden">
                     <slot name="table" :data="{ p: props, tab: tab }">
                         <RentalTable v-bind="props" :blueprint="tab.tableBluprint" :initalForm="cloneData" />
                     </slot>

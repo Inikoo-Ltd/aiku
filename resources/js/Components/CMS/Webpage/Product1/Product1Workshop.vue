@@ -255,7 +255,7 @@ const toggleExpanded = () => {
                         <input v-if="templateEdit === 'webpage'" placeholder="Description title"
                             v-model="modelValue.product.description_title"
                             @update:model-value="(e) => onDescriptionUpdate('description_title', e)"
-                            class="w-full bg-transparent text-sm border-0 px-0 py-0 focus:outline-none focus:ring-0 transition  font-medium text-gray-800 placeholder-gray-400" />
+                            class="w-full bg-transparent text-sm border-0 px-0 py-0 focus:outline-hidden focus:ring-0 transition  font-medium text-gray-800 placeholder-gray-400" />
                         <div v-else>{{ modelValue.product.description_title }}</div>
                     </div> -->
 
@@ -291,7 +291,7 @@ const toggleExpanded = () => {
             <div v-else   ref="contentRef" class="prose prose-sm text-gray-700 max-w-none" v-html="modelValue.product.description_extra"></div>
 
              <button v-if="showButton" @click="toggleExpanded"
-                class="mt-1 text-gray-900 text-xs underline focus:outline-none">
+                class="mt-1 text-gray-900 text-xs underline focus:outline-hidden">
                 {{ expanded ? trans("Show Less") : trans("Read More") }}
             </button>
         </div>

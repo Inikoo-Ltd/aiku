@@ -68,7 +68,7 @@ const gridClass = computed(() => {
                         <RadioGroupOption as="template" v-for="option in fieldData.options" :key="option.value"
                             :value="option[fieldData.valueProp] || option" v-slot="{ active, checked }">
                             <div :class="[
-                                'relative flex cursor-pointer rounded-lg border p-3 shadow-sm focus:outline-none transition-all',
+                                'relative flex cursor-pointer rounded-lg border p-3 shadow-sm focus:outline-hidden transition-all',
                                 active ? 'border-indigo-500 ring-2 ring-indigo-500' : 'border-gray-300',
                                 checked ? 'bg-indigo-100 border-indigo-400' : 'hover:bg-gray-50'
                             ]">
@@ -99,7 +99,7 @@ const gridClass = computed(() => {
                     class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-all cursor-pointer">
                     <input v-model="form[fieldName]" :id="option.label + index" :name="option.value" type="radio"
                         :value="option.value"
-                        class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-0 focus:outline-none cursor-pointer" />
+                        class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-0 focus:outline-hidden cursor-pointer" />
                     <label :for="option.label + index" class="flex items-center gap-x-2 cursor-pointer">
                         <p class="text-sm font-medium text-gray-700 capitalize">{{ option.label ?? option.value }}</p>
                     </label>

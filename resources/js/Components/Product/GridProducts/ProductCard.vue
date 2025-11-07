@@ -241,7 +241,7 @@ const toggleFavorite = (product: Product) => {
         
         <!-- Favorite Button -->
         <button :disabled="isLoadingFavorite" @click.stop="() => toggleFavorite(product)"
-            class="group absolute top-3 right-3 z-10 p-2 backdrop-blur-sm rounded-full shadow-md hover:shadow-lg transition-all xhover:scale-110 flex items-center justify-center"
+            class="group absolute top-3 right-3 z-10 p-2 backdrop-blur-xs rounded-full shadow-md hover:shadow-lg transition-all xhover:scale-110 flex items-center justify-center"
             type="button">
             <LoadingIcon v-if="isLoadingFavorite" class="h-5 w-5" />
             <div v-else-if="product.is_not_favourite" class="relative">

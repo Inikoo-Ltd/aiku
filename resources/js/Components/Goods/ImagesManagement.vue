@@ -378,7 +378,7 @@ function onDeleteFilesInList(categoryBox: any) {
                 @drop.prevent="onDropFile($event); isDragOver = false">
                 <!-- Overlay  drag -->
                 <div v-if="isDragOver && editable" class="absolute inset-0 z-10 flex flex-col items-center justify-center
-             bg-blue-50/80 backdrop-blur-sm text-blue-500 pointer-events-none">
+             bg-blue-50/80 backdrop-blur-xs text-blue-500 pointer-events-none">
                     <FontAwesomeIcon :icon="faUpload" class="text-3xl mb-2" />
                     <p class="text-sm font-medium">{{ trans("Drop files to upload") }}</p>
                 </div>

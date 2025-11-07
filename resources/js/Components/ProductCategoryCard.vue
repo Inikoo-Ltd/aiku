@@ -130,7 +130,7 @@ const statusIcon = (filled: boolean) => (filled ? faCheck : faTimesCircle); */
         <button
           v-if="props.data?.description_extra"
           @click="showExtra = !showExtra"
-          class="text-blue-500 text-xs font-medium hover:underline focus:outline-none"
+          class="text-blue-500 text-xs font-medium hover:underline focus:outline-hidden"
         >
           {{ showExtra ? trans("Show Less") : trans("Read More") }}
         </button>

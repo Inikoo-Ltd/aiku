@@ -19,7 +19,7 @@ const model = defineModel()
           class="editor-wrapper border-2 border-gray-300 rounded-lg p-3 shadow-sm focus-within:border-blue-400"
           :style="{ minHeight: `${props.rows * 24}px` }"
         >
-          <EditorContent :editor="editor" class="editor-content focus:outline-none" />
+          <EditorContent :editor="editor" class="editor-content focus:outline-hidden" />
         </div>
       </template>
     </Editor>

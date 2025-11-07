@@ -49,7 +49,7 @@ const bKeys = Blueprint?.blueprint?.map(b => b?.key?.join("-")) || [];
 		<!-- Placeholder if no link -->
 		<div
 			v-if="!props.modelValue.link || props.modelValue?.link === ''"
-			class="relative block w-full p-12 text-center hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+			class="relative block w-full p-12 text-center hover:border-gray-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
 			role="button"
 			@click="() => sendMessageToParent('activeBlock', props.indexBlock)"
 		>

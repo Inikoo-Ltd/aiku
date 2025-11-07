@@ -48,7 +48,7 @@ const props = defineProps({
                         <!-- Switch Toggle -->
                         <button type="button"
                             :id="column.label"
-                            class="ml-4 relative inline-flex shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-none focus:ring-1 focus:ring-offset-2 focus:ring-gray-600"
+                            class="ml-4 relative inline-flex shrink-0 h-6 w-11 border-2 border-transparent rounded-full cursor-pointer transition-colors ease-in-out duration-200 focus:outline-hidden focus:ring-1 focus:ring-offset-2 focus:ring-gray-600"
                             :class="[column.hidden ? 'bg-gray-200' : 'bg-gray-700']"
                             :aria-pressed="!column.hidden" :aria-labelledby="`toggle-column-${column.key}`"
                             :aria-describedby="`toggle-column-${column.key}`" :dusk="`toggle-column-${column.key}`"

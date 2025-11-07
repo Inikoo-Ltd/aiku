@@ -31,7 +31,7 @@ const removeItem = (index: number) => {
                 type="text" 
                 v-model="modelValue[index]" 
                 placeholder="Enter value" 
-                class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400"
+                class="w-full p-2 border border-gray-300 rounded focus:outline-hidden focus:ring-2 focus:ring-blue-400"
             />
             <Button 
                 :icon="['far', 'fa-trash-alt']"

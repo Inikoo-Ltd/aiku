@@ -46,7 +46,7 @@ console.log('environment', isStaging)
         <div class="mt-1 flex h-11 lg:h-10 shrink-0 gap-x-2">
             <div class="flex">
                 <!-- Mobile: Hamburger -->
-                <button class="block md:hidden w-10 h-10 relative focus:outline-none"
+                <button class="block md:hidden w-10 h-10 relative focus:outline-hidden"
                     @click="$emit('sidebarOpen', !sidebarOpen)">
                     <span class="sr-only">Open sidebar</span>
                     <div class="block w-5 absolute left-1/2 top-1/2   transform  -translate-x-1/2 -translate-y-1/2">

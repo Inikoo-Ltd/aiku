@@ -212,7 +212,7 @@ defineExpose({
     <TabGroup :selectedIndex="selectedTab" @change="changeTab">
       <TabList class="flex border-b border-gray-300">
         <Tab v-for="(tab, index) in tabs" :key="index"
-          class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-t-md focus:outline-none"
+          class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-t-md focus:outline-hidden"
           :class="selectedTab === index ? 'bg-white text-theme border-b-2 border-theme' : ''">
           <FontAwesomeIcon :icon="tab.icon" fixed-width v-tooltip="tab.tooltip" />
           {{ tab.label }}
@@ -235,7 +235,7 @@ defineExpose({
               <Button type="dashed" @click="openModalBlockList" :icon="faPlus" class="text-sm text-theme border-theme"
                 :size="'xs'" label="Block" />
               <select
-                class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none"
+                class="text-sm border border-gray-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-hidden"
                 :value="filterBlock" @change="(event: { target: { value: any } }) => filterBlock = event.target.value">
                 <option disabled value="">Filter</option>
                 <option v-for="option in filterOptions" :key="option.value" :value="option.value">

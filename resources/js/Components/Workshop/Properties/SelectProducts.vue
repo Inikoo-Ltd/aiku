@@ -304,7 +304,7 @@ const listType = [
         <label class="block text-sm text-gray-700">Select view type:</label>
         <!-- <select
             v-model="localType"
-            class="border border-gray-300 px-4 py-2 rounded w-full focus:ring-2 focus:ring-primary focus:outline-none"
+            class="border border-gray-300 px-4 py-2 rounded w-full focus:ring-2 focus:ring-primary focus:outline-hidden"
         >
             <option value="">Select type</option>
             <option value="custom">Custom</option>

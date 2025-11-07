@@ -107,7 +107,7 @@ const onSubmit = () => {
 							name="amount"
 							placeholder="Enter amount"
 							v-model.number="amount"
-							class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+							class="w-full border border-gray-300 rounded-md p-3 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
 					</div>
 
 					<div>
@@ -120,7 +120,7 @@ const onSubmit = () => {
 							rows="4"
 							placeholder="Add any private notes here..."
 							v-model="privateNote"
-							class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+							class="w-full border border-gray-300 rounded-md p-3 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"></textarea>
 					</div>
 				</div>
 
@@ -161,7 +161,7 @@ const onSubmit = () => {
 							name="amount"
 							placeholder="Enter amount"
 							v-model.number="amount"
-							class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+							class="w-full border border-gray-300 rounded-md p-3 focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
 					</div>
 
 					<div>
@@ -174,7 +174,7 @@ const onSubmit = () => {
 							rows="4"
 							placeholder="Add any private notes here..."
 							v-model="privateNote"
-							class="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+							class="w-full border border-gray-300 rounded-md p-3 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"></textarea>
 					</div>
 				</div>
 

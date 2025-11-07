@@ -252,7 +252,7 @@
 
   <style lang="scss">
   .multiselect-tags-search {
-      @apply focus:outline-none focus:ring-0 focus:border-none h-full #{!important}
+      @apply focus:outline-hidden focus:ring-0 focus:border-none h-full #{!important}
   }
 
   .multiselect.is-active {

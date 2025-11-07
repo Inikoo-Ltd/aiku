@@ -126,7 +126,7 @@ const onInput = (keyOption : any) => {
     max-height: 250px !important;
 }
 :deep(.multiselect-tags-search) {
-    @apply focus:outline-none focus:ring-0
+    @apply focus:outline-hidden focus:ring-0
 }
 
 :deep(.multiselect-tags) {

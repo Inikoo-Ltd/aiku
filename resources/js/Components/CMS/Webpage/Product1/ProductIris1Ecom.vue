@@ -462,7 +462,7 @@ const closePopover = (close: any): void => {
                 class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
                 :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
 
-            <button v-if="showButton" @click="toggleExpanded" class="mt-1 text-xs underline focus:outline-none">
+            <button v-if="showButton" @click="toggleExpanded" class="mt-1 text-xs underline focus:outline-hidden">
                 {{ expanded ? trans("Show Less") : trans("Read More") }}
             </button>
         </div>

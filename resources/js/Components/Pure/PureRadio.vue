@@ -43,7 +43,7 @@ const layout = inject('layout', layoutStructure)
                                 :value="by ? option[by] : option" v-slot="{ active, checked }">
                                 <div
                                     :class="[
-                                        'cursor-pointer focus:outline-none flex items-center justify-center rounded-md py-3 px-3 text-sm font-medium',
+                                        'cursor-pointer focus:outline-hidden flex items-center justify-center rounded-md py-3 px-3 text-sm font-medium',
                                         active ? 'ring-2 ring-gray-600 ring-offset-2' : '',
                                         checked ? 'bg-gray-600 text-white hover:bg-gray-500' : 'ring-1 ring-inset ring-gray-300 bg-white text-gray-700 hover:bg-gray-50',
                                     ]">
@@ -65,7 +65,7 @@ const layout = inject('layout', layoutStructure)
                         <div class="flex gap-x-4 justify-around">
                             <RadioGroupOption as="template" v-for="(option, index) in options" :key="option.value" :value="option" v-slot="{ active, checked }">
                                 <div :class="[
-                                    'relative flex cursor-pointer rounded-lg border bg-white py-2 px-3 shadow-sm focus:outline-none',
+                                    'relative flex cursor-pointer rounded-lg border bg-white py-2 px-3 shadow-sm focus:outline-hidden',
                                     checked ? 'ring-2 ring-gray-600' : 'border-gray-300'
                                 ]">
                                     <span class="flex flex-1">
@@ -94,7 +94,7 @@ const layout = inject('layout', layoutStructure)
                                 :value="option" v-slot="{ active, checked }">
                                 <div
                                     :class="[
-                                        'cursor-pointer focus:outline-none flex items-center justify-center py-3 px-3 text-sm font-medium',
+                                        'cursor-pointer focus:outline-hidden flex items-center justify-center py-3 px-3 text-sm font-medium',
                                         active ? 'ring-2 ring-gray-600 ring-offset-2' : '',
                                         checked ? 'bg-gray-600 text-white hover:bg-gray-500' : 'ring-1 ring-inset ring-gray-300 bg-white text-gray-700 hover:bg-gray-50',
                                     ]">
@@ -115,7 +115,7 @@ const layout = inject('layout', layoutStructure)
                         :name="name"
                         :checked="indexChecked > -1 ? indexChecked === index : (option[by] || option) == model"
                         type="radio"
-                        class="h-4 w-4 border-gray-300 focus:ring-0 focus:outline-none focus:ring-transparent cursor-pointer"
+                        class="h-4 w-4 border-gray-300 focus:ring-0 focus:outline-hidden focus:ring-transparent cursor-pointer"
                         :style="{
                             color: layout?.app?.theme?.[0] || '#4F46E5'
                         }"

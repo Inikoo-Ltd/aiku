@@ -69,7 +69,7 @@ const xxx = ref('')
                     v-slot="{ active, checked }">
                     <div
                         :class="[
-                            'group cursor-pointer focus:outline-none flex items-center justify-center border rounded-md py-2 px-3 text-sm font-medium capitalize',
+                            'group cursor-pointer focus:outline-hidden flex items-center justify-center border rounded-md py-2 px-3 text-sm font-medium capitalize',
                             active ? 'ring-2 ring-red-600 ring-offset-2' : '',
                             checked ? 'bg-red-100 text-red-600 hover:bg-red-300 border-red-500' : 'ring-1 ring-inset ring-gray-300 bg-white  hover:bg-gray-100',
                         ]">
@@ -85,7 +85,7 @@ const xxx = ref('')
                     v-slot="{ active, checked }">
                     <div
                         :class="[
-                            'group cursor-pointer focus:outline-none flex items-center justify-center border rounded-md py-2 px-3 text-sm font-medium capitalize',
+                            'group cursor-pointer focus:outline-hidden flex items-center justify-center border rounded-md py-2 px-3 text-sm font-medium capitalize',
                             active ? 'ring-2 ring-green-600 ring-offset-2' : '',
                             checked ? 'bg-green-100 text-green-600 hover:bg-green-300 border-green-500' : 'ring-1 ring-inset ring-gray-300 bg-white hover:bg-gray-100',
                         ]">

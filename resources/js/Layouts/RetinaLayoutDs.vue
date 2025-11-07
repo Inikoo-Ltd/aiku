@@ -88,7 +88,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 			<!-- Floating menu button (mobile only) -->
 			<button
 				@click="sidebarOpen = !sidebarOpen"
-				class="shadow-white/50 shadow-md fixed justify-center items-center h-16 w-16 bottom-8 left-8 z-[51] md:hidden p-4 rounded-full focus:outline-none"
+				class="shadow-white/50 shadow-md fixed justify-center items-center h-16 w-16 bottom-8 left-8 z-[51] md:hidden p-4 rounded-full focus:outline-hidden"
 				:style="{
 					backgroundColor: layout?.app?.theme[5],
 					color: layout?.app?.theme[4],

@@ -89,7 +89,7 @@ const getTemplate= async (id) => {
                 <Tab v-for="(category, categoryIndex) in categories" as="template" :key="categoryIndex"
                     v-slot="{ selected }">
                     <button :class="[
-                        'whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-none',
+                        'whitespace-nowrap border-b-2 py-1.5 px-1 text-sm font-medium focus:ring-0 focus:outline-hidden',
                         selected
                             ? 'border-group-5s00 text-org-500'
                             : 'border-transparent text-gray-400 hover:border-gray-300',
@@ -101,7 +101,7 @@ const getTemplate= async (id) => {
 
             <TabPanels class="mt-2 h-[600px]">
                 <TabPanel v-for="(category, categoryIndex) in categories" :key="categoryIndex"
-                    class="rounded bg-gray-50 p-3 ring-2 ring-gray-200 focus:outline-none h-full  overflow-auto">
+                    class="rounded bg-gray-50 p-3 ring-2 ring-gray-200 focus:outline-hidden h-full  overflow-auto">
                     <component 
                     :is="category.component" 
                     @changeTemplate="selectTemplate"

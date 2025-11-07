@@ -48,7 +48,7 @@ const onChangeProperty = (index: number, data: object) => {
                 <div class="py-1">
                     <Disclosure v-slot="{ open }">
                         <DisclosureButton
-                            class="flex w-full items-center justify-between bg-gray-100 px-4 py-2 text-left text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-none focus-visible:ring focus-visible:ring-gray-500/75">
+                            class="flex w-full items-center justify-between bg-gray-100 px-4 py-2 text-left text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-hidden focus-visible:ring focus-visible:ring-gray-500/75">
                             <span class="drag-handle cursor-move">☰</span>
                             <span>Disclosure {{ index + 1 }}</span>
                             <FontAwesomeIcon :icon="faTrash" class="text-red-500 hover:text-red-700"

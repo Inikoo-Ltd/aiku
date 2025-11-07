@@ -69,7 +69,7 @@ watch(props.forcedVisibleSearchInputs, (inputs) => {
         @input="onChange(searchInput.key, $event.target.value)">
       <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
         <button
-          class="rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+          class="rounded-md text-gray-400 hover:text-gray-500 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
           :dusk="`remove-search-row-${searchInput.key}`" @click.prevent="onRemove(searchInput.key)">
           <span class="sr-only">Remove search</span>
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

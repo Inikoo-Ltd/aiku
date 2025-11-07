@@ -112,7 +112,7 @@ const _popover = ref(null)
 
         <div @click="(e) => _popover?.toggle(e)"
             v-tooltip="trans('Filter by dates')"
-            class="group inline-flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/75"
+            class="group inline-flex items-center rounded-md focus:outline-hidden focus-visible:ring-2 focus-visible:ring-white/75"
         >
             <div class="h-7 w-9 rounded flex justify-center items-center"
                 :class="true ? 'border border-gray-300 hover:bg-gray-300 text-gray-600 hover:text-xgray-200' : 'bg-gray-600 hover:bg-gray-700 text-white'"

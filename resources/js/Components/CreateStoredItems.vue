@@ -304,7 +304,7 @@ const onSaveNameForNewStoredItem = async () => {
 			<div class=" mt-1 flex items-center gap-2">
 				<input v-model="form.quantity" id="quantity" name="quantity" :autofocus="true" type="number"
 					autocomplete="quantity" :required="true" :min="1" @update:modelValue="form.errors.quantity = ''"
-					class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+					class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-hidden focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
 				<Button type="tertiary" :icon="faPlus" @click="incrementQuantity" />
 				<Button type="tertiary" :icon="faMinus" @click="decrementQuantity" />
 			</div> -->
@@ -312,7 +312,7 @@ const onSaveNameForNewStoredItem = async () => {
 			<div class="col-span-2 self-end w-full justify-end flex gap-x-2">
 				<div
 					@click="decrementQuantity"
-					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-base justify-self-center"
+					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-hidden disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-base justify-self-center"
 				>
 					<FontAwesomeIcon icon='fas fa-minus' class='' fixed-width aria-hidden='true' />
 				</div>
@@ -337,7 +337,7 @@ const onSaveNameForNewStoredItem = async () => {
 				</div>
 				<div
 					@click="incrementQuantity"
-					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-base justify-self-center"
+					class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-hidden disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-base justify-self-center"
 				>
 					<FontAwesomeIcon icon='fas fa-plus' class='' fixed-width aria-hidden='true' />
 				</div>

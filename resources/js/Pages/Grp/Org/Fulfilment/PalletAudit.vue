@@ -322,7 +322,7 @@ const isModalOpened = ref(false)
                                                         : debounceStoreStoredItem(data.stored_item_id, get(data, `new_quantity`, data.quantity), data.stored_item_audit_id)
                                                     
                                                 )"
-                                                class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
+                                                class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-hidden disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
                                                 <FontAwesomeIcon icon='fas fa-minus' class='' fixed-width aria-hidden='true' />
                                             </div>
                                             
@@ -354,7 +354,7 @@ const isModalOpened = ref(false)
                                                     : debounceStoreStoredItem(data.stored_item_id, get(data, `new_quantity`, data.quantity), data.stored_item_audit_id)
                                             )"
                                                 type="tertiary" size="xs"
-                                                class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-none disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
+                                                class="leading-4 cursor-pointer inline-flex items-center gap-x-2 font-medium focus:outline-hidden disabled:cursor-not-allowed min-w-max bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-200/70 disabled:bg-gray-200/70 rounded px-1 py-1.5 text-xs justify-self-center">
                                                 <FontAwesomeIcon icon='fas fa-plus' class='' fixed-width
                                                     aria-hidden='true' />
                                             </div>
