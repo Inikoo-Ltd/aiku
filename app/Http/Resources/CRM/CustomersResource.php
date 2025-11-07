@@ -71,6 +71,7 @@ class CustomersResource extends JsonResource
             'sales_grp_currency_all'          => $this->sales_grp_currency_all,
             'currency_code'                   => $this->currency_code,
             'balance'                         => $this->balance,
+            'tags'                            => $this->whenLoaded('tags', fn () => $this->tags->pluck('name')),
         ];
 
         if ($this->organisation_name) {

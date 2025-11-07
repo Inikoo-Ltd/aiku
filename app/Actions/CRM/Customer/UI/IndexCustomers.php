@@ -99,7 +99,10 @@ class IndexCustomers extends OrgAction
             $query->where(function ($query) use ($value, $parent) {
                 $query->whereAnyWordStartWith('customers.name', $value)
                     ->orWhereStartWith('customers.email', $value)
-                    ->orWhere('customers.reference', '=', $value);
+                    ->orWhere('customers.reference', '=', $value)
+                    ->orWhereHas('tags', function ($tagQuery) use ($value) {
+                        $tagQuery->where('tags.name', 'LIKE', "%{$value}%");
+                    });
                 if (class_basename($parent) == 'Group') {
                     $query->orWhereStartWith('organisations.name', $value);
                     $query->orWhereStartWith('shops.name', $value);
@@ -171,6 +174,8 @@ class IndexCustomers extends OrgAction
         } else {
             $queryBuilder->withBetweenDates(['registered_at']);
         }
+
+        $queryBuilder->with('tags');
 
         return $queryBuilder
             ->defaultSort('-created_at')
@@ -277,6 +282,12 @@ class IndexCustomers extends OrgAction
             $table->column(key: 'last_invoiced_at', label: __('last invoice'), canBeHidden: false, sortable: true, searchable: true, type: 'date')
                 ->column(key: 'number_invoices_type_invoice', label: __('invoices'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'sales_all', label: __('sales'), canBeHidden: false, sortable: true, searchable: true);
+
+            $table->column(
+                key: 'tags',
+                label: __('tags'),
+                canBeHidden: false
+            );
 
             $table->defaultSort('-created_at');
         };

@@ -73,5 +73,15 @@ function shopRoute(customer: FulfilmentCustomer) {
         <template #cell(sales_all)="{ item: customer }">
             <div class="text-gray-500">{{ useLocaleStore().currencyFormat(customer.currency_code, customer.sales_all) }}</div>
         </template>
+        <template #cell(tags)="{ item: customer }">
+            <div v-if="customer.tags && customer.tags.length" class="flex flex-wrap gap-1">
+                <span v-for="tag in customer.tags" :key="tag" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition-colors duration-200 ease-in-out">
+                    {{ tag }}
+                </span>
+            </div>
+            <div v-else class="text-gray-400 text-xs italic">
+                No tags
+            </div>
+        </template>
     </Table>
 </template>
