@@ -27,7 +27,7 @@ class HydrateCustomerClients
 
     public function handle(CustomerClient $customerClient): void
     {
-        CustomerClientHydrateBasket::run($customerClient);
+        CustomerClientHydrateBasket::run($customerClient->id);
         CustomerClientHydrateInvoices::run($customerClient);
         CustomerClientHydrateOrders::run($customerClient);
 

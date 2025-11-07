@@ -39,20 +39,20 @@ class CreateShopifyWebhooks extends OrgAction
                     'format' => 'JSON',
                 ]
             ],
-            [
-                'topic'               => 'PRODUCTS_DELETE',
-                'webhookSubscription' => [
-                    'uri'    => 'https://'.config('app.domain')."/webhooks/shopify/{$shopifyUser->id}/products-deleted",
-                    'format' => 'JSON',
-                ]
-            ],
-            [
-                'topic'               => 'PRODUCTS_UPDATE',
-                'webhookSubscription' => [
-                    'uri'    => 'https://'.config('app.domain')."/webhooks/shopify/{$shopifyUser->id}/products-updated",
-                    'format' => 'JSON',
-                ]
-            ],
+//            [
+//                'topic'               => 'PRODUCTS_DELETE',
+//                'webhookSubscription' => [
+//                    'uri'    => 'https://'.config('app.domain')."/webhooks/shopify/{$shopifyUser->id}/products-deleted",
+//                    'format' => 'JSON',
+//                ]
+//            ],
+//            [
+//                'topic'               => 'PRODUCTS_UPDATE',
+//                'webhookSubscription' => [
+//                    'uri'    => 'https://'.config('app.domain')."/webhooks/shopify/{$shopifyUser->id}/products-updated",
+//                    'format' => 'JSON',
+//                ]
+//            ],
         ];
 
 

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted } from "vue"
 import { getStyles } from "@/Composables/styles"
-import { sendMessageToParent } from "@/Composables/Workshop"
-
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
@@ -111,7 +109,7 @@ onMounted(()=> {
             <!-- <EditorV2
                 v-model="modelValue.title"
                 @focus="() => {
-                    sendMessageToParent('activeBlock', indexBlock)
+                    sendMessageToParent('activeBlock', indexBlock?)
                 }"
                 @update:modelValue="() => emits('autoSave')" :uploadImageRoute="{
                     name: webpageData.images_upload_route.name,

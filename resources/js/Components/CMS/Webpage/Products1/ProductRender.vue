@@ -211,18 +211,6 @@ const profitMargin = computed(() => {
     <div class="relative flex flex-col justify-between h-full">
         <!-- Top Section -->
         <div>
-            <!-- <div v-if="product?.top_seller"
-                class="absolute top-2 left-2 bg-white border border-black text-xs font-bold px-2 py-0.5 rounded">
-                <FontAwesomeIcon :icon="faMedal" class="w-3.5 h-3.5 mr-0 md:mr-2" :class="{
-
-                    'text-[#FFD700]': product.top_seller === 1, // Gold
-                    'text-[#C0C0C0]': product.top_seller === 2, // Silver
-                    'text-[#CD7F32]': product.top_seller === 3  // Bronze
-                }" />
-
-                <span class="hidden md:inline">BESTSELLER</span>
-            </div> -->
-
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
             <!-- Favorite Icon -->
             <template v-if="layout?.retina?.type != 'dropshipping' && layout?.iris?.is_logged_in">
@@ -250,7 +238,6 @@ const profitMargin = computed(() => {
             </component>
 
             <!-- Title -->
-
             <LinkIris v-if="product.url" :href="product.url" type="internal" class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 <template #default>
                     <span  class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
@@ -276,25 +263,12 @@ const profitMargin = computed(() => {
                         <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
                         <span>{{ product.stock > 0 ? product.stock : 0 }} {{ trans("available") }}</span>
                     </div>
-
-                    <!-- Notify button as tag -->
-                    <!-- <button v-if="product.stock == 0 && layout?.app?.environment === 'local'" type="button"
-                    @click.prevent="() => product?.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
-                    v-tooltip="'Will notify you when product is in stock'"
-                    class="flex items-center gap-1 px-2 rounded-full border text-gray-500 hover:bg-gray-100 hover:text-gray-800 transition text-xs">
-                    <LoadingIcon v-if="isLoadingRemindBackInStock" />
-                    <FontAwesomeIcon v-else :icon="product?.is_back_in_stock ? faEnvelopeCircleCheck : faEnvelope"
-                        fixed-width :class="[product?.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
-                    <span>{{ trans('Notify me') }}</span>
-                </button> -->
                 </div>
             </div>
 
             <!-- Price Card -->
            <Prices :product="product" :currency="currency" />
         </div>
-
-
         <ButtonAddPortfolio :product="product" :productHasPortfolio="productHasPortfolio" />
     </div>
 </template>

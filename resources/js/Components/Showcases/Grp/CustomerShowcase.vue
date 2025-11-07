@@ -117,7 +117,10 @@ const props = defineProps<{
         }
         type_options: {}
         tax_number: {}
-        stats: any
+        stats: any,
+        tag_routes: Record<string, routeType>
+        tags: {}[]
+        tags_selected_id: number[]
     },
     tab: string
     handleTabUpdate?: Function
@@ -218,6 +221,21 @@ const copyToClipboard = async (text: string, label: string) => {
             text: trans("Failed to copy to clipboard"),
             type: "error"
         })
+    }
+}
+
+function tagColorClass(scope?: string) {
+    const normalized = (scope || '').toLowerCase()
+
+    switch (normalized) {
+        case 'system customer':
+            return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+        case 'admin customer':
+            return 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+        case 'user customer':
+            return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+        default:
+            return 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100'
     }
 }
 </script>
@@ -383,7 +401,22 @@ const copyToClipboard = async (text: string, label: string) => {
                             </dd>
                         </div>
 
-
+                        <div v-if="data.tags.length > 0" class="relative flex items-center w-full flex-none gap-x-4 px-6">
+                            <dt v-tooltip="'Tags'" class="flex-none pt-2">
+                                <FontAwesomeIcon icon="fal fa-tags" class="text-gray-400" fixed-width aria-hidden="true" />
+                            </dt>
+                            <dd class="flex items-center gap-2 w-full">
+                                <span
+                                    v-for="tag in data.tags"
+                                    :key="tag.id"
+                                    v-tooltip="tag.scope"
+                                    class="px-2 py-0.5 rounded-full text-xs font-medium border transition-colors duration-200 ease-in-out"
+                                    :class="tagColorClass(tag.scope)"
+                                >
+                                    {{ tag.name }}
+                                </span>
+                            </dd>
+                        </div>
                     </div>
 
 

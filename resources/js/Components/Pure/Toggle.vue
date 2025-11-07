@@ -7,7 +7,7 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 library.add(faTimes, faCheck)
 
 const props = defineProps<{
-    modelValue: boolean
+    modelValue: boolean|undefined
     classes?: string
 }>()
 

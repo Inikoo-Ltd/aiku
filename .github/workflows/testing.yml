@@ -49,15 +49,15 @@ jobs:
             tests/**
             database/migrations/**
       - name: Generate database dumps 📚
-        run: ./generate_testing_db_dumps.sh php8.3 aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
+        run: ./generate_testing_db_dumps.sh php8.4 aiku_test;cp tests/datasets/db_dumps/aiku.dump ../../../../artifacts/
       - name: Retrieve db dumps
         run: cp ../../../../artifacts/aiku.dump tests/datasets/db_dumps/
       - name: Run test with coverage
         if: steps.changed-coverage-files.outputs.any_changed == 'true'
-        run: vendor/bin/pest -d memory_limit=-1 --coverage-clover clover.xml --exclude-group=integration --stop-on-defect
+        run: /usr/bin/php8.4 vendor/bin/pest -d memory_limit=-1 --coverage-clover clover.xml --exclude-group=integration --stop-on-defect
       - name: Run test without coverage
         if: steps.changed-coverage-files.outputs.any_changed != 'true'
-        run: vendor/bin/pest --exclude-group=integration --stop-on-defect
+        run: /usr/bin/php8.4 vendor/bin/pest --exclude-group=integration --stop-on-defect
       - name: Upload coverage to Codecov
         if: steps.changed-coverage-files.outputs.any_changed == 'true'
         uses: codecov/codecov-action@v4

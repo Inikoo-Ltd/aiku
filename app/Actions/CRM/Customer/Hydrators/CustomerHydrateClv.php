@@ -37,6 +37,9 @@ class CustomerHydrateClv implements ShouldBeUnique
 
     public function handle(int $customerId): void
     {
+        //todo , this hydrator is too slow  need to redo
+        return;
+
         $customer = Customer::find($customerId);
 
         if (!$customer) {

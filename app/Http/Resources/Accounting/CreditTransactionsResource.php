@@ -37,6 +37,8 @@ class CreditTransactionsResource extends JsonResource
             'payment_type'      => $this->payment_type,
             'currency_code'     => $this->currency_code,
             'created_at'        => $this->created_at,
+            'order_slug'        => $this->order_slug,
+            'order_reference'   => $this->order_reference,
         ];
     }
 }

@@ -59,7 +59,7 @@ const downloadUrl = (type: string) => {
 </script>
 
 <template>
-    <!-- <Head :title="capitalize(title)"/> -->
+    <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #otherBefore>
             <div class="rounded-md ">

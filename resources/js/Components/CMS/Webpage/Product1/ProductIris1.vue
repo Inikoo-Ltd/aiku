@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { faCube, faLink, faHeart } from "@fal"
-import { faCircle, faHeart as fasHeart, faDotCircle, faFilePdf, faFileDownload } from "@fas"
+import { faCube, faLink } from "@fal"
+import { faCircle, faFilePdf, faFileDownload } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { ref, inject, onMounted, computed } from "vue"
@@ -14,14 +14,10 @@ import ButtonAddPortfolio from "@/Components/Iris/Products/ButtonAddPortfolio.vu
 import { trans } from "laravel-vue-i18n"
 import { router } from "@inertiajs/vue3"
 import { Image as ImageTS } from "@/types/Image"
-import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import { set, isArray } from "lodash-es"
 import { getStyles } from "@/Composables/styles"
 import axios from "axios"
-import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
-import product from "@/Pages/Retina/Dropshipping/Product/Product.vue"
 import ProductPrices from "./ProductPrices.vue"
-import { faCircleArrowDown } from "@fortawesome/free-solid-svg-icons"
 
 library.add(faCube, faLink, faFilePdf, faFileDownload)
 

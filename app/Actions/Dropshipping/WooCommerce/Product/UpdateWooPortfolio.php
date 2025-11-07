@@ -77,7 +77,7 @@ class UpdateWooPortfolio
         $availableQuantity = $product->available_quantity ?? 0;
 
 
-        $wooCommerceUser->setTimeout(60);
+        $wooCommerceUser->setTimeout(45);
         try {
             $response = $wooCommerceUser->updateWooCommerceProduct(
                 $portfolio->platform_product_id,
@@ -101,16 +101,31 @@ class UpdateWooPortfolio
                     'stock_last_updated_at' => now()
                 ]);
             } else {
-                $message = Arr::get($response, '0.message') ?? __('Unknown error');
+                $ban = true;
+
+                $rawMessage  = Arr::get($response, '0', 'Unknown error');
+                $messageData = json_decode($rawMessage, true);
+                if ($messageData) {
+                    $message = Arr::get($messageData, 'message');
+                    if (Arr::get($messageData, 'code') == 'rest_invalid_param' || Arr::get($messageData, 'code') == 'woocommerce_rest_product_invalid_id' || Arr::get($messageData, 'data.status') == 404 || Arr::get($messageData, 'data.status') == 400) {
+                        $ban = false;
+                    }
+                } else {
+                    $message = $rawMessage;
+                }
 
 
                 UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                     'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                    'response' => $message
+                    'response' => 'E1: '.$message
                 ]);
-                $customerSalesChannel->update([
-                    'ban_stock_update_util' => now()->addHours(3),
-                ]);
+
+                if ($ban) {
+                    $customerSalesChannel->update([
+                        'ban_stock_update_util' => now()->addHours(3),
+                    ]);
+                }
+
                 $portfolio->update([
                     'stock_last_fail_updated_at' => now()
                 ]);
@@ -118,7 +133,7 @@ class UpdateWooPortfolio
         } catch (Throwable $e) {
             UpdatePlatformPortfolioLog::run($platformPortfolioLog, [
                 'status'   => PlatformPortfolioLogsStatusEnum::FAIL,
-                'response' => $e->getMessage()
+                'response' => 'E2: '.$e->getMessage()
             ]);
             $portfolio->update([
                 'stock_last_fail_updated_at' => now()

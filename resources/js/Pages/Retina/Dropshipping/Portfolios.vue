@@ -55,6 +55,7 @@ const props = defineProps<{
     tabs: TSTabs
     download_route: any
     grouped_portfolios: any
+    is_closed: boolean
     content?: {
         portfolio_empty?: {
             title?: string,
@@ -335,7 +336,7 @@ const key = ulid()
                     v-tooltip="!selectedData.products.length ? trans('Select at least one product to upload') : ''"/>
         </template>
 
-        <template v-if="props.product_count" #other>
+        <template v-if="props.product_count && !props.is_closed" #other>
             <div class="rounded-md ">
                 <a :href="downloadUrl('csv') as string" target="_blank" rel="noopener">
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>

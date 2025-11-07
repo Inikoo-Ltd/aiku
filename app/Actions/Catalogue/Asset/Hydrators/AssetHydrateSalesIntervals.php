@@ -15,7 +15,7 @@ use App\Models\Catalogue\Asset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
-class AssetHydrateSales implements ShouldBeUnique
+class AssetHydrateSalesIntervals implements ShouldBeUnique
 {
     use AsAction;
     use WithIntervalsAggregators;
@@ -23,13 +23,19 @@ class AssetHydrateSales implements ShouldBeUnique
 
     public string $jobQueue = 'sales';
 
-    public function getJobUniqueId(Asset $asset, ?array $intervals = null, ?array $doPreviousPeriods = null): string
+    public function getJobUniqueId(int $assetID, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        return $this->getUniqueJobWithInterval($asset, $intervals, $doPreviousPeriods);
+        return $this->getUniqueJobWithIntervalFromId($assetID, $intervals, $doPreviousPeriods);
+
     }
 
-    public function handle(Asset $asset, ?array $intervals = null, ?array $doPreviousPeriods = null): void
+    public function handle(int $assetID,  ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
+
+        $asset = Asset::find($assetID);
+        if (!$asset) {
+            return;
+        }
         $stats = [];
 
         $queryBase = InvoiceTransaction::where('in_process', false)->where('asset_id', $asset->id)->selectRaw('sum(net_amount) as  sum_aggregate  ');

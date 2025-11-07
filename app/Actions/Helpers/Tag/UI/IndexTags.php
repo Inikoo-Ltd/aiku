@@ -1,11 +1,9 @@
 <?php
-
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
  * Github: https://github.com/Ganes556
  * Copyright: 2025
- *
 */
 
 namespace App\Actions\Helpers\Tag\UI;
@@ -16,16 +14,31 @@ use App\Http\Resources\Catalogue\TagsResource;
 use App\InertiaTable\InertiaTable;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\SysAdmin\Organisation;
 use App\Services\QueryBuilder;
 use Closure;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
 class IndexTags extends OrgAction
 {
-    public function handle(Model $parent, $prefix = null): LengthAwarePaginator
+    public function inTradeUnit(TradeUnit $tradeUnit, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisationFromGroup($tradeUnit->group, $request);
+
+        return $this->handle($tradeUnit);
+    }
+
+    public function asController(Organisation $organisation, ActionRequest $request): LengthAwarePaginator
+    {
+        $this->initialisation($organisation, $request);
+
+        return $this->handle($organisation);
+    }
+
+    public function handle(Organisation|TradeUnit $parent, $prefix = null): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -45,11 +58,9 @@ class IndexTags extends OrgAction
             $queryBuilder->where('scope', TagScopeEnum::PRODUCT_PROPERTY);
         }
 
-        $queryBuilder
-            ->defaultSort('name')
-            ->select(['id', 'name', 'slug', 'scope']);
-
         return $queryBuilder
+            ->defaultSort('name')
+            ->select(['id', 'name', 'slug', 'scope'])
             ->allowedSorts(['name', 'scope'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
@@ -70,6 +81,7 @@ class IndexTags extends OrgAction
                 ->withGlobalSearch()
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'scope', label: __('Scope'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'action', label: __('Action'))
                 ->defaultSort('name');
         };
     }

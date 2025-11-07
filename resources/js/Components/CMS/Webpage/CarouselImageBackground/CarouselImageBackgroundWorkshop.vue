@@ -13,7 +13,7 @@ const props = defineProps<{
   webpageData?: any
   blockData?: Object
   screenType: 'mobile' | 'tablet' | 'desktop'
-  indexBlock: number
+  indexBlock?: number
 }>()
 
 const emits = defineEmits<{ (e: 'autoSave'): void }>()
@@ -101,11 +101,7 @@ const imageSettings = {
     <div :data-refresh="refreshTrigger" :style="{
       ...getStyles(layout?.app?.webpage_layout?.container?.properties, props.screenType),
       ...getStyles(modelValue?.container?.properties, props.screenType)
-    }" xclick.stop="
-      () => {
-        sendMessageToParent('activeBlock', indexBlock)
-        sendMessageToParent('activeChildBlock', bKeys[0])
-      }">
+    }" >
       <Carousel
         v-if="hasCards"
         :value="modelValue.carousel_data.cards"

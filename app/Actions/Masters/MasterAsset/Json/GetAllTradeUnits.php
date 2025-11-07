@@ -15,6 +15,7 @@ use App\Models\Masters\MasterProductCategory;
 use App\Services\QueryBuilder;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
 
@@ -57,6 +58,12 @@ class GetAllTradeUnits extends GrpAction
                 'trade_units.cost_price',
                 'trade_units.marketing_dimensions',
                 'trade_units.marketing_weight',
+                DB::raw("EXISTS(
+                        SELECT 1 FROM model_has_trade_units s
+                        WHERE s.trade_unit_id = trade_units.id
+                        AND s.model_type = 'Stock'
+                        AND s.quantity > 0
+                    ) AS stock_available")
             ])
             ->allowedSorts(['code', 'name', 'net_weight', 'gross_weight'])
             ->allowedFilters([$globalSearch])

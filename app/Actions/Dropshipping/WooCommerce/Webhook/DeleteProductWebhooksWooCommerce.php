@@ -40,8 +40,8 @@ class DeleteProductWebhooksWooCommerce extends OrgAction
 
     public function asController(WooCommerceUser $wooCommerceUser, ActionRequest $request): void
     {
-        $this->initialisation($wooCommerceUser->organisation, $request);
 
+        $this->initialisation($wooCommerceUser->organisation, $request);
         $this->handle($wooCommerceUser, $request->all());
     }
 }

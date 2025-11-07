@@ -11,6 +11,7 @@ namespace App\Http\Resources\Catalogue;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
+use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Helpers\Media;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -45,6 +46,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class IrisProductsInWebpageResource extends JsonResource
 {
     use HasSelfCall;
+    use HasPriceMetrics;
 
     public function toArray($request): array
     {
@@ -60,19 +62,8 @@ class IrisProductsInWebpageResource extends JsonResource
             $url = ShowIrisWebpage::make()->getEnvironmentUrl($url);
         }
 
-        $margin     = '';
-        $rrpPerUnit = '';
-        $profit     = '';
-        $units = (int) $this->units;
-        if ($this->rrp > 0) {
-            $margin     = percentage(round((($this->rrp - $this->price) / $this->rrp) * 100, 1), 100);
-            $rrpPerUnit = round($this->rrp / $this->units, 2);
-            // $profit     = round(($this->price - $this->rrp) / $this->units, 2);
-            $profit     = round($this->rrp - $this->price, 2);
-        }
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
-
-        $units = (int) $this->units;
         return [
             'id'             => $this->id,
             'image_id'       => $this->image_id,
@@ -84,6 +75,7 @@ class IrisProductsInWebpageResource extends JsonResource
             'price'          => $this->price,
             'margin'         => $margin,
             'profit'         => $profit,
+            'profit_per_unit' => $profitPerUnit,
             'rrp'            => $this->rrp,
             'rrp_per_unit'   => $rrpPerUnit,
             'state'          => $this->state,

@@ -5,11 +5,11 @@
   -->
 
 <script setup lang="ts">
-import {Link} from "@inertiajs/vue3"
-import Table from '@/Components/Table/Table.vue'
-import type {Table as TableTS} from "@/types/Table"
-import {CustomerSalesChannel} from "@/types/customer-sales-channel";
-import {trans} from "laravel-vue-i18n";
+import { Link } from "@inertiajs/vue3"
+import Table from "@/Components/Table/Table.vue"
+import type { Table as TableTS } from "@/types/Table"
+import { CustomerSalesChannel } from "@/types/customer-sales-channel"
+import { trans } from "laravel-vue-i18n"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 
@@ -43,15 +43,13 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 }
 
 
-
-
 </script>
 <template>
     <Table :resource="data">
         <template #cell(platform_name)="{ item: customerSalesChannel }">
             <div class="flex items-center gap-2 w-7">
                 <img v-tooltip="customerSalesChannel.platform_name" :src="customerSalesChannel.platform_image" :alt="customerSalesChannel.platform_name"
-                    class="w-6 h-6"/>
+                     class="w-6 h-6" />
             </div>
         </template>
 
@@ -79,22 +77,26 @@ function ordersRoute(customerSalesChannel: CustomerSalesChannel) {
 
 
         <template #cell(action)="{ item: customerSalesChannel, proxyItem }">
-
-
             <ModalConfirmationDelete
                 :routeDelete="customerSalesChannel.delete_route"
-                :title="trans('Are you sure you want to delete this channel') + ` ${customerSalesChannel.platform_name} (${customerSalesChannel.reference})?`"
-                :description="trans('The channel will be unlinked from our shop. You can relinked it in the future.')"
+                :title="trans('Are you sure you want to close this channel?')"
+                :description="customerSalesChannel.delete_msg"
                 isFullLoading
-                :noLabel="trans('Delete')"
-                :noIcon="'fal fa-trash-alt'"
+                :noLabel="trans('Close')"
+                :noIcon="'fal fa-store-alt-slash'"
             >
+                <template #beforeTitle>
+                    <div class="text-center font-semibold text-xl mb-4">
+                        {{ `${customerSalesChannel.platform_name} (${customerSalesChannel.reference})` }}
+                    </div>
+                </template>
+                
                 <template #default="{ isOpenModal, changeModel }">
                     <Button
-                        v-tooltip="trans('Delete') + ' ' + customerSalesChannel.name"
+                        v-tooltip="trans('Close channel')"
                         @click="() => changeModel()"
                         type="negative"
-                        icon="fal fa-trash-alt"
+                        icon="fal fa-store-alt-slash"
                         size="s"
                         :key="1"
                     />

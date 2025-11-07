@@ -21,8 +21,8 @@ class ShowTags extends OrgAction
 {
     public function asController(Organisation $organisation, ActionRequest $request): ActionRequest
     {
-        $this->organisation = $organisation;
         $this->initialisation($organisation, $request);
+
         return $request;
     }
 
@@ -34,10 +34,24 @@ class ShowTags extends OrgAction
                 'breadcrumbs' => $this->getBreadcrumbs($request->route()->originalParameters()),
                 'title'       => __('Tags'),
                 'pageHeading' => [
-                    'title' => __('Tags'),
-                    'icon'  => [
+                    'title'  => __('Tags'),
+                    'icon'   => [
                         'title' => __('Tags'),
                         'icon'  => ['fal', 'fa-tags'],
+                    ],
+                    'actions' => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'create',
+                            'tooltip' => __('Create Tag'),
+                            'label'   => __('Create Tag'),
+                            'route'   => [
+                                'name'       => 'grp.org.tags.create',
+                                'parameters' => [
+                                    'organisation' => $this->organisation->slug,
+                                ],
+                            ],
+                        ],
                     ],
                 ],
                 'data'        => TagsResource::collection(IndexTags::run($this->organisation, __('Tags'))),

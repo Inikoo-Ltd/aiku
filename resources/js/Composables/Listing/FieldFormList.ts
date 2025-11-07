@@ -63,6 +63,7 @@ import MultiselectTagsInfiniteScroll from '@/Components/Forms/Fields/Multiselect
 import InputDimensions from '@/Components/Forms/Fields/InputDimensions.vue'
 import WrapperEmailSubscribetion from '@/Components/Forms/Fields/WrapperEmailSubscribetion.vue'
 import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
+import TagsCustomer from "@/Components/Forms/Fields/TagsCustomer.vue";
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -127,7 +128,7 @@ export const componentsList: {[key: string]: Component} = {
     'multiselect-tags' : MultiselectTagsInfiniteScroll,
     'input-dimension' : InputDimensions,
     'invoice_serial_references' : invoiceSerialReferences,
-
+    'tags-customer': TagsCustomer,
     'email_subscriptions': WrapperEmailSubscribetion
 }
 

@@ -9,10 +9,16 @@ import WebPreview from "@/Layouts/WebPreview.vue"
 import EmptyState from "@/Components/Utils/EmptyState.vue"
 import { getComponent } from "@/Composables/getWorkshopComponents"
 import { sendMessageToParent } from "@/Composables/Workshop"
+import { faTimes } from "@fal"
+import {debounce} from "lodash-es"
 
 import { Root as RootWebpage } from "@/types/webpageTypes"
 import "@/../css/Iris/editor.css"
 import { ulid } from "ulid"
+
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+library.add(faTimes);
 
 
 defineOptions({ layout: WebPreview })
@@ -24,7 +30,6 @@ const props = defineProps<{
   }
   luigisbox_tracker_id?: string
 }>()
-
 const layout: any = inject("layout", {});
 const data = shallowRef<RootWebpage | undefined>(toRaw(props.webpage))
 const filterBlock = ref<'all' | 'logged-in' | 'logged-out'>('all')
@@ -67,6 +72,13 @@ const updateData = (val: any) => {
   sendMessageToParent("autosave", JSON.parse(JSON.stringify(val)))
 }
 
+
+const debouncedSetWebpage = debounce((value: any) => {
+  console.log("Setting webpage data from parent")
+  data.value = value
+}, 1000)
+
+
 const handleMessage = (event: MessageEvent) => {
   const { key, value } = event.data
   if (key === "isPreviewLoggedIn") filterBlock.value = value
@@ -77,23 +89,15 @@ const handleMessage = (event: MessageEvent) => {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" })
   }
   if (key === "reload") reloadPage()
-  if (key === "setWebpage") {
-    data.value = value
-   /*  reloadPage(true) */
-  }
-}
-
-const uploadImage = ()=>{
-  console.log('masuk')
-  sendMessageToParent("uploadImage", 'test')
+  if (key === "setWebpage") debouncedSetWebpage(value)
 }
 
 const reloadPage = (withkey = false) => {
+  console.log("Reloading webpage preview")
   router.reload({ only: ["webpage"] })
   if (withkey) key.value = ulid()
 }
 
-provide("reloadPage", reloadPage)
 provide("reloadPage", reloadPage)
 
 onMounted(() => {

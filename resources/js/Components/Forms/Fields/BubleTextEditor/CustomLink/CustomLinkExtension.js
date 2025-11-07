@@ -1,6 +1,4 @@
 import { Link } from "@tiptap/extension-link"
-import { Plugin } from "prosemirror-state"
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 
 const CustomLink = Link.extend({
 	addAttributes() {

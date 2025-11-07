@@ -66,7 +66,7 @@ class EditMasterProduct extends GrpAction
         return Inertia::render(
             'EditModel',
             [
-                'title'       => __('master product'),
+                'title'       => __('Master product'),
                 'warning' => $masterAsset->products ? [
                     'type'  =>  'warning',
                     'title' =>  'warning',

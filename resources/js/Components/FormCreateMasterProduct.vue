@@ -1,6 +1,5 @@
 <!--
   - Author: Raul Perusquia <raul@inikoo.com>
-  - Cleaned & Optimized by ChatGPT
 -->
 
 <script setup lang="ts">
@@ -9,7 +8,7 @@ import { ref, computed, inject } from "vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
-import ListSelector from "@/Components/ListSelector.vue";
+import ListSelector from "@/Components/ListSelectorForCreateMasterProduct.vue";
 import { trans } from "laravel-vue-i18n";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { routeType } from "@/types/route";
@@ -43,7 +42,6 @@ import { notify } from "@kyvg/vue3-notification";
 import { cloneDeep } from "lodash";
 import PureInputNumber from "./Pure/PureInputNumber.vue";
 import Image from "./Image.vue";
-import search from "@/Pages/Iris/Search.vue"
 import { faPencil } from "@fal";
 
 library.add(
@@ -98,7 +96,6 @@ const form = useForm({
     shop_products: null,
     marketing_weight: 0,
     description: "",
-    description_title: "",
     description_extra: "",
     gross_weight: 0,
     net_weight: 0,
@@ -145,7 +142,7 @@ const getTableData = (data) => {
         for (const tableDataItem of data.data) {
             finalDataTable[tableDataItem.id] = {
                 price: tableDataItem.product.price || null,
-                has_org_stocks: tableDataItem.product.has_org_stocks,
+                create_in_shop: tableDataItem.product.create_in_shop,
                 rrp: tableDataItem.product.rrp || null
             }
         }
@@ -187,11 +184,10 @@ const ListSelectorChange = (value) => {
         form.marketing_weight = value[0].marketing_weight || 0
         form.net_weight = value[0].net_weight
         form.description = value[0].description
-        form.description_title = value[0].description_title
         form.description_extra = value[0].description_extra
         form.units = value.length > 1 ? 1 : value[0]?.quantity || 1
         form.gross_weight = value[0]?.gross_weight || 0
-        form.marketing_dimensions = value[0]?.dimensions || null
+        form.marketing_dimensions = value[0]?.dimensions || null     
     }
     getTableData(tableData.value)
 }
@@ -205,10 +201,20 @@ const submitForm = async (redirect = true) => {
 
     const finalDataTable: Record<number, { price: number | string }> = {}
     for (const tableDataItem of tableData.value.data) {
+
+        let create_in_shop = tableDataItem.product.create_in_shop
+        let price = tableDataItem.product.price
+        let rrp = tableDataItem.product.rrp
+
+        if(!create_in_shop){
+            rrp=1;
+            price=1;
+        }
+
         finalDataTable[tableDataItem.id] = {
-            price: tableDataItem.product.price,
-            create_webpage: tableDataItem.product.has_org_stocks,
-            rrp: tableDataItem.product.rrp
+            price: price,
+            create_in_shop : create_in_shop?'Yes':'No',
+            rrp: rrp
         }
     }
 
@@ -338,7 +344,7 @@ const successEditTradeUnit = (data) => {
         <!-- Header -->
         <template #header>
             <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2 flex-1">
-                {{ trans("Create Product") }}
+                {{ trans("Create Master Product") }}
             </h2>
             <button @click="toggleFull" class="text-gray-500 hover:text-gray-700 mx-3">
                 <FontAwesomeIcon :icon="isFull ? faMinimize : faExpand" />
@@ -349,7 +355,7 @@ const successEditTradeUnit = (data) => {
         <div class="p-4 pt-0 space-y-6 overflow-y-auto">
             <!-- Trade Unit Selector -->
             <div>
-                <ListSelector :key="key" ref="listSelectorRef" v-model="form.trade_units" :withQuantity="true"
+                <ListSelector :key="key" ref="listSelectorRef" no_data_label="Select Trade Unit" v-model="form.trade_units" :withQuantity="true"
                     :tabs="selectorTab" head_label="Select Trade Units" @update:model-value="ListSelectorChange"
                     key_quantity="quantity" :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
@@ -451,7 +457,7 @@ const successEditTradeUnit = (data) => {
                     <!-- Form Fields -->
                     <div class="grid grid-cols-2 gap-5">
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Code</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Code')}}</label>
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
                                 class="w-full" />
                             <small v-if="form.errors.code" class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -461,7 +467,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Name')}}</label>
                             <PureInput type="text" v-model="form.name" @update:model-value="form.errors.name = null"
                                 class="w-full" />
                             <small v-if="form.errors.name" class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -471,7 +477,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Unit</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Unit')}}</label>
                             <PureInput v-model="form.unit" @update:model-value="form.errors.unit = null"
                                 class="w-full" />
                             <small v-if="form.errors.unit" class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -481,7 +487,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Units</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Units')}}</label>
                             <PureInputNumber v-model="form.units" @update:model-value="form.errors.units = null"
                                 class="w-full" />
                             <small v-if="form.errors.units" class="text-red-500 text-xs flex items-center gap-1 mt-1">
@@ -491,7 +497,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div v-if="form.trade_units.length > 1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Marketing Weight</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Marketing Weight')}}</label>
                             <PureInputNumber v-model="form.marketing_weight"
                                 @update:model-value="form.errors.marketing_weight = null" class="w-full"
                                 :suffix="'g'" />
@@ -503,7 +509,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div v-if="form.trade_units.length > 1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Net Weight</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Net Weight')}}</label>
                             <PureInputNumber v-model="form.net_weight"
                                 @update:model-value="form.errors.net_weight = null" class="w-full" :suffix="'g'" />
                             <small v-if="form.errors.marketing_weight"
@@ -514,7 +520,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div v-if="form.trade_units.length > 1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Gross Weight</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Gross Weight')}}</label>
                             <PureInputNumber v-model="form.gross_weight"
                                 @update:model-value="form.errors.gross_weight = null" class="w-full" :suffix="'g'" />
                             <small v-if="form.errors.marketing_weight"
@@ -526,7 +532,7 @@ const successEditTradeUnit = (data) => {
 
 
                         <div v-if="form.trade_units.length > 1">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Dimension</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Dimension')}}</label>
                             <PureInputDimension :rows="4" v-model="form.marketing_dimensions"
                                 @update:model-value="form.errors.marketing_dimensions = null" class="w-full" />
                             <small v-if="form.errors.marketing_dimensions"
@@ -536,19 +542,8 @@ const successEditTradeUnit = (data) => {
                             </small>
                         </div>
 
-                        <div :class="'col-span-2'">
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Description title</label>
-                            <PureInput type="text" v-model="form.description_title"
-                                @update:model-value="form.errors.description_title = null" class="w-full" />
-                            <small v-if="form.errors.description_title"
-                                class="text-red-500 text-xs flex items-center gap-1 mt-1">
-                                <FontAwesomeIcon :icon="faCircleExclamation" />
-                                {{ form.errors.description_title.join(", ") }}
-                            </small>
-                        </div>
-
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Description')}}</label>
                             <SideEditorInputHTML :rows="4" v-model="form.description"
                                 @update:model-value="form.errors.description = null" class="w-full" />
                             <small v-if="form.errors.description"
@@ -559,7 +554,7 @@ const successEditTradeUnit = (data) => {
                         </div>
 
                         <div>
-                            <label class="block text-xs font-medium text-gray-600 mb-1">Description extra</label>
+                            <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Description extra')}}</label>
                             <SideEditorInputHTML :rows="4" v-model="form.description_extra"
                                 @update:model-value="form.errors.description_extra = null" class="w-full" />
                             <small v-if="form.errors.description_extra"

@@ -1,5 +1,4 @@
 <?php
-
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
@@ -13,11 +12,12 @@ use App\Actions\OrgAction;
 use App\Enums\Helpers\Tag\TagScopeEnum;
 use App\Http\Resources\Catalogue\TagsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\CRM\Customer;
 use App\Models\Goods\TradeUnit;
 use App\Models\Helpers\Tag;
+use App\Models\SysAdmin\Group;
 use App\Services\QueryBuilder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Lorisleiva\Actions\ActionRequest;
 use Spatie\QueryBuilder\AllowedFilter;
@@ -31,7 +31,14 @@ class GetTags extends OrgAction
         return $this->handle($tradeUnit);
     }
 
-    public function handle(Model $parent, $prefix = null): Collection
+    public function inCustomer(Customer $customer, ActionRequest $request): Collection
+    {
+        $this->initialisation($customer->organisation, $request);
+
+        return $this->handle($customer);
+    }
+
+    public function handle(Group|Customer|TradeUnit $parent, $prefix = null): Collection
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -51,11 +58,13 @@ class GetTags extends OrgAction
             $queryBuilder->where('scope', TagScopeEnum::PRODUCT_PROPERTY);
         }
 
-        $queryBuilder
-            ->defaultSort('name')
-            ->select(['id', 'name', 'slug', 'scope']);
+        if ($parent instanceof Customer) {
+            $queryBuilder->whereIn('scope', [TagScopeEnum::ADMIN_CUSTOMER, TagScopeEnum::USER_CUSTOMER]);
+        }
 
         return $queryBuilder
+            ->defaultSort('name')
+            ->select(['id', 'name', 'slug', 'scope'])
             ->allowedSorts(['tag_name'])
             ->allowedFilters([$globalSearch])
             ->get();

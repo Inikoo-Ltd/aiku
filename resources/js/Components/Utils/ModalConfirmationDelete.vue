@@ -129,6 +129,8 @@ const messageDelete = ref('')
                                     </button>
                                 </div>
 
+                                <slot name="beforeTitle" />
+
                                 <div class="sm:flex sm:items-start">
                                     <div
                                         class="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10">
