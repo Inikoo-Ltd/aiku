@@ -21,7 +21,7 @@ use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Throwable;
 
-class UpdateWooPortfolio  implements ShouldBeUnique
+class UpdateWooPortfolio implements ShouldBeUnique
 {
     use AsAction;
 

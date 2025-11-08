@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Steven Wicca stewicalf@gmail.com
  * Created: Fri, 07 Nov 2025 16:07:09 Western Indonesia Time, Lembeng Beach, Bali, Indonesia

@@ -40,7 +40,7 @@ class StoreNewProductToCurrentWooCommerce extends OrgAction implements ShouldBeU
         $result = $wooCommerceUser->checkConnection();
         if ($result && Arr::has($result, 'environment')) {
             StoreWooCommerceProduct::run($wooCommerceUser, $portfolio);
-        }else {
+        } else {
             $wooCommerceUser->customerSalesChannel->update([
                 'ban_stock_update_util' => now()->addMinutes(5),
             ]);
