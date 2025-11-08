@@ -44,7 +44,7 @@ return new class () extends Migration {
             $table->timestampsTz();
             $table->dateTimeTz('fetched_at')->nullable();
             $table->dateTimeTz('last_fetched_at')->nullable();
-            $table->string('source_id')->nullable();
+            $table->string('source_id')->index()->nullable();
             $table->string('source_alt_id')->nullable();
         });
     }
