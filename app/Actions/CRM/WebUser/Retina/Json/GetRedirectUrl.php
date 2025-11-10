@@ -22,10 +22,10 @@ class GetRedirectUrl extends IrisAction
     use AsController;
 
 
-    public function handle($modelData): string
+    public function handle($modelData): array
     {
         $retinaHome = '';
-
+        $ref_page   = null;
         if (Arr::has($modelData, 'ref')) {
             $ref_page = Arr::get($modelData, 'ref');
 
@@ -39,7 +39,11 @@ class GetRedirectUrl extends IrisAction
         }
 
 
-        return $retinaHome;
+        return [
+            'ref_page'     => $ref_page,
+            'redirect_url' => $retinaHome,
+            'redirected'   => !($retinaHome == ''),
+        ];
     }
 
     public function rules(): array
@@ -49,7 +53,7 @@ class GetRedirectUrl extends IrisAction
         ];
     }
 
-    public function jsonResponse(ActionRequest $request): string
+    public function jsonResponse(ActionRequest $request): array
     {
         $this->initialisation($request);
 
