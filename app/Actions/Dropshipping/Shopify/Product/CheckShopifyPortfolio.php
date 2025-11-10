@@ -20,6 +20,9 @@ class CheckShopifyPortfolio
 
     public function handle(Portfolio $portfolio): Portfolio
     {
+
+        $oldHasValidProductId=$portfolio->has_valid_platform_product_id;
+
         if (!$portfolio->customerSalesChannel) {
             return $portfolio;
         }
@@ -59,6 +62,17 @@ class CheckShopifyPortfolio
             'raw_data'       => $matches
 
         ];
+
+
+
+        if($oldHasValidProductId  && (
+            !$productExistsInShopify || !$hasVariantAtLocation
+            )  ){
+            // todo INI-339
+            // Do not proceed until we fix $productExistsInShopify and $hasVariantAtLocation if is a network error or throttling
+
+            return $portfolio;
+        }
 
 
         $portfolio->update([

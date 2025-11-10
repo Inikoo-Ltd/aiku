@@ -271,7 +271,7 @@ class FixShopifyPortfolios
 
     public function getCommandSignature(): string
     {
-        return 'shopify:fix_portfolios  {parent_type} {parent_slug} {--f|fix_level=0 : Fix level (1, 2, or 3)}';
+        return 'shopify:fix_portfolios {parent_type} {parent_slug} {--f|fix_level=0 : Fix level (1, 2, or 3)}';
     }
 
     public function asCommand(Command $command): void
