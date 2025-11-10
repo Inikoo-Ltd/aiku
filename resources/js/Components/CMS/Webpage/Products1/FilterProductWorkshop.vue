@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { defineProps, defineEmits, ref, onMounted, inject } from 'vue'
+import SideEditor from '@/Components/Workshop/SideEditor/SideEditor.vue'
 import { blueprint } from './BlueprintFilter'
 import { debounce } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
@@ -45,7 +46,12 @@ onMounted(() => {
 <template>
   <aside class="w-full lg:w-64">
     <h3 class="font-medium mb-3">{{ trans("Filters") }}</h3>
-
+    <SideEditor
+        :blueprint="blueprintCopy"
+        :modelValue="modelValue.data"
+        @update:modelValue="updateValue"
+        modelType="filter"
+    />
   </aside>
 </template>
 
