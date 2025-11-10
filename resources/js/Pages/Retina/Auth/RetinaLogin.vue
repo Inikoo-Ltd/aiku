@@ -52,13 +52,13 @@ const submit = async () => {
         console.log('Response Login:', response.data)
         form.reset('password')
 
-        window.location.href = await getRefRedirect()
+        //window.location.href = await getRefRedirect()
 
-        // if (response.data) {
-        //     window.location.href = `${response.data}`
-        // } else {
-        //     window.location.href = `/app/dashboard`
-        // }
+        if (response.data) {
+            window.location.href = `${response.data}`
+        } else {
+            window.location.href = `/app/dashboard`
+        }
     } catch (error: any) {
         form.reset('password')
         // console.log('er', error.response.data)
