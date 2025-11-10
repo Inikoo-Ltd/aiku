@@ -7,7 +7,6 @@
  */
 
 use App\Actions\CRM\WebUser\Retina\GoogleLoginRetina;
-use App\Actions\CRM\WebUser\Retina\Json\GetRedirectUrl;
 use App\Actions\CRM\WebUser\Retina\RetinaLogout;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\AuthenticateRetinaShopifyUser;

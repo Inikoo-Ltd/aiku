@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Steven Wicca <stewicalf@gmail.com>
  * Created: Mon, 10 Nov 2025 13:25:53 Western Indonesia Time, Bali, Indonesia
@@ -40,7 +41,7 @@ class IndexFamilySales extends OrgAction
             ->leftJoin('organisations', 'organisations.id', '=', 'invoices.organisation_id')
             ->where('invoices.in_process', false)
             ->where('invoices.type', InvoiceTypeEnum::INVOICE)
-            ->whereHas('invoiceTransactions', fn($q) => $q->where('family_id', $family->id))
+            ->whereHas('invoiceTransactions', fn ($q) => $q->where('family_id', $family->id))
             ->select([
                 'invoices.id',
                 'invoices.slug',

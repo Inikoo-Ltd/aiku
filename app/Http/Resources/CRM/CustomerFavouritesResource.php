@@ -41,7 +41,7 @@ use App\Http\Resources\Traits\HasPriceMetrics;
 class CustomerFavouritesResource extends JsonResource
 {
     use HasSelfCall;
-     use HasPriceMetrics;
+    use HasPriceMetrics;
 
     public function toArray($request): array
     {
