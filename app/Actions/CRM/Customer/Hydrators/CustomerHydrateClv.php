@@ -24,9 +24,9 @@ class CustomerHydrateClv implements ShouldBeUnique
 
     public string $commandSignature = 'hydrate:customer-clv {customer}';
 
-    public function getJobUniqueId(int $customerId): string
+    public function getJobUniqueId(Customer $customer): string
     {
-        return $customerId;
+        return $customer->id;
     }
 
     public function asCommand(Command $command): void

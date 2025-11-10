@@ -61,7 +61,7 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
         google_access_token: e.access_token,
     })
 
-    console.log('Google login response:', data.data)
+    console.log('Google register response:', data.data)
     if(data.status === 200) {
         if (data.data.logged_in) {
             // router.get(route('retina.dashboard.show'))
