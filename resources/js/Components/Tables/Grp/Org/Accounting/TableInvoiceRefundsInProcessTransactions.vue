@@ -100,16 +100,12 @@ const reloadForm = () => {
 
 
 
-
 defineExpose({
     reloadForm
 })
 
-
 const productRoute = (item) => {
-    //todo fix this
-     //   return route('grp.helpers.redirect_asset', [item.asset_id])
-
+    return item.asset_id ? route('grp.helpers.redirect_asset', [item.asset_id]) : '';
 }
 </script>
 
@@ -118,7 +114,6 @@ const productRoute = (item) => {
         <Table :resource="data" :name="tab">
             <template #cell(net_amount)="{ item}">
                 <div class="flex flex-col items-end">
-
                     <!-- Net Amount (yang tersisa setelah refund) -->
                     <div>
                         {{ locale.currencyFormat(item.currency_code, item.net_amount) }}

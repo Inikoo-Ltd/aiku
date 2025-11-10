@@ -261,10 +261,9 @@ function productRoute(product: Product) {
                  ]); */
         default:
             if (product.asset_id) {
-                //todo fix this
-                // return route(
-                //     "grp.helpers.redirect_asset",
-                //     [product.asset_id])
+                return route(
+                    "grp.helpers.redirect_asset",
+                    [product.asset_id])
             } else return ""
 
     }
