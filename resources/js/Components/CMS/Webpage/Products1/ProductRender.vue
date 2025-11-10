@@ -49,7 +49,7 @@ interface ProductResource {
 
 const props = defineProps<{
     product: ProductResource
-    productHasPortfolio: Array<Number>
+    productHasPortfolio: Array<Number> | undefined
     bestSeller: any
     currency?: {
         code: string

@@ -9,6 +9,7 @@ import { routeType } from "@/types/route"
 import { ref } from "vue"
 import { box } from "@/Assets/Iconscout/box"
 
+
 library.add(faPlus, faCactus, faIslandTropical, faSkullCow, faFish)
 
 defineProps<{
@@ -27,7 +28,7 @@ defineProps<{
     isNoIcon?: boolean
 }>()
 
-
+//https://aiku.io/cdn/empty-space/guy_carry_a_empty_box.svg
 const isLoading = ref(false)
 </script>
 
