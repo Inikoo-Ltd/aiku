@@ -22,8 +22,9 @@ const isLoggedIn = computed(() => {
 })
 provide("isPreviewLoggedIn", isLoggedIn)
 
+console.log('astat', props?.data?.settings?.target_users?.auth_state)
 const shouldShowAnnouncement = computed(() => {
-    const authState = props.data.settings.target_users.auth_state
+    const authState = props?.data?.settings?.target_users?.auth_state
     if (authState === 'all') return true
     if (authState === 'logged_in') return isLoggedIn.value
     if (authState === 'logged_out') return !isLoggedIn.value
