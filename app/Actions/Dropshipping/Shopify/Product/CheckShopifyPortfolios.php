@@ -50,7 +50,7 @@ class CheckShopifyPortfolios extends OrgAction
         } elseif ($parent instanceof Group) {
             $query->where('group_id', $parent->id);
         } elseif ($parent instanceof Portfolio) {
-            $query->where('portfolio.id', $parent->id);
+            $query->where('portfolios.id', $parent->id);
         }
 
 
