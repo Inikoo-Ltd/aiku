@@ -12,7 +12,7 @@ namespace App\Actions\Retina\Ecom\Basket;
 
 use App\Actions\Ordering\Order\UI\GetOrderDeliveryAddressManagement;
 use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
-use App\Actions\Retina\Ecom\Basket\UI\IndexBasketTransactions;
+use App\Actions\Retina\Ecom\Basket\UI\IndexBasketProducts;
 use App\Actions\Retina\Ecom\Orders\IndexRetinaEcomOrders;
 use App\Actions\RetinaAction;
 use App\Enums\Catalogue\Charge\ChargeStateEnum;
@@ -55,7 +55,6 @@ class FetchRetinaEcomBasket extends RetinaAction
     public function jsonResponse(Order $order): Array|null
     {
         if(!$order) return null;
-        // $orderArr = $this->getOrderBoxStats($order); 
         $orderArr['order_summary'] = [
             [
                 [
@@ -97,8 +96,8 @@ class FetchRetinaEcomBasket extends RetinaAction
             ],
 
             'currency' => CurrencyResource::make($order->currency),
-        ]; 
-        $orderArr['products'] = IrisAuthenticatedProductsInWebpageResource::collection(IndexBasketTransactions::run($order));
+        ];
+        $orderArr['products'] = IndexBasketProducts::run($order);
         return $orderArr;
     }
 }
