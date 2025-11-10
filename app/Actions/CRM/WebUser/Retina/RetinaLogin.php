@@ -107,6 +107,11 @@ class RetinaLogin
         return $this->postProcessRetinaLogin($request);
     }
 
+    public function jsonResponse(): string
+    {
+        return $this->handle(request());
+    }
+
     public function postProcessRetinaLogin($request): array | RedirectResponse
     {
         RateLimiter::clear($this->throttleKey($request));

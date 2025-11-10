@@ -17,6 +17,8 @@ export const getRefRedirect = async () => {
             })
         )
 
+        console.log('-Ra', response)
+
         if (response.data?.length < 1) {
             return route('retina.dashboard.show')
         }
