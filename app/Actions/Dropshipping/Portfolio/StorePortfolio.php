@@ -91,13 +91,12 @@ class StorePortfolio extends OrgAction
             return $portfolio;
         });
 
-        if ($customerSalesChannel->platform->type == PlatformTypeEnum::SHOPIFY) {
-            $portfolio = CheckShopifyPortfolio::run($portfolio);
-        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::WOOCOMMERCE) {
-            $portfolio = CheckWooPortfolio::run($portfolio);
-        } elseif ($customerSalesChannel->platform->type == PlatformTypeEnum::EBAY) {
-            $portfolio = CheckEbayPortfolio::run($portfolio);
-        }
+        match ($customerSalesChannel->platform->type) {
+            PlatformTypeEnum::SHOPIFY => $portfolio = CheckShopifyPortfolio::run($portfolio),
+            // PlatformTypeEnum::WOOCOMMERCE => $portfolio = CheckWooPortfolio::run($portfolio),
+            PlatformTypeEnum::EBAY => $portfolio = CheckEbayPortfolio::run($portfolio),
+            default => null
+        };
 
         GroupHydratePortfolios::dispatch($customerSalesChannel->group)->delay($this->hydratorsDelay);
         OrganisationHydratePortfolios::dispatch($customerSalesChannel->organisation)->delay($this->hydratorsDelay);
