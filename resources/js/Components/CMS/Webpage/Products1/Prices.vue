@@ -45,13 +45,6 @@ const props = defineProps<{
 
 
 
-const profitMargin = computed(() => {
-    const price = props.product?.price
-    const rrp = props.product?.rrp
-    if (!price || !rrp) return 0
-    return Math.floor(((rrp - price) / rrp) * 100)
-})
-
 </script>
 
 <template>
@@ -60,10 +53,10 @@ const profitMargin = computed(() => {
         class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
         <div class="flex items-center justify-between">
             <span class="font-medium text-xs">
-                {{ trans("retail") }} : {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
+                {{ trans("Retail") }} : {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
                 <span class=""> {{ product.unit }}</span>
                 <span class="text-xs ml-2 font-medium">
-                    {{ trans("retail (excl. tax)") }}
+                    {{ trans("(excl. tax)") }}
                 </span>
             </span>
         </div>
