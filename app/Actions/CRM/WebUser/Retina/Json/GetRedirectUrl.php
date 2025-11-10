@@ -24,6 +24,7 @@ class GetRedirectUrl extends IrisAction
 
     public function handle($modelData): array
     {
+
         $retinaHome = '';
         $ref_page   = null;
         if (Arr::has($modelData, 'ref')) {
@@ -53,7 +54,7 @@ class GetRedirectUrl extends IrisAction
         ];
     }
 
-    public function jsonResponse(ActionRequest $request): array
+    public function asController(ActionRequest $request): array
     {
         $this->initialisation($request);
 
