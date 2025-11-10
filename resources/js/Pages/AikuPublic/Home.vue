@@ -84,7 +84,6 @@ const features = [
                     <p class="mt-6 text-lg leading-8 text-gray-600">
                         Simplify your business processes effortlessly. Our comprehensive ERP software covers everything from inventory management to logistics, guaranteeing smooth operations for your enterprise.
                     </p>
-
                 </div>
             </div>
             <div class="relative overflow-hidden pt-16">
