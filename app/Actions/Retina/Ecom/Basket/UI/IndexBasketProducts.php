@@ -21,17 +21,16 @@ class IndexBasketProducts extends OrgAction
 {
     public function handle(Order $order): Array
     {
-        $query = DB::table('transactions')->where('transactions.order_id', $order->id);
-        $query->whereIn('transactions.model_type', ['Product', 'Service']);
-
-        $query->leftjoin('assets', 'transactions.asset_id', '=', 'assets.id');
-        $query->leftjoin('products', 'assets.model_id', '=', 'products.id');
-        $query->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
+        $query = DB::table('transactions')->where('transactions.order_id', $order->id)
+                        ->where('transactions.model_type', 'Product')
+                        ->leftjoin('assets', 'transactions.asset_id', '=', 'assets.id')
+                        ->leftjoin('products', 'assets.model_id', '=', 'products.id')
+                        ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
         return $query->select([
                 'transactions.id as transaction_id',
                 'transactions.quantity_ordered as quantity_ordered',
-                'products.id',
+                'products.id as product_id',
                 'products.image_id',
                 'products.code',
                 'products.group_id',
@@ -56,6 +55,7 @@ class IndexBasketProducts extends OrgAction
             ])
             ->orderBy('products.name') // Change sort, maybe by id to make sure it's the same as the one on basket page
             ->get()
+            ->keyBy('product_id')
             ->toArray();
     }
 }
