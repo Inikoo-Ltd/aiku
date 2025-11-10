@@ -2,7 +2,7 @@
 import { faFilter, faSearch, faLayerGroup } from "@fas";
 import { ref, computed, inject, watch } from "vue";
 import ProductRender from "./ProductRender.vue";
-import FilterProducts from "./FilterProduct.vue";
+import FilterProducts from "./FilterProductWorkshop.vue";
 import Drawer from "primevue/drawer";
 import Button from "@/Components/Elements/Buttons/Button.vue";
 import PureInput from "@/Components/Pure/PureInput.vue";
