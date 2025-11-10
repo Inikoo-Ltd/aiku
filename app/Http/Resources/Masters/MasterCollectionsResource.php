@@ -60,6 +60,13 @@ class MasterCollectionsResource extends JsonResource
                 'class'   => 'text-red-400'
             ],
             'parents_data'                      => $this->parseCollectionParentsData($this->parents_data),
+            'delete_route' => [
+                'method'     => 'delete',
+                'name'       => 'grp.models.master_collection.delete_without_return',
+                'parameters' => [
+                    'masterCollection' => $this->id
+                ]
+            ],
         ];
     }
 

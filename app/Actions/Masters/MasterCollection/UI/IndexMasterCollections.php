@@ -128,6 +128,7 @@ class IndexMasterCollections extends OrgAction
             $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_current_master_collections', label: __('Collections'), canBeHidden: false, sortable: true);
+            $table->column(key: 'actions', label: __('Action'));
         };
     }
 
