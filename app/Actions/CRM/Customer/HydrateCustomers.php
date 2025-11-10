@@ -50,7 +50,7 @@ class HydrateCustomers
         CustomerHydrateBasket::run($customer);
         CustomerHydrateExclusiveProducts::run($customer);
         CustomerHydrateCustomerSalesChannels::run($customer->id);
-        CustomerHydrateClv::run($customer->id);
+        CustomerHydrateClv::run($customer);
 
         CustomerHydrateRfm::generateGlobalMonetaryPercentiles();
         CustomerHydrateRfm::run($customer);

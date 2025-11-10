@@ -67,7 +67,7 @@ class DeleteInvoice extends OrgAction
             //
         }
 
-        CustomerHydrateClv::dispatch($invoice->customer->id)->delay($this->hydratorsDelay);
+        CustomerHydrateClv::dispatch($invoice->customer)->delay($this->hydratorsDelay);
 
         return $invoice;
     }
