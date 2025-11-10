@@ -877,12 +877,12 @@ trait WithEbayApiRequest
 
             $offer = [
                 'sku' => $sku,
-                'marketplaceId' => $listingData['marketplace_id'] ?? 'EBAY_US',
+                'marketplaceId' => $listingData['marketplace_id'] ?? 'EBAY_GB',
                 'format' => $listingData['format'] ?? 'FIXED_PRICE',
                 'pricingSummary' => [
                     'price' => [
                         'value' => $listingData['price'],
-                        'currency' => $listingData['currency'] ?? 'USD'
+                        'currency' => $listingData['currency'] ?? 'GBP'
                     ]
                 ],
                 'listingDescription' => $listingData['description'] ?? '',

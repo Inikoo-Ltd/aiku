@@ -95,9 +95,9 @@ onMounted(() => {
                 <FontAwesomeIcon :icon="faCaretLeft" class="text-black"></FontAwesomeIcon>
             </template>
             
-            <ParentFieldSideEditor 
-                :blueprint="field" 
-                :uploadImageRoute="uploadImageRoute" 
+            <ParentFieldSideEditor
+                :blueprint="field"
+                :uploadImageRoute="uploadImageRoute"
                  v-model="modelValue"
                 :key="field.key"
                 @update:modelValue="e =>  emits('update:modelValue', e)"
