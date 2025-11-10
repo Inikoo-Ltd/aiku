@@ -76,5 +76,6 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
         with:
+          ignore_missing: true
           environment: production
           release: ${{ steps.semver.outputs.next }}
