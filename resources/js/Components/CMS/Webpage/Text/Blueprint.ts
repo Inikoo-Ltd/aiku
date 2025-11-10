@@ -7,6 +7,12 @@ export default {
 			useIn: ["desktop", "tablet", "mobile"],
 		},
 		{
+			label: "Responsive Text",
+			key: ["value"],
+			type: "text-responesive",
+			/* useIn: ["desktop", "tablet", "mobile"], */
+		},
+		{
 			name: "Layout",
 			key: ["container", "properties"],
 			replaceForm: [

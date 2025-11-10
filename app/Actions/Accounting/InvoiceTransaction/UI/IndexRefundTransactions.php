@@ -42,6 +42,7 @@ class IndexRefundTransactions extends OrgAction
                 'invoice_transactions.id',
                 'invoice_transactions.in_process',
                 'invoice_transactions.historic_asset_id',
+                'historic_assets.asset_id',
                 'historic_assets.code',
                 'historic_assets.name',
                 'products.slug',

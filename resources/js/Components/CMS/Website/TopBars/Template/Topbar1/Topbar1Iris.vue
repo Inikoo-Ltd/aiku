@@ -20,7 +20,7 @@ import LinkIris from "@/Components/Iris/LinkIris.vue"
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck)
 
 const props = defineProps<{
-    screenType: "desktop" | "mobile" | "tablet"
+    screenType?: "desktop" | "mobile" | "tablet"
 }>()
 
 const screenTypeInject = inject("screenType", "desktop")

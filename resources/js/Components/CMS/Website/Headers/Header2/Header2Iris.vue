@@ -29,8 +29,8 @@ const props = defineProps<{
 			}
 		}
 	}
-	loginMode: boolean
-	screenType: "mobile" | "tablet" | "desktop"
+	loginMode?: boolean
+	screenType?: "mobile" | "tablet" | "desktop"
 }>()
 
 const isLoggedIn = inject("isPreviewLoggedIn", false)

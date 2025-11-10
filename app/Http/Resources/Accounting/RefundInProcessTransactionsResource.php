@@ -22,6 +22,8 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $in_process
  * @property mixed $refund_id
  * @property mixed $price
+ * @property mixed $slug
+ * @property mixed $asset_id
  */
 class RefundInProcessTransactionsResource extends JsonResource
 {
@@ -31,7 +33,7 @@ class RefundInProcessTransactionsResource extends JsonResource
         $refundNetAmount = abs(InvoiceTransaction::where('invoice_id', $this->refund_id)->where('original_invoice_transaction_id', $this->id)->sum('net_amount'));
 
         return [
-            'id'                             => $this->id,
+            'asset_id'                       => $this->asset_id,
             'code'                           => $this->code,
             'slug'                           => $this->slug,
             'name'                           => $this->name,

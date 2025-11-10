@@ -11,6 +11,8 @@ const props = withDefaults(defineProps<{
     alt?: string
     class?: string
     style?: Object
+    width?:string
+    height?:string
     imgAttributes?: {
         fetchpriority?: string // 'high' | 'low'
         loading?: string  // 'lazy'
@@ -77,6 +79,8 @@ onBeforeMount(setImage)
             :src="get(src, 'original')"
             :alt="alt"
             v-bind="imgAttributes"
+            :width="width" 
+            :height="height"
         >
     </picture>
 </template>

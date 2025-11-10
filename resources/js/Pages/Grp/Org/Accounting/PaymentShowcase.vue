@@ -224,8 +224,6 @@ const normalizedShowcase = computed(() => {
 	}
 })
 
-console.log('normalizedShowcase', normalizedShowcase.value)
-
 const isRefund = computed(() => {
 	return parseFloat(normalizedShowcase.value.amount) < 0
 })
@@ -263,9 +261,10 @@ const routeInvoice = (invoice) => {
 }
 
 const routeOrder = (order) => {
+	if (!(layout?.currentParams?.organisation && (layout?.currentParams?.shop || order.shop_slug) && order.customer_slug && order.slug)) return '';
 	return route('grp.org.shops.show.crm.customers.show.orders.show', {
 		organisation: layout?.currentParams?.organisation,
-		shop: layout?.currentParams?.shop,
+		shop: layout?.currentParams?.shop ?? order.shop_slug,
 		customer: order.customer_slug,
 		order: order.slug
 	})
@@ -361,7 +360,7 @@ const routeOrder = (order) => {
 		<!-- Column 2: Order & Account Information -->
 		<div class="space-y-6">
 			<!-- Section: Order data -->
-			<div v-if="normalizedShowcase.order_data" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
+			<div v-if="normalizedShowcase.order_data?.data" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
 				<div class="px-6 py-4 border-b border-gray-200">
 					<h3 class="text-lg font-medium flex items-center gap-2">
 						<FontAwesomeIcon icon="fal fa-shopping-cart" :style="{ color: themeColors.buttonBg }" />
@@ -376,8 +375,8 @@ const routeOrder = (order) => {
 					<!-- Order data: Order Reference -->
 					<div class="flex items-center justify-between rounded-lg">
 						<dt class="text-sm font-medium">{{ trans('Order Reference') }}</dt>
-						<Link :href="routeOrder(normalizedShowcase.order_data)" class="text-sm primaryLink" xstyle="{ color: themeColors.primaryBg }">
-							{{ normalizedShowcase.order_data.reference }}
+						<Link :href="routeOrder(normalizedShowcase.order_data.data)" class="text-sm primaryLink" xstyle="{ color: themeColors.primaryBg }">
+							{{ normalizedShowcase.order_data.data.reference }}
 						</Link>
 					</div>
 
@@ -385,7 +384,7 @@ const routeOrder = (order) => {
 					<div class="flex items-center justify-between">
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Order Status') }}</dt>
 						<dd>
-							<Icon :data="normalizedShowcase.order_data?.state_icon" />
+							<Icon :data="normalizedShowcase.order_data?.data.state_icon" />
 							<!-- <Tag :label="normalizedShowcase.order_data.state_label"
 								:theme="getStateTheme(normalizedShowcase.order_data.state)" /> -->
 						</dd>
@@ -396,12 +395,12 @@ const routeOrder = (order) => {
 						<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
 							{{ trans('Payment Status') }}
 							<FontAwesomeIcon
-								:icon="normalizedShowcase.order_data.is_fully_paid ? 'fal fa-check-circle' : 'fal fa-times-circle'"
-								:class="normalizedShowcase.order_data.is_fully_paid ? 'text-green-500' : 'text-red-500'" />
+								:icon="normalizedShowcase.order_data.data.is_fully_paid ? 'fal fa-check-circle' : 'fal fa-times-circle'"
+								:class="normalizedShowcase.order_data.data.is_fully_paid ? 'text-green-500' : 'text-red-500'" />
 						</dt>
 						<dd class="text-sm font-medium"
-							:class="normalizedShowcase.order_data.is_fully_paid ? 'text-green-700' : 'text-red-700'">
-							{{ normalizedShowcase.order_data.is_fully_paid ? trans('Fully Paid') : trans('Unpaid') }}
+							:class="normalizedShowcase.order_data.data.is_fully_paid ? 'text-green-700' : 'text-red-700'">
+							{{ normalizedShowcase.order_data.data.is_fully_paid ? trans('Fully Paid') : trans('Unpaid') }}
 						</dd>
 					</div>
 
@@ -410,7 +409,7 @@ const routeOrder = (order) => {
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Net Amount') }}</dt>
 						<dd class="text-sm">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.order_data.net_amount) }}
+							normalizedShowcase.order_data.data.net_amount) }}
 						</dd>
 					</div>
 
@@ -419,7 +418,7 @@ const routeOrder = (order) => {
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Payment Amount') }}</dt>
 						<dd class="text-sm">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.order_data.payment_amount) }}
+							normalizedShowcase.order_data.data.payment_amount) }}
 						</dd>
 					</div>
 
@@ -428,30 +427,30 @@ const routeOrder = (order) => {
 						<dt class="text-sm font-medium text-gray-600">{{ trans('Total Amount') }}</dt>
 						<dd class="text-lg font-semibold" :style="{ color: themeColors.primaryBg }">
 							{{ useLocaleStore().currencyFormat(normalizedShowcase.currency.code,
-							normalizedShowcase.order_data.total_amount) }}
+							normalizedShowcase.order_data.data.total_amount) }}
 						</dd>
 					</div>
 
 					<!-- Order data: Created/Cancelled -->
 					<div class="border-t border-gray-200 pt-4 space-y-3">
-						<div v-if="normalizedShowcase.order_data.created_at" class="flex items-center justify-between">
+						<div v-if="normalizedShowcase.order_data.data.created_at" class="flex items-center justify-between">
 							<dt v-tooltip="trans('Date of order created')" class="text-sm font-medium text-gray-600 flex items-center gap-2">
 								<FontAwesomeIcon icon="fal fa-calendar-alt" class="text-gray-400" />
 								{{ trans('Created') }}
 							</dt>
 							<dd class="text-sm">
-								{{ useFormatTime(normalizedShowcase.order_data.created_at, { formatTime: 'hm' }) }}
+								{{ useFormatTime(normalizedShowcase.order_data.data.created_at, { formatTime: 'hm' }) }}
 							</dd>
 						</div>
 
-						<div v-if="normalizedShowcase.order_data.cancelled_at"
+						<div v-if="normalizedShowcase.order_data.data.cancelled_at"
 							class="flex items-center justify-between">
 							<dt class="text-sm font-medium text-gray-600 flex items-center gap-2">
 								<FontAwesomeIcon icon="fal fa-times-circle" class="text-red-400" />
 								{{ trans('Cancelled') }}
 							</dt>
 							<dd class="text-sm text-red-600">
-								{{ useFormatTime(normalizedShowcase.order_data.cancelled_at, {
+								{{ useFormatTime(normalizedShowcase.order_data.data.cancelled_at, {
 								formatTime: 'hm'
 								}) }}
 							</dd>
