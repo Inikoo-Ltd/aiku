@@ -251,7 +251,6 @@ const profitMargin = computed(() => {
             </div> -->
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
 
-
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
                 class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative">
@@ -259,6 +258,21 @@ const profitMargin = computed(() => {
                     <Image :src="product?.web_images?.main?.gallery" alt="product image"
                         :style="{ objectFit: 'contain' }" />
                 </slot>
+
+                  <template v-if="layout?.retina?.type != 'dropshipping' && layout?.iris?.is_logged_in">
+                <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl z-10">
+                    <LoadingIcon />
+                </div>
+                <div v-else @click.prevent="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
+                     class="cursor-pointer absolute left-2 bottom-2 group text-xl z-10">
+
+                    <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
+                    <div v-else class="relative">
+                        <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400" fixed-width />
+                        <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300" fixed-width />
+                    </div>
+                </div>
+            </template>
 
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
@@ -308,7 +322,34 @@ const profitMargin = computed(() => {
 
             <!-- Price Card -->
              <Prices :product="product" :currency="currency" />
-            
+
+                <!-- old price -->
+                <!-- <div v-if="layout?.iris?.is_logged_in"
+                    class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
+                    <div class="">
+                        <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
+                            product.price || 0) }}</span></div>
+                        <div>
+                            <span class="text-sm text-gray-400  font-normal">
+                                ({{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
+                                }}/{{
+                                    product.unit }})
+                            </span>
+                        </div>
+                    </div>
+
+                    <div v-if="product?.rrp" class="text-xs mt-1 text-right">
+                        <div>
+                            RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }} <span
+                                v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ product?.margin }} )</span>
+                            <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
+                                ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} /
+                                {{
+                                    product.unit }})
+                            </div>
+                        </div>
+                    </div>
+                </div> -->
             </div>
         </div>
 
