@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -75,6 +76,17 @@ class CheckShopifyPortfolio
 
 
         return $portfolio;
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'shopify:check_portfolio {portfolio_id}';
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $portfolio = Portfolio::find($command->argument('portfolio_id'));
+        $this->handle($portfolio);
     }
 
 

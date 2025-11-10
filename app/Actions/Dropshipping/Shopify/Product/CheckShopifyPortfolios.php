@@ -32,7 +32,7 @@ class CheckShopifyPortfolios extends OrgAction
     private array $tableData = [];
 
 
-    public function handle(Group|Organisation|Shop|Customer|CustomerSalesChannel $parent = null, Command $command = null): void
+    public function handle(Group|Organisation|Shop|Customer|CustomerSalesChannel|Portfolio $parent = null, Command $command = null): void
     {
         $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
@@ -49,6 +49,8 @@ class CheckShopifyPortfolios extends OrgAction
             $query->where('organisation_id', $parent->id);
         } elseif ($parent instanceof Group) {
             $query->where('group_id', $parent->id);
+        } elseif ($parent instanceof Portfolio) {
+            $query->where('portfolio.id', $parent->id);
         }
 
 
@@ -105,6 +107,7 @@ class CheckShopifyPortfolios extends OrgAction
             'shp' => Shop::where('slug', $parentSlug)->firstOrFail(),
             'cus' => Customer::where('slug', $parentSlug)->firstOrFail(),
             'csc' => CustomerSalesChannel::where('slug', $parentSlug)->firstOrFail(),
+            'portfolio' => Portfolio::where('id', $parentSlug)->firstOrFail(),
             default => throw new \InvalidArgumentException("Invalid parent type: $parentType"),
         };
 
