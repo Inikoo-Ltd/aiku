@@ -25,8 +25,8 @@ const props = defineProps<{
     information?: string,
     props_data?: any
     reset_value?: any  // Value to reset the field to
-    modelType?: string
   },
+  modelType?: string
   uploadImageRoute?: routeType,
 }>()
 

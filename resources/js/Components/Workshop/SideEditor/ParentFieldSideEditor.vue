@@ -19,7 +19,7 @@ import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 library.add(faInfoCircle, faSparkles)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     blueprint: {
         name: string
         type: string
@@ -29,10 +29,12 @@ const props = defineProps<{
         icon?: any
         show_new_until?: string  // "2025-06-04"
         information?: string  // For tooltip on i icon
-        modelType?: string
     }
+    modelType?: string
     uploadImageRoute?: routeType
-}>()
+}>(), {
+    modelType: 'edit'
+})
 
 const emits = defineEmits<{
     (e: 'update:modelValue', value: number): void
