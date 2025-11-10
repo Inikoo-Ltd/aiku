@@ -52,8 +52,6 @@ onMounted(() => {
   <aside class="w-full lg:w-64">
     <h3 class="font-medium mb-3">{{ trans("Filters") }}</h3>
 
-    <h3 class="font-medium mb-3">{{ trans('Filters') }}</h3>
-
     <div v-for="item in blueprintCopy" :key="item.id" class="my-4">
       <div v-if="item?.type !== 'hidden'">
         <div class="flex items-center font-semibold text-start my-2 border-b">
