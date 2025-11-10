@@ -6,7 +6,6 @@ import { debounce } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 
-// Props
 const props = defineProps<{
   modelValue: Record<string, any>
   productCategory: number
@@ -14,26 +13,20 @@ const props = defineProps<{
 
 const layout = inject('layout', retinaLayoutStructure)
 
-// Emits
 const emit = defineEmits(['update:modelValue'])
 
-// Debounced update function to avoid unnecessary emit bursts
 const debouncedUpdate = debounce((val: Record<string, any>) => {
-  // Only update the nested `data`, keep same reference to avoid rerender
   props.modelValue.data = val
   emit('update:modelValue', props.modelValue)
 }, 400)
 
-// Handler when SideEditor emits changes
 const updateValue = (val: Record<string, any>) => {
   debouncedUpdate(val)
 }
 
 const blueprintCopy = ref([...blueprint(props.productCategory).blueprint])
-// const isLoadingFetching = ref(false)
+
 onMounted(() => {
-
-
     let hidden_list = []
     if (layout.iris?.shop?.number_current_brands < 1) {
         hidden_list.push('brands_filter')
@@ -46,7 +39,6 @@ onMounted(() => {
             item.type = 'hidden'
         }
     })
-
 })
 
 </script>
@@ -54,17 +46,12 @@ onMounted(() => {
 <template>
   <aside class="w-full lg:w-64">
     <h3 class="font-medium mb-3">{{ trans("Filters") }}</h3>
-
     <SideEditor
         :blueprint="blueprintCopy"
         :modelValue="modelValue.data"
         @update:modelValue="updateValue"
+        modelType="filter"
     />
-
-    <!-- <div v-if="isLoadingFetching" class="flex flex-col gap-y-4">
-        <div class="skeleton w-full h-28" />
-        <div class="skeleton w-full h-28" />
-    </div> -->
   </aside>
 </template>
 

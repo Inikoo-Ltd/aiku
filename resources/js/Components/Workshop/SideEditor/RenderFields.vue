@@ -11,6 +11,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faInfoCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import type { Ref } from 'vue'
+import { getFilterComponent } from '@/Composables/SideEditorHelperFilter'
+
 library.add(faInfoCircle)
 
 const props = defineProps<{
@@ -24,6 +26,7 @@ const props = defineProps<{
     props_data?: any
     reset_value?: any  // Value to reset the field to
   },
+  modelType?: string
   uploadImageRoute?: routeType,
 }>()
 
@@ -121,7 +124,7 @@ const keyRender = ref(1)
 
   <component
     :key="keyRender + currentView"
-    :is="getComponent(blueprint.type)"
+    :is="modelType == 'edit' ? getComponent(blueprint.type) : getFilterComponent(blueprint.type)"
     :uploadRoutes="uploadImageRoute"
     v-bind="blueprint?.props_data"
     :modelValue="valueForField"

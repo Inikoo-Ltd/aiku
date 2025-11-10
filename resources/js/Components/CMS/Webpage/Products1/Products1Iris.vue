@@ -14,10 +14,7 @@ import { debounce } from "lodash-es";
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import PureInput from "@/Components/Pure/PureInput.vue";
-// import { useConfirm } from "primevue/useconfirm";
 import { faSearch } from "@fal";
-import { faExclamationTriangle } from "@far";
-// import ConfirmDialog from "primevue/confirmdialog";
 import { trans } from "laravel-vue-i18n"
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
