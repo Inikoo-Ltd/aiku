@@ -33,8 +33,10 @@ const props = withDefaults(defineProps<{
         id: number
     }
     panelOpen?: number|null|string
+    modelType?: string // 'edit'|'filter'
 }>(), {
     panelOpen: null,
+    modelType: 'edit'
 })
 
 const modelValue = defineModel()
@@ -99,6 +101,7 @@ onMounted(() => {
                  v-model="modelValue"
                 :key="field.key"
                 @update:modelValue="e =>  emits('update:modelValue', e)"
+                :modelType="type"
             />
         </Accordion>
     </div>
