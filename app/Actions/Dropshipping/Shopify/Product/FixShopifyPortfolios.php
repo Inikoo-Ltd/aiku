@@ -25,7 +25,7 @@ class FixShopifyPortfolios
 {
     use AsAction;
 
-    public function handle(Shop|CustomerSalesChannel $parent, int $fixLevel = null, Command $command = null): array
+    public function handle(Shop|CustomerSalesChannel|Portfolio $parent, int $fixLevel = null, Command $command = null): array
     {
         $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
@@ -33,8 +33,10 @@ class FixShopifyPortfolios
 
         if ($parent instanceof Shop) {
             $query->where('shop_id', $parent->id);
-        } else {
+        } elseif ($parent instanceof CustomerSalesChannel) {
             $query->where('customer_sales_channel_id', $parent->id);
+        } else {
+            $query->where('portfolios.id', $parent->id);
         }
 
         $portfoliosSynchronisation = [];
@@ -248,7 +250,7 @@ class FixShopifyPortfolios
     {
         list(
             $hasValidProductId, $productExistsInShopify, $hasVariantAtLocation
-        ) =
+            ) =
             $this->fixLevel4($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
 
         if ($hasVariantAtLocation) {
@@ -280,6 +282,7 @@ class FixShopifyPortfolios
         $parent = match (strtolower($parentType)) {
             'shp' => Shop::where('slug', $parentSlug)->firstOrFail(),
             'csc' => CustomerSalesChannel::where('slug', $parentSlug)->firstOrFail(),
+            'portfolio' => Portfolio::where('slug', $parentSlug)->firstOrFail(),
             default => throw new \InvalidArgumentException("Invalid parent type: $parentType"),
         };
 
