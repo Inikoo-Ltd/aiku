@@ -6,10 +6,9 @@ import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
 import { ProductHit } from '@/types/Luigi/LuigiTypes'
 import { faCircle } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { Link } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
-import { SwiperSlide } from 'swiper/vue'
 import { inject } from 'vue'
+import LinkIris from '@/Components/Iris/LinkIris.vue'
 
 const props = defineProps<{
     product: ProductHit
@@ -21,10 +20,10 @@ const locale = inject('locale', aikuLocaleStructure)
 </script>
 
 <template>
-    <div class="flex flex-col justify-between w-full px-4 py-3 rounded border hover:border-black/40">
+    <div class="flex flex-col justify-between w-full px-4 py-3 rounded">
         <div class="w-full">
             <!-- Image -->
-            <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
+            <component :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
                 :href="product.attributes.web_url?.[0]"
                 class="block rounded aspect-[5/4] w-full overflow-hidden"
                 @success="() => SelectItemCollector(product)"
@@ -34,7 +33,7 @@ const locale = inject('locale', aikuLocaleStructure)
             </component>
 
             <!-- Title -->
-            <component :is="product.attributes.web_url?.[0] ? Link : 'div'"
+            <component :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
                 :href="product.attributes.web_url?.[0]"
                 class="font-bold text-sm leading-tight hover:!underline !cursor-pointer"
                 @success="() => SelectItemCollector(product)"
