@@ -51,7 +51,7 @@ trait WithIrisInertia
         $currentLanguage = Language::where('code', app()->getLocale())->first();
 
 
-        $cacheKey="iris:nav:product_categories:website:$website->id:language:".$currentLanguage?->id;
+        $cacheKey = "iris:nav:product_categories:website:$website->id:language:".$currentLanguage?->id;
         $ttl = (int) (config('iris.cache.product_category_navigation_ttl') ?? 900);
 
         $compute = function () use ($website) {
