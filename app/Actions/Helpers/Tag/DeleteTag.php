@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 26-05-2025, Bali, Indonesia
@@ -56,7 +57,7 @@ class DeleteTag extends OrgAction
         }
     }
 
-    public function htmlResponse(Tag $tag=null): void
+    public function htmlResponse(Tag $tag = null): void
     {
         if (is_null($tag)) {
             return;

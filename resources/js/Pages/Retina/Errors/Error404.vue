@@ -7,15 +7,11 @@
 <script setup lang="ts">
 import { ufo404 } from '@/Assets/Iconscout/404_ufo'
 import { rocket_falling } from '@/Assets/Iconscout/rocket_falling'
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { Button as ButtonTS } from '@/types/Button'
-import { routeType } from '@/types/route'
-import { Link } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
 import { inject } from 'vue'
 
-const props = defineProps<{
+defineProps<{
     status: {}
 }>()
 

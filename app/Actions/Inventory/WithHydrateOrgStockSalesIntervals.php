@@ -75,7 +75,7 @@ trait WithHydrateOrgStockSalesIntervals
 
     public function perSalesType(OrgStock|OrgStockFamily $stockable, array $stats, DeliveryNoteItemSalesTypeEnum $salesType, ?array $intervals, ?array $doPreviousPeriods): array
     {
-        $queryBase = DeliveryNoteItem::where('sales_type', DeliveryNoteItemSalesTypeEnum::B2B)
+        $queryBase = DeliveryNoteItem::where('sales_type', $salesType)
             ->where($stockable instanceof OrgStock ? 'org_stock_id' : 'org_stock_family_id', $stockable->id)
             ->selectRaw($this->rawSqlOrgRevenue);
 

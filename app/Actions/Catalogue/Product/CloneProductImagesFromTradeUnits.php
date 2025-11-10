@@ -33,7 +33,7 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
 
         $tradeUnit = $product->tradeUnits->first();
 
-        if(!$tradeUnit){
+        if (!$tradeUnit) {
             return;
         }
 

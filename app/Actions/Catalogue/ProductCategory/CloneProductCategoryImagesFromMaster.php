@@ -33,7 +33,7 @@ class CloneProductCategoryImagesFromMaster implements ShouldBeUnique
 
         $master = $productCategory->masterProductCategory;
 
-        if(!$master){
+        if (!$master) {
             return;
         }
 
