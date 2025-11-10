@@ -17,13 +17,20 @@ export const getRefRedirect = async () => {
             })
         )
 
-        console.log('-Ra', response)
+        console.log('-Response-redirect', response)
 
-        if (response.data?.length < 1) {
-            return route('retina.dashboard.show')
+
+        // response.data.ref_page
+        // response.data.redirect_url
+        // response.data.redirected
+
+        if (response.data?.redirect_url) {
+            return response.data?.redirect_url  // "https://ecom.test/gold_reward"
         }
 
-        return response.data  // "https://ecom.test/gold_reward"
+        return route('retina.dashboard.show')
+
+        // return response.data  // "https://ecom.test/gold_reward"
     } catch (error: any) {
         return route('retina.dashboard.show')
     }
