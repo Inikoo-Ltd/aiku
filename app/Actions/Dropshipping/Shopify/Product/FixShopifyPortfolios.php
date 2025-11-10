@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -233,6 +234,8 @@ class FixShopifyPortfolios
 
         $portfolio->refresh();
         StoreShopifyProductVariant::run($portfolio);
+        CustomerSalesChannelsHydratePortfolios::run($portfolio->customerSalesChannel);
+
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
