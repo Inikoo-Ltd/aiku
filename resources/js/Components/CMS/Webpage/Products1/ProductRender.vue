@@ -219,7 +219,7 @@ const profitMargin = computed(() => {
                     <LoadingIcon />
                 </div>
                 <div v-else @click="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
-                     class="cursor-pointer absolute top-2 right-2 group text-xl ">
+                    class="cursor-pointer absolute top-2 right-2 group text-xl ">
 
                     <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width class="text-pink-500" />
                     <div v-else class="relative">
@@ -232,15 +232,16 @@ const profitMargin = computed(() => {
 
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
-                       class="block w-full mb-1 rounded sm:h-[305px] h-[180px]">
+                class="block w-full mb-1 rounded sm:h-[305px] h-[180px]">
                 <Image :src="product?.web_images?.main?.gallery" alt="product image"
-                       :style="{ objectFit: 'contain' }" />
+                    :style="{ objectFit: 'contain' }" />
             </component>
 
             <!-- Title -->
-            <LinkIris v-if="product.url" :href="product.url" type="internal" class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
+            <LinkIris v-if="product.url" :href="product.url" type="internal"
+                class="text-gray-800 hover:text-gray-500 font-bold text-sm mb-1">
                 <template #default>
-                    <span  class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
+                    <span class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
                 </template>
             </LinkIris>
 
@@ -258,16 +259,18 @@ const profitMargin = computed(() => {
                 <div class="flex justify-between items-center text-xs mb-2">
                     <!-- Stock indicator -->
                     <div v-if="layout?.iris?.is_logged_in"
-                         class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
-                         :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
+                        class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
+                        :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
                         <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
                         <span>{{ product.stock > 0 ? product.stock : 0 }} {{ trans("available") }}</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Price Card -->
-           <Prices :product="product" :currency="currency" />
+        </div>
+
+        <div class="mt-auto">
+            <Prices :product="product" :currency="currency" />
         </div>
         <ButtonAddPortfolio :product="product" :productHasPortfolio="productHasPortfolio" />
     </div>

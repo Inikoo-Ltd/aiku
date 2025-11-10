@@ -37,6 +37,8 @@ class CallbackRetinaEbayUser extends OrgAction
      */
     public function handle(Customer $customer, array $modelData): string
     {
+
+
         $config = $this->getEbayConfig();
 
         try {
