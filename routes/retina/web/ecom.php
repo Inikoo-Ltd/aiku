@@ -12,7 +12,6 @@
 use App\Actions\Retina\Billing\RetinaPdfInvoice;
 use App\Actions\Retina\Billing\UI\IndexRetinaEcomInvoices;
 use App\Actions\Retina\Billing\UI\ShowRetinaEcomInvoice;
-use App\Actions\Retina\Ecom\Basket\FetchRetinaEcomBasket;
 use App\Actions\Retina\Ecom\BackInStock\UI\IndexRetinaEcomBackInStocks;
 use App\Actions\Retina\Ecom\Basket\UI\ShowRetinaEcomBasket;
 use App\Actions\Retina\Ecom\Checkout\UI\ShowRetinaEcomCheckout;
@@ -24,7 +23,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('basket')->as('basket.')->group(function () {
     Route::get('/', ShowRetinaEcomBasket::class)->name('show');
-    Route::post('/fetch', FetchRetinaEcomBasket::class)->name('fetch');
 });
 Route::prefix('checkout')->as('checkout.')->group(function () {
     Route::get('/', ShowRetinaEcomCheckout::class)->name('show');

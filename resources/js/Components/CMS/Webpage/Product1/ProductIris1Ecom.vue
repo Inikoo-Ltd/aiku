@@ -506,7 +506,7 @@ const closePopover = (close: any): void => {
             <!-- <ButtonAddToBasket :product="fieldValue.product" /> -->
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
                 <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
-                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
+                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" :customerData="customerData" />
 
                 <div v-else>
                     <Button :label="trans('Out of stock')" type="tertiary" disabled full />

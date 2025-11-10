@@ -19,8 +19,10 @@ use App\Enums\Catalogue\Charge\ChargeStateEnum;
 use App\Enums\Catalogue\Charge\ChargeTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Catalogue\ChargeResource;
+use App\Http\Resources\Catalogue\IrisAuthenticatedProductsInWebpageResource;
 use App\Http\Resources\Fulfilment\RetinaEcomBasketTransactionsResources;
 use App\Http\Resources\Helpers\AddressResource;
+use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use App\Http\Resources\Sales\OrderResource;
@@ -53,8 +55,50 @@ class FetchRetinaEcomBasket extends RetinaAction
     public function jsonResponse(Order $order): Array|null
     {
         if(!$order) return null;
-        $orderArr = $this->getOrderBoxStats($order); 
-        $orderArr['products']['product_detail'] = RetinaEcomBasketTransactionsResources::collection(IndexBasketTransactions::run($order));
+        // $orderArr = $this->getOrderBoxStats($order); 
+        $orderArr['order_summary'] = [
+            [
+                [
+                    'label'       => __('Items'),
+                    'quantity'    => $order->stats->number_item_transactions,
+                    'price_base'  => 'Multiple',
+                    'price_total' => $order->goods_amount
+                ],
+            ],
+            [
+                [
+                    'label'       => __('Charges'),
+                    'information' => '',
+                    'price_total' => $order->charges_amount
+                ],
+                [
+                    'label'       => __('Shipping'),
+                    'information' => '',
+                    'price_total' => $order->shipping_amount
+                ]
+            ],
+            [
+                [
+                    'label'       => __('Net'),
+                    'information' => '',
+                    'price_total' => $order->net_amount
+                ],
+                [
+                    'label'       => __('Tax').' ('.$order->taxCategory?->name.')',
+                    'information' => '',
+                    'price_total' => $order->tax_amount
+                ]
+            ],
+            [
+                [
+                    'label'       => __('Total'),
+                    'price_total' => $order->total_amount
+                ],
+            ],
+
+            'currency' => CurrencyResource::make($order->currency),
+        ]; 
+        $orderArr['products'] = IrisAuthenticatedProductsInWebpageResource::collection(IndexBasketTransactions::run($order));
         return $orderArr;
     }
 }
