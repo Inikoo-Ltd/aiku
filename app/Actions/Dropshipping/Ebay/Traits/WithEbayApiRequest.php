@@ -17,6 +17,13 @@ use Illuminate\Support\Facades\Log;
 
 trait WithEbayApiRequest
 {
+    public int $timeOut = 30;
+
+    public function setTimeout(int $timeOut): void
+    {
+        $this->timeOut = $timeOut;
+    }
+
     /**
      * Fields that require user action to fix
      */
@@ -730,6 +737,25 @@ trait WithEbayApiRequest
                 ],
                 "categoryId" => Arr::get($offerData, 'category_id'),
                 "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key')
+            ];
+
+            $endpoint = "/sell/inventory/v1/offer/$offerId";
+            return $this->makeEbayRequest('put', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Get eBay Offer Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+
+    /**
+     * Update offer by offer ID
+     */
+    public function updateQuantityOffer($offerId, array $offerData)
+    {
+        try {
+            $data = [
+                "availableQuantity" => Arr::get($offerData, 'availableQuantity'),
             ];
 
             $endpoint = "/sell/inventory/v1/offer/$offerId";
