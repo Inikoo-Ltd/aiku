@@ -59,9 +59,9 @@ const profitMargin = computed(() => {
     <div v-if="layout?.iris?.is_logged_in"
         class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
         <div class="flex items-center justify-between">
-            <span class="font-medium text-base">
-                {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
-                <span class="text-sm"> {{ product.unit }}</span>
+            <span class="font-medium text-xs">
+                {{ trans("retail") }} : {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
+                <span class=""> {{ product.unit }}</span>
                 <span class="text-xs ml-2 font-medium">
                     {{ trans("retail (excl. tax)") }}
                 </span>
