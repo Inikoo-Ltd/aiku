@@ -56,7 +56,7 @@ class DeleteShopifyUser extends OrgAction
         );
 
         $this->update($shopifyUser, [
-            'name'   => $shopifyUser->name.$deletedSuffix.'-'.$ulid,
+            'name'   => $ulid,
             'slug'   => $ulid,
             'email'  => $ulid,
             'status' => false
