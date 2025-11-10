@@ -282,7 +282,7 @@ class FixShopifyPortfolios
         $parent = match (strtolower($parentType)) {
             'shp' => Shop::where('slug', $parentSlug)->firstOrFail(),
             'csc' => CustomerSalesChannel::where('slug', $parentSlug)->firstOrFail(),
-            'portfolio' => Portfolio::where('slug', $parentSlug)->firstOrFail(),
+            'portfolio' => Portfolio::where('id', $parentSlug)->firstOrFail(),
             default => throw new \InvalidArgumentException("Invalid parent type: $parentType"),
         };
 
