@@ -7,7 +7,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { ref } from "vue"
-import { box } from "@/Assets/Iconscout/box"
 
 
 library.add(faPlus, faCactus, faIslandTropical, faSkullCow, faFish)
@@ -28,7 +27,6 @@ defineProps<{
     isNoIcon?: boolean
 }>()
 
-//https://aiku.io/cdn/empty-space/guy_carry_a_empty_box.svg
 const isLoading = ref(false)
 </script>
 
@@ -37,7 +35,13 @@ const isLoading = ref(false)
         <h3 v-if="data?.title" class="text-lg font-light text-[#4b525b] tracking-wide pb-2">{{ data?.title || trans("No records found") }}</h3>
         <p v-if="data?.description" class="text-sm text-gray-500 inline-block">{{ data?.description }}</p>
 
-        <div v-if="!isNoIcon" class="mb-6 h-64 aspect-square text-indigo-600 mx-auto" v-html="box" />
+        <!-- <div v-html="box" /> -->
+        <img
+            v-if="!isNoIcon" 
+            :alt="trans('Guy holding an empty box')"
+            class="mb-6 h-64 aspect-square text-indigo-600 mx-auto"
+            src="/cdn/empty-space/guy_carry_a_empty_box.svg"
+        />
 
         <slot name="button-empty-state">
             <Link v-if="data?.action" as="div" :href="data?.action?.route?.name ? route(data?.action.route.name, data?.action.route.parameters) : '#'" @start="() => isLoading = true" :method="data?.action?.route?.method"
