@@ -62,7 +62,7 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
                 continue;
             }
 
-            if (! Arr::get($wooOrder, 'shipping.country')) {
+            if (!Arr::get($wooOrder, 'shipping.country')) {
                 continue;
             }
 
@@ -96,10 +96,4 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
         }
     }
 
-    public function asController(WooCommerceUser $wooCommerceUser, ActionRequest $request): void
-    {
-        $this->initialisation($wooCommerceUser->organisation, $request);
-
-        $this->handle($wooCommerceUser);
-    }
 }
