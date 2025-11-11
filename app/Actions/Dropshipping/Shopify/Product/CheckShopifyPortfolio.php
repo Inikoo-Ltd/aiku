@@ -10,6 +10,7 @@ namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -19,29 +20,41 @@ class CheckShopifyPortfolio
 
     public function handle(Portfolio $portfolio): Portfolio
     {
-        if (!$portfolio->customerSalesChannel) {
-            return $portfolio;
-        }
+
 
         $shopifyUser = $portfolio->customerSalesChannel->user;
 
-        if (!$shopifyUser instanceof ShopifyUser) {
+        // Do not check on platform_status = true
+        if ($portfolio->platform_status ||  !$portfolio->customerSalesChannel || !$shopifyUser instanceof ShopifyUser || !$shopifyUser->checkConnection()) {
             return $portfolio;
         }
 
-
-        $hasValidProductId      = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
-        $productExistsInShopify = false;
-        $hasVariantAtLocation   = false;
+        $hasValidProductId           = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
+        $productExistsInShopify      = false;
+        $hasVariantAtLocation        = false;
+        $productExistsInShopifyError = false;
+        $hasVariantAtLocationError   = false;
         if ($hasValidProductId) {
-            $productExistsInShopify = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
-            $hasVariantAtLocation   = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+            $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+
+            $productExistsInShopify      = $productExistsInShopifyResult['exist'];
+            $productExistsInShopifyError = $productExistsInShopifyResult['error'];
+
+
+            $hasVariantAtLocationResult = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+            $hasVariantAtLocation       = $hasVariantAtLocationResult['exist'];
+            $hasVariantAtLocationError  = $hasVariantAtLocationResult['error'];
         }
 
 
         $numberMatches = 0;
         $matchesLabels = [];
         $matches       = [];
+
+
+        if ($productExistsInShopifyError || $hasVariantAtLocationError ) {
+            return $portfolio;
+        }
 
         if (!$hasValidProductId || !$productExistsInShopify || !$hasVariantAtLocation) {
             $result = FindShopifyProductVariant::run($portfolio->customerSalesChannel, trim($portfolio->sku.' '.$portfolio->barcode));
@@ -75,6 +88,17 @@ class CheckShopifyPortfolio
 
 
         return $portfolio;
+    }
+
+    public function getCommandSignature(): string
+    {
+        return 'shopify:check_portfolio {portfolio_id}';
+    }
+
+    public function asCommand(Command $command): void
+    {
+        $portfolio = Portfolio::find($command->argument('portfolio_id'));
+        $this->handle($portfolio);
     }
 
 

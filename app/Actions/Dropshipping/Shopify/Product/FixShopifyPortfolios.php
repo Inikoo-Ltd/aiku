@@ -8,6 +8,7 @@
 
 namespace App\Actions\Dropshipping\Shopify\Product;
 
+use App\Actions\Dropshipping\CustomerSalesChannel\Hydrators\CustomerSalesChannelsHydratePortfolios;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Catalogue\Product;
 use App\Models\Catalogue\Shop;
@@ -24,7 +25,7 @@ class FixShopifyPortfolios
 {
     use AsAction;
 
-    public function handle(Shop|CustomerSalesChannel $parent, int $fixLevel = null, Command $command = null): array
+    public function handle(Shop|CustomerSalesChannel|Portfolio $parent, int $fixLevel = null, Command $command = null): array
     {
         $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
@@ -32,12 +33,14 @@ class FixShopifyPortfolios
 
         if ($parent instanceof Shop) {
             $query->where('shop_id', $parent->id);
-        } else {
+        } elseif ($parent instanceof CustomerSalesChannel) {
             $query->where('customer_sales_channel_id', $parent->id);
+        } else {
+            $query->where('portfolios.id', $parent->id);
         }
 
         $portfoliosSynchronisation = [];
-        foreach ($query->orderBy('status')->get() as $portfolioData) {
+        foreach ($query->orderBy('sku')->get() as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);
             if (!$portfolio) {
                 continue;
@@ -150,10 +153,13 @@ class FixShopifyPortfolios
             StoreShopifyProductVariant::run($portfolio);
         }
 
+        $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
-            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
-            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+            $productExistsInShopifyResult['exist'],
+            $productHasVariantAtLocation['exist'],
         ];
     }
 
@@ -177,11 +183,13 @@ class FixShopifyPortfolios
             StoreShopifyProductVariant::run($portfolio);
         }
 
+        $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
-            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
-            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+            $productExistsInShopifyResult['exist'],
+            $productHasVariantAtLocation['exist'],
         ];
     }
 
@@ -203,11 +211,13 @@ class FixShopifyPortfolios
                 StoreShopifyProduct::run($portfolio);
             }
         }
+        $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
-            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
-            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+            $productExistsInShopifyResult['exist'],
+            $productHasVariantAtLocation['exist'],
         ];
     }
 
@@ -233,11 +243,15 @@ class FixShopifyPortfolios
 
         $portfolio->refresh();
         StoreShopifyProductVariant::run($portfolio);
+        CustomerSalesChannelsHydratePortfolios::run($portfolio->customerSalesChannel);
+
+        $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
-            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
-            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+            $productExistsInShopifyResult['exist'],
+            $productHasVariantAtLocation['exist'],
         ];
     }
 
@@ -245,7 +259,7 @@ class FixShopifyPortfolios
     {
         list(
             $hasValidProductId, $productExistsInShopify, $hasVariantAtLocation
-        ) =
+            ) =
             $this->fixLevel4($portfolio, $shopifyUser, $productExistsInShopify, $numberMatches, $matches);
 
         if ($hasVariantAtLocation) {
@@ -255,18 +269,20 @@ class FixShopifyPortfolios
 
         StoreShopifyProduct::run($portfolio);
 
+        $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
-            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
-            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+            $productExistsInShopifyResult['exist'],
+            $productHasVariantAtLocation['exist'],
         ];
     }
 
 
     public function getCommandSignature(): string
     {
-        return 'shopify:fix_portfolios  {parent_type} {parent_slug} {--f|fix_level=0 : Fix level (1, 2, or 3)}';
+        return 'shopify:fix_portfolios {parent_type} {parent_slug} {--f|fix_level=0 : Fix level (1, 2, or 3)}';
     }
 
     public function asCommand(Command $command): void
@@ -277,6 +293,7 @@ class FixShopifyPortfolios
         $parent = match (strtolower($parentType)) {
             'shp' => Shop::where('slug', $parentSlug)->firstOrFail(),
             'csc' => CustomerSalesChannel::where('slug', $parentSlug)->firstOrFail(),
+            'portfolio' => Portfolio::where('id', $parentSlug)->firstOrFail(),
             default => throw new \InvalidArgumentException("Invalid parent type: $parentType"),
         };
 

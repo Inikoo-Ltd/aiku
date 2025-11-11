@@ -1,23 +1,11 @@
 <script setup lang="ts">
 import { Head, Link } from "@inertiajs/vue3"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import {
-    faBullhorn,
-    faCameraRetro,
-    faCube,
-    faFolder,
-    faMoneyBillWave,
-    faProjectDiagram,
-    faTag,
-    faUser,
-    faBrowser,
-    faPlus, faMinus,
-    faFolderDownload,
-} from "@fal"
+import { faBullhorn, faCameraRetro, faCube, faFolder, faMoneyBillWave, faProjectDiagram, faTag, faUser, faBrowser, faFolderDownload } from "@fal"
 import { faExclamationTriangle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, defineAsyncComponent, ref } from "vue"
+import { computed, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
@@ -34,6 +22,7 @@ import FormCreateMasterProduct from "@/Components/FormCreateMasterProduct.vue"
 import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons"
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import Breadcrumb from 'primevue/breadcrumb'
+import ProductCategorySales from "@/Components/Product/ProductCategorySales.vue";
 
 library.add(
     faFolder,
@@ -44,7 +33,7 @@ library.add(
     faProjectDiagram,
     faUser,
     faMoneyBillWave,
-    faBrowser, 
+    faBrowser,
     faExclamationTriangle,
     faFolderDownload
 )
@@ -70,6 +59,7 @@ const props = defineProps<{
     shopsData? :any
     masterProductCategory?:number
     images?:object
+    sales: any
 }>()
 console.log('family',props)
 const currentTab = ref(props.tabs.current)
@@ -86,7 +76,8 @@ const component = computed(() => {
         customers: TableCustomers,
         details: ModelDetails,
         history: TableHistories,
-        images:ImagesManagement
+        images: ImagesManagement,
+        sales: ProductCategorySales
     }
     return components[currentTab.value] ?? ModelDetails
 })
@@ -142,11 +133,11 @@ const showDialog = ref(false);
         </Breadcrumb>
     </div>
     <component :is="component" :data="props[currentTab]" :tab="currentTab" />
-  
 
-    <FormCreateMasterProduct 
-        :showDialog="showDialog" 
-        :storeProductRoute="storeProductRoute" 
+
+    <FormCreateMasterProduct
+        :showDialog="showDialog"
+        :storeProductRoute="storeProductRoute"
         @update:show-dialog="(value) => showDialog = value"
         :master-currency="currency"
         :shopsData="shopsData"

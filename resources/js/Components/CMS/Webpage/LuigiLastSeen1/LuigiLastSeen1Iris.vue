@@ -105,7 +105,6 @@ onMounted(() => {
 </script>
 
 <template>
-    {{ props.fieldValue?.settings?.per_row }}
     <div aria-type="luigi-last-seen-1-iris" class="w-full pb-6" :style="{
         ...getStyles(layout?.app?.webpage_layout?.container?.properties, screenType),
         ...getStyles(fieldValue.container?.properties, screenType),

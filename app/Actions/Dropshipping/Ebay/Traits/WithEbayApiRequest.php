@@ -17,6 +17,13 @@ use Illuminate\Support\Facades\Log;
 
 trait WithEbayApiRequest
 {
+    public int $timeOut = 30;
+
+    public function setTimeout(int $timeOut): void
+    {
+        $this->timeOut = $timeOut;
+    }
+
     /**
      * Fields that require user action to fix
      */
@@ -740,6 +747,25 @@ trait WithEbayApiRequest
         }
     }
 
+
+    /**
+     * Update offer by offer ID
+     */
+    public function updateQuantityOffer($offerId, array $offerData)
+    {
+        try {
+            $data = [
+                "availableQuantity" => Arr::get($offerData, 'availableQuantity'),
+            ];
+
+            $endpoint = "/sell/inventory/v1/offer/$offerId";
+            return $this->makeEbayRequest('put', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Get eBay Offer Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
     /**
      * Delete product from eBay
      */
@@ -830,10 +856,9 @@ trait WithEbayApiRequest
 
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
-            $errorMsg = 'Fulfill eBay Order Error: ' . $e->getMessage();
-
-            Log::error($errorMsg);
-            \Sentry::captureMessage($e->getMessage());
+            $errMsg = 'Fulfill eBay Order Error: ' . $e->getMessage();
+            Log::error($errMsg);
+            \Sentry::captureMessage($errMsg);
             return ['error' => $e->getMessage()];
         }
     }
@@ -879,12 +904,12 @@ trait WithEbayApiRequest
 
             $offer = [
                 'sku' => $sku,
-                'marketplaceId' => $listingData['marketplace_id'] ?? 'EBAY_US',
+                'marketplaceId' => $listingData['marketplace_id'] ?? 'EBAY_GB',
                 'format' => $listingData['format'] ?? 'FIXED_PRICE',
                 'pricingSummary' => [
                     'price' => [
                         'value' => $listingData['price'],
-                        'currency' => $listingData['currency'] ?? 'USD'
+                        'currency' => $listingData['currency'] ?? 'GBP'
                     ]
                 ],
                 'listingDescription' => $listingData['description'] ?? '',

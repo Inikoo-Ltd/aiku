@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Steven Wicca <stewicalf@gmail.com>
  * Created: Mon, 10 Nov 2025 07:32:45 Western Indonesia Time, Lembeng Beach, Bali, Indonesia
@@ -47,7 +48,9 @@ class CustomerHydrateRfm implements ShouldBeUnique
             ->whereNotNull('date')
             ->get();
 
-        if ($invoices->isEmpty()) return;
+        if ($invoices->isEmpty()) {
+            return;
+        }
 
         $now = Carbon::now();
 
@@ -55,33 +58,49 @@ class CustomerHydrateRfm implements ShouldBeUnique
         $lastInvoiceDate = $invoices->max('date');
         $daysSinceLast = $lastInvoiceDate->diffInDays($now);
 
-        if ($daysSinceLast <= 30) $recencyTag = 'Active';
-        elseif ($daysSinceLast <= 90) $recencyTag = 'At Risk';
-        elseif ($daysSinceLast <= 180) $recencyTag = 'Inactive';
-        else $recencyTag = 'Lost Customer';
+        if ($daysSinceLast <= 30) {
+            $recencyTag = 'Active';
+        } elseif ($daysSinceLast <= 90) {
+            $recencyTag = 'At Risk';
+        } elseif ($daysSinceLast <= 180) {
+            $recencyTag = 'Inactive';
+        } else {
+            $recencyTag = 'Lost Customer';
+        }
 
-        /** 🔹 FREQUENCY **/
+        /** 🔹 FREQUENCY (last month only) **/
         $frequencyCount = $customer->invoices()
-            ->whereBetween('date', [$now->copy()->subYear(), $now])
+            ->whereBetween('date', [$now->copy()->subMonth(), $now])
             ->count();
 
-        if ($frequencyCount == 1) $frequencyTag = 'One-Time Buyer';
-        elseif ($frequencyCount <= 4) $frequencyTag = 'Occasional Shopper';
-        elseif ($frequencyCount <= 9) $frequencyTag = 'Frequent Buyer';
-        else $frequencyTag = 'Brand Advocate';
+        if ($frequencyCount == 1) {
+            $frequencyTag = 'One-Time Buyer';
+        } elseif ($frequencyCount <= 4) {
+            $frequencyTag = 'Occasional Shopper';
+        } elseif ($frequencyCount <= 9) {
+            $frequencyTag = 'Frequent Buyer';
+        } else {
+            $frequencyTag = 'Brand Advocate';
+        }
 
-        /** 🔹 MONETARY **/
+        /** 🔹 MONETARY (last month only) **/
         $monetaryValue = $customer->invoices()
-            ->whereBetween('date', [$now->copy()->subYear(), $now])
+            ->whereBetween('date', [$now->copy()->subMonth(), $now])
             ->sum('net_amount');
 
         $percentile = $this->getMonetaryPercentileGlobal($monetaryValue);
 
-        if ($percentile <= 50) $monetaryTag = 'Low Value';
-        elseif ($percentile <= 80) $monetaryTag = 'Medium Value';
-        elseif ($percentile <= 95) $monetaryTag = 'High Value';
-        elseif ($percentile <= 99) $monetaryTag = 'Gold Reward';
-        else $monetaryTag = 'Top 100';
+        if ($percentile <= 50) {
+            $monetaryTag = 'Low Value';
+        } elseif ($percentile <= 80) {
+            $monetaryTag = 'Medium Value';
+        } elseif ($percentile <= 95) {
+            $monetaryTag = 'High Value';
+        } elseif ($percentile <= 99) {
+            $monetaryTag = 'Gold Reward';
+        } else {
+            $monetaryTag = 'Top 100';
+        }
 
         /** 🔹 Attach or replace RFM tags safely **/
         $newTagNames = [$recencyTag, $frequencyTag, $monetaryTag];
@@ -139,22 +158,24 @@ class CustomerHydrateRfm implements ShouldBeUnique
     }
 
     /**
-     * 🔹 Generate percentile distribution for all customers
+     * 🔹 Generate percentile distribution for all customers (last month only)
      */
     public static function generateGlobalMonetaryPercentiles(): void
     {
         $now = Carbon::now();
-        $oneYearAgo = $now->copy()->subYear();
+        $oneMonthAgo = $now->copy()->subMonth();
 
-        $allSpend = Customer::with(['invoices' => function ($q) use ($oneYearAgo, $now) {
-            $q->whereBetween('date', [$oneYearAgo, $now])
+        $allSpend = Customer::with(['invoices' => function ($q) use ($oneMonthAgo, $now) {
+            $q->whereBetween('date', [$oneMonthAgo, $now])
                 ->where('in_process', false);
         }])->get()->mapWithKeys(function ($c) {
             $sum = $c->invoices->sum('net_amount');
             return [$c->id => $sum];
         });
 
-        if ($allSpend->isEmpty()) return;
+        if ($allSpend->isEmpty()) {
+            return;
+        }
 
         $sorted = $allSpend->sort()->values();
         $count = $sorted->count();

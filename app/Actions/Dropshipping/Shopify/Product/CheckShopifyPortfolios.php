@@ -32,7 +32,7 @@ class CheckShopifyPortfolios extends OrgAction
     private array $tableData = [];
 
 
-    public function handle(Group|Organisation|Shop|Customer|CustomerSalesChannel $parent = null, Command $command = null): void
+    public function handle(Group|Organisation|Shop|Customer|CustomerSalesChannel|Portfolio $parent = null, Command $command = null): void
     {
         $shopifyPlatform = Platform::where('type', PlatformTypeEnum::SHOPIFY)->first();
 
@@ -49,6 +49,8 @@ class CheckShopifyPortfolios extends OrgAction
             $query->where('organisation_id', $parent->id);
         } elseif ($parent instanceof Group) {
             $query->where('group_id', $parent->id);
+        } elseif ($parent instanceof Portfolio) {
+            $query->where('portfolios.id', $parent->id);
         }
 
 
@@ -65,6 +67,7 @@ class CheckShopifyPortfolios extends OrgAction
                 if ($command) {
                     $this->tableData[] = [
                         'slug'                          => $portfolio->reference ?? $portfolio->id,
+                        'sku'                           => $portfolio->sku,
                         'status'                        => $portfolio->status ? 'Open' : 'Closed',
                         'has_valid_platform_product_id' => $portfolio->has_valid_platform_product_id ? 'Yes' : 'No',
                         'exist_in_platform'             => $portfolio->exist_in_platform ? 'Yes' : 'No',
@@ -105,6 +108,7 @@ class CheckShopifyPortfolios extends OrgAction
             'shp' => Shop::where('slug', $parentSlug)->firstOrFail(),
             'cus' => Customer::where('slug', $parentSlug)->firstOrFail(),
             'csc' => CustomerSalesChannel::where('slug', $parentSlug)->firstOrFail(),
+            'portfolio' => Portfolio::where('id', $parentSlug)->firstOrFail(),
             default => throw new \InvalidArgumentException("Invalid parent type: $parentType"),
         };
 
@@ -113,7 +117,7 @@ class CheckShopifyPortfolios extends OrgAction
 
         $command->info("\nPortfolio Shopify Status:");
         $command->table(
-            ['Portfolio', 'Status', 'Has Valid Product ID', 'Exists in Platform', 'Platform Status', 'Possible Matches'],
+            ['Portfolio', 'SKU', 'Status', 'Has Valid Product ID', 'Exists in Platform', 'Platform Status', 'Possible Matches'],
             $this->tableData
         );
     }
