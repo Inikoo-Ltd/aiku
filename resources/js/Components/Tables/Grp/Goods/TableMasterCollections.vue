@@ -106,7 +106,7 @@ const isLoadingDetach = ref<string[]>([])
             <template v-for="(parent, index) in collection.parents_data" :key="index">
                 <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" />
                 <FontAwesomeIcon v-else-if="parent.type === 'subdepartment'" :icon="faFolders" class="mr-1" v-tooltip="trans('Sub Department')" />
-                <Link :href="parentRoute(parent.slug) as string" class="secondaryLink">
+                <Link :href="parentRoute(parent.slug)" class="secondaryLink">
                     {{ parent.code && parent.code.length > 16 ? parent.code.substring(0, 16) + "..." : parent.code }}
                 </Link>
             </template>
@@ -114,7 +114,7 @@ const isLoadingDetach = ref<string[]>([])
 
          <template #cell(actions)="{ item }">
             <div class="flex items-center gap-2">
-             <Link v-if="routes?.detach?.name" as="button"
+            <!--  <Link v-if="routes?.detach?.name" as="button"
                 :href="route(routes.detach.name, { ...routes.detach.parameters, collection : item.id })"
                 :method="routes.detach.method" preserve-scroll @start="() => isLoadingDetach.push('detach' + item.id)"
                 @finish="() => loRemove(isLoadingDetach, (xx) => xx == 'detach' + item.id)">
@@ -128,7 +128,7 @@ const isLoadingDetach = ref<string[]>([])
                         icon="fal fa-edit"
                         size="s"
                     />
-            </Link>
+            </Link> -->
 
             <ModalConfirmationDelete
                 :routeDelete="item.delete_route"

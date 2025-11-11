@@ -115,10 +115,8 @@ class ShowMasterCollection extends GrpAction
                     'actions' => [
                         [
                             'type'    => 'button',
-                            'style'   => 'tertiary',
+                            'style'   => 'edit',
                             'tooltip' => __('Edit'),
-                            'label'   => __('Edit'),
-                            'icon'    => ["fal", "fa-edit"],
                             'route'   => [
                                 'name'       => 'grp.masters.master_shops.show.master_collections.edit',
                                 'parameters' => [
