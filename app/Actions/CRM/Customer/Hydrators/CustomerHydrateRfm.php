@@ -68,9 +68,9 @@ class CustomerHydrateRfm implements ShouldBeUnique
             $recencyTag = 'Lost Customer';
         }
 
-        /** 🔹 FREQUENCY **/
+        /** 🔹 FREQUENCY (last month only) **/
         $frequencyCount = $customer->invoices()
-            ->whereBetween('date', [$now->copy()->subYear(), $now])
+            ->whereBetween('date', [$now->copy()->subMonth(), $now])
             ->count();
 
         if ($frequencyCount == 1) {
@@ -83,9 +83,9 @@ class CustomerHydrateRfm implements ShouldBeUnique
             $frequencyTag = 'Brand Advocate';
         }
 
-        /** 🔹 MONETARY **/
+        /** 🔹 MONETARY (last month only) **/
         $monetaryValue = $customer->invoices()
-            ->whereBetween('date', [$now->copy()->subYear(), $now])
+            ->whereBetween('date', [$now->copy()->subMonth(), $now])
             ->sum('net_amount');
 
         $percentile = $this->getMonetaryPercentileGlobal($monetaryValue);
@@ -158,15 +158,15 @@ class CustomerHydrateRfm implements ShouldBeUnique
     }
 
     /**
-     * 🔹 Generate percentile distribution for all customers
+     * 🔹 Generate percentile distribution for all customers (last month only)
      */
     public static function generateGlobalMonetaryPercentiles(): void
     {
         $now = Carbon::now();
-        $oneYearAgo = $now->copy()->subYear();
+        $oneMonthAgo = $now->copy()->subMonth();
 
-        $allSpend = Customer::with(['invoices' => function ($q) use ($oneYearAgo, $now) {
-            $q->whereBetween('date', [$oneYearAgo, $now])
+        $allSpend = Customer::with(['invoices' => function ($q) use ($oneMonthAgo, $now) {
+            $q->whereBetween('date', [$oneMonthAgo, $now])
                 ->where('in_process', false);
         }])->get()->mapWithKeys(function ($c) {
             $sum = $c->invoices->sum('net_amount');
