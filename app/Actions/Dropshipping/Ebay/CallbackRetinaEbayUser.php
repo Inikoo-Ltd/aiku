@@ -11,7 +11,7 @@ namespace App\Actions\Dropshipping\Ebay;
 
 use App\Actions\Dropshipping\CustomerSalesChannel\UpdateCustomerSalesChannel;
 use App\Actions\Dropshipping\Ebay\Traits\WithEbayApiRequest;
-use App\Actions\OrgAction;
+use App\Actions\RetinaAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Models\CRM\Customer;
 use App\Models\Dropshipping\CustomerSalesChannel;
@@ -25,7 +25,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Symfony\Component\HttpFoundation\Response;
 
-class CallbackRetinaEbayUser extends OrgAction
+class CallbackRetinaEbayUser extends RetinaAction
 {
     use AsAction;
     use WithAttributes;
@@ -37,7 +37,6 @@ class CallbackRetinaEbayUser extends OrgAction
      */
     public function handle(Customer $customer, array $modelData): string
     {
-
 
         $config = $this->getEbayConfig();
 
@@ -67,9 +66,16 @@ class CallbackRetinaEbayUser extends OrgAction
                 $ebayUser->refresh();
                 $userData = $ebayUser->getUser();
 
-                if ($customerSalesChannel = CustomerSalesChannel::where('name', Arr::get($userData, 'username'))->first()) {
+                $registrationMarketplaceId = Arr::get($userData, 'registrationMarketplaceId');
+                if ($registrationMarketplaceId === "EBAY_US") {
+                    $registrationMarketplaceId = "EBAY_GB";
+                }
+
+                if ($customerSalesChannel = CustomerSalesChannel::where('customer_id', $customer->id)
+                    ->where('name', Arr::get($userData, 'username'))->first()) {
                     $currentEbayUser = UpdateEbayUser::run($customerSalesChannel->user, [
                         'settings' => [
+                            'marketplace_id' => $registrationMarketplaceId,
                             'credentials' => [
                                 'ebay_access_token' => $tokenData['access_token'],
                                 'ebay_refresh_token' => $tokenData['refresh_token'],
@@ -85,6 +91,10 @@ class CallbackRetinaEbayUser extends OrgAction
                 } else {
                     $ebayUser = UpdateEbayUser::run($ebayUser, [
                         'name' => Arr::get($userData, 'username'),
+                        'settings' => [
+                            'marketplace_id' => $registrationMarketplaceId,
+                            'credentials' => Arr::get($ebayUser->settings, 'credentials')
+                        ]
                     ]);
 
                     UpdateCustomerSalesChannel::run($ebayUser->customerSalesChannel, [
@@ -121,6 +131,8 @@ class CallbackRetinaEbayUser extends OrgAction
 
     public function asController(ActionRequest $request): string
     {
+        $this->initialisation($request);
+
         return $this->handle($request->user()->customer, $request->all());
     }
 }

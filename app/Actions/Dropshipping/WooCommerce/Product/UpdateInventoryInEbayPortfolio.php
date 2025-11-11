@@ -52,6 +52,7 @@ class UpdateInventoryInEbayPortfolio
 
             $ebayUser->setTimeout(20);
             $result = $ebayUser->getUser();
+
             if ($result && Arr::has($result, 'username')) {
 
                 $customerSalesChannel->update([
