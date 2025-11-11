@@ -57,7 +57,7 @@ const groupedAttachments = computed(() => {
 </script>
 
 <template>
-    <div class="w-full sm:w-7/12 border border-gray-300">
+    <div class="w-full  border border-gray-300">
         <div v-if="product?.specifications?.origin" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Origin') }}</div>
             <div class="p-2 text-sm">{{ product.specifications.origin }}</div>
