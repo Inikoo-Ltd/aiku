@@ -41,34 +41,32 @@ const locale = inject('locale', aikuLocaleStructure)
                 {{ product.attributes.title }}
             </component>
 
-            <!-- SKU and RRP -->
+           
             <div class="flex justify-between text-xs text-gray-500 mb-1 capitalize">
-                <span>{{ product.attributes.product_code?.[0] }}</span>
-            </div>
-
-            <!-- Rating and Stock E-->
-            <div class="flex justify-between items-center text-xs mb-2">
-                <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')"
-                    class="flex items-center gap-1"
-                    :class="Number(product.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
-                    <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
-                    <span>{{ Number(product.attributes?.stock_qty?.[0]) > 0 ?
-                        locale.number(Number(product.attributes?.stock_qty?.[0])) : 0 }} {{ trans('available') }}</span>
+                 <!-- code -->
+                <div>{{ product.attributes.product_code?.[0] }}</div>
+                   <!-- Rating and Stock E-->
+                    <div class="flex justify-between items-center text-xs mb-2">
+                        <div v-if="layout?.iris?.is_logged_in" v-tooltip="trans('Stock')"
+                            class="flex items-center gap-1"
+                            :class="Number(product.attributes?.stock_qty?.[0]) > 0 ? 'text-green-600' : 'text-red-600'">
+                            <FontAwesomeIcon :icon="faCircle" class="text-[8px]" />
+                            <span>{{ Number(product.attributes?.stock_qty?.[0]) > 0 ?
+                                locale.number(Number(product.attributes?.stock_qty?.[0])) : 0 }} {{ trans('available') }}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Prices -->
+          <!-- Prices -->
             <div v-if="layout?.iris?.is_logged_in" class="mb-3">
                 <div class="flex justify-between text-sm ">
-                    <span>{{ trans('Price') }}: <span class="font-semibold"> {{ product.attributes.formatted_price }}</span>
-                    </span>
-                    <!-- <span><span v-tooltip="trans('Recommended retail price')" >{{trans('RRP')}}</span>:  <span class="font-semibold">{{ locale.currencyFormat(layout.iris.currency.code,product.rrp) }}</span></span> -->
+                    <span>{{ trans('Price') }}: <span class="font-semibold"> {{ product.attributes.formatted_price }}</span></span>
                 </div>
             </div>
-        </div>
         
         <!-- Button: Add to Basket -->
-        <div v-if="false && layout.retina.type === 'b2b' && product.attributes.product_id?.[0]">
+        <!-- <div v-if="false && layout.retina.type === 'b2b' && product.attributes.product_id?.[0]">
             <Button @click="() => false"
                 xdisabled="isProductLoading(product.attributes.product_id[0])"
                 disabled
@@ -77,6 +75,6 @@ const locale = inject('locale', aikuLocaleStructure)
                 class="w-full justify-center"
                 :loading="isProductLoading(product.attributes.product_id[0])"
             />
-        </div>
+        </div> -->
     </div>
 </template>

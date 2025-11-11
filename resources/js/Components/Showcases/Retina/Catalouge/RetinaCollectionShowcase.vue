@@ -1,12 +1,9 @@
 <script setup lang="ts">
 import { inject } from 'vue'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faDollarSign, faImage, faUnlink, faGlobe } from '@fortawesome/free-solid-svg-icons'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { trans } from 'laravel-vue-i18n'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
-
-import Image from '@/Components/Image.vue'
+import ProductCategoryCard from "@/Components/ProductCategoryCard.vue";
 import { routeType } from '@/types/route'
 
 library.add(faDollarSign, faImage, faUnlink, faGlobe)
@@ -46,23 +43,10 @@ const props = defineProps<{
 </script>
 
 <template>
-  <div class="p-4 space-y-6">
-    <div class="grid lg:grid-cols-[30%_40%] gap-4 max-w-6xl">
-      <!-- Info Card -->
-      <div class="bg-white border border-gray-200 rounded-xl shadow p-4 space-y-3 h-fit">
-        <div class="bg-white rounded-lg overflow-hidden">
-          <Image v-if="data.image" :src="data.image" imageCover class="w-full h-36 object-cover" />
-          <div v-else class="h-36 flex items-center justify-center bg-gray-100 flex-col">
-            <FontAwesomeIcon :icon="faImage" class="text-gray-400 w-6 h-6" />
-            <span class="text-xs text-gray-500">{{ trans('No image') }}</span>
-          </div>
-        </div>
-        <div class="border-t pt-3 text-sm space-y-1 text-gray-700">
-          <div class="text-base font-semibold">{{ data.name || trans('No label') }}</div>
-          <div class="text-gray-500">{{ data.description || trans('No description') }}</div>
-        </div>
+   <div class="p-4 grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4 mt-4">
+      <div class="col-span-1 md:col-span-1 lg:col-span-2">
+        <ProductCategoryCard :data="data" />
       </div>
     </div>
-  </div>
 
 </template>

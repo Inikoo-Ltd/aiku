@@ -27,6 +27,12 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $master_family_name
  * @property mixed $show_in_website
  * @property mixed $used_in
+ * @property mixed $id
+ * @property mixed $unit
+ * @property mixed $currency_code
+ * @property mixed $rrp
+ * @property mixed $price
+ * @property mixed $status
  */
 class MasterProductsResource extends JsonResource
 {
@@ -53,6 +59,7 @@ class MasterProductsResource extends JsonResource
             'unit'                   => $this->unit,
             'price'                  => $this->price,
             'rrp'                    => $this->rrp,
+            'status'                 => $this->status,
             'currency_code'          => $this->currency_code,
         ];
     }

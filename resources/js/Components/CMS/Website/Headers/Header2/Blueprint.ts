@@ -35,7 +35,26 @@ export default {
 				},
 			],
 		},
-			{
+		{
+			name: "Search",
+			key: ["search"],
+			icon: {
+				icon: "fal fa-search",
+				tooltip: "Search",
+			},
+			replaceForm: [
+				{
+					key: ["placeholder"],
+					label: "Placeholder text",
+					information: "This text will be displayed inside the search box (when the user didn't type anything yet).",
+					props_data: {
+						placeholder: 'Enter text to search'
+					},
+					type: "text",
+				},
+			],
+		},
+		{
 			name: "Mobile",
 			key: ["mobile"],
 			icon: {

@@ -104,7 +104,11 @@ const isLoggedIn = inject("isPreviewLoggedIn", false)
 
 				<!-- Search Bar -->
 				<div class="relative justify-self-center w-full max-w-80 flex items-center h-full">
-					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id" id="luigi_header_1" />
+					<LuigiSearch
+						v-if="layout.iris?.luigisbox_tracker_id"
+						id="luigi_header_1"
+						:fieldValueSearch="fieldValue?.search"
+					/>
 				</div>
 
 				<!-- Gold Member Button -->

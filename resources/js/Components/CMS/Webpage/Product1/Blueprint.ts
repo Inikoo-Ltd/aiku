@@ -6,12 +6,12 @@ export default {
 			name: "Settings",
 			key: ["setting"],
 			replaceForm: [
-				{
+				/* {
 					key: ["faqs"],
 					type: "switch",
 					label: "Show Faqs",
 					props_data: {},
-				},
+				}, */
 				{
 					key: ["product_specs"],
 					type: "switch",

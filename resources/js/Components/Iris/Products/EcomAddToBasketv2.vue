@@ -139,13 +139,25 @@ const onUpdateQuantity = (product: ProductResource) => {
 
 
 const debAddAndUpdateProduct = debounce(() => {
-    if (!customer.value.quantity_ordered) {
-        onAddToBasket(props.product)
-    } else if (customer.value.quantity_ordered_new === 0) {
-        onUpdateQuantity(customer.value)
-    } else {
-        onUpdateQuantity(customer.value)
+    const currentQty = customer.value.quantity_ordered || 0
+    const newQty = customer.value.quantity_ordered_new ?? currentQty
+
+    if (!customer.value.transaction_id || currentQty === 0) {
+        if (newQty > 0) {
+            onAddToBasket(props.product, newQty)
+        }
+        return
     }
+
+    if (newQty === 0) {
+        onUpdateQuantity(customer.value)
+        customer.value.transaction_id = null
+        customer.value.quantity_ordered = 0
+        return
+    }
+
+    // Otherwise just update normally
+    onUpdateQuantity(customer.value)
 }, 700)
 
 

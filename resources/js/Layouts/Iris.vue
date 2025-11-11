@@ -24,6 +24,7 @@ import { initialiseIrisVarnish } from '@/Composables/initialiseIrisVarnish'
 import { setColorStyleRoot } from '@/Composables/useApp'
 import { getStyles } from '@/Composables/styles'
 import BreadcrumbsIris from '@/Components/Navigation/BreadcrumbsIris.vue'
+import IrisAnnouncement from './Iris/IrisAnnouncement.vue'
 library.add(faHome, faExclamationTriangle, faWhatsapp)
 
 initialiseIrisApp()
@@ -33,6 +34,8 @@ const isOpenMenuMobile = ref(false)
 provide('layout', layout)
 provide('isOpenMenuMobile', isOpenMenuMobile)
 
+
+const propsAnnouncements = usePage().props?.iris?.announcements
 const header = usePage().props?.iris?.header
 const navigation = usePage().props?.iris?.menu
 const footer = usePage().props?.iris?.footer
@@ -133,7 +136,15 @@ console.log('handle', usePage().props)
         </Modal>
 
         <div :class="[(theme.layout === 'blog' || !theme.layout) ? 'container max-w-7xl mx-auto shadow-xl' : '']">
+            <template v-if="propsAnnouncements?.length">
+                <template v-for="announcement in propsAnnouncements">
+                    <IrisAnnouncement
+                        :data="announcement"
+                    />
+                </template>
+            </template>
 
+            <!-- Section: Topbar, Header, Menu, Sidebar -->
             <IrisHeader
                 v-if="header?.header"
                 :data="header"
