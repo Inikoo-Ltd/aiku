@@ -3,7 +3,7 @@ import { inject, onMounted, ref, watch } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { get, set } from 'lodash-es'
+import { debounce, get, set } from 'lodash-es'
 import { faChevronRight, faTrashAlt } from "@fal"
 import { faMinus, faArrowRight, faPlus } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -84,9 +84,13 @@ const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
     }
 }
 
+const debFetchDataSideBasket = debounce((isWithoutSetProduct?: boolean) => {
+    fetchDataSideBasket(isWithoutSetProduct)
+}, 500)
+
 watch(() => [layout.iris_variables?.cart_amount, layout.iris_variables?.cart_count], (newValue) => {
     if (props.isOpen) {
-        fetchDataSideBasket(true)
+        debFetchDataSideBasket(true)
     }
 }, {
     immediate: true,
@@ -94,7 +98,7 @@ watch(() => [layout.iris_variables?.cart_amount, layout.iris_variables?.cart_cou
 
 watch(() => props.isOpen, (newValue) => {
     if (newValue) {
-        fetchDataSideBasket()
+        debFetchDataSideBasket()
     }
 }, {
     immediate: true
