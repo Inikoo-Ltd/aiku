@@ -8,11 +8,10 @@
  *
 */
 
-namespace App\Actions\Retina\Ecom\Basket;
+namespace App\Actions\Iris\Basket;
 
-use App\Actions\Retina\Ecom\Basket\UI\IsOrder;
-use App\Actions\Retina\Ecom\Basket\UI\IndexBasketProducts;
-use App\Actions\RetinaAction;
+use App\Actions\IrisAction;
+use App\Actions\Iris\Basket\IndexBasketProducts;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
 use App\Models\CRM\Customer;
@@ -22,17 +21,15 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
 
-class FetchRetinaEcomBasket extends RetinaAction
+class FetchIrisEcomBasket extends IrisAction
 {
-    use IsOrder;
 
     public function handle(ActionRequest $request): Order|null
     {
-        $customer = $this->customer ?? null;
+        $customer = $request->user()?->customer;
         if (!$customer?->current_order_in_basket_id) {
             return null;
         }
-
         return Order::where('id', $customer->current_order_in_basket_id)->where('customer_id', $customer->id)->where('state', OrderStateEnum::CREATING)->first();
     }
 

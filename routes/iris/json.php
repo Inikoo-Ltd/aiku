@@ -27,10 +27,10 @@ use App\Actions\Helpers\Brand\Json\GetIrisShopBrands;
 use App\Actions\Helpers\Tag\Json\GetIrisShopTags;
 use App\Actions\Helpers\Tag\Json\GetIrisTags;
 use App\Actions\Iris\IrisLogWebUserRequest;
+use App\Actions\Iris\Basket\FetchIrisEcomBasket;
 use App\Actions\Iris\Json\GetIrisFirstHitData;
 use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Retina\Dropshipping\CustomerSalesChannel\UI\IndexRetinaDropshippingCustomerSalesChannels;
-use App\Actions\Retina\Ecom\Basket\FetchRetinaEcomBasket;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(["retina-auth:retina"])->group(function () {
@@ -51,7 +51,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
     Route::get('tags', GetIrisTags::class)->name('tags.index');
     Route::get('brands', GetIrisBrands::class)->name('brands.index');
 
-    Route::get('/fetch-basket', FetchRetinaEcomBasket::class)->name('fetch_basket');
+    Route::get('/fetch-basket', FetchIrisEcomBasket::class)->name('fetch_basket');
 
 
     Route::get('shop-tags', GetIrisShopTags::class)->name('shops.tags.index');
