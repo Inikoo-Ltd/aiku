@@ -105,7 +105,7 @@ class ShowMasterDepartment extends GrpAction
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => $tittle
-                    ],                    
+                    ],
                     'iconRight' => $masterDepartment->status ? [
                         'tooltip' => __('Active'),
                         'icon'    => 'fas fa-check-circle',

@@ -13,23 +13,19 @@ use Spatie\MediaLibrary\HasMedia;
  * App\Models\AnnouncementTemplate
  *
  * @property int $id
+ * @property int $group_id
  * @property string $code
  * @property int|null $screenshot_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property string|null $category
+ * @property-read Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $images
  * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, Media> $media
- * @property-read int|null $media_count
  * @property-read Media|null $screenshot
- * @method static \Illuminate\Database\Eloquent\Builder|AnnouncementTemplate newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|AnnouncementTemplate newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder|AnnouncementTemplate query()
- * @method static \Illuminate\Database\Eloquent\Builder|AnnouncementTemplate whereCategory($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AnnouncementTemplate whereCode($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AnnouncementTemplate whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AnnouncementTemplate whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AnnouncementTemplate whereScreenshotId($value)
- * @method static \Illuminate\Database\Eloquent\Builder|AnnouncementTemplate whereUpdatedAt($value)
+ * @property-read Media|null $seoImage
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementTemplate newModelQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementTemplate newQuery()
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|AnnouncementTemplate query()
  * @mixin \Eloquent
  */
 class AnnouncementTemplate extends Model implements HasMedia
