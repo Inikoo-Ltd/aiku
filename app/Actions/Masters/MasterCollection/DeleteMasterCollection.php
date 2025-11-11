@@ -26,51 +26,52 @@ class DeleteMasterCollection extends GrpAction
 
     private ?MasterCollection $masterCollection;
 
-    public function handle(MasterCollection $masterCollection, bool $forceDelete = false): MasterCollection
+    public function handle(MasterCollection $masterCollection, bool $forceDelete = false)
     {
-        DB::table('collections')->where('master_collection_id', $masterCollection->id)
-            ->update(
-                [
-                    'master_collection_id' => null
-                ]
-            );
+        try {
+            DB::beginTransaction();
 
+            DB::table('collections')->where('master_collection_id', $masterCollection->id)
+                ->update(['master_collection_id' => null]);
 
-        if ($forceDelete) {
-            DB::table('model_has_master_collections')->where('master_collection_id', $masterCollection->id)->delete();
-            DB::table('master_collection_has_models')->where('master_collection_id', $masterCollection->id)->delete();
+            if ($forceDelete) {
+                DB::table('model_has_master_collections')->where('master_collection_id', $masterCollection->id)->delete();
+                DB::table('master_collection_has_models')->where('master_collection_id', $masterCollection->id)->delete();
 
-            if ($masterCollection->stats) {
-                $masterCollection->stats->delete();
+                if ($masterCollection->stats) {
+                    $masterCollection->stats->delete();
+                }
+
+                if ($masterCollection->salesIntervals) {
+                    $masterCollection->salesIntervals->delete();
+                }
+
+                if ($masterCollection->orderingStats) {
+                    $masterCollection->orderingStats->delete();
+                }
+
+               $masterCollection->forceDelete();
+            } else {
+                $masterCollection->delete();
             }
 
-            if ($masterCollection->salesIntervals) {
-                $masterCollection->salesIntervals->delete();
-            }
+            MasterCollectionRecordSearch::run($masterCollection);
+            MasterShopHydrateMasterCollections::dispatch($masterCollection->masterShop);
 
-            if ($masterCollection->orderingStats) {
-                $masterCollection->orderingStats->delete();
-            }
+            DB::commit();
 
-            $masterCollection->forceDelete();
-        } else {
-            $masterCollection->delete();
+        } catch (\Exception $e) {
+            DB::rollBack();
         }
-
-        MasterCollectionRecordSearch::run($masterCollection);
-        MasterShopHydrateMasterCollections::dispatch($masterCollection->masterShop);
-
-        return $masterCollection;
     }
 
-    public function action(MasterCollection $masterCollection, bool $forceDelete = false): MasterCollection
+    public function action(MasterCollection $masterCollection, bool $forceDelete = false)
     {
         $this->masterCollection = $masterCollection;
-
         return $this->handle($masterCollection, $forceDelete);
     }
 
-    public function asController(MasterCollection $masterCollection, ActionRequest $request): MasterCollection
+    public function asController(MasterCollection $masterCollection, ActionRequest $request)
     {
         $this->masterCollection = $masterCollection;
         $this->initialisation($masterCollection->group, $request);

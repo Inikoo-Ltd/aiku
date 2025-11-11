@@ -112,7 +112,20 @@ class ShowMasterCollection extends GrpAction
                         'icon'  => ['fal', 'fa-album-collection'],
                         'title' => __('Master collection')
                     ],
-                    'actions' => [],
+                    'actions' => [
+                        [
+                            'type'    => 'button',
+                            'style'   => 'edit',
+                            'tooltip' => __('Edit'),
+                            'route'   => [
+                                'name'       => 'grp.masters.master_shops.show.master_collections.edit',
+                                'parameters' => [
+                                    'masterShop' => $masterCollection->masterShop->slug,
+                                    'masterCollection' => $masterCollection->slug
+                                ]
+                            ]
+                        ]
+                    ],
                 ],
                 'tabs'        => [
                     'current'    => $this->tab,

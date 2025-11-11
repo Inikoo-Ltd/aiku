@@ -14,6 +14,7 @@ use App\Actions\Masters\MasterCollection\UI\CreateMasterCollection;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollections;
 use App\Actions\Masters\MasterCollection\UI\IndexMasterCollectionsInMasterProductCategory;
 use App\Actions\Masters\MasterCollection\UI\ShowMasterCollection;
+use App\Actions\Masters\MasterCollection\UI\EditMasterCollection;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\CreateMasterSubDepartment;
 use App\Actions\Masters\MasterProductCategory\UI\EditMasterDepartment;
@@ -200,6 +201,7 @@ Route::name("master_shops")->prefix('master-shops')
             Route::prefix('master-collections')->as('.master_collections.')->group(function () {
                 Route::get('', IndexMasterCollections::class)->name('index');
                 Route::get('create', CreateMasterCollection::class)->name('create');
+                Route::get('{masterCollection}/edit', EditMasterCollection::class)->name('edit');
                 Route::get('{masterCollection}', ShowMasterCollection::class)->name('show');
             });
         });
