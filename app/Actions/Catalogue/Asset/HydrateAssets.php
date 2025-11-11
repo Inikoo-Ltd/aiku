@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Asset;
 
+use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateDeliveryNotesIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateHistoricAssets;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoicedCustomersIntervals;
 use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateInvoiceIntervals;
@@ -30,6 +31,7 @@ class HydrateAssets
 
     public function handle(Asset $asset): void
     {
+        AssetHydrateDeliveryNotesIntervals::run($asset->id);
         AssetHydrateHistoricAssets::run($asset);
         AssetHydrateSalesIntervals::run($asset->id);
         AssetHydrateInvoiceIntervals::run($asset->id);
