@@ -15,6 +15,7 @@ use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Facades\Log;
 
 class EditMasterCollection extends OrgAction
 {
@@ -43,10 +44,8 @@ class EditMasterCollection extends OrgAction
                             'style' => 'cancel',
                             'label' => __('Cancel'),
                             'route' => [
-                                'name' => preg_replace('/edit$/', 'index', $request->route()->getName()),
-                                'parameters' => [
-                                    'masterShop' => $parent->slug,
-                                ]
+                                'name' => 'grp.masters.master_shops.show.master_collections.show',
+                                'parameters' => array_values($request->route()->originalParameters())
                             ],
                         ]
                     ]
