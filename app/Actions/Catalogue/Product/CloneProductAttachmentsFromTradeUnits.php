@@ -31,6 +31,7 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
         $attachments   = [];
         $processedChecksums = [];
         $tradeUnit = $product->tradeUnits->first();
+        /** @var \App\Models\Helpers\Media $publicAttachments */
         $publicAttachments = $tradeUnit->attachments()
             ->wherePivotIn('scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
             ->get();
@@ -50,8 +51,10 @@ class CloneProductAttachmentsFromTradeUnits implements ShouldBeUnique
             ];
         }
 
+        /** @var \App\Models\Goods\TradeUnitFamily $tradeUnitFamily */
         $tradeUnitFamily = $tradeUnit->tradeUnitFamily;
         if ($tradeUnitFamily) {
+            /** @var \App\Models\Helpers\Media $familyAttachments */
             $familyAttachments = $tradeUnitFamily->attachments()->wherePivotIn('scope', [TradeAttachmentScopeEnum::ALLERGEN_DECLARATIONS, TradeAttachmentScopeEnum::CPSR, TradeAttachmentScopeEnum::DOC, TradeAttachmentScopeEnum::IFRA, TradeAttachmentScopeEnum::SDS])
             ->get();
             foreach ($familyAttachments as $familyAttachment) {
