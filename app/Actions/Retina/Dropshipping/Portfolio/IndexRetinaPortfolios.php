@@ -370,7 +370,8 @@ class IndexRetinaPortfolios extends RetinaAction
                         ]
                     ],
                     'images' => [
-                        'name'       => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
+                        // 'name'       => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip',
+                        'name'       => 'retina.json.dropshipping.customer_sales_channel.portfolio_images_zip_to_r2',
                         'parameters' => [
                             'customerSalesChannel' => $this->customerSalesChannel->id,
                         ]

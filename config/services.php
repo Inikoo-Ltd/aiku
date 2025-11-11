@@ -67,4 +67,9 @@ return [
             'channel' => env('SLACK_CHANNEL', '#general'),
         ],
     ],
+    'cloudflare-zip-r2' => [
+        'account_id' => env('CLOUDFLARE_WAF_ZIP_ACCOUNT_ID'),
+        'token' => env('CLOUDFLARE_WAF_ZIP_TOKEN'),
+        'waf_secret' => env('CLOUDFLARE_WAF_ZIP_SECRET', 'mysecrettoken'),
+    ],
 ];
