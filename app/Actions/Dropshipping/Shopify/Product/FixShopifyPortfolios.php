@@ -40,7 +40,7 @@ class FixShopifyPortfolios
         }
 
         $portfoliosSynchronisation = [];
-        foreach ($query->orderBy('status')->get() as $portfolioData) {
+        foreach ($query->orderBy('sku')->get() as $portfolioData) {
             $portfolio = Portfolio::find($portfolioData->id);
             if (!$portfolio) {
                 continue;
