@@ -476,8 +476,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             return TradeAttachmentScopeEnum::MSDS;
 
 
-        } else {
-            print_r(Arr::only($attachmentData, ['scope', 'caption']));
         }
 
         return $scope;
