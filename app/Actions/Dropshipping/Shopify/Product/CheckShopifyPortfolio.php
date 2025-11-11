@@ -20,15 +20,12 @@ class CheckShopifyPortfolio
 
     public function handle(Portfolio $portfolio): Portfolio
     {
-        if (!$portfolio->customerSalesChannel) {
-            return $portfolio;
-        }
+
 
         $shopifyUser = $portfolio->customerSalesChannel->user;
 
-        if (!$shopifyUser instanceof ShopifyUser) {
-            return $portfolio;
-        } elseif (!$shopifyUser->checkConnection()) {
+        // Do not check on platform_status = true
+        if ($portfolio->platform_status ||  !$portfolio->customerSalesChannel || !$shopifyUser instanceof ShopifyUser || !$shopifyUser->checkConnection()) {
             return $portfolio;
         }
 
@@ -55,7 +52,7 @@ class CheckShopifyPortfolio
         $matches       = [];
 
 
-        if ($productExistsInShopifyError || $hasVariantAtLocationError) {
+        if ($productExistsInShopifyError || $hasVariantAtLocationError ) {
             return $portfolio;
         }
 
