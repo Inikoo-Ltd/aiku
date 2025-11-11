@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, onMounted, ref } from 'vue'
+import { inject, onMounted, ref, watch } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
@@ -16,45 +16,18 @@ import PureInput from '@/Components/Pure/PureInput.vue'
 import { ProductResource } from '@/types/Iris/Products'
 import InputQuantitySideBasket from '../Products/InputQuantitySideBasket.vue'
 import axios from 'axios'
+import { router } from '@inertiajs/vue3'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
+import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
+import Image from '@/Components/Image.vue'
 library.add(faMinus, faArrowRight, faPlus, faChevronRight, faTrashAlt)
 // import { XMarkIcon } from '@heroicons/vue/24/outline'
 
-// const products = ref([
-//     {
-//         id: 1,
-//         name: 'Throwback Hip Bag Throwback Hip Bag Throwback Hip Bag Throwback Hip Bag',
-//         href: '#',
-//         color: 'Salmon',
-//         stock: 23,
-//         price: '$90.00',
-//         quantity: 4,
-//         imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/shopping-cart-page-04-product-01.jpg',
-//         imageAlt: 'Salmon orange fabric pouch with match zipper, gray zipper pull, and adjustable hip belt.',
-//     },
-//     {
-//         id: 2,
-//         name: 'Medium Stuff Satchel Medium Stuff Satchel Medium Stuff Satchel Medium Stuff Satchel',
-//         href: '#',
-//         color: 'Blue',
-//         stock: 19,
-//         price: '$32.00',
-//         quantity: 5,
-//         imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/shopping-cart-page-04-product-02.jpg',
-//         imageAlt:
-//             'Front of satchel with blue canvas body, black straps and handle, drawstring top, and front zipper pouch.',
-//     },
-//     {
-//         id: 3,
-//         name: 'Zip Tote Basket Zip Tote Basket Zip Tote Basket Zip Tote Basket',
-//         href: '#',
-//         color: 'White and black',
-//         stock: 37,
-//         price: '$140.00',
-//         quantity: 14,
-//         imageSrc: 'https://tailwindcss.com/plus-assets/img/ecommerce-images/shopping-cart-page-04-product-03.jpg',
-//         imageAlt: 'Front of zip tote bag with white canvas, black canvas straps and handle, and black zipper pulls.',
-//     },
-// ])
+const props = defineProps<{
+    isOpen: boolean
+}>()
+
+const locale = inject('locale', aikuLocaleStructure)
 
 const open = ref(true)
 
@@ -73,8 +46,10 @@ const handleToggleLeftBar = () => {
 
 
 const dataSideBasket = ref(null)
-onMounted(async () => {
+const isLoadingFetch = ref(false)
+const fetchDataSideBasket = async () => {
     try {
+        isLoadingFetch.value = true
         const response = await axios.get(
             route('iris.json.fetch_basket')
         )
@@ -84,14 +59,69 @@ onMounted(async () => {
         dataSideBasket.value = response.data
         console.log('Response axios:', response.data)
     } catch (error: any) {
-        console.log('error', error)
+        console.log('errorzzzzz', error)
         // notify({
         //     title: trans("Something went wrong"),
         //     text: error.message || trans("Please try again or contact administrator"),
         //     type: 'error'
         // })
+    } finally {
+        isLoadingFetch.value = false
     }
+}
+
+watch(() => props.isOpen, (newValue) => {
+    if (newValue) {
+        fetchDataSideBasket()
+    }
+}, {
+    immediate: true
 })
+
+const onRemoveFromBasket = (product) => {
+    router.post(
+        route('iris.models.transaction.update', {
+            transaction: product.transaction_id
+        }),
+        {
+            quantity_ordered: 0
+        },
+        {
+            preserveScroll: true,
+            preserveState: true,
+            // only: ['zzzziris'],
+            onStart: () => {
+                product.isLoadingRemove = true
+                // setStatus('loading')
+
+                // isLoadingSubmitQuantityProduct.value = true
+            },
+            onError: (e) => {
+                console.log('error', e)
+                product.isLoadingRemove = false
+            },
+            onSuccess: () => {
+                
+                layout.reload_handle()
+                if (dataSideBasket.value?.products) {
+                    dataSideBasket.value.products = dataSideBasket.value.products.filter(p => p.transaction_id !== product.transaction_id)
+                }
+                fetchDataSideBasket()
+            },
+            // onError: errors => {
+            //     setStatus('error')
+            //     notify({
+            //         title: trans("Something went wrong"),
+            //         text: errors.message || trans("Failed to update product quantity in basket"),
+            //         type: "error"
+            //     })
+            // },
+            // onFinish: () => {
+            //     // isLoadingSubmitQuantityProduct.value = false
+            // },
+        }
+    )
+}
 </script>
 
 <template>
@@ -106,9 +136,7 @@ onMounted(async () => {
                 'color': layout.app.theme[1]
             }"
         >
-            <div class="flex items-center justify-center transition-all duration-300 ease-in-out"
-                
-            >
+            <div class="flex items-center justify-center transition-all duration-300 ease-in-out">
                 <FontAwesomeIcon v-if="layout.rightbasket?.show" icon="far fa-chevron-right" class="h-[14px] leading-none" aria-hidden="true"
                     :class="[
                         layout.rightbasket?.show ? '-translate-x-[1px]' : '',
@@ -123,11 +151,12 @@ onMounted(async () => {
         <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">
-                    Your Basket (4 items)
+                    {{ trans("Your Basket (:items items)", { items: dataSideBasket?.products?.length ?? 0 }) }}
                 </div>
                 
                 <div>
-                    $100.50
+                    <div v-if="isLoadingFetch" class="h-7 w-20 skeleton" />
+                    <div v-else>{{ dataSideBasket ? locale.currencyFormat(dataSideBasket?.order_data?.currency_code, dataSideBasket?.order_data?.net_amount) : '' }}</div>
                 </div>
 
                 <!-- <div class="ml-3 flex h-7 items-center">
@@ -143,8 +172,8 @@ onMounted(async () => {
             
             <!-- Section: Order Number & 3 points -->
             <div class="text-xs">
-                <div class="bg-gray-300 px-2 mb-3">
-                    Order Number GB56432
+                <div class="-ml-2 bg-gray-200 px-2 mb-3">
+                    {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
                 </div>
 
                 <div class="grid grid-cols-2 mb-3">
@@ -178,29 +207,38 @@ onMounted(async () => {
             <div class="mt-8">
                 <div class="flow-root">
                     <ul role="list" class="!mx-0 -my-6">
-                        <li v-for="product in dataSideBasket?.products" :key="product.id" class="flex py-2">
+                        <li v-for="product in dataSideBasket?.products" :key="product.id" class="flex py-2 relative">
+                            <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
+
                             <div
                                 class="size-20 shrink-0 overflow-hidden rounded-md border border-gray-200">
-                                <img :src="product.imageSrc" :alt="product.imageAlt"
-                                    class="size-full object-cover" />
+                                <!-- <img :src="product.image" :alt="product.imageAlt"
+                                    class="size-full object-cover" /> -->
+                                <Image
+                                    :src="product.image.source"
+                                />
                             </div>
 
-                            <div class="ml-4 flex justify-between gap-x-4">
+                            <div>
+                                <!-- <pre>{{ product }}</pre> -->
+                            </div>
+
+                            <div class="ml-4 flex justify-between gap-x-4 w-full">
                                 <div class="flex flex-1 flex-col">
                                     <div class="text-orange-600 text-sm">
                                         Volume Discount 5% OFF
                                     </div>
                                     
-                                    <div class="flex justify-between  font-medium">
+                                    <div class="flex justify-between font-medium">
                                         <h4>
-                                            <a :href="product.href">{{ product.name }}</a>
+                                            <LinkIris :href="product.canonical_url" class=" hover:underline">{{ product.name }}</LinkIris>
                                         </h4>
                                     </div>
 
                                     <div class="flex flex-1 items-end justify-between">
                                         <p class=" text-lg">
-                                            <span class="text-gray-500 line-through">$90.00</span>
-                                            72.56
+                                            <!-- <span class="text-gray-500 line-through">{{ product.price }}</span> -->
+                                            {{ product?.price ? locale.currencyFormat(dataSideBasket?.order_data?.currency_code, product.price) : '' }}
                                         </p>
                                     </div>
                                 </div>
@@ -211,8 +249,10 @@ onMounted(async () => {
                                         <InputQuantitySideBasket
                                             :product
                                         />
-                                        <div>
-                                            <FontAwesomeIcon icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
+                                        
+                                        <div @click="() => onRemoveFromBasket(product)">
+                                            <LoadingIcon v-if="product?.isLoadingRemove" />
+                                            <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
                                         </div>
                                     </div>
 
@@ -250,7 +290,10 @@ onMounted(async () => {
         <!-- Section: Order Summary -->
         <div class="border-t border-gray-200 px-4 py-6 sm:px-6">
             <div class="">
+                <div v-if="isLoadingFetch" class="h-60 w-full skeleton" />
+
                 <OrderSummary
+                    v-else
                     :order_summary="dataSideBasket?.order_summary"
                     :currency_code="dataSideBasket?.order_summary?.currency?.code"
                 />

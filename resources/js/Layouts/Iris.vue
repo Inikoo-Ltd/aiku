@@ -178,7 +178,9 @@ console.log('handle', usePage().props)
                     class="sticky border-l top-0 pointer-events-auto max-h-screen w-screen transition-all"
                     :class="layout.rightbasket?.show ? 'border-l-gray-300 max-w-xl' : 'border-transparent max-w-0'"
                 >
-                    <IrisRightsideBasket />
+                    <IrisRightsideBasket
+                        :isOpen="layout.rightbasket?.show"
+                    />
                 </div>
             </main>
 

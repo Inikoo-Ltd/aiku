@@ -15,6 +15,7 @@ const props = defineProps<{
         transaction_id: number
         quantity_ordered_new: number
         quantity_ordered: number
+        available_quantity: number
     }
 }>()
 
@@ -77,7 +78,10 @@ const debUpdateQuantity = debounce((newVal?: number) => {
 
 <template>
     <div class="flex gap-x-0.5 items-center">
-        <div @click="() => product.quantity_ordered_new > 0 ? (product.quantity_ordered_new--, debUpdateQuantity()) : null" class="cursor-pointer opacity-50 hover:opacity-100">
+        <div @click="() => product.quantity_ordered_new > 0 ? (product.quantity_ordered_new--, debUpdateQuantity()) : null"
+            class="cursor-pointer opacity-50 hover:opacity-100"
+            :class="product.quantity_ordered_new < 1 ? 'opacity-20' : 'cursor-pointer opacity-50 hover:opacity-100'"
+        >
             <FontAwesomeIcon icon="far fa-minus" class="" fixed-width aria-hidden="true" />
         </div>
 
@@ -85,17 +89,21 @@ const debUpdateQuantity = debounce((newVal?: number) => {
             <InputNumber
                 :modelValue="product.quantity_ordered_new"
                 @input="(e) => set(product, 'quantity_ordered_new', e?.value)"
+                @update:modelValue="e => set(product, 'quantity_ordered_new', e)"
                 size="small"
                 inputId="minmax-buttons"
                 mode="decimal"
                 inputClass="text-center"
                 :min="0"
-                :max="product.stock"
+                :max="product.available_quantity"
                 fluid
             />
         </div>
 
-        <div @click="() => product.quantity_ordered_new < product.stock ? (product.quantity_ordered_new++, debUpdateQuantity()) : null" class="cursor-pointer opacity-50 hover:opacity-100" >
+        <div @click="() => product.quantity_ordered_new < product.available_quantity ? (product.quantity_ordered_new++, debUpdateQuantity()) : null"
+            class=""
+            :class="product.quantity_ordered_new >= product.available_quantity ? 'opacity-20' : 'cursor-pointer opacity-50 hover:opacity-100'"
+        >
             <FontAwesomeIcon icon="far fa-plus" class="" fixed-width aria-hidden="true" />
         </div>
     </div>

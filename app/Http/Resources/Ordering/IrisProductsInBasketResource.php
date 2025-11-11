@@ -12,18 +12,24 @@ use App\Models\Catalogue\Product;
 use App\Models\Helpers\Media;
 use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Helpers\ImageResource;
 
 class IrisProductsInBasketResource extends JsonResource
 {
     public function toArray($request): array
     {
-        $transactions = $this;
+
+        $media = null;
+        if ($this->image_id) {
+            $media = Media::find($this->image_id);
+        }
 
         return [
             'transaction_id'        => $this->transaction_id,
-            'quantity_ordered'      => $this->quantity_ordered,
+            'quantity_ordered'          => (int) $this->quantity_ordered,
+            'quantity_ordered_new'      => (int) $this->quantity_ordered,
             'product_id'            => $this->product_id,
-            'image_id'              => $this->image_id,
+            'image'                 => $this->image_id ? ImageResource::make($media)->getArray() : null,
             'code'                  => $this->code,
             'group_id'              => $this->group_id,
             'organisation_id'       => $this->organisation_id,

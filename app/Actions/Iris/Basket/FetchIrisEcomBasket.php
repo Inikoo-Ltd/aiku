@@ -21,6 +21,7 @@ use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use App\Http\Resources\Sales\OrderResource;
 
 class FetchIrisEcomBasket extends IrisAction
 {
@@ -44,6 +45,9 @@ class FetchIrisEcomBasket extends IrisAction
     public function jsonResponse(Order $order): Array|null
     {
         if(!$order) return null;
+        
+        $orderArr['order_data'] = OrderResource::make($order);
+
         $orderArr['order_summary'] = [
             [
                 [
@@ -86,6 +90,7 @@ class FetchIrisEcomBasket extends IrisAction
 
             'currency' => CurrencyResource::make($order->currency),
         ];
+
         $orderArr['products'] = IrisProductsInBasketResource::collection(IndexBasketProducts::run($order));
         return $orderArr;
     }
