@@ -51,8 +51,6 @@ class HydrateCustomers
         CustomerHydrateExclusiveProducts::run($customer);
         CustomerHydrateCustomerSalesChannels::run($customer->id);
         CustomerHydrateClv::run($customer);
-
-        CustomerHydrateRfm::generateGlobalMonetaryPercentiles();
         CustomerHydrateRfm::run($customer);
 
         if ($customer->fulfilmentCustomer) {
