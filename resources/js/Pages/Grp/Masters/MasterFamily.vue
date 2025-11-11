@@ -17,7 +17,7 @@ import {
 import { faExclamationTriangle } from "@fas"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PageHeading from "@/Components/Headings/PageHeading.vue"
-import { computed, defineAsyncComponent, inject, ref } from "vue"
+import { computed, inject, ref } from "vue"
 import { useTabChange } from "@/Composables/tab-change"
 import ModelDetails from "@/Components/ModelDetails.vue"
 import TableCustomers from "@/Components/Tables/Grp/Org/CRM/TableCustomers.vue"
