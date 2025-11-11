@@ -28,6 +28,9 @@ class CustomerResource extends JsonResource
         /** @var Customer $customer */
         $customer = $this;
 
+        // Temp fix || Need to redo later, some payment have invalid customer id
+        if(!$customer->resource) return [];
+
         $comms = $customer->comms;
 
         $subscriptions = [
