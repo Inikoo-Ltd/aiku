@@ -86,7 +86,7 @@ const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
 
 const debFetchDataSideBasket = debounce((isWithoutSetProduct?: boolean) => {
     fetchDataSideBasket(isWithoutSetProduct)
-}, 500)
+}, 250)
 
 watch(() => [layout.iris_variables?.cart_amount, layout.iris_variables?.cart_count], (newValue) => {
     if (props.isOpen) {
