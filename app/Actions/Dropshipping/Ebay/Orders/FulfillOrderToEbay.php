@@ -32,6 +32,10 @@ class FulfillOrderToEbay extends OrgAction
             $fulfillOrderId = $order->platform_order_id;
         }
 
+        if (! $order->customerSalesChannel->platform_status) {
+            return;
+        }
+
         /** @var EbayUser $ebayUser */
         $ebayUser = $order->customerSalesChannel->user;
 
