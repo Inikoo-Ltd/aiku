@@ -20,9 +20,6 @@ class CheckShopifyPortfolio
 
     public function handle(Portfolio $portfolio): Portfolio
     {
-
-        $oldHasValidProductId=$portfolio->has_valid_platform_product_id;
-
         if (!$portfolio->customerSalesChannel) {
             return $portfolio;
         }
@@ -31,22 +28,36 @@ class CheckShopifyPortfolio
 
         if (!$shopifyUser instanceof ShopifyUser) {
             return $portfolio;
-        } elseif (! $shopifyUser->checkConnection()) {
+        } elseif (!$shopifyUser->checkConnection()) {
             return $portfolio;
         }
 
-        $hasValidProductId      = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
-        $productExistsInShopify = false;
-        $hasVariantAtLocation   = false;
+        $hasValidProductId           = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
+        $productExistsInShopify      = false;
+        $hasVariantAtLocation        = false;
+        $productExistsInShopifyError = false;
+        $hasVariantAtLocationError   = false;
         if ($hasValidProductId) {
-            $productExistsInShopify = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
-            $hasVariantAtLocation   = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+            $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+
+            $productExistsInShopify      = $productExistsInShopifyResult['exist'];
+            $productExistsInShopifyError = $productExistsInShopifyResult['error'];
+
+
+            $hasVariantAtLocationResult = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+            $hasVariantAtLocation       = $hasVariantAtLocationResult['exist'];
+            $hasVariantAtLocationError  = $hasVariantAtLocationResult['error'];
         }
 
 
         $numberMatches = 0;
         $matchesLabels = [];
         $matches       = [];
+
+
+        if ($productExistsInShopifyError || $hasVariantAtLocationError) {
+            return $portfolio;
+        }
 
         if (!$hasValidProductId || !$productExistsInShopify || !$hasVariantAtLocation) {
             $result = FindShopifyProductVariant::run($portfolio->customerSalesChannel, trim($portfolio->sku.' '.$portfolio->barcode));
@@ -63,17 +74,6 @@ class CheckShopifyPortfolio
             'raw_data'       => $matches
 
         ];
-
-
-
-        if($oldHasValidProductId  && (
-            !$productExistsInShopify || !$hasVariantAtLocation
-            )  ){
-            // todo INI-339
-            // Do not proceed until we fix $productExistsInShopify and $hasVariantAtLocation if is a network error or throttling
-
-            return $portfolio;
-        }
 
 
         $portfolio->update([

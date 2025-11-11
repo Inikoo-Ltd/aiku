@@ -153,10 +153,13 @@ class FixShopifyPortfolios
             StoreShopifyProductVariant::run($portfolio);
         }
 
+        $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
+
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
-            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
-            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+            $productExistsInShopifyResult['exist'],
+            $productHasVariantAtLocation['exist'],
         ];
     }
 
@@ -180,11 +183,13 @@ class FixShopifyPortfolios
             StoreShopifyProductVariant::run($portfolio);
         }
 
+        $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
-            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
-            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+            $productExistsInShopifyResult['exist'],
+            $productHasVariantAtLocation['exist'],
         ];
     }
 
@@ -206,11 +211,13 @@ class FixShopifyPortfolios
                 StoreShopifyProduct::run($portfolio);
             }
         }
+        $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
-            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
-            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+            $productExistsInShopifyResult['exist'],
+            $productHasVariantAtLocation['exist'],
         ];
     }
 
@@ -238,11 +245,13 @@ class FixShopifyPortfolios
         StoreShopifyProductVariant::run($portfolio);
         CustomerSalesChannelsHydratePortfolios::run($portfolio->customerSalesChannel);
 
+        $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
-            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
-            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+            $productExistsInShopifyResult['exist'],
+            $productHasVariantAtLocation['exist'],
         ];
     }
 
@@ -260,11 +269,13 @@ class FixShopifyPortfolios
 
         StoreShopifyProduct::run($portfolio);
 
+        $productExistsInShopifyResult = CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id);
+        $productHasVariantAtLocation  = CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id);
 
         return [
             CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id),
-            CheckIfProductExistsInShopify::run($shopifyUser, $portfolio->platform_product_id),
-            CheckIfProductHasVariantAtLocation::run($shopifyUser, $portfolio->platform_product_id)
+            $productExistsInShopifyResult['exist'],
+            $productHasVariantAtLocation['exist'],
         ];
     }
 
