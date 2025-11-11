@@ -45,10 +45,10 @@ class FulfillOrderToEbay extends OrgAction
         $shipment = $deliveryNote->shipments()->first();
         $lineItems = [];
 
-        foreach ($order->transactions as $transaction) {
+        foreach ($order->transactions()->where('model_type', 'Product')->get() as $transaction) {
             $lineItems[] = [
-                'lineItemId' => Arr::get($transaction->data, 'lineItemId'),
-                'quantity' => $transaction->quantity_dispatched,
+                'lineItemId' => $transaction->platform_transaction_id,
+                'quantity' => (int) $transaction->quantity_dispatched,
             ];
         }
 
