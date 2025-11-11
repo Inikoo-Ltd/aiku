@@ -88,6 +88,17 @@ const onAddToBasket = async (product: ProductResource, basket : any) => {
             throw new Error('Failed to add to basket')
         }
 
+        const productToAddToBasket = {
+            ...product,
+            transaction_id: response.data?.transaction_id,
+            quantity_ordered: response.data?.quantity_ordered,
+            quantity_ordered_new: response.data?.quantity_ordered,
+        }
+        
+        layout.rightbasket?.products?.push(productToAddToBasket)
+
+        console.log('pzzzzrodddd', product, response.data)
+
         layout.reload_handle()
         router.reload({
             only: ['iris','data'],

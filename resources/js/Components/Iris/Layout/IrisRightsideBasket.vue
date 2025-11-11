@@ -3,7 +3,7 @@ import { inject, onMounted, ref, watch } from 'vue'
 import { Dialog, DialogPanel, DialogTitle, TransitionChild, TransitionRoot } from '@headlessui/vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { layoutStructure } from '@/Composables/useLayoutStructure'
-import { set } from 'lodash-es'
+import { get, set } from 'lodash-es'
 import { faChevronRight, faTrashAlt } from "@fal"
 import { faMinus, faArrowRight, faPlus } from "@far"
 import { library } from "@fortawesome/fontawesome-svg-core"
@@ -47,7 +47,11 @@ const handleToggleLeftBar = () => {
 
 const dataSideBasket = ref(null)
 const isLoadingFetch = ref(false)
-const fetchDataSideBasket = async () => {
+const isLoadingProducts = ref(false)
+const fetchDataSideBasket = async (isWithoutSetProduct?: boolean) => {
+    if (!isWithoutSetProduct) {
+        isLoadingProducts.value = true
+    }
     try {
         isLoadingFetch.value = true
         const response = await axios.get(
@@ -56,8 +60,14 @@ const fetchDataSideBasket = async () => {
         if (response.status !== 200) {
             
         }
-        dataSideBasket.value = response.data
         console.log('Response axios:', response.data)
+        if (isWithoutSetProduct) {
+            set(dataSideBasket.value, 'order_summary', response.data.order_summary)
+            set(dataSideBasket.value, 'order_data', response.data.order_data)
+        } else {
+            dataSideBasket.value = response.data
+            set(layout, 'rightbasket.products', response.data?.products || [])
+        }
     } catch (error: any) {
         console.log('errorzzzzz', error)
         // notify({
@@ -68,7 +78,19 @@ const fetchDataSideBasket = async () => {
     } finally {
         isLoadingFetch.value = false
     }
+
+    if (!isWithoutSetProduct) {
+        isLoadingProducts.value = false
+    }
 }
+
+watch(() => [layout.iris_variables?.cart_amount, layout.iris_variables?.cart_count], (newValue) => {
+    if (props.isOpen) {
+        fetchDataSideBasket(true)
+    }
+}, {
+    immediate: true,
+})
 
 watch(() => props.isOpen, (newValue) => {
     if (newValue) {
@@ -103,10 +125,10 @@ const onRemoveFromBasket = (product) => {
             onSuccess: () => {
                 
                 layout.reload_handle()
-                if (dataSideBasket.value?.products) {
-                    dataSideBasket.value.products = dataSideBasket.value.products.filter(p => p.transaction_id !== product.transaction_id)
+                if (layout?.rightbasket?.products) {
+                    layout.rightbasket.products = layout.rightbasket.products.filter(p => p.transaction_id !== product.transaction_id)
                 }
-                fetchDataSideBasket()
+                // fetchDataSideBasket(true)
             },
             // onError: errors => {
             //     setStatus('error')
@@ -151,12 +173,12 @@ const onRemoveFromBasket = (product) => {
         <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
             <div class="flex items-start justify-between mb-1">
                 <div class="text-lg font-medium">
-                    {{ trans("Your Basket (:items items)", { items: dataSideBasket?.products?.length ?? 0 }) }}
+                    {{ trans("Your Basket (:items items)", { items: layout.iris_variables?.cart_count ?? 0 }) }}
                 </div>
                 
                 <div>
                     <div v-if="isLoadingFetch" class="h-7 w-20 skeleton" />
-                    <div v-else>{{ dataSideBasket ? locale.currencyFormat(dataSideBasket?.order_data?.currency_code, dataSideBasket?.order_data?.net_amount) : '' }}</div>
+                    <div v-else>{{ locale.currencyFormat(layout.iris?.currency?.code, layout.iris_variables?.cart_amount) }}</div>
                 </div>
 
                 <!-- <div class="ml-3 flex h-7 items-center">
@@ -172,7 +194,7 @@ const onRemoveFromBasket = (product) => {
             
             <!-- Section: Order Number & 3 points -->
             <div class="text-xs">
-                <div class="-ml-2 bg-gray-200 px-2 mb-3">
+                <div v-if="dataSideBasket?.order_data?.reference" class="-ml-2 bg-gray-200 px-2 mb-3">
                     {{ trans("Order Number #:reference", { reference: dataSideBasket?.order_data?.reference ?? '' }) }}
                 </div>
 
@@ -207,68 +229,70 @@ const onRemoveFromBasket = (product) => {
             <div class="mt-8">
                 <div class="flow-root">
                     <ul role="list" class="!mx-0 -my-6">
-                        <li v-for="product in dataSideBasket?.products" :key="product.id" class="flex py-2 relative">
-                            <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
-
-                            <div
-                                class="size-20 shrink-0 overflow-hidden rounded-md border border-gray-200">
-                                <!-- <img :src="product.image" :alt="product.imageAlt"
-                                    class="size-full object-cover" /> -->
-                                <Image
-                                    :src="product.image.source"
-                                />
-                            </div>
-
-                            <div>
-                                <!-- <pre>{{ product }}</pre> -->
-                            </div>
-
-                            <div class="ml-4 flex justify-between gap-x-4 w-full">
-                                <div class="flex flex-1 flex-col">
-                                    <div class="text-orange-600 text-sm">
-                                        Volume Discount 5% OFF
-                                    </div>
-                                    
-                                    <div class="flex justify-between font-medium">
-                                        <h4>
-                                            <LinkIris :href="product.canonical_url" class=" hover:underline">{{ product.name }}</LinkIris>
-                                        </h4>
-                                    </div>
-
-                                    <div class="flex flex-1 items-end justify-between">
-                                        <p class=" text-lg">
-                                            <!-- <span class="text-gray-500 line-through">{{ product.price }}</span> -->
-                                            {{ product?.price ? locale.currencyFormat(dataSideBasket?.order_data?.currency_code, product.price) : '' }}
-                                        </p>
-                                    </div>
+                        <template v-if="!isLoadingProducts">
+                            <li v-for="product in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-2 relative">
+                                <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
+                                <div
+                                    class="size-20 shrink-0 overflow-hidden rounded-md border border-gray-200">
+                                    <!-- <img :src="product.image" :alt="product.imageAlt"
+                                        class="size-full object-cover" /> -->
+                                    <Image
+                                        :src="product?.web_images?.main?.original"
+                                    />
                                 </div>
-
-                                <!-- Section: input quantity -->
-                                <div class="flex flex-col justify-between items-end pt-7">
-                                    <div class="max-w-32 flex gap-x-2 h-fit items-center">
-                                        <InputQuantitySideBasket
-                                            :product
-                                        />
-                                        
-                                        <div @click="() => onRemoveFromBasket(product)">
-                                            <LoadingIcon v-if="product?.isLoadingRemove" />
-                                            <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
+                                <div>
+                                    <!-- <pre>{{ product }}</pre> -->
+                                </div>
+                                <div class="ml-4 flex justify-between gap-x-4 w-full">
+                                    <div class="flex flex-1 flex-col">
+                                        <div class="text-orange-600 text-sm">
+                                            Volume Discount 5% OFF
+                                        </div>
+                            
+                                        <div class="flex justify-between font-medium">
+                                            <h4>
+                                                <LinkIris :href="product.canonical_url" class=" hover:underline">{{ product.name }}</LinkIris>
+                                            </h4>
+                                        </div>
+                                        <div class="flex flex-1 items-end justify-between">
+                                            <p class=" text-lg">
+                                                <!-- <span class="text-gray-500 line-through">{{ product.price }}</span> -->
+                                                {{ product?.price ? locale.currencyFormat(dataSideBasket?.order_data?.currency_code, product.price) : '' }}
+                                            </p>
                                         </div>
                                     </div>
-
-                                    <div class="text-xs underline">
-                                        Save for later
+                                    <!-- Section: input quantity -->
+                                    <div class="flex flex-col justify-between items-end pt-7">
+                                        <div class="max-w-32 flex gap-x-2 h-fit items-center">
+                                            <InputQuantitySideBasket
+                                                :product
+                                            />
+                            
+                                            <div @click="() => onRemoveFromBasket(product)">
+                                                <LoadingIcon v-if="product?.isLoadingRemove" />
+                                                <FontAwesomeIcon v-else icon="fal fa-trash-alt" class="text-red-400 hover:text-red-600 cursor-pointer" fixed-width aria-hidden="true" />
+                                            </div>
+                                        </div>
+                                        <div class="text-xs underline">
+                                            Save for later
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </li>
+                            </li>
+                        </template>
+
+                        <template v-else>
+                            <li class="h-24 w-full skeleton"></li>
+                            <li class="h-24 w-full skeleton"></li>
+                            <li class="h-24 w-full skeleton"></li>
+                        </template>
                     </ul>
                 </div>
             </div>
         </div>
 
         <!-- Section: Voucher Code -->
-        <div class="px-6 mb-4">
+        <div v-if="false" class="px-6 mb-4">
             <div class="text-rose-700 font-semibold text-sm mb-3">
                 You missed ( 1 ) offer
             </div>
@@ -289,14 +313,16 @@ const onRemoveFromBasket = (product) => {
         
         <!-- Section: Order Summary -->
         <div class="border-t border-gray-200 px-4 py-6 sm:px-6">
-            <div class="">
-                <div v-if="isLoadingFetch" class="h-60 w-full skeleton" />
+            <div class="relative isolate">
 
                 <OrderSummary
-                    v-else
                     :order_summary="dataSideBasket?.order_summary"
                     :currency_code="dataSideBasket?.order_summary?.currency?.code"
                 />
+
+                <div v-if="isLoadingFetch" class="absolute inset-0">
+                    <div class="inset-0 h-full w-full skeleton z-10" />
+                </div>
             </div>
 
             <!-- <div class="flex justify-between  font-medium">

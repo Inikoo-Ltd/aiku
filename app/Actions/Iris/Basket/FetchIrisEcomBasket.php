@@ -42,7 +42,7 @@ class FetchIrisEcomBasket extends IrisAction
         return $this->handle($request);
     }
 
-    public function jsonResponse(Order $order): Array|null
+    public function jsonResponse(?Order $order): Array|null
     {
         if(!$order) return null;
         

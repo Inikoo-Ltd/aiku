@@ -55,10 +55,11 @@ class IrisProductsInBasketResource extends JsonResource
 
         return [
             'transaction_id'        => $this->transaction_id,
-            'quantity_ordered'          => (int) $this->quantity_ordered,
-            'quantity_ordered_new'      => (int) $this->quantity_ordered,
+            'quantity_ordered'      => (int) $this->quantity_ordered ?? 0,
+            'quantity_ordered_new'  => (int) $this->quantity_ordered ?? 0,
             'product_id'            => $this->product_id,
             'image'                 => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'web_images'            => is_string($this->web_images) ? json_decode($this->web_images, true) : $this->web_images,
             'code'                  => $this->code,
             'group_id'              => $this->group_id,
             'organisation_id'       => $this->organisation_id,
@@ -74,7 +75,6 @@ class IrisProductsInBasketResource extends JsonResource
             'units'                 => $this->units,
             'unit'                  => $this->unit,
             'top_seller'            => $this->top_seller,
-            'web_images'            => $this->web_images,
             'url'                   => $this->url,
             'canonical_url'         => $this->canonical_url,
             'website_id'            => $this->website_id,

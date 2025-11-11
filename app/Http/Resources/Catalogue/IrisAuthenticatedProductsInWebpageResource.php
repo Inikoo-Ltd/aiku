@@ -123,6 +123,7 @@ class IrisAuthenticatedProductsInWebpageResource extends JsonResource
             'quantity_ordered_new' => (int)$this->quantity_ordered ?? 0,  // To editable in Frontend
             'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
             'is_back_in_stock'     => $back_in_stock,
+            'available_quantity'      => $this->available_quantity,
             'back_in_stock_id'     => $back_in_stock_id
         ];
     }
