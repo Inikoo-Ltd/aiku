@@ -25,27 +25,34 @@ class Translate extends OrgAction
      */
     public function handle(?string $text, Language $languageFrom, Language $languageTo): string
     {
-        if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
-            return $text ?? '';
+        try {
+            if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
+                return $text ?? '';
+            }
+
+            if (app()->environment('local')) {
+                return $text;
+            }
+
+
+            $translationEngineService   = new TranslationEngineService();
+            $translationWorkflowService = new TranslationWorkflowService($translationEngineService);
+
+            $texts = [
+                'text_to_translate' => $text,
+            ];
+
+            $translationWorkflowService->setInMemoryTexts($texts);
+
+            $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, config('auto-translations.default_driver'));
+
+            return Arr::get($translatedTexts, 'text_to_translate', $text);
+
+        } catch (\Throwable $e) {
+            \Sentry::captureMessage($e->getMessage());
+
+            return '';
         }
-
-        if (app()->environment('local')) {
-            return $text;
-        }
-
-
-        $translationEngineService   = new TranslationEngineService();
-        $translationWorkflowService = new TranslationWorkflowService($translationEngineService);
-
-        $texts = [
-            'text_to_translate' => $text,
-        ];
-
-        $translationWorkflowService->setInMemoryTexts($texts);
-
-        $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, config('auto-translations.default_driver'));
-
-        return Arr::get($translatedTexts, 'text_to_translate', $text);
     }
 
     public function getCommandSignature(): string

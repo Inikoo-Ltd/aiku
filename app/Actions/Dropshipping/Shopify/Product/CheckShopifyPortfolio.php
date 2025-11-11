@@ -31,8 +31,9 @@ class CheckShopifyPortfolio
 
         if (!$shopifyUser instanceof ShopifyUser) {
             return $portfolio;
+        } elseif (! $shopifyUser->checkConnection()) {
+            return $portfolio;
         }
-
 
         $hasValidProductId      = CheckIfShopifyProductIDIsValid::run($portfolio->platform_product_id);
         $productExistsInShopify = false;
