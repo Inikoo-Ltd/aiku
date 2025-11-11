@@ -12,6 +12,7 @@ import { Link, usePage } from '@inertiajs/vue3'
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import RecommendationCustomerRecentlyBoughtSlideIris from "@/Components/Iris/Recommendations/RecommendationCustomerRecentlyBoughtSlideIris.vue"
 import Icon from "@/Components/Icon.vue"
+import { faSquareArrowUpRight } from "@fortawesome/free-solid-svg-icons"
 
 library.add(faLink, faSync, faCalendarAlt, faEnvelope, faPhone, faMapMarkerAlt, faMale, faMoneyBillWave, faBuilding, faCreditCard, faFileInvoice, faCheckCircle, faTimesCircle, faUndo, faTimes, faEye)
 
@@ -502,6 +503,50 @@ const routeOrder = (order) => {
 						</dd>
 					</div>
 				</div>
+			</div>
+
+			<div v-if="normalizedShowcase.creditTransaction?.type == 'Top up'" class="rounded-lg shadow-sm ring-1 ring-gray-900/5 bg-white">
+				<div class="px-6 py-4 border-b border-gray-200 flex">
+					<h3 class="text-lg font-medium flex items-center gap-2  w-full">
+						<FontAwesomeIcon icon="fal fa-user" :style="{ color: themeColors.buttonBg }" />
+						{{ trans('Associated Customer Detail') }}
+					</h3>
+					<Link :href="route('grp.org.shops.show.crm.customers.show', route().params)">
+						<FontAwesomeIcon :icon="faSquareArrowUpRight" 
+						:style="{ color: themeColors.buttonBg }" 
+						class="hover:animate-pulse cursor-pointer justify-self-end self-center text-xl" />
+					</Link>
+				</div>
+				<dl class="px-6 py-4 space-y-4">
+					<!-- Contact Name -->
+					<div class="flex items-center justify-between ">
+						<dt class="text-sm font-medium text-gray-600">{{ trans('Contact Name') }}</dt>
+						<dd class="text-sm font-semibold" :style="{ color: themeColors.primaryBg }">
+							{{ normalizedShowcase.customer.name }}
+						</dd>
+					</div>
+					<!-- Name -->
+					<div class="flex items-center justify-between ">
+						<dt class="text-sm font-medium text-gray-600">{{ trans('Company Name') }}</dt>
+						<dd class="text-sm font-semibold" :style="{ color: themeColors.primaryBg }">
+							{{ normalizedShowcase.customer.contact_name }}
+						</dd>
+					</div>
+					<!-- E-Mail -->
+					<div class="flex items-center justify-between ">
+						<dt class="text-sm font-medium text-gray-600">{{ trans('Email') }}</dt>
+						<dd class="text-sm font-semibold" :style="{ color: themeColors.primaryBg }">
+							{{ normalizedShowcase.customer.email }}
+						</dd>
+					</div>
+					<!-- Phone -->
+					<div class="flex items-center justify-between ">
+						<dt class="text-sm font-medium text-gray-600">{{ trans('Phone') }}</dt>
+						<dd class="text-sm font-semibold" :style="{ color: themeColors.primaryBg }">
+							{{ normalizedShowcase.customer.phone }}
+						</dd>
+					</div>
+				</dl>
 			</div>
 
 			<!-- Section: Credit Transaction Information -->
