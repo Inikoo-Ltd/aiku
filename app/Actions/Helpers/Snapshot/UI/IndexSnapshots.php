@@ -18,6 +18,7 @@ use App\Actions\Web\Webpage\UI\WithMenuSubNavigation;
 use App\Enums\Helpers\Snapshot\SnapshotStateEnum;
 use App\Http\Resources\Web\SnapshotsResource;
 use App\InertiaTable\InertiaTable;
+use App\Models\Announcement;
 use App\Models\Catalogue\Shop;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Helpers\Snapshot;
@@ -64,7 +65,7 @@ class IndexSnapshots extends OrgAction
             ->withQueryString();
     }
 
-    public function handle(Website|Webpage|EmailTemplate|Banner $parent, $prefix = null, $scope = null, $withLabel = false)
+    public function handle(Website|Webpage|EmailTemplate|Banner|Announcement $parent, $prefix = null, $scope = null, $withLabel = false)
     {
         $queryBuilder = QueryBuilder::for(Snapshot::class);
         $queryBuilder->where('state', '!=', SnapshotStateEnum::UNPUBLISHED->value);
@@ -79,6 +80,10 @@ class IndexSnapshots extends OrgAction
 
         if (class_basename($parent) == 'EmailTemplate') {
             $queryBuilder->where('parent_id', $parent->id)->where('parent_type', 'EmailTemplate');
+        }
+
+        if (class_basename($parent) == 'Announcement') {
+            $queryBuilder->where('parent_id', $parent->id)->where('parent_type', 'Announcement');
         }
 
         if (class_basename($parent) === 'Website') {
@@ -160,7 +165,7 @@ class IndexSnapshots extends OrgAction
         )->table($this->tableStructure($this->website));
     }
 
-    public function tableStructure(Website|Webpage|EmailTemplate|Banner $parent, $withLabel = false, ?array $modelOperations = null, $prefix = null, ?array $exportLinks = null): Closure
+    public function tableStructure(Website|Webpage|EmailTemplate|Banner|Announcement $parent, $withLabel = false, ?array $modelOperations = null, $prefix = null, ?array $exportLinks = null): Closure
     {
         return function (InertiaTable $table) use ($modelOperations, $withLabel, $prefix, $exportLinks) {
             if ($prefix) {

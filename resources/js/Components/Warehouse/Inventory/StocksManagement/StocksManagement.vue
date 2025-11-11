@@ -7,9 +7,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faForklift, faInventory, faClipboardCheck, faQuestionSquare, faDotCircle } from "@fal"
 import { faShoppingBasket, faStickyNote, faShoppingCart } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ref, nextTick } from 'vue'
+import { ref } from 'vue'
 import { useFormatTime } from '@/Composables/useFormatTime'
-import { now } from 'lodash'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { InputNumber, Popover } from 'primevue'
 import StockCheck from './StockCheck.vue'

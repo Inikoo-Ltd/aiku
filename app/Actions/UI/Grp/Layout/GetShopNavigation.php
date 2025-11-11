@@ -8,6 +8,7 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -343,6 +344,17 @@ class GetShopNavigation
                                 'root'    => 'grp.org.shops.show.web.banners.',
                                 "route"   => [
                                     "name"       => "grp.org.shops.show.web.banners.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
+                                ],
+                            ],
+
+                            [
+                                "label"   => __("Announcements"),
+                                "tooltip" => __("Announcements"),
+                                "icon"    => ["fal", "fa-megaphone"],
+                                'root'    => 'grp.org.shops.show.web.announcements.',
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.web.announcements.index",
                                     "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                                 ],
                             ],

@@ -57,6 +57,10 @@ import LuigiTrends1Iris from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
 import LuigiLastSeen1Iris from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Iris.vue'
 import LuigiItemAlternatives1Iris from '@/Components/CMS/Webpage/LuigiItemAlternatives1/LuigiItemAlternatives1Iris.vue'
+import AnnouncementInformation1 from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation1.vue'
+import AnnouncementPromo1 from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo1.vue'
+import AnnouncementPromo2Countdown from '@/Components/Websites/Announcement/Templates/Promo/AnnouncementPromo2Countdown.vue'
+import AnnouncementInformation2TransitionText from '@/Components/Websites/Announcement/Templates/Information/AnnouncementInformation2TransitionText.vue'
 
 import RecommendationCustomerRecentlyBought1Iris from '@/Components/CMS/Webpage/RecomendationRecentlyBought1/RecommendationCustomerRecentlyBought1Iris.vue'
 import CtaImageBackroundIris from '@/Components/CMS/Webpage/CtaImageBackround/CtaImageBackroundIris.vue'
@@ -151,4 +155,22 @@ export const getIrisComponent = (componentName: string, options?: {
     shop_type?: string // 'b2b' | 'dropshipping'
 }) => {
     return components(options?.shop_type)[componentName] ?? NotFoundComponent
+}
+
+
+const announcementComponent = (shop_type?: string): Record<string, Component> => {
+    return {
+        'announcement-information-1': AnnouncementInformation1,
+        'announcement-promo-1': AnnouncementPromo1,
+        'announcement-promo-2-countdown': AnnouncementPromo2Countdown,
+        'announcement-information-2-transition-text': AnnouncementInformation2TransitionText,
+
+    }
+}
+
+
+export const getIrisAnnouncementComponent = (componentName: string, options?: {
+    shop_type?: string // 'b2b' | 'dropshipping'
+}) => {
+    return announcementComponent(options?.shop_type)[componentName] ?? NotFoundComponent
 }
