@@ -14,6 +14,35 @@ use App\Models\Web\Webpage;
 use Illuminate\Http\Resources\Json\JsonResource;
 use App\Http\Resources\Helpers\ImageResource;
 
+
+/**
+ * Properties expected on the underlying IrisProductInBasketResource
+ * @property itn transaction_id
+ * @property numeric|nullquantity_ordered
+ * @property intid
+ * @property int|nullimage_id
+ * @property string
+ * @property intgroup_id
+ * @property intorganisation_id
+ * @property int|nullshop_id
+ * @property string|nullname
+ * @property int|null available_quantity
+ * @property numeric|null price
+ * @property numeric|null RRP
+ * @property ProductStatusEnumstatus
+ * @property ProductStateEnumstate
+ * @property \Illuminate\Support\Carbon|null created_at
+ * @property \Illuminate\Support\Carbon|null updated_at
+ * @property string units
+ * @property string unit
+ * @property int|null top_seller
+ * @property array<array-key, mixed> web_images
+ * @property string|null url
+ * @property string|null canonical_url
+ * @property string|null website_id
+ * @property string|null webpage_id
+ * @property string|null currency_code
+ */
 class IrisProductsInBasketResource extends JsonResource
 {
     public function toArray($request): array
