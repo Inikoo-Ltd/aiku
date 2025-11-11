@@ -70,7 +70,10 @@ trait WithMasterCatalogueSubNavigation
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_families.index',
                     'parameters' => [
-                        'masterShop' => $masterShop->slug
+                        'masterShop' => $masterShop->slug,
+                        '_query' => [
+                            'elements[status]' => 'active'
+                        ]
                     ]
                 ],
                 'leftIcon' => [
@@ -85,7 +88,10 @@ trait WithMasterCatalogueSubNavigation
                 'route'    => [
                     'name'       => 'grp.masters.master_shops.show.master_products.index',
                     'parameters' => [
-                        'masterShop' => $masterShop->slug
+                        'masterShop' => $masterShop->slug,
+                        '_query' => [
+                            'elements[status]' => 'active'
+                        ]
                     ]
                 ],
                 'leftIcon' => [

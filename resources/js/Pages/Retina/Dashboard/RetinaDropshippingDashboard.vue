@@ -68,7 +68,7 @@ const onSubmitCreateOrder = () => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingSubmit.value = true
             },
             onSuccess: () => {
@@ -121,15 +121,15 @@ const onSubmitCreateOrder = () => {
                                 }"
                             /> -->
                         </div>
-                        
+
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <!-- Left Column: Customer Information -->
                             <div class="space-y-3 text-sm">
                                 <!-- Information: contact name -->
                                 <div v-if="data.customer.contact_name" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-user" 
+                                        fixed-width
+                                        icon="fas fa-user"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Contact Name')"
                                     />
@@ -139,8 +139,8 @@ const onSubmitCreateOrder = () => {
                                 <!-- Information: company name -->
                                 <div v-if="data.customer.company_name" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-building" 
+                                        fixed-width
+                                        icon="fas fa-building"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Company Name')"
                                     />
@@ -150,8 +150,8 @@ const onSubmitCreateOrder = () => {
                                 <!-- Information: email -->
                                 <div v-if="data.customer.email" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-envelope" 
+                                        fixed-width
+                                        icon="fas fa-envelope"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Email')"
                                     />
@@ -161,8 +161,8 @@ const onSubmitCreateOrder = () => {
                                 <!-- Information: phone -->
                                 <div v-if="data.customer.phone" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-phone" 
+                                        fixed-width
+                                        icon="fas fa-phone"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Phone')"
                                     />
@@ -180,17 +180,18 @@ const onSubmitCreateOrder = () => {
                                 </div>
                             </div>
 
+                            <!-- hide email subscription, required by tomas -->
                             <!-- Right Column: Email Subscriptions -->
-                            <div class="flex justify-start lg:justify-end">
-                                <EmailSubscribetion 
+                            <!-- <div class="flex justify-start lg:justify-end">
+                                <EmailSubscribetion
                                     v-if="data?.customer?.email_subscriptions"
                                     :emailSubscriptions="data.customer.email_subscriptions"
                                     containerClass="p-3 bg-white rounded-md border border-gray-200 w-full max-w-sm"
                                 />
-                            </div>
+                            </div> -->
                         </div>
 
-                      
+
                     </div>
 
                     <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
@@ -200,7 +201,7 @@ const onSubmitCreateOrder = () => {
                         {{ trans("Have a look at your channels summary.") }}
                     </p>
                 </div>
-                
+
                 <div class="flex justify-between gap-x-4">
                     <div class="w-full max-w-96 mt-4 xmd:grid grid-cols-1 gap-2 lg:gap-5 xsm:grid-cols-2">
                         <StatsBox
@@ -298,7 +299,7 @@ const onSubmitCreateOrder = () => {
                     />
                 </div>
             </div>
-            
+
         </div>
 
         <!-- Modal: Create order -->
@@ -336,7 +337,7 @@ const onSubmitCreateOrder = () => {
                             <template #afterlist>
                                 <div class="m-2 cursor-auto text-gray-400 text-sm">
                                     {{ trans("Can't find the client?") }}
-                                    
+
                                     <Link
                                         :href="route('retina.dropshipping.customer_sales_channels.client.create', {
                                             customerSalesChannel: data.shortcut.order.manual_data.slug
@@ -350,7 +351,7 @@ const onSubmitCreateOrder = () => {
                         </PureMultiselectInfiniteScroll>
                     </div>
 
-                    <Button 
+                    <Button
                         @click="() => onSubmitCreateOrder()"
                         label="Create Order"
                         full

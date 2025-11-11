@@ -66,7 +66,6 @@ class AddMissingMasterAssets
             ->whereRaw("lower(code) = lower(?)", [$code])->first();
 
 
-
         if (!$foundMasterAssetData) {
             $masterFamily = $this->getMasterFamily($masterShop, $product);
 
@@ -75,9 +74,13 @@ class AddMissingMasterAssets
             $price = $product->price * $exchange;
 
 
-            //Todo this will only work with parent is masterfamily
+            if (!$masterFamily) {
+                print "Skipping Product $product->code has no master family in shop $masterShop->slug \n";
+                return null;
+            }
+
             $foundMasterProduct = StoreMasterAsset::make()->action(
-                $masterFamily ?? $masterShop,
+                $masterFamily,
                 [
                     'code'        => $product->code,
                     'name'        => $product->name,
@@ -86,6 +89,15 @@ class AddMissingMasterAssets
                     'price'       => $price
                 ]
             );
+
+
+            $relatedProducts = Product::whereRaw("lower(code) = lower(?)", [$code])->get();
+            /** @var Product $relatedProduct */
+            foreach ($relatedProducts as $relatedProduct) {
+                MatchAssetsToMaster::run($relatedProduct->asset);
+
+            }
+
 
         } else {
             $foundMasterProduct = MasterAsset::find($foundMasterAssetData->id);
@@ -121,7 +133,6 @@ class AddMissingMasterAssets
             $markForDiscontinued = true;
             $maskForDiscontinued = $product->mark_for_discontinued_at;
         }
-
 
 
         UpdateMasterAsset::run(
@@ -169,7 +180,7 @@ class AddMissingMasterAssets
 
     public function getCommandSignature(): string
     {
-        return 'repair:add_missing_master_products';
+        return 'repair:add_missing_master_products {master?}';
     }
 
     /**
@@ -177,6 +188,13 @@ class AddMissingMasterAssets
      */
     public function asCommand(Command $command): int
     {
+
+        if ($command->argument('master')) {
+            $masterShop = MasterShop::where('slug', $command->argument('master'))->firstOrFail();
+            $this->handle($masterShop, $command);
+            return 0;
+        }
+
         MasterShop::orderBy('id')
             ->chunk(1000, function ($models) use ($command) {
                 foreach ($models as $model) {
