@@ -28,8 +28,8 @@ class MasterShopHydrateMasterAssets implements ShouldBeUnique
     public function handle(MasterShop $masterShop): void
     {
         $stats = [
-            'number_master_assets' => $masterShop->masterAssets()->where('is_main')->count(),
-            'number_current_master_assets' => $masterShop->masterAssets()->where('is_main')->where('status', true)->count(),
+            'number_master_assets' => $masterShop->masterAssets()->where('is_main', true)->count(),
+            'number_current_master_assets' => $masterShop->masterAssets()->where('is_main', true)->where('status', true)->count(),
 
         ];
 
@@ -58,6 +58,7 @@ class MasterShopHydrateMasterAssets implements ShouldBeUnique
                 }
             )
         );
+
 
         $masterShop->stats()->update($stats);
     }
