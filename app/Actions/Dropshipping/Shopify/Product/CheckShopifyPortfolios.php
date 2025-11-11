@@ -67,6 +67,7 @@ class CheckShopifyPortfolios extends OrgAction
                 if ($command) {
                     $this->tableData[] = [
                         'slug'                          => $portfolio->reference ?? $portfolio->id,
+                        'sku'                           => $portfolio->sku,
                         'status'                        => $portfolio->status ? 'Open' : 'Closed',
                         'has_valid_platform_product_id' => $portfolio->has_valid_platform_product_id ? 'Yes' : 'No',
                         'exist_in_platform'             => $portfolio->exist_in_platform ? 'Yes' : 'No',
@@ -116,7 +117,7 @@ class CheckShopifyPortfolios extends OrgAction
 
         $command->info("\nPortfolio Shopify Status:");
         $command->table(
-            ['Portfolio', 'Status', 'Has Valid Product ID', 'Exists in Platform', 'Platform Status', 'Possible Matches'],
+            ['Portfolio', 'SKU', 'Status', 'Has Valid Product ID', 'Exists in Platform', 'Platform Status', 'Possible Matches'],
             $this->tableData
         );
     }
