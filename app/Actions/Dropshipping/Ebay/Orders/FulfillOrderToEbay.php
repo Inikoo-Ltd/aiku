@@ -32,26 +32,30 @@ class FulfillOrderToEbay extends OrgAction
             $fulfillOrderId = $order->platform_order_id;
         }
 
-        /** @var EbayUser $ebayUser */
-        $ebayUser = $order->customerSalesChannel->user;
+        try {
+            /** @var EbayUser $ebayUser */
+            $ebayUser = $order->customerSalesChannel->user;
 
-        /** @var DeliveryNote $deliveryNote */
-        $deliveryNote = $order->deliveryNotes->first();
+            /** @var DeliveryNote $deliveryNote */
+            $deliveryNote = $order->deliveryNotes->first();
 
-        $shipment = $deliveryNote->shipments()->first();
-        $lineItems = [];
+            $shipment = $deliveryNote->shipments()->first();
+            $lineItems = [];
 
-        foreach ($order->transactions as $transaction) {
-            $lineItems[] = [
-                'lineItemId' => Arr::get($transaction->data, 'lineItemId'),
-                'quantity' => $transaction->quantity_dispatched,
-            ];
+            foreach ($order->transactions as $transaction) {
+                $lineItems[] = [
+                    'lineItemId' => Arr::get($transaction->data, 'lineItemId'),
+                    'quantity' => $transaction->quantity_dispatched,
+                ];
+            }
+
+            $ebayUser->fulfillOrder($fulfillOrderId, [
+                'line_items' => $lineItems,
+                'tracking_number' => $shipment->tracking,
+                'carrier_code' => $shipment->shipper->name
+            ]);
+        } catch (\Exception $e) {
+            \Sentry::captureMessage($e->getMessage());
         }
-
-        $ebayUser->fulfillOrder($fulfillOrderId, [
-            'line_items' => $lineItems,
-            'tracking_number' => $shipment->tracking,
-            'carrier_code' => $shipment->shipper->name
-        ]);
     }
 }
