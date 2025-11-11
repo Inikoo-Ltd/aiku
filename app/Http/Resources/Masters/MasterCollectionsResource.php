@@ -62,7 +62,7 @@ class MasterCollectionsResource extends JsonResource
             'parents_data'                      => $this->parseCollectionParentsData($this->parents_data),
             'delete_route' => [
                 'method'     => 'delete',
-                'name'       => 'grp.models.master_collection.delete_without_return',
+                'name'       => 'grp.models.master_collection.delete',
                 'parameters' => [
                     'masterCollection' => $this->id
                 ]

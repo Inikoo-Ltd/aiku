@@ -235,7 +235,6 @@ use App\Actions\Masters\MasterCollection\AttachMasterCollectionToModel;
 use App\Actions\Masters\MasterCollection\AttachModelsToMasterCollection;
 use App\Actions\Masters\MasterCollection\AttachMultipleParentsToAMasterCollection;
 use App\Actions\Masters\MasterCollection\DeleteMasterCollection;
-use App\Actions\Masters\MasterCollection\DeleteMasterCollectionWithoutReturn;
 use App\Actions\Masters\MasterCollection\UpdateMasterCollection;
 use App\Actions\Masters\MasterCollection\DetachMasterCollectionFromModel;
 use App\Actions\Masters\MasterCollection\DetachMasterModelFromMasterCollection;
@@ -417,7 +416,6 @@ Route::prefix('master-collection/{masterCollection:id}')->name('master_collectio
     Route::post('attach-models', AttachModelsToMasterCollection::class)->name('attach-models');
     Route::delete('detach-models', DetachMasterModelFromMasterCollection::class)->name('detach-models');
     Route::delete('delete', DeleteMasterCollection::class)->name('delete');
-    Route::delete('delete-without-return', DeleteMasterCollectionWithoutReturn::class)->name('delete_without_return');
     Route::patch('update', UpdateMasterCollection::class)->name('update');
     Route::post('attach-parents', AttachMultipleParentsToAMasterCollection::class)->name('attach_parents');
 });
