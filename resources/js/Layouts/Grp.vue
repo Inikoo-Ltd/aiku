@@ -35,14 +35,14 @@ import {
     faAtom, faBan, faSnooze,
     faFileInvoice, faInboxIn,
     faPaperPlane,
-    faDraftingCompass, faExternalLinkAlt,
+    faDraftingCompass, faFolderDownload, faExternalLinkAlt,
     faCheck,
     faTimes, faTrashAlt,
     faAsterisk, faPauseCircle, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble,
     faSmile
 } from "@fal"
 import { faSearch, faBell } from "@far"
-import { faAsterisk as fasAsterisk, faBoxHeart, faExclamation, faInfo, faPlay, faGlobe as fasGlobe, faStar } from "@fas"
+import { faAsterisk as fasAsterisk, faBoxHeart, faExclamation, faInfo, faPlay, faGlobe as fasGlobe, faStar, faCheckCircle, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { notify } from "@kyvg/vue3-notification"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -51,7 +51,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import Modal from "@/Components/Utils/Modal.vue"
 import { setColorStyleRoot } from "@/Composables/useApp"
 
-library.add(faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faBan, faSnooze, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
+library.add(faOctopusDeploy, faPoll, faPhotoVideo, faBrowser, faMegaphone, faAllergies, faSpellCheck, faHandPaper, faHourglassStart, faSadTear, faPauseCircle, faBoxHeart, faExclamationTriangle, faSunset, faChair, faSkull, faSkullCow, faToggleOn, faBroadcastTower, faEye, faEyeSlash, faCheckDouble, fasAsterisk, faExclamation, faInfo, faPlay, fasGlobe, faStar, faCheckCircle, faTimesCircle, faUsers, faShoppingBasket, faLayerGroup, faInboxOut, faSearch, faBell, faTachometerAltFast, faGlobe, faParachuteBox, faStore, faClock, faTransporter, faParking, faSeedling, faBoxCheck, faStackOverflow, faRulerTriangle, faRulerCombined, faAtom, faBan, faSnooze, faFileInvoice, faInboxIn, faPaperPlane, faDraftingCompass, faFolderDownload, faExternalLinkAlt, faTimes, faTrashAlt, faCheck, faAsterisk)
 
 provide("layout", useLayoutStore())
 provide("locale", useLocaleStore())

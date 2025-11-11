@@ -220,7 +220,9 @@ class IndexMasterProducts extends GrpAction
                 $table->column('master_family_code', __('Family'), sortable: true);
             }
 
-            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+            $table
+                ->column(key: 'status_icon', label: '', canBeHidden: false, sortable: false, searchable: true, type: 'icon')
+                ->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'unit', label: __('Unit'), canBeHidden: false, sortable: true, searchable: true)
               //  ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true, searchable: true)

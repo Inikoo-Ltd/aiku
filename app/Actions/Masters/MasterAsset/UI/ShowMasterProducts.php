@@ -167,13 +167,22 @@ class ShowMasterProducts extends GrpAction
                 ),
                 'pageHead'    => [
                     'title'   => $masterAsset->code,
-                    'afterTitle' => [
-                        'label' => $masterAsset->name
-                    ],
-                    'model'   => '',
+                    'model'   => __('Master Product'),
                     'icon'    => [
                         'icon'  => ['fal', 'fa-cube'],
                         'title' => __('Master asset')
+                    ],
+                    'iconRight' => $masterAsset->status ? [
+                        'tooltip' => __('Active'),
+                        'icon'    => 'fas fa-check-circle',
+                        'class'   => 'text-green-400'
+                    ] : [
+                        'tooltip' => __('Closed'),
+                        'icon'    => 'fas fa-times-circle',
+                        'class'   => 'text-red-400'
+                    ],
+                    'afterTitle' => [
+                        'label' => $masterAsset->name
                     ],
                     'actions' => [
                         [

@@ -61,6 +61,15 @@ class MasterProductsResource extends JsonResource
             'rrp'                    => $this->rrp,
             'status'                 => $this->status,
             'currency_code'          => $this->currency_code,
+            'status_icon'            => $this->status ? [
+                'tooltip' => __('Active'),
+                'icon'    => 'fas fa-check-circle',
+                'class'   => 'text-green-400'
+            ] : [
+                'tooltip' => __('Closed'),
+                'icon'    => 'fas fa-times-circle',
+                'class'   => 'text-red-400'
+            ],
         ];
     }
 }

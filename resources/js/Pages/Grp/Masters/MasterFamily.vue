@@ -108,7 +108,7 @@ const showDialog = ref(false);
             <Button :icon="action.icon" :label="action.label" @click="showDialog = true" :style="action.style" />
         </template>
 
-        <template #afterTitle>
+        <template #afterTitle2>
            <div class="whitespace-nowrap">
             <Link v-if="url_master"  :href="route(url_master.name,url_master.parameters)"  v-tooltip="'Go to Master'" class="mr-1"  :class="'opacity-70 hover:opacity-100'">
                 <FontAwesomeIcon
