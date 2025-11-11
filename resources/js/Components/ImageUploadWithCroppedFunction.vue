@@ -179,7 +179,8 @@ const confirmCrop = async () => {
 
 		cancelCrop()
 	} catch (error: any) {
-		const message = error.response?.data?.message || "Error while uploading image"
+		console.log('error', error)
+		const message = error.response?.data?.message || "Errorzzz while uploading image"
 		notify({
 			title: "Upload Failed",
 			text: message,

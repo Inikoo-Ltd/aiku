@@ -24,7 +24,11 @@ trait DataFeedsMapping
 
         if ($row->web_images && $rawImages = json_decode($row->web_images, true)) {
             foreach (Arr::get($rawImages, 'all', []) as $image) {
-                $images .= Arr::get($image, 'original.original').' ';
+                $images .= Arr::get($image, 'original.original');
+                // Add comma if there's multiple image
+                if ($image !== end($rawImages['all'])) {
+                    $images .= ', ';
+                }
             }
         }
         $images = preg_replace('/ $/', '', $images);
