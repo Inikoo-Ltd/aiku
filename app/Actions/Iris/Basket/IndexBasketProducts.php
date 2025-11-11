@@ -11,18 +11,23 @@
 namespace App\Actions\Iris\Basket;
 
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Product\ProductStatusEnum;
 use App\Models\Ordering\Order;
+use App\Models\Ordering\Transaction;
+use App\Services\QueryBuilder;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 
 
 class IndexBasketProducts extends OrgAction
 {
-    public function handle(Order $order): Array
+    public function handle(Order $order)
     {
-        $query = DB::table('transactions')->where('transactions.order_id', $order->id)
+        $query = QueryBuilder::for(Transaction::class)->where('transactions.order_id', $order->id)
                         ->where('transactions.model_type', 'Product')
                         ->leftjoin('assets', 'transactions.asset_id', '=', 'assets.id')
                         ->leftjoin('products', 'assets.model_id', '=', 'products.id')
+                        // ->where('products.status', ProductStatusEnum::FOR_SALE) // Do we need to filter out based on product status ?
                         ->leftJoin('webpages', 'webpages.id', '=', 'products.webpage_id');
 
         return $query->select([
@@ -38,8 +43,8 @@ class IndexBasketProducts extends OrgAction
                 'products.available_quantity',
                 'products.price',
                 'products.rrp',
-                'products.state',
-                'products.status',
+                'products.state as product_state',
+                'products.status as product_status',
                 'products.created_at',
                 'products.updated_at',
                 'products.units',
@@ -51,9 +56,8 @@ class IndexBasketProducts extends OrgAction
                 'webpages.website_id',
                 'webpages.id as webpage_id',
             ])
-            ->orderBy('products.name') // Change sort, maybe by id to make sure it's the same as the one on basket page
-            ->get()
-            ->keyBy('product_id')
-            ->toArray();
+            ->selectRaw("'{$order->currency->code}'  as currency_code")
+            ->withPaginator('', tableName: request()->route()->getName())
+            ->withQueryString();
     }
 }

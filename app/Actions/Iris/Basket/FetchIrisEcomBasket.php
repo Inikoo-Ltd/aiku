@@ -14,6 +14,7 @@ use App\Actions\IrisAction;
 use App\Actions\Iris\Basket\IndexBasketProducts;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Http\Resources\Helpers\CurrencyResource;
+use App\Http\Resources\Ordering\IrisProductsInBasketResource;
 use App\Models\CRM\Customer;
 use App\Models\Ordering\Order;
 use Illuminate\Http\RedirectResponse;
@@ -85,7 +86,7 @@ class FetchIrisEcomBasket extends IrisAction
 
             'currency' => CurrencyResource::make($order->currency),
         ];
-        $orderArr['products'] = IndexBasketProducts::run($order);
+        $orderArr['products'] = IrisProductsInBasketResource::collection(IndexBasketProducts::run($order));
         return $orderArr;
     }
 }
