@@ -206,7 +206,7 @@ const onClickFilterOutOfStock = (query: string) => {
 
 		</template>
 
-		<template #cell(name)="{ item: product }" v-if="disabled">
+		<template #cell(name)="{ item: product }" v-if="!disabled">
 			<Link :href="portfolioRoute(product)" class="primaryLink whitespace-nowrap">
 			{{ product["code"] }}
 			</Link>
@@ -250,7 +250,7 @@ const onClickFilterOutOfStock = (query: string) => {
 
 
 		<!-- Column: Actions -->
-		<template #cell(actions)="{ item }" v-if="disabled">
+		<template #cell(actions)="{ item }" v-if="!disabled">
 			<div class="mx-auto flex flex-wrap justify-center gap-2">
 				<ButtonWithLink v-tooltip="trans('Remove product from list')" type="negative" icon="fal fa-times"
 					:routeTarget="item.update_portfolio" :body="{
