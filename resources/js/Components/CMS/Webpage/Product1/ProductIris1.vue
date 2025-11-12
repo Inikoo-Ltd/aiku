@@ -277,10 +277,12 @@ const validImages = computed(() => {
                 <!-- Price + Profit popover -->
                 <ProductPrices :field-value="fieldValue" />
 
+
                 <!-- Button existence on all channels -->
                 <div class="relative flex gap-2 mb-6">
-                    <ButtonAddPortfolio :product="fieldValue.product"
-                        :productHasPortfolio="productExistenceInChannels" />
+                    <ButtonAddPortfolio :product="fieldValue.product" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
+                        :productHasPortfolio="productExistenceInChannels" 
+                        />
                     <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
                         <div class="h-full w-full skeleton rounded" />
                     </div>
@@ -343,7 +345,7 @@ const validImages = computed(() => {
         </div>
 
         <div class="mt-6 flex flex-col gap-2">
-            <ButtonAddPortfolio :product="fieldValue.product" :productHasPortfolio="productExistenceInChannels" />
+            <ButtonAddPortfolio :product="fieldValue.product" :productHasPortfolio="productExistenceInChannels" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
         </div>
 
         <div class="text-xs font-medium py-3">

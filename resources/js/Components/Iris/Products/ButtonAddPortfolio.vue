@@ -40,6 +40,7 @@ const props = withDefaults(defineProps<{
     productHasPortfolio?: number[]
     routeToAllPortfolios?: routeType
     routeToSpecificChannel?: routeType
+    buttonStyle?: object
 
 }>(), {
     productHasPortfolio: () => [],
@@ -213,15 +214,15 @@ watch(() => props.productHasPortfolio, (newVal) => {
 
                     <Button v-if="isInAllChannels"
                         :label="CheckChannels ? trans('Exist on all channels') : trans('Exist on some channels')" type="tertiary" disabled
-                        class="border-none border-transparent" :class="!CheckChannels ? 'rounded-r-none' : ''" full />
+                        class="border-none border-transparent" :class="!CheckChannels ? 'rounded-r-none' : ''" full  />
                     <Button v-else @click="() => onAddToAllPortfolios(product)" :label="trans('Add to all channels')"
                         :loading="isLoadingAllPortfolios" :icon="faPlus" :class="!CheckChannels ? 'rounded-r-none' : ''"
-                        class="border-none border-transparent" full xsize="l" xstyle="border: 0px" />
+                        class="border-none border-transparent" full xsize="l" xstyle="border: 0px"  :injectStyle="buttonStyle"/>
 
                     <Button v-if="!CheckChannels"
                         @click="(e) => (_popover?.toggle(e), Object.keys(channelList).length ? null : emits('refreshChannels'))"
                         :icon="faEllipsisV" :loading="!!isLoadingSpecificChannel.length"
-                        class="!px-1 border-none border-transparent rounded-l-none h-full" />
+                        class="!px-1 border-none border-transparent rounded-l-none h-full"  :injectStyle="buttonStyle"/>
 
                     <Popover  ref="_popover">
                         <div class="w-64 relative">
@@ -235,7 +236,7 @@ watch(() => props.productHasPortfolio, (newVal) => {
                                     @click="() => onAddPortfoliosSpecificChannel(product, { ...channel, id: Number(key) })" type="tertiary"
                                     xlabel="channel.customer_sales_channel_name + `${channel.platform_name}`"
                                     full
-                                    :loading="isLoadingSpecificChannel.includes(channel.customer_sales_channel_id)">
+                                    :loading="isLoadingSpecificChannel.includes(channel.customer_sales_channel_id)" >
                                     <template #icon>
                                         <FontAwesomeIcon v-if="productHasPortfolioList.includes(Number(key))" :icon="faCheck"
                                             class="text-green-500" fixed-width aria-hidden="true" />
@@ -263,7 +264,11 @@ watch(() => props.productHasPortfolio, (newVal) => {
         </div>
     </div>
 
-    <a v-else :href="urlLoginWithRedirect()" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
+   <!--  <a v-else :href="urlLoginWithRedirect()" class="text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
     {{ trans("Login / Register to Start") }}
+    </a> -->
+
+    <a  v-else  :href="urlLoginWithRedirect()" class="w-full">
+        <Button label="Login / Register to Start" full :injectStyle="buttonStyle"/>
     </a>
 </template>
