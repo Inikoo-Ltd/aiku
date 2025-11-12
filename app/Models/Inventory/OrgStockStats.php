@@ -98,7 +98,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_org_stock_movements_type_audit
- * @property-read \App\Models\Inventory\OrgStock|null $orgStock
+ * @property-read \App\Models\Inventory\OrgStock $orgStock
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrgStockStats query()

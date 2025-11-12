@@ -10,9 +10,9 @@ namespace App\Actions\Dropshipping\Shopify\Fulfilment\Callback;
 
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
-use App\Models\Catalogue\Product;
-use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -24,35 +24,43 @@ class CallbackFetchStock extends OrgAction
     use WithActionUpdate;
 
     /**
+     * Cache stock payload for 5 minutes per customer sales channel and dispatch background updater.
+     *
      * @throws \Throwable
      */
-    public function handle(ShopifyUser $shopifyUser): void
+    public function handle(ShopifyUser $shopifyUser): array
     {
-
-        $stock = [];
-        /** @var Portfolio $portfolio */
-        foreach (Portfolio::where('customer_sales_channel_id', $shopifyUser->customer_sales_channel_id)->get() as $portfolio) {
-            /** @var Product $product */
-            $product = $portfolio->item;
-            $stock[$portfolio->sku] = $product->available_quantity;
-
-            $portfolio->update([
-                'last_stock_value'      => $product->available_quantity,
-                'stock_last_updated_at' => now()
-            ]);
-
+        $channelId = $shopifyUser->customer_sales_channel_id;
+        if (!$channelId) {
+            return [];
         }
 
 
-        print json_encode($stock);
 
+        $cacheKey = "shopify:fetch_stock:channel:".$channelId;
 
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($channelId) {
+            $stock = [];
+            foreach (
+                DB::table('portfolios')->select('portfolios.id', 'sku', 'available_quantity')
+                    ->where('portfolios.customer_sales_channel_id', $channelId)
+                    ->leftJoin('products', 'portfolios.item_id', '=', 'products.id')
+                    ->where('portfolios.item_type', 'Product')->get() as $stockData
+            ) {
+                if ($stockData->sku === null) {
+                    continue;
+                }
+                $stock[$stockData->sku] = $stockData->available_quantity;
+            }
+
+            return $stock;
+        });
     }
 
     /**
      * @throws \Throwable
      */
-    public function asController(ShopifyUser $shopifyUser, ActionRequest $request): void
+    public function asController(ShopifyUser $shopifyUser, ActionRequest $request): array
     {
         if (!$shopifyUser->customer_id) {
             abort(422);
@@ -60,6 +68,6 @@ class CallbackFetchStock extends OrgAction
 
         $this->initialisation($shopifyUser->organisation, $request);
 
-        $this->handle($shopifyUser);
+        return $this->handle($shopifyUser);
     }
 }

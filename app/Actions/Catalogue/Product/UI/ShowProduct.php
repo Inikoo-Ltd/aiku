@@ -38,7 +38,6 @@ use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use function Laravel\Prompts\table;
 
 class ShowProduct extends OrgAction
 {

@@ -52,7 +52,7 @@ class CheckShopifyPortfolio
         $matches       = [];
 
 
-        if ($productExistsInShopifyError || $hasVariantAtLocationError ) {
+        if ($productExistsInShopifyError || $hasVariantAtLocationError) {
             return $portfolio;
         }
 

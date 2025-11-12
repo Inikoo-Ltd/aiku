@@ -36,7 +36,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property int $number_current_api_tokens
  * @property int $number_expired_api_tokens
- * @property-read \App\Models\SysAdmin\User|null $user
+ * @property-read \App\Models\SysAdmin\User $user
  * @method static Builder<static>|UserStats newModelQuery()
  * @method static Builder<static>|UserStats newQuery()
  * @method static Builder<static>|UserStats query()

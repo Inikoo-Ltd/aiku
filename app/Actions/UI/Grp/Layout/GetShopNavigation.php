@@ -8,7 +8,6 @@
 
 namespace App\Actions\UI\Grp\Layout;
 
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Models\Catalogue\Shop;
 use App\Models\SysAdmin\User;
 use Lorisleiva\Actions\Concerns\AsAction;

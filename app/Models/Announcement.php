@@ -17,10 +17,43 @@ use Spatie\MediaLibrary\HasMedia;
 /**
  * App\Models\Announcement
  *
+ * @property int $id
+ * @property int|null $customer_id
+ * @property string|null $code
+ * @property string $ulid
+ * @property string $name
+ * @property string|null $icon
+ * @property array<array-key, mixed> $fields
+ * @property array<array-key, mixed> $container_properties
+ * @property int|null $website_id
+ * @property int|null $unpublished_snapshot_id
+ * @property int|null $live_snapshot_id
+ * @property \Illuminate\Support\Carbon|null $ready_at
+ * @property \Illuminate\Support\Carbon|null $live_at
+ * @property \Illuminate\Support\Carbon|null $closed_at
+ * @property string|null $published_checksum
  * @property AnnouncementStateEnum $state
+ * @property bool $is_dirty
+ * @property \Illuminate\Support\Carbon|null $schedule_at
+ * @property \Illuminate\Support\Carbon|null $schedule_finish_at
  * @property AnnouncementStatusEnum $status
+ * @property array<array-key, mixed> $settings
+ * @property string|null $compiled_layout
+ * @property string|null $text
+ * @property string|null $published_message
+ * @property array<array-key, mixed>|null $published_settings
+ * @property string|null $published_fields
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property int|null $group_id
+ * @property int|null $organisation_id
+ * @property string|null $template_code
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Deployment> $deployments
+ * @property-read \App\Models\Helpers\Media|null $image
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $images
  * @property-read Snapshot|null $liveSnapshot
+ * @property-read \Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection<int, \App\Models\Helpers\Media> $media
+ * @property-read \App\Models\Helpers\Media|null $seoImage
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Snapshot> $snapshots
  * @property-read Snapshot|null $unpublishedSnapshot
  * @property-read Website|null $website

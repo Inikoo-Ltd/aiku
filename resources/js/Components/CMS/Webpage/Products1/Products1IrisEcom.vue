@@ -181,7 +181,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         const data = response.data;
 
         lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1;
-        totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+        // totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])];
@@ -474,11 +474,13 @@ watch(
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
                         <span class="font-medium">
                             {{ trans("Showing") }}
-                            <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
-                                products.length }}</span>
+                            <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                {{ products.length }}
+                            </span>
                             {{ trans("of") }}
-                            <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
-                                totalProducts }}</span>
+                            <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                {{ totalProducts }}
+                            </span>
                             {{ products.length === 1 ? trans("product") : trans("products") }}
                         </span>
                     </div>

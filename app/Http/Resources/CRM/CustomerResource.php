@@ -28,6 +28,11 @@ class CustomerResource extends JsonResource
         /** @var Customer $customer */
         $customer = $this;
 
+        // Temp fix || Need to redo later, some payment have invalid customer id
+        if (!$customer->resource) {
+            return [];
+        }
+
         $comms = $customer->comms;
 
         $subscriptions = [
@@ -81,6 +86,8 @@ class CustomerResource extends JsonResource
         return [
             'id'                  => $customer->id,
             'slug'                => $customer->slug,
+            'organisation_slug'   => $customer->organisation?->slug,
+            'shop_slug'           => $customer->shop?->slug,
             'reference'           => $customer->reference,
             'name'                => $customer->name,
             'contact_name'        => $customer->contact_name,

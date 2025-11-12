@@ -6,7 +6,6 @@ import { faCircle } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link } from '@inertiajs/vue3'
 import { trans } from 'laravel-vue-i18n'
-import { SwiperSlide } from 'swiper/vue'
 import { inject } from 'vue'
 
 const props = defineProps<{

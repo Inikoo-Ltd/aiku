@@ -170,6 +170,10 @@ class RepairMissingFixedWebBlocksInProductsWebpages
         $trendsWebBlock   = $this->getWebpageBlocksByType($webpage, 'luigi-trends-1')->first()->model_has_web_blocks_id;
         $lastSeenWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-last-seen-1')->first()->model_has_web_blocks_id;
 
+
+
+
+
         /** @var WebBlock $alternativesWebBlock */
         $alternativesWebBlock = $this->getWebpageBlocksByType($webpage, 'luigi-item-alternatives-1')->first();
         if ($alternativesWebBlock) {
@@ -183,9 +187,9 @@ class RepairMissingFixedWebBlocksInProductsWebpages
 
         $count = $webpage->webBlocks()->count();
 
-        $trendsWebBlockPosition = $count + 101;
-        $lastSeenWebBlockPosition       = $count + 102;
-        $alternativesWebBlockPosition = $count + 103;
+        $alternativesWebBlockPosition = $count + 101;
+        $trendsWebBlockPosition = $count + 102;
+        $lastSeenWebBlockPosition       = $count + 103;
 
 
         $runningPosition = 2;
