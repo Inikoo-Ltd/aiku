@@ -17,7 +17,8 @@ import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWith
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import {faSyncAlt, faHandPointer} from "@fas";
+import {faSyncAlt, faHandPointer, faBan} from "@fas";
+import { useFormatTime } from "@/Composables/useFormatTime";
 
 import {
     faBracketsCurly, faPawClaws,
@@ -348,16 +349,15 @@ const key = ulid()
                 <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
             </div>
 
-            <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')"
-                    :icon="'fas fa-plus'"/>
+            <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
 
             <div class="rounded-md" v-if="channels?.data?.length">
                 <!-- Section: Download button -->
                 <Button @click="(e) => _clone_popover?.toggle(e)" v-tooltip="trans('Open another options')"
                         :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length" class="!px-2 h-full"
-                        type="tertiary" key=""/>
+                        type="tertiary" key="" v-if="!customer_sales_channel.ban_stock_update_until" />
 
-                <Popover ref="_clone_popover">
+                <Popover ref="_clone_popover" >
                     <div class="w-64 relative">
                         <div class="text-sm mb-2">
                             {{ trans("Clone portfolio from channel:") }}
@@ -387,6 +387,19 @@ const key = ulid()
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <!-- Section: Alert if platform not connected yet -->
+    <Message v-if="customer_sales_channel.ban_stock_update_until" severity="error" class="m-4 flex items-center gap-2">
+            <div :class="'flex gap-3 items-center'">
+                <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
+                <div>
+                    {{trans("Sorry, your account is temporarily restricted until")}} 
+                    <span class="font-semibold">
+                        {{ useFormatTime(customer_sales_channel.ban_stock_update_until, { formatTime: 'MMM dd, yyyy' }) }}
+                    </span>
+                </div>
+            </div>
+    </Message>
+
+
     <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
         <div v-if="platform_data.type === 'shopify'" class="px-2 md:px-6">
             <PlatformWarningNotConnectedShopify
@@ -506,18 +519,18 @@ const key = ulid()
         </div>
         <div v-else class="overflow-x-auto">
             <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
-                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
+                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="!customer_sales_channel.ban_stock_update_until"
                 :isPlatformManual
                 :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
             <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
                 :tab="'products'" :selectedData :platform_data :platform_user_id
-                :is_platform_connected
+                :is_platform_connected :disabled="!customer_sales_channel.ban_stock_update_until"
                 :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
                 :customerSalesChannel="customer_sales_channel"
                 v-model:selectedProducts="selectedProducts" :key="key"
                 :count_product_not_synced="count_product_not_synced"/>
             <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-                :platform_user_id :is_platform_connected :progressToUploadToShopify
+                :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="!customer_sales_channel.ban_stock_update_until"
                 :customerSalesChannel="customer_sales_channel" :progressToUploadToEcom="progessbar"
                 v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
                 :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>
