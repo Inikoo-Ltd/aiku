@@ -25,7 +25,7 @@ class TagsResource extends JsonResource
             'id'    => $this->id,
             'slug'  => $this->slug,
             'name'  => $this->name,
-            'scope' => $this->scope->pretty(),
+            'scope' => $this->scope?->pretty(),
         ];
     }
 }
