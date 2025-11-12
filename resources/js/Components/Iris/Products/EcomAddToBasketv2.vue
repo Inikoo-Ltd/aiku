@@ -23,6 +23,7 @@ library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRig
 const props = defineProps<{
     product: ProductResource
     customerData : any
+    buttonStyle?: any
 }>()
 
 const customer = ref({...props.customerData})
@@ -214,6 +215,7 @@ const showWarning = () => {
                     size="lg"
                     :disabled="customer.quantity_ordered > customer.stock"
                     :loading="isLoadingSubmitQuantityProduct"
+                    :inject-style="buttonStyle"
                 />
             </div>
             
