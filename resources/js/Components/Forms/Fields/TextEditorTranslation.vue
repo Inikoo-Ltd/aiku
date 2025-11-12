@@ -259,7 +259,6 @@ onMounted(() => {
               :loading="loadingOne" />
           </div>
 
-          {{ selectedLang + key }}
           <EditorV2 v-model="langBuffers[selectedLang]" :key="selectedLang + key">
             <template #editor-content="{ editor }">
               <div
