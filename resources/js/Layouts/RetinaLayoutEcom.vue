@@ -135,8 +135,19 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 </template>
 
 <style lang="scss">
-#launcher {
-	bottom: 50px !important;
+@media (max-width: 767px) {
+	#launcher {
+		// Widget: Help chat (JIRA)
+		bottom: 50px !important;
+	}
+	#cookiescript_badge {
+		// Widget: Cookies acceptation
+		bottom: 70px !important;
+	}
+	#superchat-widget-content-root {
+		// Widget: Superchat
+		bottom: 45px !important;
+	}
 }
 </style>
 
