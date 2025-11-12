@@ -180,9 +180,12 @@ const onRemoveFromBasket = (product) => {
                     {{ trans("Your Basket (:items items)", { items: layout.iris_variables?.cart_count ?? 0 }) }}
                 </div>
                 
-                <div>
-                    <div v-if="isLoadingFetch" class="h-7 w-20 skeleton" />
-                    <div v-else>{{ locale.currencyFormat(layout.iris?.currency?.code, layout.iris_variables?.cart_amount) }}</div>
+                <div class="relative overflow-hidden">
+                    <Transition name="spin-to-down">
+                        <div :key="layout.iris_variables?.cart_amount">
+                            {{ locale.currencyFormat(layout.iris?.currency?.code, layout.iris_variables?.cart_amount) }}
+                        </div>
+                    </Transition>
                 </div>
 
                 <!-- <div class="ml-3 flex h-7 items-center">
