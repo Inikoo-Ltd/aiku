@@ -58,7 +58,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 			:data="layout.iris.header"
 			:colorThemed="irisTheme"
 			:menu="layout.iris.menu" />
-			
+
 
 		<!-- wrapper for mobile overlay + content -->
 		<div class="relative">
@@ -117,10 +117,10 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 							</span>
 						</div>
 					</div>
-					
+
 					<div
 						class="w-full">
-						<div class="pb-6 bg-white shadow-lg rounded-lg">
+						<div class="relative pb-6 bg-white shadow-lg rounded-lg">
 							<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2" />
 							<!-- Main content of the page -->
 							<slot name="default" />

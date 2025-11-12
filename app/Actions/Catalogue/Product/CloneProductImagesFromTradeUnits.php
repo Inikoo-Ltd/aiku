@@ -33,6 +33,11 @@ class CloneProductImagesFromTradeUnits implements ShouldBeUnique
 
         $tradeUnit = $product->tradeUnits->first();
 
+        if (!$tradeUnit) {
+            return;
+        }
+
+
         foreach ($tradeUnit->images as $image) {
             $images[$image->id] = [
                 'is_public'       => true,

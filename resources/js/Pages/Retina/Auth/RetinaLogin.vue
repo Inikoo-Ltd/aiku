@@ -49,8 +49,9 @@ const submit = async () => {
             }
         )
 
-        console.log('Response axios:', response.data)
+        console.log('Response Login:', response.data)
         form.reset('password')
+
 
         if (response.data) {
             window.location.href = `${response.data}`
@@ -106,6 +107,8 @@ const onCallbackGoogleLogin = async (e: GoogleLoginResponse) => {
     })
 
     console.log('Google login response:', data.data)
+
+
     if(data.status === 200) {
         if (data.data.logged_in) {
             window.location.href = await getRefRedirect()

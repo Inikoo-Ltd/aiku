@@ -57,7 +57,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             $webpage = Webpage::where('model_id', $transaction->product_id)
             ->where('model_type', class_basename(Product::class))->first();
 
-            $webpageUrl = $webpage->getCanonicalUrl();
+            $webpageUrl = $webpage?->getCanonicalUrl();
         }
 
         return [

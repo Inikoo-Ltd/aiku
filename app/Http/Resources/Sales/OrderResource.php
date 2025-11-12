@@ -21,6 +21,7 @@ class OrderResource extends JsonResource
         return [
             'id'                  => $order->id,
             'reference'           => $order->reference,
+            'shop_slug'           => $this->shop->slug ?? '',
             'slug'                => $order->slug,
             'state'               => $order->state->value,
             'state_label'         => $order->state->labels()[$order->state->value],

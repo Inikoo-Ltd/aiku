@@ -9,8 +9,10 @@
 namespace App\Actions\Helpers\Translations;
 
 use App\Actions\OrgAction;
+use App\Events\TranslateProgressEvent;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use VildanBina\LaravelAutoTranslation\TranslationWorkflowService;
@@ -23,29 +25,40 @@ class Translate extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(?string $text, Language $languageFrom, Language $languageTo): string
+    public function handle(?string $text, Language $languageFrom, Language $languageTo, $randomString = null): string
     {
-        if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
-            return $text ?? '';
-        }
+        try {
+            if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
+                return $text ?? '';
+            }
 
-        if (app()->environment('local')) {
+            if (app()->environment('local')) {
+                return $text;
+            }
+
+
+            $translationEngineService   = new TranslationEngineService();
+            $translationWorkflowService = new TranslationWorkflowService($translationEngineService);
+
+            $texts = [
+                'text_to_translate' => $text,
+            ];
+
+            $translationWorkflowService->setInMemoryTexts($texts);
+
+            $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, config('auto-translations.default_driver'));
+
+            $text = Arr::get($translatedTexts, 'text_to_translate', $text);
+
+            TranslateProgressEvent::dispatch($text, $randomString);
+
             return $text;
+
+        } catch (\Throwable $e) {
+            \Sentry::captureMessage($e->getMessage());
+
+            return '';
         }
-
-
-        $translationEngineService   = new TranslationEngineService();
-        $translationWorkflowService = new TranslationWorkflowService($translationEngineService);
-
-        $texts = [
-            'text_to_translate' => $text,
-        ];
-
-        $translationWorkflowService->setInMemoryTexts($texts);
-
-        $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, config('auto-translations.default_driver'));
-
-        return Arr::get($translatedTexts, 'text_to_translate', $text);
     }
 
     public function getCommandSignature(): string
@@ -66,12 +79,18 @@ class Translate extends OrgAction
      */
     public function asController(string $languageFrom, string $languageTo, ActionRequest $request): string
     {
+
         $this->initialisationFromGroup(group(), $request);
         $languageFrom = Language::where('code', $languageFrom)->first();
         $languageTo   = Language::where('code', $languageTo)->first();
         $text         = Arr::get($this->validatedData, 'text');
 
-        return $this->handle($text, $languageFrom, $languageTo);
+        $randomString = Str::random(10);
+        $this->handle($text, $languageFrom, $languageTo, $randomString);
+
+        Translate::dispatch($text, $languageFrom, $languageTo);
+
+        return $randomString;
     }
 
     /**

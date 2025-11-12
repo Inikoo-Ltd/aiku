@@ -161,6 +161,9 @@ class StoreEbayProduct extends RetinaAction
                     ]
                 ],
                 'condition' => 'NEW',
+                'location' => [
+                    'country' => 'GB'
+                ],
                 'product' => [
                     'title' => $portfolio->customer_product_name,
                     'description' => $descriptions,

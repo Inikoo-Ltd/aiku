@@ -132,9 +132,9 @@ class StoreWebpage extends OrgAction
             if ($this->strict) {
                 if ($model instanceof Product) {
                     $this->createWebBlock($webpage, 'product-1');
+                    $this->createWebBlock($webpage, 'luigi-item-alternatives-1');
                     $this->createWebBlock($webpage, 'luigi-trends-1');
                     $this->createWebBlock($webpage, 'luigi-last-seen-1');
-                    $this->createWebBlock($webpage, 'luigi-item-alternatives-1');
                 } elseif ($model instanceof Collection) {
                     $this->createWebBlock($webpage, 'families-1');
                     $this->createWebBlock($webpage, 'products-1');

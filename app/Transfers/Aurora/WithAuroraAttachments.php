@@ -65,6 +65,7 @@ trait WithAuroraAttachments
 
         return [
             'temporaryDirectory' => $temporaryDirectory,
+            'is_public'          => $auroraAttachmentData->{'Attachment Public'} == 'Yes',
             'modelData'          => [
                 'path'            => $temporaryDirectory->path($temporalName),
                 'originalName'    => $auroraAttachmentData->{'Attachment File Original Name'},

@@ -66,7 +66,7 @@ jobs:
         uses: newrelic/deployment-marker-action@v2.3.0
         with:
           apiKey: ${{ secrets.NEW_RELIC_API_KEY }}
-          guid: aiku
+          guid: ${{ secrets.NEW_RELIC_DEPLOYMENT_ENTITY_GUID }}
           version: ${{ steps.semver.outputs.next }}
           user: "${{ github.actor }}"
       - name: Create Sentry release
@@ -76,5 +76,6 @@ jobs:
           SENTRY_ORG: ${{ secrets.SENTRY_ORG }}
           SENTRY_PROJECT: ${{ secrets.SENTRY_PROJECTS }}
         with:
+          ignore_missing: true
           environment: production
           release: ${{ steps.semver.outputs.next }}

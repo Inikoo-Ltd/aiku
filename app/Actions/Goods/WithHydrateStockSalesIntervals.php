@@ -84,7 +84,7 @@ trait WithHydrateStockSalesIntervals
 
     public function perSalesType(Stock|StockFamily $stockable, array $stats, DeliveryNoteItemSalesTypeEnum $salesType, ?array $intervals, ?array $doPreviousPeriods): array
     {
-        $queryBase = DeliveryNoteItem::where('sales_type', DeliveryNoteItemSalesTypeEnum::B2B)
+        $queryBase = DeliveryNoteItem::where('sales_type', $salesType)
             ->where($stockable instanceof Stock ? 'stock_id' : 'stock_family_id', $stockable->id)
             ->selectRaw($this->rawSqlGrpRevenue);
 
@@ -135,7 +135,7 @@ trait WithHydrateStockSalesIntervals
 
         foreach ($organisations as $organisationID) {
             $queryBase = DeliveryNoteItem::where('organisation_id', $organisationID)
-                ->where('sales_type', DeliveryNoteItemSalesTypeEnum::B2B)
+                ->where('sales_type', $salesType)
                 ->where($stockable instanceof Stock ? 'stock_id' : 'stock_family_id', $stockable->id)
                 ->selectRaw($this->rawSqlGrpRevenue);
 

@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Ganes <gustiganes@gmail.com>
  * Created on: 23-05-2025, Bali, Indonesia
@@ -25,6 +26,13 @@ class DetachTagFromModel extends OrgAction
     }
 
     public function inCustomer(Customer $customer, Tag $tag, ActionRequest $request): void
+    {
+        $this->initialisation($customer->organisation, $request);
+
+        $this->handle($customer, $tag);
+    }
+
+    public function inRetina(Customer $customer, Tag $tag, ActionRequest $request): void
     {
         $this->initialisation($customer->organisation, $request);
 

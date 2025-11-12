@@ -12,6 +12,7 @@ import { fileURLToPath, URL } from "node:url";
 import { codecovVitePlugin } from "@codecov/vite-plugin";
 import path from "node:path";
 import tailwindcss from 'tailwindcss';
+import { analyzer } from 'vite-bundle-analyzer'
 
 export default defineConfig(
   {
@@ -47,7 +48,8 @@ export default defineConfig(
                             undefined,
                           bundleName          : "iris",
                           uploadToken         : process.env.CODECOV_TOKEN
-                        })
+                        })//,
+     // analyzer()
     ],
     ssr    : {
       noExternal: ["@inertiajs/server", "vue-countup-v3", "floating-vue", "tailwindcss", "@fortawesome/*"]

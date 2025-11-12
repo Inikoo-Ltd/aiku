@@ -88,3 +88,7 @@ Broadcast::channel("app.general", function () {
 Broadcast::channel("grp.dn.{deliveryNoteId}", function () {
     return true;
 });
+
+Broadcast::channel("translate.{randomString}.channel", function () {
+    return true;
+});

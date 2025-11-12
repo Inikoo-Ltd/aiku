@@ -111,7 +111,9 @@ class IndexMasterSubDepartments extends GrpAction
                     ],
                 );
 
-            $table->column(key: 'code', label: __('code'), sortable: true, searchable: true)
+            $table
+                ->column(key: 'status_icon', label: '', canBeHidden: false, sortable: false, searchable: true, type: 'icon')
+                ->column(key: 'code', label: __('code'), sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), sortable: true, searchable: true)
                 ->column(key: 'number_families', label: __('M. Families'), sortable: true)
                 ->column(key: 'number_products', label: __('M. Products'), sortable: true);

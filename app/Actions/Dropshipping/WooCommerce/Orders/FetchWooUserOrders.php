@@ -17,7 +17,6 @@ use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
-use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
@@ -62,7 +61,7 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
                 continue;
             }
 
-            if (! Arr::get($wooOrder, 'shipping.country')) {
+            if (!Arr::get($wooOrder, 'shipping.country')) {
                 continue;
             }
 
@@ -96,10 +95,4 @@ class FetchWooUserOrders extends OrgAction implements ShouldBeUnique
         }
     }
 
-    public function asController(WooCommerceUser $wooCommerceUser, ActionRequest $request): void
-    {
-        $this->initialisation($wooCommerceUser->organisation, $request);
-
-        $this->handle($wooCommerceUser);
-    }
 }

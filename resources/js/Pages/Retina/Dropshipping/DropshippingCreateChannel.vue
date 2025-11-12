@@ -34,6 +34,7 @@ const props = defineProps<{
     shopify_url: string
     unlinkRoute: routeType
     fetchCustomerRoute: routeType
+    shop: object
     tiktokAuth: {
         url: string
         isAuthenticated: boolean
@@ -380,6 +381,7 @@ const isModalEbayDuplicate = ref(false)
                 <div class="w-full flex justify-end">
 
                     <Button
+                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         xtype="primary"
                         :type="total_channels?.ebay ? 'tertiary' : 'primary'"
@@ -387,7 +389,7 @@ const isModalEbayDuplicate = ref(false)
                         :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
                         @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
                     />
-<!--                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
+                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
 
                 </div>
             </div>

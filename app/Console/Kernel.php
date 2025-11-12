@@ -133,6 +133,12 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'UpdateWooStockInventories',
             );
 
+        $schedule->command('ebay:update-inventory')
+            ->everyTwoHours()
+            ->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'UpdateInventoryInEbayPortfolio',
+            );
+
         $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateInventoryInShopifyPortfolio',
         );

@@ -10,18 +10,24 @@ import axios from "axios"
 // Method: to get the redirect url
 export const getRefRedirect = async () => {
     try {
-        console.log('-Re')
+        console.log('-Re:')
+
         const response = await axios.get(
-            route('retina.ref_redirect', {
-                ref: route()?.params?.['ref']
-            })
+          `/json/canonical-redirect?ref=${route()?.params?.['ref']}`,
         )
 
-        if (response.data?.length < 1) {
-            return route('retina.dashboard.show')
+
+
+        console.log('-Response-redirect', response)
+
+
+        if (response.data?.redirect_url) {
+            return response.data?.redirect_url  // "https://ecom.test/gold_reward"
         }
 
-        return response.data  // "https://ecom.test/gold_reward"
+        return route('retina.dashboard.show')
+
+
     } catch (error: any) {
         return route('retina.dashboard.show')
     }

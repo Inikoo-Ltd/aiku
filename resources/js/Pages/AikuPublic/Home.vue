@@ -1,11 +1,8 @@
 <script setup>
-// import { ref } from 'vue'
-// import { Disclosure, DisclosureButton, DisclosurePanel } from '@headlessui/vue'
-// import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+
 import { faCheck, faPlus, faMinus } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { Head } from '@inertiajs/vue3'
-import Button from '@/Components/Elements/Buttons/Button.vue'
 import { faGithub } from '@fortawesome/free-brands-svg-icons'
 library.add(faCheck, faPlus, faMinus, faGithub)
 
@@ -36,44 +33,7 @@ const features = [
     },
 ];
 
-const pricing = [
-    {
-        name: 'Basic',
-        id: 'tier-basic',
-        href: '#',
-        priceMonthly: '$99',
-        description: "Ideal for small businesses or startups with moderate storage needs.",
-        features: ['100 sq. ft. storage space', '24/7 access', 'Basic security features'],
-        featured: false,
-    },
-    {
-        name: 'Pro',
-        id: 'tier-pro',
-        href: '#',
-        priceMonthly: '$249',
-        description: 'Perfect for growing businesses with increased storage demands.',
-        features: [
-            '250 sq. ft. storage space',
-            'Climate-controlled environment',
-            'Advanced security system',
-            'Inventory management software',
-        ],
-        featured: true,
-    },
-]
 
-const faqs = [
-    {
-        question: "What sizes of storage spaces do you offer?",
-        answer:
-            "We offer a range of storage space sizes to accommodate various needs, from small businesses to large-scale operations. Our options include spaces starting from 100 square feet up to customizable areas exceeding 500 square feet.",
-    },
-    {
-        question: "How secure are your warehouse facilities?",
-        answer:
-            "Security is a top priority for us. Our warehouse facilities are equipped with state-of-the-art security systems, including surveillance cameras, access control measures, and on-site personnel. Additionally, we implement customized security protocols to ensure the safety and integrity of your stored items.",
-    },
-]
 
 </script>
 
@@ -91,14 +51,6 @@ const faqs = [
             </div>
             <div class="mx-auto max-w-7xl px-6 lg:px-8">
                 <div class="mx-auto max-w-2xl py-32 sm:py-44">
-                    <!-- <div class="hidden sm:mb-8 sm:flex sm:justify-center">
-                        <div
-                            class="relative rounded-full px-3 py-1 text-sm leading-6 text-gray-400 ring-1 ring-white/10 hover:ring-white/20">
-                            Learn more about our Aiku. <a href="#" class="font-semibold text-white"><span
-                                    class="absolute inset-0" aria-hidden="true" />Read more <span
-                                    aria-hidden="true">&rarr;</span></a>
-                        </div>
-                    </div> -->
                     <div class="text-center">
                         <h1 class="text-4xl font-medium tracking-tight text-white sm:text-6xl">
                             <span class="font-black">Take Control of Your Warehouse</span>
@@ -132,7 +84,6 @@ const faqs = [
                     <p class="mt-6 text-lg leading-8 text-gray-600">
                         Simplify your business processes effortlessly. Our comprehensive ERP software covers everything from inventory management to logistics, guaranteeing smooth operations for your enterprise.
                     </p>
-
                 </div>
             </div>
             <div class="relative overflow-hidden pt-16">
@@ -158,13 +109,6 @@ const faqs = [
             </div>
             <div
                 class="mx-auto flex max-w-7xl flex-col items-center gap-x-8 gap-y-10 px-6 sm:gap-y-8 lg:px-8 xl:flex-row xl:items-stretch">
-                <!-- <div class="-mt-8 w-full max-w-2xl xl:-mb-8 xl:w-96 xl:flex-none">
-                    <div class="relative aspect-[2/1] h-full md:-mx-8 xl:mx-0 xl:aspect-auto">
-                        <img class="absolute inset-0 h-full w-full rounded-2xl bg-gray-800 object-cover shadow-2xl"
-                            src="https://images.unsplash.com/photo-1517841905240-472988babdf9?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=2102&q=80"
-                            alt="" />
-                    </div>
-                </div> -->
                 <div class="w-full max-w-2xl xl:max-w-none xl:flex-auto xl:px-16 xl:py-24">
                     <figure class="relative isolate pt-6 sm:pt-12">
                         <svg viewBox="0 0 162 128" fill="none" aria-hidden="true"
@@ -182,9 +126,7 @@ const faqs = [
                             </p>
                         </blockquote>
                         <figcaption class="mt-8 text-base">
-                            <!-- <div class="font-semibold text-white">Judith Black</div>
-                            <div class="mt-1 text-gray-400">CEO of Tuple</div> -->
-                            <div class="font-semibold text-white">- Frimawan Laksa</div>
+                            <div class="font-semibold text-white">-</div>
                         </figcaption>
                     </figure>
                 </div>
@@ -207,70 +149,6 @@ const faqs = [
             </dl>
         </div>
 
-        <!-- Pricing section -->
-        <!-- <div class="relative isolate mt-32 bg-white px-6 sm:mt-56 lg:px-8">
-            <div class="absolute inset-x-0 -top-3 -z-10 transform-gpu overflow-hidden px-36 blur-3xl"
-                aria-hidden="true">
-                <div class="mx-auto aspect-[1155/678] w-[72.1875rem] bg-gradient-to-tr from-[#ff80b5] to-[#9089fc] opacity-30"
-                    style="clip-path: polygon(74.1% 44.1%, 100% 61.6%, 97.5% 26.9%, 85.5% 0.1%, 80.7% 2%, 72.5% 32.5%, 60.2% 62.4%, 52.4% 68.1%, 47.5% 58.3%, 45.2% 34.5%, 27.5% 76.7%, 0.1% 64.9%, 17.9% 100%, 27.6% 76.8%, 76.1% 97.7%, 74.1% 44.1%)" />
-            </div>
-            <div class="mx-auto max-w-2xl text-center lg:max-w-4xl">
-                <h2 class="text-base font-semibold leading-7 text-indigo-600">Pricing</h2>
-                <p class="mt-2 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">The right price for you,
-                    whoever you are</p>
-            </div>
-            <p class="mx-auto mt-6 max-w-2xl text-center text-lg leading-8 text-gray-600">Qui iusto aut est earum eos
-                quae. Eligendi est at nam aliquid ad quo reprehenderit in aliquid fugiat dolorum voluptatibus.</p>
-            <div
-                class="mx-auto mt-16 grid max-w-lg grid-cols-1 items-center gap-y-6 sm:mt-20 sm:gap-y-0 lg:max-w-4xl lg:grid-cols-2">
-                <div v-for="(tier, tierIdx) in pricing" :key="tier.id"
-                    :class="[tier.featured ? 'relative bg-gray-900 shadow-2xl' : 'bg-white/60 sm:mx-8 lg:mx-0', tier.featured ? '' : tierIdx === 0 ? 'rounded-t-3xl sm:rounded-b-none lg:rounded-tr-none lg:rounded-bl-3xl' : 'sm:rounded-t-none lg:rounded-tr-3xl lg:rounded-bl-none', 'rounded-3xl p-8 ring-1 ring-gray-900/10 sm:p-10']">
-                    <h3 :id="tier.id"
-                        :class="[tier.featured ? 'text-indigo-400' : 'text-indigo-600', 'text-base font-semibold leading-7']">
-                        {{ tier.name }}</h3>
-                    <p class="mt-4 flex items-baseline gap-x-2">
-                        <span
-                            :class="[tier.featured ? 'text-white' : 'text-gray-900', 'text-5xl font-bold tracking-tight']">{{
-                                tier.priceMonthly }}</span>
-                        <span :class="[tier.featured ? 'text-gray-400' : 'text-gray-500', 'text-base']">/month</span>
-                    </p>
-                    <p :class="[tier.featured ? 'text-gray-300' : 'text-gray-600', 'mt-6 text-base leading-7']">{{
-                        tier.description }}</p>
-                    <ul role="list"
-                        :class="[tier.featured ? 'text-gray-300' : 'text-gray-600', 'mt-8 space-y-3 text-sm leading-6 sm:mt-10']">
-                        <li v-for="feature in tier.features" :key="feature" class="flex gap-x-3">
-                            <FontAwesomeIcon icon='fal fa-check' class='h-6 aspect-square' :class="[tier.featured ? 'text-indigo-400' : 'text-indigo-600']" fixed-width aria-hidden='true' />
-                            {{ feature }}
-                        </li>
-                    </ul>
-                    <a :href="tier.href" :aria-describedby="tier.id"
-                        :class="[tier.featured ? 'bg-indigo-500 text-white shadow-sm hover:bg-indigo-400 focus-visible:outline-indigo-500' : 'text-indigo-600 ring-1 ring-inset ring-indigo-200 hover:ring-indigo-300 focus-visible:outline-indigo-600', 'mt-8 block rounded-md py-2.5 px-3.5 text-center text-sm font-semibold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 sm:mt-10']">Get
-                        started today</a>
-                </div>
-            </div>
-        </div> -->
 
-        <!-- FAQ section -->
-        <!-- <div class="mx-auto mt-32 max-w-7xl px-6 sm:mt-56 lg:px-8 pb-8">
-            <div class="mx-auto max-w-4xl divide-y divide-gray-900/10">
-                <h2 class="text-2xl font-bold leading-10 tracking-tight text-gray-900">Frequently asked questions</h2>
-                <dl class="mt-10 space-y-6 divide-y divide-gray-900/10">
-                    <Disclosure as="div" v-for="faq in faqs" :key="faq.question" class="pt-6" v-slot="{ open }">
-                        <dt>
-                            <DisclosureButton class="flex w-full items-start justify-between text-left text-gray-900">
-                                <span class="text-base font-semibold leading-7">{{ faq.question }}</span>
-                                <span class="ml-6 flex h-7 items-center">
-                                    <FontAwesomeIcon v-if="!open" icon='fal fa-plus' class='h-6 aspect-square' fixed-width aria-hidden='true' />
-                                    <FontAwesomeIcon v-else icon='fal fa-minus' class='h-6 aspect-square' fixed-width aria-hidden='true' />
-                                </span>
-                            </DisclosureButton>
-                        </dt>
-                        <DisclosurePanel as="dd" class="mt-2 pr-12">
-                            <p class="text-base leading-7 text-gray-600">{{ faq.answer }}</p>
-                        </DisclosurePanel>
-                    </Disclosure>
-                </dl>
-            </div>
-        </div> -->
     </div>
 </template>
