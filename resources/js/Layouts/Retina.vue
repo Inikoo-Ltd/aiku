@@ -10,7 +10,7 @@ import { initialiseRetinaApp } from "@/Composables/initialiseRetinaApp"
 import { useLayoutStore } from "@/Stores/retinaLayout"
 import Notification from '@/Components/Utils/Notification.vue'
 import { faStoreAltSlash, faNarwhal, faCircle as falCircle, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faEnvelope, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faCodeBranch, faShoppingBasket, faCheck, faShoppingCart, faSignOutAlt, faTimes, faTimesCircle, faExternalLink, faSeedling, faSkull } from '@fal'
-import { onBeforeMount, onMounted, provide, ref, watch } from 'vue'
+import { onBeforeMount, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
 import RetinaLayoutFulfilment from "./RetinaLayoutFulfilment.vue"
 import RetinaLayoutDs from "./RetinaLayoutDs.vue"
@@ -203,6 +203,23 @@ watch(
   },
   { immediate: true }
 )
+
+// Section: Screen Type
+const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
+const checkScreenType = () => {
+    const width = window.innerWidth
+    if (width < 640) screenType.value = 'mobile'
+    else if (width >= 640 && width < 1024) screenType.value = 'tablet'
+    else screenType.value = 'desktop'
+}
+provide('screenType', screenType)
+onMounted(() => {
+    checkScreenType()
+    window.addEventListener('resize', checkScreenType)
+})
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', checkScreenType)
+})
 
 
 const getTextColorDependsOnStatus = (status: string) => {
