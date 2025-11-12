@@ -11,6 +11,7 @@ namespace App\Actions\Helpers\Translations;
 use App\Actions\OrgAction;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use VildanBina\LaravelAutoTranslation\TranslationWorkflowService;
@@ -23,7 +24,7 @@ class Translate extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(?string $text, Language $languageFrom, Language $languageTo): string
+    public function handle(?string $text, Language $languageFrom, Language $languageTo, $randomString=null): string
     {
         try {
             if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
@@ -73,12 +74,18 @@ class Translate extends OrgAction
      */
     public function asController(string $languageFrom, string $languageTo, ActionRequest $request): string
     {
+
         $this->initialisationFromGroup(group(), $request);
         $languageFrom = Language::where('code', $languageFrom)->first();
         $languageTo   = Language::where('code', $languageTo)->first();
         $text         = Arr::get($this->validatedData, 'text');
 
-        return $this->handle($text, $languageFrom, $languageTo);
+        $randomString=Str::random(10);
+        $this->handle($text, $languageFrom, $languageTo,$randomString);
+
+        Translate::dispatch($text, $languageFrom, $languageTo);
+
+        return $randomString;
     }
 
     /**
