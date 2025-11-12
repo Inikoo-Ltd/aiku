@@ -503,11 +503,13 @@ watch(
                         </div>
                     </template>
 
+                    
+
                     <template v-else-if="products.length">
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border relative rounded" :class="product.stock ? '' : 'bg-red-100'">
-                            <ProductRenderEcom :product="product" :key="index"
+                            <ProductRenderEcom :product="product" :key="index" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
                                 :hasInBasket="productInBasket.list[product.id]" :bestSeller="fieldValue.bestseller"/>
                         </div>
                     </template>

@@ -387,14 +387,14 @@ const validImages = computed(() => {
                     <div v-if="layout?.iris?.is_logged_in && customerData" class="w-full">
                         <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
                         <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product"
-                            :customerData="customerData" :key="keyCustomer" />
+                            :customerData="customerData" :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"/>
 
                         <div v-else>
                             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
                         </div>
                     </div>
 
-                    <LinkIris v-else :href="urlLoginWithRedirect()"
+                    <LinkIris v-else :href="urlLoginWithRedirect()" :style="getStyles(fieldValue?.button?.properties, screenType)"
                         class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
@@ -473,14 +473,14 @@ const validImages = computed(() => {
             <!-- <ButtonAddToBasket :product="fieldValue.product" /> -->
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
                 <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
-                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
+                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product"  :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                 <div v-else>
                     <Button :label="trans('Out of stock')" type="tertiary" disabled full />
                 </div>
             </div>
 
-            <LinkIris v-else :href="urlLoginWithRedirect()"
+            <LinkIris v-else :href="urlLoginWithRedirect()" :style="getStyles(fieldValue?.button?.properties, screenType)"
                 class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                 {{ trans("Login or Register for Wholesale Prices") }}
             </LinkIris>
