@@ -55,7 +55,7 @@ class Translate extends OrgAction
             return $text;
 
         } catch (\Throwable $e) {
-            \Sentry::captureMessage($e->getMessage());
+            Sentry::captureMessage($e->getMessage());
 
             return '';
         }
