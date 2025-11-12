@@ -23,9 +23,14 @@ trait WithStoreOffer
         data_set($modelData, 'shop_id', $parent->shop_id);
 
         $status = false;
-        if (Arr::get($modelData, 'state') == $parent instanceof Offer ? OfferStateEnum::ACTIVE : OfferCampaignStateEnum::ACTIVE) {
+        if ($parent instanceof Offer) {
+            if (Arr::get($modelData, 'state') == OfferStateEnum::ACTIVE) {
+                $status = true;
+            }
+        } elseif (Arr::get($modelData, 'state') == OfferCampaignStateEnum::ACTIVE) {
             $status = true;
         }
+
 
         data_set($modelData, 'status', $status);
 

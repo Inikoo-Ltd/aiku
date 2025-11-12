@@ -11,6 +11,7 @@ namespace App\Actions\Discounts\OfferAllowance;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreOffer;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferAllowance;
@@ -49,6 +50,7 @@ class StoreOfferAllowance extends OrgAction
             'start_at'      => ['sometimes', 'date'],
             'end_at'        => ['sometimes', 'nullable', 'date'],
             'trigger_scope' => ['required', 'max:250', 'string'],
+            'duration'     => ['sometimes', OfferDurationEnum::class],
 
         ];
         if (!$this->strict) {

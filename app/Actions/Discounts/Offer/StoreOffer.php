@@ -17,14 +17,10 @@ use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateOffers;
 use App\Actions\SysAdmin\Organisation\Hydrators\OrganisationHydrateOffers;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreOffer;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\Offer\OfferStateEnum;
-use App\Models\Catalogue\Product;
-use App\Models\Catalogue\ProductCategory;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use App\Models\Discounts\Offer;
 use App\Models\Discounts\OfferCampaign;
-use App\Models\Helpers\Query;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
@@ -38,16 +34,19 @@ class StoreOffer extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(OfferCampaign $offerCampaign, null|Shop|Product|ProductCategory|Customer|Query $trigger, array $modelData): Offer
+    public function handle(OfferCampaign $offerCampaign, array $modelData): Offer
     {
+
 
         $modelData = $this->prepareOfferData($offerCampaign, $modelData);
         $allowances = Arr::pull($modelData, 'allowances', []);
         $offer = DB::transaction(function () use ($offerCampaign, $modelData, $allowances) {
+
             /** @var Offer $offer */
             $offer = $offerCampaign->offers()->create($modelData);
             $offer->stats()->create();
             foreach ($allowances as $allowanceData) {
+                data_set($allowanceData, 'duration', $offer->duration);
                 StoreOfferAllowance::run($offer, $allowanceData);
             }
 
@@ -86,6 +85,7 @@ class StoreOffer extends OrgAction
             'type'         => ['required', 'string'],
             'trigger_type' => ['sometimes', Rule::in(['Order'])],
             'allowances'   => ['sometimes', 'nullable', 'array'],
+            'duration'     => ['sometimes', OfferDurationEnum::class],
         ];
         if (!$this->strict) {
             $rules['start_at']  = ['sometimes', 'nullable', 'date'];
@@ -104,7 +104,7 @@ class StoreOffer extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(OfferCampaign $offerCampaign, null|Shop|Product|ProductCategory|Customer|Query $trigger, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Offer
+    public function action(OfferCampaign $offerCampaign, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): Offer
     {
         if (!$audit) {
             Offer::disableAuditing();
@@ -115,6 +115,6 @@ class StoreOffer extends OrgAction
 
         $this->initialisationFromShop($offerCampaign->shop, $modelData);
 
-        return $this->handle($offerCampaign, $trigger, $this->validatedData);
+        return $this->handle($offerCampaign, $this->validatedData);
     }
 }

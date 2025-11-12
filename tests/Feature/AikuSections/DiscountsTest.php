@@ -161,7 +161,7 @@ test('UI show offer campaigns', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn(AssertableInertia $page) => $page
+                fn (AssertableInertia $page) => $page
                     ->where('title', $offerCampaign->name)
                     ->etc()
             )
