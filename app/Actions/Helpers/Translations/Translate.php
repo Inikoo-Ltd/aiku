@@ -34,9 +34,9 @@ class Translate extends OrgAction
                 return $text ?? '';
             }
 
-            /* if (app()->environment('local')) {
+            if (app()->environment('local')) {
                 return $text;
-            } */
+            } 
 
 
             $translationEngineService   = new TranslationEngineService();
