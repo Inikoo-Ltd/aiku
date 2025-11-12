@@ -519,18 +519,18 @@ const key = ulid()
         </div>
         <div v-else class="overflow-x-auto">
             <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
-                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="!customer_sales_channel.ban_stock_update_until"
+                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="customer_sales_channel.ban_stock_update_until"
                 :isPlatformManual
                 :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
             <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
                 :tab="'products'" :selectedData :platform_data :platform_user_id
-                :is_platform_connected :disabled="!customer_sales_channel.ban_stock_update_until"
+                :is_platform_connected :disabled="customer_sales_channel.ban_stock_update_until"
                 :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
                 :customerSalesChannel="customer_sales_channel"
                 v-model:selectedProducts="selectedProducts" :key="key"
                 :count_product_not_synced="count_product_not_synced"/>
             <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-                :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="!customer_sales_channel.ban_stock_update_until"
+                :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="customer_sales_channel.ban_stock_update_until"
                 :customerSalesChannel="customer_sales_channel" :progressToUploadToEcom="progessbar"
                 v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
                 :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>

@@ -430,6 +430,7 @@ const submitErrorProduct = (sel) => {
 </script>
 
 <template>
+    {{ disabled }}
         <Message v-if="errorBluk.length > 0 && progressToUploadToEcom.total == 0" severity="error"
              class="relative m-4 pr-10">
         <!-- Close Button -->
@@ -611,8 +612,8 @@ const submitErrorProduct = (sel) => {
                             </div>
                         </div>
 
-                        
-                        <ButtonWithLink v-if="item.platform_possible_matches?.number_matches"
+
+                        <ButtonWithLink v-if="item.platform_possible_matches?.number_matches && !disabled"
                                         v-tooltip="trans('Match to existing :platform product', { platform: platform_data?.name || 'Platform'})" :routeTarget="{
                                 method: 'post',
                                 name: props.routes.single_match.name,
@@ -627,7 +628,8 @@ const submitErrorProduct = (sel) => {
 
                     </div>
 
-                    <Button v-if="item.platform_possible_matches?.number_matches"
+                    <div v-if="!disabled">
+                          <Button v-if="item.platform_possible_matches?.number_matches"
                             @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
                             :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs"
                             type="tertiary"/>
@@ -635,6 +637,9 @@ const submitErrorProduct = (sel) => {
                             :label="trans('Match it with an existing product in your shop')" :capitalize="false"
                             size="xxs"
                             type="tertiary"/>
+
+                    </div>
+                  
                 </template>
 
                 <template v-else>
@@ -653,7 +658,7 @@ const submitErrorProduct = (sel) => {
                     </template>
 
 
-                    <Button v-if="disabled" class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
+                    <Button v-if="!disabled" class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
                             :label="trans('Connect with other product')" :capitalize="false" :icon="faRecycle"
                             size="xxs"
                             type="tertiary"/>
@@ -764,7 +769,7 @@ const submitErrorProduct = (sel) => {
         </template>
 
         <!-- Column: Actions 3 -->
-        <template #cell(delete)="{ item }"  v-if=disabled>
+        <template #cell(delete)="{ item }"  v-if=!disabled>
             <ButtonWithLink v-tooltip="trans('Unselect product. This will not remove the product from :platform', {platform: props.platform_data.name})" type="negative" icon="fal fa-skull"
                             :routeTarget="item.update_portfolio" :body="{
 						'status': false,
