@@ -109,7 +109,11 @@ test('update offer', function ($offer) {
 })->depends('create offer');
 
 test('create offer allowance', function (Offer $offer) {
-    $offerAllowance = StoreOfferAllowance::make()->action($offer, $offer->shop, OfferAllowance::factory()->definition());
+    $allowanceData = OfferAllowance::factory()->definition();
+    data_set($allowanceData, 'trigger_type', 'Shop');
+    data_set($allowanceData, 'trigger_id', $offer->shop->id);
+
+    $offerAllowance = StoreOfferAllowance::make()->action($offer, $allowanceData);
     $this->assertModelExists($offerAllowance);
 
     return $offerAllowance;
@@ -157,7 +161,7 @@ test('UI show offer campaigns', function () {
             ->has('title')
             ->has(
                 'pageHead',
-                fn (AssertableInertia $page) => $page
+                fn(AssertableInertia $page) => $page
                     ->where('title', $offerCampaign->name)
                     ->etc()
             )

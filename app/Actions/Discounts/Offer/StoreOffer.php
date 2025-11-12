@@ -41,14 +41,13 @@ class StoreOffer extends OrgAction
     public function handle(OfferCampaign $offerCampaign, null|Shop|Product|ProductCategory|Customer|Query $trigger, array $modelData): Offer
     {
 
-        $modelData = $this->prepareOfferData($offerCampaign, $trigger, $modelData);
+        $modelData = $this->prepareOfferData($offerCampaign, $modelData);
         $allowances = Arr::pull($modelData, 'allowances', []);
         $offer = DB::transaction(function () use ($offerCampaign, $modelData, $allowances) {
             /** @var Offer $offer */
             $offer = $offerCampaign->offers()->create($modelData);
             $offer->stats()->create();
             foreach ($allowances as $allowanceData) {
-                data_set($allowanceData, 'code', $offer->id);
                 StoreOfferAllowance::run($offer, $allowanceData);
             }
 

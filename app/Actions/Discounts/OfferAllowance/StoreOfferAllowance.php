@@ -26,9 +26,10 @@ class StoreOfferAllowance extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function handle(Offer $offer, $trigger, array $modelData): OfferAllowance
+    public function handle(Offer $offer, array $modelData): OfferAllowance
     {
-        $modelData = $this->prepareOfferData($offer, $trigger, $modelData);
+
+        $modelData = $this->prepareOfferData($offer, $modelData);
         data_set($modelData, 'offer_campaign_id', $offer->offer_campaign_id);
 
 
@@ -66,7 +67,7 @@ class StoreOfferAllowance extends OrgAction
     /**
      * @throws \Throwable
      */
-    public function action(Offer $offer, $trigger, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): OfferAllowance
+    public function action(Offer $offer, array $modelData, int $hydratorsDelay = 0, bool $strict = true, $audit = true): OfferAllowance
     {
         if (!$audit) {
             OfferAllowance::disableAuditing();
@@ -77,6 +78,6 @@ class StoreOfferAllowance extends OrgAction
 
         $this->initialisationFromShop($offer->shop, $modelData);
 
-        return $this->handle($offer, $trigger, $this->validatedData);
+        return $this->handle($offer, $this->validatedData);
     }
 }

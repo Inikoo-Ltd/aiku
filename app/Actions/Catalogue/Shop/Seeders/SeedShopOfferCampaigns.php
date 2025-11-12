@@ -69,7 +69,6 @@ class SeedShopOfferCampaigns extends GrpAction
 
                 StoreOfferAllowance::make()->action(
                     $discretionaryOffer,
-                    null,
                     [
                         'code'             => 'di-'.$shop->slug,
                         'state'            => OfferAllowanceStateEnum::ACTIVE,
