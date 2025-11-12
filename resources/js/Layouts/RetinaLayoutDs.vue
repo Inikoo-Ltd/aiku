@@ -103,14 +103,16 @@ const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('de
 
 				<!-- RetinaLayoutDS -->
 				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
-					<div class="flex flex-col md:flex-row md:justify-between md:items-end md:absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
-						<BreadcrumbsIris
-							class=""
-							:breadcrumbs="usePage().props.breadcrumbs ?? []"
-							:navigation="usePage().props.navigation ?? []"
-							:layout="layout"
-							style="max-width: calc(1280px - 200px)"
-						/>
+					<div class="z-[1] flex flex-col md:flex-row md:justify-between md:items-end md:absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
+						<div>
+							<BreadcrumbsIris
+								class=""
+								:breadcrumbs="usePage().props.breadcrumbs ?? []"
+								:navigation="usePage().props.navigation ?? []"
+								:layout="layout"
+								style="max-width: calc(1280px - 200px)"
+							/>
+						</div>
 
 						<Link
 							v-if="layout.iris?.is_logged_in"
