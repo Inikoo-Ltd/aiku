@@ -145,12 +145,13 @@ const isLoadingDetach = ref<string[]>([])
 
                 <template #default="{ isOpenModal, changeModel }">
                     <Button
-                        v-tooltip="trans('Delete master collection')"
-                        @click="() => changeModel()"
-                        type="negative"
+                        v-tooltip="item.has_active_webpage ? trans('Cannot delete: Active webpage exists') : trans('Delete master collection')"
+                        @click="!item.has_active_webpage && changeModel()"
+                        :type="item.has_active_webpage ? 'disabled' : 'negative'"
                         icon="fal fa-trash"
                         size="s"
                         :key="1"
+                        :class="{'opacity-50 cursor-not-allowed': item.has_active_webpage}"
                     />
                 </template>
             </ModalConfirmationDelete>

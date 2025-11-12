@@ -67,6 +67,7 @@ class MasterCollectionsResource extends JsonResource
                     'masterCollection' => $this->id
                 ]
             ],
+            'has_active_webpage' => $this->has_active_webpage,
         ];
     }
 
