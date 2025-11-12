@@ -8,7 +8,6 @@
 
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
-use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotesState;
