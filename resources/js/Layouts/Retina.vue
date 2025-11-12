@@ -207,7 +207,7 @@ watch(
 // Section: Screen Type
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const checkScreenType = () => {
-    const width = window.innerWidth
+    const width = screen.width
     if (width < 640) screenType.value = 'mobile'
     else if (width >= 640 && width < 1024) screenType.value = 'tablet'
     else screenType.value = 'desktop'
@@ -215,11 +215,11 @@ const checkScreenType = () => {
 provide('screenType', screenType)
 onMounted(() => {
     checkScreenType()
-    window.addEventListener('resize', checkScreenType)
+    // window.addEventListener('resize', checkScreenType)
 })
-onBeforeUnmount(() => {
-    window.removeEventListener('resize', checkScreenType)
-})
+// onBeforeUnmount(() => {
+//     window.removeEventListener('resize', checkScreenType)
+// })
 
 
 const getTextColorDependsOnStatus = (status: string) => {
