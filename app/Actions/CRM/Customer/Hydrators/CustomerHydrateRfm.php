@@ -23,9 +23,9 @@ class CustomerHydrateRfm implements ShouldBeUnique
 
     public string $commandSignature = 'hydrate:customer-rfm {customer}';
 
-    public function getJobUniqueId(int $customerId): string
+    public function getJobUniqueId(Customer $customer): string
     {
-        return $customerId;
+        return $customer->id;
     }
 
     public function asCommand(Command $command): void
@@ -69,7 +69,7 @@ class CustomerHydrateRfm implements ShouldBeUnique
         }
 
         /** 🔹 FREQUENCY (last month only) **/
-        $frequencyCount = $customer->invoices()
+        $frequencyCount = $invoices
             ->whereBetween('date', [$now->copy()->subMonth(), $now])
             ->count();
 
@@ -84,11 +84,11 @@ class CustomerHydrateRfm implements ShouldBeUnique
         }
 
         /** 🔹 MONETARY (last month only) **/
-        $monetaryValue = $customer->invoices()
+        $monetaryValue = $invoices
             ->whereBetween('date', [$now->copy()->subMonth(), $now])
             ->sum('net_amount');
 
-        $percentile = $this->getMonetaryPercentileGlobal($monetaryValue);
+        $percentile = $this->getMonetaryPercentileByShop($customer->shop_id, $monetaryValue);
 
         if ($percentile <= 50) {
             $monetaryTag = 'Low Value';
@@ -102,14 +102,9 @@ class CustomerHydrateRfm implements ShouldBeUnique
             $monetaryTag = 'Top 100';
         }
 
-        /** 🔹 Attach or replace RFM tags safely **/
-        $newTagNames = [$recencyTag, $frequencyTag, $monetaryTag];
-        $this->replaceRfmTags($customer, $newTagNames);
+        $this->replaceRfmTags($customer, [$recencyTag, $frequencyTag, $monetaryTag]);
     }
 
-    /**
-     * 🔹 Helper: Replace old RFM tags (recency/frequency/monetary) with new ones
-     */
     protected function replaceRfmTags(Customer $customer, array $newTagNames): void
     {
         $rfmTagIds = Tag::whereIn('data->type', ['recency', 'frequency', 'monetary'])
@@ -130,61 +125,59 @@ class CustomerHydrateRfm implements ShouldBeUnique
 
         foreach ($newTagIds as $tagId) {
             try {
-                TagHydrateModels::dispatch($tagId);
+                $tag = Tag::find($tagId);
+
+                TagHydrateModels::dispatch($tag);
             } catch (\Throwable $e) {
                 // Skip errors in CLI or queue context
             }
         }
     }
 
-    /**
-     * 🔹 Get global percentile from cache or regenerate if missing
-     */
-    protected function getMonetaryPercentileGlobal(float $value): float
+    protected function getMonetaryPercentileByShop(int $shopId, float $value): float
     {
-        $percentiles = Cache::get('rfm_monetary_percentiles');
+        $cacheKey = "rfm_monetary_percentiles_shop_{$shopId}";
+        $percentiles = Cache::get($cacheKey);
 
         if (!$percentiles) {
-            $this->generateGlobalMonetaryPercentiles();
-            $percentiles = Cache::get('rfm_monetary_percentiles');
+            $this->generateMonetaryPercentilesByShop($shopId);
+            $percentiles = Cache::get($cacheKey);
         }
 
-        // Find the closest percentile based on spend value
-        return collect($percentiles)
-            ->sortKeys()
-            ->reduce(function ($carry, $percent, $spend) use ($value) {
-                return ($spend <= $value) ? $percent : $carry;
-            }, 0);
+        if ($value <= $percentiles[50]) return 50;
+        if ($value <= $percentiles[80]) return 80;
+        if ($value <= $percentiles[95]) return 95;
+        if ($value <= $percentiles[99]) return 99;
+        return 100;
     }
 
-    /**
-     * 🔹 Generate percentile distribution for all customers (last month only)
-     */
-    public static function generateGlobalMonetaryPercentiles(): void
+    protected function generateMonetaryPercentilesByShop(int $shopId): void
     {
         $now = Carbon::now();
         $oneMonthAgo = $now->copy()->subMonth();
 
-        $allSpend = Customer::with(['invoices' => function ($q) use ($oneMonthAgo, $now) {
-            $q->whereBetween('date', [$oneMonthAgo, $now])
-                ->where('in_process', false);
-        }])->get()->mapWithKeys(function ($c) {
-            $sum = $c->invoices->sum('net_amount');
-            return [$c->id => $sum];
-        });
+        $spending = \DB::table('invoices')
+            ->select('customer_id', \DB::raw('SUM(net_amount) as total_spend'))
+            ->where('shop_id', $shopId)
+            ->where('in_process', false)
+            ->whereBetween('date', [$oneMonthAgo, $now])
+            ->groupBy('customer_id')
+            ->pluck('total_spend', 'customer_id');
 
-        if ($allSpend->isEmpty()) {
+        if ($spending->isEmpty()) {
             return;
         }
 
-        $sorted = $allSpend->sort()->values();
+        $sorted = $spending->values()->sort()->values();
         $count = $sorted->count();
 
-        $percentiles = [];
-        foreach ($sorted as $index => $value) {
-            $percentiles[$value] = round(($index / max($count - 1, 1)) * 100, 2);
-        }
+        $percentiles = [
+            50 => $sorted[(int)($count * 0.5)] ?? 0,
+            80 => $sorted[(int)($count * 0.8)] ?? 0,
+            95 => $sorted[(int)($count * 0.95)] ?? 0,
+            99 => $sorted[(int)($count * 0.99)] ?? 0,
+        ];
 
-        Cache::put('rfm_monetary_percentiles', $percentiles, 3600);
+        Cache::put("rfm_monetary_percentiles_shop_{$shopId}", $percentiles, now()->addHours(24));
     }
 }
