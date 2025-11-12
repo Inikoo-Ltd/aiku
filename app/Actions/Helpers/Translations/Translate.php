@@ -9,11 +9,14 @@
 namespace App\Actions\Helpers\Translations;
 
 use App\Actions\OrgAction;
+use App\Events\TranslateProgressEvent;
 use App\Models\Helpers\Language;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Sentry;
 use VildanBina\LaravelAutoTranslation\TranslationWorkflowService;
 use VildanBina\LaravelAutoTranslation\Services\TranslationEngineService;
 
@@ -24,7 +27,7 @@ class Translate extends OrgAction
     /**
      * @throws \Exception
      */
-    public function handle(?string $text, Language $languageFrom, Language $languageTo, $randomString=null): string
+    public function handle(?string $text, Language $languageFrom, Language $languageTo, $randomString = null): string
     {
         try {
             if ($text == null || $text == '' || $languageFrom->code == $languageTo->code) {
@@ -47,10 +50,14 @@ class Translate extends OrgAction
 
             $translatedTexts = $translationWorkflowService->translate($languageFrom->code, $languageTo->code, config('auto-translations.default_driver'));
 
-            return Arr::get($translatedTexts, 'text_to_translate', $text);
+            $text = Arr::get($translatedTexts, 'text_to_translate', $text);
+            TranslateProgressEvent::dispatch($text, $randomString);
+
+            return $text;
 
         } catch (\Throwable $e) {
-            \Sentry::captureMessage($e->getMessage());
+            Log::info($e->getMessage());
+            Sentry::captureMessage($e->getMessage());
 
             return '';
         }
@@ -80,10 +87,10 @@ class Translate extends OrgAction
         $languageTo   = Language::where('code', $languageTo)->first();
         $text         = Arr::get($this->validatedData, 'text');
 
-        $randomString=Str::random(10);
-        $this->handle($text, $languageFrom, $languageTo,$randomString);
+        $randomString = Str::random(10);
+        // $this->handle($text, $languageFrom, $languageTo, $randomString);
 
-        Translate::dispatch($text, $languageFrom, $languageTo);
+        Translate::dispatch($text, $languageFrom, $languageTo, $randomString);
 
         return $randomString;
     }

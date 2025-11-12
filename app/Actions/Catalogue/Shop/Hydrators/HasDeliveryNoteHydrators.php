@@ -8,6 +8,7 @@
 
 namespace App\Actions\Catalogue\Shop\Hydrators;
 
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotes;
 use App\Actions\SysAdmin\Group\Hydrators\GroupHydrateDeliveryNotesState;
@@ -32,7 +33,8 @@ trait HasDeliveryNoteHydrators
         GroupHydrateDeliveryNotesState::dispatch($deliveryNote->group_id, $deliveryNoteStateEnum)->delay($this->hydratorsDelay);
         OrganisationHydrateDeliveryNotesState::dispatch($deliveryNote->organisation_id, $deliveryNoteStateEnum)->delay($this->hydratorsDelay);
         ShopHydrateDeliveryNotesState::dispatch($deliveryNote->shop_id, $deliveryNoteStateEnum)->delay($this->hydratorsDelay);
-        OrganisationHydrateShopTypeDeliveryNotesState::dispatch($deliveryNote->organisation_id, $deliveryNote->shop_type, $deliveryNoteStateEnum);
+        // Get directly from shop.type because some deliveryNote has no shop_type somehow (null), probably old order_data
+        OrganisationHydrateShopTypeDeliveryNotesState::dispatch($deliveryNote->organisation_id, $deliveryNote->shop_type ?? $deliveryNote->shop->type, $deliveryNoteStateEnum);
     }
 
 }

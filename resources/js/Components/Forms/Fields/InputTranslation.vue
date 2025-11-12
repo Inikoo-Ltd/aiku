@@ -17,19 +17,17 @@ const emits = defineEmits(["update:form"])
 const storedLang = localStorage.getItem("translation_box")
 const initialLang = storedLang || Object.values(props.fieldData.languages)[0]?.code || "en"
 const selectedLang = ref(initialLang)
+const codeString = ref<string | null>(null)
 
-// Loading states
 const loadingOne = ref(false)
 const loadingAll = ref(false)
 
-// disable logic (prop + main null + loading)
 const isDisabled = computed(() =>
   props.fieldData?.disable ||
   !props.fieldData?.main ||
   loadingOne.value ||
   loadingAll.value
 )
-
 
 if (!Object.values(props.fieldData.languages).some(l => l.code === selectedLang.value)) {
   selectedLang.value = Object.values(props.fieldData.languages)[0]?.code || "en"
@@ -50,15 +48,100 @@ const langLabel = (code: string) => {
   return langObj?.name ?? code
 }
 
+let channel: any = null
+const initSocketListener = () => {
+  if (!window.Echo || !codeString.value) return
+
+  const socketEvent = `translate.${codeString.value}.channel`
+  const socketAction = ".translate-progress"
+
+  if (channel) channel.stopListening(socketAction)
+
+  console.log("Listening to socket event:", socketEvent, socketAction)
+  channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
+    console.log("Translation Socket Event:", eventData)
+  })
+  console.log("channel:",channel)
+}
+
+
+const generateLanguagetranslateAI = async () => {
+  if (isDisabled.value) return
+  loadingOne.value = true
+  try {
+    const response = await axios.post(
+      route("grp.models.translate", {
+        languageFrom: props.fieldData.language_from || 'en',
+        languageTo: selectedLang.value
+      }),
+      { text: props.fieldData.main }
+    )
+
+    if (response.data) {
+      codeString.value = response.data
+      initSocketListener()
+    }
+  } catch (error: any) {
+    notify({
+      title: "Translation Error",
+      text: error.response?.data?.message || "Failed to generate translation.",
+      type: "error",
+    })
+  } finally {
+    loadingOne.value = false
+  }
+}
+
+const generateAllTranslationsAI = async () => {
+  if (isDisabled.value) return
+  loadingAll.value = true
+
+  const langs = Object.values(props.fieldData.languages).map((l: any) => l.code)
+
+  for (const lang of langs) {
+    if (lang === "main" || lang === props.fieldData.mainLang || langBuffers.value[lang]) continue
+
+    try {
+      const response = await axios.post(
+        route("grp.models.translate", {
+          languageFrom: props.fieldData.language_from || "en",
+          languageTo: lang,
+        }),
+        { text: props.fieldData.main }
+      )
+
+      if (response.data) {
+        langBuffers.value[lang] = response.data.translation
+
+        if (response.data.code) {
+          codeString.value = response.data.code
+          initSocketListener()
+        }
+      }
+    } catch (error: any) {
+      notify({
+        title: `Translation Error for ${langLabel(lang)}`,
+        text: error.response?.data?.message || "Failed to translate this language.",
+        type: "error",
+      })
+    }
+  }
+
+  loadingAll.value = false
+  notify({
+    title: "Translation Complete",
+    text: "All missing translations have been updated.",
+    type: "success",
+  })
+}
+
+// === WATCHERS ===
 watch(
   langBuffers,
   (newVal) => {
     if (props.fieldData.mode === "single") {
-      // store only selected language
       props.form[props.fieldName] = newVal[selectedLang.value] || ""
-
     } else {
-      // store all translations
       props.form[props.fieldName] = { ...newVal }
     }
     emits("update:form", { ...props.form })
@@ -75,98 +158,43 @@ watch(
   { immediate: true }
 )
 
-// Single translation
-const generateLanguagetranslateAI = async () => {
-  if (isDisabled.value) return
-  loadingOne.value = true
-  try {
-    const response = await axios.post(
-      route("grp.models.translate", { languageFrom: props.fieldData.language_from || 'en', languageTo: selectedLang.value }),
-      { text: props.fieldData.main }
-    )
-    if (response.data) {
-      langBuffers.value[selectedLang.value] = response.data
-    }
-  } catch (error: any) {
-    notify({
-      title: "Translation Error",
-      text: error.response?.data?.message || "Failed to generate translation.",
-      type: "error",
-    })
-  } finally {
-    loadingOne.value = false
-  }
-}
-
-
-// Translate ALL (only empty ones)
-const generateAllTranslationsAI = async () => {
-  if (isDisabled.value) return
-  loadingAll.value = true
-
-  const langs = Object.values(props.fieldData.languages).map((l: any) => l.code)
-
-  for (const lang of langs) {
-    if (
-      lang === "main" ||
-      lang === props.fieldData.mainLang ||
-      langBuffers.value[lang] // ✅ skip if already translated
-    ) {
-      continue
-    }
-
-    try {
-      const response = await axios.post(
-        route("grp.models.translate", {
-          languageFrom: props.fieldData.language_from || "en",
-          languageTo: lang,
-        }),
-        { text: props.fieldData.main }
-      )
-
-      if (response.data) {
-        langBuffers.value[lang] = response.data
-      }
-    } catch (error: any) {
-      notify({
-        title: `Translation Error for ${langLabel(lang)}`,
-        text: error.response?.data?.message || "Failed to translate this language.",
-        type: "error",
-      })
-    }
-  }
-
-  loadingAll.value = false
-
-  notify({
-    title: "Translation Complete",
-    text: "All missing translations have been updated.",
-    type: "success",
-  })
-}
-
-
-
+// === STORAGE SYNC ===
 onMounted(() => {
   const handleStorage = (e: StorageEvent) => {
     if (e.key === "translation_box" && e.newValue) {
       selectedLang.value = e.newValue
     }
   }
+
   const handleCustom = (e: CustomEvent) => {
     selectedLang.value = e.detail
   }
+
+  // Register storage sync
   window.addEventListener("storage", handleStorage)
   window.addEventListener("translation_box_updated", handleCustom as EventListener)
+
+  // 👇 Initialize socket listener here if a code already exists
+  if (codeString.value) {
+    initSocketListener()
+  }
+
+  // You can also re-listen when codeString changes dynamically
+  watch(codeString, (newCode) => {
+    if (newCode) {
+      initSocketListener()
+    }
+  })
 
   onBeforeUnmount(() => {
     window.removeEventListener("storage", handleStorage)
     window.removeEventListener("translation_box_updated", handleCustom as EventListener)
+    if (channel) channel.stopListening(".translate-progress")
   })
 })
 
-
 </script>
+
 
 <template>
   <div class="space-y-3">
