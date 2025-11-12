@@ -44,6 +44,8 @@ interface Address {
 
 interface CustomerData {
 	slug: string
+	shop_slug: string
+	organisation_slug: string
 	reference: string
 	name: string
 	contact_name: string
@@ -511,7 +513,12 @@ const routeOrder = (order) => {
 						<FontAwesomeIcon icon="fal fa-user" :style="{ color: themeColors.buttonBg }" />
 						{{ trans('Associated Customer Detail') }}
 					</h3>
-					<Link :href="route('grp.org.shops.show.crm.customers.show', route().params)">
+					<Link v-if=" normalizedShowcase.customer.organisation_slug && normalizedShowcase.customer.shop_slug && normalizedShowcase.customer.slug" 
+					:href="route('grp.org.shops.show.crm.customers.show', {
+						organisation: normalizedShowcase.customer.organisation_slug, 
+						shop: normalizedShowcase.customer.shop_slug, 
+						customer: normalizedShowcase.customer.slug 
+					})">
 						<FontAwesomeIcon :icon="faSquareArrowUpRight" 
 						:style="{ color: themeColors.buttonBg }" 
 						class="hover:animate-pulse cursor-pointer justify-self-end self-center text-xl" />

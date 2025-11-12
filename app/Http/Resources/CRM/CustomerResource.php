@@ -86,6 +86,8 @@ class CustomerResource extends JsonResource
         return [
             'id'                  => $customer->id,
             'slug'                => $customer->slug,
+            'organisation_slug'   => $customer->organisation?->slug,
+            'shop_slug'           => $customer->shop?->slug,
             'reference'           => $customer->reference,
             'name'                => $customer->name,
             'contact_name'        => $customer->contact_name,
