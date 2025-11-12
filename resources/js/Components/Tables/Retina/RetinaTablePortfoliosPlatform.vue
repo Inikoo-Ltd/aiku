@@ -89,6 +89,7 @@ const props = defineProps<{
     useCheckBox?: boolean
     progressToUploadToEcom : {}
     count_product_not_synced : number
+    disabled?: boolean
 }>()
 
 const errorBluk = ref([])
@@ -610,6 +611,7 @@ const submitErrorProduct = (sel) => {
                             </div>
                         </div>
 
+                        
                         <ButtonWithLink v-if="item.platform_possible_matches?.number_matches"
                                         v-tooltip="trans('Match to existing :platform product', { platform: platform_data?.name || 'Platform'})" :routeTarget="{
                                 method: 'post',
@@ -651,7 +653,7 @@ const submitErrorProduct = (sel) => {
                     </template>
 
 
-                    <Button class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
+                    <Button v-if="disabled" class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
                             :label="trans('Connect with other product')" :capitalize="false" :icon="faRecycle"
                             size="xxs"
                             type="tertiary"/>
@@ -724,7 +726,7 @@ const submitErrorProduct = (sel) => {
         </template>
 
         <!-- Column: Actions 2 (Modal shopify) -->
-        <template #cell(create_new)="{ item }">
+        <template #cell(create_new)="{ item }" v-if="disabled">
             <!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
             <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
                  class="flex gap-x-2 items-center">
@@ -762,7 +764,7 @@ const submitErrorProduct = (sel) => {
         </template>
 
         <!-- Column: Actions 3 -->
-        <template #cell(delete)="{ item }">
+        <template #cell(delete)="{ item }"  v-if=disabled>
             <ButtonWithLink v-tooltip="trans('Unselect product. This will not remove the product from :platform', {platform: props.platform_data.name})" type="negative" icon="fal fa-skull"
                             :routeTarget="item.update_portfolio" :body="{
 						'status': false,
