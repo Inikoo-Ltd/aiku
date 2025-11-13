@@ -12,7 +12,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
-
 class DownloadPortfolioZipImagesToR2Service
 {
     protected $disk;
@@ -36,25 +35,6 @@ class DownloadPortfolioZipImagesToR2Service
     public function fileExists(string $path): bool
     {
         return $this->disk->exists($path);
-    }
-
-    /**
-     * Upload zip file to R2
-     */
-    public function uploadZip(string $sourcePath, string $destinationPath): bool
-    {
-        try {
-            $fileContents = file_get_contents($sourcePath);
-
-            return $this->disk->put(
-                $destinationPath,
-                $fileContents,
-                'public'
-            );
-        } catch (Exception $e) {
-            Log::error('R2 Upload Error: ' . $e->getMessage());
-            return false;
-        }
     }
 
     /**

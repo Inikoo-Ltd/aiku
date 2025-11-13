@@ -10,16 +10,12 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
-use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImagesToR2Service;
-use App\Actions\Retina\Dropshipping\Portfolio\PortfoliosTemporaryExport;
 use Lorisleiva\Actions\ActionRequest;
 
 class DownloadPortfolioZipImagesToR2 extends RetinaAction
 {
-
     private DownloadPortfolioZipImagesToR2Service $r2Service;
     private PortfoliosTemporaryExport $portfoliosExport;
 
@@ -35,7 +31,7 @@ class DownloadPortfolioZipImagesToR2 extends RetinaAction
     /**
      * Handle the request to create and upload a zip file
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData) : array
+    public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array
     {
         // get the group from model data
         $group = Arr::get($modelData, 'group', 'all');
@@ -66,7 +62,8 @@ class DownloadPortfolioZipImagesToR2 extends RetinaAction
                 // Generate the zip file using PortfoliosZipExport
                 $tempZipPath = $this->portfoliosExport->handle($customerSalesChannel, Arr::get($modelData, 'ids', []));
                 // Upload the zip file to R2
-                $uploadResult = $this->r2Service->uploadZip($tempZipPath, $fullPath);
+                $uploadResult = UploadFileToCatalogueIrisR2::run($tempZipPath, $fullPath);
+
 
                 if (!$uploadResult) {
                     throw new \Exception('Failed to upload zip file to R2');
@@ -92,8 +89,7 @@ class DownloadPortfolioZipImagesToR2 extends RetinaAction
                 return [
                     'error' => $e->getMessage()
                 ];
-            }
-            finally {
+            } finally {
                 // Clean up temporary files
                 if (isset($tempZipPath) && file_exists($tempZipPath)) {
                     unlink($tempZipPath);
