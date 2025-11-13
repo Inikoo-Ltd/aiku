@@ -300,8 +300,8 @@ class IndexFamilies extends OrgAction
                 }
                 $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                     ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true)
-                    ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true);
+                    ->column(key: 'department_name', label: __('Department'), canBeHidden: false, sortable: true, searchable: true)
+                    ->column(key: 'sub_department_name', label: __('sub department'), canBeHidden: false, sortable: true, searchable: true);
 
                 if ($parent instanceof Group) {
                     $table->column(key: 'organisation_name', label: __('organisation'), canBeHidden: false, sortable: true, searchable: true)

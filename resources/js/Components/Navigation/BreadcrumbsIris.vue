@@ -138,7 +138,7 @@ watch(() => props.breadcrumbs?.length, async () => {
                             </Transition>
         
                             <Transition name="spin-to-down">
-                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 w-[19rem] sm:w-auto">{{ breadcrumb.simple.label }}</div>
+                                <div v-if="breadcrumb.simple.label" :key="breadcrumb.simple.label" class="inline-block truncate py-1 md:py-0 sm:w-auto">{{ breadcrumb.simple.label }}</div>
                             </Transition>
                         </component>
                     </template>
@@ -182,9 +182,9 @@ watch(() => props.breadcrumbs?.length, async () => {
                     <template v-if="breadcrumb.type === 'simple'">
                         <component :is="breadcrumb.simple?.url || breadcrumb.simple?.route?.name ? Link : 'span'"
                             xclass="'' || ''"
-                            class="py-2 grid grid-flow-col items-center justify-start"
+                            class="pl-3 py-2 grid grid-flow-col items-center justify-start"
                             :href="breadcrumb.simple?.url ? breadcrumb.simple?.url : breadcrumb.simple?.route?.name ? route(breadcrumb.simple.route.name, breadcrumb.simple.route.parameters) : ''"
-                            :style="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
+                            xstyle="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
                         >
                             <!-- Icon Section -->
                             <FontAwesomeIcon v-if="breadcrumb.simple.icon && breadcrumbIdx == 0" class="flex-shrink-0 h-3.5 w-3.5" :icon="breadcrumb.simple.icon" aria-hidden="true" />
@@ -213,7 +213,7 @@ watch(() => props.breadcrumbs?.length, async () => {
                         <div class="divide-y divide-gray-200">
                             <component :is="breadcrumb.modelWithIndex?.index?.url || breadcrumb.modelWithIndex?.index?.route?.name ? Link : 'div'" class="py-2 grid grid-flow-col justify-start items-center"
                                 :href="breadcrumb.modelWithIndex?.index?.url ? breadcrumb.modelWithIndex?.index?.url : breadcrumb.modelWithIndex?.index?.route?.name ? route(breadcrumb.modelWithIndex.index.route.name, breadcrumb.modelWithIndex.index.route.parameters) : '#' "
-                                :style="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
+                                xstyle="{ paddingLeft: 12 + breadcrumbIdx * 7 + 'px' }"
                             >
                                 <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
                                 <span class="md:text-xs ml-4 mr-3">
@@ -227,7 +227,7 @@ watch(() => props.breadcrumbs?.length, async () => {
                             <!-- Subpage -->
                             <component :is="breadcrumb.modelWithIndex?.model.url || breadcrumb.modelWithIndex?.model?.route?.name ? Link : 'div'"  class="py-2 grid grid-flow-col justify-start items-center text-indigo-400"
                                 :href="breadcrumb.modelWithIndex?.model.url ? breadcrumb.modelWithIndex?.model.url : breadcrumb.modelWithIndex?.model?.route?.name ? route(breadcrumb.modelWithIndex.model.route.name, breadcrumb.modelWithIndex.model.route.parameters) : '#'"
-                                :style="{ paddingLeft: 12 + (breadcrumbIdx + 1) * 7 + 'px', }"
+                                xstyle="{ paddingLeft: 12 + (breadcrumbIdx + 1) * 7 + 'px', }"
                             >
                                 <FontAwesomeIcon class="flex-shrink-0 h-3.5 w-3.5 mr-1 text-gray-300" icon="fa fa-arrow-from-left" aria-hidden="true" />
                                 <span class="ml-4 mr-3">
