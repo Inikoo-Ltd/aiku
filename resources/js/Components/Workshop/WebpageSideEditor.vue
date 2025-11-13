@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, defineProps, defineEmits, onMounted, onUnmounted, toRaw, computed, watch  } from 'vue'
+import { ref, inject, defineEmits, onMounted, onUnmounted, toRaw, computed, watch  } from 'vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import draggable from 'vuedraggable'

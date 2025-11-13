@@ -248,21 +248,21 @@ const updateTab = (value: string) => {
 	@apply py-2.5 px-3 md:py-4 md:px-4;
 }
 
-::v-deep .p-datatable-tbody > tr > td {
+:v-deep(.p-datatable-tbody > tr > td){
 	padding: 0.25em !important;
 	color: #7c7c7c !important;
 }
-::v-deep .p-datatable-header-cell {
+:v-deep(.p-datatable-header-cell){
 	padding: 0.25em !important;
 	color: #7c7c7c !important;
 }
-::v-deep .p-datatable-tfoot > tr > td {
+:v-deep(.p-datatable-tfoot > tr > td){
 	padding: 0.25em !important;
 	color: #7c7c7c !important;
 	border-top: 1px solid rgba(59, 59, 59, 0.5) !important;
 }
 
-::v-deep .p-datatable-column-footer {
+:v-deep(.p-datatable-column-footer){
 	font-weight: 400 !important;
 	color: #474545 !important;
 }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, defineEmits, ref, onMounted, inject, computed } from 'vue'
+import { defineEmits, ref, onMounted, inject, computed } from 'vue'
 import { debounce, get, set, cloneDeep } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
@@ -70,15 +70,15 @@ onMounted(() => {
 </template>
 
 <style scoped>
-::v-deep(.p-accordionheader) {
+:deep(.p-accordionheader) {
   padding: 0.65rem;
 }
 
-::v-deep(.p-accordioncontent-content) {
+:deep(.p-accordioncontent-content) {
   padding: 0.5rem;
 }
 
-::v-deep(.multiselect-options) {
+:deep(.multiselect-options) {
   margin-left: 0rem !important;
 }
 </style>

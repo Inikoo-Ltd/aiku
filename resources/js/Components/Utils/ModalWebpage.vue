@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, defineProps, defineEmits } from "vue"
+import { ref, defineEmits } from "vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"

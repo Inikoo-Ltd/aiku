@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref, computed, defineProps } from "vue"
+import { inject, ref, computed } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

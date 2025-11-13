@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, computed, ref, defineProps } from "vue";
+import { inject, computed, ref } from "vue";
 import { trans } from "laravel-vue-i18n"
 import ProgressBar from 'primevue/progressbar';
 import { Tooltip } from 'floating-vue'
@@ -142,7 +142,7 @@ const expectedOrderTooltip = computed(() => {
 
 <style scoped lang="scss">
 // Comparison Progress Bar: Historic (filled) vs Predicted (empty/background)
-::v-deep(.comparison-progressbar) {
+:deep(.comparison-progressbar) {
     .p-progressbar-value {
         background-color: v-bind(progressBarColor) !important;
     }
