@@ -101,18 +101,18 @@ watch(
 )
 
 const responsiveBreakpoints = computed(() => {
-  const settings = props.fieldValue?.carousel_data?.carousel_setting || {}
+  const settings = props.modelValue?.carousel_data?.carousel_setting || {}
   return {
-    1200: {
-      slidesPerView: settings.slidesPerView?.desktop || 4,
+    0: {
+      slidesPerView: settings.slidesPerView?.mobile || 1,
       spaceBetween: settings.spaceBetween || 10,
     },
-    992: {
+    768: {
       slidesPerView: settings.slidesPerView?.tablet || 2,
       spaceBetween: settings.spaceBetween || 10,
     },
-    576: {
-      slidesPerView: settings.slidesPerView?.mobile || 1,
+    1024: {
+      slidesPerView: settings.slidesPerView?.desktop || 4,
       spaceBetween: settings.spaceBetween || 10,
     },
   }
@@ -147,7 +147,7 @@ onMounted(async () => {
         :breakpoints="responsiveBreakpoints"
         :navigation="navigation"
         :pagination="{ clickable: true }"
-        :autoplay="false"
+        :autoplay="fieldValue.carousel_data.carousel_setting.autoplay ? { delay: 1000, disableOnInteraction: false } : false"
         :thumbs="{ swiper: thumbsSwiper }"
         :key="refreshTrigger"
         class="w-full"
