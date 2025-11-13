@@ -202,7 +202,7 @@ const onSubmitCreateOrder = () => {
                     </p>
                 </div>
 
-                <div class="flex justify-between gap-x-4">
+                <div class="flex flex-col md:flex-row justify-between gap-x-4">
                     <div class="w-full max-w-96 mt-4 xmd:grid grid-cols-1 gap-2 lg:gap-5 xsm:grid-cols-2">
                         <StatsBox
                             v-for="(stat, idxStat) in data.stats"
@@ -246,7 +246,7 @@ const onSubmitCreateOrder = () => {
 
                     <!-- Section: Shortcut -->
                     <div v-if="data.shortcut.order.is_show_button ||
-                    data.shortcut?.create_customer_sales_channel?.route_create?.name" class="max-w-64 w-full">
+                    data.shortcut?.create_customer_sales_channel?.route_create?.name" class="md:max-w-64 mt-8 md:mt-0 w-full">
                         <Fieldset :legend="trans('Quick links (Shortcuts)')">
                             <div class="flex flex-col gap-y-2">
                                 <Button
