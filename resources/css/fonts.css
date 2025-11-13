@@ -12,15 +12,15 @@
 /* Roman Melikhov */
 @font-face {
     font-family: 'Roman Melikhov';
-    src: url('@fonts/Conneqt_Bold/Roman_Melikhov_-_Conneqt_Bold.otf');
+    src: url('/assets/Fonts/Conneqt_Bold/Roman_Melikhov_-_Conneqt_Bold.otf');
     font-display: swap;
 }
 
 
-/* Cardinal */
+/* Shoemaker */
 @font-face {
     font-family: 'Shoemaker';
-    src: url('@fonts/Shoemaker.ttf');
+    src: url('/assets/Fonts/Shoemaker.ttf');
     font-weight: 400;
     font-display: swap;
 }
@@ -28,7 +28,7 @@
 /* Cardinal */
 @font-face {
     font-family: 'Cardinal';
-    src: url('@fonts/Cardinal.ttf');
+    src: url('/assets/Fonts/Cardinal.ttf');
     font-weight: 400;
     font-display: swap;
 }
@@ -36,31 +36,31 @@
 /* Bunya */
 @font-face {
     font-family: 'Bunya';
-    src: url('@fonts/Bunya/Bunya-Thin_PERSONAL.ttf');
+    src: url('/assets/Fonts/Bunya/Bunya-Thin_PERSONAL.ttf');
     font-weight: 200;
     font-display: swap;
 }
 @font-face {
     font-family: 'Bunya';
-    src: url('@fonts/Bunya/Bunya-Light_PERSONAL.ttf');
+    src: url('/assets/Fonts/Bunya/Bunya-Light_PERSONAL.ttf');
     font-weight: 300;
     font-display: swap;
 }
 @font-face {
     font-family: 'Bunya';
-    src: url('@fonts/Bunya/Bunya-Regular_PERSONAL.ttf');
+    src: url('/assets/Fonts/Bunya/Bunya-Regular_PERSONAL.ttf');
     font-weight: 400;
     font-display: swap;
 }
 @font-face {
     font-family: 'Bunya';
-    src: url('@fonts/Bunya/Bunya-Bold_PERSONAL.ttf');
+    src: url('/assets/Fonts/Bunya/Bunya-Bold_PERSONAL.ttf');
     font-weight: 700;
     font-display: swap;
 }
 @font-face {
     font-family: 'Bunya';
-    src: url('@fonts/Bunya/Bunya-Black_PERSONAL.ttf');
+    src: url('/assets/Fonts/Bunya/Bunya-Black_PERSONAL.ttf');
     font-weight: 900;
     font-display: swap;
 }
@@ -68,32 +68,32 @@
 /* Avenir */
 @font-face {
     font-family: 'Avenir';
-    src: url('@fonts/Avenir/Avenir Black.ttf');
-    font-weight: 900;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Avenir';
-    src: url('@fonts/Avenir/Avenir Book.ttf');
-    font-weight: 400;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Avenir';
-    src: url('@fonts/Avenir/Avenir Heavy.ttf');
-    font-weight: 700;
-    font-display: swap;
-}
-@font-face {
-    font-family: 'Avenir';
-    src: url('@fonts/Avenir/Avenir Light.ttf');
+    src: url('/assets/Fonts/Avenir/Avenir Light.ttf');
     font-weight: 300;
     font-display: swap;
 }
 @font-face {
     font-family: 'Avenir';
-    src: url('@fonts/Avenir/Avenir Medium.ttf');
+    src: url('/assets/Fonts/Avenir/Avenir Book.ttf');
+    font-weight: 400;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Avenir';
+    src: url('/assets/Fonts/Avenir/Avenir Medium.ttf');
     font-weight: 500;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Avenir';
+    src: url('/assets/Fonts/Avenir/Avenir Heavy.ttf');
+    font-weight: 700;
+    font-display: swap;
+}
+@font-face {
+    font-family: 'Avenir';
+    src: url('/assets/Fonts/Avenir/Avenir Black.ttf');
+    font-weight: 900;
     font-display: swap;
 }
 
@@ -104,36 +104,36 @@
 @font-face {
     font-family: 'Source Sans Pro';
     font-weight: 200;
-    src: url('@fonts/Source_Sans_Pro/SourceSansPro-200.ttf');
+    src: url('/assets/Fonts/Source_Sans_Pro/SourceSansPro-200.ttf');
     font-display: swap;
 }
 @font-face {
     font-family: 'Source Sans Pro';
     font-weight: 300;
-    src: url('@fonts/Source_Sans_Pro/SourceSansPro-300.ttf');
+    src: url('/assets/Fonts/Source_Sans_Pro/SourceSansPro-300.ttf');
     font-display: swap;
 }
 @font-face {
     font-family: 'Source Sans Pro';
     font-weight: 400;
-    src: url('@fonts/Source_Sans_Pro/SourceSansPro-400.ttf');
+    src: url('/assets/Fonts/Source_Sans_Pro/SourceSansPro-400.ttf');
     font-display: swap;
 }
 @font-face {
     font-family: 'Source Sans Pro';
     font-weight: 600;
-    src: url('@fonts/Source_Sans_Pro/SourceSansPro-600.ttf');
+    src: url('/assets/Fonts/Source_Sans_Pro/SourceSansPro-600.ttf');
     font-display: swap;
 }
 @font-face {
     font-family: 'Source Sans Pro';
     font-weight: 700;
-    src: url('@fonts/Source_Sans_Pro/SourceSansPro-700.ttf');
+    src: url('/assets/Fonts/Source_Sans_Pro/SourceSansPro-700.ttf');
     font-display: swap;
 }
 @font-face {
     font-family: 'Source Sans Pro';
     font-weight: 900;
-    src: url('@fonts/Source_Sans_Pro/SourceSansPro-900.ttf');
+    src: url('/assets/Fonts/Source_Sans_Pro/SourceSansPro-900.ttf');
     font-display: swap;
 }
