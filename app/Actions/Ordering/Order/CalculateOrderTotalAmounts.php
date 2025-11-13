@@ -20,7 +20,7 @@ class CalculateOrderTotalAmounts extends OrgAction
 {
     use WithOrganisationsArgument;
 
-    public function handle(Order $order, $calculateShipping = true): void
+    public function handle(Order $order, $calculateShipping = true, bool $collectionChanged = false): void
     {
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
@@ -28,12 +28,13 @@ class CalculateOrderTotalAmounts extends OrgAction
 
         $numberItemTransactions = $order->transactions()->where('model_type', 'Product')->count();
 
-        $shippingAmount  = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
         if ($order->collection_address_id) {
             $shippingAmount = 0;
+        } else {
+            $shippingAmount  = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         }
 
         $netAmount = $itemsNet + $shippingAmount + $chargesAmount;
@@ -79,6 +80,7 @@ class CalculateOrderTotalAmounts extends OrgAction
             }
         }
 
+
         if (in_array($order->state, [
             OrderStateEnum::CREATING,
             OrderStateEnum::SUBMITTED,
@@ -92,10 +94,11 @@ class CalculateOrderTotalAmounts extends OrgAction
                 $calculateCharges = true;
             }
 
-            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
+            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight']) || $collectionChanged) {
                 CalculateOrderShipping::run($order);
                 $calculateCharges = true;
             }
+
 
             if ($calculateCharges) {
                 CalculateOrderHangingCharges::run($order);

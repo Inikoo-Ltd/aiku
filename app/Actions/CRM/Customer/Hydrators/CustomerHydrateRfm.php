@@ -144,10 +144,18 @@ class CustomerHydrateRfm implements ShouldBeUnique
             $percentiles = Cache::get($cacheKey);
         }
 
-        if ($value <= $percentiles[50]) return 50;
-        if ($value <= $percentiles[80]) return 80;
-        if ($value <= $percentiles[95]) return 95;
-        if ($value <= $percentiles[99]) return 99;
+        if ($value <= $percentiles[50]) {
+            return 50;
+        }
+        if ($value <= $percentiles[80]) {
+            return 80;
+        }
+        if ($value <= $percentiles[95]) {
+            return 95;
+        }
+        if ($value <= $percentiles[99]) {
+            return 99;
+        }
         return 100;
     }
 
