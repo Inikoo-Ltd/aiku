@@ -23,6 +23,7 @@ library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRig
 const props = defineProps<{
     product: ProductResource
     customerData : any
+    buttonStyle?: any
 }>()
 
 const customer = ref({...props.customerData})
@@ -66,6 +67,7 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
         /* product.transaction_id = response.data?.transaction_id
         product.quantity_ordered = response.data?.quantity_ordered */
         customer.value.quantity_ordered = response.data?.quantity_ordered
+        customer.value.quantity_ordered_new = response.data?.quantity_ordered
         customer.value.transaction_id = response.data?.transaction_id
         setStatus('success')
         layout.reload_handle()
@@ -118,6 +120,7 @@ const onUpdateQuantity = (product: ProductResource) => {
             onSuccess: () => {
                 setStatus('success')
                 // product.quantity_ordered = product.quantity_ordered_new
+                customer.value.quantity_ordered = product.quantity_ordered_new
                 set(props, ['product', 'quantity_ordered'], get(product, ['quantity_ordered_new'], null))
                 layout.reload_handle()
             },
@@ -152,7 +155,7 @@ const debAddAndUpdateProduct = debounce(() => {
     if (newQty === 0) {
         onUpdateQuantity(customer.value)
         customer.value.transaction_id = null
-        customer.value.quantity_ordered = 0
+        // customer.value.quantity_ordered = 0
         return
     }
 
@@ -179,7 +182,7 @@ const showWarning = () => {
     <div class="">
         <div class="flex items-center gap-2 relative w-36">
             <InputNumber
-                :modelValue="get(customer, ['quantity_ordered_new'], null) === null ? customer.quantity_ordered : get(customer, ['quantity_ordered_new'], null)"
+                :modelValue="get(customer, ['quantity_ordered_new'], null) === null ? (get(customer, ['quantity_ordered'], 0) ?? 0) : get(customer, ['quantity_ordered_new'], 0)"
                 @input="(e) => (e.value ? set(customer, ['quantity_ordered_new'], e.value) : set(customer, ['quantity_ordered_new'], 0), debAddAndUpdateProduct())"
                 inputId="integeronly"
                 fluid
@@ -213,9 +216,9 @@ const showWarning = () => {
                     size="lg"
                     :disabled="customer.quantity_ordered > customer.stock"
                     :loading="isLoadingSubmitQuantityProduct"
+                    :inject-style="buttonStyle"
                 />
             </div>
-
             
         </div>
         

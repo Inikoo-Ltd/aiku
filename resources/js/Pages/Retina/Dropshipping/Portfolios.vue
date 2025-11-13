@@ -17,7 +17,8 @@ import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWith
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import {faSyncAlt, faHandPointer} from "@fas";
+import {faSyncAlt, faHandPointer, faBan} from "@fas";
+import { useFormatTime } from "@/Composables/useFormatTime";
 
 import {
     faBracketsCurly, faPawClaws,
@@ -38,7 +39,6 @@ import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTable
 import {ulid} from "ulid";
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
-import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 import { useTruncate } from "@/Composables/useTruncate"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -417,16 +417,15 @@ const handleDownloadClick = async (type: string, event: Event, ids: string = '',
                 <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
             </div>
 
-            <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')"
-                    :icon="'fas fa-plus'"/>
+            <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
 
             <div class="rounded-md" v-if="channels?.data?.length">
                 <!-- Section: Download button -->
                 <Button @click="(e) => _clone_popover?.toggle(e)" v-tooltip="trans('Open another options')"
                         :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length" class="!px-2 h-full"
-                        type="tertiary" key=""/>
+                        type="tertiary" key="" v-if="!customer_sales_channel.ban_stock_update_until" />
 
-                <Popover ref="_clone_popover">
+                <Popover ref="_clone_popover" >
                     <div class="w-64 relative">
                         <div class="text-sm mb-2">
                             {{ trans("Clone portfolio from channel:") }}
@@ -440,7 +439,13 @@ const handleDownloadClick = async (type: string, event: Event, ids: string = '',
                                 <template #default="{ loading }">
                                     <div class="flex gap-x-2 justify-start items-center w-full">
                                         <LoadingIcon v-if="loading" class="h-5"/>
-                                        <span v-else v-tooltip="manual_channel.platform_name" v-html="ChannelLogo(manual_channel.platform_code)" class="h-5"></span>
+                                        <img
+                                            v-else
+                                            :src="`/assets/channel_logo/${manual_channel.platform_code}.svg`"
+                                            class="h-5"
+                                            :alt="manual_channel.platform_code"
+                                            v-tooltip="manual_channel.platform_name"
+                                        />
                                         <div>
                                             {{ useTruncate(manual_channel.name || manual_channel.slug, 20) + ' ('+manual_channel.number_portfolios+')' }}
                                         </div>
@@ -456,6 +461,26 @@ const handleDownloadClick = async (type: string, event: Event, ids: string = '',
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <!-- Section: Alert if platform not connected yet -->
+    <Message v-if="customer_sales_channel.ban_stock_update_until" severity="error" class="m-4 flex items-center gap-2">
+            <div :class="'flex justify-between gap-3'">
+                <div :class="'flex gap-3 items-center'">
+                    <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
+                    <div>
+                        {{trans("Sorry, your account is temporarily restricted until")}}
+                        <span class="font-semibold">
+                            {{ useFormatTime(customer_sales_channel.ban_stock_update_until, { formatTime: 'MMM dd, yyyy' }) }}
+                        </span>
+                    </div>
+                </div>
+                <ButtonWithLink type="tertiary" :routeTarget="{
+                            name: 'retina.models.customer_sales_channel.unsuspend',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'patch'
+                        }" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
+            </div>
+    </Message>
+
+
     <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
         <div v-if="platform_data.type === 'shopify'" class="px-2 md:px-6">
             <PlatformWarningNotConnectedShopify
@@ -534,7 +559,7 @@ const handleDownloadClick = async (type: string, event: Event, ids: string = '',
 
                 <div>
                     <ButtonWithLink
-                        v-if="customer_sales_channel.type !== 'ebay'"
+                        v-if="customer_sales_channel.type !== 'ebay' && !customer_sales_channel.ban_stock_update_until"
                         label="Upload all as new product"
                         size="xs"
                         :routeTarget="{
@@ -575,18 +600,18 @@ const handleDownloadClick = async (type: string, event: Event, ids: string = '',
         </div>
         <div v-else class="overflow-x-auto">
             <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
-                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
+                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="customer_sales_channel.ban_stock_update_until"
                 :isPlatformManual
                 :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
             <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
                 :tab="'products'" :selectedData :platform_data :platform_user_id
-                :is_platform_connected
+                :is_platform_connected :disabled="customer_sales_channel.ban_stock_update_until"
                 :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
                 :customerSalesChannel="customer_sales_channel"
                 v-model:selectedProducts="selectedProducts" :key="key"
                 :count_product_not_synced="count_product_not_synced"/>
             <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-                :platform_user_id :is_platform_connected :progressToUploadToShopify
+                :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="customer_sales_channel.ban_stock_update_until"
                 :customerSalesChannel="customer_sales_channel" :progressToUploadToEcom="progessbar"
                 v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
                 :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>

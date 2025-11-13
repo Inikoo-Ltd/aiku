@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, defineProps, inject } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import { Tooltip } from 'floating-vue'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"

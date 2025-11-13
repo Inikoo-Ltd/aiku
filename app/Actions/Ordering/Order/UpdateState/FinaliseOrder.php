@@ -12,6 +12,7 @@ use App\Actions\Ordering\Order\GenerateInvoiceFromOrder;
 use App\Actions\Ordering\Order\HasOrderHydrators;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
+use App\Enums\Accounting\Invoice\InvoiceTypeEnum;
 use App\Enums\Ordering\Order\OrderStateEnum;
 use App\Enums\Ordering\Transaction\TransactionStateEnum;
 use App\Models\Ordering\Order;
@@ -29,6 +30,11 @@ class FinaliseOrder extends OrgAction
     public function handle(Order $order, $fromDeliveryNote = false): Order
     {
         $oldState = $order->state;
+
+        $currentInvoicesInOrder = $order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->count();
+        if($currentInvoicesInOrder >0){
+            throw ValidationException::withMessages(['status' => 'You can not change the status to finalized, because there are invoices in this order']);
+        }
         GenerateInvoiceFromOrder::make()->action($order);
 
         $data = [

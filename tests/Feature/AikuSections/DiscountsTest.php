@@ -109,7 +109,11 @@ test('update offer', function ($offer) {
 })->depends('create offer');
 
 test('create offer allowance', function (Offer $offer) {
-    $offerAllowance = StoreOfferAllowance::make()->action($offer, $offer->shop, OfferAllowance::factory()->definition());
+    $allowanceData = OfferAllowance::factory()->definition();
+    data_set($allowanceData, 'trigger_type', 'Shop');
+    data_set($allowanceData, 'trigger_id', $offer->shop->id);
+
+    $offerAllowance = StoreOfferAllowance::make()->action($offer, $allowanceData);
     $this->assertModelExists($offerAllowance);
 
     return $offerAllowance;

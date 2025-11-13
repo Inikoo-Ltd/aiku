@@ -57,12 +57,6 @@ class DeleteInvoice extends OrgAction
                 $this->postDeleteInvoiceHydrators($invoice);
             }
 
-
-
-
-
-
-
         } catch (Throwable) {
             //
         }
@@ -72,8 +66,15 @@ class DeleteInvoice extends OrgAction
         return $invoice;
     }
 
-    public function htmlResponse(): RedirectResponse
+    public function htmlResponse(Invoice $invoice): RedirectResponse
     {
+        if ($invoice->order) {
+            return Redirect::route('grp.helpers.redirect_order', [
+                $invoice->order->id
+            ]);
+        }
+
+
         return Redirect::route('grp.org.accounting.invoices.index', [
             $this->organisation->slug
         ]);

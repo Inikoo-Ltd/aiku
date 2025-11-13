@@ -49,64 +49,68 @@ class CalculateOrderShipping
         }
 
 
-        if ($discount) {
-            $shippingZoneSchema = $order->shop->discountShippingZoneSchema;
+        if ($order->collection_address_id) {
+            DB::table('transactions')->where('order_id', $order->id)
+                ->where('model_type', 'ShippingZone')
+                ->delete();
+
+            UpdateOrder::run(
+                $order,
+                [
+                    'shipping_zone_schema_id' => null,
+                    'shipping_zone_id'        => null
+                ]
+            );
         } else {
-            $shippingZoneSchema = $order->shop->currentShippingZoneSchema;
-        }
-
-
-        if (!$shippingZoneSchema) {
-            if ($order->shipping_engine == OrderShippingEngineEnum::AUTO) {
-                UpdateOrder::run(
-                    $order,
-                    [
-                        'shipping_engine'         => OrderShippingEngineEnum::MANUAL,
-                        'shipping_zone_schema_id' => null,
-                        'shipping_zone_id'        => null,
-                    ]
-                );
+            if ($discount) {
+                $shippingZoneSchema = $order->shop->discountShippingZoneSchema;
+            } else {
+                $shippingZoneSchema = $order->shop->currentShippingZoneSchema;
             }
 
-            return $order;
+
+            if (!$shippingZoneSchema) {
+                if ($order->shipping_engine == OrderShippingEngineEnum::AUTO) {
+                    UpdateOrder::run(
+                        $order,
+                        [
+                            'shipping_engine'         => OrderShippingEngineEnum::MANUAL,
+                            'shipping_zone_schema_id' => null,
+                            'shipping_zone_id'        => null,
+                        ]
+                    );
+                }
+
+                return $order;
+            }
+
+
+            list($shippingAmount, $shippingZone) = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
+
+            if (!is_numeric($shippingAmount)) {
+                $shippingAmount = 0;
+            }
+
+
+            $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
+            if ($shippingTransaction) {
+                $this->updateShippingTransaction($shippingTransaction, $shippingZone, $shippingAmount);
+            } else {
+                $this->storeShippingTransaction($order, $shippingZone, $shippingAmount);
+            }
+
+
+            if ($this->toBeConfirmed) {
+                $order->update([
+                    'shipping_engine' => OrderShippingEngineEnum::TO_BE_CONFIRMED,
+                ]);
+            } else {
+                $order->update([
+                    'shipping_engine' => OrderShippingEngineEnum::AUTO,
+                ]);
+            }
         }
 
-        list($shippingAmount, $shippingZone) = $this->getShippingAmountAndShippingZone($order, $shippingZoneSchema);
-
-        if (!is_numeric($shippingAmount)) {
-            $shippingAmount = 0;
-        }
-
-        if ($order->collection_address_id) {
-            $shippingAmount = 0;
-        }
-
-        $shippingTransaction = $order->transactions()->where('model_type', 'ShippingZone')->first();
-        if ($shippingTransaction) {
-            $this->updateShippingTransaction($shippingTransaction, $shippingZone, $shippingAmount);
-        } else {
-            $this->storeShippingTransaction($order, $shippingZone, $shippingAmount);
-        }
-
-
-        UpdateOrder::run(
-            $order,
-            [
-                'shipping_zone_schema_id' => $shippingZoneSchema->id,
-                'shipping_zone_id'        => $shippingZone->id,
-            ]
-        );
-
-
-        if ($this->toBeConfirmed) {
-            $order->update([
-                'shipping_engine' => OrderShippingEngineEnum::TO_BE_CONFIRMED,
-            ]);
-        } else {
-            $order->update([
-                'shipping_engine' => OrderShippingEngineEnum::AUTO,
-            ]);
-        }
 
         return $order;
     }

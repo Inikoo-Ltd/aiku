@@ -75,8 +75,8 @@ class FetchAuroraOfferComponent extends FetchAurora
                 ];
                 break;
             case 'Customer':
-                $trigger = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Trigger Key'});
-                $isLocked = true;
+                $trigger    = $this->parseCustomer($this->organisation->id.':'.$this->auroraModelData->{'Deal Component Trigger Key'});
+                $isLocked   = true;
                 $sourceData = [
                     'note' => 'Trigger customer not found',
                 ];
@@ -92,6 +92,7 @@ class FetchAuroraOfferComponent extends FetchAurora
 
         if ($state == OfferAllowanceStateEnum::ACTIVE and $trigger_type == null and $trigger == null) {
             print "No trigger found for Offer component w trigger ".$this->auroraModelData->{'Deal Component Trigger'}." -> ".$this->auroraModelData->{'Deal Component Trigger Key'}." \n";
+
             return;
         }
 
@@ -117,7 +118,14 @@ class FetchAuroraOfferComponent extends FetchAurora
         $code = $code.$this->auroraModelData->{'Deal Component Key'};
 
 
-        $this->parsedData['trigger']        = $trigger;
+        $this->parsedData['trigger'] = $trigger;
+
+        if ($trigger) {
+            data_set($this->parsedData, 'offerAllowance.trigger_type', class_basename($trigger));
+            data_set($this->parsedData, 'offerAllowance.trigger_id', $trigger->id);
+        }
+
+
         $this->parsedData['offer']          = $offer;
         $this->parsedData['offerAllowance'] = [
             'code'            => $code,

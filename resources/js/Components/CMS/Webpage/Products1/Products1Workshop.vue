@@ -153,6 +153,7 @@ watch(
             <ProductRender 
               :product="product" 
               :bestSeller="modelValue.bestseller"
+              :buttonStyle="getStyles(modelValue?.button?.properties, screenType)"
             />
           </div>
         </div>

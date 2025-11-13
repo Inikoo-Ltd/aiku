@@ -17,7 +17,7 @@ import LinkIris from "../LinkIris.vue"
 import { urlLoginWithRedirect } from "@/Composables/urlLoginWithRedirect"
 import { router } from '@inertiajs/vue3'
 import { ProductCategoryMenu } from "@/Composables/Iris/useMenu"
-import SidebarDesktopNavigation from "./SidebarDesktopNavigation.vue"
+import SidebarMobileNavigation from "./SidebarMobileNavigation.vue"
 
 library.add(faChevronRight, faExternalLink, faSearch, faTimes, faMapMarkerAlt)
 
@@ -86,6 +86,7 @@ const emit = defineEmits<{
 }>()
 
 const layout = inject('layout', retinaLayoutStructure)
+const screenType: string = inject('screenType', 'desktop')
 
 const isLoggedIn = inject('isPreviewLoggedIn', false)
 const onLogout = inject('onLogout', () => console.log('Logout function not injected'))
@@ -107,7 +108,8 @@ const isLoadingSubDepartment = ref(false)
 // Handle navigation with loading state
 const handleViewAllProductCategory = (url: string) => {
     isLoadingProductCategory.value = true
-    router.visit('/' + url, {
+    console.log('url', url)
+    router.visit(url, {
         onFinish: () => {
             isLoadingProductCategory.value = false
             // Emit event to close mobile drawer
@@ -123,7 +125,7 @@ const handleViewAllProductCategory = (url: string) => {
 
 const handleViewAllSubDepartment = (url: string) => {
     isLoadingSubDepartment.value = true
-    router.visit('/' + url, {
+    router.visit(url, {
         onFinish: () => {
             isLoadingSubDepartment.value = false
             // Emit event to close mobile drawer
@@ -143,7 +145,7 @@ const handleViewAllSubDepartment = (url: string) => {
         <Transition name="slide-absolute-to-right">
             <!-- 3: Families -->
             <div v-if="activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null">
-                <div @click="changeActiveSubIndex(null), changeActiveCustomTopSubIndex(null), changeActiveCustomSubIndex(null)" class="">
+                <div @click="changeActiveSubIndex(null), changeActiveCustomTopSubIndex(null), changeActiveCustomSubIndex(null)" class="py-1">
                     <FontAwesomeIcon icon="fal fa-chevron-left" class="text-xs" fixed-width aria-hidden="true" />
                     {{ sortedSubDepartments?.[activeSubIndex]?.name }}
                     {{ customTopSubDepartments?.[activeCustomTopSubIndex]?.name }}
@@ -177,7 +179,22 @@ const handleViewAllSubDepartment = (url: string) => {
                     <!-- 3: Families: Product Categories -->
                     <Transition name="slide-to-right">
                         <div v-if="activeSubIndex !== null && sortedFamilies.length">
-                            <SidebarDesktopNavigation
+                            <div class="mt-1 pt-1 pb-2 px-4">
+                                <LinkIris :href="sortedSubDepartments[activeSubIndex].url">
+                                    <template #default="{ isLoading }">
+                                        <Button
+                                            :label="trans('View all')"
+                                            :icon="faExternalLink"
+                                            :size="screenType === 'mobile' ? 'm' : 'xs'"
+                                            :loading="isLoading"
+                                            xclick="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
+                                            class="cursor-pointer"
+                                        />
+                                    </template>
+                                </LinkIris>
+                            </div>
+
+                            <SidebarMobileNavigation
                                 v-for="(sub, sIndex) in sortedFamilies" :key="sIndex"
                                 :nav="sub"
                                 :class="[
@@ -192,7 +209,7 @@ const handleViewAllSubDepartment = (url: string) => {
                             />
 
                             <template v-for="(sub, sIndex) in sortedSubDepartments?.[activeSubIndex]?.collections" :key="sIndex">
-                                <SidebarDesktopNavigation
+                                <SidebarMobileNavigation
                                     :nav="sub"
                                     :activeSubIndex
                                     :closeSidebar
@@ -200,16 +217,6 @@ const handleViewAllSubDepartment = (url: string) => {
                                 />
                             </template>
 
-                            <div class="p-2 px-4">
-                                <Button
-                                    :label="trans('View all')"
-                                    :icon="faExternalLink"
-                                    size="xs"
-                                    :loading="isLoadingSubDepartment"
-                                    @click="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
-                                    class="cursor-pointer"
-                                />
-                            </div>
                         </div>
                     </Transition>
 
@@ -248,7 +255,7 @@ const handleViewAllSubDepartment = (url: string) => {
             <!-- Column 2: Subdepartments -->
             <div v-else-if="activeIndex !== null || activeCustomIndex !== null || activeCustomTopIndex !== null"
                 :class="[(activeSubIndex !== null || activeCustomSubIndex !== null || activeCustomTopSubIndex !== null) && 'border-r']">
-                <div @click="setActiveCategory(null), setActiveCustomCategory(null), setActiveCustomTopCategory(null)" class="">
+                <div @click="setActiveCategory(null), setActiveCustomCategory(null), setActiveCustomTopCategory(null)" class="py-1">
                     <FontAwesomeIcon icon="fal fa-chevron-left" class="text-xs" fixed-width aria-hidden="true" />
                     <!-- Back to menu list -->
                     {{ sortedProductCategories?.[activeIndex]?.name }}
@@ -263,7 +270,7 @@ const handleViewAllSubDepartment = (url: string) => {
                 <div class="overflow-y-auto">
                     <!-- Section: Subdepartments (Top) -->
                     <div v-if="activeCustomTopIndex !== null && customTopSubDepartments?.length">
-                        <SidebarDesktopNavigation
+                        <SidebarMobileNavigation
                             v-for="(sub, sIndex) in customTopSubDepartments" :key="sIndex"
                             :nav="sub"
                             :class="[
@@ -281,9 +288,24 @@ const handleViewAllSubDepartment = (url: string) => {
 
                     <!-- Section: SubDepartments (Auto Product Categories) -->
                     <div v-if="activeIndex !== null && sortedSubDepartments?.length">
+                        
+                        <div class="mt-1 pt-1 pb-2 px-4">
+                            <LinkIris :href="sortedProductCategories[activeIndex].url">
+                                <template #default="{ isLoading }">
+                                    <Button
+                                        :label="trans('View all')"
+                                        :icon="faExternalLink"
+                                        :size="screenType === 'mobile' ? 'm' : 'xs'"
+                                        :loading="isLoading"
+                                        class="cursor-pointer"
+                                    />
+                                </template>
+                            </LinkIris>
+                        </div>
+
                         <template
                             v-for="(sub, sIndex) in sortedSubDepartments" :key="sIndex">
-                            <SidebarDesktopNavigation
+                            <SidebarMobileNavigation
                                 :nav="sub"
                                 :class="[
                                     activeSubIndex === sIndex
@@ -302,7 +324,7 @@ const handleViewAllSubDepartment = (url: string) => {
 
                         <!-- Collections (from Department) -->
                         <template v-for="(sub, sIndex) in sortedProductCategories[activeIndex]?.collections" :key="sIndex">
-                            <SidebarDesktopNavigation
+                            <SidebarMobileNavigation
                                 :nav="sub"
                                 xclass="[
                                     activeCustomSubIndex === sIndex
@@ -314,21 +336,11 @@ const handleViewAllSubDepartment = (url: string) => {
                                 :closeSidebar
                             />
                         </template>
-
-                        <div class="p-2 px-4">
-                            <Button
-                                :label="trans('View all')"
-                                :icon="faExternalLink"
-                                size="xs"
-                                :loading="isLoadingProductCategory"
-                                @click="handleViewAllProductCategory(sortedProductCategories[activeIndex].url)"
-                            />
-                        </div>
                     </div>
 
                     <!-- Section: Subdepartments (Bottom) -->
                     <div v-if="activeCustomIndex !== null && customSubDepartments?.length">
-                        <SidebarDesktopNavigation
+                        <SidebarMobileNavigation
                             v-for="(sub, sIndex) in customSubDepartments" :key="sIndex"
                             :nav="sub"
                             :class="[
@@ -388,8 +400,13 @@ const handleViewAllSubDepartment = (url: string) => {
                     </div>
 
                     <!-- Section: Product Categories (auto) -->
-                    <div v-for="(category, index) in sortedProductCategories" :key="'product_categories' + index" class="flex justify-between items-center w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText">
-                        <LinkIris v-if="category?.url !== null"
+                    <div
+                        v-for="(category, index) in sortedProductCategories"
+                        :key="'product_categories' + index"
+                        class="flex justify-between items-center w-full text-left px-2 py-2 font-semibold borderBottomColorSameAsText"
+                        @click="setActiveCategory(index)"
+                    >
+                        <!-- <LinkIris v-if="category?.url !== null"
                             :href="internalHref(category)"
                             :target="getTarget(category)"
                             @success="() => closeSidebar()"
@@ -399,9 +416,12 @@ const handleViewAllSubDepartment = (url: string) => {
                         <span v-else
                             class="font-bold">
                             {{ category.name }}
+                        </span> -->
+                        <span class="font-bold">
+                            {{ category.name }}
                         </span>
 
-                        <div v-if="!!category.sub_departments?.length" @click="setActiveCategory(index)" class="text-sm">
+                        <div v-if="!!category.sub_departments?.length" class="text-sm">
                             <FontAwesomeIcon :icon="faChevronRight" fixed-width  />
                         </div>
                     </div>

@@ -87,6 +87,7 @@ import suggestion from './Variables/suggestion'
 import { trans } from "laravel-vue-i18n"
 import { routeType } from "@/types/route"
 import { irisVariable } from "@/Composables/variableList"
+import { uniqueId } from "lodash"
 
 
 const props = withDefaults(defineProps<{
@@ -169,7 +170,7 @@ const editorInstance = useEditor({
                                     .nodeAt(pos)
                                     ?.marks.find((mark) => mark.type === linkMark)?.attrs
 
-                                if (attrs) {
+                               /*  if (attrs) {
                                     event.preventDefault()
                                     if (attrs.workshop) {
                                         CustomLinkConfirm.value = true
@@ -178,7 +179,7 @@ const editorInstance = useEditor({
                                         console.log(attrs.href)
                                     }
                                     return true
-                                }
+                                } */
                                 return false
                             },
                         },
@@ -358,12 +359,13 @@ const editorInstance = useEditor({
     },
 })
 
-
+const keyLinkCustomDialog = ref(uniqueId('link-custom-dialog-'))
 function openLinkDialogCustom() {
     const attrs = editorInstance.value?.getAttributes("link")
-    currentLinkInDialog.value = attrs
+    currentLinkInDialog.value = attrs;
     showLinkDialogCustom.value = true;
     showDialog.value = true;
+    keyLinkCustomDialog.value=uniqueId()
 }
 
 function updateLinkCustom(value) {
@@ -939,6 +941,7 @@ onMounted(async () => {
             v-if="showLinkDialogCustom" 
             :show="showLinkDialogCustom" 
             :attribut="currentLinkInDialog"
+            :key="keyLinkCustomDialog"
             @close="() => { showLinkDialogCustom = false; showDialog = false; }" 
             @update="updateLinkCustom" 
         />

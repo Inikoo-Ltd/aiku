@@ -56,11 +56,11 @@ defineProps({
 </template>
 
 <style scoped lang="scss">
-::v-deep(.p-progressbar-value) {
+:deep(.p-progressbar-value) {
     background-color: #2563EB !important; /* Custom blue color */
 }
 
-::v-deep(.p-progressbar) {
+:deep(.p-progressbar) {
     background-color: #E0E7FF; /* Track color */
 }
 </style>
