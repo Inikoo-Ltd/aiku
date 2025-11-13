@@ -279,7 +279,7 @@ onMounted(() => {
 
     if (layout?.iris?.is_logged_in) {
         fetchProductHasPortfolio();
-        fetchProducts()
+        // fetchProducts()
     }
 
 
