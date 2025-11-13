@@ -388,14 +388,17 @@ const key = ulid()
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <!-- Section: Alert if platform not connected yet -->
     <Message v-if="customer_sales_channel.ban_stock_update_until" severity="error" class="m-4 flex items-center gap-2">
-            <div :class="'flex gap-3 items-center'">
-                <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
-                <div>
-                    {{trans("Sorry, your account is temporarily restricted until")}} 
-                    <span class="font-semibold">
-                        {{ useFormatTime(customer_sales_channel.ban_stock_update_until, { formatTime: 'MMM dd, yyyy' }) }}
-                    </span>
+            <div :class="'flex justify-between gap-3'">
+                <div :class="'flex gap-3 items-center'">
+                    <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
+                    <div>
+                        {{trans("Sorry, your account is temporarily restricted until")}}
+                        <span class="font-semibold">
+                            {{ useFormatTime(customer_sales_channel.ban_stock_update_until, { formatTime: 'MMM dd, yyyy' }) }}
+                        </span>
+                    </div>
                 </div>
+                <Button :type="'delete'">Unsuspend</Button>
             </div>
     </Message>
 
@@ -478,7 +481,7 @@ const key = ulid()
 
                 <div>
                     <ButtonWithLink
-                        v-if="customer_sales_channel.type !== 'ebay'"
+                        v-if="customer_sales_channel.type !== 'ebay' && !customer_sales_channel.ban_stock_update_until"
                         label="Upload all as new product"
                         size="xs"
                         :routeTarget="{
