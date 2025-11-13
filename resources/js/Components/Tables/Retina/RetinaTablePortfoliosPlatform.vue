@@ -730,7 +730,7 @@ const submitErrorProduct = (sel) => {
         </template>
 
         <!-- Column: Actions 2 (Modal shopify) -->
-        <template #cell(create_new)="{ item }" v-if="disabled">
+        <template #cell(create_new)="{ item }" v-if="!disabled">
             <!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
             <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
                  class="flex gap-x-2 items-center">
