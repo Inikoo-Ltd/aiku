@@ -274,7 +274,7 @@ onMounted(() => {
     }
 
     if (layout?.iris?.is_logged_in) {
-        fetchProducts();
+        // fetchProducts();  // No need fetch on mount, product data already comes from props
         fetchHasInBasket();
     }
 })
