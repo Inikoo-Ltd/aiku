@@ -23,7 +23,7 @@ class DownloadPortfolioZipImagesToR2Service
 
     public function __construct()
     {
-        $this->disk = Storage::disk('zip-r2');
+        $this->disk = Storage::disk('catalogue-iris-r2');
         $this->publicUrl = config('filesystems.disks.zip-r2.url');
         $this->accountId = config('services.cloudflare-zip-r2.account_id');
         $this->apiToken = config('services.cloudflare-zip-r2.token');
@@ -64,6 +64,26 @@ class DownloadPortfolioZipImagesToR2Service
     {
         try {
             $fileContents = Storage::disk('local')->get($storagePath);
+
+            return $this->disk->put(
+                $destinationPath,
+                $fileContents,
+                'public'
+            );
+        } catch (Exception $e) {
+            Log::error('R2 Upload Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+
+    /**
+     * Upload from local file
+     */
+    public function uploadFileFromFile(string $filePath, string $destinationPath): bool
+    {
+        try {
+            $fileContents = file_get_contents($filePath);
 
             return $this->disk->put(
                 $destinationPath,

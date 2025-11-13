@@ -95,7 +95,7 @@ return [
             'endpoint' => env('CLOUDFLARE_R2_ENDPOINT'),
             'bucket'   => env('CLOUDFLARE_R2_MEDIA_BUCKET_NAME'),
         ],
-        'zip-r2' => [
+        'catalogue-iris-r2' => [
             'driver'   => 's3',
             'key'      => env('CLOUDFLARE_R2_ZIP_ACCESS_KEY'),
             'secret'   => env('CLOUDFLARE_R2_ZIP_SECRET_KEY'),
