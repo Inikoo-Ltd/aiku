@@ -398,7 +398,7 @@ const key = ulid()
                         </span>
                     </div>
                 </div>
-                <Button :type="'delete'">Unsuspend</Button>
+                <Button :type="'delete'">{{ trans('Unsuspend') }}</Button>
             </div>
     </Message>
 
