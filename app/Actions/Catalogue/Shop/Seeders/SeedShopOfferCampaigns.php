@@ -55,7 +55,6 @@ class SeedShopOfferCampaigns extends GrpAction
             if ($offerCampaign->type == OfferCampaignTypeEnum::DISCRETIONARY) {
                 $discretionaryOffer = StoreOffer::make()->action(
                     $offerCampaign,
-                    null,
                     [
                         'state'            => OfferStateEnum::ACTIVE,
                         'code'             => 'di-'.$shop->slug,
@@ -69,7 +68,6 @@ class SeedShopOfferCampaigns extends GrpAction
 
                 StoreOfferAllowance::make()->action(
                     $discretionaryOffer,
-                    null,
                     [
                         'code'             => 'di-'.$shop->slug,
                         'state'            => OfferAllowanceStateEnum::ACTIVE,
