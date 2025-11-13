@@ -430,7 +430,6 @@ const submitErrorProduct = (sel) => {
 </script>
 
 <template>
-    {{ disabled }}
         <Message v-if="errorBluk.length > 0 && progressToUploadToEcom.total == 0" severity="error"
              class="relative m-4 pr-10">
         <!-- Close Button -->
@@ -639,7 +638,7 @@ const submitErrorProduct = (sel) => {
                             type="tertiary"/>
 
                     </div>
-                  
+
                 </template>
 
                 <template v-else>
