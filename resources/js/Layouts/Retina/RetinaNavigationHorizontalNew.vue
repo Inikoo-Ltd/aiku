@@ -39,6 +39,7 @@ const props = defineProps<{
             subNavigation: Navigation[]
         }[]
     }
+    isNoArrows?: boolean
 
 }>()
 
@@ -109,7 +110,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
 
         <div v-if="!!currentActiveHorizontal" class="relative w-full flex justify-between items-center pt-2 pb-2 transition-all"
             :class="layout.leftSidebar.show ? 'pl-2 lg:pl-3 pr-0.5 ' : 'pl-0 lg:pl-1'"
-            :style="{ color: layout.app.theme[1] + '99' }">
+            xstyle="{ color: layout.app.theme[1] + '99' }">
 
             <!-- Section: Horizontal label -->
             <component
@@ -137,7 +138,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
                 <Transition name="slide-to-left">
                     <div v-if="layout.leftSidebar.show" class="flex items-end gap-x-0.5 w-32">
                         <Transition name="spin-to-down">
-                            <span :key="currentActiveHorizontal?.label" class="whitespace-nowrap text-base leading-[10px]">
+                            <span :key="currentActiveHorizontal?.label" class="whitespace-nowrap text-base leading-[10px] opacity-70">
                                 {{ useTruncate(currentActiveHorizontal?.label, 14) }}
                             </span>
                         </Transition>
@@ -146,7 +147,7 @@ const isLoadingVisitActiveHorizontal = ref(false)
             </component>
 
             <!-- Section: Horizontal arrow left-right -->
-            <Transition v-if="previousHorizontal || nextHorizontal" name="slide-to-left">
+            <Transition v-if="!isNoArrows && (previousHorizontal || nextHorizontal)" name="slide-to-left">
                 <div v-if="layout.leftSidebar.show" class="absolute right-0.5 top-3.5 flex text-white text-xxs" >
                     <component
                         :key="previousHorizontal?.key"

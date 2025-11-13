@@ -9,7 +9,7 @@ import { Link } from "@inertiajs/vue3"
 import Table from "@/Components/Table/Table.vue"
 import { routeType } from "@/types/route"
 import Icon from "@/Components/Icon.vue"
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faFolders, faFolderTree } from "@fal"
+import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faFolders, faFolderTree, faFolderDownload } from "@fal"
 import { faPlay,faTimesCircle, faCheckCircle  as fasCheckCircle} from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -34,6 +34,7 @@ defineProps<{
     website_domain?: string
 }>()
 
+const inMasterCollection = route().current() === 'grp.masters.master_shops.show.master_collections.index';
 
 function collectionRoute(collection: {}) {
     const currentRoute = route().current();
@@ -48,7 +49,17 @@ function collectionRoute(collection: {}) {
     } 
 }
 
-function parentRoute(slug: string) {
+function parentRoute(slug: string, type: string) {
+    if(inMasterCollection && type) 
+    {
+        const routeLink = type === 'department' ? 'grp.masters.master_shops.show.master_departments.show' : 'grp.masters.master_shops.show.master_sub_departments.show';
+        return route(
+            routeLink,
+            [
+                (route().params as RouteParams).masterShop,
+                slug
+            ]);
+    }
 
     return route(
         "grp.helpers.redirect_collections_in_product_category",
@@ -93,10 +104,10 @@ const isLoadingDetach = ref<string[]>([])
         <template #cell(parents)="{ item: collection }">
             <template v-for="(parent, index) in collection.parents_data" :key="index">
                 <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" />
-                <FontAwesomeIcon v-else-if="parent.type === 'subdepartment'" :icon="faFolders" class="mr-1" v-tooltip="trans('Sub Department')" />
-                <Link :href="parentRoute(parent.slug) as string" class="secondaryLink">
+                <FontAwesomeIcon v-else-if="parent.type === 'sub_department'" :icon="faFolderDownload" class="mr-1" v-tooltip="trans('Sub Department')" />
+                <Link :href="parentRoute(parent.slug, parent.type) as string" class="secondaryLink">
                     {{ parent.code && parent.code.length > 16 ? parent.code.substring(0, 16) + "..." : parent.code }}
-                </Link>
+                </Link>&nbsp;
             </template>
         </template>
 
