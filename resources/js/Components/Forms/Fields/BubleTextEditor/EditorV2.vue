@@ -371,7 +371,6 @@ function openLinkDialogCustom() {
 function updateLinkCustom(value) {
     if (value.href) {
         const attrs = {
-            id : value.id,
             type: value.type,
             workshop: value.workshop,
             id: value.type === 'internal' ? value.id?.id : null,

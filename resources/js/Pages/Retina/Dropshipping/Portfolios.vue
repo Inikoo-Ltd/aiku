@@ -39,7 +39,6 @@ import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTable
 import {ulid} from "ulid";
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
-import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 import { useTruncate } from "@/Composables/useTruncate"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -371,7 +370,13 @@ const key = ulid()
                                 <template #default="{ loading }">
                                     <div class="flex gap-x-2 justify-start items-center w-full">
                                         <LoadingIcon v-if="loading" class="h-5"/>
-                                        <span v-else v-tooltip="manual_channel.platform_name" v-html="ChannelLogo(manual_channel.platform_code)" class="h-5"></span>
+                                        <img
+                                            v-else
+                                            :src="`/assets/channel_logo/${manual_channel.platform_code}.svg`"
+                                            class="h-5"
+                                            :alt="manual_channel.platform_code"
+                                            v-tooltip="manual_channel.platform_name"
+                                        />
                                         <div>
                                             {{ useTruncate(manual_channel.name || manual_channel.slug, 20) + ' ('+manual_channel.number_portfolios+')' }}
                                         </div>

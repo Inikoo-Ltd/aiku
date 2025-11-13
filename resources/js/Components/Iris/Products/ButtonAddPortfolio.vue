@@ -12,7 +12,6 @@ import { faPlus } from '@fal'
 import { faEllipsisV } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 import { routeType } from '@/types/route'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
 
@@ -243,7 +242,12 @@ watch(() => props.productHasPortfolio, (newVal) => {
                                     </template>
                                     <template #label>
                                         <div class="flex items-center gap-2">
-                                            <div v-tooltip="channel.platform_name" v-html="ChannelLogo(channel.platform_code)" class="h-4 w-4"></div>
+                                            <img
+                                                :src="`/assets/channel_logo/${channel.platform_code}.svg`"
+                                                class="h-4 w-4"
+                                                :alt="channel.platform_name"
+                                                v-tooltip="channel.platform_name"
+                                            />
                                             {{ channel.customer_sales_channel_name || '-' }}
                                             <span class="text-gray-500 text-xs">({{ channel.platform_name }})</span>
                                         </div>

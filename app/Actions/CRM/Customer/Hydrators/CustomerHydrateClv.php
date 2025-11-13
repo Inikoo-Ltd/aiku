@@ -56,7 +56,9 @@ class CustomerHydrateClv implements ShouldBeUnique
             ->first();
 
         if (!$invoiceStats || $invoiceStats->total_orders == 0) {
-            return; // No valid invoices to calculate CLV
+            // Set default values if no invoices
+            $this->setDefaultStats($customer);
+            return;
         }
 
         // Convert to Carbon instances once
@@ -64,6 +66,7 @@ class CustomerHydrateClv implements ShouldBeUnique
         $lastOrderDate  = $invoiceStats->last_order_date ? Carbon::parse($invoiceStats->last_order_date) : null;
 
         if (!$firstOrderDate || !$lastOrderDate) {
+            $this->setDefaultStats($customer);
             return;
         }
 
@@ -77,7 +80,7 @@ class CustomerHydrateClv implements ShouldBeUnique
         $customerAgeDays  = (int)$customer->created_at->diffInDays(now());
         $averageLifespanY = max($customerAgeDays / 365, 1);
         $customerAgeMonths = max($customer->created_at->diffInMonths(now()), 1);
-        $expectedRemainingLifespan = $customerAgeMonths / $averageLifespanY;
+        $expectedRemainingLifespanMonths = $customerAgeMonths / $averageLifespanY;
 
         $stats = [];
 
@@ -96,17 +99,22 @@ class CustomerHydrateClv implements ShouldBeUnique
             // 1. Average Purchase Value
             $averagePurchaseValue = $totalRevenue / $totalOrders;
 
-            // 2. Estimate Customer Value
-            $customerValue = $customerAgeMonths * $averagePurchaseValue * $ordersPerMonth;
+            // 2. Historic CLV
+            $historicClv = $averagePurchaseValue * $totalOrders;
 
-            // 3. Historic, Predicted, and Total CLV
-            $historicClv  = $averagePurchaseValue * $totalOrders;
-            $predictedClv = $expectedRemainingLifespan * $customerValue;
-            $totalClv     = $historicClv + $predictedClv;
+            // 3. Predicted CLV for next year (12 months)
+            $predictedClvNextYear = 12 * $averagePurchaseValue * $ordersPerMonth;
 
-            $stats['historic_clv_amount'.$suffix]  = round($historicClv, 2);
-            $stats['predicted_clv_amount'.$suffix] = round($predictedClv, 2);
-            $stats['total_clv_amount'.$suffix]     = round($totalClv, 2);
+            // 4. Predicted CLV for remaining lifespan
+            $predictedClvLifespan = $expectedRemainingLifespanMonths * $predictedClvNextYear;
+
+            // 5. Total CLV
+            $totalClv = $historicClv + $predictedClvLifespan;
+
+            $stats['historic_clv_amount'.$suffix] = round($historicClv, 2);
+            $stats['predicted_clv_amount_next_year'.$suffix] = round($predictedClvNextYear, 2);
+            $stats['predicted_clv_amount'.$suffix] = round($predictedClvLifespan, 2);
+            $stats['total_clv_amount'.$suffix] = round($totalClv, 2);
         }
 
         // --- Currency-independent stats ---
@@ -130,14 +138,65 @@ class CustomerHydrateClv implements ShouldBeUnique
             ? $lastOrderDate->copy()->addDays($averageTimeBetweenOrders)
             : null;
 
+        // Calculate timeline positions
+        $timelinePositions = $this->calculateTimelinePositions($firstOrderDate, $expectedNextOrder);
+
         // Final stats
-        $stats['average_order_value']         = round($invoiceStats->total_net_amount / $totalOrders, 2);
+        $stats['average_order_value'] = round($invoiceStats->total_net_amount / $totalOrders, 2);
         $stats['average_time_between_orders'] = $averageTimeBetweenOrders;
         $stats['expected_date_of_next_order'] = $expectedNextOrder;
-        $stats['churn_interval']              = $churnInterval;
-        $stats['churn_risk_prediction']       = round($churnRiskPrediction, 4);
+        $stats['churn_interval'] = $churnInterval;
+        $stats['churn_risk_prediction'] = round($churnRiskPrediction, 4);
+        $stats['first_order_date'] = $firstOrderDate;
+        $stats['expected_remaining_lifespan_months'] = round($expectedRemainingLifespanMonths);
+        $stats['today_timeline_position'] = $timelinePositions['todayPosition'];
+        $stats['next_order_timeline_position'] = $timelinePositions['nextOrderPosition'];
 
         // --- Update stats efficiently ---
         $customer->stats()->update($stats);
+    }
+
+    private function setDefaultStats(Customer $customer): void
+    {
+        $customer->stats()->update([
+            'historic_clv_amount' => 0,
+            'predicted_clv_amount_next_year' => 0,
+            'predicted_clv_amount' => 0,
+            'total_clv_amount' => 0,
+            'average_order_value' => 0,
+            'average_time_between_orders' => null,
+            'expected_date_of_next_order' => null,
+            'churn_interval' => 365,
+            'churn_risk_prediction' => 0,
+            'first_order_date' => null,
+            'expected_remaining_lifespan_months' => 0,
+            'today_timeline_position' => 0,
+            'next_order_timeline_position' => null,
+        ]);
+    }
+
+    private function calculateTimelinePositions(?Carbon $firstOrderDate, ?Carbon $nextOrderDate): array
+    {
+        $today = now();
+
+        if (!$firstOrderDate) {
+            return ['todayPosition' => 0, 'nextOrderPosition' => null];
+        }
+
+        // One year from today for predicted period
+        $oneYearFromNow = $today->copy()->addYear();
+
+        // Calculate total timeline range (from first order to 1 year from now)
+        $totalRange = $oneYearFromNow->diffInSeconds($firstOrderDate);
+
+        // Calculate positions as percentages
+        $todayPosition = ($today->diffInSeconds($firstOrderDate) / $totalRange) * 100;
+        $nextOrderPosition = $nextOrderDate ?
+            min(100, ($nextOrderDate->diffInSeconds($firstOrderDate) / $totalRange) * 100) : null;
+
+        return [
+            'todayPosition' => max(0, min(100, $todayPosition)),
+            'nextOrderPosition' => $nextOrderPosition ? max(0, min(100, $nextOrderPosition)) : null,
+        ];
     }
 }
