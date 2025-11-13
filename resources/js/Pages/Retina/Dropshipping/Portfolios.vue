@@ -398,7 +398,11 @@ const key = ulid()
                         </span>
                     </div>
                 </div>
-                <Button :type="'delete'">{{ trans('Unsuspend') }}</Button>
+                <ButtonWithLink type="tertiary" :routeTarget="{
+                            name: 'retina.models.customer_sales_channel.unsuspend',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'patch'
+                        }" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
             </div>
     </Message>
 
