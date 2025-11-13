@@ -180,14 +180,18 @@ const handleViewAllSubDepartment = (url: string) => {
                     <Transition name="slide-to-right">
                         <div v-if="activeSubIndex !== null && sortedFamilies.length">
                             <div class="mt-1 pt-1 pb-2 px-4">
-                                <Button
-                                    :label="trans('View all')"
-                                    :icon="faExternalLink"
-                                    :size="screenType === 'mobile' ? 'm' : 'xs'"
-                                    :loading="isLoadingSubDepartment"
-                                    @click="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
-                                    class="cursor-pointer"
-                                />
+                                <LinkIris :href="sortedSubDepartments[activeSubIndex].url">
+                                    <template #default="{ isLoading }">
+                                        <Button
+                                            :label="trans('View all')"
+                                            :icon="faExternalLink"
+                                            :size="screenType === 'mobile' ? 'm' : 'xs'"
+                                            :loading="isLoading"
+                                            xclick="handleViewAllSubDepartment(sortedSubDepartments[activeSubIndex].url)"
+                                            class="cursor-pointer"
+                                        />
+                                    </template>
+                                </LinkIris>
                             </div>
 
                             <SidebarMobileNavigation
@@ -286,13 +290,17 @@ const handleViewAllSubDepartment = (url: string) => {
                     <div v-if="activeIndex !== null && sortedSubDepartments?.length">
                         
                         <div class="mt-1 pt-1 pb-2 px-4">
-                            <Button
-                                :label="trans('View all')"
-                                :icon="faExternalLink"
-                                :size="screenType === 'mobile' ? 'm' : 'xs'"
-                                :loading="isLoadingProductCategory"
-                                @click="handleViewAllProductCategory(sortedProductCategories[activeIndex].url)"
-                            />
+                            <LinkIris :href="sortedProductCategories[activeIndex].url">
+                                <template #default="{ isLoading }">
+                                    <Button
+                                        :label="trans('View all')"
+                                        :icon="faExternalLink"
+                                        :size="screenType === 'mobile' ? 'm' : 'xs'"
+                                        :loading="isLoading"
+                                        class="cursor-pointer"
+                                    />
+                                </template>
+                            </LinkIris>
                         </div>
 
                         <template
