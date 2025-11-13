@@ -8,7 +8,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link, router } from '@inertiajs/vue3'
 import { inject, ref } from 'vue'
-import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 import { trans } from 'laravel-vue-i18n'
 import { Fieldset } from 'primevue'
@@ -214,7 +213,12 @@ const onSubmitCreateOrder = () => {
                             </div>
                             <ul role="list" class="divide-y divide-gray-100">
                                 <li v-for="channel in data.last_visited_channels" xkey="person.email" class="flex gap-x-4 px-3 py-2">
-                                    <div v-html="ChannelLogo(channel.platform)" class="flex-grow size-8 overflow-hidden border border-gray-300 rounded-full"></div>
+                                    <img
+                                        :src="`/assets/channel_logo/${channel.platform}.svg`"
+                                        class="flex-grow size-8 overflow-hidden border border-gray-300 rounded-full"
+                                        :alt="channel.platform"
+                                        v-tooltip="channel.platform"
+                                    />
                                     <div class="w-full xflex-shrink-0 justify-between flex items-center">
                                         <div class="min-w-0">
                                             <p class="text-sm/6 font-semibold">
