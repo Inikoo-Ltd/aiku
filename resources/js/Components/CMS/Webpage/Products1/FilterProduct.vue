@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineEmits, ref, onMounted, inject, computed } from 'vue'
+import { ref, onMounted, inject, computed } from 'vue'
 import { debounce, get, set, cloneDeep } from 'lodash-es'
 import { trans } from 'laravel-vue-i18n'
 import { retinaLayoutStructure } from '@/Composables/useRetinaLayoutStructure'
