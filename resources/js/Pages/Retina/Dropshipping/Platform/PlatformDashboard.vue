@@ -11,7 +11,6 @@ import Timeline from '@/Components/Utils/Timeline.vue'
 import {aikuLocaleStructure} from "@/Composables/useLocaleStructure"
 import {trans} from "laravel-vue-i18n"
 import ButtonWithLink from "@/Components/Elements/Buttons/ButtonWithLink.vue"
-import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import ModalConfirmationDelete from "@/Components/Utils/ModalConfirmationDelete.vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
@@ -105,8 +104,10 @@ const locale = inject('locale', aikuLocaleStructure)
         <div v-else>
             <div class="flex justify-between">
                 <h3 class="text-2xl font-semibold">
-                    <div v-html="ChannelLogo(platform.code)"
+                    <img
+                        :src="`/assets/channel_logo/${platform.code}.svg`"
                         class="align-middle inline-block h-7 w-7"
+                        :alt="platform.code"
                         v-tooltip="platform.name"
                     />
                     {{ customer_sales_channel.name || 'n/a' }}

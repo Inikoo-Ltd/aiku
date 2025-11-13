@@ -11,7 +11,7 @@ export default {
 					type: "image-cropped",
 					props_data: {
 						stencilProps: {
-							aspectRatio: 1 / 1,
+							aspectRatio: [1 / 1, 3/4],
 							movable: true,
 							scalable: true,
 							resizable: true,
@@ -46,14 +46,14 @@ export default {
 			editGlobalStyle: "button",
 			replaceForm: [
 				{
-					key: ["link"],
-					label: "Link",
-					type: "link",
-				},
-				{
 					key: ["text"],
 					label: "Text",
 					type: "text",
+				},
+				{
+					key: ["link"],
+					label: "Link",
+					type: "link",
 				},
 				{
 					key: ["container", "properties", "text"],
@@ -66,6 +66,12 @@ export default {
 					type: "background",
 					useIn: ["desktop", "tablet", "mobile"],
 				},
+				{
+                    key: ['container_button','properties',"justifyContent"],
+                    label : "Justify Content",
+                    type: "justify-content",
+                    useIn : ["desktop", "tablet", "mobile"],
+                },
 				{
 					key: ["container", "properties", "margin"],
 					label: "Margin",
@@ -84,6 +90,7 @@ export default {
 					type: "border",
 					useIn: ["desktop", "tablet", "mobile"],
 				},
+				
 			],
 		},
 	],

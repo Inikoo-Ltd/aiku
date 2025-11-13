@@ -67,6 +67,7 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
         /* product.transaction_id = response.data?.transaction_id
         product.quantity_ordered = response.data?.quantity_ordered */
         customer.value.quantity_ordered = response.data?.quantity_ordered
+        customer.value.quantity_ordered_new = response.data?.quantity_ordered
         customer.value.transaction_id = response.data?.transaction_id
         setStatus('success')
         layout.reload_handle()

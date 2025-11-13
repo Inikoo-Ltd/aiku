@@ -39,7 +39,6 @@ import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTable
 import {ulid} from "ulid";
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
-import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 import { useTruncate } from "@/Composables/useTruncate"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -371,7 +370,13 @@ const key = ulid()
                                 <template #default="{ loading }">
                                     <div class="flex gap-x-2 justify-start items-center w-full">
                                         <LoadingIcon v-if="loading" class="h-5"/>
-                                        <span v-else v-tooltip="manual_channel.platform_name" v-html="ChannelLogo(manual_channel.platform_code)" class="h-5"></span>
+                                        <img
+                                            v-else
+                                            :src="`/assets/channel_logo/${manual_channel.platform_code}.svg`"
+                                            class="h-5"
+                                            :alt="manual_channel.platform_code"
+                                            v-tooltip="manual_channel.platform_name"
+                                        />
                                         <div>
                                             {{ useTruncate(manual_channel.name || manual_channel.slug, 20) + ' ('+manual_channel.number_portfolios+')' }}
                                         </div>
@@ -388,14 +393,21 @@ const key = ulid()
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <!-- Section: Alert if platform not connected yet -->
     <Message v-if="customer_sales_channel.ban_stock_update_until" severity="error" class="m-4 flex items-center gap-2">
-            <div :class="'flex gap-3 items-center'">
-                <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
-                <div>
-                    {{trans("Sorry, your account is temporarily restricted until")}} 
-                    <span class="font-semibold">
-                        {{ useFormatTime(customer_sales_channel.ban_stock_update_until, { formatTime: 'MMM dd, yyyy' }) }}
-                    </span>
+            <div :class="'flex justify-between gap-3'">
+                <div :class="'flex gap-3 items-center'">
+                    <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
+                    <div>
+                        {{trans("Sorry, your account is temporarily restricted until")}}
+                        <span class="font-semibold">
+                            {{ useFormatTime(customer_sales_channel.ban_stock_update_until, { formatTime: 'MMM dd, yyyy' }) }}
+                        </span>
+                    </div>
                 </div>
+                <ButtonWithLink type="tertiary" :routeTarget="{
+                            name: 'retina.models.customer_sales_channel.unsuspend',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'patch'
+                        }" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
             </div>
     </Message>
 
@@ -478,7 +490,7 @@ const key = ulid()
 
                 <div>
                     <ButtonWithLink
-                        v-if="customer_sales_channel.type !== 'ebay'"
+                        v-if="customer_sales_channel.type !== 'ebay' && !customer_sales_channel.ban_stock_update_until"
                         label="Upload all as new product"
                         size="xs"
                         :routeTarget="{

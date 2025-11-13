@@ -430,7 +430,6 @@ const submitErrorProduct = (sel) => {
 </script>
 
 <template>
-    {{ disabled }}
         <Message v-if="errorBluk.length > 0 && progressToUploadToEcom.total == 0" severity="error"
              class="relative m-4 pr-10">
         <!-- Close Button -->
@@ -639,7 +638,7 @@ const submitErrorProduct = (sel) => {
                             type="tertiary"/>
 
                     </div>
-                  
+
                 </template>
 
                 <template v-else>
@@ -731,7 +730,7 @@ const submitErrorProduct = (sel) => {
         </template>
 
         <!-- Column: Actions 2 (Modal shopify) -->
-        <template #cell(create_new)="{ item }" v-if="disabled">
+        <template #cell(create_new)="{ item }" v-if="!disabled">
             <!-- {{ item.customer_sales_channel_platform_status }} --- {{ !item.platform_status }} -->
             <div v-if="item.customer_sales_channel_platform_status  && !item.platform_status "
                  class="flex gap-x-2 items-center">

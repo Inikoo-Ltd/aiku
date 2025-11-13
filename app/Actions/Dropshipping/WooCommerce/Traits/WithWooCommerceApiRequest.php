@@ -176,7 +176,7 @@ trait WithWooCommerceApiRequest
      *
      * @return array|null Product data
      */
-    public function getWooCommerceProduct(int $productId, bool $useCache = true): ?array
+    public function getWooCommerceProduct(int $productId, bool $useCache = false): ?array
     {
         return $this->makeWooCommerceRequest('GET', "products/$productId", [], $useCache);
     }

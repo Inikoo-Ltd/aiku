@@ -36,12 +36,22 @@ class UpdateEbayUserData extends OrgAction
         $ebayUser->createFulfilmentPolicy();
         $ebayUser->createPaymentPolicy();
         $ebayUser->createReturnPolicy();
-        $defaultLocationData = [
-            'locationKey' => 'mainWarehouse',
-            'city' => 'Sheffield',
-            'state' => 'England',
-            'country' => 'GB',
-        ];
+
+        $defaultLocationData = match (Arr::get($ebayUser->customer?->shop?->settings, 'ebay.marketplace_id', 'EBAY_GB')) {
+            'EBAY_ES' => [
+                'locationKey' => 'esWarehouse',
+                'city' => 'Zavar',
+                'state' => 'Trnava Region',
+                'country' => 'ES',
+            ],
+            default => [
+                'locationKey' => 'mainWarehouse',
+                'city' => 'Sheffield',
+                'state' => 'England',
+                'country' => 'GB',
+            ]
+        };
+
         $ebayUser->createInventoryLocation($defaultLocationData);
 
         $fulfilmentPolicies = $ebayUser->getFulfilmentPolicies();

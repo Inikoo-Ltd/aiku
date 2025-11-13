@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, withDefaults, ref, onMounted } from "vue"
+import { withDefaults, ref, onMounted } from "vue"
 import Chart from "primevue/chart"
 import SectionTable from "@/Components/Table/SectionTable.vue"
 
