@@ -592,10 +592,6 @@ onMounted(() => {
         selectedTab.value = 2;
         openedChildSideEditor.value = value;
         return;
-      case 'activeChildBlock':
-        selectedTab.value = 2;
-        openedChildSideEditor.value = value;
-        return;
       case 'activeChildBlockArray':
         selectedTab.value = 2;
         activeChildBlockArray.value = value;

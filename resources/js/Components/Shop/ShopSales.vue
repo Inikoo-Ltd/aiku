@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, computed, defineProps } from "vue"
+import { inject, computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 

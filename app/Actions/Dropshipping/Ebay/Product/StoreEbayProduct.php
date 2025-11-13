@@ -157,13 +157,16 @@ class StoreEbayProduct extends RetinaAction
                 'sku' => $product->code,
                 'availability' => [
                     'shipToLocationAvailability' => [
+                        'availabilityDistributions' => [
+                                [
+                                    'merchantLocationKey' => Arr::get($ebayUser->settings, 'defaults.main_location_key'),
+                                    'quantity' => $product->available_quantity
+                                ]
+                            ],
                         'quantity' => $product->available_quantity
                     ]
                 ],
                 'condition' => 'NEW',
-                'location' => [
-                    'country' => 'GB'
-                ],
                 'product' => [
                     'title' => $portfolio->customer_product_name,
                     'description' => $descriptions,

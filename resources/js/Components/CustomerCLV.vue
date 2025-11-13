@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, computed, ref, defineProps } from "vue";
+import { inject, computed, ref } from "vue";
 import { trans } from "laravel-vue-i18n"
 import { Tooltip } from 'floating-vue'
 import Dialog from 'primevue/dialog';
@@ -239,7 +239,7 @@ const oneYearFromNow = computed(() => {
 </template>
 
 <style scoped lang="scss">
-::v-deep(.floating-vue-tooltip) {
+:deep(.floating-vue-tooltip) {
     z-index: 10000;
 }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, ref, computed, onMounted, onUnmounted, defineExpose } from 'vue'
+import { inject, ref, computed, onMounted, onUnmounted } from 'vue'
 import Dialog from 'primevue/dialog'
 import Button from './Elements/Buttons/Button.vue'
 import axios from 'axios'
