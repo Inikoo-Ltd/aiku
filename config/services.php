@@ -68,8 +68,8 @@ return [
         ],
     ],
     'cloudflare-zip-r2' => [
-        'account_id' => env('CLOUDFLARE_WAF_ZIP_ACCOUNT_ID'),
-        'token' => env('CLOUDFLARE_WAF_ZIP_TOKEN'),
+        'expires_in' => env('CLOUDFLARE_WAF_ZIP_EXPIRES_IN', 60),
         'waf_secret' => env('CLOUDFLARE_WAF_ZIP_SECRET', 'mysecrettoken'),
+
     ],
 ];

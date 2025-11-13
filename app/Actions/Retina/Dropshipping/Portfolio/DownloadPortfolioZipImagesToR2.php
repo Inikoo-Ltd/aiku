@@ -37,16 +37,12 @@ class DownloadPortfolioZipImagesToR2 extends RetinaAction
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData) : array
     {
-
-        // get all files from r2 related to customer sales channel
-        // $files = $this->r2Service->listFiles("",true);
-        // Log::info($files);
         // get the group from model data
         $group = Arr::get($modelData, 'group', 'all');
 
 
         // TODO: can be update from env
-        $expiresIn = 10;
+        $expiresIn = config('services.cloudflare-zip-r2.expires_in', 60);
         $slug = Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference);
         // check if zip file already exists related to customer sales channel
         $bucketName = (string) config('filesystems.disks.zip-r2.bucket', 'dev-storage');

@@ -328,14 +328,20 @@ const handleDownloadClick = async (type: string, event: Event, ids: string = '',
     event.preventDefault();
     const url = downloadUrl(type, ids);
 
-    // close modal
-    isOpenModalPortfolios.value = false
+   // Close both modals
+    isOpenModalPortfolios.value = false;
+    isOpenModalDownloadImages.value = false;  // Add this line to close the download images modal
 
     if (!url) {
         console.error('No valid URL found for download');
         return;
     }
 
+    notify({
+        title: "Download on progress",
+        text: "Please wait while your download is being prepared",
+        type: "success",
+    })
     // Convert URL to string if it's a Router object
     const urlString = typeof url === 'string' ? url : url.toString();
 
