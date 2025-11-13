@@ -214,6 +214,10 @@ console.log('product summary : ', props)
 						<dt class="text-gray-500">{{ trans("Product Name") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.name }}</dd>
 					</div>
+					<div v-if="!hide?.includes('units')" class="flex justify-between flex-wrap gap-1">
+						<dt class="text-gray-500">{{ trans("Total Units per Product") }}</dt>
+						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }}</dd>
+					</div>
 					<div v-if="!hide?.includes('cpnp')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
 						<dd class="font-medium">{{data?.cpnp_number}}</dd>

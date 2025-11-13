@@ -55,6 +55,7 @@ class IndexProductsInMasterProduct extends OrgAction
                 'products.updated_at',
                 'products.slug',
                 'products.rrp',
+                'products.units',
                 'products.asset_id',
                 'shops.name as shop_name',
                 'shops.code as shop_code',
@@ -64,7 +65,7 @@ class IndexProductsInMasterProduct extends OrgAction
             ])
             ->leftJoin('product_stats', 'products.id', 'product_stats.product_id');
 
-        return $queryBuilder->allowedSorts(['code', 'name', 'shop_code'])
+        return $queryBuilder->allowedSorts(['code', 'name', 'shop_code', 'units'])
             ->allowedFilters([$globalSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
@@ -87,11 +88,12 @@ class IndexProductsInMasterProduct extends OrgAction
                     ]
                 );
             $table->column(key: 'state', label: ['fal', 'fa-yin-yang'], type: 'icon');
-            $table->column(key: 'shop_code', label: __('shop'), canBeHidden: false, sortable: true, searchable: true);
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'price', label: __('price'), canBeHidden: false, sortable: true)
+            $table->column(key: 'shop_code', label: __('Shop'), canBeHidden: false, sortable: true, searchable: true);
+            $table->column(key: 'code', label: __('Code'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'name', label: __('Name'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'price', label: __('Price'), canBeHidden: false, sortable: true)
                 ->column(key: 'rrp', label: __('RRP'), canBeHidden: false, sortable: true)
+                ->column(key: 'units', label: __('Units'), canBeHidden: false, sortable: true)
                 ->column(key: 'actions', label: __(''), canBeHidden: false);
         };
     }

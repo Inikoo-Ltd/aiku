@@ -175,7 +175,7 @@ const getTableData = (data) => {
 }
 
 const ListSelectorChange = (value) => {
-    console.log('selector', value)
+    // console.log('selector:', value)
     if (value.length >= 1) {
         form.name = value[0].name
         form.code = value[0].code
@@ -185,7 +185,7 @@ const ListSelectorChange = (value) => {
         form.net_weight = value[0].net_weight
         form.description = value[0].description
         form.description_extra = value[0].description_extra
-        form.units = value.length > 1 ? 1 : value[0]?.quantity || 1
+        form.units = value.length > 1 ? 1 : (value[0]?.quantity * value[0]?.units) || 1
         form.gross_weight = value[0]?.gross_weight || 0
         form.marketing_dimensions = value[0]?.dimensions || null     
     }
