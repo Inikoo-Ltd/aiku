@@ -24,30 +24,51 @@ class CalculateOrderDiscounts
 
     public function handle(Order $order): Order
     {
-        return $order;
-        $this->order = $order;
+        $this->order        = $order;
         $this->transactions = collect();
 
         $this->setEnabledOffers($order);
         if (count($this->enabledOffers) > 0) {
             $this->transactions = DB::table('transactions')
-                ->select(['id','quantity_ordered','gross_amount'])
+                ->select(['id', 'quantity_ordered', 'gross_amount', 'model_type', 'model_id'])
                 ->where('order_id', $order->id)->where('model_type', 'Product')->get();
 
             $this->processAllowances();
         }
 
+        DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)->delete();
 
+        foreach ($this->transactions as $transaction) {
 
-         foreach ($this->transactions as $transaction) {
-            DB::table('transactions')->where('id', $transaction->id)->update(['percentage_off' => $transaction->percentage_off]);
-         }
+            DB::table('transactions')->where('id', $transaction->id)
+                ->update(['net_amount' => $transaction->net_amount ?? 0]);
+
+            DB::table('transaction_has_offer_allowances')->insert([
+                'order_id'              => $order->id,
+                'transaction_id'        => $transaction->id,
+                'model_type'            => $transaction->model_type,
+                'model_id'              => $transaction->model_id,
+                'offer_campaign_id'     => $transaction->offer_campaign_id,
+                'offer_id'              => $transaction->offer_id,
+                'offer_allowance_id'    => $transaction->offer_allowance_id,
+                'discounted_amount'     => $transaction->discounted_amount,
+                'discounted_percentage' => $transaction->discounted_percentage,
+                'free_items_value'      => $transaction->free_items_value ?? 0,
+                'number_of_free_items'  => $transaction->number_of_free_items ?? 0,
+                'created_at'            => now(),
+                'updated_at'            => now(),
+                'data'                  => '{}'
+
+            ]);
+        }
+
+        CalculateOrderTotalAmounts::run(order: $order, calculateShipping: true, calculateDiscounts: false);
 
 
         return $order;
     }
 
-    private function setEnabledOffers(Order $order):void
+    private function setEnabledOffers(Order $order): void
     {
         $enabledOffers = [];
 
@@ -61,14 +82,13 @@ class CalculateOrderDiscounts
         }
 
         $this->enabledOffers = $enabledOffers;
-
     }
 
     public function checkAmountAndOrderNumber($order, $offerData): bool
     {
         $triggerData = json_decode($offerData->trigger_data, true);
 
-        if ($order->goods_amount < $triggerData['min_amount']) {
+        if ($order->gross_amount < $triggerData['min_amount']) {
             return false;
         }
 
@@ -92,9 +112,9 @@ class CalculateOrderDiscounts
         }
     }
 
-    public function processAllowance($offerId):void
+    public function processAllowance($offerId): void
     {
-        $allowanceData = DB::table('offer_allowances')->select(['target_type', 'data','offer_id','id','offer_campaign_id'])->where('offer_id', $offerId)->first();
+        $allowanceData = DB::table('offer_allowances')->select(['target_type', 'data', 'offer_id', 'id', 'offer_campaign_id'])->where('offer_id', $offerId)->first();
         if ($allowanceData) {
             if ($allowanceData->target_type == 'all_products_in_order') {
                 $this->processAllowanceAllProductsInOrder($allowanceData);
@@ -105,8 +125,7 @@ class CalculateOrderDiscounts
     public function processAllowanceAllProductsInOrder($allowanceData): void
     {
         $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
-        $percentageOff = isset($allowanceOpsData['percentage_off']) ? (float)$allowanceOpsData['percentage_off'] : 0.0;
-
+        $percentageOff    = isset($allowanceOpsData['percentage_off']) ? (float)$allowanceOpsData['percentage_off'] : 0.0;
 
 
         // Clamp to [0,1]
@@ -127,11 +146,14 @@ class CalculateOrderDiscounts
 
             // Apply only if undefined or lower than the new percentage
             if ($current === null || (is_numeric($current) && (float)$current < $percentageOff)) {
-                $transaction->percentage_off = $percentageOff;
-                $transaction->net_amount = (float)$transaction->gross_amount * (1 - $percentageOff);
-                $transaction->offer_id = $allowanceData->offer_id;
-                $transaction->offer_campaign_id = $allowanceData->offer_campaign_id;
-                $transaction->offer_allowance_id = $allowanceData->id;
+                $discountedAmount = round((float)$transaction->gross_amount * $percentageOff, 2);
+
+                $transaction->discounted_percentage = $percentageOff;
+                $transaction->net_amount            = $transaction->gross_amount - $discountedAmount;
+                $transaction->discounted_amount     = $discountedAmount;
+                $transaction->offer_id              = $allowanceData->offer_id;
+                $transaction->offer_campaign_id     = $allowanceData->offer_campaign_id;
+                $transaction->offer_allowance_id    = $allowanceData->id;
             }
         }
     }
