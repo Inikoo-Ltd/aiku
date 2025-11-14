@@ -258,10 +258,9 @@ function roundDown2(num: number) {
                         <!-- RRP -->
                         <td class="px-2 py-2  border-b border-gray-100">
                             {{  locale.currencyFormat(item.product?.shop_currency ?? currency, roundDown2(
-                                (Number(item.product.rrp) * (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1)) * 2.4)
-                            )}}
+                                Number(item.product.rrp * (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1))
+                            ))}}
                         </td>
-
                         <!-- RRP per unit -->
                         <td class="px-2 py-2 border-b border-gray-100 text-center">
                             <div class="flex items-center gap-2 text-xs">
