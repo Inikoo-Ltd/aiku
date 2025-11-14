@@ -90,7 +90,7 @@ const form = useForm({
     code: "",
     name: "",
     unit: '',
-    units: null,
+   /*  units: null, */
     trade_units: [],
     image: null,
     shop_products: null,
@@ -185,7 +185,7 @@ const ListSelectorChange = (value) => {
         form.net_weight = value[0].net_weight
         form.description = value[0].description
         form.description_extra = value[0].description_extra
-        form.units = value.length > 1 ? 1 : (value[0]?.quantity * value[0]?.units) || 1
+       /*  form.units = value.length > 1 ? 1 : (value[0]?.quantity * value[0]?.units) || 1 */
         form.gross_weight = value[0]?.gross_weight || 0
         form.marketing_dimensions = value[0]?.dimensions || null     
     }
@@ -414,7 +414,7 @@ const successEditTradeUnit = (data) => {
                 </small>
                 <small class="text-gray-500 text-xs mt-1 flex items-center gap-1">
                     <FontAwesomeIcon :icon="faInfoCircle" class="text-sm" />
-                    {{ trans('When multiple trade units are selected, this one will automatically be set as the outer unit (value: 1).') }}
+                    {{ trans('When multiple trade units are selected, it will automatically be set as the outer unit (value: 1).') }}
                 </small>
 
             </div>
