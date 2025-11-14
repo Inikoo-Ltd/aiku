@@ -13,7 +13,6 @@ import { faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faL
 import { faSearch, faBell } from '@far'
 import { ref, provide } from 'vue'
 import { useLocaleStore } from "@/Stores/locale"
-// import { useColorTheme } from "@/Composables/useStockList"
 
 library.add( faNarwhal, faHome, faBars, faUsersCog, faTachometerAltFast, faUser, faLanguage, faParachuteBox, faCube, faBallot, faConciergeBell, faGarage, faAlignJustify, faShippingFast, faPaperPlane, faTasks, faSearch, faBell )
 
@@ -23,8 +22,6 @@ provide('layout', useLayoutStore())
 provide('locale', useLocaleStore())
 initialiseRetinaApp()
 
-
-// const irisTheme = usePage().props?.iris?.theme ? usePage().props?.iris?.theme : { color: [...useColorTheme[2]] }
 
 
 const layout = useLayoutStore()

@@ -32,7 +32,7 @@ class FinaliseOrder extends OrgAction
         $oldState = $order->state;
 
         $currentInvoicesInOrder = $order->invoices()->where('type', InvoiceTypeEnum::INVOICE)->count();
-        if($currentInvoicesInOrder >0){
+        if ($currentInvoicesInOrder > 0) {
             throw ValidationException::withMessages(['status' => 'You can not change the status to finalized, because there are invoices in this order']);
         }
         GenerateInvoiceFromOrder::make()->action($order);
