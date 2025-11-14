@@ -18,7 +18,7 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use ZipArchive;
 use Sentry\Laravel\Facade as Sentry;
 
-class PortfoliosTemporaryExport
+class PortfoliosZipExportToLocal
 {
     use AsAction;
 
@@ -33,7 +33,7 @@ class PortfoliosTemporaryExport
     {
         $slug = Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference);
 
-        $tempDir = sys_get_temp_dir() . '/' . uniqid('portfolio_export_');
+        $tempDir = sys_get_temp_dir() . '/' . uniqid('portfolios_zip_export_');
         if (!file_exists($tempDir)) {
             mkdir($tempDir, 0755, true);
         }

@@ -66,10 +66,5 @@ return [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
             'channel' => env('SLACK_CHANNEL', '#general'),
         ],
-    ],
-    'cloudflare-zip-r2' => [
-        'expires_in' => env('CLOUDFLARE_WAF_ZIP_EXPIRES_IN', 60),
-        'waf_secret' => env('CLOUDFLARE_WAF_ZIP_SECRET', 'mysecrettoken'),
-
-    ],
+    ]
 ];
