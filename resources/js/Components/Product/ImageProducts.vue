@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
   faChevronCircleLeft,
   faChevronCircleRight,
+  faTimesCircle
 } from '@fal'
 import { faVideo } from '@fas'
 import { ulid } from 'ulid'

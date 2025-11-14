@@ -31,7 +31,6 @@ trait HasIrisUserData
 
         $cartCount  = 0;
         $cartAmount = 0;
-        $customerSalesChannels = [];
 
         if ($this->shop->type == ShopTypeEnum::B2B) {
             $orderInBasket = $this->customer->orderInBasket;
@@ -39,7 +38,7 @@ trait HasIrisUserData
             $cartAmount    = $orderInBasket ? $orderInBasket->total_amount : 0;
         }
 
-
+        $customerSalesChannels = [];
         if ($webUser && request()->get('shop_type') == ShopTypeEnum::DROPSHIPPING->value) {
             $channels = DB::table('customer_sales_channels')
                 ->leftJoin('platforms', 'customer_sales_channels.platform_id', '=', 'platforms.id')
@@ -65,6 +64,7 @@ trait HasIrisUserData
             'is_logged_in'           => true,
             'auth'                   => [
                 'user'                  => LoggedWebUserResource::make($webUser)->getArray(),
+                'webUser_count'         => $webUser->customer->webUsers->count() ?? 1,
                 'customerSalesChannels' => $customerSalesChannels
             ],
             'customer'               => $this->customer,

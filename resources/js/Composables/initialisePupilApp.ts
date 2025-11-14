@@ -10,13 +10,20 @@ import { useLocaleStore } from "@/Stores/locale"
 import { router, usePage } from "@inertiajs/vue3"
 import { loadLanguageAsync } from "laravel-vue-i18n"
 import { watchEffect } from "vue"
-
+// import { useEchoRetinaPersonal } from "@/Stores/echo-retina-personal.js"
+// import { useEchoRetinaWebsite } from "@/Stores/echo-retina-website.js"
+// import { useEchoRetinaCustomer } from "@/Stores/echo-retina-customer.js"
 
 
 export const initialisePupilApp = () => {
     const layout = useLayoutStore()
     const locale = useLocaleStore()
 
+    // const echoPersonal = useEchoRetinaPersonal()
+    // const echoWebsite = useEchoRetinaWebsite()
+    // const echoCustomer = useEchoRetinaCustomer()
+
+    // layout.liveUsers = usePage().props.liveUsers || null
 
 
     const storageLayout = JSON.parse(localStorage.getItem('layout') || '{}')  // Get layout from localStorage
@@ -68,7 +75,15 @@ export const initialisePupilApp = () => {
             locale.languageOptions = usePage().props.localeData.languageOptions
         }
 
+        // Set data of Website
+        // if (usePage().props.layout?.website) {
+        //     layout.website = usePage().props.layout?.website
+        // }
 
+        // Set data of Locale (Language)
+        // if (usePage().props.layout?.customer) {
+        //     layout.customer = usePage().props.layout.customer
+        // }
 
         if (usePage().props.app) {
             layout.app = usePage().props.app
@@ -80,13 +95,22 @@ export const initialisePupilApp = () => {
             layout.app.environment = usePage().props?.environment
         }
 
+        // layout.webUser_count = usePage().props.auth?.webUser_count || null
 
+        // let moduleName = (layout.currentRoute || "").split(".")
+        // layout.currentModule = moduleName.length > 1 ? moduleName[1] : ""
 
         if (usePage().props.auth?.user) {
             layout.user = usePage().props.auth.user
         }
 
+        // if (usePage().props.iris) {
+        //     layout.iris = usePage().props.iris
+        // }
 
+        // if (usePage().props.auth?.user?.avatar_thumbnail) {
+        //     layout.avatar_thumbnail = usePage().props.auth.user.avatar_thumbnail
+        // }
 
     })
 

@@ -20,10 +20,26 @@ class GetCustomerProductCategorySalesChannelIds extends OrgAction
 {
     public function handle(Customer $customer, ProductCategory $productCategory): array
     {
-       return GetRetinaCustomerProductCategorySalesChannelIds::run($customer, $productCategory);
+        $productIds = $productCategory->getProducts()->pluck('id');
+
+        $queryBuilder = QueryBuilder::for(CustomerSalesChannel::class);
+        $queryBuilder->where('customer_sales_channels.customer_id', $customer->id)
+            ->distinct();
+        $queryBuilder->join('portfolios', function ($join) use ($productIds) {
+            $join->on('customer_sales_channels.id', '=', 'portfolios.customer_sales_channel_id')
+                ->where('portfolios.item_type', '=', 'Product')
+                ->whereIn('portfolios.item_id', $productIds);
+        });
+
+        $queryBuilder
+            ->select('customer_sales_channels.id')
+            ->groupBy('customer_sales_channels.id')
+            ->havingRaw('COUNT(DISTINCT portfolios.item_id) = ?', [count($productIds)]);
+
+        return $queryBuilder->get()->pluck('id')->toArray();
     }
 
-    public function asController(Customer $customer, ProductCategory $productCategory, ActionRequest $request): \Illuminate\Http\Response|array
+    public function asController(Customer $customer, ProductCategory $productCategory, ActionRequest $request)
     {
         $this->initialisationFromShop($customer->shop, $request);
 

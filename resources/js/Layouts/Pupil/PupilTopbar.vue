@@ -1,10 +1,16 @@
 <script setup lang="ts">
+import { Link } from "@inertiajs/vue3"
 import { Disclosure } from "@headlessui/vue"
+
 import { layoutStructure } from "@/Composables/useLayoutStructure";
+
 import { faChevronDown } from "@far"
 import { faDotCircle } from "@fas"
 import { faTerminal, faCog, faAbacus, faFolder, faFax,faUserCircle, faBarcode, faBallotCheck, faUsdCircle } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
+
+// import MenuTopRight from "@/Layouts/Retina/MenuTopRight.vue"
+// import MenuTopRight from "@/Layouts/Pupil/MenuTopRight.vue"
 import { inject } from "vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 import Image from "@/Components/Image.vue";

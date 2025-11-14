@@ -43,8 +43,11 @@ class GetIrisFirstHitData extends IrisAction
         if (auth()->check()) {
             $this->webUser = request()->user();
             $this->customer = $this->webUser?->customer;
+            $this->fulfilmentCustomer = $this->customer?->fulfilmentCustomer;
             $this->shop = $this->customer?->shop;
-
+            $this->fulfilment = $this->shop->fulfilment;
+            $this->website = request()->get('website');
+            $this->organisation = $this->website->organisation;
 
             RetinaLogWebUserRequest::run();
             Cookie::queue('iris_vua', true, config('session.lifetime') * 60);
@@ -58,6 +61,9 @@ class GetIrisFirstHitData extends IrisAction
 
 
     }
+
+
+    // getIrisUserData moved to HasIrisUserData trait
 
     /**
      * @throws \Psr\Container\ContainerExceptionInterface

@@ -57,7 +57,6 @@ class CalculateOrderTotalAmounts extends OrgAction
         data_set($modelData, 'number_item_transactions', $numberItemTransactions);
 
 
-
         $order->update($modelData);
         $order->stats->update(
             [
@@ -90,7 +89,7 @@ class CalculateOrderTotalAmounts extends OrgAction
         ])) {
 
             $calculateCharges = false;
-            if (Arr::hasAny($changes, ['goods_amount', 'number_item_transactions']) || true) { //todo remove true when all orders are updated with number_item_transactions
+            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'number_item_transactions'])) {
                 CalculateOrderDiscounts::run($order);
                 $calculateCharges = true;
             }
@@ -125,7 +124,7 @@ class CalculateOrderTotalAmounts extends OrgAction
             $order = Order::where('slug', $slug)->first();
             if ($order) {
                 $this->handle($order);
-                $command->line("Order $order->reference totals calculated. 🧮");
+                $command->line("Order $order->reference hydrated 💦");
             } else {
                 $command->error("Model not found");
                 $exitCode = 1;

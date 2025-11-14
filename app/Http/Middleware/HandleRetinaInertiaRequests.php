@@ -75,6 +75,7 @@ class HandleRetinaInertiaRequests extends Middleware
             [
                 'auth'     => [
                     'user'          => $webUser ? LoggedWebUserResource::make($webUser)->getArray() : null,
+                    'webUser_count' => $webUser?->customer?->webUsers?->count() ?? 1,
                     'customerSalesChannels' => $customerSalesChannels
                 ],
                 'currency' => [
