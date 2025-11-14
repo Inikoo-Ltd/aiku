@@ -36,7 +36,7 @@ import {
     faXmark,
     faCamera
 } from "@fortawesome/free-solid-svg-icons";
-import { faChevronUp, faChevronDown } from "@far";
+import { faChevronUp, faChevronDown, faInfo, faInfoCircle } from "@far";
 import { ulid } from "ulid";
 import { notify } from "@kyvg/vue3-notification";
 import { cloneDeep } from "lodash";
@@ -412,6 +412,7 @@ const successEditTradeUnit = (data) => {
                     {{ form.errors.trade_units }}
                 </small>
                 <small class="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                    <FontAwesomeIcon :icon="faInfoCircle" class="text-sm" />
                     {{ trans('When multiple trade units are selected, this one will automatically be set as the outer unit (value: 1).') }}
                 </small>
 
