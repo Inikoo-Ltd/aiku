@@ -18,6 +18,14 @@ export default {
 					type: "number",
 				},
 				{
+					label: "Duration",
+					key: ["carousel_setting", "duration"],
+					type: "number",
+					props_data: {
+						suffix : 's'
+					}
+				},
+				{
 					label: "Autoplay",
 					key: ["carousel_setting", "autoplay"],
 					type: "switch",
