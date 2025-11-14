@@ -29,7 +29,7 @@ class PortfoliosZipExportToLocal
      * @param array $ids  Portfolio IDs to export (empty = all)
      * @return string  Full path to the generated ZIP file
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, $ids = [], $group = 'all'): string
+    public function handle(CustomerSalesChannel $customerSalesChannel, $totalImages): string
     {
         $slug = Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference);
 
@@ -38,7 +38,7 @@ class PortfoliosZipExportToLocal
             mkdir($tempDir, 0755, true);
         }
 
-        $zipFilename = 'images_'.$group.'_'.$slug.'.zip';
+        $zipFilename = 'images_'.$slug.'_'.$totalImages.'.zip';
         $tempZipPath = sys_get_temp_dir() . '/' . $zipFilename;
 
         $zip = new ZipArchive();
@@ -47,7 +47,7 @@ class PortfoliosZipExportToLocal
         }
 
     try {
-        $imagesData = $this->getImages($customerSalesChannel, $ids);
+        $imagesData = $this->getImages($customerSalesChannel);
 
         foreach ($imagesData as $imageId => $imageData) {
             $image = $imageData['image'];
@@ -103,15 +103,11 @@ class PortfoliosZipExportToLocal
     /**
      * Gather image data from the requested portfolios.
      */
-    public function getImages(CustomerSalesChannel $customerSalesChannel, $ids = []): array
+    public function getImages(CustomerSalesChannel $customerSalesChannel): array
     {
         $imagesData = [];
 
         $query = $customerSalesChannel->portfolios();
-
-        if (!blank($ids)) {
-            $query->whereIn('id', $ids);
-        }
 
         $portfolios = $query->get();
 

@@ -10,16 +10,16 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
+use Illuminate\Support\Facades\Log;
 
 class DownloadAndUploadPortfolioZipImages extends RetinaAction
 {
-     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array
+     public function handle(CustomerSalesChannel $customerSalesChannel): array
     {
-        $group = Arr::get($modelData, 'group', 'all') ?? 'all';
-        $fullPath = $this->buildFilePath($customerSalesChannel, $group);
+        $totalImagePortofolio = TotalImagePortfolios::run($customerSalesChannel);
+        $fullPath = $this->buildFilePath($customerSalesChannel, $totalImagePortofolio);
 
         // Return existing file if available
         if (CheckCatalogueFileExistsInR2::run($fullPath)) {
@@ -27,10 +27,10 @@ class DownloadAndUploadPortfolioZipImages extends RetinaAction
         }
 
         // Generate and upload new zip file
-        return $this->createAndUploadZip($customerSalesChannel, $modelData, $fullPath);
+        return $this->createAndUploadZip($customerSalesChannel, $totalImagePortofolio, $fullPath);
     }
 
-    private function buildFilePath(CustomerSalesChannel $customerSalesChannel, string $group): string
+    private function buildFilePath(CustomerSalesChannel $customerSalesChannel, int $totalImagePortofolio ): string
     {
         $bucketName = config('filesystems.disks.zip-r2.bucket', 'dev-storage');
         $slug = Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference);
@@ -40,7 +40,7 @@ class DownloadAndUploadPortfolioZipImages extends RetinaAction
             $bucketName,
             $customerSalesChannel->id,
             $slug,
-            $group
+            $totalImagePortofolio
         );
     }
 
@@ -53,7 +53,7 @@ class DownloadAndUploadPortfolioZipImages extends RetinaAction
 
     private function createAndUploadZip(
         CustomerSalesChannel $customerSalesChannel,
-        array $modelData,
+        int $totalImagePortfolios,
         string $fullPath
     ): array {
         $tempZipPath = null;
@@ -61,8 +61,7 @@ class DownloadAndUploadPortfolioZipImages extends RetinaAction
         try {
             $tempZipPath = PortfoliosZipExportToLocal::run(
                 $customerSalesChannel,
-                Arr::get($modelData, 'ids', []),
-                Arr::get($modelData, 'group', 'all')
+                $totalImagePortfolios
             );
 
             if (!UploadFileToCatalogueIrisR2::run($tempZipPath, $fullPath)) {
@@ -96,27 +95,9 @@ class DownloadAndUploadPortfolioZipImages extends RetinaAction
         return true;
     }
 
-    public function rules(): array
-    {
-        return [
-            'ids' => ['nullable', 'array'],
-            'group' => ['nullable', 'string']
-        ];
-    }
-
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        if (! blank($request->get('ids'))) {
-            $this->set('ids', explode(',', $request->get('ids')));
-        }
-        if ($request->has('group')) {
-            $this->set('group', $request->input('group'));
-        }
-    }
-
     public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): array
     {
         $this->initialisation($request);
-        return $this->handle($customerSalesChannel, $this->validatedData);
+        return $this->handle($customerSalesChannel);
     }
 }

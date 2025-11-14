@@ -324,9 +324,9 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const key = ulid()
 
-const handleDownloadClick = async (type: string, event: Event, ids: string = '', group: string = '') => {
+const handleDownloadClick = async (type: string, event: Event) => {
     event.preventDefault();
-    const url = downloadUrl(type, ids);
+    const url = downloadUrl(type);
 
    // Close both modals
     isOpenModalPortfolios.value = false;
@@ -346,11 +346,7 @@ const handleDownloadClick = async (type: string, event: Event, ids: string = '',
     const urlString = typeof url === 'string' ? url : url.toString();
 
     try {
-        const response = await axios.get(urlString, {
-            params: {
-                group: group
-            }
-        });
+        const response = await axios.get(urlString, {});
         if (response.status !== 200) {
             notify({
                 title: "Something went wrong.",
@@ -411,10 +407,10 @@ const handleDownloadClick = async (type: string, event: Event, ids: string = '',
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
-                <a v-if="props.product_count <= 200" href="#" @click.prevent="handleDownloadClick('images', $event)">
+                <a href="#" @click.prevent="handleDownloadClick('images', $event)">
                     <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 rounded-l-none"/>
                 </a>
-                <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
+                <!-- <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/> -->
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
@@ -633,7 +629,7 @@ const handleDownloadClick = async (type: string, event: Event, ids: string = '',
                                  :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
     </Modal>
 
-    <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
+    <!-- <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
            width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
         <div class="mb-8">
             <h3 class="text-center font-semibold">{{ trans('Images grouped by first letter from product code')}}</h3>
@@ -648,5 +644,5 @@ const handleDownloadClick = async (type: string, event: Event, ids: string = '',
                 </a>
             </div>
         </div>
-    </Modal>
+    </Modal> -->
 </template>
