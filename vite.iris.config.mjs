@@ -48,8 +48,8 @@ export default defineConfig(
                             undefined,
                           bundleName          : "iris",
                           uploadToken         : process.env.CODECOV_TOKEN
-                        })//,
-     // analyzer()
+                        })
+      //, analyzer()
     ],
     ssr    : {
       noExternal: ["@inertiajs/server", "vue-countup-v3", "floating-vue", "tailwindcss", "@fortawesome/*"]
@@ -79,11 +79,8 @@ export default defineConfig(
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes("node_modules") &&
-              !id.includes("sentry")) {
-              return id.toString().
-                split("node_modules/")[1].split(
-                "/")[0].toString();
+            if (id.includes('node_modules')) {
+              return 'vendor'; // This will create a single chunk named 'vendor.js' (with a hash)
             }
           }
         }
