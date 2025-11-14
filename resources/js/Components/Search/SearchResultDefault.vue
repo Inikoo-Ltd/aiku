@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link } from "@inertiajs/vue3"
 import { routeType } from "@/types/route"
-//import { useFormatTime } from "@/Composables/useFormatTime"
+import { useFormatTime } from "@/Composables/useFormatTime"
 import { inject, ref } from "vue"
 import AddressLocation from "@/Components/Elements/Info/AddressLocation.vue"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
@@ -113,7 +113,7 @@ const isLoading = ref(false)
                             <FontAwesomeIcon v-if="meta?.icon" v-tooltip="meta?.icon?.title ? meta?.icon?.title : meta?.icon?.tooltip" aria-hidden="true" :icon="meta?.icon?.icon" size="sm" :class="meta?.icon?.class" fixed-width />
 
                             <template v-if="meta.type === 'date'">
-                                {{meta.label}}
+                                {{ useFormatTime(meta.label) }}
                             </template>
 
                             <template v-else-if="meta.type === 'currency'">

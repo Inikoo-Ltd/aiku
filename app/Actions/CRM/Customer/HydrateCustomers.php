@@ -51,6 +51,7 @@ class HydrateCustomers
         CustomerHydrateExclusiveProducts::run($customer);
         CustomerHydrateCustomerSalesChannels::run($customer->id);
         CustomerHydrateClv::run($customer);
+        CustomerHydrateRfm::run($customer);
 
         if ($customer->fulfilmentCustomer) {
             HydrateFulfilmentCustomer::run($customer->fulfilmentCustomer);

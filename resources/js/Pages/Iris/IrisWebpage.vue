@@ -22,7 +22,7 @@ const props = defineProps<{
 defineOptions({ layout: LayoutIris })
 library.add(faCheck, faPlus, faMinus)
 
-const layout: any = inject("layout", {})
+const layout: any = inject("layout", {});
 
 const screenType = ref<'mobile' | 'tablet' | 'desktop'>('desktop')
 const currentUrl = ref('')
