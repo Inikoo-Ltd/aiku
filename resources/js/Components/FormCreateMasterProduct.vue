@@ -413,7 +413,7 @@ const successEditTradeUnit = (data) => {
                 </small>
                 <small class="text-gray-500 text-xs mt-1 flex items-center gap-1">
                     <FontAwesomeIcon :icon="faInfoCircle" class="text-sm" />
-                    {{ trans('When multiple trade units are selected, this one will automatically be set as the outer unit (value: 1).') }}
+                    {{ trans('When multiple trade units are selected, it will automatically be set as the outer unit (value: 1).') }}
                 </small>
 
             </div>
