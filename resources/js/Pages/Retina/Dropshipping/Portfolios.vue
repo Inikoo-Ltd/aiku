@@ -19,7 +19,7 @@ import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faSyncAlt, faHandPointer, faBan} from "@fas";
 import { useFormatTime } from "@/Composables/useFormatTime";
-
+import Icon from '@/Components/Icon.vue'
 import {
     faBracketsCurly, faPawClaws,
     faFileExcel,
@@ -29,8 +29,9 @@ import {
     faUpload,
     faBox,
     faEllipsisV,
-    faDownload,
+    faDownload
 } from "@fal";
+import {faCheck} from "@fas";
 import axios from "axios"
 import {Table as TableTS} from "@/types/Table"
 import {CustomerSalesChannel} from "@/types/customer-sales-channel"
@@ -46,7 +47,7 @@ import { useTabChange } from "@/Composables/tab-change";
 import TableRetinaPlatformPortfolioLogs from "@/Components/Tables/Retina/TableRetinaPlatformPortfolioLogs.vue";
 
 
-library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
+library.add(faFileExcel, faCheck, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
 const props = defineProps<{
@@ -105,6 +106,8 @@ const step = ref(props.step);
 const isPlatformManual = computed(() => props.platform_data.type === 'manual');
 const isOpenModalPortfolios = ref(false);
 const isOpenModalDownloadImages = ref(false);
+const isOpenModalSuspended = ref(false);
+const isTestConnectionSuccess = ref(false);
 
 
 const isLoadingUpload = ref(false);
@@ -403,11 +406,7 @@ const key = ulid()
                         </span>
                     </div>
                 </div>
-                <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.unsuspend',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch'
-                        }" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
+                    <ButtonWithLink type="tertiary" @click="isOpenModalSuspended = true" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
             </div>
     </Message>
 
@@ -578,6 +577,30 @@ const key = ulid()
                     <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
                 </a>
             </div>
+        </div>
+    </Modal>
+    <Modal :isOpen="isOpenModalSuspended" @onClose="isOpenModalSuspended = false"
+           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
+        <div class="mb-8">
+            <h3 class="text-center">{{ trans('If you experience an issue when clicking Unsuspend, your store might be down. You can check it by clicking Test Connection.')}}</h3>
+            <div class="mt-8 flex justify-center items-center gap-2 font-light text-sm" v-if="isTestConnectionSuccess">
+                <Icon class="text-green-500" :data="{
+                icon: 'fas fa-check'
+            }" /> {{ trans('Great! your store can connect, now click unsuspend') }}
+            </div>
+        </div>
+
+        <div class="flex justify-center gap-2">
+            <ButtonWithLink type="tertiary" :routeTarget="{
+                            name: 'retina.models.customer_sales_channel.test_connection',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'patch',
+                        }" @success="data => isTestConnectionSuccess = true" @error="data => isTestConnectionSuccess = data.status" icon="fas fa-check" :label="trans('Test Connection')" />
+            <ButtonWithLink type="tertiary" :routeTarget="{
+                            name: 'retina.models.customer_sales_channel.unsuspend',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'patch'
+                        }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
         </div>
     </Modal>
 </template>
