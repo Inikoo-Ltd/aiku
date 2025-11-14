@@ -412,8 +412,9 @@ const successEditTradeUnit = (data) => {
                     {{ form.errors.trade_units }}
                 </small>
                 <small class="text-gray-500 text-xs mt-1 flex items-center gap-1">
-                    {{ trans('This unit will be used as the outer packaging.') }}
+                    {{ trans('When multiple trade units are selected, this one will automatically be set as the outer unit (value: 1).') }}
                 </small>
+
             </div>
 
             <!-- Product Details & Price -->
