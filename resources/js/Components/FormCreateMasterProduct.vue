@@ -204,7 +204,8 @@ const submitForm = async (redirect = true) => {
 
         let create_in_shop = tableDataItem.product.create_in_shop
         let price = tableDataItem.product.price
-        let rrp = tableDataItem.product.rrp
+        let rrp = tableDataItem.product.rrp * (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1)
+        let rrp_per_unit = tableDataItem.product.rrp
 
         if(!create_in_shop){
             rrp=1;
@@ -213,8 +214,9 @@ const submitForm = async (redirect = true) => {
 
         finalDataTable[tableDataItem.id] = {
             price: price,
-            create_in_shop : create_in_shop?'Yes':'No',
-            rrp: rrp
+            create_in_shop : create_in_shop? 'Yes':'No',
+            rrp: rrp,
+            rrp_per_unit : rrp_per_unit
         }
     }
 
