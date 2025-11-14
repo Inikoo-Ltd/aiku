@@ -52,7 +52,6 @@ interface ProductData {
 
 // v-model:data
 const modelValue = defineModel<ProductData>();
-
 const emits = defineEmits<{
     (e: "change", payload: { tableData: ProductItem[]; data: ProductData }): void;
 }>();
@@ -116,7 +115,7 @@ modelValue.value.data.forEach((item) => {
 
         // default rrp
         if (!item.product.rrp) {
-            item.product.rrp = roundDown2(Number(item.product.price) * 2.4);
+            item.product.rrp = roundDown2(Number(item.product.price / (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1)) * 2.4);
         }
 
         // watcher untuk auto mode
@@ -124,7 +123,7 @@ modelValue.value.data.forEach((item) => {
             () => item.product!.price,
             (newPrice) => {
                 if (!item.product!.useCustomRrp) {
-                    item.product!.rrp = roundDown2(Number(newPrice) * 2.4);
+                    item.product!.rrp = roundDown2(Number(newPrice / (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1)) * 2.4);
                     emits("change", modelValue.value);
                 }
             },
@@ -133,18 +132,9 @@ modelValue.value.data.forEach((item) => {
     }
 });
 
+
 function roundDown2(num: number) {
     return Math.floor(num * 100) / 100;
-}
-
-const computeRrpPerUnit = (rrp: number, units: any[]) => {
-    const totalUnit =
-        units.length === 1
-            ? Number(units[0]?.quantity) || 1
-            : 1
-
-    const value = Number(rrp) / totalUnit
-    return isFinite(value) ? value : 0
 }
 
 </script>
@@ -168,7 +158,7 @@ const computeRrpPerUnit = (rrp: number, units: any[]) => {
                         </th>
 
                         <!-- Shop (2 column width) -->
-                        <th class="px-2 py-1 text-left" >
+                        <th class="px-2 py-1 text-left">
                             {{ trans('Shop') }}
                         </th>
 
@@ -251,7 +241,8 @@ const computeRrpPerUnit = (rrp: number, units: any[]) => {
 
                         <!-- Price per unit -->
                         <td class="px-2 py-2  border-b border-gray-100 text-center">
-                            {{ locale.currencyFormat(item.product?.shop_currency ?? currency, (item.product?.price / (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity)  : 1))) }}
+                            {{ locale.currencyFormat(item.product?.shop_currency ?? currency, (item.product?.price /
+                                (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1))) }}
                         </td>
 
                         <!-- Margin -->
@@ -266,23 +257,26 @@ const computeRrpPerUnit = (rrp: number, units: any[]) => {
                         </td>
 
                         <!-- RRP -->
-                        <td class="px-2 py-2  border-b border-gray-100" >
+                        <td class="px-2 py-2  border-b border-gray-100">
+                            {{  locale.currencyFormat(item.product?.shop_currency ?? currency, roundDown2(
+                                (Number(item.product.price) * 2.4))
+                            )}}
+                        </td>
+
+                        <!-- RRP per unit -->
+                        <td class="px-2 py-2 border-b border-gray-100 text-center">
                             <div class="flex items-center gap-2 text-xs">
                                 <div class="w-32" v-if="item.product?.useCustomRrp">
-                                     <InputNumber  v-model="item.product.rrp"
-                                    mode="currency" :disabled="!item.product.create_in_shop"
-                                    :currency="item?.product?.shop_currency ?? currency" :step="0.25"
-                                    :showButtons="true" inputClass="w-full text-xs" :min="0"
-                                    @input="emits('change', modelValue)" />
+                                    <InputNumber v-model="item.product.rrp" mode="currency"
+                                        :disabled="!item.product.create_in_shop"
+                                        :currency="item?.product?.shop_currency ?? currency" :step="0.25"
+                                        :showButtons="true" inputClass="w-full text-xs" :min="0"
+                                        @input="emits('change', modelValue)" />
 
                                 </div>
-                               
 
                                 <span v-else>
-                                    {{ locale.currencyFormat(
-                                        item?.product?.shop_currency ?? currency,
-                                        roundDown2(Number(item.product?.price) * 2.4)
-                                    ) }}
+                                    {{locale.currencyFormat(item.product?.shop_currency ?? currency, roundDown2(Number(item.product.price / (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1)) * 2.4))}}
                                 </span>
 
                                 <button class="px-2 py-1 text-[10px] rounded border bg-gray-50 hover:bg-gray-100"
@@ -291,16 +285,6 @@ const computeRrpPerUnit = (rrp: number, units: any[]) => {
                                     {{ item.product?.useCustomRrp ? 'Auto' : 'Custom' }}
                                 </button>
                             </div>
-                        </td>
-
-                        <!-- RRP per unit -->
-                       <td class="px-2 py-2 border-b border-gray-100 text-center">
-                            {{
-                                locale.currencyFormat(
-                                    item.product?.shop_currency ?? currency,
-                                    computeRrpPerUnit(item.product?.rrp, form.trade_units)
-                                )
-                            }}
                         </td>
 
                         <!-- RRP Margin -->
