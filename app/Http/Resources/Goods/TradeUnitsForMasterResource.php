@@ -64,6 +64,7 @@ class TradeUnitsForMasterResource extends JsonResource
             'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
             'quantity'                => $this->quantity,
             'stock_available'         => $this->quantity ? true : false,
+            'ecom_quantity'             => $this->quantity, // for FE
             'ds_quantity'             => 1 // for FE
         ];
     }

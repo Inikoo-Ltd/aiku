@@ -17,7 +17,7 @@ import { faPlus, faTimes } from "@fal"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
-import { faTrashAlt } from '@far'
+import { faForklift, faTrashAlt } from '@far'
 import Toggle from './Pure/Toggle.vue'
 
 library.add(faCheckCircle, faTimes)
@@ -35,6 +35,7 @@ const props = withDefaults(defineProps<{
     head_label?: string
     no_data_label?: string
     tabs?: Array<{ label: string, routeFetch: routeType }>
+    is_dropship?:boolean
 }>(), {
     key_quantity: 'quantity_selected',
     head_label: 'Selected Products',
@@ -282,7 +283,16 @@ defineExpose({
                                 @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
                                 noUndoButton noSaveButton parentClass="w-min" >
                                 <template #suffix>
-                                   <div class="text-sm text-gray-700 px-3 font-bold capitalize">{{ item.type }}</div>
+                                   <div class="text-sm text-gray-700 px-3 font-bold capitalize">{{ is_dropship ? 'SKU' : item.type }}</div>
+                                </template>
+                                 <template #prefix>
+                                   <div  v-if="is_dropship" class="text-sm text-gray-700 px-3 font-bold capitalize w-20">
+                                    <span>{{ `${parseInt(item.quantity)}  ${item.type}` }}</span>
+                                </div>
+                                 <div v-else class="text-sm text-gray-700 px-3 font-bold flex text-center capitalize w-24">
+                                    <span ><FontAwesomeIcon :icon="faForklift" class="mr-2" /> {{ ( parseInt(item.quantity)/ parseInt(item?.ecom_quantity)) }} &nbsp; / </span>
+                                </div>
+                                  
                                 </template>
                             </NumberWithButtonSave>
                             <button class="text-red-500 hover:text-red-700 px-4"
