@@ -44,7 +44,7 @@ library.add(
     faCameraRetro,
     faTag,
     faBullhorn,
-    faProjectDiagram,
+    faProjectDiagram,  
     faUser,
     faMoneyBillWave,
     faBrowser, faExclamationTriangle

@@ -411,6 +411,9 @@ const successEditTradeUnit = (data) => {
                     <FontAwesomeIcon :icon="faCircleExclamation" />
                     {{ form.errors.trade_units }}
                 </small>
+                <small class="text-gray-500 text-xs mt-1 flex items-center gap-1">
+                    {{ trans('This unit will be used as the outer packaging.') }}
+                </small>
             </div>
 
             <!-- Product Details & Price -->
@@ -458,7 +461,7 @@ const successEditTradeUnit = (data) => {
 
                     <!-- Form Fields -->
                     <div class="grid grid-cols-2 gap-5">
-                        <div>
+                        <div class="col-span-2">
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Code')}}</label>
                             <PureInput type="text" v-model="form.code" @update:model-value="form.errors.code = null"
                                 class="w-full" />
@@ -488,7 +491,7 @@ const successEditTradeUnit = (data) => {
                             </small>
                         </div>
 
-                        <div>
+                       <!--  <div>
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Units')}}</label>
                             <PureInputNumber v-model="form.units" @update:model-value="form.errors.units = null"
                                 class="w-full" />
@@ -496,7 +499,7 @@ const successEditTradeUnit = (data) => {
                                 <FontAwesomeIcon :icon="faCircleExclamation" />
                                 {{ form.errors.units.join(", ") }}
                             </small>
-                        </div>
+                        </div> -->
 
                         <div v-if="form.trade_units.length > 1">
                             <label class="block text-xs font-medium text-gray-600 mb-1">{{trans('Marketing Weight')}}</label>
@@ -601,7 +604,7 @@ const successEditTradeUnit = (data) => {
 
 
     <!-- Add after Drawer in your <template> -->
-    <Dialog v-model:visible="modalTradeUnit" modal header="Edit Trade Unit" :style="{ width: '500px' }">
+    <Dialog v-model:visible="modalTradeUnit" modal header="Edit Trade Unit" :style="{ width: '700px' }">
         <EditTradeUnit :data="dataTradeUnitEdit" @cancel="onCanceleditTradeUnit" @save-success="successEditTradeUnit" />
     </Dialog>
 
