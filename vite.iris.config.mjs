@@ -49,7 +49,7 @@ export default defineConfig(
                           bundleName          : "iris",
                           uploadToken         : process.env.CODECOV_TOKEN
                         })
-      //, analyzer()
+     // , analyzer()
     ],
     ssr    : {
       noExternal: ["@inertiajs/server", "vue-countup-v3", "floating-vue", "tailwindcss", "@fortawesome/*"]
