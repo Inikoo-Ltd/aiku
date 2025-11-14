@@ -221,7 +221,8 @@ const submitForm = async (redirect = true) => {
     // Build payload manual
     const payload: any = {
         ...form.data(),
-        shop_products: finalDataTable
+        shop_products: finalDataTable,
+        masterShop: route().params['masterShop']
     }
 
     // Hapus image kalau tidak diganti user

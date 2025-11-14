@@ -17,6 +17,7 @@ use App\Actions\Traits\WithAttachMediaToModel;
 use App\Enums\Masters\MasterAsset\MasterAssetTypeEnum;
 use App\Models\Masters\MasterAsset;
 use App\Models\Masters\MasterProductCategory;
+use App\Models\Goods\TradeUnit;
 use App\Rules\AlphaDashDot;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -41,9 +42,27 @@ class StoreMasterProductFromTradeUnits extends GrpAction
     {
         $tradeUnits   = Arr::pull($modelData, 'trade_units', []);
         $shopProducts = Arr::pull($modelData, 'shop_products', []);
+        $masterShop   = Arr::pull($modelData, 'masterShop');
+        $hasOneTradeUnit = count($tradeUnits) == 1;
 
+        $qtyFinal = 1;
+        
+        if($hasOneTradeUnit){
+            $arrKeyFirst = array_key_first($tradeUnits);
+            $qtyFinal = $tradeUnits[$arrKeyFirst]['quantity'];
+        }
 
-        if (!Arr::has($modelData, 'unit') && count($tradeUnits) == 1) {
+        if($masterShop == 'ds'){
+            foreach ($tradeUnits as $key => $value) {
+                $qtyPerOuter = TradeUnit::find($tradeUnits[$key]['id'])->stocks->pluck('pivot.quantity')->first();
+                if($hasOneTradeUnit) $qtyFinal *= $qtyPerOuter;
+                $tradeUnits[$key]['quantity'] *= $qtyPerOuter;
+            }
+        }
+        
+        data_set($modelData, 'units', $qtyFinal);
+
+        if (!Arr::has($modelData, 'unit') && $hasOneTradeUnit) {
             data_set($modelData, 'unit', Arr::get($tradeUnits, '0.type'));
         }
 
@@ -109,7 +128,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             ],
             'name'                   => ['required', 'string'],
             'unit'                   => ['sometimes', 'string'],
-            'units'                  => ['sometimes', 'nullable'],
+            // 'units'                  => ['sometimes', 'nullable'],
             'description'            => ['sometimes', 'string', 'nullable'],
             'description_title'      => ['sometimes', 'string', 'nullable'],
             'description_extra'      => ['sometimes', 'string', 'nullable'],
@@ -148,6 +167,7 @@ class StoreMasterProductFromTradeUnits extends GrpAction
             'image'                  => ["sometimes", "mimes:jpg,png,jpeg,gif", "max:50000"],
             'gross_weight'           => ['sometimes', 'numeric', 'min:0'],
             'marketing_dimensions'   => ['sometimes'],
+            'masterShop'             => ['required']
         ];
     }
 
