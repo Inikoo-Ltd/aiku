@@ -9,12 +9,13 @@ import { Autoplay, Pagination } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/autoplay'
 import { resolveResponsiveValue } from "@/Composables/Workshop"
-import { inject } from "vue"
+import { inject, ref } from "vue"
 import { computed } from "vue"
 import { Link } from "@inertiajs/vue3"
 import { trans } from "laravel-vue-i18n"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import LinkIris from "@/Components/Iris/LinkIris.vue"
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 
 library.add(faCube, faStar, faImage, faPencil)
@@ -93,6 +94,8 @@ const getVal = (base: any, path?: string[]) => {
 const resolvedGap = computed(() => {
   return ( props.fieldValue?.value?.gap?.[props.screenType || 'desktop'] || 0 ) + 'px'
 })
+
+const idxSlideLoading = ref<number | null>(null)
 </script>
 
 <template>
@@ -119,6 +122,8 @@ const resolvedGap = computed(() => {
                 class="block w-full h-full"
                 :type="image.link_data?.type"
                 :chanonical_url="image.link_data?.canonical_url"
+                @start="() => idxSlideLoading = index"
+                @finish="() => idxSlideLoading = null"
             >
             <template #default>
                 <Image
@@ -131,6 +136,10 @@ const resolvedGap = computed(() => {
                     }"
                     :imgAttributes="{ ...image?.attributes, loading: 'lazy' }"
                 />
+                
+              <div v-if="idxSlideLoading == index" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
+                <LoadingIcon />
+              </div>
             </template>
             </component>
           <div v-else class="block w-full h-full">
@@ -197,15 +206,22 @@ const resolvedGap = computed(() => {
             :target="image.link_data?.target"
             rel="noopener noreferrer"
             class="block w-full h-full"
+            @start="() => idxSlideLoading = index"
+            @finish="() => idxSlideLoading = null"
           >
             <Image v-if="image?.source" :src="image.source" :alt="image.properties?.alt || `image ${index + 1}`"
               :imageCover="true" class="w-full h-full aspect-square object-cover rounded-lg" :style="{
                 ...getStyles(fieldValue.value.layout?.properties, screenType),
                 ...getStyles(image.properties, screenType)
-              }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }" />
+              }" :imgAttributes="{ ...image.attributes, loading: 'lazy' }"
+            />
             <div v-else
               class="flex items-center justify-center w-full h-32 bg-gray-200 rounded-lg aspect-square transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:scale-105 cursor-pointer">
               <FontAwesomeIcon :icon="['fas', 'image']" class="text-gray-500 text-4xl group-hover:text-gray-700" />
+            </div>
+
+            <div v-if="idxSlideLoading == index" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
+              <LoadingIcon />
             </div>
           </component>
 
