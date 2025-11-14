@@ -105,6 +105,14 @@ watch(() => props.isOpen, (newValue) => {
 })
 
 const onRemoveFromBasket = (product) => {
+    if (!product.transaction_id) {
+        if (layout?.rightbasket?.products) {
+            layout.rightbasket.products = layout.rightbasket.products.filter(p => p.transaction_id !== product.transaction_id)
+            layout.reload_handle()
+        }
+        return
+    }
+    
     router.post(
         route('iris.models.transaction.update', {
             transaction: product.transaction_id
