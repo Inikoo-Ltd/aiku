@@ -347,7 +347,7 @@ const isLoadingVisit = ref<number | null>(null)
 		</dl>
 
 		<!-- RFM Segments Cards -->
-		<div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+		<div v-if="data.segments" class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
 			<!-- Recency Card -->
 			<div class="bg-white rounded-lg shadow p-6">
 				<div class="flex items-center justify-between mb-4">
