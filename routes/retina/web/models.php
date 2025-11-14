@@ -25,6 +25,7 @@ use App\Actions\Dropshipping\Tiktok\Product\StoreProductToTiktok;
 use App\Actions\Dropshipping\Tiktok\User\DeleteTiktokUser;
 use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Product\CreateNewBulkPortfolioToWooCommerce;
+use App\Actions\Dropshipping\WooCommerce\TestConnectionWooCommerceUser;
 use App\Actions\Helpers\Tag\AttachTagsToModel;
 use App\Actions\Helpers\Tag\DetachTagFromModel;
 use App\Actions\Iris\UpdateIrisLocale;
@@ -279,6 +280,7 @@ Route::post('customer-sales-channel-manual', StoreRetinaManualPlatform::class)->
 
 Route::name('customer_sales_channel.')->prefix('customer-sales-channel/{customerSalesChannel:id}')->group(function () {
     Route::patch('unsuspend', UnSuspendRetinaCustomerSalesChannel::class)->name('unsuspend');
+    Route::patch('test-connection', TestConnectionWooCommerceUser::class)->name('test_connection');
     Route::patch('reset-shopify', ResetShopifyChannel::class)->name('shopify_reset');
     Route::post('sync-shopify-portfolio', CheckShopifyPortfolios::class)->name('portfolio_shopify_sync');
 

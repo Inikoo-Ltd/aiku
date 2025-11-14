@@ -103,7 +103,7 @@ const submitForm = async (redirect = true) => {
         }
     }
     let params = route().params;
-    params['masterFamily'] = String(props.masterAsset.master_sub_department.id);
+    params['masterFamily'] = String(props.masterAsset.master_family.id);
 
     // Build payload manual
     const payload: any = {

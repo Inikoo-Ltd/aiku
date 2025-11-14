@@ -44,7 +44,7 @@ library.add(
     faCameraRetro,
     faTag,
     faBullhorn,
-    faProjectDiagram,
+    faProjectDiagram,  
     faUser,
     faMoneyBillWave,
     faBrowser, faExclamationTriangle
@@ -168,6 +168,7 @@ const showDialog = ref(false);
         :master-currency="currency"
         :shopsData="shopsData"
         :masterProductCategory="masterProductCategory"
+        :is_dropship="route().params['masterShop'] == 'ds'"
     />
 
 

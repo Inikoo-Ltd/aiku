@@ -42,6 +42,7 @@ const props = withDefaults(defineProps<{
     addToBasketRoute?: routeType
     updateBasketQuantityRoute?: routeType
     bestSeller?:any
+    buttonStyleHover?:any
     buttonStyle?:object | undefined
 
 }>(), {
@@ -233,6 +234,7 @@ const profitMargin = computed(() => {
 
 
 
+const idxSlideLoading = ref(false)
 
 </script>
 
@@ -255,7 +257,10 @@ const profitMargin = computed(() => {
 
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
-                class="block w-full mb-1 rounded xsm:h-[305px] h-[180px] relative">
+                class="block w-full mb-1 rounded xsm:h-[305px] h-[180px] relative"
+                @start="() => idxSlideLoading = true"
+                @finish="() => idxSlideLoading = false"
+            >
                 <slot name="image" :product="product">
                     <Image :src="product?.web_images?.main?.gallery" alt="product image"
                         :style="{ objectFit: 'contain' }" />
@@ -283,8 +288,8 @@ const profitMargin = computed(() => {
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton v-if="product.stock > 0 && basketButton" :hasInBasket :product="product"
-                        :key="product" :addToBasketRoute="addToBasketRoute"
-                        :updateBasketQuantityRoute="updateBasketQuantityRoute" />
+                        :key="product" :addToBasketRoute="addToBasketRoute" :buttonStyleHover="buttonStyleHover" 
+                        :updateBasketQuantityRoute="updateBasketQuantityRoute" :buttonStyle="buttonStyle" />
                     <button v-else-if="layout?.app?.environment === 'local' && product.stock < 1"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
@@ -294,6 +299,9 @@ const profitMargin = computed(() => {
                             fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
                     </button>
                 </div>
+
+                
+                
             </component>
 
             <div class="px-3">
@@ -343,6 +351,10 @@ const profitMargin = computed(() => {
              <a :href="urlLoginWithRedirect()" class="w-full"> 
                 <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyle"/>
             </a>
+        </div>
+
+        <div v-if="idxSlideLoading" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
+            <LoadingIcon />
         </div>
     </div>
 </template>
