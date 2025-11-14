@@ -67,6 +67,7 @@ const props = defineProps<{
     masterCurrency?: string
     shopsData?: any
     masterProductCategory: string | number
+    is_dropship: boolean
 }>();
 
 const emits = defineEmits(["update:showDialog"]);
@@ -83,7 +84,6 @@ const loading = ref(null)
 const modalTradeUnit = ref(false)
 const dataTradeUnitEdit = ref(null)
 const listSelectorRef = ref<InstanceType<typeof ListSelector> | null>(null)
-
 
 // Inertia form
 const form = useForm({
@@ -229,6 +229,12 @@ const submitForm = async (redirect = true) => {
         delete payload.image
     }
 
+    if(props.is_dropship){
+        for(const item of payload.trade_units){
+            item.quantity = item.ds_quantity
+        }
+    }
+
     console.log("Payload to submit:", payload)
     try {
         const response = await axios.post(
@@ -357,9 +363,17 @@ const successEditTradeUnit = (data) => {
         <div class="p-4 pt-0 space-y-6 overflow-y-auto">
             <!-- Trade Unit Selector -->
             <div>
-                <ListSelector :key="key" ref="listSelectorRef" no_data_label="Select Trade Unit" v-model="form.trade_units" :withQuantity="true"
-                    :tabs="selectorTab" head_label="Select Trade Units" @update:model-value="ListSelectorChange"
-                    key_quantity="quantity" :routeFetch="{
+                <ListSelector 
+                    :key="key" 
+                    ref="listSelectorRef" 
+                    no_data_label="Select Trade Unit" 
+                    v-model="form.trade_units" 
+                    :withQuantity="true"
+                    :tabs="selectorTab" 
+                    head_label="Select Trade Units" 
+                    @update:model-value="ListSelectorChange"
+                    :key_quantity="is_dropship ? 'ds_quantity' : 'quantity'" 
+                    :routeFetch="{
                         name: 'grp.json.master-product-category.recommended-trade-units',
                         parameters: { masterProductCategory: route().params['masterFamily'] }
                     }">
