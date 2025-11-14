@@ -34,8 +34,8 @@ class WebBlockProductResource extends JsonResource
         $product = $this->resource;
 
 
-        $tradeUnits = $product->tradeUnits;
-        $ingredients = [];
+        $tradeUnits       = $product->tradeUnits;
+        $ingredients      = [];
         $marketingWeights = [];
         if ($tradeUnits) {
             $tradeUnits->loadMissing(['ingredients']);
@@ -44,9 +44,7 @@ class WebBlockProductResource extends JsonResource
             })->unique()->values()->all();
 
             $marketingWeights = $tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all();
-
         }
-
 
 
         $specifications = [
@@ -62,7 +60,7 @@ class WebBlockProductResource extends JsonResource
         ];
 
 
-        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
         return [
             'luigi_identity'    => $product->getLuigiIdentity(),
@@ -84,6 +82,7 @@ class WebBlockProductResource extends JsonResource
             'profit'            => $profit,
             'profit_per_unit'   => $profitPerUnit,
             'price'             => $product->price,
+            'price_per_unit'    => $pricePerUnit,
             'status'            => $product->status,
             'state'             => $product->state,
             'units'             => $units,
