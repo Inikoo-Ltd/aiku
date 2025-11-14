@@ -113,10 +113,6 @@ export const initialiseRetinaApp = () => {
             layout.app.environment = usePage().props?.environment
         }
 
-        // Set WebUser count
-        if (usePage().props.auth?.webUser_count) {
-            layout.webUser_count = usePage().props.auth?.webUser_count || null
-        }
 
 
         // if (usePage().props.auth?.user) {

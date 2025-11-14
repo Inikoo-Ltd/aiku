@@ -39,7 +39,7 @@ class GetRetinaCustomerProductCategorySalesChannelIds extends RetinaAction
         return $queryBuilder->get()->pluck('id')->toArray();
     }
 
-    public function asController(ProductCategory $productCategory, ActionRequest $request)
+    public function asController(ProductCategory $productCategory, ActionRequest $request): \Illuminate\Http\Response|array
     {
         $this->initialisation($request);
 

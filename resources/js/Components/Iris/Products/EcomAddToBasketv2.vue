@@ -23,6 +23,7 @@ library.add(faTrashAlt, faShoppingCart, faTimes, faCartArrowDown, faLongArrowRig
 const props = defineProps<{
     product: ProductResource
     customerData : any
+    buttonStyle?: any
 }>()
 
 const customer = ref({...props.customerData})
@@ -66,6 +67,7 @@ const onAddToBasket = async (product: ProductResource, quantity?: number) => {
         /* product.transaction_id = response.data?.transaction_id
         product.quantity_ordered = response.data?.quantity_ordered */
         customer.value.quantity_ordered = response.data?.quantity_ordered
+        customer.value.quantity_ordered_new = response.data?.quantity_ordered
         customer.value.transaction_id = response.data?.transaction_id
         setStatus('success')
         layout.reload_handle()
@@ -214,6 +216,7 @@ const showWarning = () => {
                     size="lg"
                     :disabled="customer.quantity_ordered > customer.stock"
                     :loading="isLoadingSubmitQuantityProduct"
+                    :inject-style="buttonStyle"
                 />
             </div>
             

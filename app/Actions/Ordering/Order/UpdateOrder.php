@@ -48,7 +48,7 @@ class UpdateOrder extends OrgAction
         $oldPlatform             = $order->platform;
         $oldShippingZoneSchemaId = $order->shipping_zone_schema_id;
         $oldShippingZoneId       = $order->shipping_zone_id;
-        $oldState = $order->state;
+        $oldState                = $order->state;
 
         $order         = $this->update($order, $modelData, ['data']);
         $changedFields = $order->getChanges();
@@ -56,9 +56,8 @@ class UpdateOrder extends OrgAction
 
         $changes = Arr::except($order->getChanges(), ['updated_at', 'last_fetched_at']);
 
-
         if (Arr::hasAny($changes, ['tax_category_id', 'collection_address_id'])) {
-            CalculateOrderTotalAmounts::run($order);
+            CalculateOrderTotalAmounts::run($order, true, true);
         }
 
         if (count($changes) > 0) {
@@ -147,7 +146,6 @@ class UpdateOrder extends OrgAction
 
                 if ($order->shipping_zone_id) {
                     ShippingZoneHydrateUsageInOrders::dispatch($order->shipping_zone_id)->delay($this->hydratorsDelay);
-
                 }
             }
         }

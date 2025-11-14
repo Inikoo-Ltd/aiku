@@ -8,21 +8,21 @@
 
 namespace App\Enums\Discounts\OfferAllowance;
 
-enum OfferAllowanceTargetFilter: string
+enum OfferAllowanceTargetTypeEnum: string
 {
     case ALL_PRODUCTS_IN_ORDER = 'all_products_in_order';
 
     public function label(): string
     {
         return match ($this) {
-            OfferAllowanceTargetFilter::ALL_PRODUCTS_IN_ORDER => __('All products in order'),
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER => __('All products in order'),
         };
     }
 
     public function slug(): string
     {
         return match ($this) {
-            OfferAllowanceTargetFilter::ALL_PRODUCTS_IN_ORDER => 'all',
+            OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER => 'all',
         };
     }
 

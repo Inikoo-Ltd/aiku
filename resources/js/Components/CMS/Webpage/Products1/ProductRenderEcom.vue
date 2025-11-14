@@ -10,6 +10,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faEnvelope, faHeart } from '@far'
 import { faCircle, faHeart as fasHeart, faMedal } from '@fas'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle } from "@fal"
@@ -41,6 +42,7 @@ const props = withDefaults(defineProps<{
     addToBasketRoute?: routeType
     updateBasketQuantityRoute?: routeType
     bestSeller?:any
+    buttonStyle?:object | undefined
 
 }>(), {
     basketButton: true,
@@ -330,12 +332,16 @@ const profitMargin = computed(() => {
          <div class="px-3 mt-auto">
             <Prices :product="product" :currency="currency" />
         </div>
+        
 
         <!-- Login Button for Non-Logged In Users -->
         <div v-if="!layout?.iris?.is_logged_in" class="px-3">
-            <a :href="urlLoginWithRedirect()"
+           <!--  <a :href="urlLoginWithRedirect()"
                 class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                 {{ trans("Login or Register for Wholesale Prices") }}
+            </a> -->
+             <a :href="urlLoginWithRedirect()" class="w-full"> 
+                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyle"/>
             </a>
         </div>
     </div>

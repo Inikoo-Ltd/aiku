@@ -22,7 +22,6 @@ class GetCustomersDashboard
     {
         $stats = [];
 
-
         $stats['customers'] = [
             'label' => __('Customers'),
             'count' => $parent->crmStats->number_customers
@@ -45,9 +44,9 @@ class GetCustomersDashboard
             ];
         }
 
-        return [
-            'prospectStats' => $stats,
-        ];
+        return array_merge(
+            ['prospectStats' => $stats],
+            GetCustomerRfmComparison::run($parent->id) ?? []
+        );
     }
-
 }
