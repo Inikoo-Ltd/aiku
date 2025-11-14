@@ -9,28 +9,31 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
+use App\Events\UploadPortfolioToR2Event;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
-class DownloadAndUploadPortfolioZipImages extends RetinaAction
+class UploadPortfolioZipImages extends RetinaAction
 {
-     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): array
+     public function handle(CustomerSalesChannel $customerSalesChannel, string $randomString): string
     {
-        $group = Arr::get($modelData, 'group', 'all') ?? 'all';
-        $fullPath = $this->buildFilePath($customerSalesChannel, $group);
+        $totalImagePortofolio = TotalImagePortfolios::run($customerSalesChannel);
+        $fullPath = $this->buildFilePath($customerSalesChannel, $totalImagePortofolio);
 
         // Return existing file if available
-        if (CheckCatalogueFileExistsInR2::run($fullPath)) {
-            return $this->generateDownloadResponse($fullPath);
-        }
+        // if (CheckCatalogueFileExistsInR2::run($fullPath)) {
+        //     return $this->generateDownloadResponse($fullPath);
+        // }
 
         // Generate and upload new zip file
-        return $this->createAndUploadZip($customerSalesChannel, $modelData, $fullPath);
+        $result = $this->createAndUploadZip($customerSalesChannel, $totalImagePortofolio, $fullPath);
+
+        UploadPortfolioToR2Event::dispatch($result, $randomString);
+        return $result;
     }
 
-    private function buildFilePath(CustomerSalesChannel $customerSalesChannel, string $group): string
+    private function buildFilePath(CustomerSalesChannel $customerSalesChannel, int $totalImagePortofolio ): string
     {
         $bucketName = config('filesystems.disks.zip-r2.bucket', 'dev-storage');
         $slug = Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference);
@@ -40,29 +43,26 @@ class DownloadAndUploadPortfolioZipImages extends RetinaAction
             $bucketName,
             $customerSalesChannel->id,
             $slug,
-            $group
+            $totalImagePortofolio
         );
     }
 
-    private function generateDownloadResponse(string $fullPath): array
+    private function generateDownloadResponse(string $fullPath): string
     {
-        return [
-            'download_url' => GenerateDownloadLinkFileFromCatalogueIrisR2::run($fullPath),
-        ];
+        return GenerateDownloadLinkFileFromCatalogueIrisR2::run($fullPath);
     }
 
     private function createAndUploadZip(
         CustomerSalesChannel $customerSalesChannel,
-        array $modelData,
+        int $totalImagePortfolios,
         string $fullPath
-    ): array {
+    ): string {
         $tempZipPath = null;
 
         try {
             $tempZipPath = PortfoliosZipExportToLocal::run(
                 $customerSalesChannel,
-                Arr::get($modelData, 'ids', []),
-                Arr::get($modelData, 'group', 'all')
+                $totalImagePortfolios
             );
 
             if (!UploadFileToCatalogueIrisR2::run($tempZipPath, $fullPath)) {
@@ -72,7 +72,7 @@ class DownloadAndUploadPortfolioZipImages extends RetinaAction
             return $this->generateDownloadResponse($fullPath);
 
         } catch (\Exception $e) {
-            return ['error' => $e->getMessage()];
+            return $e->getMessage();
         } finally {
             $this->cleanupTempFile($tempZipPath);
         }
@@ -96,27 +96,15 @@ class DownloadAndUploadPortfolioZipImages extends RetinaAction
         return true;
     }
 
-    public function rules(): array
-    {
-        return [
-            'ids' => ['nullable', 'array'],
-            'group' => ['nullable', 'string']
-        ];
-    }
-
-    public function prepareForValidation(ActionRequest $request): void
-    {
-        if (! blank($request->get('ids'))) {
-            $this->set('ids', explode(',', $request->get('ids')));
-        }
-        if ($request->has('group')) {
-            $this->set('group', $request->input('group'));
-        }
-    }
-
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): array
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request) : string
     {
         $this->initialisation($request);
-        return $this->handle($customerSalesChannel, $this->validatedData);
+
+        // generte ramdon number
+         $randomString = Str::random(10);
+
+        UploadPortfolioZipImages::dispatch($customerSalesChannel, $randomString);
+
+        return $randomString;
     }
 }
