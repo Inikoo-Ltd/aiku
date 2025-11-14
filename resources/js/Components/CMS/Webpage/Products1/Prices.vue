@@ -75,7 +75,7 @@ const props = defineProps<{
             <div>
                 {{ trans("Price") }}:
                 <span class="font-semibold">
-                    {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}
+                    {{ locale.currencyFormat(currency?.code, product.price_per_unit | product.price  ) }}
                     <span class="text-xs text-gray-600"> / {{ product.unit }}</span>
                 </span>
             </div>
@@ -84,7 +84,7 @@ const props = defineProps<{
             <div class="flex justify-between">
                 <div>
                    {{ trans("Price") }}:
-                    <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price) }}/{{trans('outer')}}</span>
+                    <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price_per_unit | product.price  ) }}/{{trans('outer')}}</span>
                 </div>
                 <div>
                     <span class="text-xs price_per_unit">(<span> {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2)) }}

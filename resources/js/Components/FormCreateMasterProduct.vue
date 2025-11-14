@@ -365,6 +365,7 @@ const successEditTradeUnit = (data) => {
             <!-- Trade Unit Selector -->
             <div>
                 <ListSelector 
+                    :is_dropship
                     :key="key" 
                     ref="listSelectorRef" 
                     no_data_label="Select Trade Unit" 
