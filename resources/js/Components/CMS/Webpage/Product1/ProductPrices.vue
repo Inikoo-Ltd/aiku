@@ -18,14 +18,6 @@ const currency = layout?.iris?.currency
 const locale = useLocaleStore()
 
 
-const profitMargin = computed(() => {
-    const price = props.fieldValue?.product?.price
-    const rrp = props.fieldValue?.product?.rrp
-    if (!price || !rrp || rrp === 0) return 0
-    return Math.round(((rrp - price) / rrp) * 100)
-})
-
-
 const popoverHover = ref(false)
 const popoverTimeout = ref()
 
@@ -66,13 +58,12 @@ const closePopover = (close: any): void => {
 
                         </div>
                     </div>
-
                     <!-- Profit -->
                     <div class="flex flex-col items-end text-right col-span-1 col-span-2 justify-end">
                         <div>
                             <span class="text-sm font-medium text-gray-600 mb-1 flex justify-end">
                                 <span v-tooltip="trans('Profit margin')" class="mr-3 text-xs ml-1 font-medium text-gray-400">
-                                </span> {{trans('Profit') }} ({{ profitMargin }}%)</span>
+                                </span> {{trans('Profit') }} ({{ fieldValue.product?.margin }})</span>
                             <div class="flex flex-wrap items-baseline justify-end gap-1">
                                 <span class="text-base font-semibold text-gray-700">
                                     {{ locale.currencyFormat(currency?.code, fieldValue.product?.profit_per_unit || 0) }}  
