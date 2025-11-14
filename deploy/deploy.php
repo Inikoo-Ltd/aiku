@@ -33,7 +33,7 @@ task('deploy:check-fe-changes', function () {
         $changedFiles = 'resources'; // force detection
     }
 
-    $triggerFiles = ['resources'];
+    $triggerFiles = ['resources','vite.iris.config.mjs','vite.aiku-public.config.js'];
     $frontEndChanged = false;
     foreach ($triggerFiles as $triggerFile) {
         if (str_contains($changedFiles, $triggerFile)) {
@@ -220,7 +220,7 @@ task('deploy', [
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
-    'artisan:inertia:stop-ssr',
+   // 'artisan:inertia:stop-ssr',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
 ]);

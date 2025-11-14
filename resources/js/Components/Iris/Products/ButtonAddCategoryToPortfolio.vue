@@ -8,7 +8,6 @@ import { Image as ImageTS } from '@/types/Image'
 import { Popover } from 'primevue'
 
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 import axios from 'axios'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -312,7 +311,12 @@ onMounted(() => {
                     </template>
                     <template #label>
                         <div class="flex items-center gap-2">
-                            <div v-tooltip="channel.platform_name" v-html="ChannelLogo(channel.platform_code)" class="h-4 w-4"></div>
+                            <img
+                                :src="`/assets/channel_logo/${channel.platform_code}.svg`"
+                                class="h-4 w-4"
+                                :alt="channel.platform_name"
+                                v-tooltip="channel.platform_name"
+                            />
                             {{ channel.customer_sales_channel_name || '-' }}
                             <span class="text-gray-500 text-xs">({{ channel.platform_name }})</span>
                         </div>

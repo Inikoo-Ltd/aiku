@@ -144,7 +144,7 @@ use Spatie\Sluggable\SlugOptions;
  * @property-read Address|null $billingAddress
  * @property-read Address|null $collectionAddress
  * @property-read Currency $currency
- * @property-read \App\Models\CRM\Customer $customer
+ * @property-read \App\Models\CRM\Customer|null $customer
  * @property-read CustomerClient|null $customerClient
  * @property-read CustomerSalesChannel|null $customerSalesChannel
  * @property-read Address|null $deliveryAddress

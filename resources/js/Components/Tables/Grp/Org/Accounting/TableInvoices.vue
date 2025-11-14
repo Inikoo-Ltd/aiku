@@ -99,7 +99,7 @@ function customerRoute(invoice: Invoice) {
       ]);
   }
 
-  
+
 }
 
 </script>

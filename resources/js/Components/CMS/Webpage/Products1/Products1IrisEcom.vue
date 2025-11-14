@@ -181,7 +181,7 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         const data = response.data;
 
         lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1;
-        totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+        // totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])];
@@ -274,7 +274,7 @@ onMounted(() => {
     }
 
     if (layout?.iris?.is_logged_in) {
-        fetchProducts();
+        // fetchProducts();  // No need fetch on mount, product data already comes from props
         fetchHasInBasket();
     }
 })
@@ -474,11 +474,13 @@ watch(
                         class="flex items-center gap-3 p-4 bg-gray-50 rounded-md border border-gray-200 shadow-sm text-sm">
                         <span class="font-medium">
                             {{ trans("Showing") }}
-                            <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
-                                products.length }}</span>
+                            <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                {{ products.length }}
+                            </span>
                             {{ trans("of") }}
-                            <span :class="['font-semibold', `text-[${layout?.app?.theme?.[0] || '#1F2937'}]`]">{{
-                                totalProducts }}</span>
+                            <span :class="['font-semibold', `text-[--theme-color-0]`]">
+                                {{ totalProducts }}
+                            </span>
                             {{ products.length === 1 ? trans("product") : trans("products") }}
                         </span>
                     </div>
@@ -501,11 +503,13 @@ watch(
                         </div>
                     </template>
 
+                    
+
                     <template v-else-if="products.length">
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border relative rounded" :class="product.stock ? '' : 'bg-red-100'">
-                            <ProductRenderEcom :product="product" :key="index"
+                            <ProductRenderEcom :product="product" :key="index" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
                                 :hasInBasket="productInBasket.list[product.id]" :bestSeller="fieldValue.bestseller"/>
                         </div>
                     </template>

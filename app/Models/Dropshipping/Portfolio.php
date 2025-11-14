@@ -68,7 +68,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property int|null $last_stock_value
  * @property PortfolioTypeEnum $type
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read \App\Models\Dropshipping\CustomerSalesChannel|null $customerSalesChannel
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read Model|\Eloquent|null $item
@@ -122,6 +122,11 @@ class Portfolio extends Model implements Auditable
         'status',
         'last_added_at',
         'removed_at',
+        'has_valid_platform_product_id',
+        'exist_in_platform',
+        'platform_status',
+        'number_platform_possible_matches',
+        'sku'
     ];
 
     public function item(): BelongsTo

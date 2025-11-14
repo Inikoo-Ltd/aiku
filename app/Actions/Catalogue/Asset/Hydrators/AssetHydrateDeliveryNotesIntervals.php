@@ -9,8 +9,8 @@
 
 namespace App\Actions\Catalogue\Asset\Hydrators;
 
-use App\Actions\Traits\Hydrators\WithHydrateIntervals;
-use App\Actions\Traits\WithEnumStats;
+use App\Actions\Traits\Hydrators\WithIntervalUniqueJob;
+use App\Actions\Traits\WithIntervalsAggregators;
 use App\Models\Catalogue\Asset;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\DB;
@@ -19,48 +19,44 @@ use Lorisleiva\Actions\Concerns\AsAction;
 class AssetHydrateDeliveryNotesIntervals implements ShouldBeUnique
 {
     use AsAction;
-    use WithEnumStats;
-    use WithHydrateIntervals;
+    use WithIntervalsAggregators;
+    use WithIntervalUniqueJob;
 
     public string $jobQueue = 'sales';
 
-    public function getJobUniqueId(Asset $asset): string
+    public function getJobUniqueId(int $assetID, ?array $intervals = null, ?array $doPreviousPeriods = null): string
     {
-        return $asset->id;
+        return $this->getUniqueJobWithIntervalFromId($assetID, $intervals, $doPreviousPeriods);
     }
 
-    public function handle(Asset $asset): void
+    public function handle(int $assetID, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
-        if ($asset->model_type != 'Product') {
+
+        $asset = Asset::find($assetID);
+        if (!$asset) {
             return;
         }
 
-        $dateRanges = $this->getDateRanges();
-        $stats      = [];
+        $stats     = [];
+        $queryBase = DB::table('delivery_note_items')
+            ->join('transactions', 'transaction_id', '=', 'transactions.id')
+            ->where('transactions.asset_id', $asset->id)->selectRaw('count(distinct delivery_note_id) as  sum_aggregate');
 
-        foreach ($dateRanges as $key => $range) {
-            if ($key === 'all') {
-                $deliveryNotesData = DB::table('delivery_note_items')
-                    ->leftJoin('product_has_org_stocks', 'product_has_org_stocks.org_stock_id', '=', 'delivery_note_items.org_stock_id')
-                    ->select(DB::raw('COUNT(DISTINCT delivery_note_items.delivery_note_id) as count'))
-                    ->where('product_has_org_stocks.product_id', $asset->model_id)
-                    ->first();
-            } else {
-                [$start, $end] = $range;
 
-                $deliveryNotesData = DB::table('delivery_note_items')
-                    ->leftJoin('product_has_org_stocks', 'product_has_org_stocks.org_stock_id', '=', 'delivery_note_items.org_stock_id')
-                    ->leftJoin('delivery_notes', 'delivery_notes.id', '=', 'delivery_note_items.delivery_note_id')
-                    ->select(DB::raw('COUNT(DISTINCT delivery_notes.id) as count'))
-                    ->whereBetween('delivery_notes.created_at', [$start, $end])
-                    ->where('product_has_org_stocks.product_id', $asset->model_id)
-                    ->first();
-            }
+        $stats     = $this->getIntervalsData(
+            stats: $stats,
+            queryBase: $queryBase,
+            statField: 'delivery_notes_',
+            dateField: 'delivery_note_items.date',
+            intervals: $intervals,
+            doPreviousPeriods: $doPreviousPeriods
+        );
 
-            $stats["delivery_notes_$key"] = $deliveryNotesData->count;
-        }
 
         $asset->orderingIntervals()->update($stats);
+
+
+
     }
 
 }

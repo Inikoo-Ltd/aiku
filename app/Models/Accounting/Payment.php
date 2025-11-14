@@ -72,7 +72,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\Accounting\CreditTransaction|null $creditTransaction
  * @property-read Currency $currency
- * @property-read Customer $customer
+ * @property-read Customer|null $customer
  * @property-read Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Accounting\Invoice> $invoices
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Order> $orders

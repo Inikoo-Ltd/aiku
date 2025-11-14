@@ -9,6 +9,7 @@
 namespace App\Actions\Helpers\Deployment;
 
 use App\Actions\Web\Webpage\Hydrators\WebpageHydrateDeployments;
+use App\Models\Announcement;
 use App\Models\Comms\Email;
 use App\Models\Comms\EmailTemplate;
 use App\Models\Helpers\Deployment;
@@ -21,7 +22,7 @@ class StoreDeployment
 {
     use AsAction;
 
-    public function handle(Website|Webpage|EmailTemplate|Banner|Email $model, array $modelData): Deployment
+    public function handle(Website|Webpage|EmailTemplate|Banner|Email|Announcement $model, array $modelData): Deployment
     {
 
         /** @var Deployment $deployment */

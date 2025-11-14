@@ -9,6 +9,7 @@
 namespace App\Actions\Catalogue\ProductCategory;
 
 use App\Actions\Catalogue\ProductCategory\Search\ProductCategoryRecordSearch;
+use App\Actions\Helpers\ClearCacheByWildcard;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\UI\WithImageCatalogue;
@@ -140,10 +141,6 @@ class UpdateProductCategory extends OrgAction
             ]);
         }
 
-
-
-
-
         if (Arr::hasAny($changes, [
             'code',
             'name',
@@ -154,6 +151,7 @@ class UpdateProductCategory extends OrgAction
             $this->productCategoryHydrators($productCategory);
             if ($productCategory->webpage_id) {
                 ReindexWebpageLuigiData::dispatch($productCategory->webpage)->delay(60 * 15);
+                ClearCacheByWildcard::run("iris:nav:product_categories:website:{$productCategory->webpage->website_id}:*");
             }
         }
         $productCategory->refresh();
@@ -170,7 +168,7 @@ class UpdateProductCategory extends OrgAction
         return $request->user()->authTo("products.{$this->shop->id}.edit");
     }
 
-    public function prepareForValidation()
+    public function prepareForValidation(): void
     {
         if ($this->has('department_or_sub_department_id')) {
             $parent = ProductCategory::find($this->get('department_or_sub_department_id'));

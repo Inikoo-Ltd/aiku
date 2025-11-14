@@ -2,7 +2,7 @@
 import FileUpload from 'primevue/fileupload'
 import Badge from 'primevue/badge'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { ref, defineExpose } from 'vue';
+import { ref } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUpload, faImages } from '@fal'
 import { library } from '@fortawesome/fontawesome-svg-core'

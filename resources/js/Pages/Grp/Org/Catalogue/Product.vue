@@ -33,6 +33,7 @@ import ProductTranslation from '@/Components/Showcases/Grp/ProductTranslation.vu
 import { routeType } from '@/types/route'
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
+import ProductSales from "@/Components/Product/ProductSales.vue";
 
 
 library.add(
@@ -97,6 +98,7 @@ const props = defineProps<{
             }
         }
     }
+    sales: {}
 }>()
 
 const currentTab = ref(props.tabs.current)
@@ -118,7 +120,8 @@ const component = computed(() => {
         stocks: TableOrgStocks,
         images: TradeUnitImagesManagement,
         translation: ProductTranslation,
-        attachments : AttachmentManagement
+        attachments : AttachmentManagement,
+        sales: ProductSales
     }
     console.log(currentTab.value)
     return components[currentTab.value]

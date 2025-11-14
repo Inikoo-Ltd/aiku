@@ -25,7 +25,6 @@ import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue"
 import ButtonWithLink from "../Elements/Buttons/ButtonWithLink.vue"
 import LoadingIcon from "../Utils/LoadingIcon.vue"
 import Icon from "../Icon.vue"
-import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 import ButtonExport from "@/Components/ButtonExport.vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
@@ -155,11 +154,17 @@ const setError = (e) => {
                             </div>
                             </component>
                         </slot>
-                        <slot name="platform">
-                            <div v-if="data.platform" v-tooltip="data.platform.title || data.platform.name" class=" h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none" v-html="ChannelLogo(data.platform.type)">
-                            </div>
 
+                        <slot name="platform">
+                            <img
+                                v-if="data.platform"
+                                :src="`/assets/channel_logo/${data.platform.type}.svg`"
+                                class="h-6 max-w-7 min-w-5 w-auto text-gray-400 font-normal text-lg leading-none"
+                                :alt="data.platform.type"
+                                v-tooltip="data.platform.title || data.platform.name"
+                            />
                         </slot>
+
                         <slot name="afterTitle2" />
                     </div>
                 </div>

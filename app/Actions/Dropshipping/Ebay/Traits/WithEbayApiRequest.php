@@ -17,6 +17,13 @@ use Illuminate\Support\Facades\Log;
 
 trait WithEbayApiRequest
 {
+    public int $timeOut = 30;
+
+    public function setTimeout(int $timeOut): void
+    {
+        $this->timeOut = $timeOut;
+    }
+
     /**
      * Fields that require user action to fix
      */
@@ -203,7 +210,7 @@ trait WithEbayApiRequest
                 case 'Department':
                     $attributes['Department'] = ['Unisex Adults'];
                     break;
-                // Add more mappings as needed
+                    // Add more mappings as needed
                 default:
                     // Use generic mapping or default value
                     $attributes[$aspectName] = [$this->getDefaultValueForAspect($aspect)];
@@ -248,18 +255,17 @@ trait WithEbayApiRequest
      */
     protected function getEbayConfig(): array
     {
-        $shopSlug = null;
-        if (isset($this->customer)) {
-            $shopSlug = $this->customer->shop?->slug;
-        }
+        $shop = $this->shop ?? $this->customer?->shop ?? $this->customerSalesChannel->shop;
 
         return [
             'client_id' => config('services.ebay.client_id'),
             'client_secret' => config('services.ebay.client_secret'),
-            'redirect_uri' => $shopSlug === 'dse' ? config('services.ebay.redirect_uri_es') : config('services.ebay.redirect_uri'),
+            'redirect_uri' => Arr::get($shop->settings, 'ebay.redirect_key'),
             'sandbox' => config('services.ebay.sandbox'),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
-            'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token')
+            'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token'),
+            'marketplace_id' => Arr::get($shop->settings, 'ebay.marketplace_id'),
+            'currency' => $shop->currency?->code ?? 'GBP'
         ];
     }
 
@@ -617,16 +623,19 @@ trait WithEbayApiRequest
      */
     public function storeOffer($offerData)
     {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+        $currency = Arr::get($this->getEbayConfig(), 'currency');
+
         $data = [
             "sku" => Arr::get($offerData, 'sku'),
-            "marketplaceId" => "EBAY_GB",
+            "marketplaceId" => $marketplaceId,
             "format" => "FIXED_PRICE",
             "listingDescription" => Arr::get($offerData, 'description'),
             "availableQuantity" => Arr::get($offerData, 'quantity', 1),
             "pricingSummary" => [
                 "price" => [
                     "value" => Arr::get($offerData, 'price', 0),
-                    "currency" => Arr::get($offerData, 'currency', 'GBP')
+                    "currency" => $currency
                 ]
             ],
             "listingPolicies" => [
@@ -636,8 +645,8 @@ trait WithEbayApiRequest
             ],
             "categoryId" => Arr::get($offerData, 'category_id'),
             "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
-
         ];
+
         try {
             $endpoint = "/sell/inventory/v1/offer";
             return $this->makeEbayRequest('post', $endpoint, $data);
@@ -710,17 +719,17 @@ trait WithEbayApiRequest
      */
     public function updateOffer($offerId, array $offerData)
     {
+        $currency = Arr::get($this->getEbayConfig(), 'currency');
+
         try {
             $data = [
-                "sku" => Arr::get($offerData, 'sku'),
-                "marketplaceId" => "EBAY_GB",
                 "format" => "FIXED_PRICE",
                 "listingDescription" => Arr::get($offerData, 'description'),
                 "availableQuantity" => Arr::get($offerData, 'quantity', 1),
                 "pricingSummary" => [
                     "price" => [
                         "value" => Arr::get($offerData, 'price', 0),
-                        "currency" => Arr::get($offerData, 'currency', 'GBP')
+                        "currency" => $currency
                     ]
                 ],
                 "listingPolicies" => [
@@ -729,7 +738,26 @@ trait WithEbayApiRequest
                     "returnPolicyId" => Arr::get($this->settings, 'defaults.main_return_policy_id'),
                 ],
                 "categoryId" => Arr::get($offerData, 'category_id'),
-                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key')
+                "merchantLocationKey" => Arr::get($this->settings, 'defaults.main_location_key'),
+            ];
+
+            $endpoint = "/sell/inventory/v1/offer/$offerId";
+            return $this->makeEbayRequest('put', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Get eBay Offer Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+
+    /**
+     * Update offer by offer ID
+     */
+    public function updateQuantityOffer($offerId, array $offerData)
+    {
+        try {
+            $data = [
+                "availableQuantity" => Arr::get($offerData, 'availableQuantity'),
             ];
 
             $endpoint = "/sell/inventory/v1/offer/$offerId";
@@ -830,8 +858,9 @@ trait WithEbayApiRequest
 
             return $this->makeEbayRequest('post', $endpoint, $fulfillment);
         } catch (Exception $e) {
-            Log::error('Fulfill eBay Order Error: ' . $e->getMessage());
-            \Sentry::captureMessage($e->getMessage());
+            $errMsg = 'Fulfill eBay Order Error: ' . $e->getMessage();
+            Log::error($errMsg);
+            \Sentry::captureMessage($errMsg);
             return ['error' => $e->getMessage()];
         }
     }
@@ -863,36 +892,6 @@ trait WithEbayApiRequest
             return $orders;
         } catch (Exception $e) {
             Log::error('Get eBay Customers Error: ' . $e->getMessage());
-            return ['error' => $e->getMessage()];
-        }
-    }
-
-    /**
-     * Create eBay listing from inventory item
-     */
-    public function createListing($sku, $listingData)
-    {
-        try {
-            $endpoint = "/sell/inventory/v1/offer";
-
-            $offer = [
-                'sku' => $sku,
-                'marketplaceId' => $listingData['marketplace_id'] ?? 'EBAY_US',
-                'format' => $listingData['format'] ?? 'FIXED_PRICE',
-                'pricingSummary' => [
-                    'price' => [
-                        'value' => $listingData['price'],
-                        'currency' => $listingData['currency'] ?? 'USD'
-                    ]
-                ],
-                'listingDescription' => $listingData['description'] ?? '',
-                'categoryId' => $listingData['category_id'],
-                'merchantLocationKey' => $listingData['location_key'] ?? 'DEFAULT'
-            ];
-
-            return $this->makeEbayRequest('post', $endpoint, $offer);
-        } catch (Exception $e) {
-            Log::error('Create eBay Listing Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
@@ -962,13 +961,15 @@ trait WithEbayApiRequest
      */
     public function createFulfilmentPolicy()
     {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
         $data = [
             "categoryTypes" => [
                 [
                     "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
                 ]
             ],
-            "marketplaceId" => "EBAY_GB",
+            "marketplaceId" => $marketplaceId,
             "name" => "Domestic shipping",
             "handlingTime" => [
                 "unit"  => "DAY",
@@ -982,8 +983,8 @@ trait WithEbayApiRequest
                         [
                             "buyerResponsibleForShipping" => "false",
                             "freeShipping" => "true",
-                            "shippingCarrierCode" => "RoyalMail",
-                            "shippingServiceCode" => "UK_RoyalMailNextDay"
+                            "shippingCarrierCode" => $marketplaceId === "EBAY_ES" ? "Correos" : "RoyalMail",
+                            "shippingServiceCode" => $marketplaceId === "EBAY_ES" ? "ES_CartasNacionalesDeMas20" : "UK_RoyalMailNextDay"
                         ]
                     ]
                 ]
@@ -1004,10 +1005,12 @@ trait WithEbayApiRequest
      */
     public function getFulfilmentPolicies()
     {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
         try {
             $endpoint = "/sell/account/v1/fulfillment_policy";
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'marketplace_id' => 'EBAY_GB'
+                'marketplace_id' => $marketplaceId
             ]);
         } catch (Exception $e) {
             Log::error('Get Fulfilment Policy Error: ' . $e->getMessage());
@@ -1020,9 +1023,11 @@ trait WithEbayApiRequest
      */
     public function createPaymentPolicy()
     {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
         $data = [
             "name" => "minimal Payment Policy",
-            "marketplaceId" => "EBAY_GB",
+            "marketplaceId" => $marketplaceId,
             "categoryTypes" => [
                 [
                     "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
@@ -1044,10 +1049,12 @@ trait WithEbayApiRequest
      */
     public function getPaymentPolicies()
     {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
         try {
             $endpoint = "/sell/account/v1/payment_policy";
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'marketplace_id' => 'EBAY_GB'
+                'marketplace_id' => $marketplaceId
             ]);
         } catch (Exception $e) {
             Log::error('Get Payment Policy Error: ' . $e->getMessage());
@@ -1060,9 +1067,11 @@ trait WithEbayApiRequest
      */
     public function createReturnPolicy()
     {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
         $data = [
             "name" => "minimal return policy",
-            "marketplaceId" => "EBAY_GB",
+            "marketplaceId" => $marketplaceId,
             "refundMethod" => "MONEY_BACK",
             "returnsAccepted" => true,
             "returnShippingCostPayer" => "SELLER",
@@ -1086,10 +1095,12 @@ trait WithEbayApiRequest
      */
     public function getReturnPolicies()
     {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+
         try {
             $endpoint = "/sell/account/v1/return_policy";
             return $this->makeEbayRequest('get', $endpoint, [], [
-                'marketplace_id' => 'EBAY_GB'
+                'marketplace_id' => $marketplaceId
             ]);
         } catch (Exception $e) {
             Log::error('Get Return Policy Error: ' . $e->getMessage());
@@ -1177,6 +1188,20 @@ trait WithEbayApiRequest
 
     /**
      * Get user's eBay category suggestions
+     */
+    public function getPrivileges()
+    {
+        try {
+            $endpoint = "/sell/account/v1/privilege";
+            return $this->makeEbayRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Get Privilege Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay category suggestions
      *
      */
     public function getUser($data = [], $queryParams = [])
@@ -1199,7 +1224,12 @@ trait WithEbayApiRequest
 
             // If unauthorized, try to refresh the token once
             if ($response->status() === 401) {
-                $token = $this->refreshEbayToken()['access_token'];
+                $token = Arr::get($this->refreshEbayToken(), 'access_token');
+
+                if (! $token) {
+                    return [];
+                }
+
                 $response = Http::withHeaders([
                     'Authorization' => 'Bearer ' . $token,
                     'Content-Type' => 'application/json',

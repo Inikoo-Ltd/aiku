@@ -136,7 +136,7 @@ class UpdateInvoice extends OrgAction
 
 
         if (Arr::hasAny($changes, ['in_process', 'net_amount', 'org_net_amount', 'grp_net_amount'])) {
-            CustomerHydrateClv::dispatch($invoice->customer->id)->delay($this->hydratorsDelay);
+            CustomerHydrateClv::dispatch($invoice->customer)->delay($this->hydratorsDelay);
         }
 
         if (Arr::hasAny($changes, ['billing_country_id', 'sales_channel_id', 'is_vip', 'external_invoicer_id'])) {

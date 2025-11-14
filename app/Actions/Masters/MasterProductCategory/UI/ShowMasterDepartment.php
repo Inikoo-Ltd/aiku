@@ -101,9 +101,19 @@ class ShowMasterDepartment extends GrpAction
                 ),
                 'pageHead'    => [
                     'title'         => $masterDepartment->name,
+                    'model'         => __('Master Department'),
                     'icon'          => [
                         'icon'  => ['fal', 'fa-folder-tree'],
                         'title' => $tittle
+                    ],
+                    'iconRight' => $masterDepartment->status ? [
+                        'tooltip' => __('Active'),
+                        'icon'    => 'fas fa-check-circle',
+                        'class'   => 'text-green-400'
+                    ] : [
+                        'tooltip' => __('Closed'),
+                        'icon'    => 'fas fa-times-circle',
+                        'class'   => 'text-red-400'
                     ],
                     'actions'       => [
                          $this->canEdit ? [

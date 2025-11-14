@@ -142,8 +142,7 @@ class IndexProspects extends OrgAction
         return $elements;
     }
 
-    // if $scope is set as $scope= all, then php artisan ide-helper:meta will fail!
-    public function handle(Group|Organisation|Shop|Fulfilment|Tag $parent, $prefix = null, $scope): LengthAwarePaginator
+    public function handle(Group|Organisation|Shop|Fulfilment|Tag $parent, ?string $prefix, string $scope): LengthAwarePaginator
     {
         $globalSearch = AllowedFilter::callback('global', function ($query, $value) {
             $query->where(function ($query) use ($value) {
@@ -206,6 +205,7 @@ class IndexProspects extends OrgAction
                     if (!in_array($direction, ['asc', 'desc'])) {
                         $direction = 'asc';
                     }
+
                     return $query->orderBy('contact_website', $direction);
                 }),
             ])
@@ -214,13 +214,17 @@ class IndexProspects extends OrgAction
             ->withQueryString();
     }
 
-    public function tableStructure(Group|Organisation|Shop|Fulfilment|Tag $parent, ?array $modelOperations = null, $prefix = null, $scope = 'all'): Closure
-    {
+    public function tableStructure(
+        Group|Organisation|Shop|Fulfilment|Tag $parent,
+        ?array $modelOperations = null,
+        $prefix = null,
+        $scope = 'all'
+    ): Closure {
         return function (InertiaTable $table) use ($modelOperations, $prefix, $parent, $scope) {
             if ($prefix) {
                 $table
                     ->name($prefix)
-                    ->pageName($prefix . 'Page');
+                    ->pageName($prefix.'Page');
             }
             if (class_basename($parent) != 'Tag' && !($parent instanceof Group)) {
                 foreach ($this->getElementGroups($parent, $scope) as $key => $elementGroup) {
@@ -254,16 +258,18 @@ class IndexProspects extends OrgAction
         };
     }
 
-    public function jsonResponse(LengthAwarePaginator $prospects): AnonymousResourceCollection
-    {
+    public function jsonResponse(
+        LengthAwarePaginator $prospects
+    ): AnonymousResourceCollection {
         return ProspectsResource::collection($prospects);
     }
 
 
-    public function htmlResponse(LengthAwarePaginator $prospects, ActionRequest $request): Response
-    {
-
-        $shop = $request->route()->parameters()['shop'];
+    public function htmlResponse(
+        LengthAwarePaginator $prospects,
+        ActionRequest $request
+    ): Response {
+        $shop          = $request->route()->parameters()['shop'];
         $subNavigation = $this->getSubNavigation($shop, $request);
 
         $navigation = ProspectsTabsEnum::navigation();
@@ -274,11 +280,10 @@ class IndexProspects extends OrgAction
         }
 
 
-
         if ($this->parent instanceof Shop) {
             $spreadsheetRoute = [
                 'event'           => 'action-progress',
-                'channel'         => 'grp.personal.' . $this->group->id,
+                'channel'         => 'grp.personal.'.$this->group->id,
                 'required_fields' => ["id:prospect_key", "company", "contact_name", "email", "telephone"],
                 'route'           => [
                     'upload' => [
@@ -290,7 +295,6 @@ class IndexProspects extends OrgAction
                 ],
             ];
         }
-
 
 
         if ($this->parent instanceof Group) {
@@ -352,30 +356,30 @@ class IndexProspects extends OrgAction
                         $this->canEdit ? [
                             'type'    => 'buttonGroup',
                             'buttons' =>
-                            match (class_basename($this->parent)) {
-                                'Shop' => [
-                                    [
-                                        'style' => 'primary',
-                                        'icon'  => ['fal', 'fa-upload'],
-                                        'label' => 'Upload',
-                                        'route' => [
-                                            'name'       => 'grp.org.models.shop.prospects.upload',
-                                            'parameters' => $this->parent->id
+                                match (class_basename($this->parent)) {
+                                    'Shop' => [
+                                        [
+                                            'style' => 'primary',
+                                            'icon'  => ['fal', 'fa-upload'],
+                                            'label' => 'Upload',
+                                            'route' => [
+                                                'name'       => 'grp.org.models.shop.prospects.upload',
+                                                'parameters' => $this->parent->id
 
+                                            ],
                                         ],
-                                    ],
-                                    [
-                                        'type'  => 'button',
-                                        'style' => 'create',
-                                        'label' => __('Prospect'),
-                                        'route' => [
-                                            'name'       => 'grp.org.shops.show.prospects.create',
-                                            'parameters' => $request->route()->originalParameters()
+                                        [
+                                            'type'  => 'button',
+                                            'style' => 'create',
+                                            'label' => __('Prospect'),
+                                            'route' => [
+                                                'name'       => 'grp.org.shops.show.prospects.create',
+                                                'parameters' => $request->route()->originalParameters()
+                                            ]
                                         ]
-                                    ]
-                                ],
-                                default => []
-                            }
+                                    ],
+                                    default => []
+                                }
 
 
                         ] : false
@@ -389,7 +393,7 @@ class IndexProspects extends OrgAction
                         ]
                     ],
                     'event'     => class_basename(Prospect::class),
-                    'channel'   => 'uploads.org.' . request()->user()->id
+                    'channel'   => 'uploads.org.'.request()->user()->id
                 ],
                 'upload_spreadsheet' => $spreadsheetRoute ?? null,
                 'uploadRoutes'       => [
@@ -402,21 +406,21 @@ class IndexProspects extends OrgAction
                         'parameters' => []
                     ],
                 ],
-                'download_route' => [
-                    'xlsx'   => [
+                'download_route'     => [
+                    'xlsx' => [
                         'name'       => 'grp.org.shops.show.crm.prospects.export',
                         'parameters' => [
                             'organisation' => $this->organisation->slug,
-                            'shop' => $this->shop->slug,
-                            'type' => 'xlsx'
+                            'shop'         => $this->shop->slug,
+                            'type'         => 'xlsx'
                         ]
                     ],
-                    'csv'    => [
+                    'csv'  => [
                         'name'       => 'grp.org.shops.show.crm.prospects.export',
                         'parameters' => [
                             'organisation' => $this->organisation->slug,
-                            'shop' => $this->shop->slug,
-                            'type'                 => 'csv'
+                            'shop'         => $this->shop->slug,
+                            'type'         => 'csv'
                         ]
                     ]
                 ],
@@ -432,8 +436,10 @@ class IndexProspects extends OrgAction
             ->table(IndexHistory::make()->tableStructure(prefix: ProspectsTabsEnum::HISTORY->value));
     }
 
-    public function getBreadcrumbs(string $routeName, array $routeParameters): array
-    {
+    public function getBreadcrumbs(
+        string $routeName,
+        array $routeParameters
+    ): array {
         $headCrumb = function (array $routeParameters = []) {
             return [
                 [

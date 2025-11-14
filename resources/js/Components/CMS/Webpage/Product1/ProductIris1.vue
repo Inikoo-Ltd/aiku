@@ -161,11 +161,6 @@ onMounted(() => {
     if (layout.iris?.customer && layout?.iris?.is_logged_in) {
         fetchProductExistInChannel()
     }
-    requestAnimationFrame(() => {
-        if (contentRef.value.scrollHeight > 100) {
-            showButton.value = true
-        }
-    })
     if (props.fieldValue?.product?.luigi_identity) {
         window?.dataLayer?.push({
             event: "view_item",
@@ -221,33 +216,6 @@ const validImages = computed(() => {
 })
 
 
-const profitMargin = computed(() => {
-    const price = props.fieldValue?.product?.price
-    const rrp = props.fieldValue?.product?.rrp
-    if (!price || !rrp || rrp === 0) return 0
-    return Math.round(((rrp - price) / rrp) * 100)
-})
-
-
-const popoverHover = ref(false)
-const popoverTimeout = ref()
-
-const hoverPopover = (e: any, open: boolean): void => {
-    popoverHover.value = true
-    if (!open) {
-        e.target.parentNode.click()
-    }
-}
-
-const closePopover = (close: any): void => {
-    popoverHover.value = false
-    if (popoverTimeout.value) clearTimeout(popoverTimeout.value)
-    popoverTimeout.value = setTimeout(() => {
-        if (!popoverHover.value) {
-            close()
-        }
-    }, 100)
-}
 
 
 </script>
@@ -297,9 +265,9 @@ const closePopover = (close: any): void => {
                                 :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                             <span>
                                 {{
-                                    fieldValue.product.stock > 0
-                                        ? trans("In stock") + ` (${fieldValue.product.stock} ` + trans("available") + `)`
-                                        : trans("Out Of Stock")
+                                fieldValue.product.stock > 0
+                                ? trans("In stock") + ` (${fieldValue.product.stock} ` + trans("available") + `)`
+                                : trans("Out Of Stock")
                                 }}
                             </span>
                         </div>
@@ -309,10 +277,12 @@ const closePopover = (close: any): void => {
                 <!-- Price + Profit popover -->
                 <ProductPrices :field-value="fieldValue" />
 
+
                 <!-- Button existence on all channels -->
                 <div class="relative flex gap-2 mb-6">
-                    <ButtonAddPortfolio :product="fieldValue.product"
-                        :productHasPortfolio="productExistenceInChannels" />
+                    <ButtonAddPortfolio :product="fieldValue.product" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
+                        :productHasPortfolio="productExistenceInChannels" 
+                        />
                     <div v-if="isLoadingFetchExistenceChannels" class="absolute h-full w-full z-10">
                         <div class="h-full w-full skeleton rounded" />
                     </div>
@@ -321,9 +291,23 @@ const closePopover = (close: any): void => {
                 <div class="text-xs font-medium text-gray-800"
                     :style="getStyles(fieldValue?.description?.description_content, screenType)">
                     <div v-html="fieldValue.product.description"></div>
+
+                    <div class="text-xs font-normal text-gray-700 my-1" v-if="expanded"
+                        :style="getStyles(fieldValue?.description?.description_extra, screenType)">
+                        <div ref="contentRef"
+                            class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
+                            v-html="fieldValue.product.description_extra"></div>
+                    </div>
+
+                    <button v-if="fieldValue.product.description_extra" @click="toggleExpanded"
+                        class="mt-1 text-gray-900 text-xs underline focus:outline-none">
+                        {{ expanded ? trans("Show Less") : trans("Read More") }}
+                    </button>
                 </div>
 
                 <div v-if="fieldValue.setting?.information" class="my-4 space-y-2">
+                    <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
+                        :styleData="fieldValue?.information_style" />
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
                         :informations="fieldValue?.information" :styleData="fieldValue?.information_style" />
                     <div v-if="fieldValue?.paymentData?.length > 0"
@@ -338,21 +322,6 @@ const closePopover = (close: any): void => {
                 </div>
             </div>
         </div>
-
-        <div class="text-xs font-normal text-gray-700 my-6"
-            :style="getStyles(fieldValue?.description?.description_extra, screenType)">
-            <div ref="contentRef"
-                class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
-                :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
-
-            <button v-if="showButton" @click="toggleExpanded"
-                class="mt-1 text-gray-900 text-xs underline focus:outline-none">
-                {{ expanded ? trans("Show Less") : trans("Read More") }}
-            </button>
-        </div>
-
-        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
-            :styleData="fieldValue?.information_style" />
     </div>
 
     <!-- Mobile Layout -->
@@ -376,14 +345,19 @@ const closePopover = (close: any): void => {
         </div>
 
         <div class="mt-6 flex flex-col gap-2">
-            <ButtonAddPortfolio :product="fieldValue.product" :productHasPortfolio="productExistenceInChannels" />
+            <ButtonAddPortfolio :product="fieldValue.product" :productHasPortfolio="productExistenceInChannels" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
         </div>
 
         <div class="text-xs font-medium py-3">
             <div v-html="fieldValue.product.description"></div>
+             <div class="text-xs font-normal text-gray-700 my-1">
+            <div class="prose prose-sm text-gray-700 max-w-none" v-html="fieldValue.product.description_extra"></div>
+        </div>
         </div>
 
         <div class="mt-4">
+            <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
+                :styleData="fieldValue?.information_style" />
             <InformationSideProduct v-if="fieldValue?.information?.length > 0" :informations="fieldValue?.information"
                 :styleData="fieldValue?.information_style" />
             <div class="text-sm font-semibold mb-2">Secure Payments:</div>
@@ -393,11 +367,8 @@ const closePopover = (close: any): void => {
             </div>
         </div>
 
-        <div class="text-xs font-normal text-gray-700 my-6">
-            <div class="prose prose-sm text-gray-700 max-w-none" v-html="fieldValue.product.description_extra"></div>
-        </div>
+       
 
-        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
-            :styleData="fieldValue?.information_style" />
+
     </div>
 </template>

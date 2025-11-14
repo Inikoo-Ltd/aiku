@@ -29,7 +29,7 @@ class AssetHydrateSalesIntervals implements ShouldBeUnique
 
     }
 
-    public function handle(int $assetID,  ?array $intervals = null, ?array $doPreviousPeriods = null): void
+    public function handle(int $assetID, ?array $intervals = null, ?array $doPreviousPeriods = null): void
     {
 
         $asset = Asset::find($assetID);

@@ -57,23 +57,24 @@ class DeleteInvoice extends OrgAction
                 $this->postDeleteInvoiceHydrators($invoice);
             }
 
-
-
-
-
-
-
         } catch (Throwable) {
             //
         }
 
-        CustomerHydrateClv::dispatch($invoice->customer->id)->delay($this->hydratorsDelay);
+        CustomerHydrateClv::dispatch($invoice->customer)->delay($this->hydratorsDelay);
 
         return $invoice;
     }
 
-    public function htmlResponse(): RedirectResponse
+    public function htmlResponse(Invoice $invoice): RedirectResponse
     {
+        if ($invoice->order) {
+            return Redirect::route('grp.helpers.redirect_order', [
+                $invoice->order->id
+            ]);
+        }
+
+
         return Redirect::route('grp.org.accounting.invoices.index', [
             $this->organisation->slug
         ]);

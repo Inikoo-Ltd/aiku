@@ -50,7 +50,7 @@ trait WithShopifyOrderRetrieval
                                             phone
                                         }
                                     }
-                                    lineItems(first: 10) {
+                                    lineItems(first: 100) {
                                         edges {
                                             node {
                                                 id
@@ -68,7 +68,7 @@ trait WithShopifyOrderRetrieval
                                             }
                                         }
                                     }
-                                    merchantRequests(first: 10, kind: FULFILLMENT_REQUEST) {
+                                    merchantRequests(first: 100, kind: FULFILLMENT_REQUEST) {
                                         edges {
                                             node {
                                                 message

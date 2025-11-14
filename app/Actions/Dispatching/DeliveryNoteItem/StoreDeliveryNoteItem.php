@@ -12,6 +12,7 @@ use App\Actions\Catalogue\Asset\Hydrators\AssetHydrateDeliveryNotesIntervals;
 use App\Actions\Dispatching\DeliveryNote\CalculateDeliveryNoteTotalAmounts;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
+use App\Enums\DateIntervals\DateIntervalEnum;
 use App\Models\Dispatching\DeliveryNote;
 use App\Models\Dispatching\DeliveryNoteItem;
 use App\Models\Inventory\OrgStock;
@@ -52,7 +53,8 @@ class StoreDeliveryNoteItem extends OrgAction
         $deliveryNoteItem = $deliveryNote->deliveryNoteItems()->create($modelData);
 
         if ($deliveryNoteItem->transaction_id && $deliveryNoteItem->transaction->asset) {
-            AssetHydrateDeliveryNotesIntervals::dispatch($deliveryNoteItem->transaction->asset)->delay($this->hydratorsDelay);
+            $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
+            AssetHydrateDeliveryNotesIntervals::dispatch($deliveryNoteItem->transaction->asset_id, $intervalsExceptHistorical, [])->delay(900);
         }
 
         $deliveryNote->refresh();
@@ -64,16 +66,16 @@ class StoreDeliveryNoteItem extends OrgAction
     public function rules(): array
     {
         $rules = [
-            'org_stock_id'      => [
+            'org_stock_id'               => [
                 'required',
                 Rule::Exists('org_stocks', 'id')->where('organisation_id', $this->organisation->id)
             ],
-            'transaction_id'    =>
+            'transaction_id'             =>
                 [
                     'required',
                     Rule::Exists('transactions', 'id')->where('shop_id', $this->shop->id)
                 ],
-            'quantity_required' => ['required', 'numeric'],
+            'quantity_required'          => ['required', 'numeric'],
             'original_quantity_required' => ['sometimes', 'numeric']
         ];
 
@@ -90,6 +92,7 @@ class StoreDeliveryNoteItem extends OrgAction
         $this->strict         = $strict;
         $this->hydratorsDelay = $hydratorsDelay;
         $this->initialisationFromShop($deliveryNote->shop, $modelData);
+
         return $this->handle($deliveryNote, $this->validatedData);
     }
 }

@@ -23,6 +23,7 @@ use App\Actions\Traits\Authorisations\WithCatalogueAuthorisation;
 use App\Enums\UI\Catalogue\ProductTabsEnum;
 use App\Http\Resources\Catalogue\ProductBackInStockRemindersResource;
 use App\Http\Resources\Catalogue\ProductFavouritesResource;
+use App\Http\Resources\Catalogue\ProductSalesResource;
 use App\Http\Resources\Catalogue\ProductsResource;
 use App\Http\Resources\Goods\TradeUnitsResource;
 use App\Http\Resources\History\HistoryResource;
@@ -357,6 +358,9 @@ class ShowProduct extends OrgAction
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
 
+                ProductTabsEnum::SALES->value => $this->tab == ProductTabsEnum::SALES->value ?
+                    fn () => ProductSalesResource::collection(IndexProductSales::run($product, ProductTabsEnum::SALES->value))
+                    : Inertia::lazy(fn () => ProductSalesResource::collection(IndexProductSales::run($product, ProductTabsEnum::SALES->value))),
 
                 ProductTabsEnum::FAVOURITES->value => $this->tab == ProductTabsEnum::FAVOURITES->value ?
                     fn () => ProductFavouritesResource::collection(IndexProductFavourites::run($product))
@@ -393,7 +397,8 @@ class ShowProduct extends OrgAction
             ->table(IndexOrgStocksInProduct::make()->tableStructure(prefix: ProductTabsEnum::STOCKS->value))
             ->table(IndexProductFavourites::make()->tableStructure($product, ProductTabsEnum::FAVOURITES->value))
             ->table(IndexProductImages::make()->tableStructure($product, ProductTabsEnum::IMAGES->value))
-            ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value));
+            ->table(IndexHistory::make()->tableStructure(prefix: ProductTabsEnum::HISTORY->value))
+            ->table(IndexProductSales::make()->tableStructure(prefix: ProductTabsEnum::SALES->value));
     }
 
     public function jsonResponse(Product $product): ProductsResource

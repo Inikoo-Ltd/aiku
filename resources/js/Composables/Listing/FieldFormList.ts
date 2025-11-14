@@ -64,6 +64,7 @@ import InputDimensions from '@/Components/Forms/Fields/InputDimensions.vue'
 import WrapperEmailSubscribetion from '@/Components/Forms/Fields/WrapperEmailSubscribetion.vue'
 import AddressDelivery from '@/Components/Forms/Fields/AddressDelivery.vue'
 import TagsCustomer from "@/Components/Forms/Fields/TagsCustomer.vue";
+import RetinaTagsCustomer from "@/Components/Forms/Fields/RetinaTagsCustomer.vue";
 
 
 export const componentsList: {[key: string]: Component} = {
@@ -129,6 +130,7 @@ export const componentsList: {[key: string]: Component} = {
     'input-dimension' : InputDimensions,
     'invoice_serial_references' : invoiceSerialReferences,
     'tags-customer': TagsCustomer,
+    'retina-tags-customer': RetinaTagsCustomer,
     'email_subscriptions': WrapperEmailSubscribetion
 }
 

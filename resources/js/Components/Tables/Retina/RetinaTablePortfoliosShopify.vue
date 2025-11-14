@@ -82,6 +82,7 @@ const props = defineProps<{
     useCheckBox?: boolean
     progressToUploadToShopifyAll: {}
     count_product_not_synced: number
+    disabled?: boolean
 }>()
 
 console.log(props)
@@ -423,7 +424,7 @@ onMounted(() => {
     </Message>
 
 
-    <Table :resource="data" :name="tab" class="mt-5" isCheckBox @onChecked="(item) => onChangeCheked(true, item)"
+    <Table :resource="data" :name="tab" class="mt-5" :isCheckBox="disabled" @onChecked="(item) => onChangeCheked(true, item)"
            @onUnchecked="(item) => onChangeCheked(false, item)" checkboxKey='id'
            :isChecked="(item) => selectedProducts.includes(item.id)" ref="_table">
 
@@ -546,7 +547,7 @@ onMounted(() => {
             </div>
 
             <!-- Section: is code exist in platform -->
-            <div v-if="product.is_code_exist_in_platform" class="text-xs text-amber-500">
+            <div v-if="product.is_code_exist_in_platform && !disabled" class="text-xs text-amber-500">
                 <FontAwesomeIcon icon="fas fa-exclamation-triangle" class="" fixed-width aria-hidden="true"/>
                 <span class="pr-2">{{
                         trans("We found same product in your shop, do you want to create new or use existing?")
@@ -669,7 +670,7 @@ onMounted(() => {
                             </div>
                         </div>
 
-                        <ButtonWithLink v-if="item.platform_possible_matches?.number_matches"
+                        <ButtonWithLink v-if="item.platform_possible_matches?.number_matches && !disabled"
                                         v-tooltip="trans('Match to existing Shopify product')" :routeTarget="{
                             method: 'post',
                                 name: 'retina.models.portfolio.match_to_existing_shopify_product',
@@ -684,6 +685,7 @@ onMounted(() => {
 
                     </div>
 
+                    <div v-if="!disabled">
                     <Button v-if="item.platform_possible_matches?.number_matches"
                             @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
                             :label="trans('Choose another product from your shop')" :capitalize="false" size="xxs"
@@ -692,6 +694,7 @@ onMounted(() => {
                             :label="trans('Match it with an existing product in your shop')" :capitalize="false"
                             size="xxs"
                             type="tertiary"/>
+                    </div>
                 </template>
                 <template v-else>
 
@@ -709,7 +712,7 @@ onMounted(() => {
                         </div>
                     </template>
 
-                    <Button class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
+                    <Button v-if="!disabled" class="mt-2" @click="() => (fetchRoute(), isOpenModal = true, selectedPortfolio = item)"
                             :label="trans('Connect with other product')" :capitalize="false" :icon="faRecycle"
                             size="xxs"
                             type="tertiary"/>
@@ -722,7 +725,7 @@ onMounted(() => {
         </template>
 
         <!-- Column: Actions 2 (Modal shopify) -->
-        <template #cell(create_new)="{ item }">
+        <template #cell(create_new)="{ item }" v-if=!disabled>
             <!-- <template v-if="!(!item.has_valid_platform_product_id && !item.exist_in_platform && !item.platform_status && (get(progressToUploadToShopify, [item.id], undefined) != 'success' && get(progressToUploadToShopify, [item.id], undefined) != 'loading'))">
 				<Button
 					v-if="(!item.has_valid_platform_product_id || !item.exist_in_platform || !item.platform_status) && item.platform_possible_matches.length"
@@ -746,7 +749,7 @@ onMounted(() => {
         </template>
 
         <!-- Column: Actions 3 -->
-        <template #cell(delete)="{ item }">
+        <template #cell(delete)="{ item }" v-if=!disabled>
             <ButtonWithLink
                 v-if="! item.platform_status"
                 v-tooltip="trans('remove product')"
@@ -758,7 +761,7 @@ onMounted(() => {
             						preserveScroll: true,
             					}"
             />
-            <ButtonWithLink
+            <ButtonWithLink 
                 v-if="item.platform_status"
                 v-tooltip="trans('unlink product')"
                 type="negative"

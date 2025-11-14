@@ -60,9 +60,16 @@ class TradeUnitsHydrateStocks implements ShouldBeUnique
         return 'hydrate:trade-units-stocks';
     }
 
-    public function asCommand()
+    public function asCommand(): void
     {
-        $tradeUnit = TradeUnit::where('slug', 'jbb-01')->first();
-        $this->handle($tradeUnit);
+        // Process all Trade Units in chunks to avoid memory issues
+        DB::disableQueryLog();
+
+        TradeUnit::query()
+            ->chunkById(500, function ($tradeUnits) {
+                foreach ($tradeUnits as $tradeUnit) {
+                    $this->handle($tradeUnit);
+                }
+            });
     }
 }

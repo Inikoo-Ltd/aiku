@@ -224,12 +224,6 @@ const getOrderingProduct = async () => {
 
 
 onMounted(() => {
-    requestAnimationFrame(() => {
-        if (contentRef.value?.scrollHeight && contentRef.value?.scrollHeight > 100) {
-            showButton.value = true
-        }
-    })
-
     if (layout?.iris?.is_logged_in) getOrderingProduct()
 
     // Luigi: last_seen recommendations
@@ -291,34 +285,6 @@ const validImages = computed(() => {
     return imagesSetup.value
 })
 
-const profitMargin = computed(() => {
-    const price = props.fieldValue?.product?.price
-    const rrp = props.fieldValue?.product?.rrp
-    if (!price || !rrp || rrp === 0) return 0
-    return Math.round(((rrp - price) / rrp) * 100)
-})
-
-
-const popoverHover = ref(false)
-const popoverTimeout = ref()
-
-const hoverPopover = (e: any, open: boolean): void => {
-    popoverHover.value = true
-    if (!open) {
-        e.target.parentNode.click()
-    }
-}
-
-const closePopover = (close: any): void => {
-    popoverHover.value = false
-    if (popoverTimeout.value) clearTimeout(popoverTimeout.value)
-    popoverTimeout.value = setTimeout(() => {
-        if (!popoverHover.value) {
-            close()
-        }
-    }, 100)
-}
-
 </script>
 
 <template>
@@ -366,12 +332,12 @@ const closePopover = (close: any): void => {
                                     :class="fieldValue.product.stock > 0 ? 'text-green-600' : 'text-red-600'" />
                                 <span>
                                     {{
-                                        customerData?.stock > 0
-                                            ? trans("In stock") +
-                                            ` (${customerData?.stock} ` +
-                                            trans("available") +
-                                            `)`
-                                            : trans("Out Of Stock")
+                                    customerData?.stock > 0
+                                    ? trans("In stock") +
+                                    ` (${customerData?.stock} ` +
+                                    trans("available") +
+                                    `)`
+                                    : trans("Out Of Stock")
                                     }}
                                 </span>
                             </div>
@@ -413,35 +379,48 @@ const closePopover = (close: any): void => {
                     </div>
                 </div>
 
-                
-               <ProductPrices :field-value="fieldValue" />
+
+                <ProductPrices :field-value="fieldValue" />
 
                 <!-- Section: Button add to cart -->
                 <div class="relative flex gap-2 mb-6">
                     <div v-if="layout?.iris?.is_logged_in && customerData" class="w-full">
                         <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
                         <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product"
-                            :customerData="customerData" :key="keyCustomer" />
+                            :customerData="customerData" :key="keyCustomer" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"/>
 
                         <div v-else>
                             <Button :label="trans('Out of stock')" type="tertiary" disabled full />
                         </div>
                     </div>
 
-                    <LinkIris v-else :href="urlLoginWithRedirect()"
+                    <LinkIris v-else :href="urlLoginWithRedirect()" :style="getStyles(fieldValue?.button?.properties, screenType)"
                         class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                         {{ trans("Login or Register for Wholesale Prices") }}
                     </LinkIris>
                 </div>
 
-                <!-- <div class="text-sm" :style="getStyles(fieldValue?.description?.description_title, screenType)">
-                    <div>{{ fieldValue.product.description_title }}</div>
-                </div> -->
 
-                <div class="text-sm" :style="getStyles(fieldValue?.description?.description_content, screenType)">
+                <div class="text-xs font-medium text-gray-800"
+                    :style="getStyles(fieldValue?.description?.description_content, screenType)">
                     <div v-html="fieldValue.product.description"></div>
+
+                    <div class="text-xs font-normal text-gray-700 my-1" v-if="expanded"
+                        :style="getStyles(fieldValue?.description?.description_extra, screenType)">
+                        <div ref="contentRef"
+                            class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
+                            v-html="fieldValue.product.description_extra"></div>
+                    </div>
+
+                    <button v-if="fieldValue.product.description_extra" @click="toggleExpanded"
+                        class="mt-1 text-gray-900 text-xs underline focus:outline-none">
+                        {{ expanded ? trans("Show Less") : trans("Read More") }}
+                    </button>
                 </div>
-                <div v-if="fieldValue.setting?.information" class="my-4 space-y-2">
+
+                <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
+                    :styleData="fieldValue?.information_style" :fullWidth="true" />
+                <div v-if="fieldValue.setting?.information" class="">
                     <InformationSideProduct v-if="fieldValue?.information?.length > 0"
                         :informations="fieldValue?.information" :styleData="fieldValue?.information_style" />
                     <div v-if="fieldValue?.paymentData?.length > 0"
@@ -457,18 +436,6 @@ const closePopover = (close: any): void => {
             </div>
         </div>
 
-        <div class="text-xs font-normal text-gray-700 my-6"
-            :style="getStyles(fieldValue?.description?.description_extra, screenType)">
-            <div ref="contentRef"
-                class="prose prose-sm text-gray-700 max-w-none transition-all duration-300 overflow-hidden"
-                :style="{ maxHeight: expanded ? 'none' : '100px' }" v-html="fieldValue.product.description_extra"></div>
-
-            <button v-if="showButton" @click="toggleExpanded" class="mt-1 text-xs underline focus:outline-none">
-                {{ expanded ? trans("Show Less") : trans("Read More") }}
-            </button>
-        </div>
-        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
-            :styleData="fieldValue?.information_style" />
     </div>
 
     <!-- Mobile Layout -->
@@ -478,7 +445,7 @@ const closePopover = (close: any): void => {
         <div class="flex justify-between items-start gap-4 mt-4">
             <!-- Price + Unit Info -->
             <div v-if="layout?.iris?.is_logged_in">
-               <ProductPrices :field-value="fieldValue" />
+                <ProductPrices :field-value="fieldValue" />
             </div>
 
             <!-- Favorite Icon -->
@@ -506,14 +473,14 @@ const closePopover = (close: any): void => {
             <!-- <ButtonAddToBasket :product="fieldValue.product" /> -->
             <div v-if="layout?.iris?.is_logged_in" class="w-full">
                 <!-- <ButtonAddToBasket v-if="fieldValue.product.stock > 0" :product="fieldValue.product" /> -->
-                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product" />
+                <EcomAddToBasketv2 v-if="fieldValue.product.stock > 0" :product="fieldValue.product"  :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
 
                 <div v-else>
                     <Button :label="trans('Out of stock')" type="tertiary" disabled full />
                 </div>
             </div>
 
-            <LinkIris v-else :href="urlLoginWithRedirect()"
+            <LinkIris v-else :href="urlLoginWithRedirect()" :style="getStyles(fieldValue?.button?.properties, screenType)"
                 class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
                 {{ trans("Login or Register for Wholesale Prices") }}
             </LinkIris>
@@ -521,10 +488,16 @@ const closePopover = (close: any): void => {
 
         <div class="mt-4 text-xs font-medium py-3">
             <div v-html="fieldValue.product.description"></div>
+            <div class="text-xs font-normal text-gray-700 my-1">
+                <div class="prose prose-sm text-gray-700 max-w-none" v-html="fieldValue.product.description_extra">
+                </div>
+            </div>
         </div>
 
 
         <div class="mt-4">
+            <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
+                :styleData="fieldValue?.information_style" />
             <InformationSideProduct v-if="fieldValue?.information?.length > 0" :informations="fieldValue?.information"
                 :styleData="fieldValue?.information_style" />
             <div class="text-sm font-semibold mb-2">Secure Payments:</div>
@@ -532,15 +505,7 @@ const closePopover = (close: any): void => {
                 <img v-for="logo in fieldValue?.paymentData" :key="logo.code" v-tooltip="logo.code" :src="logo.image"
                     :alt="logo.code" class="h-4 px-1" />
             </div>
-
         </div>
-
-        <div class="text-xs font-normal text-gray-700 my-6">
-            <div class="prose prose-sm text-gray-700 max-w-none" v-html="fieldValue.product.description_extra"></div>
-        </div>
-
-        <ProductContentsIris :product="props.fieldValue.product" :setting="fieldValue.setting"
-            :styleData="fieldValue?.information_style" />
     </div>
 
 </template>

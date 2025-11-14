@@ -29,8 +29,8 @@ const props = defineProps<{
 			}
 		}
 	}
-	loginMode: boolean
-	screenType: "mobile" | "tablet" | "desktop"
+	loginMode?: boolean
+	screenType?: "mobile" | "tablet" | "desktop"
 }>()
 
 const isLoggedIn = inject("isPreviewLoggedIn", false)
@@ -71,7 +71,11 @@ const layout = inject('layout', layoutStructure)
 				</div>
 				<!-- Search Bar -->
 				<div class="relative justify-self-center w-full max-w-80 flex items-center h-full">
-					<LuigiSearch v-if="layout.iris?.luigisbox_tracker_id" id="luigi_header_2" />
+					<LuigiSearch
+						v-if="layout.iris?.luigisbox_tracker_id"
+						:fieldValueSearch="fieldValue?.search"
+						id="luigi_header_2"
+					/>
 				</div>
 
 				<div class="relative w-full h-auto">

@@ -1,26 +1,28 @@
 <script setup lang="ts">
 import { Link, usePage } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/retinaLayout"
-import { provide, ref } from "vue"
+import { inject, onMounted, provide, ref } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { useColorTheme } from "@/Composables/useStockList"
 import { isArray } from 'lodash-es'
+import { generateNavigationName } from '@/Composables/useConvertString'
 
 import IrisHeader from "@/Layouts/Iris/Header.vue"
 import IrisFooter from "@/Layouts/Iris/Footer.vue"
-import RetinaDsLeftSidebar from "./Retina/RetinaDsLeftSidebar.vue"
 import ScreenWarning from "@/Components/Utils/ScreenWarning.vue"
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, } from "@fal"
+import { faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faBooks } from "@fal"
 import { faArrowRight, faExclamationCircle, faCheckCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-library.add( faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faExclamationCircle, faCheckCircle, faArrowRight, faListUl, faEye )
+library.add( faShoppingBasket, faHandHoldingUsd, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder, faBuilding, faCreditCard, faBooks, faExclamationCircle, faCheckCircle, faArrowRight, faListUl, faEye )
 import { faListUl, faEye } from "@far"
 
 import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import { trans } from "laravel-vue-i18n"
 import RetinaEcomLeftSidebar from "./Retina/RetinaEcomLeftSidebar.vue"
+import RetinaMobileNavigationSimple from "./Retina/RetinaMobileNavigationSimple.vue"
+import BreadcrumbsIris from "@/Components/Navigation/BreadcrumbsIris.vue"
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
 const layout = useLayoutStore()
@@ -34,7 +36,8 @@ const irisTheme = props?.iris?.theme ?? { color: [...useColorTheme[2]] }
 
 const sidebarOpen = ref(false)
 
-console.log("Layout Ds", layout.iris.is_logged_in)
+const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('desktop'))
+
 </script>
 
 <template>
@@ -58,36 +61,15 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 			:data="layout.iris.header"
 			:colorThemed="irisTheme"
 			:menu="layout.iris.menu" />
-			
+
 
 		<!-- wrapper for mobile overlay + content -->
 		<div class="relative">
-			<!-- Floating menu button (mobile only) -->
-			<button
-				@click="sidebarOpen = !sidebarOpen"
-				class="shadow-white/50 shadow-md fixed justify-center items-center h-16 w-16 bottom-8 left-8 z-[51] md:hidden p-4 rounded-full focus:outline-none"
-				:style="{
-					backgroundColor: layout?.app?.theme[5],
-					color: layout?.app?.theme[4],
-				}"
-				aria-label="Toggle menu">
-				<FontAwesomeIcon
-					:icon="faListUl"
-					class="text-2xl"
-					fixed-width
-					aria-hidden="true" />
-			</button>
-
-			<div
-				v-if="sidebarOpen"
-				@click="sidebarOpen = false"
-				class="fixed inset-0 bg-gray-800/50 z-40 md:hidden" />
 
 			<!-- sidebar + main content -->
-			<main
-				class="flex flex-col md:flex-row gap-x-2 lg:max-w-7xl w-full lg:mx-auto my-10 px-4 lg:px-8 xl:px-0 transition-all">
+			<main class="flex flex-col md:flex-row gap-x-2 lg:max-w-7xl w-full lg:mx-auto my-10 px-4 lg:px-8 xl:px-0 transition-all">
 				<RetinaEcomLeftSidebar
-					v-if="layout.user"
+					v-if="layout.user && screenType !== 'mobile'"
 					:class="[
 						'fixed inset-y-0 left-0 md:h-fit bg-white shadow-lg transform z-50 md:z-0 transition-all',
 						sidebarOpen ? 'translate-x-0' : '-translate-x-full',
@@ -97,18 +79,17 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 				/>
 
 				<!-- RetinaLayoutDS -->
-				<div class="overflow-x-auto flex-1 flex flex-col pb-6 text-gray-700 relative">
-					<div class="flex justify-between items-end absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
-						<Breadcrumbs
+				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
+					<div class="overflow-x-auto flex flex-col md:flex-row md:justify-between md:items-end absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
+						<!-- <Breadcrumbs
 							class=""
 							:breadcrumbs="usePage().props.breadcrumbs ?? []"
 							:navigation="usePage().props.navigation ?? []"
 							:layout="layout"
 							style="max-width: calc(1280px - 200px)"
-						/>
+						/> -->
 
-						<div
-							v-if="layout.iris?.is_logged_in"
+						<div v-if="layout.iris?.is_logged_in"
 							class="xbg-slate-300 xborder border-slate-500 px-4 py-0.5 rounded-full flex items-center gap-x-2 xtext-indigo-600"
 						>
 							{{ trans("Reference") }}:
@@ -117,11 +98,12 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 							</span>
 						</div>
 					</div>
-					
-					<div
-						class="w-full">
-						<div class="pb-6 bg-white shadow-lg rounded-lg">
-							<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2" />
+
+					<div class="overflow-x-auto w-full">
+						<div class="relative pb-6 bg-white shadow-lg rounded-lg">
+							<!-- Section: Top navigation -->
+							<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 overflow-x-auto" />
+
 							<!-- Main content of the page -->
 							<slot name="default" />
 						</div>
@@ -135,9 +117,40 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 		<IrisFooter
 			v-if="layout.iris?.footer && !isArray(layout.iris.footer)"
 			:data="layout.iris.footer"
-			:colorThemed="irisTheme" />
+			:colorThemed="irisTheme"
+		/>
+		
+		<!-- Section: bottom navigation -->
+		<div v-if="layout.user && screenType === 'mobile'" class="bg-[rgb(20,20,20)] text-white sticky bottom-0 w-full z-10">
+			<div class="flex gap-x-3 pt-2 pb-3 px-4 overflow-x-auto">
+				<template v-for="(grpNav, itemKey) in layout.navigation">
+					<RetinaMobileNavigationSimple
+						:nav="grpNav"
+						:navKey="generateNavigationName(itemKey)"
+					/>
+				</template>
+			</div>
+		</div>
 	</div>
 </template>
+
+<style lang="scss">
+@media (max-width: 767px) {
+	#launcher {
+		// Widget: Help chat (JIRA)
+		bottom: 50px !important;
+	}
+	#cookiescript_badge {
+		// Widget: Cookies acceptation
+		bottom: 70px !important;
+	}
+	#superchat-widget-content-root {
+		// Widget: Superchat
+		bottom: 45px !important;
+	}
+}
+</style>
+
 
 <style lang="scss" scoped>
 :deep(.topbarNavigationActive) {

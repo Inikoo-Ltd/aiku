@@ -53,7 +53,7 @@ class UpdateRetinaCustomer extends RetinaAction
             'is_re'               => ['sometimes', 'boolean'],
             'delivery_address'    => ['sometimes', 'nullable', new ValidAddress()],
             'delivery_address_id' => ['sometimes', 'integer'],
-
+            'tags'                => ['sometimes', 'array'],
 
         ];
     }

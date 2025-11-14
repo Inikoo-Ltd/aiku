@@ -11,6 +11,7 @@ namespace App\Actions\Web;
 use App\Actions\Helpers\Media\StoreMediaFromFile;
 use App\Actions\Traits\WithAttachMediaToModel;
 use App\Http\Resources\Helpers\ImageResource;
+use App\Models\Announcement;
 use App\Models\SysAdmin\Group;
 use App\Models\Web\WebBlock;
 use App\Models\Web\Website;
@@ -20,7 +21,7 @@ use Illuminate\Support\Collection;
 trait WithUploadWebImage
 {
     use WithAttachMediaToModel;
-    public function handle(WebBlock|Website|Group $model, string $scope, array $modelData): Collection
+    public function handle(WebBlock|Website|Group|Announcement $model, string $scope, array $modelData): Collection
     {
         $medias = [];
 

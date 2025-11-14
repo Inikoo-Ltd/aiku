@@ -13,7 +13,6 @@ import { faCubes, faSeedling, faRulerCombined } from "@fal"
 import { faFireAlt } from "@fad"
 import { faCheckCircle, faTimesCircle } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
-import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 import { StatsBoxTS } from '@/types/Components/StatsBox'
 
 library.add(faCheckCircle, faTimesCircle, faCubes, faSeedling, faRulerCombined, faFireAlt)
@@ -96,7 +95,7 @@ const isLoadingMetaRight = ref(false)
 
                  <template v-if="!meta?.hide">
                     <LoadingIcon v-if="isLoadingMeta == idxMeta" class="md:opacity-50 group-hover/sub:opacity-100" />
-                    <span v-else-if="meta.logo_icon" v-html="ChannelLogo(meta.logo_icon)"
+                    <img v-else-if="meta.logo_icon" :src="`/assets/channel_logo/${meta.logo_icon}.svg`"
                         class="flex items-center min-w-6 w-min max-w-10 min-h-4 h-auto max-h-7" />
                     <Icon v-else-if="meta.icon" :data="meta.icon" class=""
                         :class="meta.route?.name ? 'md:opacity-50 group-hover/sub:opacity-100' : 'md:opacity-50'" />
