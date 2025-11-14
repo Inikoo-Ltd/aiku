@@ -18,6 +18,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
+import axios from "axios"
+import { startRegistration } from "@simplewebauthn/browser"
+import { notify } from "@kyvg/vue3-notification"
 
 library.add(faChevronLeft, faSignOutAlt, faSensor, faLifeRing)
 
@@ -49,6 +52,47 @@ const onLogoutAuth = () => {
         onStart: () => isLoadingLogout.value = true,
         onError: () => isLoadingLogout.value = false
     })
+}
+
+const handleRegisterPasskey = async () => {
+     try {
+        const response = await axios.get(route('grp.profile.generate-passkey'))
+        console.log(response)
+        const options = response.data;
+        notify({
+            title: 'Passkey Generated',
+            text: 'Passkey generated successfully',
+            type: 'success',
+        })
+
+        // error in this step need to runnig on the ngrok or change to localhost
+        const startAuthenticationResponse = await startRegistration({ optionsJSON: options });
+
+        try {
+            await axios.post(
+                route('profile.passkeys.store'),
+                {
+                    options: JSON.stringify(options),
+                    passkey: JSON.stringify(startAuthenticationResponse)
+                }
+            );
+        } catch (error) {
+            console.log(error)
+        }
+
+
+    } catch (error) {
+        console.log(error)
+        // notify({
+        //     title: trans('Something went wrong.'),
+        //     text: trans('Failed to fetch this page.'),
+        //     type: 'error',
+        // })
+    }
+    // generate passkey
+
+    console.log('Register Passkey clicked');
+    // Add your passkey registration logic here
 }
 
 </script>
@@ -102,7 +146,7 @@ const onLogoutAuth = () => {
                     target="_blank"
                 >
                     <FontAwesomeIcon aria-hidden="true" class="flex-shrink-0 h-4 w-4" fixed-width :icon="helpData.icon" />
-                    
+
                     <Transition name="slide-to-left">
                         <span v-if="layout.leftSidebar.show" class="py-0.5 leading-none whitespace-nowrap "
                             :class="[layout.leftSidebar.show ? 'truncate block md:block' : 'block md:hidden']">
@@ -117,6 +161,15 @@ const onLogoutAuth = () => {
                         color: layout?.app?.theme[1],
                     }"/>
                 </a>
+
+
+                <button class="flex w-full px-2 focus:outline-none"
+                  @click="handleRegisterPasskey">
+                    <div class="w-full">
+                        <NavigationSimple :nav="{label: 'Register Passkey', icon: 'fal fa-key'}" />
+                    </div>
+                </button>
+
 
                 <Popover class="relative w-full " v-slot="{ open }">
                     <PopoverButton class="flex w-full focus:outline-none focus:ring-0 focus:border-none px-2">
