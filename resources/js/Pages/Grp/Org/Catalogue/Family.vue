@@ -142,6 +142,7 @@ const showDialog = ref(false);
         :master-currency="currency"
         :shopsData="shopsData"
         :masterProductCategory="masterProductCategory"
+        :is_dropship="route().params['masterShop'] == 'ds'"
     />
 
 </template>
