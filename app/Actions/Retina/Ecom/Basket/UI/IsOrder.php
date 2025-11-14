@@ -170,8 +170,10 @@ trait IsOrder
                     ],
                     [
                         'label'       => __('Discounts'),
+                        'label_class' => 'text-green-600',
                         'information' => '',
-                        'price_total' => $order->gross_amount - $order->goods_amount
+                        'price_total' => $order->gross_amount - $order->goods_amount,
+                        'price_total_class' => 'text-green-600 font-medium'
                     ],
                     [
                         'label'       => __('Items net'),
@@ -179,8 +181,6 @@ trait IsOrder
                         'price_total' => $order->goods_amount
                     ],
                 ],
-
-
             ];
         } else {
             $itemsData = [
