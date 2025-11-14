@@ -62,7 +62,10 @@ class TradeUnitsForMasterResource extends JsonResource
             'cost_price'              => $this->cost_price ?? 0,
             'tags'                    => TagsResource::collection($tradeUnit->tags)->resolve(),
             'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
-            'stock_available'         => $this->stock_available
+            'quantity'                => $this->quantity,
+            'stock_available'         => $this->quantity ? true : false,
+            'ecom_quantity'             => $this->quantity, // for FE
+            'ds_quantity'             => 1 // for FE
         ];
     }
 }

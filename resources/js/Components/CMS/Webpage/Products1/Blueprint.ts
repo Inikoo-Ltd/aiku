@@ -144,5 +144,25 @@ export default {
                     },
                 ],
         },
+        {
+            name: "Button Hover",
+            key: ["buttonHover", "properties"],
+            replaceForm: [
+                    {
+                        key: ["background"],
+                        label : "Background",
+                        type: "background",
+                    },
+                    {
+                        key: ["text"],
+                        type: "textProperty",
+                    },
+                    {
+                        key: ["border"],
+                        label : "Border",
+                        type: "border",
+                    },
+                ],
+        },
     ],
 }

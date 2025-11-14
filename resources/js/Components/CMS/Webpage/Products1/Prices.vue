@@ -53,16 +53,16 @@ const props = defineProps<{
         class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
         <div class="flex items-center justify-between">
             <span class="font-medium text-xs">
-                {{ trans("Retail") }} : {{ locale.currencyFormat(currency?.code, product?.rrp || 0) }} /
+                {{ trans("Retail") }} : {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }} /
                 <span class=""> {{ product.unit }}</span>
-                <span class="text-xs ml-2 font-medium">
+                <!-- <span class="text-xs ml-2 font-medium">
                     {{ trans("(excl. tax)") }}
-                </span>
+                </span> -->
             </span>
         </div>
         <div class="flex items-center justify-between">
             <span class="text-xs flex items-center text-gray-500 font-medium">
-                {{ trans("Profit") }} : {{ locale.currencyFormat(currency?.code, product?.profit || 0) }}
+                {{ trans("Profit") }} : {{ locale.currencyFormat(currency?.code, product?.profit_per_unit || 0) }}
                 <span v-tooltip="trans('Profit margin')" class="ml-1">
                     ({{ product?.margin }})
                 </span>
@@ -75,7 +75,7 @@ const props = defineProps<{
             <div>
                 {{ trans("Price") }}:
                 <span class="font-semibold">
-                    {{ locale.currencyFormat(currency?.code, product.price) }}
+                    {{ locale.currencyFormat(currency?.code, product.price_per_unit | product.price  ) }}
                     <span class="text-xs text-gray-600"> / {{ product.unit }}</span>
                 </span>
             </div>
@@ -83,8 +83,8 @@ const props = defineProps<{
         <div v-else>
             <div class="flex justify-between">
                 <div>
-                    {{ trans("Price") }}:
-                    <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price) }}</span>
+                   {{ trans("Price") }}:
+                    <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price_per_unit | product.price  ) }}/{{trans('outer')}}</span>
                 </div>
                 <div>
                     <span class="text-xs price_per_unit">(<span> {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2)) }}
