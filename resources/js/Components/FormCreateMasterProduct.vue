@@ -143,10 +143,11 @@ const getTableData = (data) => {
             finalDataTable[tableDataItem.id] = {
                 price: tableDataItem.product.price || null,
                 create_in_shop: tableDataItem.product.create_in_shop,
-                rrp: tableDataItem.product.rrp || null
+                rrp: tableDataItem.product.rrp || null,
             }
         }
 
+        console.log(finalDataTable)
         try {
             const response = await axios.post(
                 route("grp.models.master_product_category.product_creation_data", {
@@ -163,6 +164,7 @@ const getTableData = (data) => {
                     tableData.value.data[index].product = {
                         ...tableData.value.data[index].product,
                         ...item,
+                        rrp : item.rrp / (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1)
                     }
                 }
             }
@@ -192,6 +194,10 @@ const ListSelectorChange = (value) => {
     getTableData(tableData.value)
 }
 
+function roundDown2(num: number) {
+    return Math.floor(num * 100) / 100;
+}
+
 const submitForm = async (redirect = true) => {
     form.processing = true
     form.errors = {}
@@ -204,7 +210,7 @@ const submitForm = async (redirect = true) => {
 
         let create_in_shop = tableDataItem.product.create_in_shop
         let price = tableDataItem.product.price
-        let rrp = tableDataItem.product.rrp * (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1)
+        let rrp = roundDown2(tableDataItem.product.rrp * (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1))
         let rrp_per_unit = tableDataItem.product.rrp
 
         if(!create_in_shop){
