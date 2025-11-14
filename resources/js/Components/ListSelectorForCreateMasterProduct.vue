@@ -286,7 +286,7 @@ defineExpose({
                                    <div class="text-sm text-gray-700 px-3 font-bold capitalize">{{ is_dropship ? 'SKU' : item.type }}</div>
                                 </template>
                                  <template #prefix>
-                                   <div  v-if="is_dropship" class="text-sm text-gray-700 px-3 font-bold capitalize w-20">
+                                   <div  v-if="is_dropship" class="text-sm text-gray-700 px-3 font-bold capitalize w-24">
                                     <span>{{ `${parseInt(item.quantity)}  ${item.type}` }}</span>
                                 </div>
                                  <div v-else class="text-sm text-gray-700 px-3 font-bold flex text-center capitalize w-24">
