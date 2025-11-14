@@ -197,6 +197,7 @@ class ShowShop extends OrgAction
                     ],
                     'shop_blocks' => [
                         'interval_data' => json_decode(DashboardTotalShopInvoiceCategoriesSalesResource::make($shop)->toJson()),
+                        'currency_code' => $shop->currency->code,
                     ],
                     'tabs_box' => [
                         'current'    => $this->tab,

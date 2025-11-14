@@ -7,8 +7,9 @@ import { ProductHit } from '@/types/Luigi/LuigiTypes'
 import { faCircle } from '@fas'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { trans } from 'laravel-vue-i18n'
-import { inject } from 'vue'
+import { inject, ref } from 'vue'
 import LinkIris from '@/Components/Iris/LinkIris.vue'
+import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 
 const props = defineProps<{
     product: ProductHit
@@ -17,16 +18,20 @@ const props = defineProps<{
 
 const layout = inject('layout', retinaLayoutStructure)
 const locale = inject('locale', aikuLocaleStructure)
+
+const isLoadingVisit = ref(false)
 </script>
 
 <template>
-    <div class="flex flex-col justify-between w-full px-4 py-3 rounded">
+    <div class="flex flex-col justify-between w-full px-4 py-3 rounded relative">
         <div class="w-full">
             <!-- Image -->
             <component :is="product.attributes.web_url?.[0] ? LinkIris : 'div'"
                 :href="product.attributes.web_url?.[0]"
                 class="block rounded aspect-[5/4] w-full overflow-hidden"
                 @success="() => SelectItemCollector(product)"
+                @start="() => isLoadingVisit = true"
+                @finish="() => isLoadingVisit = false"
             >
                 <img :src="product.attributes.image_link" :alt="product.attributes.title"
                     class="w-full h-full object-contain text-center text-xxs text-gray-400/70 italic font-normal">
@@ -37,6 +42,8 @@ const locale = inject('locale', aikuLocaleStructure)
                 :href="product.attributes.web_url?.[0]"
                 class="font-bold text-sm leading-tight hover:!underline !cursor-pointer"
                 @success="() => SelectItemCollector(product)"
+                @start="() => isLoadingVisit = true"
+                @finish="() => isLoadingVisit = false"
             >
                 {{ product.attributes.title }}
             </component>
@@ -64,6 +71,11 @@ const locale = inject('locale', aikuLocaleStructure)
                     <span>{{ trans('Price') }}: <span class="font-semibold"> {{ product.attributes.formatted_price }}</span></span>
                 </div>
             </div>
+
+            
+        <div v-if="isLoadingVisit" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
+            <LoadingIcon />
+        </div>
         
         <!-- Button: Add to Basket -->
         <!-- <div v-if="false && layout.retina.type === 'b2b' && product.attributes.product_id?.[0]">
