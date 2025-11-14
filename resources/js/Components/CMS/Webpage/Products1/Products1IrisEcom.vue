@@ -509,8 +509,9 @@ watch(
                         <div v-for="(product, index) in products" :key="index"
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border relative rounded" :class="product.stock ? '' : 'bg-red-100'">
-                            <ProductRenderEcom :product="product" :key="index" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)"
-                                :hasInBasket="productInBasket.list[product.id]" :bestSeller="fieldValue.bestseller"/>
+                            <ProductRenderEcom 
+                                :product="product" :key="index" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType, false)"
+                                :hasInBasket="productInBasket.list[product.id]" :bestSeller="fieldValue.bestseller" :buttonStyleHover="getStyles(fieldValue?.buttonHover?.properties, screenType, false)"/>
                         </div>
                     </template>
 
