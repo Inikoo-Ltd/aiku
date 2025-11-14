@@ -121,7 +121,7 @@ const onSaveEditBulkProduct = async () => {
   <!-- Dialog Create Product -->
   <FormCreateMasterProduct :showDialog="showDialog" :storeProductRoute="storeProductRoute"
     @update:show-dialog="(value) => showDialog = value" :shopsData="shopsData"
-    :masterProductCategory="masterProductCategory" />
+    :masterProductCategory="masterProductCategory" :is_dropship="route().params['masterShop'] == 'ds'"/>
 
 
        <Dialog :header="trans('Edit Selected Products')" v-model:visible="isOpenModalEditProducts" :modal="true"

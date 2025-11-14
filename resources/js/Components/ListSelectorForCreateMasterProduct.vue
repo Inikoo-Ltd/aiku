@@ -102,7 +102,6 @@ const getPortfoliosList = async (url?: string) => {
     try {
         const tabRoute = props.tabs?.[activeTab.value]?.routeFetch || props.routeFetch
         const currentTab = props.tabs?.[activeTab.value]
-        console.log('sdsd', props.routeFetch)
         const params: Record<string, any> = { ...tabRoute.parameters }
 
         // ✅ Only append search if tab has "search: true"
@@ -128,7 +127,6 @@ const getPortfoliosList = async (url?: string) => {
     }
 }
 
-
 const debounceGetPortfoliosList = debounce(() => (getPortfoliosList()), 500)
 
 const compSelectedProduct = computed(() =>
@@ -148,9 +146,6 @@ const selectProduct = (item: Portfolio) => {
     }
 }
 
-const deleteProduct = (id: number) => {
-    selectedProduct.value = selectedProduct.value.filter(p => p.id !== id)
-}
 
 const isAllSelected = computed(() => {
     if (list.value.length === 0) return false
@@ -198,7 +193,6 @@ const deleteFormCommited = (item) => {
 }
 
 const updateProduct = (updated: Portfolio) => {
-    console.log('sss', updated, committedProducts.value)
     committedProducts.value = committedProducts.value.map(p => {
         if (p.id === updated.id) {
             console.log("✅ Match found:", p);
@@ -286,7 +280,11 @@ defineExpose({
                                 :key="item.id + '-' + (item[props.key_quantity] || 1)"
                                 :modelValue="item[props.key_quantity] || 1" :bindToTarget="{ min: 1 }"
                                 @update:modelValue="(val: number) => { item[props.key_quantity] = val; emits('update:modelValue', [...committedProducts]) }"
-                                noUndoButton noSaveButton parentClass="w-min" />
+                                noUndoButton noSaveButton parentClass="w-min" >
+                                <template #suffix>
+                                   <div class="text-sm text-gray-700 px-3 font-bold capitalize">{{ item.type }}</div>
+                                </template>
+                            </NumberWithButtonSave>
                             <button class="text-red-500 hover:text-red-700 px-4"
                                 @click="() => deleteFormCommited(item)">
                                 <FontAwesomeIcon :icon="faTrashAlt" />
@@ -414,25 +412,15 @@ defineExpose({
                                                     </div>
                                                     <div v-if="!item.no_price && item.price"
                                                         class="text-xs text-gray-x500">
-                                                        {{ locale?.currencyFormat(item.currency_code || 'usd',
-                                                            item.price || 0) }}
+                                                        {{ locale?.currencyFormat(item.currency_code || 'usd',  item.price || 0) }}
                                                     </div>
                                                     <template v-if="item.stock_available">
-                                                        <NumberWithButtonSave
-                                                            :modelValue="selectedProduct.find(p => p.id === item.id)?.[props.key_quantity] || 1"
-                                                            :bindToTarget="{ min: 1 }" @update:modelValue="(val: number) => {
-                                                                const target = selectedProduct.find(p => p.id === item.id)
-                                                                if (target) {
-                                                                    target[props.key_quantity] = val
-                                                                } else {
-                                                                    const newItem: any = { ...item, [props.key_quantity]: val }
-                                                                    selectedProduct.push(newItem)
-                                                                }
-                                                            }" noUndoButton noSaveButton parentClass="w-min" />
+                                                      <div class="text-sm font-semibold text-emerald-600">
+                                                        {{ parseInt(item.quantity) }} {{ item.type }}
+                                                      </div>
                                                     </template>
                                                     <template v-else>
-                                                        <span class="text-xs text-red-500 italic">Don't have
-                                                            stock</span>
+                                                        <span class="text-xs text-red-500 italic">Don't have stock</span>
                                                     </template>
                                                 </div>
                                             </slot>
