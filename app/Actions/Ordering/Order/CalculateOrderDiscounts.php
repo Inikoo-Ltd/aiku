@@ -37,11 +37,14 @@ class CalculateOrderDiscounts
         }
 
         DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)->delete();
+        DB::table('transactions')->where('order_id', $order->id)->update([
+            'net_amount' => DB::raw('gross_amount'),
+        ]);
 
         foreach ($this->transactions as $transaction) {
 
             DB::table('transactions')->where('id', $transaction->id)
-                ->update(['net_amount' => $transaction->net_amount ?? 0]);
+                ->update(['net_amount' => $transaction->net_amount]);
 
             DB::table('transaction_has_offer_allowances')->insert([
                 'order_id'              => $order->id,
