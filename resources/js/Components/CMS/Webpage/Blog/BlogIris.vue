@@ -17,7 +17,7 @@ import {
 } from "@fortawesome/free-brands-svg-icons"
 
 import Image from "@/Components/Image.vue"
-import { useFormatTime } from "@/Composables/useFormatTime"
+//import { useFormatTime } from "@/Composables/useFormatTime"
 import { getStyles } from "@/Composables/styles"
 
 library.add(faCube, faLink, faImage, faEnvelope, faFacebook, faTwitter, faLinkedin)
@@ -144,7 +144,7 @@ const screenType = inject("screenType", "desktop")
       <div v-html="fieldValue.title" :style="{fontFamily: 'Raleway, sans-serif', ...getStyles(fieldValue.properties, screenType)}" class="text-4xl font-bold tracking-tight mb-3 leading-snug text-gray-900"/>
 
       <div class="text-sm text-gray-500 mb-6">
-        {{ useFormatTime(displayDate) }}
+        {{ displayDate }}
       </div>
 
       <div

@@ -5,7 +5,7 @@
  */
 
 import { BrowserAgent } from "@newrelic/browser-agent/loaders/browser-agent";
-import './bootstrap';
+import './bootstrap_iris';
 import '../css/app.css';
 
 import {createApp, h} from 'vue';

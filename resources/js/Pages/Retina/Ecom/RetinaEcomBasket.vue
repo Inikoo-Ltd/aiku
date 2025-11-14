@@ -569,7 +569,7 @@ const onChangeInsurance = async (val: boolean) => {
                 :updateRoute="routes.update_route"
             />
             
-            <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-end pr-6">
+            <div v-if="charges.premium_dispatch" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.is_premium_dispatch ? 'text-green-500' : ''">
                     <InformationIcon :information="charges.premium_dispatch?.description" />
                     {{ charges.premium_dispatch?.label ?? charges.premium_dispatch?.name }}
@@ -593,7 +593,7 @@ const onChangeInsurance = async (val: boolean) => {
             </div>
             
             <!-- Section: Charge Extra Packing -->
-            <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-end pr-6">
+            <div v-if="charges.extra_packing" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative" xclass="data?.data?.has_extra_packing ? 'text-green-500' : ''">
                     <InformationIcon :information="charges.extra_packing?.description" />
                     {{ charges.extra_packing?.label ?? charges.extra_packing?.name }}
@@ -616,7 +616,7 @@ const onChangeInsurance = async (val: boolean) => {
             </div>
             
             <!-- Section: Charge Insurance -->
-            <div v-if="charges.insurance" class="flex gap-4 my-4 justify-end pr-6">
+            <div v-if="charges.insurance" class="flex gap-4 my-4 justify-between md:justify-end pr-2 md:pr-6">
                 <div class="px-2 flex justify-end items-center gap-x-1 relative">
                     <InformationIcon :information="charges.insurance?.description" />
                     {{ charges.insurance?.label ?? charges.insurance?.name }}

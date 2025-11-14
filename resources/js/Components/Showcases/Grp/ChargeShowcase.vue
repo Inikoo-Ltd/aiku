@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { defineProps, computed, inject } from 'vue';
+import { computed, inject } from 'vue';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faTag, faInfoCircle, faCalendarAlt, faPoundSign, faCog, faRuler, faHashtag } from "@fal";
 import { faCheckCircle, faTimesCircle } from "@fas";

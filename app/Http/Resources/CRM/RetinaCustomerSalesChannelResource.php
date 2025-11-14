@@ -82,6 +82,8 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'platform_name'           => $this->platform_name,
             'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
 
+            'ban_stock_update_until'   => $this->ban_stock_update_util,
+
             'reconnect_route' => $reconnectRoute,
             'test_route' => $testRoute,
             'delete_route' => [

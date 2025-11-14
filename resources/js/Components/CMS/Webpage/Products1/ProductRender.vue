@@ -51,6 +51,7 @@ const props = defineProps<{
     product: ProductResource
     productHasPortfolio: Array<Number> | undefined
     bestSeller: any
+    buttonStyle?:object | undefined
     currency?: {
         code: string
         name: string
@@ -272,7 +273,11 @@ const profitMargin = computed(() => {
         <div class="mt-auto">
             <Prices :product="product" :currency="currency" />
         </div>
-        <ButtonAddPortfolio :product="product" :productHasPortfolio="productHasPortfolio" />
+        <ButtonAddPortfolio 
+            :product="product" 
+            :productHasPortfolio="productHasPortfolio" 
+            :buttonStyle="buttonStyle"
+        />
     </div>
 </template>
 

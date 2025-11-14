@@ -71,7 +71,7 @@ function clientRoute(order) {
 
 <template>
   <div>
-    <Table :resource="data" class="mt-5">
+    <Table :resource="data" class="mt-5 overflow-x-auto">
 
       <!-- Column: Reference -->
       <template #cell(reference)="{ item }">

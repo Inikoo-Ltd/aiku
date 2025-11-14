@@ -95,6 +95,26 @@ export default {
 				},
 			],
 		},
+		 {
+            name: "Button",
+            key: ["button", "properties"],
+            replaceForm: [
+                    {
+                        key: ["background"],
+                        label : "Background",
+                        type: "background",
+                    },
+                    {
+                        key: ["text"],
+                        type: "textProperty",
+                    },
+                    {
+                        key: ["border"],
+                        label : "Border",
+                        type: "border",
+                    },
+                ],
+        },
 		/* {
 			name: "Layout",
 			key: ["container", "properties"],

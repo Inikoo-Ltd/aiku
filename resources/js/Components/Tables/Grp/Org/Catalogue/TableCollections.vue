@@ -12,7 +12,7 @@ import { remove as loRemove } from "lodash-es"
 import { ref } from "vue"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import Icon from "@/Components/Icon.vue"
-import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt, faFolders, faFolderTree } from "@fal"
+import { faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faPowerOff, faExclamationTriangle, faTrashAlt, faFolderDownload, faFolderTree } from "@fal"
 import { faPlay } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import Dialog from "primevue/dialog"
@@ -26,7 +26,7 @@ import { trans } from "laravel-vue-i18n"
 import SelectQuery from "@/Components/SelectQuery.vue"
 
 
-library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolders, faFolderTree)
+library.add(faSeedling, faBroadcastTower, faPauseCircle, faSunset, faSkull, faCheckCircle, faLockAlt, faHammer, faExclamationTriangle, faPlay, faFolderDownload, faFolderTree)
 
 const props = defineProps<{
     data: {}
@@ -379,12 +379,10 @@ function handleUrlChange(e: string | null) {
 
             <template v-for="(parent, index) in collection.parents_data" :key="index">
                 <FontAwesomeIcon v-if="parent.type === 'department'" :icon="faFolderTree" class="mr-1" v-tooltip="trans('Department')" />
-                <FontAwesomeIcon v-else-if="parent.type === 'subdepartment'" :icon="faFolders" class="mr-1" v-tooltip="trans('Sub Department')" />
+                <FontAwesomeIcon v-else-if="parent.type === 'sub_department'" :icon="faFolderDownload" class="mr-1" v-tooltip="trans('Sub Department')" />
                 <Link :href="parentRoute(parent.slug) as string" class="secondaryLink">
                     {{ parent.code && parent.code.length > 6 ? parent.code.substring(0, 6) + "..." : parent.code }}
-                </Link>
-
-
+                </Link>&nbsp;
             </template>
 
 

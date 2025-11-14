@@ -17,7 +17,6 @@ import {notify} from "@kyvg/vue3-notification";
 
 import {layoutStructure} from "@/Composables/useLayoutStructure";
 import axios from "axios";
-import {ChannelLogo} from "@/Composables/Icon/ChannelLogoSvg"
 import PurePassword from "@/Components/Pure/PurePassword.vue";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -299,7 +298,12 @@ const isModalEbayDuplicate = ref(false)
             <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <div v-html="ChannelLogo('shopify')" class="h-9 sm:h-12"></div>
+                    <img
+                        src="/assets/channel_logo/shopify.svg"
+                        class="h-9 sm:h-12"
+                        alt="Shopify"
+                        v-tooltip="'Shopify'"
+                    />
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Shopify</div>
                         <div class="text-xs text-gray-500 text-center sm:text-left">{{ total_channels?.shopify }} {{ trans("Channels") }}</div>
@@ -315,8 +319,13 @@ const isModalEbayDuplicate = ref(false)
             <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <div v-html="ChannelLogo('tiktok')" class="h-9 sm:h-12"
-                         :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
+                    <img
+                        src="/assets/channel_logo/tiktok.svg"
+                        class="h-9 sm:h-12"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
+                        alt="Tiktok"
+                        v-tooltip="'Tiktok'"
+                    />
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Tiktok</div>
                         <div v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
@@ -343,7 +352,12 @@ const isModalEbayDuplicate = ref(false)
             <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="truncate md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-                    <div v-html="ChannelLogo('woocommerce')" class="h-9 sm:h-12 min-w-6"></div>
+                    <img
+                        src="/assets/channel_logo/woocommerce.svg"
+                        class="h-9 sm:h-12 min-w-6"
+                        alt="Woocommerce"
+                        v-tooltip="'Woocommerce'"
+                    />
 
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Woocommerce</div>
@@ -381,7 +395,7 @@ const isModalEbayDuplicate = ref(false)
                 <div class="w-full flex justify-end">
 
                     <Button
-                        v-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
+                        xv-if="layout?.app?.environment === 'local' || layout?.app?.environment === 'staging'"
                         :label="trans('Connect')"
                         xtype="primary"
                         :type="total_channels?.ebay ? 'tertiary' : 'primary'"
@@ -389,7 +403,7 @@ const isModalEbayDuplicate = ref(false)
                         :iconRight="total_channels?.ebay ? '' : 'fal fa-external-link-alt'"
                         @click="() => total_channels?.ebay ? isModalEbay = true : onSubmitEbay()"
                     />
-                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>
+<!--                    <Button v-else :label="trans('Coming soon')" type="tertiary" disabled full/>-->
 
                 </div>
             </div>
@@ -398,9 +412,13 @@ const isModalEbayDuplicate = ref(false)
             <div class="xbg-gray-50 border border-gray-200 rounded-md p-4 flex flex-col justify-between">
                 <div
                     class="md:mb-4 lg:border-b border-gray-300 pb-4 flex flex-col sm:flex-row gap-x-4 items-center text-xl">
-
-                    <div v-html="ChannelLogo('amazon_simple')" class="h-9 sm:h-12"
-                         :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"></div>
+                    <img
+                        src="/assets/channel_logo/amazon_simple.svg"
+                        class="h-9 sm:h-12"
+                        :class="layout?.app?.environment === 'production' ? 'grayscale opacity-40' : ''"
+                        alt="Amazon"
+                        v-tooltip="'Amazon'"
+                    />
 
                     <div class="flex flex-col">
                         <div class="font-semibold text-base sm:text-xl text-center sm:text-left">Amazon</div>

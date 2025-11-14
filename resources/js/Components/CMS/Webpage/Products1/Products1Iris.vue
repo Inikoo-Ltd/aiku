@@ -279,7 +279,7 @@ onMounted(() => {
 
     if (layout?.iris?.is_logged_in) {
         fetchProductHasPortfolio();
-        fetchProducts()
+        // fetchProducts()
     }
 
 
@@ -541,7 +541,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border p-3 relative rounded bg-white">
                             <ProductRender :product="product" :key="index" :bestSeller="fieldValue.bestseller"
-                                :productHasPortfolio="productHasPortfolio.list[product.id]" />
+                                :productHasPortfolio="productHasPortfolio.list[product.id]" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
                         </div>
                     </template>
 

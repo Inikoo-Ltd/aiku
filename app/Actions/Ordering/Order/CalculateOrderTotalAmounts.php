@@ -20,20 +20,24 @@ class CalculateOrderTotalAmounts extends OrgAction
 {
     use WithOrganisationsArgument;
 
-    public function handle(Order $order, $calculateShipping = true): void
+    public function handle(Order $order, $calculateShipping = true, $calculateDiscounts= true,bool $collectionChanged = false): void
     {
+
+
+
         $itemsNet   = $order->transactions()->where('model_type', 'Product')->sum('net_amount');
         $itemsGross = $order->transactions()->where('model_type', 'Product')->sum('gross_amount');
         $tax        = $order->taxCategory->rate;
 
         $numberItemTransactions = $order->transactions()->where('model_type', 'Product')->count();
 
-        $shippingAmount  = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         $chargesAmount   = $order->transactions()->where('model_type', 'Charge')->sum('net_amount');
         $estimatedWeight = $order->transactions()->where('model_type', 'Product')->sum('estimated_weight');
 
         if ($order->collection_address_id) {
             $shippingAmount = 0;
+        } else {
+            $shippingAmount  = $order->transactions()->where('model_type', 'ShippingZone')->sum('net_amount');
         }
 
         $netAmount = $itemsNet + $shippingAmount + $chargesAmount;
@@ -54,6 +58,7 @@ class CalculateOrderTotalAmounts extends OrgAction
         data_set($modelData, 'charges_amount', $chargesAmount);
         data_set($modelData, 'estimated_weight', $estimatedWeight);
         data_set($modelData, 'number_item_transactions', $numberItemTransactions);
+
 
 
         $order->update($modelData);
@@ -79,6 +84,7 @@ class CalculateOrderTotalAmounts extends OrgAction
             }
         }
 
+
         if (in_array($order->state, [
             OrderStateEnum::CREATING,
             OrderStateEnum::SUBMITTED,
@@ -87,15 +93,16 @@ class CalculateOrderTotalAmounts extends OrgAction
         ])) {
 
             $calculateCharges = false;
-            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'number_item_transactions'])) {
+            if (Arr::hasAny($changes, ['goods_amount', 'number_item_transactions']) && $calculateDiscounts) { //todo remove true when all orders are updated with number_item_transactions
                 CalculateOrderDiscounts::run($order);
                 $calculateCharges = true;
             }
 
-            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight'])) {
+            if ($calculateShipping && Arr::hasAny($changes, ['goods_amount', 'estimated_weight']) || $collectionChanged) {
                 CalculateOrderShipping::run($order);
                 $calculateCharges = true;
             }
+
 
             if ($calculateCharges) {
                 CalculateOrderHangingCharges::run($order);
@@ -121,7 +128,7 @@ class CalculateOrderTotalAmounts extends OrgAction
             $order = Order::where('slug', $slug)->first();
             if ($order) {
                 $this->handle($order);
-                $command->line("Order $order->reference hydrated 💦");
+                $command->line("Order $order->reference totals calculated. 🧮");
             } else {
                 $command->error("Model not found");
                 $exitCode = 1;

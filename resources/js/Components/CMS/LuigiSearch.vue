@@ -198,6 +198,10 @@ const visitSearchPage = () => {
 
 <style lang="scss">
 
+.luigi-ac-heromobile-input { // Input on mobile
+    @apply border border-[var(--theme-color-0)] focus:border-[var(--theme-color-0)] focus:ring-[var(--theme-color-0)] rounded-sm !important;
+}
+
 .luigi-ac-ribbon {
     /* Border top of the Autocomplete */
     background: var(--luigiColor1) !important;

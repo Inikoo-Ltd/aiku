@@ -172,7 +172,7 @@ const onChangeProperty = debounce(updateProperty, 500);
   font-size: 1rem;
 }
 
-::v-deep(.p-accordionheader) {
+:deep(.p-accordionheader) {
   @apply flex items-center justify-between bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-none transition-colors duration-200 text-sm font-medium px-3 py-2;
 }
 

@@ -264,7 +264,7 @@ trait WithEbayApiRequest
             'sandbox' => config('services.ebay.sandbox'),
             'access_token' => Arr::get($this->settings, 'credentials.ebay_access_token'),
             'refresh_token' => Arr::get($this->settings, 'credentials.ebay_refresh_token'),
-            'marketplace_id' => Arr::get($this->settings, 'marketplace_id', Arr::get($shop->settings, 'ebay.marketplace_id')),
+            'marketplace_id' => Arr::get($shop->settings, 'ebay.marketplace_id'),
             'currency' => $shop->currency?->code ?? 'GBP'
         ];
     }
@@ -983,8 +983,8 @@ trait WithEbayApiRequest
                         [
                             "buyerResponsibleForShipping" => "false",
                             "freeShipping" => "true",
-                            "shippingCarrierCode" => "RoyalMail",
-                            "shippingServiceCode" => "UK_RoyalMailNextDay"
+                            "shippingCarrierCode" => $marketplaceId === "EBAY_ES" ? "Correos" : "RoyalMail",
+                            "shippingServiceCode" => $marketplaceId === "EBAY_ES" ? "ES_CartasNacionalesDeMas20" : "UK_RoyalMailNextDay"
                         ]
                     ]
                 ]
@@ -1182,6 +1182,20 @@ trait WithEbayApiRequest
             ]);
         } catch (Exception $e) {
             Log::error('Get Category Suggestions Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get user's eBay category suggestions
+     */
+    public function getPrivileges()
+    {
+        try {
+            $endpoint = "/sell/account/v1/privilege";
+            return $this->makeEbayRequest('get', $endpoint);
+        } catch (Exception $e) {
+            Log::error('Get Privilege Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }

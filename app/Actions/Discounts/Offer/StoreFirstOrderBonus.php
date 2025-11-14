@@ -12,9 +12,9 @@ use App\Actions\Helpers\Translations\Translate;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Rules\WithNoStrictRules;
 use App\Actions\Traits\WithStoreOffer;
-use App\Enums\Discounts\Offer\OfferStateEnum;
+use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
-use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetFilter;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferCampaign\OfferCampaignTypeEnum;
 use App\Models\Catalogue\Shop;
@@ -47,7 +47,6 @@ class StoreFirstOrderBonus extends OrgAction
 
         data_set($modelData, 'type', 'Amount AND Order Number');
         data_set($modelData, 'code', $code, false);
-        data_set($modelData, 'start_at', now(), false);
         data_set(
             $modelData,
             'name',
@@ -55,13 +54,17 @@ class StoreFirstOrderBonus extends OrgAction
             false
         );
 
+        data_set($modelData, 'trigger_type', 'Customer');
 
-        return StoreOffer::run($offerCampaign, $shop, $modelData);
+        $offer = StoreOffer::run($offerCampaign, $modelData);
+        ActivatePermanentOffer::run($offer);
+
+        return $offer;
     }
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'code'         => [
                 'required',
                 new IUnique(
@@ -83,18 +86,6 @@ class StoreFirstOrderBonus extends OrgAction
             'type'         => ['required', 'string'],
             'trigger_type' => ['sometimes', Rule::in(['Order'])],
         ];
-        if (!$this->strict) {
-            $rules['start_at']         = ['sometimes', 'nullable', 'date'];
-            $rules['finish_at']        = ['sometimes', 'nullable', 'date'];
-            $rules['state']            = ['sometimes', Rule::enum(OfferStateEnum::class)];
-            $rules['is_discretionary'] = ['sometimes', 'boolean'];
-            $rules['is_locked']        = ['sometimes', 'boolean'];
-            $rules['source_data']      = ['sometimes', 'array'];
-
-            $rules = $this->noStrictStoreRules($rules);
-        }
-
-        return $rules;
     }
 
     public function getCommandSignature(): string
@@ -102,22 +93,26 @@ class StoreFirstOrderBonus extends OrgAction
         return 'offer:create_first_order_bonus {shop} {amount} {discount} ';
     }
 
+    /**
+     * @throws \Throwable
+     */
     public function asCommand(Command $command): int
     {
         $shop = Shop::where('slug', $command->argument('shop'))->firstOrFail();
 
         $modelData = [
+            'duration'     => OfferDurationEnum::PERMANENT,
             'trigger_data' => [
                 'order_number' => 1,
                 'min_amount'   => $command->argument('amount'),
             ],
             'allowances'   => [
                 [
-                    'class'          => OfferAllowanceClass::DISCOUNT,
-                    'target_filter'    => OfferAllowanceTargetFilter::ALL_PRODUCTS_IN_ORDER,
-                    'allowance_type' => OfferAllowanceType::PERCENTAGE_OFF,
-                    'target_type'    => 'Order',
-                    'data'           => [
+                    'class'         => OfferAllowanceClass::DISCOUNT,
+                    'target_filter' => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
+                    'type'          => OfferAllowanceType::PERCENTAGE_OFF,
+                    'target_type'   => OfferAllowanceTargetTypeEnum::ALL_PRODUCTS_IN_ORDER,
+                    'data'          => [
                         'percentage_off' => $command->argument('discount'),
                     ]
                 ]
