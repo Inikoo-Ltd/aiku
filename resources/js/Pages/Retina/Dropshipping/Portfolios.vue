@@ -324,6 +324,71 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const key = ulid()
 
+const handleDownloadClick = async (type: string, event: Event) => {
+    event.preventDefault();
+    const url = downloadUrl(type);
+
+   // Close both modals
+    isOpenModalPortfolios.value = false;
+    isOpenModalDownloadImages.value = false;  // Add this line to close the download images modal
+
+    if (!url) {
+        console.error('No valid URL found for download');
+        return;
+    }
+
+    notify({
+        title: "Download on progress",
+        text: "Please wait while your download is being prepared",
+        type: "success",
+    })
+    // Convert URL to string if it's a Router object
+    const urlString = typeof url === 'string' ? url : url.toString();
+
+    try {
+        const response = await axios.get(urlString, {});
+        if (response.status !== 200) {
+            notify({
+                title: "Something went wrong.",
+                text: "An error occurred.",
+                type: "error",
+            })
+            return;
+        }
+
+        const downloadUrl = response.data.download_url;
+        if (!downloadUrl) {
+            notify({
+                title: "Something went wrong.",
+                text: "No download URL was provided.",
+                type: "error",
+            });
+            return;
+        }
+
+        // convert downloadUrl to string
+        const downloadUrlString = typeof downloadUrl === 'string' ? downloadUrl : downloadUrl.toString();
+        const fullUrl = downloadUrlString.startsWith('http') ?
+            downloadUrlString :
+            `https://${downloadUrlString}`;
+
+        window.open(fullUrl, '_blank');
+
+        notify({
+            title: "Download started",
+            text: "Your download should begin shortly.",
+            type: "success",
+        });
+    } catch (error) {
+        console.error('Download failed:', error);
+        notify({
+            title: "Something went wrong.",
+            text: "An error occurred.",
+            type: "error",
+        })
+    }
+}
+
 </script>
 
 <template>
@@ -342,10 +407,10 @@ const key = ulid()
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
-                <a v-if="props.product_count <= 200" :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
+                <a href="#" @click.prevent="handleDownloadClick('images', $event)">
+                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 rounded-l-none"/>
                 </a>
-                <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
+                <!-- <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/> -->
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
@@ -564,7 +629,7 @@ const key = ulid()
                                  :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
     </Modal>
 
-    <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
+    <!-- <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
            width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
         <div class="mb-8">
             <h3 class="text-center font-semibold">{{ trans('Images grouped by first letter from product code')}}</h3>
@@ -574,10 +639,10 @@ const key = ulid()
                 <div class="my-auto">
                     <span><b>{{grouped.char}}</b>: ({{grouped.count}}) images</span>
                 </div>
-                <a v-if="grouped.count > 0" :href="downloadUrl('images', grouped.ids) as string" rel="noopener">
+                <a v-if="grouped.count > 0" href="#" @click.prevent="handleDownloadClick('images', $event, grouped.ids, grouped.char)" rel="noopener">
                     <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
                 </a>
             </div>
         </div>
-    </Modal>
+    </Modal> -->
 </template>
