@@ -62,7 +62,7 @@ class TradeUnitsForMasterResource extends JsonResource
             'cost_price'              => $this->cost_price ?? 0,
             'tags'                    => TagsResource::collection($tradeUnit->tags)->resolve(),
             'brands'                  => BrandResource::collection($tradeUnit->brands)->resolve(),
-            'units'                   => $this->quantity,
+            'quantity'                   => $this->quantity,
             'stock_available'         => $this->quantity ? true : false
         ];
     }
