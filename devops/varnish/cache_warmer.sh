@@ -38,7 +38,7 @@ warm_varnish() {
         # For each URL, request both logged-in and logged-out variants
         for STATUS in "${STATUSES[@]}"; do
             local HEADER="X-Logged-Status: ${STATUS}"
-            echo "  -> [$STATUS] $trimmed"
+            #echo "  -> [$STATUS] $trimmed"
             # First request: only X-Logged-Status
             curl -sS -L --retry 2 --retry-delay 1 \
                  -A "$USER_AGENT" -H "$HEADER" \
