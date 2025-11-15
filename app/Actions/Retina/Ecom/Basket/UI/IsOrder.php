@@ -25,7 +25,6 @@ trait IsOrder
 
     public function getOrderBoxStats(Order $order): array
     {
-
         $taxCategory = $order->taxCategory;
 
         $payAmount   = $order->total_amount - $order->payment_amount;
@@ -57,7 +56,7 @@ trait IsOrder
                 $routeDownload = null;
             } else {
                 $routeShow = [
-                    'name'       => request()->route()->getName() . '.invoices.show',
+                    'name'       => request()->route()->getName().'.invoices.show',
                     'parameters' => array_merge(request()->route()->originalParameters(), ['invoice' => $invoice->slug])
                 ];
 
@@ -94,7 +93,7 @@ trait IsOrder
                 $routeDownload = null;
             } else {
                 $routeShow = [
-                    'name'       => request()->route()->getName() . '.invoices.show',
+                    'name'       => request()->route()->getName().'.invoices.show',
                     'parameters' => array_merge(request()->route()->originalParameters(), ['invoice' => $invoice->slug])
                 ];
 
@@ -158,6 +157,82 @@ trait IsOrder
             }
         }
 
+
+        $hasDiscounts = $order->goods_amount != $order->gross_amount;
+
+        if ($hasDiscounts) {
+            $itemsData = [
+                [
+                    [
+                        'label'       => __('Gross'),
+                        'price_base'  => 'Multiple',
+                        'price_total' => $order->gross_amount
+                    ],
+                    [
+                        'label'       => __('Discounts'),
+                        'label_class' => 'text-green-600',
+                        'information' => '',
+                        'price_total' => $order->gross_amount - $order->goods_amount,
+                        'price_total_class' => 'text-green-600 font-medium'
+                    ],
+                    [
+                        'label'       => __('Items net'),
+                        'information' => '',
+                        'price_total' => $order->goods_amount
+                    ],
+                ],
+            ];
+        } else {
+            $itemsData = [
+                [
+                    [
+                        'label'       => __('Items'),
+                        'quantity'    => $order->stats->number_item_transactions,
+                        'price_base'  => 'Multiple',
+                        'price_total' => $order->goods_amount
+                    ],
+                ]
+            ];
+        }
+
+
+        $orderSummary = $itemsData;
+
+        $orderSummary[] = [
+            [
+                'label'       => __('Charges'),
+                'information' => '',
+                'price_total' => $order->charges_amount
+            ],
+            [
+                'label'       => __('Shipping'),
+                'information' => '',
+                'price_total' => $order->shipping_amount
+            ]
+        ];
+
+        $orderSummary[] =
+            [
+                [
+                    'label'       => __('Net'),
+                    'information' => '',
+                    'price_total' => $order->net_amount
+                ],
+                [
+                    'label'       => __('Tax').' ('.$taxCategory->name.')',
+                    'information' => '',
+                    'price_total' => $order->tax_amount
+                ]
+            ];
+
+        $orderSummary[] = [
+            [
+                'label'       => __('Total'),
+                'price_total' => $order->total_amount
+            ],
+        ];
+
+
         return [
             'customer_client'  => $customerClientData,
             'customer'         => array_merge(
@@ -179,7 +254,7 @@ trait IsOrder
             ),
             'customer_channel' => $customerChannel,
             // 'invoice'          => $invoiceData,   //todo vika delete this
-            'invoices'          => $invoicesData,
+            'invoices'         => $invoicesData,
 
 
             'order_properties' => [
@@ -224,48 +299,10 @@ trait IsOrder
 
             'payments' => PaymentsResource::collection($order->payments)->toArray(request()),
 
-            'order_summary' => [
-                [
-                    [
-                        'label'       => __('Items'),
-                        'quantity'    => $order->stats->number_item_transactions,
-                        'price_base'  => 'Multiple',
-                        'price_total' => $order->goods_amount
-                    ],
-                ],
-                [
-                    [
-                        'label'       => __('Charges'),
-                        'information' => '',
-                        'price_total' => $order->charges_amount
-                    ],
-                    [
-                        'label'       => __('Shipping'),
-                        'information' => '',
-                        'price_total' => $order->shipping_amount
-                    ]
-                ],
-                [
-                    [
-                        'label'       => __('Net'),
-                        'information' => '',
-                        'price_total' => $order->net_amount
-                    ],
-                    [
-                        'label'       => __('Tax').' ('.$taxCategory->name.')',
-                        'information' => '',
-                        'price_total' => $order->tax_amount
-                    ]
-                ],
-                [
-                    [
-                        'label'       => __('Total'),
-                        'price_total' => $order->total_amount
-                    ],
-                ],
 
-                'currency' => CurrencyResource::make($order->currency),
-            ],
+            'order_summary' => $orderSummary,
+            'currency'      => CurrencyResource::make($order->currency)
+
         ];
     }
 
