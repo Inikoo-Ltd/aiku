@@ -39,10 +39,18 @@ warm_varnish() {
         for STATUS in "${STATUSES[@]}"; do
             local HEADER="X-Logged-Status: ${STATUS}"
             echo "  -> [$STATUS] $trimmed"
-            time curl -sS -L --retry 2 --retry-delay 1 \
+            # First request: only X-Logged-Status
+            curl -sS -L --retry 2 --retry-delay 1 \
                  -A "$USER_AGENT" -H "$HEADER" \
                  -w "%{http_code} %{url_effective}\n" \
                  "$trimmed" -o /dev/null 2>&1
+
+            # Second request: add X-Inertia: true header
+            curl -sS -L --retry 2 --retry-delay 1 \
+                 -A "$USER_AGENT" -H "$HEADER" -H "X-Inertia: true" \
+                 -w "%{http_code} %{url_effective}\n" \
+                 "$trimmed" -o /dev/null 2>&1
+
         done
     done
     echo "Done warming cache for ${host}"
