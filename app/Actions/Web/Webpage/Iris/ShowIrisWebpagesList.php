@@ -26,32 +26,49 @@ class ShowIrisWebpagesList
         $domain = 'https://www.'.$website->domain.'/';
 
         $callback = function () use ($website, $domain, $mode) {
-            $chunkSize = 1000;
-            $query     = DB::table('webpages')
-                ->select(['id', 'url', 'canonical_url'])
-                ->where('website_id', $website->id)
-                ->whereNull('deleted_at') // only non-deleted pages
-                ->where('state', WebpageStateEnum::LIVE->value)
-                ->orderBy('id');
+            // Build the base query
+            $query = DB::table('webpages')
+                ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url'])
+                ->where('webpages.website_id', $website->id)
+                ->whereNull('webpages.deleted_at') // only non-deleted pages
+                ->where('webpages.state', WebpageStateEnum::LIVE->value)
+                ->orderBy('webpages.id');
 
+            // Mode-specific adjustments
             if ($mode == 'products') {
-                $query->where('sub_type', 'product');
+                $query = DB::table('webpages')
+                    ->leftJoin('products', 'webpages.model_id', '=', 'products.id')
+                    ->leftJoin('assets', 'products.asset_id', '=', 'assets.id')
+                    ->leftJoin('asset_sales_intervals', 'assets.id', '=', 'asset_sales_intervals.asset_id')
+                    ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url','sales_1q'])
+                    ->where('webpages.website_id', $website->id)
+                    ->whereNull('webpages.deleted_at')
+                    ->where('webpages.state', WebpageStateEnum::LIVE->value)
+                    ->where('webpages.sub_type', 'product')
+                    ->orderBy('sales_1q','desc')
+                    ->limit(500);
             } elseif ($mode == 'families') {
-                $query->where('sub_type', 'family');
+                $query->where('webpages.sub_type', 'family');
             } elseif ($mode == 'base') {
-                $query->whereNotIn('sub_type', ['product', 'family']);
+                $query->whereNotIn('webpages.sub_type', ['product', 'family']);
             }
 
-            $query->chunkById($chunkSize, function ($rows) use ($domain) {
-                foreach ($rows as $row) {
-                    print $row->canonical_url."\n";
-                    $url = $domain.$row->url;
+            // Iterate using a cursor (no chunkById)
+            foreach ($query->cursor() as $row) {
 
-                    if ($url != $row->canonical_url) {
-                        print $url."\n";
-                    }
+                print $row->canonical_url . "\n";
+                $url = $domain . $row->url;
+                if ($url != $row->canonical_url) {
+                    print $url . "\n";
                 }
-            }, 'id');
+                // Flush output buffers periodically to stream to the client
+                if (function_exists('flush')) {
+                    @flush();
+                }
+                if (function_exists('ob_flush')) {
+                    @ob_flush();
+                }
+            }
         };
 
         return response()->stream($callback, 200, [
