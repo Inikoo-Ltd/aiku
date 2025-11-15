@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useLocaleStore } from "@/Stores/locale"
-import { inject, computed } from "vue"
+import { inject } from "vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import { Image as ImageTS } from "@/types/Image"
 import { trans } from "laravel-vue-i18n"
@@ -35,7 +35,7 @@ interface ProductResource {
     }
 }
 
-const props = defineProps<{
+defineProps<{
     product: ProductResource
     currency?: {
         code: string
@@ -53,7 +53,7 @@ const props = defineProps<{
         class="border-t border-b border-gray-200 p-1 px-0 mb-1 flex flex-col gap-1 text-gray-800 tabular-nums">
         <div class="flex items-center justify-between">
             <span class="font-medium text-xs">
-                {{ trans("Retail") }} : {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }} /
+               {{ trans("Retail") }} : {{ locale.currencyFormat(currency?.code, product?.rrp_per_unit || 0) }} /
                 <span class=""> {{ product.unit }}</span>
                 <!-- <span class="text-xs ml-2 font-medium">
                     {{ trans("(excl. tax)") }}
@@ -75,7 +75,7 @@ const props = defineProps<{
             <div>
                 {{ trans("Price") }}:
                 <span class="font-semibold">
-                    {{ locale.currencyFormat(currency?.code, product.price_per_unit | product.price  ) }}
+                    {{ locale.currencyFormat(currency?.code, product.price  ) }}
                     <span class="text-xs text-gray-600"> / {{ product.unit }}</span>
                 </span>
             </div>
@@ -87,7 +87,7 @@ const props = defineProps<{
                     <span class="font-semibold">{{ locale.currencyFormat(currency?.code, product.price_per_unit | product.price  ) }}/{{trans('outer')}}</span>
                 </div>
                 <div>
-                    <span class="text-xs price_per_unit">(<span> {{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2)) }}
+                    <span class="text-xs price_per_unit">(<span> {{ locale.currencyFormat(currency?.code, product.price_per_unit) }}
                     <span class=" text-gray-600"> / {{ product.unit }}</span></span>)</span>
                 </div>
             </div>
@@ -95,33 +95,6 @@ const props = defineProps<{
         </div>
 
 
-        <!-- old Prices -->
-        <!-- <div v-if="layout?.iris?.is_logged_in"
-                class="text-sm flex flex-wrap items-center justify-between gap-x-2 mb-3 tabular-nums">
-                <div class="">
-                    <div>{{ trans('Price') }}: <span class="font-semibold">{{ locale.currencyFormat(currency?.code,
-                        product.price || 0) }}</span></div>
-                    <div>
-                        <span class="text-sm text-gray-400  font-normal">
-                            ({{ locale.currencyFormat(currency?.code, (product.price / product.units).toFixed(2))
-                            }}/{{
-                                product.unit }})
-                        </span>
-                    </div>
-                </div>
-
-                <div v-if="product?.rrp" class="text-xs mt-1 text-right">
-                    <div>
-                        RRP: {{ locale.currencyFormat(currency?.code, Number(product.rrp).toFixed(2)) }}
-                        <span
-                            v-tooltip="trans('Profit margin')" class="text-green-600 font-medium">( {{ product?.margin }} )</span>
-                        <div v-if="product?.rrp_per_unit" class="text-gray-400 text-sm font-normal">
-                            ({{ locale.currencyFormat(currency?.code, Number(product.rrp_per_unit).toFixed(2)) }} / {{
-                                product.unit }})
-                        </div>
-                    </div>
-                </div>
-            </div> -->
     </div>
 </template>
 

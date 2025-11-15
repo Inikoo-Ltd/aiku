@@ -65,9 +65,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $source_alt_id to be used in no products transactions
  * @property int|null $original_invoice_transaction_id For refunds link to original invoice transaction
  * @property bool $in_process Used for refunds only
+ * @property string|null $offers_data
  * @property-read Asset|null $asset
  * @property-read Currency|null $currency
- * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\CRM\Customer $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransactionHasFeedback> $feedbackBridges
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read HistoricAsset|null $historicAsset

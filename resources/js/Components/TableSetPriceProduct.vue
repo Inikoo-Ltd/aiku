@@ -77,7 +77,7 @@ function getMargin(item: ProductItem) {
 // helper for RRP margin
 function getRrpMargin(item: ProductItem) {
     const rrp = item.product?.useCustomRrp
-        ? Number(item.product?.rrp)
+        ? Number(item.product?.rrp * (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1))
         : Math.round(Number(item.product?.price) * 2.4);
 
     const cost = Number(item.product?.org_cost);
@@ -241,8 +241,7 @@ function roundDown2(num: number) {
 
                         <!-- Price per unit -->
                         <td class="px-2 py-2  border-b border-gray-100 text-center">
-                            {{ locale.currencyFormat(item.product?.shop_currency ?? currency, (item.product?.price /
-                                (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1))) }}
+                            {{ locale.currencyFormat(item.product?.shop_currency ?? currency, (item.product?.price / (form.trade_units.length == 1 ? parseInt(form.trade_units[0].quantity) : 1))) }}
                         </td>
 
                         <!-- Margin -->
@@ -259,10 +258,9 @@ function roundDown2(num: number) {
                         <!-- RRP -->
                         <td class="px-2 py-2  border-b border-gray-100">
                             {{  locale.currencyFormat(item.product?.shop_currency ?? currency, roundDown2(
-                                (Number(item.product.price) * 2.4))
-                            )}}
+                                Number(item.product.rrp * (props.form.trade_units.length == 1 ? parseInt(props.form.trade_units[0].quantity) : 1))
+                            ))}}
                         </td>
-
                         <!-- RRP per unit -->
                         <td class="px-2 py-2 border-b border-gray-100 text-center">
                             <div class="flex items-center gap-2 text-xs">

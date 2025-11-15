@@ -12,15 +12,13 @@ namespace App\Actions\Dropshipping\CustomerSalesChannel\Json;
 use App\Actions\OrgAction;
 use App\Models\Catalogue\ProductCategory;
 use App\Models\CRM\Customer;
-use App\Models\Dropshipping\CustomerSalesChannel;
-use App\Services\QueryBuilder;
 use Lorisleiva\Actions\ActionRequest;
 
 class GetCustomerProductCategorySalesChannelIds extends OrgAction
 {
     public function handle(Customer $customer, ProductCategory $productCategory): array
     {
-       return GetRetinaCustomerProductCategorySalesChannelIds::run($customer, $productCategory);
+        return GetRetinaCustomerProductCategorySalesChannelIds::run($customer, $productCategory);
     }
 
     public function asController(Customer $customer, ProductCategory $productCategory, ActionRequest $request): \Illuminate\Http\Response|array

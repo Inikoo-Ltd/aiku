@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { trans } from "laravel-vue-i18n"
 import { computed } from 'vue'
-import { faUnlink, faInfoCircle, faFile, faStarChristmas, faFileCheck, faFilePdf, faFileWord } from "@fal"
+import { faFileCheck, faFilePdf, faFileWord } from "@fal"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const props = defineProps<{
     product: {
         specifications: {
             gross_weight?: number
-            net_weight?: number
+            marketing_weight?: number
             barcode?: number
             origin?: string
             dimensions?: [number, number]
@@ -63,9 +63,9 @@ const groupedAttachments = computed(() => {
             <div class="p-2 text-sm">{{ product.specifications.origin }}</div>
         </div>
 
-        <div v-if="product?.specifications?.net_weight" class="grid grid-cols-2 border-b border-gray-300">
+        <div v-if="product?.specifications?.marketing_weight" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Net Weight') }}</div>
-            <div class="p-2 text-sm">{{ product.specifications.net_weight }} g/{{ product.specifications.unit }}</div>
+            <div class="p-2 text-sm">{{ product.specifications.marketing_weight }} g/{{ product.specifications.unit }}</div>
         </div>
 
         <div v-if="product?.specifications?.gross_weight" class="grid grid-cols-2 border-b border-gray-300">
@@ -81,7 +81,7 @@ const groupedAttachments = computed(() => {
 
         <div v-if="product?.specifications?.ingredients" class="grid grid-cols-2 border-b border-gray-300">
             <div class="p-2 font-medium text-sm bg-gray-50">{{ trans('Materials/Ingredients') }}</div>
-            <div class="p-2 text-sm"> {{ product.specifications.ingredients.join(', ') }}</div>
+            <div class="p-2 text-sm"> {{ product.specifications.ingredients }}</div>
         </div>
 
         <div v-if="product?.specifications?.barcode" class="grid grid-cols-2 border-b border-gray-300">

@@ -71,7 +71,7 @@ class CalculateOrderDiscounts
         return $order;
     }
 
-    private function setEnabledOffers(Order $order): void
+    private function setEnabledOffers(Order $order):void
     {
         $enabledOffers = [];
 
@@ -115,7 +115,7 @@ class CalculateOrderDiscounts
         }
     }
 
-    public function processAllowance($offerId): void
+    public function processAllowance($offerId):void
     {
         $allowanceData = DB::table('offer_allowances')->select(['target_type', 'data', 'offer_id', 'id', 'offer_campaign_id'])->where('offer_id', $offerId)->first();
         if ($allowanceData) {

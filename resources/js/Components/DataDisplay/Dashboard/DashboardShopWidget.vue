@@ -40,8 +40,6 @@
             isNegative: delta.raw_value < 1
         };
     }
-
-    console.log("Shop Props: ", props)
 </script>
 
 <template>
