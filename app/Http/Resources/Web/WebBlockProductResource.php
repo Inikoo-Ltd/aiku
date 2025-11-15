@@ -33,29 +33,14 @@ class WebBlockProductResource extends JsonResource
         /** @var Product $product */
         $product = $this->resource;
 
-
-        $tradeUnits       = $product->tradeUnits;
-        $ingredients      = [];
-        $marketingWeights = [];
-        if ($tradeUnits) {
-            $tradeUnits->loadMissing(['ingredients']);
-            $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
-                return $tradeUnit->ingredients->pluck('name');
-            })->unique()->values()->all();
-
-            $marketingWeights = $tradeUnits->pluck('marketing_weights')->flatten()->filter()->values()->all();
-        }
-
-
         $specifications = [
             'country_of_origin' => NaturalLanguage::make()->country($product->country_of_origin),
-            'ingredients'       => $ingredients,
+            'ingredients'       => $product->marketing_ingredients,
             'gross_weight'      => $product->gross_weight,
-            'marketing_weights' => $marketingWeights,
             'barcode'           => $product->barcode,
             'dimensions'        => NaturalLanguage::make()->dimensions(json_encode($product->marketing_dimensions)),
             'cpnp'              => $product->cpnp_number,
-            'net_weight'        => $product->marketing_weight,
+            'marketing_weight'  => $product->marketing_weight,
             'unit'              => $product->unit,
         ];
 
@@ -71,7 +56,7 @@ class WebBlockProductResource extends JsonResource
             'description_title' => $product->description_title,
             'description_extra' => $product->description_extra,
             'stock'             => $product->available_quantity,
-            'specifications'    => $tradeUnits->count() > 0 ? $specifications : null,
+            'specifications'    => $product->is_single_trade_unit ? $specifications : null,
             'contents'          => ModelHasContentsResource::collection($product->contents)->toArray($request),
             'id'                => $product->id,
             'image_id'          => $product->image_id,
