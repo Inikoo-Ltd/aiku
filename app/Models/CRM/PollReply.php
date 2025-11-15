@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $fetched_at
  * @property \Illuminate\Support\Carbon|null $last_fetched_at
  * @property string|null $source_id
- * @property-read \App\Models\CRM\Customer|null $customer
+ * @property-read \App\Models\CRM\Customer $customer
  * @property-read \App\Models\CRM\Poll $poll
  * @property-read \App\Models\CRM\PollOption|null $pollOption
  * @method static \Illuminate\Database\Eloquent\Builder<static>|PollReply newModelQuery()

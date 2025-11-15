@@ -46,20 +46,22 @@ class StoreMasterProductFromTradeUnits extends GrpAction
         $hasOneTradeUnit = count($tradeUnits) == 1;
 
         $qtyFinal = 1;
-        
-        if($hasOneTradeUnit){
+
+        if ($hasOneTradeUnit) {
             $arrKeyFirst = array_key_first($tradeUnits);
             $qtyFinal = $tradeUnits[$arrKeyFirst]['quantity'];
         }
 
-        if($masterShop == 'ds'){
+        if ($masterShop == 'ds') {
             foreach ($tradeUnits as $key => $value) {
                 $qtyPerOuter = TradeUnit::find($tradeUnits[$key]['id'])->stocks->pluck('pivot.quantity')->first();
-                if($hasOneTradeUnit) $qtyFinal *= $qtyPerOuter;
+                if ($hasOneTradeUnit) {
+                    $qtyFinal *= $qtyPerOuter;
+                }
                 $tradeUnits[$key]['quantity'] *= $qtyPerOuter;
             }
         }
-        
+
         data_set($modelData, 'units', $qtyFinal);
 
         if (!Arr::has($modelData, 'unit') && $hasOneTradeUnit) {

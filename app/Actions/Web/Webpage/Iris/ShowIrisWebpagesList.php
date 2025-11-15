@@ -46,21 +46,21 @@ class ShowIrisWebpagesList
                     ->where('webpages.website_id', $website->id)
                     ->whereNull('webpages.deleted_at')
                     ->where('webpages.state', WebpageStateEnum::LIVE->value)
-                    ->where('products.state',ProductStateEnum::ACTIVE->value)
+                    ->where('products.state', ProductStateEnum::ACTIVE->value)
                     ->where('webpages.sub_type', 'product')
-                    ->orderBy('sales_1q','desc')
+                    ->orderBy('sales_1q', 'desc')
                     ->limit(1000);
             } elseif ($mode == 'families') {
                 $query = DB::table('webpages')
                     ->leftJoin('product_categories', 'webpages.model_id', '=', 'product_categories.id')
                     ->leftJoin('product_category_sales_intervals', 'product_categories.id', '=', 'product_category_sales_intervals.product_category_id')
                     ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url','sales_1q'])
-                    ->where('product_categories.state',ProductCategoryStateEnum::ACTIVE->value)
+                    ->where('product_categories.state', ProductCategoryStateEnum::ACTIVE->value)
                     ->where('webpages.website_id', $website->id)
                     ->whereNull('webpages.deleted_at')
                     ->where('webpages.state', WebpageStateEnum::LIVE->value)
                     ->where('webpages.sub_type', 'family')
-                    ->orderBy('sales_1q','desc')
+                    ->orderBy('sales_1q', 'desc')
                     ->limit(500);
 
             } elseif ($mode == 'base') {

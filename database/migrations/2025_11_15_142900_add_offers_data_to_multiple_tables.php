@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sat, 15 Nov 2025 18:22:19 Central Indonesia Time, Sanur, Indonesia
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 
-return new class extends Migration {
+return new class () extends Migration {
     public function up(): void
     {
         DB::transaction(function () {

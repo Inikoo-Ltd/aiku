@@ -71,7 +71,7 @@ Route::middleware(["iris-relax-auth:retina"])->group(function () {
         Route::get('/sitemap.xml', ShowIrisSitemap::class)->name('iris_sitemap');
         Route::get('/warming_base.txt', [ShowIrisWebpagesList::class,'base'])->name('warming.base');
         Route::get('/warming_families.txt', [ShowIrisWebpagesList::class,'families'])->name('warming.families');
-        Route::get('/warming_products.txt', [ShowIrisWebpagesList::class,'products'])->name('warming.products');;
+        Route::get('/warming_products.txt', [ShowIrisWebpagesList::class,'products'])->name('warming.products');
 
         Route::get('/invoice/{invoice:ulid}', IrisPdfInvoice::class)->name('iris_invoice');
         Route::get('/attachment/{media:ulid}', DownloadAttachment::class)->name('iris_attachment');
