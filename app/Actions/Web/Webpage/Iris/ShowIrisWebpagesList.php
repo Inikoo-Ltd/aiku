@@ -10,6 +10,8 @@
 
 namespace App\Actions\Web\Webpage\Iris;
 
+use App\Enums\Catalogue\Product\ProductStateEnum;
+use App\Enums\Catalogue\ProductCategory\ProductCategoryStateEnum;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Website;
 use Illuminate\Support\Facades\DB;
@@ -44,19 +46,31 @@ class ShowIrisWebpagesList
                     ->where('webpages.website_id', $website->id)
                     ->whereNull('webpages.deleted_at')
                     ->where('webpages.state', WebpageStateEnum::LIVE->value)
+                    ->where('products.state',ProductStateEnum::ACTIVE->value)
                     ->where('webpages.sub_type', 'product')
                     ->orderBy('sales_1q','desc')
-                    ->limit(500);
+                    ->limit(1000);
             } elseif ($mode == 'families') {
-                $query->where('webpages.sub_type', 'family');
+                $query = DB::table('webpages')
+                    ->leftJoin('product_categories', 'webpages.model_id', '=', 'product_categories.id')
+                    ->leftJoin('product_category_sales_intervals', 'product_categories.id', '=', 'product_category_sales_intervals.product_category_id')
+                    ->select(['webpages.id', 'webpages.url', 'webpages.canonical_url','sales_1q'])
+                    ->where('product_categories.state',ProductCategoryStateEnum::ACTIVE->value)
+                    ->where('webpages.website_id', $website->id)
+                    ->whereNull('webpages.deleted_at')
+                    ->where('webpages.state', WebpageStateEnum::LIVE->value)
+                    ->where('webpages.sub_type', 'family')
+                    ->orderBy('sales_1q','desc')
+                    ->limit(500);
+
             } elseif ($mode == 'base') {
                 $query->whereNotIn('webpages.sub_type', ['product', 'family']);
             }
 
-            // Iterate using a cursor (no chunkById)
-            foreach ($query->cursor() as $row) {
 
-                print $row->canonical_url . "\n";
+            // Iterate using a cursor (no chunkById)
+            foreach ($query->get() as $row) {
+                print "$row->canonical_url\n";
                 $url = $domain . $row->url;
                 if ($url != $row->canonical_url) {
                     print $url . "\n";
