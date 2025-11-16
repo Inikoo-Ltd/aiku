@@ -10,14 +10,12 @@
 
 namespace App\Actions\Fulfilment\PalletReturn\UI;
 
-use App\Actions\Fulfilment\Fulfilment\UI\ShowFulfilment;
-use App\Actions\Fulfilment\FulfilmentCustomer\ShowFulfilmentCustomer;
 use App\Actions\Fulfilment\GetNotesData;
 use App\Actions\Fulfilment\PalletReturn\IndexPalletsInReturnPalletWholePallets;
 use App\Actions\Fulfilment\StoredItem\UI\IndexStoredItemsInReturn;
 use App\Actions\Fulfilment\WithFulfilmentCustomerSubNavigation;
+use App\Actions\Fulfilment\PalletReturn\UI\Traits\WithShowPalletReturnHelpers;
 use App\Actions\Helpers\Media\UI\IndexAttachments;
-use App\Actions\Inventory\Warehouse\UI\ShowWarehouse;
 use App\Actions\OrgAction;
 use App\Actions\Traits\Authorisations\WithFulfilmentShopAuthorisation;
 use App\Enums\Fulfilment\PalletReturn\PalletReturnTypeEnum;
@@ -31,7 +29,6 @@ use App\Models\Fulfilment\FulfilmentCustomer;
 use App\Models\Fulfilment\PalletReturn;
 use App\Models\Inventory\Warehouse;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
@@ -40,6 +37,7 @@ class ShowPalletReturnDeleted extends OrgAction
 {
     use WithFulfilmentShopAuthorisation;
     use WithFulfilmentCustomerSubNavigation;
+    use WithShowPalletReturnHelpers;
 
     private Warehouse|FulfilmentCustomer|Fulfilment $parent;
 
@@ -90,35 +88,15 @@ class ShowPalletReturnDeleted extends OrgAction
 
     public function htmlResponse(PalletReturn $palletReturn, ActionRequest $request): Response
     {
-        $subNavigation = [];
-        if ($this->parent instanceof FulfilmentCustomer) {
-            $subNavigation = $this->getFulfilmentCustomerSubNavigation($this->parent, $request);
-        }
+        $subNavigation = $this->buildSubNavigation($this->parent, $request);
 
-
-        $navigation = PalletReturnTabsEnum::navigation($palletReturn);
-
-
-        if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
-            unset($navigation[PalletReturnTabsEnum::STORED_ITEMS->value]);
-        } else {
-            unset($navigation[PalletReturnTabsEnum::PALLETS->value]);
-            $this->tab = $request->get('tab', array_key_first($navigation));
-        }
+        $navigation = $this->buildTabsNavigation($palletReturn, $request);
 
 
         $actions = GetPalletReturnActions::run($palletReturn, $this->canEdit);
 
 
-        if ($palletReturn->type == PalletReturnTypeEnum::STORED_ITEM) {
-            $afterTitle = [
-                'label' => '('.__("Customer's SKUs").')'
-            ];
-        } else {
-            $afterTitle = [
-                'label' => '('.__('Whole pallets').')'
-            ];
-        }
+        $afterTitle = $this->computeAfterTitle($palletReturn);
 
         if ($palletReturn->type == PalletReturnTypeEnum::PALLET) {
             $downloadRoute = 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.pallets.export';
@@ -148,12 +126,7 @@ class ShowPalletReturnDeleted extends OrgAction
                         'icon'  => ['fal', 'fa-truck-couch'],
                         'title' => $palletReturn->reference
                     ],
-                    'edit'          => $this->canEdit ? [
-                        'route' => [
-                            'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                            'parameters' => array_values($request->route()->originalParameters())
-                        ]
-                    ] : false,
+                    'edit'          => $this->buildEditLink($request, $this->canEdit),
                     'actions'       => $actions
                 ],
 
@@ -185,40 +158,7 @@ class ShowPalletReturnDeleted extends OrgAction
                     ]
                 ],
 
-                'upload_spreadsheet' => [
-                    'event'           => 'action-progress',
-                    'channel'         => 'grp.personal.'.$this->organisation->id,
-                    'required_fields' => ['reference'],
-                    'template'        => [
-                        'label' => 'Download template (.xlsx)',
-                    ],
-                    'route'           => [
-                        'upload'   => [
-                            'name'       => 'grp.models.pallet-return.pallet-return-item.upload.upload',
-                            'parameters' => [
-                                'palletReturn' => $palletReturn->id
-                            ]
-                        ],
-                        'history'  => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.pallets.uploads.history',
-                            'parameters' => [
-                                'organisation'       => $palletReturn->organisation->slug,
-                                'fulfilment'         => $palletReturn->fulfilment->slug,
-                                'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                                'palletReturn'       => $palletReturn->slug
-                            ]
-                        ],
-                        'download' => [
-                            'name'       => $downloadRoute,
-                            'parameters' => [
-                                'organisation'       => $palletReturn->organisation->slug,
-                                'fulfilment'         => $palletReturn->fulfilment->slug,
-                                'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
-                                'type'               => 'xlsx'
-                            ]
-                        ],
-                    ],
-                ],
+                'upload_spreadsheet' => $this->buildUploadSpreadsheetConfig($palletReturn, $downloadRoute),
 
                 'attachmentRoutes' => [
                     'attachRoute' => [
@@ -341,85 +281,7 @@ class ShowPalletReturnDeleted extends OrgAction
 
     public function getBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
     {
-        $headCrumb = function (PalletReturn $palletReturn, array $routeParameters, string $suffix) {
-            return [
-                [
-                    'type'           => 'modelWithIndex',
-                    'modelWithIndex' => [
-                        'index' => [
-                            'route' => $routeParameters['index'],
-                            'label' => __('Pallet returns')
-                        ],
-                        'model' => [
-                            'route' => $routeParameters['model'],
-                            'label' => $palletReturn->reference,
-                        ],
-
-                    ],
-                    'suffix'         => $suffix
-                ],
-            ];
-        };
-
-        $palletReturn = PalletReturn::where('slug', $routeParameters['palletReturn'])->first();
-
-        return match ($routeName) {
-            'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show' => array_merge(
-                ShowFulfilmentCustomer::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer'])),
-                $headCrumb(
-                    $palletReturn,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.crm.customers.show.pallet_returns.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'fulfilmentCustomer', 'palletReturn'])
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.fulfilments.show.operations.pallet-returns.show' => array_merge(
-                ShowFulfilment::make()->getBreadcrumbs(Arr::only($routeParameters, ['organisation', 'fulfilment'])),
-                $headCrumb(
-                    $palletReturn,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'palletReturn'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.fulfilments.show.operations.pallet-returns.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'fulfilment', 'palletReturn'])
-                        ]
-                    ],
-                    $suffix
-                )
-            ),
-            'grp.org.warehouses.show.dispatching.pallet-returns.show' => array_merge(
-                ShowWarehouse::make()->getBreadcrumbs(
-                    Arr::only($routeParameters, ['organisation', 'warehouse'])
-                ),
-                $headCrumb(
-                    $palletReturn,
-                    [
-                        'index' => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.pallet-returns.index',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse'])
-                        ],
-                        'model' => [
-                            'name'       => 'grp.org.warehouses.show.dispatching.pallet-returns.show',
-                            'parameters' => Arr::only($routeParameters, ['organisation', 'warehouse', 'palletReturn'])
-                        ]
-                    ],
-                    $suffix
-                ),
-            ),
-
-            default => []
-        };
+        return $this->buildPalletReturnBreadcrumbs($routeName, $routeParameters, $suffix);
     }
 
     public function getPrevious(Warehouse|FulfilmentCustomer|Fulfilment $parent, PalletReturn $palletReturn, ActionRequest $request): ?array
