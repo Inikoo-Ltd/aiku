@@ -192,7 +192,7 @@
         <td width="45%" style="border: 0.1mm solid #888888;">
 
             @if($return->is_collection)
-                <span style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('For collection') }}</span>
+                <span style="font-size: 12pt; color: #555555; font-family: sans-serif;">{{ __('For collection') }}</span>
             @else
                 <span style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
                 <div>
@@ -238,22 +238,24 @@
         </tbody>
     </table>
 @else
-    <p>{{ __("Customer's SKU") }}</p>
+    <p>{{ __("Customer's SKUs") }}</p>
     <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
         <thead>
         <tr>
-            <td style="width:20%; text-align:left">{{ __('Name') }}</td>
-            <td style="width:50%; text-align:left">{{ __('Reference') }}</td>
-            <td style="text-align:right">{{ __('Quantity') }}</td>
+            <td style="width:50%; text-align:left">{{ __('SKU Reference') }}</td>
+            <td style="text-align:right">{{ __('Quantity requested') }}</td>
         </tr>
         </thead>
         <tbody>
 
         @foreach($return->storedItems as $storedItem)
             <tr class="@if($loop->last) last @endif">
-                <td style="text-align:left">{{ $storedItem->name }}</td>
                 <td style="text-align:left">{{ $storedItem->reference }}</td>
-                <td style="text-align:left">{{ $storedItem->quantity }}</td>
+                <td style="text-align:right">
+                    {{ preg_match('/^\s*\d+(?:\.0+)?\s*$/', (string) $storedItem->pivot->quantity_ordered)
+                        ? (int) $storedItem->pivot->quantity_ordered
+                        : $storedItem->pivot->quantity_ordered }}
+                </td>
             </tr>
         @endforeach
 
