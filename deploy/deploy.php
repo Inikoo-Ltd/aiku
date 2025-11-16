@@ -85,6 +85,7 @@ desc('Stops inertia SSR server');
 task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod');
 
 
+
 desc('Refresh vue after deployment');
 task('artisan:refresh_vue', artisan('deploy:refresh_vue'))->select('env=prod');
 
@@ -133,6 +134,9 @@ task('deploy:save-ssr-checksums', function () {
     $checksumFile = '{{release_path}}/SSR_CHECKSUM';
     run('printf %s '.escapeshellarg($combined).' > '.$checksumFile);
     writeln('SSR checksum saved to '.$checksumFile);
+
+
+
 });
 
 
@@ -187,6 +191,52 @@ task('deploy:flush-varnish', function () {
     }
 });
 
+desc('Restart Inertia SSR by supervisorctl');
+task('restart-ssr-by-supervisorctl', function () {
+
+    $currentFile  = '{{release_path}}/SSR_CHECKSUM';
+    $previousFile = '{{previous_release}}/SSR_CHECKSUM';
+
+    $current  = '';
+    $previous = '';
+
+    // Read current checksum
+    try {
+        if (test('[ -f '.$currentFile.' ]')) {
+            $current = trim(run('cat '.$currentFile));
+        } else {
+            writeln('SSR checksum: current file not found, will trigger restart ssr.');
+        }
+    } catch (\Throwable $e) {
+        writeln('Error reading current SSR checksum: '.$e->getMessage());
+    }
+
+    // Read previous checksum
+    try {
+        if (test('[ -f '.$previousFile.' ]')) {
+            $previous = trim(run('cat '.$previousFile));
+        } else {
+            writeln('SSR checksum: previous file not found, will trigger ssr restart.');
+        }
+    } catch (\Throwable $e) {
+        writeln('Error reading previous SSR checksum: '.$e->getMessage());
+    }
+
+    $shouldRestartSSR = false;
+
+    $frontEndChanged = get('front_end_changed');
+
+    if ($previous === '' || $current === '' || $previous !== $current || $frontEndChanged) {
+        $shouldRestartSSR = true;
+    }
+
+    if ($shouldRestartSSR) {
+        run("sudo supervisorctl restart inertia-ssr-production");
+    }
+
+
+})->select('env=prod');
+
 set('keep_releases', 25);
 
 set('shared_dirs', ['storage', 'private']);
@@ -218,7 +268,7 @@ task('deploy', [
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
-    'artisan:inertia:stop-ssr',
+    'deploy:restart-ssr-by-supervisorctl',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
 ]);
