@@ -20,8 +20,8 @@
             margin-header: 1mm; /* <any of the usual CSS values for margins> */
             margin-footer: 5mm; /* <any of the usual CSS values for margins> */
             marks: 'cross'; /*crop | cross | none*/
-            header: myheader;
-            footer: myfooter;
+            header: myHeader;
+            footer: myFooter;
             /* background: ...
             background-image: ...
             background-position ...
@@ -91,7 +91,7 @@
             border: 0.1mm solid #000000;
         }
 
-        .items td.blanktotal {
+        .items td.blank_total {
             background-color: #FFFFFF;
             border: 0mm none #000000;
             border-top: 0.1mm solid #000000;
@@ -113,7 +113,7 @@
     </style>
 </head>
 <body>
-<htmlpageheader name="myheader">
+<htmlpageheader name="myHeader">
     <br><br>
     <table width="100%" style="font-size: 9pt;">
         <tr>
@@ -142,8 +142,8 @@
     </table>
 </htmlpageheader>
 
-<sethtmlpageheader name="myheader" value="on" show-this-page="1"/>
-<sethtmlpagefooter name="myfooter" value="on"/>
+<sethtmlpageheader name="myHeader" value="on" show-this-page="1"/>
+<sethtmlpagefooter name="myFooter" value="on"/>
 
 <table width="100%" style="margin-top: 40px">
     <tr>
@@ -208,7 +208,7 @@
 
 </table>
 
-<htmlpagefooter name="myfooter">
+<htmlpagefooter name="myFooter">
     <div
         style="border-top: 1px solid #000000; font-size: 9pt; text-align: center; padding-top: 3mm; margin-top: 120px"></div>
     <table width="100%">
