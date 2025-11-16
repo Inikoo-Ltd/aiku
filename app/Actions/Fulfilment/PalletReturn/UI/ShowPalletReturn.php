@@ -106,7 +106,7 @@ class ShowPalletReturn extends OrgAction
                 'pageHead'    => [
                     'subNavigation' => $subNavigation,
                     'title'         => $palletReturn->reference,
-                    'model'         => __('return'),
+                    'model'         => __('Return'),
                     'afterTitle'    => $afterTitle,
                     'icon'          => [
                         'icon'  => ['fal', 'fa-truck-couch'],
@@ -361,11 +361,11 @@ class ShowPalletReturn extends OrgAction
                 'route' => [
                     'name'       => $routeName,
                     'parameters' => [
-                        'organisation'       => $palletReturn->organisation->slug,
-                        'fulfilment'         => $palletReturn->fulfilment->slug,
-                        'fulfilmentCustomer' => $palletReturn->fulfilmentCustomer->slug,
+                        'organisation'         => $palletReturn->organisation->slug,
+                        'fulfilment'           => $palletReturn->fulfilment->slug,
+                        'fulfilmentCustomer'   => $palletReturn->fulfilmentCustomer->slug,
                         'customerSalesChannel' => $parent,
-                        'palletReturn'       => $palletReturn->reference
+                        'palletReturn'         => $palletReturn->reference
                     ]
 
                 ]

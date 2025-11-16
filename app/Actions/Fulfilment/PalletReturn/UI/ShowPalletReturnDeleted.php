@@ -120,7 +120,7 @@ class ShowPalletReturnDeleted extends OrgAction
                 'pageHead'    => [
                     'subNavigation' => $subNavigation,
                     'title'         => $palletReturn->reference,
-                    'model'         => __('return'),
+                    'model'         => __('Return'),
                     'afterTitle'    => $afterTitle,
                     'icon'          => [
                         'icon'  => ['fal', 'fa-truck-couch'],

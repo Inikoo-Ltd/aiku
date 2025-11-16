@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Sun, 16 Nov 2025 12:31:16 Central Indonesia Time, Sanur, Bali, Indonesia
@@ -72,9 +73,7 @@ trait WithShowPalletReturnHelpers
         ];
     }
 
-    /**
-     * Build the common upload_spreadsheet configuration used by both ShowPalletReturn* actions.
-     */
+
     protected function buildUploadSpreadsheetConfig(PalletReturn $palletReturn, string $downloadRoute): array
     {
         return [
@@ -113,9 +112,7 @@ trait WithShowPalletReturnHelpers
         ];
     }
 
-    /**
-     * Common breadcrumb builder used by both ShowPalletReturn* actions.
-     */
+
     protected function buildPalletReturnBreadcrumbs(string $routeName, array $routeParameters, $suffix = ''): array
     {
         $headCrumb = function (PalletReturn $palletReturn, array $routeParameters, string $suffix) {
