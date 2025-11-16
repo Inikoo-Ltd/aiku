@@ -29,7 +29,7 @@
         }
 
         p {
-            margin: 0pt;
+            margin: 0;
         }
 
         h1 {
@@ -81,7 +81,7 @@
 
         .items td.blank_total {
             background-color: #FFFFFF;
-            border: 0mm none #000000;
+            border: 0 none #000000;
             border-top: 0.1mm solid #000000;
             border-right: 0.1mm solid #000000;
         }

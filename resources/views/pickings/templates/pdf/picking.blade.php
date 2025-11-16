@@ -15,7 +15,7 @@
         }
 
         p {
-            margin: 0pt;
+            margin: 0;
         }
 
         h1 {
@@ -67,7 +67,7 @@
 
         .items td.blank_total {
             background-color: #FFFFFF;
-            border: 0mm none #000000;
+            border: 0 none #000000;
             border-top: 0.1mm solid #000000;
             border-right: 0.1mm solid #000000;
         }
@@ -150,7 +150,7 @@
 </table>
 <table width="100%" style="font-family: sans-serif; margin-top: 20px" cellpadding="0">
     <tr>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;">
+        <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;">
             <div>
                 <div>
                     Payment State: <b>{{ $invoice->order['payment'] }}</b>
@@ -168,7 +168,7 @@
                 </div>
             </div>
         </td>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
+        <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
 
             <div style="text-align:right;">
                 <b>1 box</b>

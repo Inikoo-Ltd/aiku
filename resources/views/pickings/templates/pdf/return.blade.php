@@ -11,9 +11,7 @@
     <style>
         @page {
             size: 8.27in 11.69in; /* <length>{1,2} | auto | portrait | landscape */
-            /* 'em' 'ex' and % are not allowed; length values are width height */
             margin-top: 15%; /* <any of the usual CSS values for margins> */
-            /*(% of page-box width for LR, of height for TB) */
             margin-bottom: 13%;
             margin-right: 8%;
             margin-left: 8%;
@@ -22,12 +20,7 @@
             marks: 'cross'; /*crop | cross | none*/
             header: myHeader;
             footer: myFooter;
-            /* background: ...
-            background-image: ...
-            background-position ...
-            background-repeat ...
-            background-color ...
-            background-gradient: ... */
+
         }
 
         body {
@@ -36,7 +29,7 @@
         }
 
         p {
-            margin: 0pt;
+            margin: 0;
         }
 
         h1 {
@@ -88,7 +81,7 @@
 
         .items td.blank_total {
             background-color: #FFFFFF;
-            border: 0mm none #000000;
+            border: 0 none #000000;
             border-top: 0.1mm solid #000000;
             border-right: 0.1mm solid #000000;
         }
@@ -172,7 +165,7 @@
 </table>
 <table width="100%" style="font-family: sans-serif; margin-top: 20px" cellpadding="0">
     <tr>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;">
+        <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;">
             <div>
                 <div>
                     {{ __('Customer') }}: <b>{{ $customer->name }}</b>
@@ -186,7 +179,7 @@
                 @endif
             </div>
         </td>
-        <td width="50%" style="vertical-align:bottom;border: 0mm solid #888888;text-align: right">
+        <td width="50%" style="vertical-align:bottom;border: 0 solid #888888;text-align: right">
             <div style="text-align:right;">
                 {{ __('State') }}: <b>{{ $return->state->labels()[$return->state->value] }}</b>
             </div>
@@ -197,19 +190,24 @@
 <table width="100%" style="font-family: sans-serif;" cellpadding="10">
     <tr>
         <td width="45%" style="border: 0.1mm solid #888888;">
-            <span style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
-            <div>
-                {{ $return->deliveryAddress?->address_line_1 }}
-            </div>
-            <div>
-                {{ $return->deliveryAddress?->address_line }}
-            </div>
-            <div>
-                {{ $return->deliveryAddress?->locality }}
-            </div>
-            <div>
-                {{ $return->deliveryAddress?->country->name }}
-            </div>
+
+            @if($return->is_collection)
+                <span style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('For collection') }}</span>
+            @else
+                <span style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Delivery address') }}:</span>
+                <div>
+                    {{ $return->deliveryAddress?->address_line_1 }}
+                </div>
+                <div>
+                    {{ $return->deliveryAddress?->address_line }}
+                </div>
+                <div>
+                    {{ $return->deliveryAddress?->locality }}
+                </div>
+                <div>
+                    {{ $return->deliveryAddress?->country->name }}
+                </div>
+            @endif
         </td>
         <td width="10%">&nbsp;</td>
         <td width="45%">&nbsp;</td>
