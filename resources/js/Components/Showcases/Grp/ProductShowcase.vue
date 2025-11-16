@@ -126,15 +126,24 @@ const validImages = computed(() =>
 </script>
 
 <template>
-	<div v-if="data.webpage_url"
-		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
-		<div class="flex items-center gap-2 text-blue-700 text-sm">
-			<FontAwesomeIcon :icon="faExternalLink" class="text-blue-500" />
-			<a :href="data.webpage_url" target="_blank" rel="noopener noreferrer"
-				class="font-medium break-all hover:underline hover:text-blue-800 transition-colors duration-200">
-				{{ data.webpage_url }}
-			</a>
-		</div>
+	<div
+		class="w-full  px-4 py-3 mb-3 shadow-sm">
+
+
+        <span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
+        <!-- Units box -->
+        <span v-if="data.product?.data?.units !== null && data.product?.data?.units !== undefined && data.product?.data?.units !== ''"
+              class="inline-flex items-center border border-gray-300 rounded px-2 py-0.5 mr-2 bg-white text-gray-900">
+            <span>{{ data.product.data.units }}</span>
+            <span class="ml-1">x</span>
+        </span>
+        <!-- Product name -->
+        <span class="align-middle">
+           {{data.product.data.name}}
+        </span>
+        </span>
+
+
 	</div>
 
 

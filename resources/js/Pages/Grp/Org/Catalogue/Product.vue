@@ -6,7 +6,7 @@ import {
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
     faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
-    faFolderDownload
+    faFolderDownload,faQuoteLeft
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -34,6 +34,7 @@ import { routeType } from '@/types/route'
 import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
 import ProductSales from "@/Components/Product/ProductSales.vue";
+import { trans } from "laravel-vue-i18n"
 
 
 library.add(
@@ -55,7 +56,8 @@ library.add(
     faLanguage,
     faPaperclip,
     faFolderTree,
-    faFolderDownload
+    faFolderDownload,
+    faQuoteLeft
 )
 
 const props = defineProps<{
@@ -136,15 +138,6 @@ const showMissingTaxonomyMessage = computed(() => {
 
 
 
-function masterProductRoute() {
-    return route(
-        "grp.masters.master_shops.show.master_products.show",
-        {
-            masterShop : route().params.shop as string,
-            masterProduct : props.code as string
-        }
-    );
-}
 
 
 </script>
@@ -155,7 +148,7 @@ function masterProductRoute() {
 
     <PageHeading :data="pageHead" >
         <template #afterTitle>
-             <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="'Go to Master'" class="mr-1">
+             <Link v-if="master" :href="route(masterRoute.name, masterRoute.parameters)"  v-tooltip="trans('Go to Master')"   class="mr-1">
                 <FontAwesomeIcon
                     icon="fab fa-octopus-deploy"
                     color="#4B0082"
@@ -166,7 +159,7 @@ function masterProductRoute() {
 
 
     <Message v-if="showMissingTaxonomyMessage" severity="warn" class="mb-4">
-        Both department and family data are missing in taxonomy.
+        {{trans('Both department and family data are missing in taxonomy.')}}
     </Message>
 
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
@@ -180,7 +173,7 @@ function masterProductRoute() {
                             ? 'text-gray-500'
                             : 'text-gray-500 cursor-default'">
                         <FontAwesomeIcon :icon="item.icon" class="w-4 h-4" />
-                        <span class="">{{ item.label || '-' }}</span>
+                        <span>{{ item.label || '-' }}</span> <span v-if="item.post_label" class="text-gray-400">{{ item.post_label }}</span>
                     </component>
                 </div>
             </template>
