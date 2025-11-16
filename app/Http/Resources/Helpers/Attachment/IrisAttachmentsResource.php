@@ -30,12 +30,7 @@ class IrisAttachmentsResource extends JsonResource
             'media_id'       => $this->media_id,
             'media_ulid'     => $this->media_ulid,
             'mime_type'      => $this->mime_type,
-            'download_route' => [
-                'name'       => 'iris.iris_attachment',
-                'parameters' => ['media' => $this->media_ulid],
-                'method'     => 'get'
-            ]
-
+            'url'            => route('iris.iris_attachment', ['media' => $this->media_ulid]),
         ];
     }
 }
