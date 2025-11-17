@@ -17,6 +17,7 @@ use App\Actions\Iris\Json\GetRetinaEcomCustomerData;
 use App\Actions\Iris\Json\GetRetinaFirstHitData;
 use App\Actions\Iris\RetinaLogWebUserRequest;
 use App\Actions\Retina\Dropshipping\Portfolio\DownloadPortfolioZipImages;
+use App\Actions\Retina\Dropshipping\Portfolio\UploadPortfolioZipImages;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentPhysicalGoods;
 use App\Actions\Retina\Fulfilment\PalletDelivery\Json\GetRetinaFulfilmentServices;
 use App\Actions\Retina\GetCheckoutComTokenToPayOrder;
@@ -32,6 +33,7 @@ Route::get('/{order}/recent-uploads', \App\Actions\Ordering\Order\UI\IndexRecent
 Route::get('/{order:id}/get-checkout-com-token-to_pay-order', GetCheckoutComTokenToPayOrder::class)->name('get_checkout_com_token_to_pay_order');
 
 Route::get('dropshipping/{customerSalesChannel:id}/portfolio-images-zip', DownloadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.portfolio_images_zip');
+Route::get('dropshipping/{customerSalesChannel:id}/upload-portfolio-zip-images', UploadPortfolioZipImages::class)->name('dropshipping.customer_sales_channel.upload_portfolio_zip_images');
 
 Route::get('dropshipping/{product:id}/channels_list', GetRetinaPortfoliosInProduct::class)->name('dropshipping.product.channels_list');
 

@@ -202,6 +202,7 @@ class ShowOrder extends OrgAction
 
     public function htmlResponse(Order $order, ActionRequest $request): Response
     {
+        $wrapped_actions = [];
         $finalTimeline = $this->getOrderTimeline($order);
 
         $nonProductItems = NonProductItemsResource::collection(IndexNonProductItems::run($order));
@@ -212,17 +213,28 @@ class ShowOrder extends OrgAction
             :
             GetEcomOrderActions::run($order, $this->canEdit);
 
-        /*if(! in_array($order->state, [OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED])) {
-            $actions[] = [
-                'type'  => 'button',
-                'style' => 'edit',
-                'label' => __('Edit'),
-                'route' => [
-                    'name'       => 'grp.org.shops.show.marketing.mailshots.create',
-                    'parameters' => array_values($request->route()->originalParameters())
+        if ($order->state != OrderStateEnum::CANCELLED) {
+            $wrapped_actions = [
+                [
+                    'type'  => 'button',
+                    'icon'    => 'fal fa-pencil',
+                    'style' => 'tertiary',
+                    'tooltip' => __('Edit the order reference'),
+                    'label' => __('Edit'),
+                    'route' => [
+                        'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                        'parameters' => array_values($request->route()->originalParameters())
+                    ]
                 ]
             ];
-        }*/
+        }
+
+        $wrapped_actions[] = [
+            'type'  => 'button',
+            'style' => 'save',
+            'label' => __('Add note'),
+            'key' => 'add-note'
+        ];
 
         $deliveryNoteRoute    = null;
         $deliveryNoteResource = null;
@@ -281,6 +293,7 @@ class ShowOrder extends OrgAction
                         'label' => $order->state->labels()[$order->state->value],
                     ],
                     'actions'    => $actions,
+                    'wrapped_actions' => $wrapped_actions,
                     'platform'   => $platform ? [
                         'icon'  => $platform->imageSources(24, 24),
                         'type'  => $platform->type,

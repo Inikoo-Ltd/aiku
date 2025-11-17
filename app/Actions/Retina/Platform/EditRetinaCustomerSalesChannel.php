@@ -11,9 +11,12 @@ namespace App\Actions\Retina\Platform;
 
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Helpers\TaxCategory;
+use Illuminate\Support\Arr;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
+use Spatie\LaravelOptions\Options;
 
 class EditRetinaCustomerSalesChannel extends RetinaAction
 {
@@ -52,6 +55,36 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                             [
                                 "label"  => __("Properties"),
                                 'title'  => __('properties'),
+                                'fields' => [
+                                    'name' => [
+                                        'type'  => 'input',
+                                        'label' => __('store name'),
+                                        'value' => $customerSalesChannel->name
+                                    ],
+                                ]
+                            ],
+                            [
+                                "label"  => __("Pricing"),
+                                'title'  => __('pricing'),
+                                'fields' => [
+                                    'is_vat_adjustment' => [
+                                        'type'  => 'toggle',
+                                        'label' => __('VAT Pricing Adjustment'),
+                                        'value' => (bool) Arr::get($customerSalesChannel->settings, 'tax_category.checked')
+                                    ],
+                                    'tax_category_id' => [
+                                        'type'     => 'select',
+                                        'label'    => __('Vat Category'),
+                                        'required' => true,
+                                        'hidden' => ! Arr::get($customerSalesChannel->settings, 'tax_category.checked'),
+                                        'options' => Options::forModels(TaxCategory::class),
+                                        'value'    => Arr::get($customerSalesChannel->settings, 'tax_category.id')
+                                    ],
+                                ]
+                            ],
+                            [
+                                "label"  => __("Shipping"),
+                                'title'  => __('shipping'),
                                 'fields' => [
                                     'name' => [
                                         'type'  => 'input',

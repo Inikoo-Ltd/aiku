@@ -25,12 +25,12 @@ class GetWebBlockProducts
         if ($webpage->model_type == 'Collection') {
             $products = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model, stockMode: $stockMode));
             if ($isLoggedIn) {
-                $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model, stockMode: 'in_stock'));
+                $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInCollection::run(collection: $webpage->model, stockMode: 'out_of_stock'));
             }
         } else {
             $products = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: $stockMode));
             if ($isLoggedIn) {
-                $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'in_stock'));
+                $productsOutOfStock = IrisProductsInWebpageResource::collection(GetIrisProductsInProductCategory::run(productCategory: $webpage->model, stockMode: 'out_of_stock'));
             }
         }
 
