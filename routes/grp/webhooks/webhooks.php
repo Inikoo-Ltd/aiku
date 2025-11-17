@@ -17,7 +17,7 @@ use App\Actions\Dropshipping\Shopify\Webhook\ShopRedactWebhookShopify;
 use App\Actions\Dropshipping\ShopifyUser\DeleteShopifyUser;
 use App\Actions\Dropshipping\Tiktok\Webhooks\HandleOrderIncomingTiktok;
 use App\Actions\Dropshipping\WooCommerce\CallbackRetinaWooCommerceUser;
-use App\Actions\Dropshipping\WooCommerce\Orders\FetchWooUserOrders;
+use App\Actions\Dropshipping\WooCommerce\Orders\CallbackFetchWooUserOrders;
 use App\Actions\Dropshipping\WooCommerce\Webhook\DeleteProductWebhooksWooCommerce;
 
 Route::name('webhooks.')->group(function () {
@@ -45,7 +45,7 @@ Route::prefix('woocommerce')->name('webhooks.woo.')->group(function () {
         });
 
         Route::prefix('orders')->as('orders.')->group(function () {
-            Route::post('catch', FetchWooUserOrders::class)->name('catch');
+            Route::post('catch', CallbackFetchWooUserOrders::class)->name('catch');
         });
     });
 });

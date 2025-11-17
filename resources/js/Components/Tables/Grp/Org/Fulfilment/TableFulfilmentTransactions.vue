@@ -190,11 +190,11 @@ const userCanEdit = (item) => {
 </template>
 
 <style scoped>
-::v-deep(.p-inputnumber) {
+:deep(.p-inputnumber) {
     border-bottom: 2px solid transparent;
     transition: border-color 0.3s;
 }
-::v-deep(.p-inputnumber:focus-within) {
+:deep(.p-inputnumber:focus-within) {
     border-bottom: 2px solid #4b5563; /* gray-500 */
 }
 

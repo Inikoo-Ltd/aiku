@@ -42,6 +42,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property mixed $website_id
  * @property mixed $shop_id
  * @property mixed $canonical_url
+ * @property mixed $transaction_id
  */
 class IrisProductsInWebpageResource extends JsonResource
 {
@@ -62,31 +63,34 @@ class IrisProductsInWebpageResource extends JsonResource
             $url = ShowIrisWebpage::make()->getEnvironmentUrl($url);
         }
 
-        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
+
 
         return [
-            'id'             => $this->id,
-            'image_id'       => $this->image_id,
-            'image'          => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'code'           => $this->code,
-            'luigi_identity' => $oldLuigiIdentity,
-            'name'           => $this->name,
-            'stock'          => $this->available_quantity,
-            'price'          => $this->price,
-            'margin'         => $margin,
-            'profit'         => $profit,
+            'id'              => $this->id,
+            'image_id'        => $this->image_id,
+            'image'           => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'code'            => $this->code,
+            'luigi_identity'  => $oldLuigiIdentity,
+            'name'            => $this->name,
+            'stock'           => $this->available_quantity,
+            'price'           => $this->price,
+            'price_per_unit'  => $pricePerUnit,
+            'margin'          => $margin,
+            'profit'          => $profit,
             'profit_per_unit' => $profitPerUnit,
-            'rrp'            => $this->rrp,
-            'rrp_per_unit'   => $rrpPerUnit,
-            'state'          => $this->state,
-            'status'         => $this->status,
-            'created_at'     => $this->created_at,
-            'updated_at'     => $this->updated_at,
-            'units'          => $units,
-            'unit'           => $this->unit,
-            'url'            => $url,
-            'top_seller'     => $this->top_seller,
-            'web_images'     => $this->web_images,
+            'rrp'             => $this->rrp,
+            'rrp_per_unit'    => $rrpPerUnit,
+            'state'           => $this->state,
+            'status'          => $this->status,
+            'created_at'      => $this->created_at,
+            'updated_at'      => $this->updated_at,
+            'units'           => $units,
+            'unit'            => $this->unit,
+            'url'             => $url,
+            'top_seller'      => $this->top_seller,
+            'web_images'      => $this->web_images,
+            'transaction_id'  => $this->transaction_id,
         ];
     }
 

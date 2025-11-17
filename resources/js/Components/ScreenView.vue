@@ -11,10 +11,10 @@ const screenView = defineModel()
 
 const props = withDefaults(defineProps<{
     // currentView?: string
-    showList?:Array<string>
+    showList?: string[]
 }>(), {
     // currentView: 'desktop',
-    showList: ['mobile', 'tablet', 'desktop']
+    showList: () => ['mobile', 'tablet', 'desktop']
 })
 
 defineEmits<{

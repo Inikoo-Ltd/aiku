@@ -40,6 +40,44 @@ class IndexMasterFamilies extends OrgAction
 
     private Group|MasterShop|MasterProductCategory $parent;
 
+    protected function getElementGroups(Group|MasterShop|MasterProductCategory $parent): array
+    {
+        $activeMasterProducts       = 0;
+        $discontinuedMasterProducts = 0;
+
+        if ($parent instanceof MasterShop || $parent instanceof MasterProductCategory) {
+            $activeMasterProducts       = $parent->stats->number_current_master_product_categories_type_family;
+            $discontinuedMasterProducts = $parent->stats->number_master_product_categories_type_family - $parent->stats->number_current_master_product_categories_type_family;
+        }
+
+
+        return [
+            'status' => [
+                'label'    => __('Status'),
+                'elements' => [
+                    'active'       => [
+                        __('Active'),
+                        $activeMasterProducts
+                    ],
+                    'discontinued' => [
+                        __('Discontinued'),
+                        $discontinuedMasterProducts
+                    ],
+                ],
+
+                'engine' => function ($query, $elements) {
+                    if (in_array('discontinued', $elements)) {
+                        $query->where('master_product_categories.status', false);
+                    } else {
+                        $query->where('master_product_categories.status', true);
+                    }
+                }
+
+            ],
+
+        ];
+    }
+
 
     public function asController(MasterShop $masterShop, ActionRequest $request): LengthAwarePaginator
     {
@@ -115,6 +153,16 @@ class IndexMasterFamilies extends OrgAction
         $queryBuilder->where('master_product_categories.type', ProductCategoryTypeEnum::FAMILY);
         $queryBuilder->leftJoin('master_product_category_stats', 'master_product_categories.id', '=', 'master_product_category_stats.master_product_category_id');
 
+
+        foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+            $queryBuilder->whereElementGroup(
+                key: $key,
+                allowedElements: array_keys($elementGroup['elements']),
+                engine: $elementGroup['engine'],
+                prefix: $prefix
+            );
+        }
+
         $queryBuilder->select([
             'master_product_categories.id',
             'master_product_categories.slug',
@@ -170,6 +218,15 @@ class IndexMasterFamilies extends OrgAction
                     ->name($prefix)
                     ->pageName($prefix.'Page');
             }
+
+            foreach ($this->getElementGroups($parent) as $key => $elementGroup) {
+                $table->elementGroup(
+                    key: $key,
+                    label: $elementGroup['label'],
+                    elements: $elementGroup['elements']
+                );
+            }
+
             $table
                 ->defaultSort('code')
                 ->withGlobalSearch()
@@ -186,7 +243,9 @@ class IndexMasterFamilies extends OrgAction
             }
 
 
-            $table->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
+            $table
+                ->column(key: 'status_icon', label: '', canBeHidden: false, sortable: false, searchable: true, type: 'icon')
+                ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'used_in', label: __('Used in'), tooltip: __('Current families with this master'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'products', label: __('products'), tooltip: __('current master products'), canBeHidden: false, sortable: true, searchable: true);

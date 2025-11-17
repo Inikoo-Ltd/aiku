@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, inject, onBeforeUnmount, defineExpose } from 'vue'
+import { ref, reactive, inject, onBeforeUnmount } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import NumberWithButtonSave from '@/Components/NumberWithButtonSave.vue'
 import Table from '@/Components/Table/Table.vue'

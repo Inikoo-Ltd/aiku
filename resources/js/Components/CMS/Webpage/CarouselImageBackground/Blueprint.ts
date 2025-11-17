@@ -13,6 +13,19 @@ export default {
 					type: "number",
 				},
 				{
+					label: "Space Between",
+					key: ["carousel_setting", "spaceBetween"],
+					type: "number",
+				},
+				{
+					label: "Duration",
+					key: ["carousel_setting", "duration"],
+					type: "number",
+					props_data: {
+						suffix : 's'
+					}
+				},
+				{
 					label: "Autoplay",
 					key: ["carousel_setting", "autoplay"],
 					type: "switch",
@@ -27,12 +40,23 @@ export default {
 					key: ["carousel_setting", "button"],
 					type: "switch",
 				},
+				{
+					name: "Button next and previous",
+					key: ["buttonStyle"],
+					replaceForm: [
+						{
+							key: ["text"],
+							label: "",
+							type: "textProperty",
+						},
+					],
+				},
 			],
 		},
 		{
 			name: "Cards",
 			key: ["carousel_data"],
-			information: trans('This settings will apply for all cards'),
+			information: trans("This settings will apply for all cards"),
 			replaceForm: [
 				{
 					key: ["card_container", "properties", "background"],
@@ -66,6 +90,48 @@ export default {
 			],
 		},
 		{
+			name: "Button Default Style",
+			key: ["button"],
+			editGlobalStyle: "button",
+			replaceForm: [
+				{
+					key: ["container", "properties", "text"],
+					type: "textProperty",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "background"],
+					label: "Background",
+					type: "background",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container_button", "properties", "justifyContent"],
+					label: "Justify Content",
+					type: "justify-content",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "margin"],
+					label: "Margin",
+					type: "margin",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "padding"],
+					label: "Padding",
+					type: "padding",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+				{
+					key: ["container", "properties", "border"],
+					label: "Border",
+					type: "border",
+					useIn: ["desktop", "tablet", "mobile"],
+				},
+			],
+		},
+		{
 			name: "Cards Data",
 			key: ["carousel_data", "cards"],
 			type: "array-data-drawer",
@@ -77,6 +143,9 @@ export default {
 				can_add: true,
 				new_value_data: {
 					text: "Lorem Ipsum",
+					button: {
+						text: "Explore more",
+					},
 					image: {
 						source: null,
 						alt: "Image",

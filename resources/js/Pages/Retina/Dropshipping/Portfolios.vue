@@ -17,8 +17,9 @@ import AddPortfoliosWithUpload from "@/Components/Dropshipping/AddPortfoliosWith
 import AddPortfolios from "@/Components/Dropshipping/AddPortfolios.vue";
 import {Message, Popover} from "primevue"
 import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
-import {faSyncAlt, faHandPointer} from "@fas";
-
+import {faSyncAlt, faHandPointer, faBan} from "@fas";
+import { useFormatTime } from "@/Composables/useFormatTime";
+import Icon from '@/Components/Icon.vue'
 import {
     faBracketsCurly, faPawClaws,
     faFileExcel,
@@ -28,8 +29,9 @@ import {
     faUpload,
     faBox,
     faEllipsisV,
-    faDownload,
+    faDownload
 } from "@fal";
+import {faCheck} from "@fas";
 import axios from "axios"
 import {Table as TableTS} from "@/types/Table"
 import {CustomerSalesChannel} from "@/types/customer-sales-channel"
@@ -38,7 +40,6 @@ import RetinaTablePortfoliosShopify from "@/Components/Tables/Retina/RetinaTable
 import {ulid} from "ulid";
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
-import { ChannelLogo } from "@/Composables/Icon/ChannelLogoSvg"
 import { useTruncate } from "@/Composables/useTruncate"
 import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 import Tabs from "@/Components/Navigation/Tabs.vue";
@@ -46,7 +47,7 @@ import { useTabChange } from "@/Composables/tab-change";
 import TableRetinaPlatformPortfolioLogs from "@/Components/Tables/Retina/TableRetinaPlatformPortfolioLogs.vue";
 
 
-library.add(faFileExcel, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
+library.add(faFileExcel, faCheck, faBracketsCurly, faSyncAlt, faHandPointer, faPawClaws, faImage, faSyncAlt, faBox, faArrowLeft, faArrowRight, faUpload);
 
 
 const props = defineProps<{
@@ -105,6 +106,8 @@ const step = ref(props.step);
 const isPlatformManual = computed(() => props.platform_data.type === 'manual');
 const isOpenModalPortfolios = ref(false);
 const isOpenModalDownloadImages = ref(false);
+const isOpenModalSuspended = ref(false);
+const isTestConnectionSuccess = ref(false);
 
 
 const isLoadingUpload = ref(false);
@@ -348,16 +351,15 @@ const key = ulid()
                 <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
             </div>
 
-            <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')"
-                    :icon="'fas fa-plus'"/>
+            <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
 
             <div class="rounded-md" v-if="channels?.data?.length">
                 <!-- Section: Download button -->
                 <Button @click="(e) => _clone_popover?.toggle(e)" v-tooltip="trans('Open another options')"
                         :icon="faEllipsisV" xloading="!!isLoadingSpecificChannel.length" class="!px-2 h-full"
-                        type="tertiary" key=""/>
+                        type="tertiary" key="" v-if="!customer_sales_channel.ban_stock_update_until" />
 
-                <Popover ref="_clone_popover">
+                <Popover ref="_clone_popover" >
                     <div class="w-64 relative">
                         <div class="text-sm mb-2">
                             {{ trans("Clone portfolio from channel:") }}
@@ -371,7 +373,13 @@ const key = ulid()
                                 <template #default="{ loading }">
                                     <div class="flex gap-x-2 justify-start items-center w-full">
                                         <LoadingIcon v-if="loading" class="h-5"/>
-                                        <span v-else v-tooltip="manual_channel.platform_name" v-html="ChannelLogo(manual_channel.platform_code)" class="h-5"></span>
+                                        <img
+                                            v-else
+                                            :src="`/assets/channel_logo/${manual_channel.platform_code}.svg`"
+                                            class="h-5"
+                                            :alt="manual_channel.platform_code"
+                                            v-tooltip="manual_channel.platform_name"
+                                        />
                                         <div>
                                             {{ useTruncate(manual_channel.name || manual_channel.slug, 20) + ' ('+manual_channel.number_portfolios+')' }}
                                         </div>
@@ -387,6 +395,22 @@ const key = ulid()
     </PageHeading>
     <Tabs :current="currentTab" :navigation="tabs.navigation" @update:tab="handleTabUpdate" />
     <!-- Section: Alert if platform not connected yet -->
+    <Message v-if="customer_sales_channel.ban_stock_update_until" severity="error" class="m-4 flex items-center gap-2">
+            <div :class="'flex justify-between gap-3'">
+                <div :class="'flex gap-3 items-center'">
+                    <FontAwesomeIcon :icon="faBan" class="text-red-500 text-lg" />
+                    <div>
+                        {{trans("Sorry, your account is temporarily restricted until")}}
+                        <span class="font-semibold">
+                            {{ useFormatTime(customer_sales_channel.ban_stock_update_until, { formatTime: 'MMM dd, yyyy' }) }}
+                        </span>
+                    </div>
+                </div>
+                    <ButtonWithLink type="tertiary" @click="isOpenModalSuspended = true" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
+            </div>
+    </Message>
+
+
     <div v-if="!is_platform_connected && !isPlatformManual" class="mb-10">
         <div v-if="platform_data.type === 'shopify'" class="px-2 md:px-6">
             <PlatformWarningNotConnectedShopify
@@ -465,7 +489,7 @@ const key = ulid()
 
                 <div>
                     <ButtonWithLink
-                        v-if="customer_sales_channel.type !== 'ebay'"
+                        v-if="customer_sales_channel.type !== 'ebay' && !customer_sales_channel.ban_stock_update_until"
                         label="Upload all as new product"
                         size="xs"
                         :routeTarget="{
@@ -506,18 +530,18 @@ const key = ulid()
         </div>
         <div v-else class="overflow-x-auto">
             <RetinaTablePortfoliosManual v-if="isPlatformManual" :data="props.products" :tab="'products'" :selectedData
-                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify
+                :platform_data :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="customer_sales_channel.ban_stock_update_until"
                 :isPlatformManual
                 :useCheckBox="is_platform_connected && count_product_not_synced > 0 && !isPlatformManual"/>
             <RetinaTablePortfoliosShopify v-else-if="platform_data.type === 'shopify'" :data="props.products"
                 :tab="'products'" :selectedData :platform_data :platform_user_id
-                :is_platform_connected
+                :is_platform_connected :disabled="customer_sales_channel.ban_stock_update_until"
                 :progressToUploadToShopifyAll="progessbar" :progressToUploadToShopify
                 :customerSalesChannel="customer_sales_channel"
                 v-model:selectedProducts="selectedProducts" :key="key"
                 :count_product_not_synced="count_product_not_synced"/>
             <RetinaTablePortfoliosPlatform v-else :data="props.products" :tab="'products'" :selectedData :platform_data
-                :platform_user_id :is_platform_connected :progressToUploadToShopify
+                :platform_user_id :is_platform_connected :progressToUploadToShopify :disabled="customer_sales_channel.ban_stock_update_until"
                 :customerSalesChannel="customer_sales_channel" :progressToUploadToEcom="progessbar"
                 v-model:selectedProducts="selectedProducts" :key="key + 'table-products'"
                 :routes="props.routes" :count_product_not_synced="count_product_not_synced"/>
@@ -553,6 +577,30 @@ const key = ulid()
                     <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
                 </a>
             </div>
+        </div>
+    </Modal>
+    <Modal :isOpen="isOpenModalSuspended" @onClose="isOpenModalSuspended = false"
+           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
+        <div class="mb-8">
+            <h3 class="text-center">{{ trans('If you experience an issue when clicking Unsuspend, your store might be down. You can check it by clicking Test Connection.')}}</h3>
+            <div class="mt-8 flex justify-center items-center gap-2 font-light text-sm" v-if="isTestConnectionSuccess">
+                <Icon class="text-green-500" :data="{
+                icon: 'fas fa-check'
+            }" /> {{ trans('Great! your store can connect, now click unsuspend') }}
+            </div>
+        </div>
+
+        <div class="flex justify-center gap-2">
+            <ButtonWithLink type="tertiary" :routeTarget="{
+                            name: 'retina.models.customer_sales_channel.test_connection',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'patch',
+                        }" @success="data => isTestConnectionSuccess = true" @error="data => isTestConnectionSuccess = data.status" icon="fas fa-check" :label="trans('Test Connection')" />
+            <ButtonWithLink type="tertiary" :routeTarget="{
+                            name: 'retina.models.customer_sales_channel.unsuspend',
+                            parameters: { customerSalesChannel: customer_sales_channel.id },
+                            method: 'patch'
+                        }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
         </div>
     </Modal>
 </template>

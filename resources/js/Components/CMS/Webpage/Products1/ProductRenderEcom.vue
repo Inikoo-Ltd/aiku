@@ -10,6 +10,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { faEnvelope, faHeart } from '@far'
 import { faCircle, faHeart as fasHeart, faMedal } from '@fas'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
+import Button from '@/Components/Elements/Buttons/Button.vue'
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faQuestionCircle } from "@fal"
@@ -41,6 +42,8 @@ const props = withDefaults(defineProps<{
     addToBasketRoute?: routeType
     updateBasketQuantityRoute?: routeType
     bestSeller?:any
+    buttonStyleHover?:any
+    buttonStyle?:object | undefined
 
 }>(), {
     basketButton: true,
@@ -231,6 +234,7 @@ const profitMargin = computed(() => {
 
 
 
+const idxSlideLoading = ref(false)
 
 </script>
 
@@ -238,7 +242,7 @@ const profitMargin = computed(() => {
     <div class="pb-3 relative flex flex-col justify-between h-full" comp="product-render-ecom">
 
         <!-- Top Section: Stock, Images, Title, Code, Price -->
-        <div class=" text-gray-800 isolate">
+        <div class="text-gray-800 isolate">
             <!-- <div v-if="product?.top_seller"
                 class="z-10 absolute top-2 left-2 border text-xs font-bold px-2 py-0.5 rounded" :class="{
                     'text-[#FFD700] bg-[#584b015] border-[#FFD700]': product.top_seller == 1, // Gold
@@ -251,20 +255,41 @@ const profitMargin = computed(() => {
             </div> -->
             <BestsellerBadge v-if="product?.top_seller" :topSeller="product?.top_seller" :data="bestSeller" />
 
-
             <!-- Product Image -->
             <component :is="product.url ? Link : 'div'" :href="product.url"
-                class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative">
+                class="block w-full mb-1 rounded sm:h-[305px] h-[180px] relative"
+                @start="() => idxSlideLoading = true"
+                @finish="() => idxSlideLoading = false"
+            >
                 <slot name="image" :product="product">
                     <Image :src="product?.web_images?.main?.gallery" alt="product image"
                         :style="{ objectFit: 'contain' }" />
                 </slot>
 
+                <template v-if="layout?.retina?.type != 'dropshipping' && layout?.iris?.is_logged_in">
+                    <div v-if="isLoadingFavourite" class="absolute top-2 right-2 text-gray-500 text-xl z-10">
+                        <LoadingIcon />
+                    </div>
+                    <div v-else
+                        @click.prevent="() => product.is_favourite ? onUnselectFavourite(product) : onAddFavourite(product)"
+                        class="cursor-pointer absolute left-2 bottom-2 group text-xl z-10">
+
+                        <FontAwesomeIcon v-if="product.is_favourite" :icon="fasHeart" fixed-width
+                            class="text-pink-500" />
+                        <div v-else class="relative">
+                            <FontAwesomeIcon :icon="fasHeart" class="hidden group-hover:inline text-pink-400"
+                                fixed-width />
+                            <FontAwesomeIcon :icon="faHeart" class="inline group-hover:hidden text-pink-300"
+                                fixed-width />
+                        </div>
+                    </div>
+                </template>
+
                 <!-- New Add to Cart Button - hanya tampil jika user sudah login -->
                 <div v-if="layout?.iris?.is_logged_in" class="absolute right-2 bottom-2">
                     <NewAddToCartButton v-if="product.stock > 0 && basketButton" :hasInBasket :product="product"
-                        :key="product" :addToBasketRoute="addToBasketRoute"
-                        :updateBasketQuantityRoute="updateBasketQuantityRoute" />
+                        :key="product" :addToBasketRoute="addToBasketRoute" :buttonStyleHover="buttonStyleHover" 
+                        :updateBasketQuantityRoute="updateBasketQuantityRoute" :buttonStyle="buttonStyle" />
                     <button v-else-if="layout?.app?.environment === 'local' && product.stock < 1"
                         @click.prevent="() => product.is_back_in_stock ? onUnselectBackInStock(product) : onAddBackInStock(product)"
                         class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
@@ -274,6 +299,9 @@ const profitMargin = computed(() => {
                             fixed-width :class="[product.is_back_in_stock ? 'text-green-600' : 'text-gray-600']" />
                     </button>
                 </div>
+
+                
+                
             </component>
 
             <div class="px-3">
@@ -281,43 +309,52 @@ const profitMargin = computed(() => {
                 <LinkIris v-if="product.url" :href="product.url" class="hover:text-gray-500 font-bold text-sm mb-1"
                     type="internal">
                     <template #default>
-                          <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
+                        <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{
+                        product.name }}
                     </template>
                 </LinkIris>
                 <div v-else class="hover:text-gray-500 font-bold text-sm mb-1">
-                     <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name }}
+                    <span v-if="product.units != 1" class="text-indigo-900">{{ product.units }}x</span> {{ product.name}}
                 </div>
 
-            <!-- Price Card -->
-                 <div class="flex justify-between text-xs text-gray-600 mb-1">
-                <span>{{ product?.code }}</span>
-                <span v-if="product.rpp">
-                    RRP: {{ locale.currencyFormat((currency.code, product.rpp || 0)) }}/ {{ product.unit }}
-                </span>
+                <!-- Price Card -->
+                <div class="flex justify-between text-xs text-gray-600 mb-1">
+                    <span>{{ product?.code }}</span>
+                    <span v-if="product.rpp">
+                        RRP: {{ locale.currencyFormat((currency.code, product.rpp || 0)) }}/ {{ product.unit }}
+                    </span>
 
-                <div class="flex justify-between items-center text-xs mb-2">
-                    <!-- Stock indicator -->
-                    <div v-if="layout?.iris?.is_logged_in"
-                         class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
-                         :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
-                        <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
-                        <span>{{ product.stock > 0 ? product.stock : 0 }} {{ trans("available") }}</span>
+                    <div class="flex justify-between items-center text-xs mb-2">
+                        <!-- Stock indicator -->
+                        <div v-if="layout?.iris?.is_logged_in"
+                            class="flex items-center gap-1 px-2 py-0.5 rounded-full font-medium"
+                            :class="product.stock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'">
+                            <FontAwesomeIcon :icon="faCircle" class="text-[7px]" />
+                            <span>{{ product.stock > 0 ? product.stock : 0 }} {{ trans("available") }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Price Card -->
-             <Prices :product="product" :currency="currency" />
-            
-            </div>
         </div>
+
+         <div class="px-3 mt-auto">
+            <Prices :product="product" :currency="currency" />
+        </div>
+        
 
         <!-- Login Button for Non-Logged In Users -->
         <div v-if="!layout?.iris?.is_logged_in" class="px-3">
-            <a :href="urlLoginWithRedirect()"
+           <!--  <a :href="urlLoginWithRedirect()"
                 class="block text-center border border-gray-200 text-sm px-3 py-2 rounded text-gray-600 w-full">
-            {{ trans("Login or Register for Wholesale Prices") }}
+                {{ trans("Login or Register for Wholesale Prices") }}
+            </a> -->
+             <a :href="urlLoginWithRedirect()" class="w-full"> 
+                <Button label="Login or Register for Wholesale Prices" class="rounded-none" full :injectStyle="buttonStyle"/>
             </a>
+        </div>
+
+        <div v-if="idxSlideLoading" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-5xl">
+            <LoadingIcon />
         </div>
     </div>
 </template>

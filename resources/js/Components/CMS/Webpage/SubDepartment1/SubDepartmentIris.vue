@@ -5,7 +5,7 @@ import EmptyState from "@/Components/Utils/EmptyState.vue";
 import { faGalaxy, faTimesCircle } from "@fas";
 import { getStyles } from "@/Composables/styles"
 import Image from "@/Components/Image.vue";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import {
   faBaby, faCactus, faCircle, faObjectGroup, faUser, faHouse,
   faTruck, faTag, faPhone, faInfoCircle
@@ -20,6 +20,7 @@ import {
 import { faLambda } from "@fad";
 import { trans } from "laravel-vue-i18n"
 import LinkIris from "@/Components/Iris/LinkIris.vue";
+import LoadingIcon from "@/Components/Utils/LoadingIcon.vue"
 
 // Tambahkan semua ikon ke library
 library.add(
@@ -78,6 +79,9 @@ const mergedItems = computed(() => {
 
   return [...subs, ...collections]
 })
+
+const idxSlideLoading = ref<number | null>(null)
+
 </script>
 
 <template>
@@ -94,28 +98,34 @@ const mergedItems = computed(() => {
     <div >
       <div class="grid gap-4" :class="gridColsClass">
         <LinkIris
-          v-for="item in mergedItems"
+          v-for="(item, index) in mergedItems"
           :key="item?.code"
           :href="`${item?.url}`"
-          class="flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
+          class="relative flex items-center gap-3 border rounded px-4 py-3 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 transition-all w-full"
           :aria-label="`Go to ${item?.name}`"
           type="internal"
+          @start="() => idxSlideLoading = index"
+          @finish="() => idxSlideLoading = null"
         >
         <template #default>
-          <div class="flex items-center justify-center min-w-5 min-h-5 w-5 h-5 shrink-0">
+          <div v-if="item?.icon || item?.web_images?.main?.gallery" class="flex items-center justify-center min-w-5 min-h-5 w-5 h-5 shrink-0">
             <FontAwesomeIcon
               v-if="item?.icon"
               :icon="item?.icon"
               class="text-xl w-5 h-5"
             />
             <Image
-              v-else
+              v-else-if="item?.web_images?.main?.gallery"
               :src="item?.web_images?.main?.gallery"
               class="max-w-full max-h-full object-contain"
               :alt="item?.name"
             />
           </div>
           <span class="flex-1 text-center">{{ item?.name }}</span>
+          
+          <div v-if="idxSlideLoading == index" class="absolute inset-0 grid justify-center items-center bg-black/50 text-white text-2xl">
+            <LoadingIcon />
+          </div>
           </template>
         </LinkIris>
       </div>

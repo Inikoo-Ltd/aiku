@@ -58,12 +58,13 @@ class GetAllTradeUnits extends GrpAction
                 'trade_units.cost_price',
                 'trade_units.marketing_dimensions',
                 'trade_units.marketing_weight',
-                DB::raw("EXISTS(
-                        SELECT 1 FROM model_has_trade_units s
-                        WHERE s.trade_unit_id = trade_units.id
-                        AND s.model_type = 'Stock'
-                        AND s.quantity > 0
-                    ) AS stock_available")
+            ])
+            ->addSelect([
+                'quantity' => DB::table('model_has_trade_units')
+                    ->select('quantity')
+                    ->whereColumn('model_has_trade_units.trade_unit_id', 'trade_units.id')
+                    ->where('model_has_trade_units.model_type', 'Stock')
+                    ->limit(1)
             ])
             ->allowedSorts(['code', 'name', 'net_weight', 'gross_weight'])
             ->allowedFilters([$globalSearch])

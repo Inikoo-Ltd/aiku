@@ -1,6 +1,6 @@
 <script setup lang='ts'>
 import { trans } from 'laravel-vue-i18n'
-import { defineExpose, ref } from 'vue'
+import { ref } from 'vue'
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus } from '@fal'

@@ -13,6 +13,7 @@ use App\Actions\Helpers\Country\UI\GetCountriesOptions;
 use App\Actions\Helpers\Currency\UI\GetCurrenciesOptions;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
 use App\Actions\OrgAction;
+use App\Enums\Catalogue\Shop\ShopTypeEnum;
 use App\Enums\Helpers\SerialReference\SerialReferenceModelEnum;
 use App\Http\Resources\Helpers\AddressFormFieldsResource;
 use App\Models\Catalogue\Shop;
@@ -356,6 +357,22 @@ class EditShop extends OrgAction
                                 ]
                             ],
                         ],
+                        $shop->type === ShopTypeEnum::DROPSHIPPING ? [
+                            'label'  => __('Ebay Redirect Key'),
+                            'icon'   => 'fa-light fa-key',
+                            'fields' => [
+                                'ebay_redirect_key' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ebay Redirect Key'),
+                                    'value' => Arr::get($shop->settings, 'ebay.redirect_key', ''),
+                                ],
+                                'ebay_marketplace_id' => [
+                                    'type'  => 'input',
+                                    'label' => __('Ebay Marketplace Id'),
+                                    'value' => Arr::get($shop->settings, 'ebay.marketplace_id', ''),
+                                ],
+                            ],
+                        ] : [],
                     ],
                     'args'      => [
                         'updateRoute' => [

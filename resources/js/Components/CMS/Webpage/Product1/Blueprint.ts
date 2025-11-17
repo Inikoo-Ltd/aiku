@@ -6,12 +6,12 @@ export default {
 			name: "Settings",
 			key: ["setting"],
 			replaceForm: [
-				{
+				/* {
 					key: ["faqs"],
 					type: "switch",
 					label: "Show Faqs",
 					props_data: {},
-				},
+				}, */
 				{
 					key: ["product_specs"],
 					type: "switch",
@@ -95,6 +95,26 @@ export default {
 				},
 			],
 		},
+		 {
+            name: "Button",
+            key: ["button", "properties"],
+            replaceForm: [
+                    {
+                        key: ["background"],
+                        label : "Background",
+                        type: "background",
+                    },
+                    {
+                        key: ["text"],
+                        type: "textProperty",
+                    },
+                    {
+                        key: ["border"],
+                        label : "Border",
+                        type: "border",
+                    },
+                ],
+        },
 		/* {
 			name: "Layout",
 			key: ["container", "properties"],

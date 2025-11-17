@@ -20,7 +20,7 @@ import LinkIris from "@/Components/Iris/LinkIris.vue"
 library.add(faLaptopCode, faHeart, faShoppingCart, faSignOut, faUser, faSignIn, faUserPlus, faEnvelopeCircleCheck)
 
 const props = defineProps<{
-    screenType: "desktop" | "mobile" | "tablet"
+    screenType?: "desktop" | "mobile" | "tablet"
 }>()
 
 const screenTypeInject = inject("screenType", "desktop")
@@ -141,22 +141,8 @@ watch(
             <SwitchLanguage
                 v-if="layout.app.environment !== 'production' && Object.values(layout.iris.website_i18n?.language_options || {})?.length" />
 
-            <!-- Section: My account -->
-            <LinkIris href="/app/dashboard" :type="'internal'">
-                <Button
-                    v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn) && layout.retina?.type == 'dropshipping')"
-                    type="transparent"
-                    v-tooltip="trans('My account')"
-                    class="button"
-                >
-                    <template #label>
-                        <span class="button"> {{ trans('My account') }}</span>
-                    </template>
-                </Button>
-            </LinkIris>
-
             <!-- Section: Profile -->
-            <LinkIris :href="layout.retina?.type == 'b2b' ? '/app/dashboard' : '/app/profile'" :type="'internal'">
+            <LinkIris href="/app/dashboard" :type="'internal'">
                 <Button
                     v-if="(checkVisible(model?.profile?.visible || null, isLoggedIn))"
                     v-tooltip="trans('Profile')"

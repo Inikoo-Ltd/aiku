@@ -329,7 +329,7 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
-::v-deep(.p-listbox .p-listbox-list .p-listbox-option.p-listbox-option-selected) {
+:deep(.p-listbox .p-listbox-list .p-listbox-option.p-listbox-option-selected) {
     background: rgb(203 213 225);
     color: black;
 }

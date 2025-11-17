@@ -85,6 +85,7 @@ use Spatie\Translatable\HasTranslations;
  * @property bool|null $is_description_title_reviewed
  * @property bool|null $is_description_reviewed
  * @property bool|null $is_description_extra_reviewed
+ * @property string|null $offers_data
  * @property-read LaravelCollection<int, \App\Models\Helpers\Audit> $audits
  * @property-read LaravelCollection<int, ProductCategory> $children
  * @property-read LaravelCollection<int, \App\Models\Catalogue\Collection> $collections

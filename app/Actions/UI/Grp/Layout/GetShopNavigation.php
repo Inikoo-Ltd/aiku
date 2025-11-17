@@ -346,6 +346,17 @@ class GetShopNavigation
                                     "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
                                 ],
                             ],
+
+                            [
+                                "label"   => __("Announcements"),
+                                "tooltip" => __("Announcements"),
+                                "icon"    => ["fal", "fa-megaphone"],
+                                'root'    => 'grp.org.shops.show.web.announcements.',
+                                "route"   => [
+                                    "name"       => "grp.org.shops.show.web.announcements.index",
+                                    "parameters" => [$shop->organisation->slug, $shop->slug, $shop->website->slug],
+                                ],
+                            ],
                             [
                                 "label"   => __("Analytics"),
                                 "tooltip" => __("Analytics"),

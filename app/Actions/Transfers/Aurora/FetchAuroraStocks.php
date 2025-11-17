@@ -185,7 +185,7 @@ class FetchAuroraStocks extends FetchAuroraAction
             }
             /** @var TradeUnit $tradeUnit */
             $tradeUnit = $stock->tradeUnits()->first();
-            $this->processFetchAttachments($tradeUnit, 'Part', $stockData['stock']['source_id']);
+            //$this->processFetchAttachments($tradeUnit, 'Part', $stockData['stock']['source_id']);
 
 
             if ($isPrincipal) {

@@ -115,8 +115,12 @@ class NaturalLanguage
         }
     }
 
-    public function dimensions($dimensionsData): string
+    public function dimensions(array|string $dimensionsData): string
     {
+        if (is_array($dimensionsData)) {
+            $dimensionsData = json_encode($dimensionsData);
+        }
+
         return DimensionsFormatter::make()->dimensions($dimensionsData) ?? '';
     }
 
