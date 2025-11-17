@@ -33,7 +33,7 @@ class UploadPortfolioZipImages extends RetinaAction
     {
         $this->initialisation($request);
         $key = now()->timestamp.'-'.Str::random(8);
-        ProcessPortfolioZipImages::run($customerSalesChannel, $key);
+        ProcessPortfolioZipImages::dispatch($customerSalesChannel, $key);
 
         return $key;
     }

@@ -344,9 +344,9 @@ const initSocketListener = () => {
 
   channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
 
-    if (eventData.download_url) {
-        downloadZipFromUrl(eventData.download_url)
-    }
+   // make show the link only,
+    console.log(eventData.download_url)
+
     notify({
       title: "Upload to R2 Completed",
       text: `Upload to R2 finished`,
@@ -666,44 +666,5 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                                  :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
     </Modal>
 
-    <!-- <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
-           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
-        <div class="mb-8">
-            <h3 class="text-center font-semibold">{{ trans('Images grouped by first letter from product code')}}</h3>
-        </div>
-        <div class="flex flex-col gap-2">
-            <div v-for="grouped in grouped_portfolios" class="flex justify-between gap-2">
-                <div class="my-auto">
-                    <span><b>{{grouped.char}}</b>: ({{grouped.count}}) images</span>
-                </div>
-                <a v-if="grouped.count > 0" href="#" @click.prevent="handleDownloadClick('images', $event, grouped.ids, grouped.char)" rel="noopener">
-                    <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
-                </a>
-            </div>
-        </div>
-    </Modal>
-    <Modal :isOpen="isOpenModalSuspended" @onClose="isOpenModalSuspended = false"
-           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
-        <div class="mb-8">
-            <h3 class="text-center">{{ trans('If you experience an issue when clicking Unsuspend, your store might be down. You can check it by clicking Test Connection.')}}</h3>
-            <div class="mt-8 flex justify-center items-center gap-2 font-light text-sm" v-if="isTestConnectionSuccess">
-                <Icon class="text-green-500" :data="{
-                icon: 'fas fa-check'
-            }" /> {{ trans('Great! your store can connect, now click unsuspend') }}
-            </div>
-        </div>
 
-        <div class="flex justify-center gap-2">
-            <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.test_connection',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch',
-                        }" @success="data => isTestConnectionSuccess = true" @error="data => isTestConnectionSuccess = data.status" icon="fas fa-check" :label="trans('Test Connection')" />
-            <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.unsuspend',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch'
-                        }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
-        </div>
-    </Modal> -->
 </template>
