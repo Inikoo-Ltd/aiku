@@ -211,6 +211,9 @@
 </table>
 
 <br>
+*<span style="font-style:italic">&nbsp;{{ __('This is a list of prepayment done for future purchases. A VAT invoice will be issued upon delivery of goods.') }}</span>
+<br>
+<br>
 
 <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
     <thead>
@@ -235,8 +238,6 @@
 
 <br>
 <br>
-
-*<span style="font-style:italic">&nbsp;{{ __('This is a list of prepayment done for future purchases. A VAT invoice will be issued upon delivery of goods.') }}</span>
 
 <br>
 <br>
