@@ -28,11 +28,7 @@ class UploadPortfolioToR2Event implements ShouldBroadcastNow
         $this->randomString = $randomString;
     }
 
-    /**
-     * Get the channels the event should broadcast on.
-     *
-     * @return \Illuminate\Broadcasting\Channel|array
-     */
+
     public function broadcastOn()
     {
         return new PrivateChannel("upload-portfolio-to-r2.{$this->randomString}");

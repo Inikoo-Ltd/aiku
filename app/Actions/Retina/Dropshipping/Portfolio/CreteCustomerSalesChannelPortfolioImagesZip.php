@@ -1,12 +1,9 @@
 <?php
-
 /*
- * Author: Eka Yudinata <ekayudinatha@gmail.com>
- * Created on: 08-05-2025, Bali, Indonesia
- * Github: https://github.com/ekayudinatha
- * Copyright: 2025
- *
-*/
+ * Author: Raul Perusquia <raul@inikoo.com>
+ * Created: Mon, 17 Nov 2025 15:24:04 Central Indonesia Time, Pantai Lembeng, Bali, Indonesia
+ * Copyright (c) 2025, Raul A Perusquia Flores
+ */
 
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
@@ -18,18 +15,15 @@ use Lorisleiva\Actions\Concerns\AsAction;
 use ZipArchive;
 use Sentry\Laravel\Facade as Sentry;
 
-class PortfoliosZipExportToLocal
+class CreteCustomerSalesChannelPortfolioImagesZip
 {
     use AsAction;
 
+
     /**
-     * Create a ZIP file in storage/app/temp and return its absolute path.
-     *
-     * @param CustomerSalesChannel $customerSalesChannel
-     * @param array $ids  Portfolio IDs to export (empty = all)
-     * @return string  Full path to the generated ZIP file
+     * @throws \Exception
      */
-    public function handle(CustomerSalesChannel $customerSalesChannel, $totalImages): string
+    public function handle(CustomerSalesChannel $customerSalesChannel, string $filename): string
     {
         $slug = Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference);
 
@@ -38,12 +32,12 @@ class PortfoliosZipExportToLocal
             mkdir($tempDir, 0755, true);
         }
 
-        $zipFilename = 'images_'.$slug.'_'.$totalImages.'.zip';
+        $zipFilename = $filename;
         $tempZipPath = sys_get_temp_dir() . '/' . $zipFilename;
 
         $zip = new ZipArchive();
         if ($zip->open($tempZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-            throw new \RuntimeException("Cannot create ZIP file at {$tempZipPath}");
+            throw new \RuntimeException("Cannot create ZIP file at $tempZipPath");
         }
 
     try {
@@ -68,7 +62,7 @@ class PortfoliosZipExportToLocal
                 $contents = stream_get_contents($stream);
                 fclose($stream);
 
-                // Add file to zip
+                // Add a file to zip
                 $zip->addFromString($imageData['filename'], $contents);
             } catch (\Throwable $e) {
                 Sentry::captureException($e, [
@@ -80,7 +74,7 @@ class PortfoliosZipExportToLocal
             }
         }
 
-        // Check if zip is empty and add error message if needed
+
         if ($zip->count() === 0) {
             $zip->addFromString('error.txt', 'No images were found to include in the zip file.');
         }
@@ -107,10 +101,11 @@ class PortfoliosZipExportToLocal
     {
         $imagesData = [];
 
-        $query = $customerSalesChannel->portfolios();
 
-        $portfolios = $query->get();
+        $portfolios =$customerSalesChannel->portfolios()->where('status', true)->get();
 
+
+        /** @var \App\Models\Dropshipping\Portfolio $portfolio */
         foreach ($portfolios as $portfolio) {
             if ($portfolio->item instanceof Product) {
                 /** @var Product $product */
