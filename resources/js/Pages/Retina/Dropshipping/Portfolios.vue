@@ -448,9 +448,9 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
-<!--                <a href="#" @click.prevent="!isSocketActive && handleDownloadClick('images', $event)">-->
-<!--                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 rounded-l-none" :disabled="isSocketActive"/>-->
-<!--                </a>-->
+                <a href="#" @click.prevent="!isSocketActive && handleDownloadClick('images', $event)">
+                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 rounded-l-none" :disabled="isSocketActive"/>
+                </a>
                 <!-- <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/> -->
             </div>
 

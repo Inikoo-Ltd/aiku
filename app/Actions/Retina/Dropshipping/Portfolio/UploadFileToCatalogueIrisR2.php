@@ -24,7 +24,6 @@ class UploadFileToCatalogueIrisR2
         $disk = Storage::disk('catalogue-iris-r2');
 
         try {
-            // get file contents from source path
             $fileContents = file_get_contents($sourcePath);
 
             return $disk->put(
