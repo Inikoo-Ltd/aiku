@@ -114,7 +114,7 @@ class CustomerSalesChannel extends Model implements Authenticatable
     ];
 
     protected $attributes = [
-        'data'      => '{}',
+        // 'data'      => '{}',
         'settings'  => '{}'
     ];
 
