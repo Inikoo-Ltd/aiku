@@ -216,7 +216,7 @@ watch(() => props.productHasPortfolio, (newVal) => {
                         class="border-none border-transparent" :class="!CheckChannels ? 'rounded-r-none' : ''" full  />
                     <Button v-else @click="() => onAddToAllPortfolios(product)" :label="trans('Add to all channels')"
                         :loading="isLoadingAllPortfolios" :icon="faPlus" :class="!CheckChannels ? 'rounded-r-none' : ''"
-                        class="border-none border-transparent" full xsize="l" xstyle="border: 0px"  :injectStyle="buttonStyle"/>
+                        class="border-none border-transparent" full   :injectStyle="buttonStyle"/>
 
                     <Button v-if="!CheckChannels"
                         @click="(e) => (_popover?.toggle(e), Object.keys(channelList).length ? null : emits('refreshChannels'))"
