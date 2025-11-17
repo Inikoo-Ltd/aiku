@@ -14,6 +14,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import Button from '@/Components/Elements/Buttons/Button.vue'
 import { routeType } from '@/types/route'
 import { urlLoginWithRedirect } from '@/Composables/urlLoginWithRedirect'
+import { toInteger } from 'lodash'
 
 
 interface ProductResource {
@@ -185,12 +186,12 @@ const _popover = ref()
 
 const isInAllChannels = computed(() => {
   const allChannelIds = Object.keys(channelList).map(Number)
-  return allChannelIds.some(id => productHasPortfolioList.value?.includes(id))
+  return allChannelIds.some(id => productHasPortfolioList.value?.includes(toInteger(id)))
 })
 
 const CheckChannels = computed(() => {
   const allChannelIds = Object.keys(channelList).map(Number)
-  return allChannelIds.every(id => productHasPortfolioList.value?.includes(id))
+  return allChannelIds.every(id => productHasPortfolioList.value?.includes(toInteger(id)))
 })
 
 
@@ -205,6 +206,8 @@ watch(() => props.productHasPortfolio, (newVal) => {
 </script>
 
 <template>
+
+   <!--  <pre>{{ layout?.user?.customerSalesChannels }}</pre> -->
     <!-- Bottom Section (fixed position in layout) -->
     <div v-if="layout?.iris?.is_logged_in" class="w-full">
         <div v-if="product.stock > 0" class="flex items-center gap-2 xmt-2">

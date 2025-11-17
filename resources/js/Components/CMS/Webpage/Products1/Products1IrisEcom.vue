@@ -14,13 +14,11 @@ import { debounce } from "lodash-es"
 import LoadingText from "@/Components/Utils/LoadingText.vue"
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure"
 import PureInput from "@/Components/Pure/PureInput.vue"
-import { useConfirm } from "primevue/useconfirm"
 import { faSearch } from "@fal"
-import { faExclamationTriangle, faLayerGroup } from "@far"
+import { faExclamationTriangle } from "@far"
 import ConfirmDialog from "primevue/confirmdialog"
 import { trans } from "laravel-vue-i18n"
 import ProductRenderEcom from "./ProductRenderEcom.vue"
-import * as Sentry from "@sentry/vue"
 
 
 const props = defineProps<{
@@ -181,7 +179,15 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         const data = response.data;
 
         lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1;
-        // totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+    
+
+        if (useOutOfStock) {
+            totalProducts.value =
+                totalProducts.value +
+                (data?.meta?.total ?? data?.total ?? 0)
+        } else {
+            totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+        }
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])];
@@ -274,7 +280,7 @@ onMounted(() => {
     }
 
     if (layout?.iris?.is_logged_in) {
-        // fetchProducts();  // No need fetch on mount, product data already comes from props
+      /*   fetchProducts(); */
         fetchHasInBasket();
     }
 })

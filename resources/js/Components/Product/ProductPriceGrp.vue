@@ -17,7 +17,7 @@ const props = defineProps<{
 	product: ProductResource
 	currency_code: string
 }>()
-console.log('zcxzcxzcxzcxz', props.currency_code)
+// console.log('zcxzcxzcxzcxz', props.currency_code)
 
 const locale = inject('locale', aikuLocaleStructure)
 
