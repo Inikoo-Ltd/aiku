@@ -17,7 +17,7 @@ const props = defineProps<{
   };
 }>();
 
-console.log(props)
+// console.log(props)
 
 // Status mapping based on actual boolean values
 const status = computed(() => ({

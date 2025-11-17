@@ -163,7 +163,6 @@ const validImages = computed(() =>
 							class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
 							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
 								class="block w-full h-full object-cover" />
-							<!-- Delete Icon -->
 							<ModalConfirmationDelete :routeDelete="{
 								name: props.data.deleteImageRoute.name,
 								parameters: {
