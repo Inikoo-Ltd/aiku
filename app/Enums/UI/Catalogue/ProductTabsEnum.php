@@ -17,10 +17,12 @@ enum ProductTabsEnum: string
     use HasTabs;
 
     case SHOWCASE = 'showcase';
-    case SALES = 'sales';
-    // case VARIATIONS = 'variations';
-    case HISTORY = 'history';
+    case CONTENT = 'content';
     case IMAGES = 'images';
+    case SALES = 'sales';
+
+
+    case HISTORY = 'history';
     case STOCKS = 'stocks';
     case TRADE_UNITS = 'trade_units';
     case ORDERS = 'orders';
@@ -37,10 +39,6 @@ enum ProductTabsEnum: string
                 'title' => __('Overview'),
                 'icon'  => 'fal fa-tachometer-alt-fast',
             ],
-            //            ProductTabsEnum::VARIATIONS => [
-            //                'title' => __('Variations'),
-            //                'icon'  => 'fal fa-stream',
-            //            ],
             ProductTabsEnum::SALES => [
                 'title' => __('Sales'),
                 'icon'  => 'fal fa-money-bill-wave',
@@ -73,8 +71,10 @@ enum ProductTabsEnum: string
             ProductTabsEnum::IMAGES => [
                 'title' => __('Media'),
                 'icon'  => 'fal fa-camera-retro',
-                'type'  => 'icon',
-                'align' => 'right',
+            ],
+            ProductTabsEnum::CONTENT => [
+                'title' => __('Content'),
+                'icon'  => 'fal fa-quote-left',
             ],
             ProductTabsEnum::REMINDERS => [
                 'title' => __('Reminders'),
@@ -94,6 +94,7 @@ enum ProductTabsEnum: string
                 'title' => __('Attachments'),
                 'icon'  => 'fal fa-paperclip',
             ],
+
         };
     }
 }

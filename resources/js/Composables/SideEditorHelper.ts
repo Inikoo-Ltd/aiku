@@ -43,6 +43,7 @@ import MinMaxPrice from '@/Components/Workshop/Properties/MinMaxPrice.vue'
 import VideoSettings from '@/Components/Workshop/Properties/VideoSettings.vue'
 import PureMultiselectInfiniteScroll from '@/Components/Pure/PureMultiselectInfiniteScroll.vue'
 import SelectProducts from '@/Components/Workshop/Properties/SelectProducts.vue'
+import Countdown from '@/Components/CMS/Fields/Countdown.vue'
 import UploadImageCropped from '@/Components/Workshop/Properties/UploadImageCropped.vue'
 import ShowBlockInResponsive from '@/Components/CMS/Fields/ShowBlockInResponsive.vue'
 import ResponsiveText from '@/Components/CMS/Fields/ResponsiveText.vue'
@@ -90,6 +91,7 @@ export const getComponent = (componentName: string) => {
         'video-settings' : VideoSettings,
         'selectquery' : PureMultiselectInfiniteScroll,
         'select_product' : SelectProducts,
+        'countdown': Countdown,
         "array-data-drawer" : ArrayEditDrawer,
         "image-cropped" : UploadImageCropped,
         'visibility' : ShowBlockInResponsive,

@@ -39,7 +39,7 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
     {
         $accessToken = $this->getAccessToken($webpage->website);
         if (count($accessToken) < 2) {
-            Log::error("Luigi's Box access token is not configured properly");
+            Log::error("Luigi's Box access token is not configured properly for website {$webpage->website->name}.");
 
             return;
         }
@@ -56,8 +56,7 @@ class ReindexWebpageLuigiData extends OrgAction implements ShouldBeUnique
         ];
         try {
             $this->request($webpage, '/v1/content', $body);
-        } catch (Exception $e) {
-            Log::error("Failed to reindex webpage $webpage->title: ".$e->getMessage());
+        } catch (Exception) {
         }
     }
 

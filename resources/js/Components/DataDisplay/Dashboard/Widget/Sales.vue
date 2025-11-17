@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { inject, computed, defineProps } from "vue"
+import { inject, computed } from "vue"
 import { trans } from "laravel-vue-i18n"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 
@@ -37,6 +37,17 @@ const refundRatio = computed(() => {
 
     return revenue > 0 ? (refunds / revenue) * 100 : 0
 })
+
+const getYoYComparison = (metric: string) => {
+    const delta = props.tableData?.tables?.invoice_categories?.totals?.columns?.[`${metric}_delta`]?.[props.intervals.value];
+    if (!delta || delta.raw_value === 9999999) return null;
+
+    return {
+        value: delta.formatted_value,
+        isPositive: delta.raw_value > 1,
+        isNegative: delta.raw_value < 1
+    };
+}
 </script>
 
 <template>
@@ -44,7 +55,12 @@ const refundRatio = computed(() => {
         <div class="text-sm w-full">
             <p class="text-lg font-bold mb-1">{{ trans('Sales') }}</p>
             <p class="flex flex-col">
-                <span class="text-2xl font-bold">{{ props.tableData?.tables?.invoice_categories?.totals?.columns?.[props.scope === 'group' ? 'sales_grp_currency' : 'sales_org_currency']?.[props.intervals.value]?.formatted_value || 0 }}</span>
+                <span class="text-2xl font-bold">
+                    {{ props.tableData?.tables?.invoice_categories?.totals?.columns?.[props.scope === 'group' ? 'sales_grp_currency' : 'sales_org_currency']?.[props.intervals.value]?.formatted_value || 0 }}
+                    <span v-if="getYoYComparison(props.scope === 'group' ? 'sales_grp_currency' : 'sales_org_currency')" :class="['italic text-base font-medium ml-1', { 'text-green-500': getYoYComparison(props.scope === 'group' ? 'sales_grp_currency' : 'sales_org_currency')?.isPositive, 'text-red-500': getYoYComparison(props.scope === 'group' ? 'sales_grp_currency' : 'sales_org_currency')?.isNegative }]">
+                        {{ getYoYComparison(props.scope === 'group' ? 'sales_grp_currency' : 'sales_org_currency')?.value }}
+                    </span>
+                </span>
                 <span>
                     {{ refundRatio.toFixed(2) }}%
                     <span class="italic">{{ trans("refunded") }}</span>

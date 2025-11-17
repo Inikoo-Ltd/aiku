@@ -33,8 +33,10 @@ const props = withDefaults(defineProps<{
         id: number
     }
     panelOpen?: number|null|string
+    modelType?: string // 'edit'|'filter'
 }>(), {
     panelOpen: null,
+    modelType: 'edit'
 })
 
 const modelValue = defineModel()
@@ -93,12 +95,13 @@ onMounted(() => {
                 <FontAwesomeIcon :icon="faCaretLeft" class="text-black"></FontAwesomeIcon>
             </template>
             
-            <ParentFieldSideEditor 
-                :blueprint="field" 
-                :uploadImageRoute="uploadImageRoute" 
+            <ParentFieldSideEditor
+                :blueprint="field"
+                :uploadImageRoute="uploadImageRoute"
                  v-model="modelValue"
                 :key="field.key"
                 @update:modelValue="e =>  emits('update:modelValue', e)"
+                :modelType="type"
             />
         </Accordion>
     </div>
@@ -106,10 +109,10 @@ onMounted(() => {
 
 
 <style lang="scss" scoped>
-::v-deep(.p-accordioncontent ) {
+:deep(.p-accordioncontent ) {
   padding: 0px 0px 0px 0px !important;
 }
-::v-deep(.p-accordioncontent-content) {
+:deep(.p-accordioncontent-content) {
   padding: 1rem !important;
 }
 </style>

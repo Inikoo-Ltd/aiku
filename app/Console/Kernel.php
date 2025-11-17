@@ -133,6 +133,12 @@ class Kernel extends ConsoleKernel
                 monitorSlug: 'UpdateWooStockInventories',
             );
 
+        $schedule->command('ebay:update-inventory')
+            ->everyTwoHours()
+            ->withoutOverlapping()->sentryMonitor(
+                monitorSlug: 'UpdateInventoryInEbayPortfolio',
+            );
+
         $schedule->command('shopify:update-inventory')->everySixHours()->withoutOverlapping()->sentryMonitor(
             monitorSlug: 'UpdateInventoryInShopifyPortfolio',
         );
@@ -160,6 +166,10 @@ class Kernel extends ConsoleKernel
 
         $schedule->job(ConsolidateRecurringBills::makeJob())->dailyAt('17:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'ConsolidateRecurringBills',
+        );
+
+        (new Schedule())->command('hydrate:customers-tag')->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateCustomersTag',
         );
     }
 

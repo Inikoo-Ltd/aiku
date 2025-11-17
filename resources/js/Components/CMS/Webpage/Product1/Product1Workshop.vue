@@ -244,7 +244,7 @@ const toggleExpanded = () => {
                     </div>
                 </div> -->
                 <div class="flex gap-2 mb-6">
-                    <ButtonAddPortfolio :product="modelValue.product" />
+                    <ButtonAddPortfolio :product="modelValue.product" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)"/>
                 </div>
                 <div class="flex items-center text-sm text-medium text-gray-500 mb-6">
                     <FontAwesomeIcon :icon="faBox" class="mr-3 text-xl" />
@@ -337,7 +337,7 @@ const toggleExpanded = () => {
         </div>
 
         <div class="mt-6 flex flex-col gap-2">
-            <ButtonAddPortfolio :product="modelValue.product" />
+            <ButtonAddPortfolio :product="modelValue.product" :buttonStyle="getStyles(modelValue?.button?.properties, screenType)" />
         </div>
         <div class="text-xs font-medium py-3">
             <EditorV2 v-model="modelValue.product.description" @update:model-value="(e) => onDescriptionUpdate(e)" />

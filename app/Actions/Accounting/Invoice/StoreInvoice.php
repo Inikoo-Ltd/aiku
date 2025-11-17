@@ -260,7 +260,11 @@ class StoreInvoice extends OrgAction
                 new IUnique(
                     table: 'invoices',
                     extraConditions: [
-                        ['column' => 'shop_id', 'value' => $this->shop->id],
+                        [
+                            'column' => 'shop_id',
+                            'value'  => $this->shop->id
+                        ],
+                        ['column' => 'deleted_at', 'operator' => 'null'],
                     ]
                 ),
             ],

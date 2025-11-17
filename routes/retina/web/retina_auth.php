@@ -7,7 +7,6 @@
  */
 
 use App\Actions\CRM\WebUser\Retina\GoogleLoginRetina;
-use App\Actions\CRM\WebUser\Retina\Json\GetRedirectUrl;
 use App\Actions\CRM\WebUser\Retina\RetinaLogout;
 use App\Actions\CRM\WebUser\Retina\RetinaLogin;
 use App\Actions\CRM\WebUser\Retina\UI\AuthenticateRetinaShopifyUser;
@@ -27,8 +26,6 @@ use App\Actions\Retina\UI\Auth\ShowForgotPasswordForm;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest:retina')->group(function () {
-    Route::get('/get_redirect', GetRedirectUrl::class)->name('ref_redirect');
-
 
     Route::post('login', RetinaLogin::class)->name('login.store');
     Route::post('login-google', GoogleLoginRetina::class)->name('login_google');

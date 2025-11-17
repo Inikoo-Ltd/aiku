@@ -19,7 +19,7 @@ import { trans } from 'laravel-vue-i18n'
 import InformationIcon from '@/Components/Utils/InformationIcon.vue'
 library.add(faInfoCircle, faSparkles)
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
     blueprint: {
         name: string
         type: string
@@ -30,8 +30,11 @@ const props = defineProps<{
         show_new_until?: string  // "2025-06-04"
         information?: string  // For tooltip on i icon
     }
+    modelType?: string
     uploadImageRoute?: routeType
-}>()
+}>(), {
+    modelType: 'edit'
+})
 
 const emits = defineEmits<{
     (e: 'update:modelValue', value: number): void
@@ -99,7 +102,7 @@ const isFutureDatePassed = (futureDate: string) => {
 
             <RenderFields v-else :modelValue="modelValue" :blueprint="blueprint"
                 :uploadImageRoute="uploadImageRoute"
-                @update:modelValue="onPropertyUpdate" />
+                @update:modelValue="onPropertyUpdate" :modelType="modelType" />
         </AccordionContent>
     </AccordionPanel>
 
@@ -109,9 +112,13 @@ const isFutureDatePassed = (futureDate: string) => {
             :blueprint="blueprint" :uploadImageRoute="uploadImageRoute"  @update:model-value="(e)=>onPropertyUpdate(blueprint.key,e)" />
 
 
-        <RenderFields v-else :modelValue="modelValue" :blueprint="blueprint"
+        <RenderFields 
+            v-else :modelValue="modelValue" 
+            :blueprint="blueprint"
             :uploadImageRoute="uploadImageRoute"
-            @update:modelValue="onPropertyUpdate" />
+            @update:modelValue="onPropertyUpdate" 
+            :modelType="modelType" 
+        />
     </div>
 </template>
 

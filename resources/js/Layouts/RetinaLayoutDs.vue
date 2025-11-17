@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Link, usePage } from "@inertiajs/vue3"
 import { useLayoutStore } from "@/Stores/retinaLayout"
-import { provide, ref } from "vue"
+import { inject, provide, ref } from "vue"
 import { useLocaleStore } from "@/Stores/locale"
 import { useColorTheme } from "@/Composables/useStockList"
 import { isArray } from 'lodash-es'
@@ -41,9 +41,9 @@ library.add(
 )
 import { faListUl, faEye } from "@far"
 
-import Breadcrumbs from "@/Components/Navigation/Breadcrumbs.vue"
 import { trans } from "laravel-vue-i18n"
 import BreadcrumbsIris from "@/Components/Navigation/BreadcrumbsIris.vue"
+import RetinaBottomNavigation from "./Retina/RetinaBottomNavigation.vue"
 library.add(faShoppingBasket, faFax, faCog, faUserCircle, faMoneyBillWave, faFolder)
 
 const layout = useLayoutStore()
@@ -57,7 +57,8 @@ const irisTheme = props?.iris?.theme ?? { color: [...useColorTheme[2]] }
 
 const sidebarOpen = ref(false)
 
-console.log("Layout Ds", layout.iris.is_logged_in)
+const screenType = inject('screenType', ref<'mobile' | 'tablet' | 'desktop'>('desktop'))
+
 </script>
 
 <template>
@@ -68,8 +69,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 		{{ trans("This environment is for testing and development purposes only. The data you enter will be deleted in the future.") }}
 	</ScreenWarning>
 
-	<div
-		class="isolate relative min-h-screen transition-all"
+	<div class="isolate relative transition-all pb-12 md:pb-0"
 		:class="{
 			'mr-44': Object.values(layout.rightSidebar || {}).some((v) => v.show),
 			'mr-0': !Object.values(layout.rightSidebar || {}).some((v) => v.show),
@@ -85,33 +85,13 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 		<!-- wrapper for mobile overlay + content -->
 		<div class="relative">
-			<!-- Floating menu button (mobile only) -->
-			<button
-				@click="sidebarOpen = !sidebarOpen"
-				class="shadow-white/50 shadow-md fixed justify-center items-center h-16 w-16 bottom-8 left-8 z-[51] md:hidden p-4 rounded-full focus:outline-none"
-				:style="{
-					backgroundColor: layout?.app?.theme[5],
-					color: layout?.app?.theme[4],
-				}"
-				aria-label="Toggle menu">
-				<FontAwesomeIcon
-					:icon="faListUl"
-					class="text-2xl"
-					fixed-width
-					aria-hidden="true" />
-			</button>
-
-			<div
-				v-if="sidebarOpen"
-				@click="sidebarOpen = false"
-				class="fixed inset-0 bg-gray-800/50 z-40 md:hidden" />
 
 			<!-- sidebar + main content -->
 			<main
-				class="flex flex-col md:flex-row gap-x-2 xmax-w-5xl lg:max-w-7xl w-full lg:mx-auto my-2 md:my-10 px-3 md:px-8 xl:px-0 transition-all">
+				class="flex flex-col md:flex-row gap-x-2 lg:max-w-7xl w-full lg:mx-auto my-2 md:my-10 px-3 md:px-8 xl:px-0 transition-all">
 				<Transition>
 					<RetinaDsLeftSidebar
-						v-if="layout.user && layout.iris.is_logged_in"
+						v-if="layout.user && layout.iris.is_logged_in && screenType !== 'mobile'"
 						:class="[
 							'fixed inset-y-0 left-0 md:h-fit bg-white shadow-lg transform z-50 md:z-0 transition-all',
 							sidebarOpen ? 'translate-x-0' : '-translate-x-full',
@@ -123,14 +103,16 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 
 				<!-- RetinaLayoutDS -->
 				<div class="flex-1 flex flex-col pb-6 text-gray-700 relative">
-					<div class="flex flex-col md:flex-row md:justify-between md:items-end md:absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
-						<BreadcrumbsIris
-							class=""
-							:breadcrumbs="usePage().props.breadcrumbs ?? []"
-							:navigation="usePage().props.navigation ?? []"
-							:layout="layout"
-							style="max-width: calc(1280px - 200px)"
-						/>
+					<div class="z-[1] flex flex-col md:flex-row md:justify-between md:items-end md:absolute bottom-full w-full border-b-0 mx-auto transition-all mb-1">
+						<div>
+							<BreadcrumbsIris
+								class=""
+								:breadcrumbs="usePage().props.breadcrumbs ?? []"
+								:navigation="usePage().props.navigation ?? []"
+								:layout="layout"
+								style="max-width: calc(1280px - 200px)"
+							/>
+						</div>
 
 						<Link
 							v-if="layout.iris?.is_logged_in"
@@ -147,7 +129,7 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 					
 					<div
 						class="pb-6 bg-white w-full mx-auto shadow-lg rounded-lg">
-						<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2" />
+						<div id="RetinaTopBarSubsections" class="pl-2 py-2 flex gap-x-2 overflow-x-auto" />
 
 						<!-- Main content of the page -->
 						<slot name="default" />
@@ -159,9 +141,35 @@ console.log("Layout Ds", layout.iris.is_logged_in)
 		<IrisFooter
 			v-if="layout.iris?.footer && !isArray(layout.iris.footer)"
 			:data="layout.iris.footer"
-			:colorThemed="irisTheme" />
+			:colorThemed="irisTheme"
+		/>
+
+			
+		<!-- Section: bottom navigation -->
+		<div v-if="layout.user && screenType === 'mobile'" class="bg-[rgb(20,20,20)] text-white fixed bottom-0 w-full z-10">
+			<RetinaBottomNavigation
+				
+			/>
+		</div>
 	</div>
 </template>
+
+<style lang="scss">
+@media (max-width: 767px) {
+	#launcher {
+		// Widget: Help chat (JIRA)
+		bottom: 50px !important;
+	}
+	#cookiescript_badge {
+		// Widget: Cookies acceptation
+		bottom: 70px !important;
+	}
+	#superchat-widget-content-root {
+		// Widget: Superchat
+		bottom: 45px !important;
+	}
+}
+</style>
 
 <style lang="scss" scoped>
 :deep(.topbarNavigationActive) {

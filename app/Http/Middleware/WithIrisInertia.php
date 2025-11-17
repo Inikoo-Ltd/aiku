@@ -10,7 +10,9 @@ namespace App\Http\Middleware;
 
 use App\Actions\Catalogue\ProductCategory\Json\GetIrisProductCategoryNavigation;
 use App\Actions\Helpers\Language\UI\GetLanguagesOptions;
+use App\Enums\Announcement\AnnouncementStatusEnum;
 use App\Http\Resources\Helpers\LanguageResource;
+use App\Http\Resources\Web\AnnouncementResource;
 use App\Http\Resources\Web\WebsiteIrisResource;
 use App\Models\Helpers\Language;
 use App\Models\Web\Website;
@@ -51,7 +53,7 @@ trait WithIrisInertia
         $currentLanguage = Language::where('code', app()->getLocale())->first();
 
 
-        $cacheKey="iris:nav:product_categories:website:$website->id:language:".$currentLanguage?->id;
+        $cacheKey = "iris:nav:product_categories:website:$website->id:language:".$currentLanguage?->id;
         $ttl = (int) (config('iris.cache.product_category_navigation_ttl') ?? 900);
 
         $compute = function () use ($website) {
@@ -80,6 +82,7 @@ trait WithIrisInertia
                 $isSidebarActive == 'active' ? Arr::get($website->published_layout, 'sidebar', []) : [],
                 ['product_categories' => $irisProductCategoryNavigation]
             ),
+            'announcements' => AnnouncementResource::collection($website->announcements()->where('status', AnnouncementStatusEnum::ACTIVE)->get())->toArray(request()),
             'shop'                 => [
                 'type' => $shop->type->value,
                 'id'   => $shop->id,

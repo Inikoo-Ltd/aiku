@@ -8,7 +8,6 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { Link, router } from '@inertiajs/vue3'
 import { inject, ref } from 'vue'
-import { ChannelLogo } from '@/Composables/Icon/ChannelLogoSvg'
 import StatsBox from '@/Components/Stats/StatsBox.vue'
 import { trans } from 'laravel-vue-i18n'
 import { Fieldset } from 'primevue'
@@ -68,7 +67,7 @@ const onSubmitCreateOrder = () => {
         {
             preserveScroll: true,
             preserveState: true,
-            onStart: () => { 
+            onStart: () => {
                 isLoadingSubmit.value = true
             },
             onSuccess: () => {
@@ -121,15 +120,15 @@ const onSubmitCreateOrder = () => {
                                 }"
                             /> -->
                         </div>
-                        
+
                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <!-- Left Column: Customer Information -->
                             <div class="space-y-3 text-sm">
                                 <!-- Information: contact name -->
                                 <div v-if="data.customer.contact_name" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-user" 
+                                        fixed-width
+                                        icon="fas fa-user"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Contact Name')"
                                     />
@@ -139,8 +138,8 @@ const onSubmitCreateOrder = () => {
                                 <!-- Information: company name -->
                                 <div v-if="data.customer.company_name" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-building" 
+                                        fixed-width
+                                        icon="fas fa-building"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Company Name')"
                                     />
@@ -150,8 +149,8 @@ const onSubmitCreateOrder = () => {
                                 <!-- Information: email -->
                                 <div v-if="data.customer.email" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-envelope" 
+                                        fixed-width
+                                        icon="fas fa-envelope"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Email')"
                                     />
@@ -161,8 +160,8 @@ const onSubmitCreateOrder = () => {
                                 <!-- Information: phone -->
                                 <div v-if="data.customer.phone" class="flex items-center">
                                     <FontAwesomeIcon
-                                        fixed-width 
-                                        icon="fas fa-phone" 
+                                        fixed-width
+                                        icon="fas fa-phone"
                                         class="text-gray-600 mr-2 w-4 h-4"
                                         v-tooltip="trans('Phone')"
                                     />
@@ -180,17 +179,18 @@ const onSubmitCreateOrder = () => {
                                 </div>
                             </div>
 
+                            <!-- hide email subscription, required by tomas -->
                             <!-- Right Column: Email Subscriptions -->
-                            <div class="flex justify-start lg:justify-end">
-                                <EmailSubscribetion 
+                            <!-- <div class="flex justify-start lg:justify-end">
+                                <EmailSubscribetion
                                     v-if="data?.customer?.email_subscriptions"
                                     :emailSubscriptions="data.customer.email_subscriptions"
                                     containerClass="p-3 bg-white rounded-md border border-gray-200 w-full max-w-sm"
                                 />
-                            </div>
+                            </div> -->
                         </div>
 
-                      
+
                     </div>
 
                     <h1 class="mt-10 text-pretty text-5xl font-semibold tracking-tight sm:text-7xl">
@@ -200,8 +200,8 @@ const onSubmitCreateOrder = () => {
                         {{ trans("Have a look at your channels summary.") }}
                     </p>
                 </div>
-                
-                <div class="flex justify-between gap-x-4">
+
+                <div class="flex flex-col md:flex-row justify-between gap-x-4">
                     <div class="w-full max-w-96 mt-4 xmd:grid grid-cols-1 gap-2 lg:gap-5 xsm:grid-cols-2">
                         <StatsBox
                             v-for="(stat, idxStat) in data.stats"
@@ -213,7 +213,12 @@ const onSubmitCreateOrder = () => {
                             </div>
                             <ul role="list" class="divide-y divide-gray-100">
                                 <li v-for="channel in data.last_visited_channels" xkey="person.email" class="flex gap-x-4 px-3 py-2">
-                                    <div v-html="ChannelLogo(channel.platform)" class="flex-grow size-8 overflow-hidden border border-gray-300 rounded-full"></div>
+                                    <img
+                                        :src="`/assets/channel_logo/${channel.platform}.svg`"
+                                        class="flex-grow size-8 overflow-hidden border border-gray-300 rounded-full"
+                                        :alt="channel.platform"
+                                        v-tooltip="channel.platform"
+                                    />
                                     <div class="w-full xflex-shrink-0 justify-between flex items-center">
                                         <div class="min-w-0">
                                             <p class="text-sm/6 font-semibold">
@@ -245,7 +250,7 @@ const onSubmitCreateOrder = () => {
 
                     <!-- Section: Shortcut -->
                     <div v-if="data.shortcut.order.is_show_button ||
-                    data.shortcut?.create_customer_sales_channel?.route_create?.name" class="max-w-64 w-full">
+                    data.shortcut?.create_customer_sales_channel?.route_create?.name" class="md:max-w-64 mt-8 md:mt-0 w-full">
                         <Fieldset :legend="trans('Quick links (Shortcuts)')">
                             <div class="flex flex-col gap-y-2">
                                 <Button
@@ -298,7 +303,7 @@ const onSubmitCreateOrder = () => {
                     />
                 </div>
             </div>
-            
+
         </div>
 
         <!-- Modal: Create order -->
@@ -336,7 +341,7 @@ const onSubmitCreateOrder = () => {
                             <template #afterlist>
                                 <div class="m-2 cursor-auto text-gray-400 text-sm">
                                     {{ trans("Can't find the client?") }}
-                                    
+
                                     <Link
                                         :href="route('retina.dropshipping.customer_sales_channels.client.create', {
                                             customerSalesChannel: data.shortcut.order.manual_data.slug
@@ -350,7 +355,7 @@ const onSubmitCreateOrder = () => {
                         </PureMultiselectInfiniteScroll>
                     </div>
 
-                    <Button 
+                    <Button
                         @click="() => onSubmitCreateOrder()"
                         label="Create Order"
                         full

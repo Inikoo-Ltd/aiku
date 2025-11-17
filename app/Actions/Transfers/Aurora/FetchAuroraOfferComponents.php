@@ -55,7 +55,6 @@ class FetchAuroraOfferComponents extends FetchAuroraAction
             try {
                 $offerAllowance = StoreOfferAllowance::make()->action(
                     offer: $offerAllowanceData['offer'],
-                    trigger: $offerAllowanceData['trigger'],
                     modelData: $offerAllowanceData['offerAllowance'],
                     hydratorsDelay: $this->hydratorsDelay,
                     strict: false,

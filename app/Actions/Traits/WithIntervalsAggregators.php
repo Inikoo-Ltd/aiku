@@ -42,7 +42,7 @@ trait WithIntervalsAggregators
 
 
         foreach (DateIntervalEnum::cases() as $interval) {
-            if ($intervals !== null && !in_array($interval, $intervals)) {
+            if ($intervals !== null && !in_array($interval->value, $intervals)) {
                 continue;
             }
 

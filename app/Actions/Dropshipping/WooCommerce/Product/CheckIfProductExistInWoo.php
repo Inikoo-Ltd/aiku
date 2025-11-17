@@ -11,6 +11,7 @@ namespace App\Actions\Dropshipping\WooCommerce\Product;
 use App\Actions\RetinaAction;
 use App\Models\Dropshipping\Portfolio;
 use App\Models\Dropshipping\WooCommerceUser;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Sentry;
@@ -40,14 +41,18 @@ class CheckIfProductExistInWoo extends RetinaAction
 
             $result = [];
 
-            foreach ($searchFields as $field => $value) {
-                $searchResult = $wooCommerceUser->getWooCommerceProducts([
-                    $field => $value
-                ]);
+            if (Arr::has($searchFields, 'id')) {
+                $result[] = $wooCommerceUser->getWooCommerceProduct($portfolio->platform_product_id);
+            } else {
+                foreach ($searchFields as $field => $value) {
+                    $searchResult = $wooCommerceUser->getWooCommerceProducts([
+                        $field => $value
+                    ]);
 
-                if (!empty($searchResult)) {
-                    $result = $searchResult;
-                    break;
+                    if (!empty($searchResult)) {
+                        $result = $searchResult;
+                        break;
+                    }
                 }
             }
 

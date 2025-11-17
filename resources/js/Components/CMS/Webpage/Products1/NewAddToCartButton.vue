@@ -14,24 +14,29 @@ import { library } from "@fortawesome/fontawesome-svg-core"
 import { routeType } from '@/types/route'
 import { useIrisLayoutStore } from "@/Stores/irisLayout"
 import { useLayoutStore } from "@/Stores/retinaLayout"
+import { faCartShopping } from '@fortawesome/free-solid-svg-icons'
+import { faShoppingCart } from '@far'
+import { ButtonStyle } from 'primevue'
 
 library.add(faPlus, faMinus, faCartPlus)
 
 const props = withDefaults(
-  defineProps<{
-    product: ProductResource
-    addToBasketRoute: routeType
-    updateBasketQuantityRoute: routeType
-    hasInBasket?: any
-  }>(),
-  {
-    hasInBasket: {
-        id: null,
-        quantity_ordered: 0,
-        quantity_ordered_new: 0,
-        asset_id: null
+    defineProps<{
+        product: ProductResource
+        addToBasketRoute: routeType
+        updateBasketQuantityRoute: routeType
+        hasInBasket?: any
+        buttonStyle?: any
+        buttonStyleHover?: any
+    }>(),
+    {
+        hasInBasket: {
+            id: null,
+            quantity_ordered: 0,
+            quantity_ordered_new: 0,
+            asset_id: null
+        }
     }
-  }
 )
 
 
@@ -71,7 +76,7 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
 }
 
 // Add to basket function - exact copy dari ButtonAddToBasketInFamily
-const onAddToBasket = async (product: ProductResource, basket : any) => {
+const onAddToBasket = async (product: ProductResource, basket: any) => {
     try {
         setStatus('loading')
         isLoadingSubmitQuantityProduct.value = true
@@ -90,7 +95,7 @@ const onAddToBasket = async (product: ProductResource, basket : any) => {
 
         layout.reload_handle()
         router.reload({
-            only: ['iris','data'],
+            only: ['iris', 'data'],
         })
 
         product.transaction_id = response.data?.transaction_id
@@ -124,7 +129,7 @@ const onAddToBasket = async (product: ProductResource, basket : any) => {
 }
 
 // Update quantity function - exact copy dari ButtonAddToBasketInFamily
-const onUpdateQuantity = (product: ProductResource, basket : any) => {
+const onUpdateQuantity = (product: ProductResource, basket: any) => {
     router[props.updateBasketQuantityRoute.method || 'post'](
         route(props.updateBasketQuantityRoute.name, {
             transaction: product.transaction_id
@@ -163,11 +168,11 @@ const onUpdateQuantity = (product: ProductResource, basket : any) => {
 // Main function to add/update product - dari ButtonAddToBasketInFamily
 const addAndUpdateProduct = () => {
     if (!props.hasInBasket.quantity_ordered) {
-        onAddToBasket(props.product,props.hasInBasket)
+        onAddToBasket(props.product, props.hasInBasket)
     } else if (props.hasInBasket.quantity_ordered_new === 0) {
-        onUpdateQuantity(props.product,props.hasInBasket)
+        onUpdateQuantity(props.product, props.hasInBasket)
     } else {
-        onUpdateQuantity(props.product,props.hasInBasket)
+        onUpdateQuantity(props.product, props.hasInBasket)
     }
 }
 
@@ -212,13 +217,14 @@ const handleInitialAdd = () => {
 
 const instantAddToBasket = () => {
     set(props.hasInBasket, ['quantity_ordered_new'], 1)
-    onAddToBasket(props.product,props.hasInBasket)
+    onAddToBasket(props.product, props.hasInBasket)
 }
 
 const showChartButton = computed(() => {
-  const quantityOrdered = get(props.hasInBasket, ['quantity_ordered'], 0)
-  return !quantityOrdered && currentQuantity.value === 0
+    const quantityOrdered = get(props.hasInBasket, ['quantity_ordered'], 0)
+    return !quantityOrdered && currentQuantity.value === 0
 })
+
 
 
 </script>
@@ -226,17 +232,17 @@ const showChartButton = computed(() => {
 <template>
     <div class="group relative">
         <!-- State awal: qty 0, tampilkan icon + -->
-        <button v-if="showChartButton"
-            @click.stop.prevent="instantAddToBasket"
+        <button v-if="showChartButton" @click.stop.prevent="instantAddToBasket" :style="buttonStyle"
             :disabled="isLoadingSubmitQuantityProduct || props.product.stock === 0"
-            class="rounded-full bg-gray-200 hover:bg-gray-300 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg" v-tooltip="trans('Add to basket')">
+            class="rounded-full button-cart hover:bg-green-700 bg-gray-800 mr-4 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            v-tooltip="trans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />
-            <FontAwesomeIcon v-else :icon="faCartPlus" fixed-width class="text-gray-600" />
+            <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width class="text-gray-100 button-cart" :style="{ color : buttonStyle.color}" />
         </button>
 
         <!-- State: qty > 0, tampilkan quantity dan expand saat hover -->
-        <div v-else @click.stop
-            class="rounded-full bg-gray-200 h-10 transition-all flex items-center justify-center group-hover:justify-between  group-hover:bg-gray-300 overflow-hidden relative shadow-lg"
+        <div v-else @click.stop :style="buttonStyle"
+            class="rounded-full  button-cart  bg-gray-200 h-10 transition-all flex items-center justify-center group-hover:justify-between  group-hover:bg-gray-300 overflow-hidden relative shadow-lg"
             :class="[
                 'group-hover:w-24 w-10',
                 { 'opacity-50': isLoadingSubmitQuantityProduct }
@@ -255,7 +261,7 @@ const showChartButton = computed(() => {
             </button>
 
             <!-- Quantity display (always visible) -->
-            <span @click.stop.prevent
+            <span @click.stop.prevent 
                 class="text-sm font-medium text-gray-700 min-w-[1rem] cursor-default relative z-10 px-1 text-center self-center">
                 {{ currentQuantity }}
             </span>
@@ -307,5 +313,16 @@ button {
 
 .group * {
     pointer-events: auto;
+}
+
+
+.button-cart {
+    &:hover {
+        background: v-bind(buttonStyleHover?.background) !important;
+        color: v-bind(buttonStyleHover?.color) !important;
+        font-family: v-bind(buttonStyleHover?.fontFamily) !important;
+        font-size: v-bind(buttonStyleHover?.fontSize) !important;
+        font-style: v-bind(buttonStyleHover?.fontStyle) !important;
+    }
 }
 </style>

@@ -9,39 +9,56 @@
 
 namespace App\Actions\CRM\WebUser\Retina\Json;
 
+use App\Actions\IrisAction;
 use App\Actions\Web\Webpage\Iris\ShowIrisWebpage;
 use App\Enums\Web\Webpage\WebpageStateEnum;
 use App\Models\Web\Webpage;
+use Illuminate\Support\Arr;
+use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsController;
-use Illuminate\Http\Request;
 
-class GetRedirectUrl
+class GetRedirectUrl extends IrisAction
 {
     use AsController;
 
-    /**
-     * @throws \Illuminate\Validation\ValidationException
-     */
-    public function handle(Request $request): string
+
+    public function handle($modelData): array
     {
+
         $retinaHome = '';
+        $ref_page   = null;
+        if (Arr::has($modelData, 'ref')) {
+            $ref_page = Arr::get($modelData, 'ref');
 
-        $ref_page = request()->get('ref');  // '239984'
-
-        if ($ref_page && is_numeric($ref_page)) {
-            $webpage = Webpage::where('id', $ref_page)->where('website_id', $request->get('website')->id)
-                ->where('state', WebpageStateEnum::LIVE)->first();
-            if ($webpage) {
-                $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
+            if ($ref_page && is_numeric($ref_page)) {
+                $webpage = Webpage::where('id', $ref_page)->where('website_id', $this->website->id)
+                    ->where('state', WebpageStateEnum::LIVE)->first();
+                if ($webpage) {
+                    $retinaHome = ShowIrisWebpage::make()->getEnvironmentUrl($webpage->canonical_url);
+                }
             }
         }
 
-        return $retinaHome;  // "https://xxx.test/aaa/bbb/ccc-02"
+
+        return [
+            'ref_page'     => $ref_page,
+            'redirect_url' => $retinaHome,
+            'redirected'   => !($retinaHome == ''),
+        ];
     }
 
-    public function jsonResponse(): string
+    public function rules(): array
     {
-        return $this->handle(request());
+        return [
+            'ref' => ['sometimes'],
+        ];
+    }
+
+    public function asController(ActionRequest $request): array
+    {
+        $this->initialisation($request);
+
+        return $this->handle($this->validatedData);
     }
 
 }

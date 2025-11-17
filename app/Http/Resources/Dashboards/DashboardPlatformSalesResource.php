@@ -14,6 +14,11 @@ class DashboardPlatformSalesResource extends JsonResource
     // Note: Experimental Data (Need to be checked)
     public function toArray($request): array
     {
+        // Check if platform should be hidden (all values are zero)
+        if ($this->shouldHidePlatform()) {
+            return []; // Return empty array to exclude from collection
+        }
+
         $routeTargets = [
             'invoices' => [
                 'route_target' => [
@@ -95,7 +100,32 @@ class DashboardPlatformSalesResource extends JsonResource
             'slug'      => $this->resource->platform->slug ?? '',
             'state'     => 'active',
             'columns'   => $columns,
-            'colour'      => ''
+            'colour'    => ''
         ];
+    }
+
+    private function shouldHidePlatform(): bool
+    {
+        // Check key metrics to determine if platform should be hidden
+        $keyMetrics = ['invoices', 'sales', 'new_customers', 'new_channels'];
+
+        foreach ($keyMetrics as $metric) {
+            // Check the 'all' interval first as it represents total data
+            $value = $this->resource->{$metric . '_all'} ?? 0;
+
+            // If any key metric has a non-zero value, don't hide
+            if ($value > 0) {
+                return false;
+            }
+
+            // Also check current year data as fallback
+            $currentYearValue = $this->resource->{$metric . '_1y'} ?? 0;
+            if ($currentYearValue > 0) {
+                return false;
+            }
+        }
+
+        // If all key metrics are zero, hide the platform
+        return true;
     }
 }

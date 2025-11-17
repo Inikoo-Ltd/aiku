@@ -14,10 +14,7 @@ import { debounce } from "lodash-es";
 import LoadingText from "@/Components/Utils/LoadingText.vue";
 import { retinaLayoutStructure } from "@/Composables/useRetinaLayoutStructure";
 import PureInput from "@/Components/Pure/PureInput.vue";
-// import { useConfirm } from "primevue/useconfirm";
 import { faSearch } from "@fal";
-import { faExclamationTriangle } from "@far";
-// import ConfirmDialog from "primevue/confirmdialog";
 import { trans } from "laravel-vue-i18n"
 import ButtonAddCategoryToPortfolio from "@/Components/Iris/Products/ButtonAddCategoryToPortfolio.vue"
 
@@ -282,7 +279,7 @@ onMounted(() => {
 
     if (layout?.iris?.is_logged_in) {
         fetchProductHasPortfolio();
-        fetchProducts()
+        // fetchProducts()
     }
 
 
@@ -544,7 +541,7 @@ const search_class = ref(getStyles(props.fieldValue?.search_sort?.search?.input?
                             :style="getStyles(fieldValue?.card_product?.properties, screenType)"
                             class="border p-3 relative rounded bg-white">
                             <ProductRender :product="product" :key="index" :bestSeller="fieldValue.bestseller"
-                                :productHasPortfolio="productHasPortfolio.list[product.id]" />
+                                :productHasPortfolio="productHasPortfolio.list[product.id]" :buttonStyle="getStyles(fieldValue?.button?.properties, screenType)" />
                         </div>
                     </template>
 

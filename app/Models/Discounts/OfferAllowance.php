@@ -8,8 +8,9 @@
 
 namespace App\Models\Discounts;
 
+use App\Enums\Discounts\Offer\OfferDurationEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceStateEnum;
-use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetFilter;
+use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceClass;
 use App\Models\Accounting\InvoiceTransaction;
@@ -58,7 +59,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property OfferAllowanceType|null $type
  * @property int|null $target_id
  * @property array<array-key, mixed>|null $target_data For complex target policies
- * @property OfferAllowanceTargetFilter|null $target_type
+ * @property OfferAllowanceTargetTypeEnum|null $target_type
+ * @property OfferDurationEnum|null $duration
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Helpers\Audit> $audits
  * @property-read \App\Models\SysAdmin\Group $group
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InvoiceTransaction> $invoiceTransactions
@@ -92,7 +94,8 @@ class OfferAllowance extends Model implements Auditable
         'state'           => OfferAllowanceStateEnum::class,
         'type'            => OfferAllowanceType::class,
         'class'           => OfferAllowanceClass::class,
-        'target_type'     => OfferAllowanceTargetFilter::class,
+        'target_type'     => OfferAllowanceTargetTypeEnum::class,
+        'duration'        => OfferDurationEnum::class,
         'begin_at'        => 'datetime',
         'end_at'          => 'datetime',
         'fetched_at'      => 'datetime',
@@ -129,8 +132,8 @@ class OfferAllowance extends Model implements Auditable
                 if ($this->target_type) {
                     $slug .= '-'.$this->target_type->slug();
                 }
-                return preg_replace('/^-/', '', $slug);
 
+                return preg_replace('/^-/', '', $slug);
             })
             ->doNotGenerateSlugsOnUpdate()
             ->saveSlugsTo('slug')

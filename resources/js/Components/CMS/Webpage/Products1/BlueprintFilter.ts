@@ -1,3 +1,6 @@
+// only one dimension
+
+
 export const blueprint = (productCategory: number) => {
 	return {
 		blueprint: [

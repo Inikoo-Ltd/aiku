@@ -15,6 +15,7 @@ use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Models\Dropshipping\WooCommerceUser;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
@@ -27,7 +28,7 @@ class TestConnectionWooCommerceUser extends RetinaAction
 
     public $commandSignature = 'retina:ds:test-woo {customerSalesChannel}';
 
-    public function handle(CustomerSalesChannel $customerSalesChannel): WooCommerceUser
+    public function handle(CustomerSalesChannel $customerSalesChannel): array|null
     {
         /** @var WooCommerceUser $wooCommerceUser */
         $wooCommerceUser = $customerSalesChannel->user;
@@ -35,18 +36,10 @@ class TestConnectionWooCommerceUser extends RetinaAction
         $connection = $wooCommerceUser->checkConnection();
 
         if (! Arr::has($connection, 'environment')) {
-            $errorData = [
-                'error_data' => $connection
-            ];
-
-            $wooCommerceUser->update([
-                'data' => $errorData,
-            ]);
+            throw ValidationException::withMessages(['status' => false]);
         }
 
-        $wooCommerceUser->refresh();
-
-        return $wooCommerceUser;
+        return null;
     }
 
     public function asCommand(Command $command): void
@@ -65,7 +58,7 @@ class TestConnectionWooCommerceUser extends RetinaAction
         return $request->user()->authTo("crm.{$this->shop->id}.edit");
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): WooCommerceUser
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): array|null
     {
         $this->initialisation($request);
 

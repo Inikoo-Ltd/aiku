@@ -17,7 +17,6 @@ use App\Actions\CRM\Customer\Hydrators\CustomerHydrateDeliveryNotes;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateExclusiveProducts;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateInvoices;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateOrders;
-use App\Actions\CRM\Customer\Hydrators\CustomerHydrateRfm;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateTopUps;
 use App\Actions\CRM\Customer\Hydrators\CustomerHydrateWebUsers;
 use App\Actions\Fulfilment\FulfilmentCustomer\HydrateFulfilmentCustomer;
@@ -50,10 +49,7 @@ class HydrateCustomers
         CustomerHydrateBasket::run($customer);
         CustomerHydrateExclusiveProducts::run($customer);
         CustomerHydrateCustomerSalesChannels::run($customer->id);
-        CustomerHydrateClv::run($customer->id);
-
-        CustomerHydrateRfm::generateGlobalMonetaryPercentiles();
-        CustomerHydrateRfm::run($customer);
+        CustomerHydrateClv::run($customer);
 
         if ($customer->fulfilmentCustomer) {
             HydrateFulfilmentCustomer::run($customer->fulfilmentCustomer);

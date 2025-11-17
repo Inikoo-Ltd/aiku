@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { routeType } from "@/types/route"
-import { onMounted, ref, defineExpose } from "vue"
+import { onMounted, ref } from "vue"
 import { notify } from "@kyvg/vue3-notification"
 import { trans } from "laravel-vue-i18n"
 import DataTable from "primevue/datatable"

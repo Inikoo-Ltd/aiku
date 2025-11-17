@@ -89,13 +89,13 @@ onMounted(() => {
                 </div>
 
                 <!-- Right Column: Email Subscriptions -->
-                <div class="flex justify-start lg:justify-end">
+                <!-- <div class="flex justify-start lg:justify-end">
                     <EmailSubscribetion
                         v-if="data?.customer?.email_subscriptions"
                         :emailSubscriptions="data.customer.email_subscriptions"
                         containerClass="p-3 bg-white rounded-md border border-gray-200 w-full max-w-sm"
                     />
-                </div>
+                </div> -->
             </div>
         </div>
 

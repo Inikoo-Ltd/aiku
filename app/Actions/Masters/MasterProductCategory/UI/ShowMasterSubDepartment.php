@@ -114,6 +114,15 @@ class ShowMasterSubDepartment extends GrpAction
                         'icon'  => ['fal', 'fa-folder-download'],
                         'title' => __('Master sub-department')
                     ],
+                    'iconRight' => $masterSubDepartment->status ? [
+                        'tooltip' => __('Active'),
+                        'icon'    => 'fas fa-check-circle',
+                        'class'   => 'text-green-400'
+                    ] : [
+                        'tooltip' => __('Closed'),
+                        'icon'    => 'fas fa-times-circle',
+                        'class'   => 'text-red-400'
+                    ],
                     'actions' => [
                         $this->canEdit ? [
                             'type'  => 'button',

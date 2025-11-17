@@ -9,6 +9,7 @@
 namespace App\Actions\Dropshipping\Shopify\Product;
 
 use App\Models\Dropshipping\ShopifyUser;
+use Illuminate\Support\Arr;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Sentry;
 
@@ -16,21 +17,26 @@ class CheckIfProductHasVariantAtLocation
 {
     use AsAction;
 
-    public function handle(ShopifyUser $shopifyUser, ?string $productId): bool
+    public function handle(ShopifyUser $shopifyUser, ?string $productId): array
     {
+        $result = [
+            'exist' => false,
+            'error' => false
+        ];
+
         if (!$productId) {
-            return false;
+            return $result;
         }
 
         if (!CheckIfShopifyProductIDIsValid::run($productId)) {
-            return false;
+            return $result;
         }
 
 
         if (!$shopifyUser->shopify_location_id) {
             Sentry::captureMessage("No location ID found for Shopify user");
 
-            return false;
+            return $result;
         }
 
         $client = $shopifyUser->getShopifyClient(true); // Get GraphQL client
@@ -38,7 +44,9 @@ class CheckIfProductHasVariantAtLocation
         if (!$client) {
             Sentry::captureMessage("Failed to initialize Shopify GraphQL client");
 
-            return false;
+            data_set($result, 'error', true);
+
+            return $result;
         }
 
         try {
@@ -72,32 +80,43 @@ class CheckIfProductHasVariantAtLocation
             $response = $client->request($query, $variables);
 
             if (!empty($response['errors']) || !isset($response['body'])) {
+                data_set($result, 'error', true);
 
-                // Sentry::captureMessage("Product inventory check failed:  shopifyUser: $shopifyUser->id  > $productId <    ".json_encode($response));
-
-                return false;
+                return $result;
             }
 
             $body = $response['body']->toArray();
 
+
+            if (Arr::has($body, 'data.product')) {
+                data_set($result, 'error', false);
+            } else {
+                data_set($result, 'error', true);
+            }
+
+
             // Check if product data exists in the response
             if (!isset($body['data']['product']) || !isset($body['data']['product']['variants']['edges'])) {
-                return false;
+                return $result;
             }
 
             // Check if any variant has inventory at the specified location
             foreach ($body['data']['product']['variants']['edges'] as $edge) {
                 $variant = $edge['node'];
                 if (isset($variant['inventoryItem']['inventoryLevel']['id']) && $variant['inventoryItem']['inventoryLevel']['id']) {
-                    return true;
+                    data_set($result, 'exist', true);
+
+                    return $result;
                 }
             }
 
-            return false;
-        } catch (\Exception $e) {
+            return $result;
+        } catch (\Exception) {
             // Sentry::captureException($e);
 
-            return false;
+            data_set($result, 'error', true);
+
+            return $result;
         }
     }
 }
