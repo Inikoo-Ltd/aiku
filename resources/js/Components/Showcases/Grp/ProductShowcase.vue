@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
+import ImagePrime from "primevue/image"
 import { ref, computed, inject } from "vue"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
@@ -15,6 +16,9 @@ import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ReviewContent from "@/Components/ReviewContent.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
+import ProductPriceGrp from "@/Components/Product/ProductPriceGrp.vue"
+import { ProductResource } from "@/types/Iris/Products"
+import { Image as ImageTS } from "@/types/Image"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -35,20 +39,7 @@ const props = defineProps<{
 			save_route: routeType
 		}
 		product: {
-			data: {
-				id: number
-				slug: string
-				image_id: number
-				code: string
-				name: string
-				price: string
-				description?: string
-				state: string
-				created_at: string
-				updated_at: string
-				images: Images[]
-				currency_code: string
-			}
+			data: ProductResource
 		}
 		stats: {
 			amount: number | null
@@ -94,7 +85,9 @@ const props = defineProps<{
 			warnings: string | null
 		}
 		images: any
+		main_image: ImageTS
 	}
+	handleTabUpdate?: Function
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -126,15 +119,24 @@ const validImages = computed(() =>
 </script>
 
 <template>
-	<div v-if="data.webpage_url"
-		class="w-full bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 px-4 py-3 mb-3 shadow-sm">
-		<div class="flex items-center gap-2 text-blue-700 text-sm">
-			<FontAwesomeIcon :icon="faExternalLink" class="text-blue-500" />
-			<a :href="data.webpage_url" target="_blank" rel="noopener noreferrer"
-				class="font-medium break-all hover:underline hover:text-blue-800 transition-colors duration-200">
-				{{ data.webpage_url }}
-			</a>
-		</div>
+	<div
+		class="w-full  px-4 py-3 mb-3 shadow-sm">
+
+
+        <span class="text-xl font-semibold text-gray-800 whitespace-pre-wrap">
+        <!-- Units box -->
+        <span v-if="data.product?.data?.units !== null && data.product?.data?.units !== undefined && data.product?.data?.units !== ''"
+              class="inline-flex items-center border border-gray-300 rounded px-2 py-0.5 mr-2 bg-white text-gray-900">
+            <span>{{ data.product.data.units }}</span>
+            <span class="ml-1">x</span>
+        </span>
+        <!-- Product name -->
+        <span class="align-middle">
+           {{data.product.data.name}}
+        </span>
+        </span>
+
+
 	</div>
 
 
@@ -143,7 +145,13 @@ const validImages = computed(() =>
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
 			<div class="bg-white   p-4 lg:p-5">
-				<ImageProducts v-if="validImages.length" :images="validImages" :breakpoints="{
+				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
+					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
+					<div class="text-sm italic text-gray-500">
+						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')" class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
+					</div>
+				</div>
+				<!-- <ImageProducts v-if="validImages.length" :images="validImages" :breakpoints="{
 					0: { slidesPerView: 3 },
 					480: { slidesPerView: 4 },
 					640: { slidesPerView: 5 },
@@ -154,7 +162,6 @@ const validImages = computed(() =>
 							class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
 							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
 								class="block w-full h-full object-cover" />
-							<!-- Delete Icon -->
 							<ModalConfirmationDelete :routeDelete="{
 								name: props.data.deleteImageRoute.name,
 								parameters: {
@@ -174,12 +181,16 @@ const validImages = computed(() =>
 						</div>
 					</template>
 				</ImageProducts>
-
-				<!-- Empty State -->
-				<div v-else
-					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
-					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+				-->
+				
+				<div v-else>
+					<div class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+					</div>
+					<div class="mt-2 text-sm italic text-gray-500">
+						Manage images in tab <span @click="() => handleTabUpdate('images')" class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -192,67 +203,25 @@ const validImages = computed(() =>
 
 
 		<div class="bg-white h-fit mx-4  shadow-sm ">
-			<div class="my-4 ">
-				<ReviewContent :data="data.product.data" />
+			<div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+					:class="data?.product?.data?.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+				<span>
+					{{
+					data?.product?.data?.stock > 0
+					? trans("In stock") + ` (${data?.product?.data?.stock} ` + trans("available") + `)`
+					: trans("Out Of Stock")
+					}}
+				</span>
 			</div>
-			<dl class="space-y-2 text-sm border border-gray-100 px-4 py-2 lg:p-6 lg:py-4 rounded">
-				<!-- Stock -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Stock") }}</dt>
-					<dd class="flex items-center gap-2 font-medium">
-						<FontAwesomeIcon :icon="['fas', 'circle']" :class="[
-							data.product.data?.stock > 20
-								? 'text-green-500'
-								: data.product.data?.stock > 0
-									? 'text-orange-500'
-									: 'text-red-500'
-						]" />
-						<span :class="[
-							data.product.data?.stock > 20
-								? 'text-green-600'
-								: data.product.data?.stock > 0
-									? 'text-orange-600'
-									: 'text-red-600 font-semibold'
-						]">
-							{{ data.product.data?.stock }} {{ data.product.data?.unit }}
-						</span>
-					</dd>
-				</div>
 
-				<hr class="border-gray-200" />
+			<!-- Section: Price -->
+			<ProductPriceGrp
+				:product="data?.product?.data"
+				:currency_code="data.product.data?.currency_code"
+			/>
 
-				<!-- Cost -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Cost") }}</dt>
-					<dd class="font-medium text-blue-600">
-						{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.cost) || '-' }}
-					</dd>
-				</div>
-
-				<!-- Price -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Price") }}</dt>
-					<dd class="font-semibold text-green-600 text-lg">
-						{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.price) }}
-					</dd>
-				</div>
-
-				<!-- RRP -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">RRP</dt>
-					<dd class="flex items-center gap-2 font-semibold text-gray-700">
-						<span>
-							{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.rrp) }}
-						</span>
-						<span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-							({{ (((data.product.data?.rrp - data.product.data?.price) / data.product.data?.rrp) *
-							100).toFixed(2) }}%)
-						</span>
-					</dd>
-				</div>
-			</dl>
-
-
+			
 			<div>
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
 			</div>

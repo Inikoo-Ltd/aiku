@@ -206,7 +206,7 @@ class ShowProduct extends OrgAction
                         'department'   => $product->department->slug,
                     ]
                 ],
-                'tooltip'   => __('Department').': '.$product->department->name,
+                'tooltip' => __('Department'),
                 'icon'    => ['fal', 'folder-tree']
             ];
         }
@@ -223,7 +223,7 @@ class ShowProduct extends OrgAction
                         'subDepartment' => $product->subDepartment->slug,
                     ]
                 ],
-                'tooltip' => __('Sub-department').': '.$product->subDepartment->name,
+                'tooltip' => __('Sub-department'),
                 'icon'    => ['fal', 'folder-download']
             ];
         }
@@ -256,22 +256,65 @@ class ShowProduct extends OrgAction
             if ($route) {
                 $miniBreadcrumbs[] = [
                     'label'   => $product->family->name,
+                    'post_label'   => $product->family->code,
                     'to'      => $route,
-                    'tooltip' => __('Family').': '.$product->family->name,
+                    'tooltip' => __('Family'),
                     'icon'    => ['fal', 'folder']
                 ];
             }
-
-
         }
 
+        $actions = [];
 
+        if ($product->webpage) {
+            $actions[] =
+                [
+                    'type'  => 'button',
+                    'style' => 'edit',
+                    'label' => __('Webpage'),
+                    'icon'  => ["fal", "fa-browser"],
+                    'route' => [
+                        'name'       => 'grp.org.shops.show.web.webpages.show',
+                        'parameters' => [
+                            'organisation' => $this->organisation->slug,
+                            'shop'         => $this->shop->slug,
+                            'website'      => $this->shop->website->slug,
+                            'webpage'      => $product->webpage->slug
+                        ]
+                    ]
+                ];
+        } else {
+            $actions[] =
+                [
+                    'type'  => 'button',
+                    'style' => 'edit',
+                    'label' => __('Create Webpage'),
+                    'icon'  => ["fal", "fa-browser"],
+                    'route' => [
+                        'name'       => 'grp.models.webpages.product.store',
+                        'parameters' => $product->id,
+                        'method'     => 'post'
+                    ]
+                ];
+        }
+
+        if ($this->canEdit) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('Edit'),
+                'route' => [
+                    'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
+                    'parameters' => $request->route()->originalParameters()
+                ]
+            ];
+        }
 
 
         return Inertia::render(
             'Org/Catalogue/Product',
             [
-                'title'            => __('product'),
+                'title'            => __('Product'),
                 'breadcrumbs'      => $this->getBreadcrumbs(
                     $this->parent,
                     $product,
@@ -296,48 +339,8 @@ class ShowProduct extends OrgAction
                         'label' => $product->name
                     ],
                     'iconRight'  => $product->state->stateIcon()[$product->state->value],
-                    'actions'    => [
-                        $product->webpage
-                            ?
-                            [
-                                'type'  => 'button',
-                                'style' => 'edit',
-                                'label' => __('Webpage'),
-                                'icon'  => ["fal", "fa-browser"],
-                                'route' => [
-                                    'name'       => 'grp.org.shops.show.web.webpages.show',
-                                    'parameters' => [
-                                        'organisation' => $this->organisation->slug,
-                                        'shop'         => $this->shop->slug,
-                                        'website'      => $this->shop->website->slug,
-                                        'webpage'      => $product->webpage->slug
-                                    ]
-                                ]
-                            ]
-                            : [
-                            'type'    => 'button',
-                            'style'   => 'edit',
-                            'tooltip' => __('Create Webpage'),
-                            'label'   => __('Create Webpage'),
-                            'icon'    => ["fal", "fa-browser"],
-                            'route'   => [
-                                'name'       => 'grp.models.webpages.product.store',
-                                'parameters' => $product->id,
-                                'method'     => 'post'
-                            ]
+                    'actions'    => $actions
 
-                        ],
-                        $this->canEdit ? [
-                            'type'  => 'button',
-                            'style' => 'edit',
-                            'label' => __('Edit'),
-                            'route' => [
-                                'name'       => preg_replace('/show$/', 'edit', $request->route()->getName()),
-                                'parameters' => $request->route()->originalParameters()
-                            ]
-                        ] : false,
-
-                    ]
                 ],
                 'master'      => $hasMaster,
                 'masterRoute' => $hasMaster ? [
@@ -353,10 +356,15 @@ class ShowProduct extends OrgAction
                 ],
                 'taxonomy'    => $this->getProductTaxonomy($product, $request),
 
+                'webpage_canonical_url' => $product->webpage?->canonical_url,
 
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
+
+                ProductTabsEnum::CONTENT->value => $this->tab == ProductTabsEnum::CONTENT->value ?
+                    fn () => GetProductContent::run($product)
+                    : Inertia::lazy(fn () => GetProductContent::run($product)),
 
                 ProductTabsEnum::SALES->value => $this->tab == ProductTabsEnum::SALES->value ?
                     fn () => ProductSalesResource::collection(IndexProductSales::run($product, ProductTabsEnum::SALES->value))

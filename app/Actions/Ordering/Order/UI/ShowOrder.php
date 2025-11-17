@@ -212,6 +212,18 @@ class ShowOrder extends OrgAction
             :
             GetEcomOrderActions::run($order, $this->canEdit);
 
+        /*if(! in_array($order->state, [OrderStateEnum::DISPATCHED, OrderStateEnum::CANCELLED])) {
+            $actions[] = [
+                'type'  => 'button',
+                'style' => 'edit',
+                'label' => __('Edit'),
+                'route' => [
+                    'name'       => 'grp.org.shops.show.marketing.mailshots.create',
+                    'parameters' => array_values($request->route()->originalParameters())
+                ]
+            ];
+        }*/
+
         $deliveryNoteRoute    = null;
         $deliveryNoteResource = null;
 

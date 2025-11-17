@@ -82,8 +82,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string|null $platform_transaction_id
  * @property string|null $quantity_picked quantity picked for delivery
  * @property string $submitted_quantity_ordered
+ * @property string|null $offers_data
  * @property-read Asset|null $asset
- * @property-read Customer|null $customer
+ * @property-read Customer $customer
  * @property-read DeliveryNoteItem|null $deliveryNoteItemTODELETE
  * @property-read Collection<int, DeliveryNoteItem> $deliveryNoteItems
  * @property-read Collection<int, Feedback> $feedbacks

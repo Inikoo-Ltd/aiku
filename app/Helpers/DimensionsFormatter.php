@@ -14,7 +14,7 @@ class DimensionsFormatter
 {
     use AsObject;
 
-    public function dimensions($dimensionsData)
+    public function dimensions(string $dimensionsData)
     {
         $data = json_decode($dimensionsData, true);
         if ($data) {

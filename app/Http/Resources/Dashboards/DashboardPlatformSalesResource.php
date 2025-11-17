@@ -14,6 +14,10 @@ class DashboardPlatformSalesResource extends JsonResource
     // Note: Experimental Data (Need to be checked)
     public function toArray($request): array
     {
+        if ($this->shouldHidePlatform()) {
+            return [];
+        }
+
         $routeTargets = [
             'invoices' => [
                 'route_target' => [
@@ -83,19 +87,65 @@ class DashboardPlatformSalesResource extends JsonResource
             $totalSales = collect($this->sumIntervalValues($models, 'sales'))->sum();
 
             $sales = collect($this->sumIntervalValues([$this->resource], 'sales'))->sum();
-            $percentage = $totalSales > 0 ? ($sales / $totalSales) * 100 : 0;
 
-            $columns['sales_percentage'] = [
-                'formatted_value' => number_format($percentage, 2) . '%',
-                'align' => 'right',
-            ];
+            $columns['sales_percentage'] = $this->getSalesPercentageIntervals(
+                $this->resource->shop_id,
+                $this->resource
+            );
         }
 
         return [
             'slug'      => $this->resource->platform->slug ?? '',
             'state'     => 'active',
             'columns'   => $columns,
-            'colour'      => ''
+            'colour'    => ''
         ];
+    }
+
+    private function shouldHidePlatform(): bool
+    {
+        $keyMetrics = ['invoices', 'sales', 'new_customers', 'new_channels'];
+
+        foreach ($keyMetrics as $metric) {
+            $value = $this->resource->{$metric . '_all'} ?? 0;
+
+            if ($value > 0) {
+                return false;
+            }
+
+            $currentYearValue = $this->resource->{$metric . '_1y'} ?? 0;
+            if ($currentYearValue > 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    private function getSalesPercentageIntervals($shopId, $currentModel): array
+    {
+        $models = PlatformShopSalesIntervals::where('shop_id', $shopId)->get();
+
+        $totalPerInterval = $this->sumIntervalValues($models, 'sales');
+
+        $currentPlatformSales = $this->sumIntervalValues([$currentModel], 'sales');
+
+        $result = [];
+
+        foreach (\App\Enums\DateIntervals\DateIntervalEnum::cases() as $interval) {
+            $key = 'sales_' . $interval->value;
+
+            $total = $totalPerInterval[$key] ?? 0;
+            $value = $currentPlatformSales[$key] ?? 0;
+
+            $percentage = $total > 0 ? ($value / $total) * 100 : 0;
+
+            $result[$interval->value] = [
+                'raw_value'       => $percentage,
+                'formatted_value' => number_format($percentage, 2) . '%',
+                'align'           => 'right',
+            ];
+        }
+
+        return $result;
     }
 }

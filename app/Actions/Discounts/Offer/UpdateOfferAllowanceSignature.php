@@ -9,7 +9,6 @@
 namespace App\Actions\Discounts\Offer;
 
 use App\Actions\OrgAction;
-use App\Enums\Discounts\OfferAllowance\OfferAllowanceTargetTypeEnum;
 use App\Enums\Discounts\OfferAllowance\OfferAllowanceType;
 use App\Models\Discounts\Offer;
 use Illuminate\Console\Command;
@@ -30,10 +29,10 @@ class UpdateOfferAllowanceSignature extends OrgAction
                 $allowanceSignature .= '|';
             }
 
-            if($offerAllowance->target_type){
+            if ($offerAllowance->target_type) {
                 $allowanceSignature .= $offerAllowance->target_type->value.':';
             }
-            if($offerAllowance->type){
+            if ($offerAllowance->type) {
                 $allowanceSignature .= $offerAllowance->type->value.':';
             }
 

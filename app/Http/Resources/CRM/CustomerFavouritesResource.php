@@ -80,35 +80,36 @@ class CustomerFavouritesResource extends JsonResource
             $media = Media::find($this->image_id);
         }
 
-        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($this->rrp, $this->price, $this->units);
 
         return [
-            'id'         => $this->id,
-            'image_id'   => $this->image_id,
-            'image'      => $this->image_id ? ImageResource::make($media)->getArray() : null,
-            'code'       => $this->code,
-            'name'       => $this->name,
-            'stock'      => $this->available_quantity,
-            'price'      => $this->price,
-            'rrp'        => $this->rrp,
-            'state'      => $this->state,
-            'status'     => $this->status,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'unit'       => $this->unit,
-            'url'        => $url,
-            'slug_product'       => $this->slug,
-            'web_images'         => $this->web_images,
-            'transaction_id' => $this->transaction_id ?? null,
-            'quantity_ordered' => (int) $this->quantity_ordered ?? 0,
-            'quantity_ordered_new' => (int) $this->quantity_ordered ?? 0,  // To editable in Frontend
+            'id'                   => $this->id,
+            'image_id'             => $this->image_id,
+            'image'                => $this->image_id ? ImageResource::make($media)->getArray() : null,
+            'code'                 => $this->code,
+            'name'                 => $this->name,
+            'stock'                => $this->available_quantity,
+            'price'                => $this->price,
+            'price_per_unit'       => $pricePerUnit,
+            'rrp'                  => $this->rrp,
+            'state'                => $this->state,
+            'status'               => $this->status,
+            'created_at'           => $this->created_at,
+            'updated_at'           => $this->updated_at,
+            'unit'                 => $this->unit,
+            'url'                  => $url,
+            'slug_product'         => $this->slug,
+            'web_images'           => $this->web_images,
+            'transaction_id'       => $this->transaction_id ?? null,
+            'quantity_ordered'     => (int)$this->quantity_ordered ?? 0,
+            'quantity_ordered_new' => (int)$this->quantity_ordered ?? 0,  // To editable in Frontend
             'is_favourite'         => $favourite && !$favourite->unfavourited_at ?? false,
-            'is_back_in_stock' => $back_in_stock,
-            'margin'         => $margin,
-            'profit'         => $profit,
-            'units'          => $units,
-            'profit_per_unit' => $profitPerUnit,
-            'rrp_per_unit'   => $rrpPerUnit,
+            'is_back_in_stock'     => $back_in_stock,
+            'margin'               => $margin,
+            'profit'               => $profit,
+            'units'                => $units,
+            'profit_per_unit'      => $profitPerUnit,
+            'rrp_per_unit'         => $rrpPerUnit,
         ];
     }
 }

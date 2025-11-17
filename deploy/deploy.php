@@ -33,7 +33,7 @@ task('deploy:check-fe-changes', function () {
         $changedFiles = 'resources'; // force detection
     }
 
-    $triggerFiles = ['resources','vite.iris.config.mjs','vite.aiku-public.config.js'];
+    $triggerFiles    = ['resources', 'vite.iris.config.mjs', 'vite.aiku-public.config.js'];
     $frontEndChanged = false;
     foreach ($triggerFiles as $triggerFile) {
         if (str_contains($changedFiles, $triggerFile)) {
@@ -67,8 +67,6 @@ task('deploy:build', function () {
         run(
             'cd {{release_path}}/bootstrap && rsync -a {{previous_release}}/bootstrap/ssr . '
         );
-
-
     }
 });
 
@@ -85,6 +83,7 @@ task('deploy:sync-octane-anchor', function () {
 
 desc('Stops inertia SSR server');
 task('artisan:inertia:stop-ssr', artisan('inertia:stop-ssr'))->select('env=prod');
+
 
 
 desc('Refresh vue after deployment');
@@ -104,68 +103,71 @@ task('deploy:refresh-vue', function () {
 desc('Save ssr checksums');
 task('deploy:save-ssr-checksums', function () {
     $manifestPath = '{{release_path}}/bootstrap/ssr/ssr-manifest.json';
-    $irisPath = '{{release_path}}/bootstrap/ssr/ssr-iris.mjs';
+    $irisPath     = '{{release_path}}/bootstrap/ssr/ssr-iris.mjs';
 
     $manifestChecksum = '';
-    $irisChecksum = '';
+    $irisChecksum     = '';
 
     try {
-        if (test('[ -f ' . $manifestPath . ' ]')) {
+        if (test('[ -f '.$manifestPath.' ]')) {
             $manifestChecksum = trim(run("sha256sum $manifestPath | awk '{print $1}'"));
         } else {
             writeln("Warning: $manifestPath not found");
         }
     } catch (\Throwable $e) {
-        writeln('Error computing manifest checksum: ' . $e->getMessage());
+        writeln('Error computing manifest checksum: '.$e->getMessage());
     }
 
     try {
-        if (test('[ -f ' . $irisPath . ' ]')) {
+        if (test('[ -f '.$irisPath.' ]')) {
             $irisChecksum = trim(run("sha256sum $irisPath | awk '{print $1}'"));
         } else {
             writeln("Warning: $irisPath not found");
         }
     } catch (\Throwable $e) {
-        writeln('Error computing iris checksum: ' . $e->getMessage());
+        writeln('Error computing iris checksum: '.$e->getMessage());
     }
 
     // Combine both checksums and write a single checksum file
-    $combined = hash('sha256', $manifestChecksum . '|' . $irisChecksum);
+    $combined = hash('sha256', $manifestChecksum.'|'.$irisChecksum);
 
     $checksumFile = '{{release_path}}/SSR_CHECKSUM';
-    run('printf %s ' . escapeshellarg($combined) . ' > ' . $checksumFile);
-    writeln('SSR checksum saved to ' . $checksumFile);
+    run('printf %s '.escapeshellarg($combined).' > '.$checksumFile);
+    writeln('SSR checksum saved to '.$checksumFile);
+
+
+
 });
 
 
 desc('Flush varnish cache if ssr checksum if different as previous release');
 task('deploy:flush-varnish', function () {
-    $currentFile = '{{release_path}}/SSR_CHECKSUM';
+    $currentFile  = '{{release_path}}/SSR_CHECKSUM';
     $previousFile = '{{previous_release}}/SSR_CHECKSUM';
 
-    $current = '';
+    $current  = '';
     $previous = '';
 
     // Read current checksum
     try {
-        if (test('[ -f ' . $currentFile . ' ]')) {
-            $current = trim(run('cat ' . $currentFile));
+        if (test('[ -f '.$currentFile.' ]')) {
+            $current = trim(run('cat '.$currentFile));
         } else {
             writeln('SSR checksum: current file not found, will trigger cache flush.');
         }
     } catch (\Throwable $e) {
-        writeln('Error reading current SSR checksum: ' . $e->getMessage());
+        writeln('Error reading current SSR checksum: '.$e->getMessage());
     }
 
     // Read previous checksum
     try {
-        if (test('[ -f ' . $previousFile . ' ]')) {
-            $previous = trim(run('cat ' . $previousFile));
+        if (test('[ -f '.$previousFile.' ]')) {
+            $previous = trim(run('cat '.$previousFile));
         } else {
             writeln('SSR checksum: previous file not found, will trigger cache flush.');
         }
     } catch (\Throwable $e) {
-        writeln('Error reading previous SSR checksum: ' . $e->getMessage());
+        writeln('Error reading previous SSR checksum: '.$e->getMessage());
     }
 
     $shouldFlush = false;
@@ -182,12 +184,58 @@ task('deploy:flush-varnish', function () {
             artisan('varnish', ['skipIfNoEnv', 'showOutput'])();
             writeln('Varnish cache flush command executed.');
         } catch (\Throwable $e) {
-            writeln('Error flushing Varnish cache: ' . $e->getMessage());
+            writeln('Error flushing Varnish cache: '.$e->getMessage());
         }
     } else {
         writeln('SSR checksum unchanged. Skipping Varnish cache flush.');
     }
 });
+
+desc('Restart Inertia SSR by supervisorctl');
+task('deploy:restart-ssr-by-supervisorctl', function () {
+
+    $currentFile  = '{{release_path}}/SSR_CHECKSUM';
+    $previousFile = '{{previous_release}}/SSR_CHECKSUM';
+
+    $current  = '';
+    $previous = '';
+
+    // Read current checksum
+    try {
+        if (test('[ -f '.$currentFile.' ]')) {
+            $current = trim(run('cat '.$currentFile));
+        } else {
+            writeln('SSR checksum: current file not found, will trigger restart ssr.');
+        }
+    } catch (\Throwable $e) {
+        writeln('Error reading current SSR checksum: '.$e->getMessage());
+    }
+
+    // Read previous checksum
+    try {
+        if (test('[ -f '.$previousFile.' ]')) {
+            $previous = trim(run('cat '.$previousFile));
+        } else {
+            writeln('SSR checksum: previous file not found, will trigger ssr restart.');
+        }
+    } catch (\Throwable $e) {
+        writeln('Error reading previous SSR checksum: '.$e->getMessage());
+    }
+
+    $shouldRestartSSR = false;
+
+    $frontEndChanged = get('front_end_changed');
+
+    if ($previous === '' || $current === '' || $previous !== $current || $frontEndChanged) {
+        $shouldRestartSSR = true;
+    }
+
+    if ($shouldRestartSSR) {
+        run("sudo supervisorctl restart inertia-ssr-production");
+    }
+
+
+})->select('env=prod');
 
 set('keep_releases', 25);
 
@@ -220,7 +268,7 @@ task('deploy', [
     'artisan:horizon:terminate',
     'deploy:sync-octane-anchor',
     'artisan:octane:reload',
-   'artisan:inertia:stop-ssr',
+    'deploy:restart-ssr-by-supervisorctl',
     'deploy:refresh-vue',
     'deploy:flush-varnish',
 ]);

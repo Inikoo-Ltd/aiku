@@ -21,7 +21,7 @@ import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { routeType } from "@/types/route"
 import ImageProducts from "@/Components/Product/ImageProducts.vue"
 import { faImage } from "@far"
-import ProductSummary from "@/Components/Product/ProductSummary.vue"
+import ProductSummary from "@/Components/Goods/TradeUnitSummary.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
 
 library.add(
