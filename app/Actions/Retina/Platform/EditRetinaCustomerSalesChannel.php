@@ -70,7 +70,7 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                     'is_vat_adjustment' => [
                                         'type'  => 'toggle',
                                         'label' => __('VAT Pricing Adjustment'),
-                                        'value' => false
+                                        'value' => (bool) Arr::get($customerSalesChannel->settings, 'tax_category_id')
                                     ],
                                     'tax_category_id' => [
                                         'type'     => 'select',
