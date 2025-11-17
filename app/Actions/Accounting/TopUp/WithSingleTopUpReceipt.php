@@ -1,37 +1,38 @@
 <?php
-
 /*
- * Author: Raul Perusquia <raul@inikoo.com>
- * Created: Fri, 03 Oct 2025 11:36:21 Malaysia Time, Kuala Lumpur, Malaysia
- * Copyright (c) 2025, Raul A Perusquia Flores
- */
+ * author Louis Perez
+ * created on 17-11-2025-14h-25m
+ * github: https://github.com/louis-perez
+ * copyright 2025
+*/
 
-namespace App\Actions\Retina\Accounting\TopUp;
+namespace App\Actions\Accounting\TopUp;
 
-use App\Actions\RetinaAction;
-use App\Models\CRM\Customer;
+use App\Models\Accounting\TopUp;
 use Exception;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Sentry;
-use Symfony\Component\HttpFoundation\Response;
 
-class PdfTopupPdf extends RetinaAction
+trait WithSingleTopUpReceipt
 {
-    use AsAction;
-    use WithAttributes;
-
-
-    public function handle(Customer $customer, array $options): Response
+    public function processDataExportPdf(TopUp $topUp): \Symfony\Component\HttpFoundation\Response
     {
+        $customer = $topUp->customer;
+
         $locale = $customer->shop->language->code;
         app()->setLocale($locale);
+        $auth = auth()->guard();
+        if($auth->name == 'retina' && $customer->id !== $auth->user()->customer->id){
+            // Disable receipt check if logged in user is retina and is trying to access other user invoice
+            abort(404);
+        }
 
         try {
             $config = [
-                'title'                  => 'Topup All History - ' . $customer->reference,
+                'title'                  => 'Topup - ' . $topUp->reference,
                 'margin_left'            => 8,
                 'margin_right'           => 8,
                 'margin_top'             => 2,
@@ -42,10 +43,11 @@ class PdfTopupPdf extends RetinaAction
 
 
             $filename = $config['title'].'-'.now()->format('Y-m-d');
-            $pdf      = PDF::loadView('invoices.templates.pdf.topup-all', [
+            $pdf      = PDF::loadView('invoices.templates.pdf.topup-receipt', [
                 'shop'                 => $customer->shop,
-                'topups'                => $customer->topUps,
-                'reference'                => $config['title'],
+                'topup'                => $topUp,
+                'payment'              => $topUp->payment,
+                'reference'            => $config['title'],
                 'customer' => $customer
             ], [], $config);
 
@@ -57,12 +59,5 @@ class PdfTopupPdf extends RetinaAction
 
             return response()->json(['error' => 'Failed to generate PDF'], 404);
         }
-    }
-
-    public function asController(ActionRequest $request): Response
-    {
-        $this->initialisation($request);
-
-        return $this->handle($request->user()->customer, $this->validatedData);
     }
 }
