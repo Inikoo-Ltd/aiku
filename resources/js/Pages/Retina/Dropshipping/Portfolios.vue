@@ -2,7 +2,7 @@
 import {Head, router} from "@inertiajs/vue3";
 import PageHeading from "@/Components/Headings/PageHeading.vue";
 import {capitalize} from "@/Composables/capitalize";
-import {computed, reactive, ref} from "vue";
+import {computed, reactive, ref,watch, onMounted, onBeforeUnmount} from "vue";
 import {PageHeading as PageHeadingTypes} from "@/types/PageHeading";
 import {Tabs as TSTabs} from "@/types/Tabs";
 import RetinaTablePortfoliosManual from "@/Components/Tables/Retina/RetinaTablePortfoliosManual.vue";
@@ -327,6 +327,109 @@ const handleTabUpdate = (tabSlug: string) => useTabChange(tabSlug, currentTab)
 
 const key = ulid()
 
+// ========= handle upload to R2 and get download link
+const codeString = ref<string | null>(null)
+const isSocketActive = ref(false)
+
+let channel: any = null
+const initSocketListener = () => {
+  if (!window.Echo || !codeString.value) return
+
+  isSocketActive.value = true
+
+  const socketEvent = `upload-portfolio-to-r2.${codeString.value}`
+  const socketAction = ".upload-portfolio-to-r2"
+
+  if (channel) channel.stopListening(socketAction)
+
+  channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
+
+    if (eventData.download_url) {
+        downloadZipFromUrl(eventData.download_url)
+    }
+    notify({
+      title: "Upload to R2 Completed",
+      text: `Upload to R2 finished`,
+      type: "success",
+    })
+
+    // stop listening after this event
+    channel.stopListening(socketAction)
+    isSocketActive.value = false
+  })
+}
+// === STORAGE & SOCKET SYNC ===
+onMounted(() => {
+
+  if (codeString.value) {
+    initSocketListener()
+  }
+
+  watch(codeString, (newCode) => {
+    if (newCode) {
+      initSocketListener()
+    }
+  })
+
+  onBeforeUnmount(() => {
+    if (channel) channel.stopListening(".upload-portfolio-to-r2")
+  })
+})
+const handleDownloadClick = async (type: string, event: Event) => {
+    event.preventDefault();
+    const url = downloadUrl(type);
+
+    if (!url) {
+        console.error('No valid URL found for download');
+        return;
+    }
+
+    notify({
+        title: "Download on progress",
+        text: "Please wait while your download is being prepared",
+        type: "success",
+    })
+    // Convert URL to string if it's a Router object
+    const urlString = typeof url === 'string' ? url : url.toString();
+
+    try {
+        const response = await axios.get(urlString, {});
+        if (response.status !== 200) {
+            notify({
+                title: "Something went wrong.",
+                text: "An error occurred.",
+                type: "error",
+            })
+            return;
+        }
+
+        if(response.data) {
+            codeString.value = response.data
+            initSocketListener()
+        }
+    } catch (error) {
+        console.error('Download failed:', error);
+        notify({
+            title: "Something went wrong.",
+            text: "An error occurred.",
+            type: "error",
+        })
+    }
+}
+
+
+const downloadZipFromUrl = (downloadUrl: string): void => {
+  if (!downloadUrl) return;
+
+  const downloadUrlString = typeof downloadUrl === 'string' ? downloadUrl : downloadUrl.toString();
+  const fullUrl = downloadUrlString.startsWith('http') ?
+      downloadUrlString :
+      `https://${downloadUrlString}`;
+
+  window.open(fullUrl, '_blank');
+};
+
+
 </script>
 
 <template>
@@ -345,10 +448,10 @@ const key = ulid()
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
-                <a v-if="props.product_count <= 200" :href="downloadUrl('images') as string" target="_blank" rel="noopener">
-                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
+                <a href="#" @click.prevent="!isSocketActive && handleDownloadClick('images', $event)">
+                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 rounded-l-none" :disabled="isSocketActive"/>
                 </a>
-                <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/>
+                <!-- <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/> -->
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
@@ -563,7 +666,7 @@ const key = ulid()
                                  :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
     </Modal>
 
-    <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
+    <!-- <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
            width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
         <div class="mb-8">
             <h3 class="text-center font-semibold">{{ trans('Images grouped by first letter from product code')}}</h3>
@@ -573,7 +676,7 @@ const key = ulid()
                 <div class="my-auto">
                     <span><b>{{grouped.char}}</b>: ({{grouped.count}}) images</span>
                 </div>
-                <a v-if="grouped.count > 0" :href="downloadUrl('images', grouped.ids) as string" rel="noopener">
+                <a v-if="grouped.count > 0" href="#" @click.prevent="handleDownloadClick('images', $event, grouped.ids, grouped.char)" rel="noopener">
                     <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
                 </a>
             </div>
@@ -602,5 +705,5 @@ const key = ulid()
                             method: 'patch'
                         }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
         </div>
-    </Modal>
+    </Modal> -->
 </template>
