@@ -9,6 +9,8 @@
 namespace App\Actions\Transfers\Aurora;
 
 use App\Actions\Catalogue\Product\CloneProductAttachmentsFromTradeUnits;
+use App\Actions\Catalogue\Product\Hydrators\ProductHydrateMarketingIngredientsFromTradeUnits;
+use App\Actions\Goods\TradeUnit\Hydrators\TradeUnitsHydrateMarketingIngredients;
 use App\Actions\Goods\TradeUnit\StoreTradeUnit;
 use App\Actions\Goods\TradeUnit\UpdateTradeUnit;
 use App\Actions\Helpers\Media\SaveModelAttachment;
@@ -51,10 +53,11 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
         $tradeUnitData = $organisationSource->fetchTradeUnit($organisationSourceId);
 
-
         if ($tradeUnitData) {
-            if ($metaTradeUnit = TradeUnit::withTrashed()->where('source_slug', $tradeUnitData['trade_unit']['source_slug'])->first()) {
-                if ($tradeUnit = TradeUnit::withTrashed()->where('source_id', $tradeUnitData['trade_unit']['source_id'])->first()) {
+            $metaTradeUnit = TradeUnit::withTrashed()->where('source_slug', $tradeUnitData['trade_unit']['source_slug'])->first();
+            if ($metaTradeUnit) {
+                $tradeUnit = TradeUnit::withTrashed()->where('source_id', $tradeUnitData['trade_unit']['source_id'])->first();
+                if ($tradeUnit) {
                     try {
                         $tradeUnit = UpdateTradeUnit::make()->action(
                             tradeUnit: $tradeUnit,
@@ -102,7 +105,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
 
                     foreach ($tradeUnit->sources['parts'] as $source) {
-                        $dataSource  = explode(':', $source);
+                        $dataSource = explode(':', $source);
                         if ($dataSource[0] == 2) {
                             $skSource = $dataSource[1];
                         }
@@ -114,13 +117,11 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
                         $ingredients = [];
 
-
+                        $position = 0;
                         foreach (
                             DB::connection('aurora')->table('Part Material Bridge')
                                 ->where('Part SKU', $skSource)->orderBy('Part Material Key')->get() as $auroraIngredients
                         ) {
-
-                            print_r($auroraIngredients);
 
                             $ingredient = $this->parseIngredient(
                                 $organisation->id.
@@ -132,13 +133,12 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                                 $ingredientSourceID = $organisation->id.':'.$auroraIngredients->{'Material Key'};
 
 
-
-
-                                $arguments                    = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
+                                $arguments = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
+                                $position++;
+                                $arguments['position']        = $position;
                                 $ingredients[$ingredient->id] = $arguments;
                             }
 
-                            print_r($ingredients);
                             $tradeUnit->ingredients()->syncWithoutDetaching($ingredients);
                         }
 
@@ -148,11 +148,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                         foreach ($tradeUnit->products as $product) {
                             ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
                         }
-
-
                     }
-
-
                 }
             } else {
                 try {
@@ -216,6 +212,7 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
                     $dataSource  = explode(':', $tradeUnit->source_id);
                     $ingredients = [];
+                    $position = 0;
                     foreach (
                         DB::connection('aurora')->table('Part Material Bridge')
                             ->where('Part SKU', $dataSource[1])->get() as $auroraIngredients
@@ -230,6 +227,8 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                             $ingredientSourceID = $organisation->id.':'.$auroraIngredients->{'Material Key'};
 
                             $arguments                    = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
+                            $position++;
+                            $arguments['position']        = $position;
                             $ingredients[$ingredient->id] = $arguments;
                         }
 
@@ -239,6 +238,11 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
 
                     $tradeUnit->ingredients()->whereIn('ingredient_id', array_keys($ingredientsToDelete))->forceDelete();
+
+                    TradeUnitsHydrateMarketingIngredients::run($tradeUnit);
+                    foreach ($tradeUnit->products as $product) {
+                        ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
+                    }
                 }
 
 
@@ -246,7 +250,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                     $tradeUnit,
                 );
                 $this->processFetchAttachments($tradeUnit, 'Part', $tradeUnitData['trade_unit']['source_id']);
-
             }
 
 
@@ -256,8 +259,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
         return null;
     }
-
-
 
 
     public function updateTradeUnitSources(TradeUnit $tradeUnit, string $source): void
@@ -407,8 +408,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         //        }
 
         return $country?->id;
-
-
     }
 
     public function getModelsQuery(): Builder
@@ -440,7 +439,6 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
         if (Arr::get($modelSourceIDData, 0) != '1') {
             return;
         }
-
 
 
         foreach ($this->parseAttachments($modelSourceID, $modelType) as $attachmentData) {
@@ -500,15 +498,11 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
             foreach ($tradeUnit->products as $product) {
                 CloneProductAttachmentsFromTradeUnits::run($product);
             }
-
-
         }
-
     }
 
     public function parseTradeUnitAttachmentScope($attachmentData): TradeAttachmentScopeEnum
     {
-
         $scope = TradeAttachmentScopeEnum::OTHER;
 
         $caption = strtolower(Arr::get($attachmentData, 'caption', ''));
@@ -529,13 +523,9 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
 
 
         if (Arr::get($attachmentData, 'scope') == 'MSDS') {
-
             return TradeAttachmentScopeEnum::MSDS;
-
-
         }
 
         return $scope;
-
     }
 }
