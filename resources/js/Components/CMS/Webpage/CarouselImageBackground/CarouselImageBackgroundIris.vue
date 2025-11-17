@@ -102,7 +102,7 @@ watch(
 )
 
 const responsiveBreakpoints = computed(() => {
-  const settings = props.modelValue?.carousel_data?.carousel_setting || {}
+  const settings = props.fieldValue?.carousel_data?.carousel_setting || {}
   return {
     0: {
       slidesPerView: settings.slidesPerView?.mobile || 1,
