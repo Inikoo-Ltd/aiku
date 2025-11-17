@@ -6,10 +6,15 @@ import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
 import { onMounted, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
+import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
 
 import Layout from '@/Layouts/GrpAuth.vue'
 import { useLayoutStore } from '@/Stores/layout'
 defineOptions({ layout: Layout })
+
+window.browserSupportsWebAuthn = browserSupportsWebAuthn;
+window.startAuthentication = startAuthentication;
+window.startRegistration = startRegistration;
 
 const form = useForm({
     username: '',
@@ -51,8 +56,8 @@ const withPassKey = async () => {
 
       const options = await response.json();
 
-      const startAuthenticationResponse = await window.startAuthentication({ 
-        optionsJSON: options 
+      const startAuthenticationResponse = await window.startAuthentication({
+        optionsJSON: options
       });
 
       await router.post(window.route("grp.passkeys.login"), {

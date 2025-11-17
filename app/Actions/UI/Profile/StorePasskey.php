@@ -56,8 +56,6 @@ class StorePasskey extends OrgAction
     {
         $this->initialisationFromGroup(app('group'), $request);
 
-        $validated = $request->validate($this->rules());
-
-        return $this->handle($request->user(), $validated);
+        return $this->handle($request->user(), $this->validatedData);
     }
 }

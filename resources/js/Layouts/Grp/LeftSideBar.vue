@@ -19,8 +19,12 @@ import { inject, ref } from "vue"
 import { layoutStructure } from "@/Composables/useLayoutStructure"
 import Button from "@/Components/Elements/Buttons/Button.vue"
 import axios from "axios"
-import { startRegistration } from "@simplewebauthn/browser"
+import { browserSupportsWebAuthn, startAuthentication, startRegistration } from "@simplewebauthn/browser"
 import { notify } from "@kyvg/vue3-notification"
+
+window.browserSupportsWebAuthn = browserSupportsWebAuthn;
+window.startAuthentication = startAuthentication;
+window.startRegistration = startRegistration;
 
 library.add(faChevronLeft, faSignOutAlt, faSensor, faLifeRing)
 
