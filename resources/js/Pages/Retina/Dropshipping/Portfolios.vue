@@ -20,6 +20,8 @@ import {FontAwesomeIcon} from "@fortawesome/vue-fontawesome"
 import {faSyncAlt, faHandPointer, faBan} from "@fas";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Icon from '@/Components/Icon.vue'
+import LoadingText from "@/Components/Utils/LoadingText.vue"
+
 import {
     faBracketsCurly, faPawClaws,
     faFileExcel,
@@ -332,49 +334,62 @@ const codeString = ref<string | null>(null)
 const isSocketActive = ref(false)
 
 let channel: any = null
+const isModalReadyDownloadImages = ref(false)
+const isModalDownloadImages = ref(false)
+const stateDownloadImagesReady = ref<string | null>(null)
+const linkDownloadImages = ref(null)
 const initSocketListener = () => {
-  if (!window.Echo || !codeString.value) return
+    if (!window.Echo || !codeString.value) return
 
-  isSocketActive.value = true
+    isSocketActive.value = true
+    stateDownloadImagesReady.value = 'loading'
+    isModalDownloadImages.value = true
 
-  const socketEvent = `upload-portfolio-to-r2.${codeString.value}`
-  const socketAction = ".upload-portfolio-to-r2"
+    const socketEvent = `upload-portfolio-to-r2.${codeString.value}`
+    const socketAction = ".upload-portfolio-to-r2"
 
-  if (channel) channel.stopListening(socketAction)
-
-  channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
-
-    if (eventData.download_url) {
-        downloadZipFromUrl(eventData.download_url)
+    if (channel) {
+        channel.stopListening(socketAction)
     }
-    notify({
-      title: "Upload to R2 Completed",
-      text: `Upload to R2 finished`,
-      type: "success",
-    })
 
-    // stop listening after this event
-    channel.stopListening(socketAction)
-    isSocketActive.value = false
-  })
+    channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
+        // make show the link only,
+        console.log(eventData.download_url)
+        stateDownloadImagesReady.value = 'success'
+        linkDownloadImages.value = 'https://' + eventData.download_url
+        isModalDownloadImages.value = false
+        isModalReadyDownloadImages.value = true
+
+        notify({
+            title: "Your download images is ready",
+            text: "Click download button to get your files.",
+            type: "success",
+        })
+
+        // stop listening after this event
+        channel.stopListening(socketAction)
+        isSocketActive.value = false
+    })
 }
+
 // === STORAGE & SOCKET SYNC ===
 onMounted(() => {
 
-  if (codeString.value) {
-    initSocketListener()
-  }
-
-  watch(codeString, (newCode) => {
-    if (newCode) {
-      initSocketListener()
+    if (codeString.value) {
+        initSocketListener()
     }
-  })
 
-  onBeforeUnmount(() => {
-    if (channel) channel.stopListening(".upload-portfolio-to-r2")
-  })
+    watch(codeString, (newCode) => {
+        if (newCode) {
+            initSocketListener()
+        }
+    })
+
+    onBeforeUnmount(() => {
+        if (channel) channel.stopListening(".upload-portfolio-to-r2")
+    })
 })
+
 const handleDownloadClick = async (type: string, event: Event) => {
     event.preventDefault();
     const url = downloadUrl(type);
@@ -448,10 +463,21 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                     <Button :icon="faDownload" label="CSV" type="tertiary" class="rounded-r-none"/>
                 </a>
 
-                <a href="#" @click.prevent="!isSocketActive && handleDownloadClick('images', $event)">
-                    <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 rounded-l-none" :disabled="isSocketActive"/>
+                <a v-if="!linkDownloadImages" href="#" @click.prevent="!isSocketActive && handleDownloadClick('images', $event)">
+                    <Button :icon="faImage" type="tertiary" class="border-l-0 rounded-l-none" :disabled="isSocketActive">
+                        <template #label>
+                            <LoadingText v-if="stateDownloadImagesReady === 'loading'" />
+                            <span v-else>
+                                {{ trans('Images') }}
+                            </span>
+                        </template>
+                    </Button>
                 </a>
-                <!-- <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/> -->
+
+                <a v-else :href="linkDownloadImages" target="_blank" rel="noopener" download>
+                    <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive">
+                    </Button>
+                </a>
             </div>
 
             <Button @click="() => (isOpenModalPortfolios = true)" :label="trans('Add products')" :icon="'fas fa-plus'" v-if="!customer_sales_channel.ban_stock_update_until"/>
@@ -666,44 +692,78 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                                  :customerSalesChannel="customer_sales_channel" :onClickReconnect/>
     </Modal>
 
-    <!-- <Modal :isOpen="isOpenModalDownloadImages" @onClose="isOpenModalDownloadImages = false"
-           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
-        <div class="mb-8">
-            <h3 class="text-center font-semibold">{{ trans('Images grouped by first letter from product code')}}</h3>
-        </div>
-        <div class="flex flex-col gap-2">
-            <div v-for="grouped in grouped_portfolios" class="flex justify-between gap-2">
-                <div class="my-auto">
-                    <span><b>{{grouped.char}}</b>: ({{grouped.count}}) images</span>
+
+    <Modal :isOpen="isModalDownloadImages" @onClose="isModalDownloadImages = false" width="w-full max-w-lg">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full"
+                xclass="getTextColorDependsOnStatus(selectedModal?.status)"
+            >
+                <div>
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100"
+                        xclass="getBgColorDependsOnStatus(selectedModal?.status)"
+                    >
+                        <!-- <FontAwesomeIcon v-if="selectedModal?.status == 'error' || selectedModal?.status == 'failure'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' /> -->
+                        <FontAwesomeIcon icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
+                    </div>
+                    
+                    <div class="mt-3 text-center sm:mt-5">
+                        <div as="h3" class="font-semibold text-2xl">
+                            Your download images request is being processed.
+                        </div>
+
+                        <div xv-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
+                            Please wait a moment and don't refresh the page. It takes around 10 seconds. You will receive a notification when it's ready.
+                        </div>
+
+                    </div>
                 </div>
-                <a v-if="grouped.count > 0" href="#" @click.prevent="handleDownloadClick('images', $event, grouped.ids, grouped.char)" rel="noopener">
-                    <Button :icon="faImage" label="Download" type="tertiary" class="rounded"/>
+                
+
+                <a v-if="linkDownloadImages" :href="linkDownloadImages" class="mt-5 sm:mt-6">
+                    <Button
+                        :label="trans('Download')"
+                        full
+                    />
                 </a>
             </div>
         </div>
     </Modal>
-    <Modal :isOpen="isOpenModalSuspended" @onClose="isOpenModalSuspended = false"
-           width="w-[70%] max-w-[420px] max-h-[600px] md:max-h-[85vh] overflow-y-auto">
-        <div class="mb-8">
-            <h3 class="text-center">{{ trans('If you experience an issue when clicking Unsuspend, your store might be down. You can check it by clicking Test Connection.')}}</h3>
-            <div class="mt-8 flex justify-center items-center gap-2 font-light text-sm" v-if="isTestConnectionSuccess">
-                <Icon class="text-green-500" :data="{
-                icon: 'fas fa-check'
-            }" /> {{ trans('Great! your store can connect, now click unsuspend') }}
+
+    <Modal :isOpen="isModalReadyDownloadImages" @onClose="isModalReadyDownloadImages = false" width="w-full max-w-lg">
+        <div class="flex min-h-full items-end justify-center text-center sm:items-center px-2 py-3">
+            <div class="relative transform overflow-hidden rounded-lg bg-white text-left transition-all w-full"
+                xclass="getTextColorDependsOnStatus(selectedModal?.status)"
+            >
+                <div>
+                    <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100"
+                        xclass="getBgColorDependsOnStatus(selectedModal?.status)"
+                    >
+                        <FontAwesomeIcon icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
+                    </div>
+                    
+                    <div class="mt-3 text-center sm:mt-5">
+                        <div as="h3" class="font-semibold text-2xl">
+                            Your download images is ready.
+                        </div>
+
+                        <div xv-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
+                            Click the download button below to get your files.
+                        </div>
+
+                    </div>
+                </div>
+                
+
+                <a v-if="linkDownloadImages" :href="linkDownloadImages" target="_blank" download class="mt-5 sm:mt-6 block">
+                    <Button
+                        :label="trans('Download')"
+                        full
+                    />
+                </a>
             </div>
         </div>
+    </Modal>
 
-        <div class="flex justify-center gap-2">
-            <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.test_connection',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch',
-                        }" @success="data => isTestConnectionSuccess = true" @error="data => isTestConnectionSuccess = data.status" icon="fas fa-check" :label="trans('Test Connection')" />
-            <ButtonWithLink type="tertiary" :routeTarget="{
-                            name: 'retina.models.customer_sales_channel.unsuspend',
-                            parameters: { customerSalesChannel: customer_sales_channel.id },
-                            method: 'patch'
-                        }" @success="isOpenModalSuspended = false" icon="fas fa-sync-alt" :label="trans('Unsuspend')" />
-        </div>
-    </Modal> -->
 </template>
