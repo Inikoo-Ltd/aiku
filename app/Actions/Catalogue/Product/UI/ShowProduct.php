@@ -283,13 +283,6 @@ class ShowProduct extends OrgAction
                         ]
                     ]
                 ];
-            $actions[] =
-                [
-                    'type'  => 'button',
-                    'style' => 'edit',
-                    'icon'  => ["fal", "fa-external-link"],
-                    'url'   => $product->webpage->canonical_url,
-                ];
         } else {
             $actions[] =
                 [
