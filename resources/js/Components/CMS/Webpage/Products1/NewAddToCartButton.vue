@@ -237,7 +237,7 @@ const showChartButton = computed(() => {
             class="rounded-full button-cart hover:bg-green-700 bg-gray-800 mr-4 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             v-tooltip="trans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />
-            <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width class="text-gray-100 button-cart" :style="{ color : buttonStyle?.color}" />
+            <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width  />
         </button>
 
         <!-- State: qty > 0, tampilkan quantity dan expand saat hover -->

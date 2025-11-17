@@ -192,7 +192,7 @@ task('deploy:flush-varnish', function () {
 });
 
 desc('Restart Inertia SSR by supervisorctl');
-task('restart-ssr-by-supervisorctl', function () {
+task('deploy:restart-ssr-by-supervisorctl', function () {
 
     $currentFile  = '{{release_path}}/SSR_CHECKSUM';
     $previousFile = '{{previous_release}}/SSR_CHECKSUM';
