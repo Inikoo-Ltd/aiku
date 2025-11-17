@@ -11,12 +11,14 @@ namespace App\Http\Resources\Catalogue;
 use App\Helpers\NaturalLanguage;
 use App\Http\Resources\HasSelfCall;
 use App\Http\Resources\Helpers\ImageResource;
+use App\Http\Resources\Traits\HasPriceMetrics;
 use App\Models\Catalogue\Product;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ProductResource extends JsonResource
 {
     use HasSelfCall;
+    use HasPriceMetrics;
 
     public function toArray($request): array
     {
@@ -36,6 +38,8 @@ class ProductResource extends JsonResource
                 )
             ];
         }
+
+        [$margin, $rrpPerUnit, $profit, $profitPerUnit, $units, $pricePerUnit] = $this->getPriceMetrics($product->rrp, $product->price, $product->units);
 
 
         return [
@@ -86,6 +90,12 @@ class ProductResource extends JsonResource
             'gpsr_manual'                   => $product->gpsr_manual,
             'gpsr_class_category_danger'    => $product->gpsr_class_category_danger,
             'gpsr_product_languages'        => $product->gpsr_product_languages,
+
+            'rrp_per_unit'      => $rrpPerUnit,
+            'margin'            => $margin,
+            'profit'            => $profit,
+            'profit_per_unit'   => $profitPerUnit,
+            'price_per_unit'    => $pricePerUnit,
 
 
         ];
