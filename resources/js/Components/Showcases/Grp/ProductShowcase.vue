@@ -15,6 +15,8 @@ import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import { aikuLocaleStructure } from "@/Composables/useLocaleStructure"
 import ReviewContent from "@/Components/ReviewContent.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
+import ProductPriceGrp from "@/Components/Product/ProductPriceGrp.vue"
+import { ProductResource } from "@/types/Iris/Products"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -35,20 +37,7 @@ const props = defineProps<{
 			save_route: routeType
 		}
 		product: {
-			data: {
-				id: number
-				slug: string
-				image_id: number
-				code: string
-				name: string
-				price: string
-				description?: string
-				state: string
-				created_at: string
-				updated_at: string
-				images: Images[]
-				currency_code: string
-			}
+			data: ProductResource
 		}
 		stats: {
 			amount: number | null
@@ -163,7 +152,6 @@ const validImages = computed(() =>
 							class="aspect-square w-full overflow-hidden group relative rounded-lg border border-gray-200">
 							<Image :src="image.thumbnail" :alt="`Thumbnail ${index + 1}`"
 								class="block w-full h-full object-cover" />
-							<!-- Delete Icon -->
 							<ModalConfirmationDelete :routeDelete="{
 								name: props.data.deleteImageRoute.name,
 								parameters: {
@@ -201,67 +189,25 @@ const validImages = computed(() =>
 
 
 		<div class="bg-white h-fit mx-4  shadow-sm ">
-			<div class="my-4 ">
-				<ReviewContent :data="data.product.data" />
+			<div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
+					:class="data?.product?.data?.stock > 0 ? 'text-green-600' : 'text-red-600'" />
+				<span>
+					{{
+					data?.product?.data?.stock > 0
+					? trans("In stock") + ` (${data?.product?.data?.stock} ` + trans("available") + `)`
+					: trans("Out Of Stock")
+					}}
+				</span>
 			</div>
-			<dl class="space-y-2 text-sm border border-gray-100 px-4 py-2 lg:p-6 lg:py-4 rounded">
-				<!-- Stock -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Stock") }}</dt>
-					<dd class="flex items-center gap-2 font-medium">
-						<FontAwesomeIcon :icon="['fas', 'circle']" :class="[
-							data.product.data?.stock > 20
-								? 'text-green-500'
-								: data.product.data?.stock > 0
-									? 'text-orange-500'
-									: 'text-red-500'
-						]" />
-						<span :class="[
-							data.product.data?.stock > 20
-								? 'text-green-600'
-								: data.product.data?.stock > 0
-									? 'text-orange-600'
-									: 'text-red-600 font-semibold'
-						]">
-							{{ data.product.data?.stock }} {{ data.product.data?.unit }}
-						</span>
-					</dd>
-				</div>
 
-				<hr class="border-gray-200" />
+			<!-- Section: Price -->
+			<ProductPriceGrp
+				:product="data?.product?.data"
+				:currency_code="data.product.data?.currency_code"
+			/>
 
-				<!-- Cost -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Cost") }}</dt>
-					<dd class="font-medium text-blue-600">
-						{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.cost) || '-' }}
-					</dd>
-				</div>
-
-				<!-- Price -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">{{ trans("Price") }}</dt>
-					<dd class="font-semibold text-green-600 text-lg">
-						{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.price) }}
-					</dd>
-				</div>
-
-				<!-- RRP -->
-				<div class="flex justify-between items-center flex-wrap gap-2">
-					<dt class="text-gray-500">RRP</dt>
-					<dd class="flex items-center gap-2 font-semibold text-gray-700">
-						<span>
-							{{ locale.currencyFormat(data.product.data?.currency_code, data.product.data?.rrp) }}
-						</span>
-						<span class="text-xs px-2 py-0.5 rounded bg-gray-100 text-gray-600">
-							({{ (((data.product.data?.rrp - data.product.data?.price) / data.product.data?.rrp) *
-							100).toFixed(2) }}%)
-						</span>
-					</dd>
-				</div>
-			</dl>
-
-
+			
 			<div>
 				<AttachmentCard :public="data.attachment_box.public" :private="data.attachment_box.private" />
 			</div>
