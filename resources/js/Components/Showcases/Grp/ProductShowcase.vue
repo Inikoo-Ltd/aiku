@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import Image from "@/Components/Image.vue"
+import ImagePrime from "primevue/image"
 import { ref, computed, inject } from "vue"
 import { faTrash as falTrash, faEdit, faExternalLink, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
@@ -17,6 +18,7 @@ import ReviewContent from "@/Components/ReviewContent.vue"
 import AttachmentCard from "@/Components/AttachmentCard.vue"
 import ProductPriceGrp from "@/Components/Product/ProductPriceGrp.vue"
 import { ProductResource } from "@/types/Iris/Products"
+import { Image as ImageTS } from "@/types/Image"
 
 
 library.add(faCircle, faTrash, falTrash, faEdit, faExternalLink, faPlay, faPlus, faBarcode, faPuzzlePiece, faShieldAlt, faInfoCircle, faChevronDown, faChevronUp, faBox, faVideo)
@@ -83,7 +85,9 @@ const props = defineProps<{
 			warnings: string | null
 		}
 		images: any
+		main_image: ImageTS
 	}
+	handleTabUpdate?: Function
 }>()
 
 const locale = inject("locale", aikuLocaleStructure)
@@ -141,7 +145,13 @@ const validImages = computed(() =>
 		<div class="space-y-4 lg:space-y-6">
 			<!-- Image Preview & Thumbnails -->
 			<div class="bg-white   p-4 lg:p-5">
-				<ImageProducts v-if="validImages.length" :images="validImages" :breakpoints="{
+				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
+					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
+					<div class="text-sm italic text-gray-500">
+						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')" class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
+					</div>
+				</div>
+				<!-- <ImageProducts v-if="validImages.length" :images="validImages" :breakpoints="{
 					0: { slidesPerView: 3 },
 					480: { slidesPerView: 4 },
 					640: { slidesPerView: 5 },
@@ -171,12 +181,16 @@ const validImages = computed(() =>
 						</div>
 					</template>
 				</ImageProducts>
-
-				<!-- Empty State -->
-				<div v-else
-					class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
-					<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
-					<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+				-->
+				
+				<div v-else>
+					<div class="flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-gray-200 rounded-lg">
+						<FontAwesomeIcon :icon="faImage" class="text-4xl text-gray-400" />
+						<p class="text-sm text-gray-500 text-center">No images uploaded yet</p>
+					</div>
+					<div class="mt-2 text-sm italic text-gray-500">
+						Manage images in tab <span @click="() => handleTabUpdate('images')" class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
+					</div>
 				</div>
 			</div>
 		</div>

@@ -121,6 +121,7 @@ class GetProductShowcase
                 ],
             ],
             'images'          => $this->getImagesData($product),
+            'main_image'      => $product->imageSources(),
             'attachment_box'  => $this->getAttachmentData($product),
             'webpage_url'     => $webpageUrl
 
