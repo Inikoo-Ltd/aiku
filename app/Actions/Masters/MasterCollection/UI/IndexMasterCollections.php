@@ -63,6 +63,7 @@ class IndexMasterCollections extends OrgAction
                 'master_collection_stats.number_current_master_collections',
             ]
         )
+            ->selectRaw("EXISTS(SELECT 1 FROM collections JOIN webpages ON collections.id = webpages.model_id WHERE collections.master_collection_id = master_collections.id AND collections.webpage_id IS NOT NULL AND webpages.deleted_at IS NULL AND webpages.model_type = 'Collection') as has_active_webpage")
             ->selectRaw(
                 '(
         SELECT concat(string_agg(master_product_categories.slug,\',\'),\'|\',string_agg(master_product_categories.type,\',\'),\'|\',string_agg(master_product_categories.code,\',\'),\'|\',string_agg(master_product_categories.name,\',\')) FROM model_has_master_collections
@@ -128,6 +129,7 @@ class IndexMasterCollections extends OrgAction
             $table->column(key: 'number_current_master_families', label: __('Families'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_current_master_products', label: __('Products'), canBeHidden: false, sortable: true);
             $table->column(key: 'number_current_master_collections', label: __('Collections'), canBeHidden: false, sortable: true);
+            $table->column(key: 'actions', label: __('Action'));
         };
     }
 
