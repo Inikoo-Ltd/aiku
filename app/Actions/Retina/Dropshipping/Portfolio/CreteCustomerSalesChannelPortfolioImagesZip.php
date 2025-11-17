@@ -11,7 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Models\Catalogue\Product;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 use ZipArchive;
 use Sentry\Laravel\Facade as Sentry;
