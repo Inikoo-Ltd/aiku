@@ -27,7 +27,6 @@ class UploadPortfolioZipImages extends RetinaAction
         // }
 
         // Generate and upload new zip file
-        // trigger github action
         $result = $this->createAndUploadZip($customerSalesChannel, $totalImagePortofolio, $fullPath);
 
         UploadPortfolioToR2Event::dispatch($result, $randomString);
