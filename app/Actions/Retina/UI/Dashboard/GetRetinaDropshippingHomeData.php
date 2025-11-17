@@ -49,7 +49,10 @@ class GetRetinaDropshippingHomeData
             ];
         }
 
-        $manuals = $customer->customerSalesChannels()->where('platform_id', $manualPlatform->id)->get();
+        $manuals = $customer->customerSalesChannels()
+            ->where('platform_id', $manualPlatform->id)
+            ->where('status', CustomerSalesChannelStatusEnum::OPEN)
+            ->get();
         $isOrderButton = false;
         $manualPlatformData = null;
         if ($manuals->count() == 1) {

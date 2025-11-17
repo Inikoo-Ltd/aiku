@@ -24,6 +24,7 @@ use App\Actions\Accounting\InvoiceCategory\UI\ShowInvoiceCategory;
 use App\Actions\Accounting\OrgPaymentServiceProvider\UI\IndexOrgPaymentServiceProviders;
 use App\Actions\Accounting\OrgPaymentServiceProvider\UI\ShowOrgPaymentServiceProvider;
 use App\Actions\Accounting\Payment\ExportPayments;
+use App\Actions\Accounting\Payment\ShowTopUpReceipt;
 use App\Actions\Accounting\Payment\UI\CreatePayment;
 use App\Actions\Accounting\Payment\UI\EditPayment;
 use App\Actions\Accounting\Payment\UI\IndexPayments;
@@ -80,6 +81,7 @@ Route::get('/accounts/{paymentAccount}/payments/{payment}/edit', [EditPayment::c
 Route::get('/payments/export', ExportPayments::class)->name('payments.export');
 Route::get('/payments', [IndexPayments::class, 'inOrganisation'])->name('payments.index');
 Route::get('/payments/{payment}', [ShowPayment::class, 'inOrganisation'])->name('payments.show');
+Route::get('/payments/{payment}/topUpReceipt/{topUp}', [ShowTopUpReceipt::class, 'inOrganisation'])->name('payments.topUp.pdf');
 Route::get('/payments/{payment}/edit', [EditPayment::class, 'inOrganisation'])->name('payments.edit');
 Route::get('/invoices/{invoice}/export', PdfInvoice::class)->name('invoices.download');
 Route::get('/invoices/{invoice}/is-doc', ISDocInvoice::class)->name('invoices.show.is_doc');

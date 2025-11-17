@@ -11,7 +11,9 @@ namespace App\Http\Resources\CRM;
 use App\Actions\Retina\UI\Layout\GetPlatformLogo;
 use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
+use App\Models\Helpers\TaxCategory;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Arr;
 
 /**
  * @property mixed $type
@@ -67,6 +69,11 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             ];
         }
 
+        $taxCategory = null;
+        if (Arr::get($this->settings, 'tax_category.checked')) {
+            $taxCategory = TaxCategory::find(Arr::get($this->settings, 'tax_category.id'));
+        }
+
         return [
             'slug'                    => $this->slug,
             'id'                      => $this->id,
@@ -83,6 +90,8 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
 
             'ban_stock_update_until'   => $this->ban_stock_update_util,
+            'include_vat'   => Arr::get($this->settings, 'tax_category.checked'),
+            'vat_rate'   => $taxCategory?->rate,
 
             'reconnect_route' => $reconnectRoute,
             'test_route' => $testRoute,

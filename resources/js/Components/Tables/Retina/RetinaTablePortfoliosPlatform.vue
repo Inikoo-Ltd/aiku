@@ -427,6 +427,10 @@ const submitErrorProduct = (sel) => {
         }
     )
 }
+
+const calculateVat = (price: number) => {
+    return (price * 1) + (price * props.customerSalesChannel.vat_rate);
+}
 </script>
 
 <template>
@@ -546,7 +550,10 @@ const submitErrorProduct = (sel) => {
             </div>
 
             <div class="text-sm text-gray-500 italic flex gap-x-10 gap-y-2">
-                <div>
+                <div v-if="customerSalesChannel.include_vat">
+                    {{ trans("Price (include VAT):") }} {{ locale.currencyFormat(product.currency_code, calculateVat(product.price)) }}
+                </div>
+                <div v-else>
                     {{ trans("Price:") }} {{ locale.currencyFormat(product.currency_code, product.price) }}
                 </div>
                 <div>

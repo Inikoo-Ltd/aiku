@@ -29,8 +29,18 @@ class UpdateCustomerSalesChannel extends OrgAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, array $modelData): CustomerSalesChannel
     {
+        if (Arr::has($modelData, 'is_vat_adjustment')) {
+            data_set($modelData, 'settings.tax_category.checked', Arr::get($modelData, 'is_vat_adjustment'));
+        }
 
-        $customerSalesChannel = $this->update($customerSalesChannel, $modelData);
+        if (Arr::has($modelData, 'tax_category_id')) {
+            data_set($modelData, 'settings.tax_category.id', Arr::get($modelData, 'tax_category_id'));
+        }
+
+        data_forget($modelData, 'tax_category_id');
+        data_forget($modelData, 'is_vat_adjustment');
+
+        $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
         $changes = Arr::except($customerSalesChannel->getChanges(), ['updated_at', 'last_fetched_at']);
 
         if (Arr::has($changes, 'status')) {
@@ -65,6 +75,7 @@ class UpdateCustomerSalesChannel extends OrgAction
                     ]
                 ),
             ],
+            'tax_category_id'   => ['sometimes', 'integer', Rule::exists('tax_categories', 'id')],
             'status'            => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'state'             => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],
             'name'              => ['sometimes', 'string', 'max:255'],

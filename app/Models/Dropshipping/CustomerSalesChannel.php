@@ -105,11 +105,17 @@ class CustomerSalesChannel extends Model implements Authenticatable
 
     protected $casts = [
         'data'                  => 'array',
+        'settings'              => 'array',
         'status'                => CustomerSalesChannelStatusEnum::class,
         'state'                 => CustomerSalesChannelStateEnum::class,
         'connection_status'     => CustomerSalesChannelConnectionStatusEnum::class,
         'closed_at'             => 'datetime',
         'ban_stock_update_util' => 'datetime',
+    ];
+
+    protected $attributes = [
+        'data'      => '{}',
+        'settings'  => '{}'
     ];
 
     public function getSlugOptions(): SlugOptions
