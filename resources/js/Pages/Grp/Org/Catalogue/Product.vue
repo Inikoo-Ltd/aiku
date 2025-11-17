@@ -6,7 +6,8 @@ import {
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
     faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
-    faFolderDownload,faQuoteLeft
+    faFolderDownload,faQuoteLeft,
+    faExternalLink
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -35,6 +36,7 @@ import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
 import ProductSales from "@/Components/Product/ProductSales.vue";
 import { trans } from "laravel-vue-i18n"
+import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 
 
 library.add(
@@ -72,6 +74,7 @@ const props = defineProps<{
     customers?: {}
     mailshots?: {}
     showcase?: {}
+    content?: {}
     service: {}
     rental: {}
     trade_units?: {}
@@ -100,6 +103,7 @@ const props = defineProps<{
             }
         }
     }
+    webpage_canonical_url?: string
     sales: {}
 }>()
 
@@ -123,7 +127,8 @@ const component = computed(() => {
         images: TradeUnitImagesManagement,
         translation: ProductTranslation,
         attachments : AttachmentManagement,
-        sales: ProductSales
+        sales: ProductSales,
+        content: ProductContent,
     }
     console.log(currentTab.value)
     return components[currentTab.value]
@@ -154,6 +159,12 @@ const showMissingTaxonomyMessage = computed(() => {
                     color="#4B0082"
                 />
             </Link>
+        </template>
+
+        <template #other>
+            <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
+                <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
+            </a>
         </template>
     </PageHeading>
 
