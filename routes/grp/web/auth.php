@@ -21,6 +21,10 @@ Route::middleware('guest')->group(function () {
     Route::get('resetpassword', ShowResetPassword::class)->name('reset.password');
     Route::get('login', ShowLogin::class)->name('login.show');
     Route::post('login', Login::class)->name('login.store');
+    // Route::get('login/passkey', function () {
+    //     return response('Passkey authentication options');
+    // })->name('passkeys.authentication_options');
+    Route::passkeys();
 
     Route::get('reset-password', ShowSetNewPassword::class)->name('email.reset-password.show');
     Route::post('reset/password/link', PasswordResetLink::class)->name('password.email');
