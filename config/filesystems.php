@@ -95,6 +95,18 @@ return [
             'endpoint' => env('CLOUDFLARE_R2_ENDPOINT'),
             'bucket'   => env('CLOUDFLARE_R2_MEDIA_BUCKET_NAME'),
         ],
+        'catalogue-iris-r2' => [
+            'driver'   => 's3',
+            'key'      => env('CLOUDFLARE_CATALOGUE_IRIS_R2_ACCESS_KEY'),
+            'secret'   => env('CLOUDFLARE_CATALOGUE_IRIS_R2_SECRET_KEY'),
+            'region'   => env('CLOUDFLARE_CATALOGUE_IRIS_R2_REGION', 'auto'),
+            'endpoint' => env('CLOUDFLARE_CATALOGUE_IRIS_R2_ENDPOINT'),
+            'bucket'   => env('CLOUDFLARE_CATALOGUE_IRIS_R2_BUCKET_NAME'),
+            'url' => env('CLOUDFLARE_CATALOGUE_IRIS_R2_URL'), // This will be used for public URLs
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+            'visibility' => 'public', // Important!
+        ],
         'google' => [
             'driver'       => 'google',
             'clientId'     => env('GOOGLE_DRIVE_CLIENT_ID'),

@@ -16,6 +16,7 @@ import Button from "@/Components/Elements/Buttons/Button.vue"
 import PlatformWarningNotConnected from "@/Components/Retina/Platform/PlatformWarningNotConnected.vue"
 import { CustomerSalesChannel } from "@/types/customer-sales-channel"
 import PlatformWarningNotConnectedShopify from "@/Components/Retina/Platform/PlatformWarningNotConnectedShopify.vue"
+import { layoutStructure } from "@/Composables/useLayoutStructure";
 
 library.add(faArrowRight, faCube, faLink, farArrowRight)
 
@@ -50,7 +51,7 @@ const props = defineProps<{
 }>()
 
 const locale = inject('locale', aikuLocaleStructure)
-
+const layout = inject('layout', layoutStructure)
 </script>
 
 <template>
@@ -177,6 +178,12 @@ const locale = inject('locale', aikuLocaleStructure)
                             </Button>
                         </template>
                     </ModalConfirmationDelete>
+                </div>
+
+                <div>
+                    <Link :href="route(route().current().split('.').slice(0, -1).join('.') + '.edit', layout.currentParams)">
+                        <FontAwesomeIcon icon="fal fa-pencil" />
+                    </Link>
                 </div>
             </div>
 

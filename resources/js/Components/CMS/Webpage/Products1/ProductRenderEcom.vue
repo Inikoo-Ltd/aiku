@@ -225,12 +225,6 @@ const onUnselectBackInStock = (product: ProductResource) => {
 }
 
 
-const profitMargin = computed(() => {
-    const price = props.product?.price
-    const rrp = props.product?.rrp
-    if (!price || !rrp) return 0
-    return Math.floor(((rrp - price) / rrp) * 100)
-})
 
 
 

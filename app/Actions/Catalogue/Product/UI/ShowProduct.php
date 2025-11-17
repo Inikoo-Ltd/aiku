@@ -356,10 +356,15 @@ class ShowProduct extends OrgAction
                 ],
                 'taxonomy'    => $this->getProductTaxonomy($product, $request),
 
+                'webpage_canonical_url' => $product->webpage?->canonical_url,
 
                 ProductTabsEnum::SHOWCASE->value => $this->tab == ProductTabsEnum::SHOWCASE->value ?
                     fn () => GetProductShowcase::run($product)
                     : Inertia::lazy(fn () => GetProductShowcase::run($product)),
+
+                ProductTabsEnum::CONTENT->value => $this->tab == ProductTabsEnum::CONTENT->value ?
+                    fn () => GetProductContent::run($product)
+                    : Inertia::lazy(fn () => GetProductContent::run($product)),
 
                 ProductTabsEnum::SALES->value => $this->tab == ProductTabsEnum::SALES->value ?
                     fn () => ProductSalesResource::collection(IndexProductSales::run($product, ProductTabsEnum::SALES->value))

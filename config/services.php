@@ -67,4 +67,8 @@ return [
             'channel' => env('SLACK_CHANNEL', '#general'),
         ],
     ],
+    // Atlassian Jira Service Desk (embedded widget)
+    'jsd' => [
+        'widget_key' => env('JSD_WIDGET_KEY'),
+    ],
 ];

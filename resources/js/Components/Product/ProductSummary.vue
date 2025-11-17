@@ -11,6 +11,7 @@ import { routeType } from "@/types/route"
 import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "primevue"
 import { faTag } from "@far"
 import { ProductShowcase } from "@/types/product-showcase"
+import FractionDisplay from "../DataDisplay/FractionDisplay.vue"
 
 interface Stats {
 	amount: number | null
@@ -87,7 +88,7 @@ const props = withDefaults(
 		data: ProductShowcase
         // gpsr?: Gpsr
 		parts?: { id: number; name: string }[]
-		type: string
+		type?: string
 		video?: string
 		hide?: string[]
 		properties?: {
@@ -198,35 +199,44 @@ console.log('product summary : ', props)
 
 
 	<div>
-		<div class="bg-white rounded-xl p-4 lg:p-5">
-			<div class="flex justify-between items-center border-b pb-3">
+		<div class="bg-white rounded-xl px-4 lg:px-5">
+			<!-- <div class="flex justify-between items-center border-b pb-3">
 				<h2 class="text-base lg:text-lg font-semibold "></h2>
 
 				
-			</div>
+			</div> -->
+			
 			<dl class="mt-4 space-y-6 text-sm">
 				<div class="space-y-3">
+					<!-- Section: Since -->
                     <div  class="flex justify-between flex-wrap gap-1">
                         <dt class="text-gray-500">{{ trans("Since") }}</dt>
                         <dd class="font-medium">{{ useFormatTime(data?.created_at) }}</dd>
                     </div>
+					
+					<!-- Section: Units -->
 					<div  class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Units") }}</dt>
 						<dd class="font-medium max-w-[236px] text-right">{{ data?.units }}  ({{data.unit}}) </dd>
 					</div>
 
+					<!-- Section: Weight marketing -->
                     <div  class="flex justify-between flex-wrap gap-1">
                         <dt class="text-gray-500">{{ trans("Weight") }} <span class="text-xs font-light text-gray-500">({{trans('Marketing')}})</span></dt>
                         <dd class="font-medium">
                             {{ data?.marketing_weight }}
                         </dd>
                     </div>
+
+					<!-- Section: Weight shipping -->
 					<div class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Weight") }} <span class="text-xs font-light text-gray-500">({{trans('Shipping')}})</span></dt>
 						<dd class="font-medium">
 							{{ data?.gross_weight }}
 						</dd>
 					</div>
+
+					<!-- Section: Marketing Dimensions -->
 					<div  class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Dimensions") }}</dt>
 						<dd class="font-medium">
@@ -234,6 +244,7 @@ console.log('product summary : ', props)
 						</dd>
 					</div>
 
+					<!-- Section: Barcode -->
                     <div  class="flex justify-between flex-wrap gap-1">
                         <dt class="text-gray-500">{{ trans("Barcode") }} <FontAwesomeIcon :icon="faBarcode" /></dt>
                         <dd class="font-medium">
@@ -241,12 +252,30 @@ console.log('product summary : ', props)
                         </dd>
                     </div>
 
+					<!-- Section: Picking -->
                     <div  class="flex justify-between flex-wrap gap-1">
                         <dt class="text-gray-500">{{ trans("Picking") }}</dt>
-                        <dd class="font-medium max-w-[236px] text-right">{{ data?.picking_factor }}</dd>
+						<dd class="w-full border border-gray-300 px-2.5 py-1.5 rounded">
+							<div v-for="pick in data.picking_factor" class="grid grid-cols-4">
+								<div class="col-span-3">
+									<div class="w-fit">
+										<span class="xprimaryLink ">{{ pick.org_stock_code }}</span>
+										<span class="italic opacity-60">({{ pick.org_stock_id }})</span>
+									</div>
+
+									<div v-tooltip="trans('Note')" class="text-gray-400 text-xs w-fit">
+										{{ pick.note || '-' }}
+									</div>
+								</div>
+								
+								<div class=" text-right">
+									<FractionDisplay
+										:fractionData="pick.picking_factor"
+									/>
+								</div>
+							</div>
+						</dd>
                     </div>
-
-
 				</div>
 
 
@@ -313,7 +342,7 @@ console.log('product summary : ', props)
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("Country of origin") }}</dt>
 										<dd class="font-medium">
-											<div v-if="data?.country_of_origin.code">
+											<div v-if="data?.country_of_origin?.code">
 												<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
 													:src="'/flags/' + data?.country_of_origin.code.toLowerCase() + '.png'"
 													loading="lazy" />
