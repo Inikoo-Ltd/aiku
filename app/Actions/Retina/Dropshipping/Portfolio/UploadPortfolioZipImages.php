@@ -21,6 +21,7 @@ class UploadPortfolioZipImages extends RetinaAction
         $totalImagePortofolio = TotalImagePortfolios::run($customerSalesChannel);
         $fullPath = $this->buildFilePath($customerSalesChannel, $totalImagePortofolio);
 
+        // dd($fullPath);
         // Return existing file if available
         // if (CheckCatalogueFileExistsInR2::run($fullPath)) {
         //     return $this->generateDownloadResponse($fullPath);
@@ -36,13 +37,11 @@ class UploadPortfolioZipImages extends RetinaAction
     private function buildFilePath(CustomerSalesChannel $customerSalesChannel, int $totalImagePortofolio ): string
     {
         $bucketName = config('filesystems.disks.zip-r2.bucket', 'dev-storage');
-        $slug = Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference);
 
         return sprintf(
-            '%s/%s/image_%s_%s.zip',
+            '%s/%s/portfolio_images_%s.zip',
             $bucketName,
             $customerSalesChannel->id,
-            $slug,
             $totalImagePortofolio
         );
     }

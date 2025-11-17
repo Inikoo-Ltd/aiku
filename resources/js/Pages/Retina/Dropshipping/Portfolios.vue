@@ -451,6 +451,7 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                 <a href="#" @click.prevent="!isSocketActive && handleDownloadClick('images', $event)">
                     <Button :icon="faImage" label="Images" type="tertiary" class="border-l-0 rounded-l-none" :disabled="isSocketActive"/>
                 </a>
+                .
                 <!-- <Button v-else @click="isOpenModalDownloadImages = true" :icon="faImage" label="Images" type="tertiary" class="border-l-0  rounded-l-none"/> -->
             </div>
 
