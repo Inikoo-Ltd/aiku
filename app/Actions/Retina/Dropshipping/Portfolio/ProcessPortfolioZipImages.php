@@ -22,10 +22,8 @@ class ProcessPortfolioZipImages extends RetinaAction
 
     public function handle(CustomerSalesChannel $customerSalesChannel, string $randomString): string
     {
-        $bucketName = config('filesystems.disks.zip-r2.bucket', 'dev-storage');
         $filename   = "portfolio_images_$randomString.zip";
-        $fullPath   = "$bucketName/portfolio_images/$customerSalesChannel->id/$filename";
-
+        $fullPath   = "portfolio_images/$customerSalesChannel->id/$filename";
 
         $result = $this->createAndUploadZip($customerSalesChannel, $filename,$fullPath);
 
