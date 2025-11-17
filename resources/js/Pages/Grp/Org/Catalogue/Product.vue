@@ -6,7 +6,8 @@ import {
     faMoneyBillWave, faProjectDiagram, faRoad, faShoppingCart,
     faStream, faUsers, faHeart, faMinus,
     faFolderTree, faBrowser, faLanguage,faFolders, faPaperclip,
-    faFolderDownload,faQuoteLeft
+    faFolderDownload,faQuoteLeft,
+    faExternalLink
 } from '@fal'
 import { ref, computed } from 'vue'
 import { useTabChange } from '@/Composables/tab-change'
@@ -102,6 +103,7 @@ const props = defineProps<{
             }
         }
     }
+    webpage_canonical_url?: string
     sales: {}
 }>()
 
@@ -157,6 +159,12 @@ const showMissingTaxonomyMessage = computed(() => {
                     color="#4B0082"
                 />
             </Link>
+        </template>
+
+        <template #other>
+            <a v-if="webpage_canonical_url" :href="webpage_canonical_url" target="_blank" class="text-gray-400 hover:text-gray-700 px-2 cursor-pointer" v-tooltip="trans('Open website in new tab')" aclick="openWebsite" >
+                <FontAwesomeIcon :icon="faExternalLink" aria-hidden="true" size="xl" />
+            </a>
         </template>
     </PageHeading>
 
