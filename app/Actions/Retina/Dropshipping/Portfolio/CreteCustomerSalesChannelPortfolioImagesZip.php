@@ -1,4 +1,5 @@
 <?php
+
 /*
  * Author: Raul Perusquia <raul@inikoo.com>
  * Created: Mon, 17 Nov 2025 15:24:04 Central Indonesia Time, Pantai Lembeng, Bali, Indonesia
@@ -25,7 +26,6 @@ class CreteCustomerSalesChannelPortfolioImagesZip
      */
     public function handle(CustomerSalesChannel $customerSalesChannel, string $filename): string
     {
-        $slug = Str::slug($customerSalesChannel->name ?? $customerSalesChannel->reference);
 
         $tempDir = sys_get_temp_dir() . '/' . uniqid('portfolios_zip_export_');
         if (!file_exists($tempDir)) {
@@ -40,58 +40,58 @@ class CreteCustomerSalesChannelPortfolioImagesZip
             throw new \RuntimeException("Cannot create ZIP file at $tempZipPath");
         }
 
-    try {
-        $imagesData = $this->getImages($customerSalesChannel);
+        try {
+            $imagesData = $this->getImages($customerSalesChannel);
 
-        foreach ($imagesData as $imageId => $imageData) {
-            $image = $imageData['image'];
-            $disk = Storage::disk($image->disk);
-            $filePath = $image->getPathRelativeToRoot();
+            foreach ($imagesData as $imageId => $imageData) {
+                $image = $imageData['image'];
+                $disk = Storage::disk($image->disk);
+                $filePath = $image->getPathRelativeToRoot();
 
-            if (!$disk->exists($filePath)) {
-                continue;
-            }
-
-            try {
-                $stream = $disk->readStream($filePath);
-                if (!$stream) {
+                if (!$disk->exists($filePath)) {
                     continue;
                 }
 
-                // Read the file contents
-                $contents = stream_get_contents($stream);
-                fclose($stream);
+                try {
+                    $stream = $disk->readStream($filePath);
+                    if (!$stream) {
+                        continue;
+                    }
 
-                // Add a file to zip
-                $zip->addFromString($imageData['filename'], $contents);
-            } catch (\Throwable $e) {
-                Sentry::captureException($e, [
-                    'extra' => [
-                        'image_id' => $imageId,
-                        'file_path' => $filePath,
-                    ],
-                ]);
+                    // Read the file contents
+                    $contents = stream_get_contents($stream);
+                    fclose($stream);
+
+                    // Add a file to zip
+                    $zip->addFromString($imageData['filename'], $contents);
+                } catch (\Throwable $e) {
+                    Sentry::captureException($e, [
+                        'extra' => [
+                            'image_id' => $imageId,
+                            'file_path' => $filePath,
+                        ],
+                    ]);
+                }
             }
-        }
 
 
-        if ($zip->count() === 0) {
-            $zip->addFromString('error.txt', 'No images were found to include in the zip file.');
-        }
-        $zip->close();
+            if ($zip->count() === 0) {
+                $zip->addFromString('error.txt', 'No images were found to include in the zip file.');
+            }
+            $zip->close();
 
-        return $tempZipPath;
+            return $tempZipPath;
 
-    } catch (\Exception $e) {
-        // Clean up in case of error
-        if (file_exists($tempZipPath)) {
-            unlink($tempZipPath);
+        } catch (\Exception $e) {
+            // Clean up in case of error
+            if (file_exists($tempZipPath)) {
+                unlink($tempZipPath);
+            }
+            if (is_dir($tempDir)) {
+                @rmdir($tempDir);
+            }
+            throw $e;
         }
-        if (is_dir($tempDir)) {
-            @rmdir($tempDir);
-        }
-        throw $e;
-    }
     }
 
     /**
@@ -102,7 +102,7 @@ class CreteCustomerSalesChannelPortfolioImagesZip
         $imagesData = [];
 
 
-        $portfolios =$customerSalesChannel->portfolios()->where('status', true)->get();
+        $portfolios = $customerSalesChannel->portfolios()->where('status', true)->get();
 
 
         /** @var \App\Models\Dropshipping\Portfolio $portfolio */

@@ -37,7 +37,8 @@ class HydrateCustomersTag
             })
             ->orderBy("$tableName.id", 'desc');
 
-        $query->chunk(1000,
+        $query->chunk(
+            1000,
             function (Collection $modelsData) {
                 foreach ($modelsData as $modelId) {
                     $model = (new $this->model());

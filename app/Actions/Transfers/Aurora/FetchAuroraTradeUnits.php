@@ -96,6 +96,63 @@ class FetchAuroraTradeUnits extends FetchAuroraAction
                         strict: false,
                         audit: false
                     );
+
+
+                    $skSource = null;
+
+
+                    foreach ($tradeUnit->sources['parts'] as $source) {
+                        $dataSource  = explode(':', $source);
+                        if ($dataSource[0] == 2) {
+                            $skSource = $dataSource[1];
+                        }
+                    }
+
+                    if ($skSource) {
+                        $ingredientsToDelete = $tradeUnit->ingredients()->pluck('trade_unit_has_ingredients.ingredient_id')->toArray();
+
+
+                        $ingredients = [];
+
+
+                        foreach (
+                            DB::connection('aurora')->table('Part Material Bridge')
+                                ->where('Part SKU', $skSource)->orderBy('Part Material Key')->get() as $auroraIngredients
+                        ) {
+
+                            print_r($auroraIngredients);
+
+                            $ingredient = $this->parseIngredient(
+                                $organisation->id.
+                                ':'.$auroraIngredients->{'Material Key'}
+                            );
+                            if ($ingredient) {
+                                $ingredientsToDelete = array_diff($ingredientsToDelete, [$ingredient->id]);
+
+                                $ingredientSourceID = $organisation->id.':'.$auroraIngredients->{'Material Key'};
+
+
+
+
+                                $arguments                    = Arr::get($ingredient->source_data, 'trade_unt_args.'.$ingredientSourceID, []);
+                                $ingredients[$ingredient->id] = $arguments;
+                            }
+
+                            print_r($ingredients);
+                            $tradeUnit->ingredients()->syncWithoutDetaching($ingredients);
+                        }
+
+
+                        $tradeUnit->ingredients()->whereIn('ingredient_id', array_keys($ingredientsToDelete))->forceDelete();
+                        TradeUnitsHydrateMarketingIngredients::run($tradeUnit);
+                        foreach ($tradeUnit->products as $product) {
+                            ProductHydrateMarketingIngredientsFromTradeUnits::run($product);
+                        }
+
+
+                    }
+
+
                 }
             } else {
                 try {

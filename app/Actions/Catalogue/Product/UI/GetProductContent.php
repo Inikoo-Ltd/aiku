@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Actions\Catalogue\Product\UI;
 
 /*

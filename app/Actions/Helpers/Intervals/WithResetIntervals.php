@@ -65,7 +65,6 @@ use App\Models\Inventory\OrgStockFamily;
 use App\Models\Masters\MasterShop;
 use App\Models\SysAdmin\Group;
 use App\Models\SysAdmin\Organisation;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 trait WithResetIntervals
@@ -342,7 +341,7 @@ trait WithResetIntervals
                     shop: $shop,
                     intervals: $this->intervals,
                     doPreviousPeriods: $this->doPreviousPeriods
-                )->delay(now()->addMinute())->onQueue('low-priority');;
+                )->delay(now()->addMinute())->onQueue('low-priority');
             }
         }
     }

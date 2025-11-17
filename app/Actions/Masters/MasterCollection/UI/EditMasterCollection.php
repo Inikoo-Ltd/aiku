@@ -15,11 +15,10 @@ use App\Models\Masters\MasterShop;
 use Inertia\Inertia;
 use Inertia\Response;
 use Lorisleiva\Actions\ActionRequest;
-use Illuminate\Support\Facades\Log;
 
 class EditMasterCollection extends OrgAction
 {
-    public function asController(MasterShop $masterShop,  MasterCollection $masterCollection, ActionRequest $request): Response
+    public function asController(MasterShop $masterShop, MasterCollection $masterCollection, ActionRequest $request): Response
     {
         $this->initialisationFromGroup(group(), $request);
         return $this->handle($masterShop, $masterCollection, $request);
@@ -94,12 +93,12 @@ class EditMasterCollection extends OrgAction
     public function getBreadcrumbs(MasterProductCategory|MasterShop|MasterCollection $parent, string $routeName, array $routeParameters): array
     {
         return array_merge(
-                IndexMasterCollections::make()->getBreadcrumbs(
-                    parent: $parent,
-                    routeName: preg_replace('/edit$/', 'index', $routeName),
-                    routeParameters: $routeParameters
-                ),
-                [
+            IndexMasterCollections::make()->getBreadcrumbs(
+                parent: $parent,
+                routeName: preg_replace('/edit$/', 'index', $routeName),
+                routeParameters: $routeParameters
+            ),
+            [
                     [
                         'type'          => 'editingModel',
                         'editingModel' => [
@@ -107,6 +106,6 @@ class EditMasterCollection extends OrgAction
                         ]
                     ]
                 ]
-            );
+        );
     }
 }

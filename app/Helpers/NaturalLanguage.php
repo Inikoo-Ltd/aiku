@@ -117,7 +117,7 @@ class NaturalLanguage
 
     public function dimensions(null|array|string $dimensionsData): string
     {
-        if($dimensionsData===null){
+        if ($dimensionsData === null) {
             return '';
         }
 
