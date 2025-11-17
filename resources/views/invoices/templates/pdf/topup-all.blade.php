@@ -139,7 +139,7 @@
     <tr>
         <td>
             <h1>
-                {{__('Topup')}}
+                {{__('Credit Account Top-Up')}}
             </h1>
         </td>
     </tr>
@@ -162,10 +162,13 @@
                     <span class="address_label">{{ __('Phone') }}:</span> <span
                         class="address_value">{{ $customer->phone }}</span>
                 </div>
-                @if($customer->tax_number  && $customer->tax_number_valid)
+                @if($customer->identity_document_number)
+                    {{__('Registration Number')}}: {{$customer->identity_document_number}}
+                @endif
+                @if($customer->taxNumber && $customer->taxNumber->status == 'valid')
                     <div>
                         <span class="address_label">{{ __('Tax Number') }}:</span> <span
-                            class="address_value">{{ $customer->tax_number }}</span>
+                            class="address_value">{{ $customer->taxNumber->number }}</span>
                     </div>
                 @endif
             </div>
@@ -175,28 +178,65 @@
         </td>
     </tr>
 </table>
+@php
+    $deliveryAddress = $customer->deliveryAddress()->first();
+@endphp
+<table width="100%" style="font-family: sans-serif;" cellpadding="10">
+    <tr>
+        @if($deliveryAddress)
+            <td width="45%" style="border: 0.1mm solid #888888;"><span
+                    style="font-size: 7pt; color: #555555; font-family: sans-serif;">{{ __('Billing address') }}:</span>
+                <div>
+                    {{ $deliveryAddress->address_line_1 }}
+                </div>
+                <div>
+                    {{ $deliveryAddress->address_line_2 }}
+                </div>
+                <div>
+                    {{ $deliveryAddress->administrative_area }}
+                </div>
+                <div>
+                    {{ $deliveryAddress->locality }}
+                </div>
+                <div>
+                    {{ $deliveryAddress->postal_code }}
+                </div>
+                <div>
+                    {{ $deliveryAddress->country->name }}
+                </div>
+            </td>
+            <td width="10%">&nbsp;</td>
+        @endif
+    </tr>
+</table>
 
 <br>
 
 <table class="items" width="100%" style="font-size: 9pt; border-collapse: collapse;" cellpadding="8">
     <thead>
-    <tr>
-        <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
-        <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
-    </tr>
+        <tr>
+            <td style="width:14%;text-align:right">{{ __('Amount') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Description') }}</td>
+            <td style="text-align:left" colspan="2">{{ __('Payment Method') }}</td>
+            <td style="text-align:left">{{ __('Date of Transaction') }}</td>
+        </tr>
     </thead>
     <tbody>
-    @foreach($topups as $topup)
-        <tr>
-            <td style="text-align:right">{{ $topup->currency->symbol . $topup->amount }}</td>
-            <td style="text-align:left" colspan="2">{{ __('Topup to balance') }}</td>
-        </tr>
-    @endforeach
+        @foreach($topups as $topup)
+            <tr>
+                <td style="text-align:right">{{ $topup->currency->symbol . $topup->amount }}</td>
+                <td style="text-align:left" colspan="2">{{ __('Credit Account Balance Top-Up') . " [" }}<span style="font-style: italic">{{  $topup->reference }}</span>{{ "]" }}</td>
+                <td style="text-align:left" colspan="2">{{ $topup->payment->paymentAccount->name }}</td>
+                <td style="text-align:left">{{ $topup->created_at }}</td>
+            </tr>
+        @endforeach
     </tbody>
 </table>
 
 <br>
 <br>
+
+*<span style="font-style:italic">&nbsp;{{ __('This is a list of prepayment done for future purchases. A VAT invoice will be issued upon delivery of goods.') }}</span>
 
 <br>
 <br>
