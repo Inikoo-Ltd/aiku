@@ -185,7 +185,14 @@ const fetchProducts = async (isLoadMore = false, ignoreOutOfStockFallback = fals
         const data = response.data;
 
         lastPage.value = data?.meta?.last_page ?? data?.last_page ?? 1;
-        totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+
+         if (useOutOfStock) {
+            totalProducts.value =
+                totalProducts.value +
+                (data?.meta?.total ?? data?.total ?? 0)
+        } else {
+            totalProducts.value = data?.meta?.total ?? data?.total ?? 0;
+        }
 
         if (isLoadMore) {
             products.value = [...products.value, ...(data?.data ?? [])];
@@ -279,7 +286,7 @@ onMounted(() => {
 
     if (layout?.iris?.is_logged_in) {
         fetchProductHasPortfolio();
-        // fetchProducts()
+        /* fetchProducts() */
     }
 
 

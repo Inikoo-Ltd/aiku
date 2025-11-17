@@ -42,7 +42,7 @@ const isLoadingVisit = ref(false)
         </component>
 
         <!-- Content -->
-        <div class="flex flex-col md:flex-1">
+        <div class="flex-1 flex flex-col">
 
             <!-- Title -->
             <component
