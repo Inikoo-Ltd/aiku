@@ -35,6 +35,7 @@ import TradeUnitImagesManagement from "@/Components/Goods/ImagesManagement.vue"
 import AttachmentManagement from '@/Components/Goods/AttachmentManagement.vue'
 import ProductSales from "@/Components/Product/ProductSales.vue";
 import { trans } from "laravel-vue-i18n"
+import ProductContent from '@/Components/Showcases/Grp/ProductContent.vue'
 
 
 library.add(
@@ -72,6 +73,7 @@ const props = defineProps<{
     customers?: {}
     mailshots?: {}
     showcase?: {}
+    content?: {}
     service: {}
     rental: {}
     trade_units?: {}
@@ -123,7 +125,8 @@ const component = computed(() => {
         images: TradeUnitImagesManagement,
         translation: ProductTranslation,
         attachments : AttachmentManagement,
-        sales: ProductSales
+        sales: ProductSales,
+        content: ProductContent,
     }
     console.log(currentTab.value)
     return components[currentTab.value]

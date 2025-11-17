@@ -201,9 +201,6 @@ const validImages = computed(() =>
 
 
 		<div class="bg-white h-fit mx-4  shadow-sm ">
-			<div class="my-4 ">
-				<ReviewContent :data="data.product.data" />
-			</div>
 			<dl class="space-y-2 text-sm border border-gray-100 px-4 py-2 lg:p-6 lg:py-4 rounded">
 				<!-- Stock -->
 				<div class="flex justify-between items-center flex-wrap gap-2">
