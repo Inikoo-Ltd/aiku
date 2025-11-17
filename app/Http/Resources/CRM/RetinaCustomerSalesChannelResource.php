@@ -70,8 +70,8 @@ class RetinaCustomerSalesChannelResource extends JsonResource
         }
 
         $taxCategory = null;
-        if (Arr::has($this->settings, 'tax_category_id')) {
-            $taxCategory = TaxCategory::find(Arr::get($this->settings, 'tax_category_id'));
+        if (Arr::get($this->settings, 'tax_category.checked')) {
+            $taxCategory = TaxCategory::find(Arr::get($this->settings, 'tax_category.id'));
         }
 
         return [
@@ -90,8 +90,8 @@ class RetinaCustomerSalesChannelResource extends JsonResource
             'platform_image'          => $this->getPlatformLogo($customerSalesChannels->platform->code),
 
             'ban_stock_update_until'   => $this->ban_stock_update_util,
-            'include_vat'   => Arr::has($this->settings, 'tax_category_id'),
-            'vat_rate'   => $taxCategory->rate,
+            'include_vat'   => Arr::get($this->settings, 'tax_category.checked'),
+            'vat_rate'   => $taxCategory?->rate,
 
             'reconnect_route' => $reconnectRoute,
             'test_route' => $testRoute,

@@ -51,6 +51,7 @@ class UpdateRetinaCustomerSalesChannel extends RetinaAction
                     ]
                 ),
             ],
+            'is_vat_adjustment' => ['sometimes', 'boolean'],
             'tax_category_id'   => ['sometimes', 'integer', Rule::exists('tax_categories', 'id')],
             'status'       => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'name' => ['sometimes', 'string', 'max:255']

@@ -70,14 +70,15 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                     'is_vat_adjustment' => [
                                         'type'  => 'toggle',
                                         'label' => __('VAT Pricing Adjustment'),
-                                        'value' => (bool) Arr::get($customerSalesChannel->settings, 'tax_category_id')
+                                        'value' => (bool) Arr::get($customerSalesChannel->settings, 'tax_category.checked')
                                     ],
                                     'tax_category_id' => [
                                         'type'     => 'select',
                                         'label'    => __('Vat Category'),
                                         'required' => true,
+                                        'hidden' => ! Arr::get($customerSalesChannel->settings, 'tax_category.checked'),
                                         'options' => Options::forModels(TaxCategory::class),
-                                        'value'    => Arr::get($customerSalesChannel->settings, 'tax_category_id')
+                                        'value'    => Arr::get($customerSalesChannel->settings, 'tax_category.id')
                                     ],
                                 ]
                             ],
