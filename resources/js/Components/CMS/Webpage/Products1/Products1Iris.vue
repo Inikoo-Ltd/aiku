@@ -75,10 +75,15 @@ const showFilters = ref(false);
 const showAside = ref(false);
 const totalProducts = ref(props.fieldValue.products.meta.total);
 const settingPortfolio = ref(false);
-const isFetchingOutOfStock = ref(false);
+const isFetchingOutOfStock = ref(true);
 // const confirm = useConfirm();
 const isNewArrivals = ref(false);
 
+// Add page initiation check whether products_out_of_stock is fetched or not
+isFetchingOutOfStock.value = props.fieldValue.products_out_of_stock?.length > 0;
+if(isFetchingOutOfStock){
+    totalProducts.value = props.fieldValue.products.meta.total + (props.fieldValue.products_out_of_stock?.meta.total ?? 0);
+}
 
 const getRoutes = () => {
     if (props.fieldValue.model_type === "ProductCategory") {
