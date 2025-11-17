@@ -36,12 +36,14 @@ const setStatus = (newStatus: null | 'loading' | 'success' | 'error') => {
 
 // Update quantity function - exact copy dari ButtonAddToBasketInFamily
 const onUpdateQuantity = (newVal?: number) => {
+    const selectedQuantity = newVal ?? props.product.quantity_ordered_new
+
     router.post(
         route('iris.models.transaction.update', {
             transaction: props.product.transaction_id
         }),
         {
-            quantity_ordered: newVal ?? props.product.quantity_ordered_new
+            quantity_ordered: selectedQuantity
         },
         {
             preserveScroll: true,
@@ -55,6 +57,10 @@ const onUpdateQuantity = (newVal?: number) => {
                 setStatus('success')
                 layout.reload_handle()
                 props.product.quantity_ordered = props.product.quantity_ordered_new
+                
+                if (layout.temp?.fetchIrisProductCustomerData) {
+                    layout.temp.fetchIrisProductCustomerData()
+                }
             },
             onError: errors => {
                 setStatus('error')

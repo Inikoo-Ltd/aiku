@@ -4,7 +4,7 @@ import { notify } from '@kyvg/vue3-notification'
 import { trans } from 'laravel-vue-i18n'
 import { InputNumber } from 'primevue'
 import { router } from '@inertiajs/vue3'
-import { inject, ref, computed } from 'vue'
+import { inject, ref, computed, watch } from 'vue'
 import { debounce, get, set } from 'lodash-es'
 import { ProductResource } from '@/types/Iris/Products'
 import axios from 'axios'
@@ -219,6 +219,12 @@ const showWarning = () => {
     })
 }
 
+// Watch: if parent refetch the Customer Data (maybe RightSideBasket have update the quantity)
+watch(() => props.customerData, (newVal) => {
+    customer.value = {...newVal}
+}, {
+    deep: true
+})
 </script>
 
 <template>

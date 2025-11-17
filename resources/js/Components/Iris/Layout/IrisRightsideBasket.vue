@@ -137,9 +137,15 @@ const onRemoveFromBasket = (product) => {
             onSuccess: () => {
                 
                 layout.reload_handle()
+
                 if (layout?.rightbasket?.products) {
                     layout.rightbasket.products = layout.rightbasket.products.filter(p => p.transaction_id !== product.transaction_id)
                 }
+
+                if (layout.temp?.fetchIrisProductCustomerData) {
+                    layout.temp.fetchIrisProductCustomerData()
+                }
+
                 // fetchDataSideBasket(true)
             },
             // onError: errors => {
@@ -272,7 +278,7 @@ const onRemoveFromBasket = (product) => {
                                         <div class="flex flex-1 items-end justify-between">
                                             <p class=" text-lg">
                                                 <!-- <span class="text-gray-500 line-through">{{ product.price }}</span> -->
-                                                {{ product?.price ? locale.currencyFormat(dataSideBasket?.order_data?.currency_code, product.price) : '' }}
+                                                {{ product?.price ? locale.currencyFormat(dataSideBasket?.order_data?.currency_code || '', product.price) : '' }}
                                             </p>
                                         </div>
                                     </div>
