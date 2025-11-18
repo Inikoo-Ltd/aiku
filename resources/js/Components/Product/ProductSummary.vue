@@ -12,6 +12,7 @@ import { Accordion, AccordionPanel, AccordionHeader, AccordionContent } from "pr
 import { faTag } from "@far"
 import { ProductShowcase } from "@/types/product-showcase"
 import FractionDisplay from "../DataDisplay/FractionDisplay.vue"
+import { Link } from "@inertiajs/vue3"
 
 interface Stats {
 	amount: number | null
@@ -253,13 +254,13 @@ console.log('product summary : ', props)
                     </div>
 
 					<!-- Section: Picking -->
-                    <div  class="flex justify-between flex-wrap gap-1"  v-if="!hide?.includes('picking')">
+                    <div  class="flex justify-between flex-wrap gap-0.5"  v-if="!hide?.includes('picking')">
                         <dt class="text-gray-500">{{ trans("Picking") }}</dt>
-						<dd class="w-full border border-gray-300 px-2.5 py-1.5 rounded">
+						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded">
 							<div v-for="pick in data.picking_factor" class="grid grid-cols-4">
 								<div class="col-span-3">
 									<div class="w-fit">
-										<span class="xprimaryLink ">{{ pick.org_stock_code }}</span>
+										<Link :href="route('grp.helpers.redirect_org_stock', pick.org_stock_id)" class="primaryLink -ml-1">{{ pick.org_stock_code }}</Link>
 										<span class="italic opacity-60">({{ pick.org_stock_id }})</span>
 									</div>
 
@@ -270,6 +271,7 @@ console.log('product summary : ', props)
 								
 								<div class=" text-right">
 									<FractionDisplay
+										v-tooltip="trans('Number of packed in')"
 										:fractionData="pick.picking_factor"
 									/>
 								</div>
