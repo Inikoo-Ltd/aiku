@@ -253,7 +253,7 @@ console.log('product summary : ', props)
                     </div>
 
 					<!-- Section: Picking -->
-                    <div  class="flex justify-between flex-wrap gap-1">
+                    <div  class="flex justify-between flex-wrap gap-1"  v-if="!hide?.includes('picking')">
                         <dt class="text-gray-500">{{ trans("Picking") }}</dt>
 						<dd class="w-full border border-gray-300 px-2.5 py-1.5 rounded">
 							<div v-for="pick in data.picking_factor" class="grid grid-cols-4">
@@ -336,7 +336,11 @@ console.log('product summary : ', props)
 								<div class="space-y-3 py-2">
                                     <div  class="flex justify-between flex-wrap gap-1">
                                         <dt class="text-gray-500">{{ trans("Materials/Ingredients") }}</dt>
-                                        <dd class="font-medium max-w-[236px] text-right">{{ data?.marketing_ingredients }}</dd>
+                                      <dd class="font-medium max-w-[236px] text-right">
+										{{ Array.isArray(data?.marketing_ingredients)
+											? data.marketing_ingredients.join(', ')
+											: data?.marketing_ingredients ?? '' }}
+									 </dd>
                                     </div>
 
 									<div class="flex justify-between">
@@ -346,8 +350,7 @@ console.log('product summary : ', props)
 												<img class="inline-block h-[14px] w-[20px] object-cover rounded-sm"
 													:src="'/flags/' + data?.country_of_origin.code.toLowerCase() + '.png'"
 													loading="lazy" />
-												<span class="ml-2">{{ data.country_of_origin.name
-												}}</span>
+												<span class="ml-2">{{ data.country_of_origin.name}}</span>
 											</div>
 
 										</dd>
