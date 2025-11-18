@@ -115,8 +115,12 @@ class NaturalLanguage
         }
     }
 
-    public function dimensions(array|string $dimensionsData): string
+    public function dimensions(null|array|string $dimensionsData): string
     {
+        if ($dimensionsData === null) {
+            return '';
+        }
+
         if (is_array($dimensionsData)) {
             $dimensionsData = json_encode($dimensionsData);
         }

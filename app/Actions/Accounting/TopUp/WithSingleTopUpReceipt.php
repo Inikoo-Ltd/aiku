@@ -1,4 +1,5 @@
 <?php
+
 /*
  * author Louis Perez
  * created on 17-11-2025-14h-25m
@@ -10,9 +11,6 @@ namespace App\Actions\Accounting\TopUp;
 
 use App\Models\Accounting\TopUp;
 use Exception;
-use Lorisleiva\Actions\ActionRequest;
-use Lorisleiva\Actions\Concerns\AsAction;
-use Lorisleiva\Actions\Concerns\WithAttributes;
 use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use Sentry;
 
@@ -25,7 +23,7 @@ trait WithSingleTopUpReceipt
         $locale = $customer->shop->language->code;
         app()->setLocale($locale);
         $auth = auth()->guard();
-        if($auth->name == 'retina' && $customer->id !== $auth->user()->customer->id){
+        if ($auth->name == 'retina' && $customer->id !== $auth->user()->customer->id) {
             // Disable receipt check if logged in user is retina and is trying to access other user invoice
             abort(404);
         }

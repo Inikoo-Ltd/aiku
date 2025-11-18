@@ -86,10 +86,20 @@ class EditRetinaCustomerSalesChannel extends RetinaAction
                                 "label"  => __("Shipping"),
                                 'title'  => __('shipping'),
                                 'fields' => [
-                                    'name' => [
+                                    'shipping_service' => [
+                                        'type'  => 'select',
+                                        'label' => __('shipping service'),
+                                        'value' => Arr::get($customerSalesChannel->settings, 'shipping.service'),
+                                    ],
+                                    'shipping_price' => [
                                         'type'  => 'input',
-                                        'label' => __('store name'),
-                                        'value' => $customerSalesChannel->name
+                                        'label' => __('shipping price'),
+                                        'value' => Arr::get($customerSalesChannel->settings, 'shipping.price')
+                                    ],
+                                    'shipping_max_dispatch_time' => [
+                                        'type'  => 'input',
+                                        'label' => __('shipping max dispatch time'),
+                                        'value' => Arr::get($customerSalesChannel->settings, 'shipping.max_dispatch_time')
                                     ],
                                 ]
                             ],

@@ -83,7 +83,7 @@ class AssetHydrateOrderIntervals implements ShouldBeUnique
             $output->writeln("<info>Processing assets for shop:</info> $shop->name ($shop->slug)");
 
             $baseQuery->where('shop_id', $shop->id);
-        }else{
+        } else {
             $output->writeln("<info>Processing assets for all assets</info>");
         }
 

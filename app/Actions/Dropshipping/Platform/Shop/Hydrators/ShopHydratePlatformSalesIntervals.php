@@ -7,6 +7,9 @@ use App\Models\Catalogue\Shop;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Support\Facades\Log;
+use Exception;
+use Sentry;
 
 // Note: Experimental Data (Need to be checked)
 class ShopHydratePlatformSalesIntervals implements ShouldBeUnique
@@ -35,13 +38,18 @@ class ShopHydratePlatformSalesIntervals implements ShouldBeUnique
 
     public function handle(Shop $shop): void
     {
-        ShopHydrateAllPlatformsSalesIntervalsInvoices::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsNewChannels::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsNewCustomers::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsNewPortfolios::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsNewCustomerClient::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsSales::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsSalesOrgCurrency::run($shop);
-        ShopHydrateAllPlatformsSalesIntervalsSalesGrpCurrency::run($shop);
+        try {
+            ShopHydrateAllPlatformsSalesIntervalsInvoices::run($shop);
+            ShopHydrateAllPlatformsSalesIntervalsNewChannels::run($shop);
+            ShopHydrateAllPlatformsSalesIntervalsNewCustomers::run($shop);
+            ShopHydrateAllPlatformsSalesIntervalsNewPortfolios::run($shop);
+            ShopHydrateAllPlatformsSalesIntervalsNewCustomerClient::run($shop);
+            ShopHydrateAllPlatformsSalesIntervalsSales::run($shop);
+            ShopHydrateAllPlatformsSalesIntervalsSalesOrgCurrency::run($shop);
+            ShopHydrateAllPlatformsSalesIntervalsSalesGrpCurrency::run($shop);
+        } catch(Exception $e) {
+            Log::info("Failed to Hydrate Shop Sales Intervals: " . $e->getMessage());
+            Sentry::captureMessage("Failed to Hydrate Shop Sales Intervals to: " . $e->getMessage());
+        }
     }
 }

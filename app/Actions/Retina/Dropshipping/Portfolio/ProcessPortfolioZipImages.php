@@ -11,10 +11,6 @@ namespace App\Actions\Retina\Dropshipping\Portfolio;
 use App\Actions\RetinaAction;
 use App\Events\UploadPortfolioToR2Event;
 use App\Models\Dropshipping\CustomerSalesChannel;
-use Illuminate\Support\Str;
-use Lorisleiva\Actions\ActionRequest;
-
-use function Deployer\timestamp;
 
 class ProcessPortfolioZipImages extends RetinaAction
 {
@@ -25,7 +21,7 @@ class ProcessPortfolioZipImages extends RetinaAction
         $filename   = "portfolio_images_$randomString.zip";
         $fullPath   = "portfolio_images/$customerSalesChannel->id/$filename";
 
-        $result = $this->createAndUploadZip($customerSalesChannel, $filename,$fullPath);
+        $result = $this->createAndUploadZip($customerSalesChannel, $filename, $fullPath);
 
         UploadPortfolioToR2Event::dispatch($result, $randomString);
 
@@ -38,7 +34,8 @@ class ProcessPortfolioZipImages extends RetinaAction
         return GenerateDownloadLinkFileFromCatalogueIrisR2::run($fullPath);
     }
 
-    private function createAndUploadZip(CustomerSalesChannel $customerSalesChannel,string $filename,string $fullPath): string {
+    private function createAndUploadZip(CustomerSalesChannel $customerSalesChannel, string $filename, string $fullPath): string
+    {
         $tempZipPath = null;
 
         try {

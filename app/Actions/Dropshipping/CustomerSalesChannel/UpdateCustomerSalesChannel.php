@@ -8,12 +8,14 @@
 
 namespace App\Actions\Dropshipping\CustomerSalesChannel;
 
+use App\Actions\Dropshipping\Ebay\UpdateShippingPolicyEbayUser;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewChannels;
 use App\Actions\Dropshipping\Platform\Shop\Hydrators\ShopHydratePlatformSalesIntervalsNewCustomers;
 use App\Actions\OrgAction;
 use App\Actions\Traits\WithActionUpdate;
 use App\Enums\Dropshipping\CustomerSalesChannelStateEnum;
 use App\Enums\Dropshipping\CustomerSalesChannelStatusEnum;
+use App\Enums\Ordering\Platform\PlatformTypeEnum;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use App\Rules\IUnique;
 use Illuminate\Support\Arr;
@@ -37,8 +39,28 @@ class UpdateCustomerSalesChannel extends OrgAction
             data_set($modelData, 'settings.tax_category.id', Arr::get($modelData, 'tax_category_id'));
         }
 
+        if (Arr::has($modelData, 'shipping_service')) {
+            data_set($modelData, 'settings.shipping.service', Arr::get($modelData, 'shipping_service'));
+        }
+        if (Arr::has($modelData, 'shipping_price')) {
+            data_set($modelData, 'settings.shipping.price', Arr::get($modelData, 'shipping_price'));
+        }
+        if (Arr::has($modelData, 'shipping_max_dispatch_time')) {
+            data_set($modelData, 'settings.shipping.max_dispatch_time', Arr::get($modelData, 'shipping_max_dispatch_time'));
+        }
+
         data_forget($modelData, 'tax_category_id');
         data_forget($modelData, 'is_vat_adjustment');
+
+        if ($customerSalesChannel->platform->type === PlatformTypeEnum::EBAY) {
+            if (Arr::has($modelData, 'shipping_service') || Arr::has($modelData, 'shipping_price') || Arr::has($modelData, 'shipping_max_dispatch_time')) {
+                data_forget($modelData, 'shipping_service');
+                data_forget($modelData, 'shipping_price');
+                data_forget($modelData, 'shipping_max_dispatch_time');
+
+                UpdateShippingPolicyEbayUser::run($customerSalesChannel->user, $modelData);
+            }
+        }
 
         $customerSalesChannel = $this->update($customerSalesChannel, $modelData, 'settings');
         $changes = Arr::except($customerSalesChannel->getChanges(), ['updated_at', 'last_fetched_at']);
@@ -79,6 +101,9 @@ class UpdateCustomerSalesChannel extends OrgAction
             'status'            => ['sometimes', Rule::enum(CustomerSalesChannelStatusEnum::class)],
             'state'             => ['sometimes', Rule::enum(CustomerSalesChannelStateEnum::class)],
             'name'              => ['sometimes', 'string', 'max:255'],
+            'shipping_service'              => ['sometimes', 'string', 'max:255'],
+            'shipping_price'              => ['sometimes', 'string', 'max:255'],
+            'shipping_max_dispatch_time'              => ['sometimes', 'string', 'max:255'],
             'closed_at'         => ['sometimes', 'date'],
         ];
     }
