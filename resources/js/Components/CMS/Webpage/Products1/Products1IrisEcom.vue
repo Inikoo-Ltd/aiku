@@ -397,7 +397,6 @@ watch(
     },
     { deep: true }
 )
-console.log(props)
 
 </script>
 
