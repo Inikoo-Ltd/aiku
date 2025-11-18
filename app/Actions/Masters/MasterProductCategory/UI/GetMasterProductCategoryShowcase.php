@@ -10,11 +10,8 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
-use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Http\Resources\Masters\MasterSubDepartmentsResource;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;

@@ -265,7 +265,7 @@ class ShowProduct extends OrgAction
         }
 
         $actions = [];
-        
+
         if ($this->canEdit) {
             $actions[] = [
                 'type'  => 'button',
@@ -311,7 +311,7 @@ class ShowProduct extends OrgAction
                 ];
         }
 
-      
+
 
         return Inertia::render(
             'Org/Catalogue/Product',

@@ -74,7 +74,7 @@ class IncreaseCreditTransactionCustomer extends OrgAction
                 CreditTransactionReasonEnum::OTHER->value, CreditTransactionReasonEnum::TRANSFER->value => CreditTransactionTypeEnum::ADD_FUNDS_OTHER
             };
 
-            if(in_array($request->input('reason'), [CreditTransactionReasonEnum::PAY_FOR_SHIPPING->value, CreditTransactionReasonEnum::PAY_FOR_PRODUCT->value]) && !blank($request->input('notes'))){
+            if (in_array($request->input('reason'), [CreditTransactionReasonEnum::PAY_FOR_SHIPPING->value, CreditTransactionReasonEnum::PAY_FOR_PRODUCT->value]) && !blank($request->input('notes'))) {
                 $this->set('notes', CreditTransactionReasonEnum::getStaticLabel($request->input('reason')) . '. '. $request->input('notes'));
             }
             $this->set('type', $type->value);
