@@ -146,7 +146,7 @@ const validImages = computed(() =>
 			<!-- Image Preview & Thumbnails -->
 			<div class="bg-white   p-4 lg:p-5">
 				<div v-if="props.data?.main_image?.webp" class="max-w-[550px] w-full">
-					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
+					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview class="min-h-60" />
 					<div class="text-sm italic text-gray-500">
 						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')" class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
 					</div>
