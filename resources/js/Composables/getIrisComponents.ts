@@ -52,7 +52,7 @@ import Cta4 from '@/Components/CMS/Webpage/Cta4/Cta4Iris.vue'
 
 import SeeAlso1WorkshopIris from '@/Components/CMS/Webpage/SeeAlso1/SeeAlso1Iris.vue'
 import LuigiTrends1Iris from '@/Components/CMS/Webpage/LuigiTrends1/LuigiTrends1Iris.vue'
-
+import Step2Iris from '@/Components/CMS/Webpage/Step2/Step2Iris.vue'
 
 import UserSubscribeIris from '@/Components/CMS/Webpage/UserSubscribe/UserSubscribeIris.vue'
 import LuigiLastSeen1Iris from '@/Components/CMS/Webpage/LuigiLastSeen1/LuigiLastSeen1Iris.vue'
@@ -147,6 +147,7 @@ const components = (shop_type?: string): Record<string, Component> => {
         "blog" : BlogIris,
         'carousel-cta' : CarouselCtaIris,
         'carousel-image-background' : CarouselImageBackgroundIris,
+        'step-2' : Step2Iris
     }
 }
 
