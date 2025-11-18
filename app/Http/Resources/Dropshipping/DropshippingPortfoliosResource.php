@@ -140,6 +140,7 @@ class DropshippingPortfoliosResource extends JsonResource
             'weight'                => $weight,
             'marketing_weight'      => $marketing_weight,
             'price'                 => $price,
+            'price_include_vat'     => $price,
             'selling_price'         => $this->selling_price,
             'customer_price'        => $this->customer_price,
             'status'                => $this->status,

@@ -109,7 +109,7 @@ class DashboardHeaderPlatformSalesResource extends JsonResource
                         'formatted_value'   => '',
                         'currency_type'     => 'always',
                         'data_display_type' => 'full',
-                        'align'             => 'left',
+                        'align'             => 'right',
                         'scope'             => 'sales_percentage'
                     ]
                 ]

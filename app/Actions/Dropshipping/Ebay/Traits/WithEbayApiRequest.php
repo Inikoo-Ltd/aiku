@@ -959,9 +959,10 @@ trait WithEbayApiRequest
     /**
      * Create a user's eBay fulfilment policy
      */
-    public function createFulfilmentPolicy()
+    public function createFulfilmentPolicy($attributes)
     {
         $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+        $currency = Arr::get($this->getEbayConfig(), 'currency');
 
         $data = [
             "categoryTypes" => [
@@ -970,10 +971,10 @@ trait WithEbayApiRequest
                 ]
             ],
             "marketplaceId" => $marketplaceId,
-            "name" => "Domestic shipping",
+            "name" => "Shipping",
             "handlingTime" => [
                 "unit"  => "DAY",
-                "value"  => "1"
+                "value"  => Arr::get($attributes, 'max_dispatch_time')
             ],
             "shippingOptions" => [
                 [
@@ -982,9 +983,13 @@ trait WithEbayApiRequest
                     "shippingServices" => [
                         [
                             "buyerResponsibleForShipping" => "false",
-                            "freeShipping" => "true",
-                            "shippingCarrierCode" => $marketplaceId === "EBAY_ES" ? "Correos" : "RoyalMail",
-                            "shippingServiceCode" => $marketplaceId === "EBAY_ES" ? "ES_CartasNacionalesDeMas20" : "UK_RoyalMailNextDay"
+                            "freeShipping" => "false",
+                            "shippingCost" => [
+                                'currency' => $currency,
+                                'value' => Arr::get($attributes, 'price')
+                            ],
+                            "shippingCarrierCode" => Arr::get($attributes, 'carrier_code'),
+                            "shippingServiceCode" => Arr::get($attributes, 'service_code')
                         ]
                     ]
                 ]
@@ -996,6 +1001,54 @@ trait WithEbayApiRequest
             return $this->makeEbayRequest('post', $endpoint, $data);
         } catch (Exception $e) {
             Log::error('Create Fulfilment Policy Error: ' . $e->getMessage());
+            return ['error' => $e->getMessage()];
+        }
+    }
+
+    public function updateFulfilmentPolicy($fulfillmentPolicyId, $attributes)
+    {
+        $marketplaceId = Arr::get($this->getEbayConfig(), 'marketplace_id');
+        $currency = Arr::get($this->getEbayConfig(), 'currency');
+
+        $defaults = Arr::get($this->settings, 'shipping');
+
+        $data = [
+            "categoryTypes" => [
+                [
+                    "name" => "ALL_EXCLUDING_MOTORS_VEHICLES"
+                ]
+            ],
+            "marketplaceId" => $marketplaceId,
+            "name" => "Shipping",
+            "handlingTime" => [
+                "unit"  => "DAY",
+                "value"  => Arr::get($attributes, 'max_dispatch_time', Arr::get($defaults, 'max_dispatch_time'))
+            ],
+            "shippingOptions" => [
+                [
+                    "costType" => "FLAT_RATE",
+                    "optionType" => "DOMESTIC",
+                    "shippingServices" => [
+                        [
+                            "buyerResponsibleForShipping" => "false",
+                            "freeShipping" => "false",
+                            "shippingCost" => [
+                                'currency' => $currency,
+                                'value' => Arr::get($attributes, 'price', Arr::get($defaults, 'price'))
+                            ],
+                            "shippingCarrierCode" => Arr::get($attributes, 'carrier_code', Arr::get($defaults, 'carrier_code')),
+                            "shippingServiceCode" => Arr::get($attributes, 'service_code', Arr::get($defaults, 'service_code'))
+                        ]
+                    ]
+                ]
+            ]
+        ];
+
+        try {
+            $endpoint = "/sell/account/v1/fulfillment_policy/$fulfillmentPolicyId";
+            return $this->makeEbayRequest('post', $endpoint, $data);
+        } catch (Exception $e) {
+            Log::error('Edit Fulfilment Policy Error: ' . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }

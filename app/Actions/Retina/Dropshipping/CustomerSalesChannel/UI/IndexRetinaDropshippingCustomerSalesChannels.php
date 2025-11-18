@@ -35,6 +35,12 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
             });
         });
 
+        $platformSearch = AllowedFilter::callback('platform', function ($query, $value) {
+            $query->where(function ($query) use ($value) {
+                $query->whereStartWith('platforms.code', $value);
+            });
+        });
+
         if ($prefix) {
             InertiaTable::updateQueryBuilderParameters($prefix);
         }
@@ -64,7 +70,7 @@ class IndexRetinaDropshippingCustomerSalesChannels extends RetinaAction
                 'platforms.code as platform_code',
             ])
             ->allowedSorts(['reference', 'name', 'number_customer_clients', 'number_portfolios', 'number_orders'])
-            ->allowedFilters([$globalSearch])
+            ->allowedFilters([$globalSearch, $platformSearch])
             ->withPaginator($prefix, tableName: request()->route()->getName())
             ->withQueryString();
     }

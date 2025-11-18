@@ -130,6 +130,74 @@ if (!function_exists('findSmallestFactorsForSmallNumbers')) {
 
 }
 
+if (!function_exists('trim_decimal_zeros')) {
+
+    /**
+     * Trim trailing zeros from the decimal part of a numeric value.
+     *
+     * Examples:
+     *  - 1.6600  -> "1.66"
+     *  - 1.0000  -> "1"
+     *  - 3.3232  -> "3.3232"
+     *  - 3       -> "3"
+     *  - "001.500" -> "1.5"
+     *
+     * The function accepts int|float|numeric-string and returns a string representation
+     * without changing the numeric value, only trimming insignificant trailing zeros
+     * in the fractional part. Scientific notation inputs will be expanded to a fixed
+     * decimal form before trimming.
+     */
+    function trim_decimal_zeros(int|float|string $value): string
+    {
+        // Fast paths
+        if (is_int($value)) {
+            return (string)$value;
+        }
+
+        // Normalize to string while avoiding scientific notation for floats
+        if (is_float($value)) {
+            // Use a reasonably precise fixed format, then trim.
+            $normalized = sprintf('%.14F', $value);
+        } else {
+            // For strings, ensure it's numeric. If not, return as-is cast to string.
+            if (!is_numeric($value)) {
+                return (string)$value;
+            }
+            // If it is in scientific notation, expand via sprintf
+            if (preg_match('/^[+-]?\d+(?:\.\d+)?[eE][+-]?\d+$/', trim((string)$value))) {
+                $normalized = sprintf('%.14F', (float)$value);
+            } else {
+                $normalized = trim((string)$value);
+            }
+        }
+
+        // Remove leading plus sign if any
+        $normalized = ltrim($normalized, '+');
+
+        // If there is a decimal point, trim trailing zeros; then trim the dot if no fraction remains
+        if (str_contains($normalized, '.')) {
+            // Remove trailing zeros in the fractional part
+            $normalized = rtrim($normalized, '0');
+            // If all fractional digits were zeros, remove the dot
+            $normalized = rtrim($normalized, '.');
+        }
+
+        // Normalize leading zeros in the integer part like "000" -> "0"
+        // but preserve negative sign
+        if (preg_match('/^(-?)(\d+)(?:\.(\d+))?$/', $normalized, $m)) {
+            $sign = $m[1];
+            $int  = ltrim($m[2], '0');
+            $frac = $m[3] ?? '';
+            if ($int === '') {
+                $int = '0';
+            }
+            return $frac !== '' ? ($sign.$int.'.'.$frac) : ($sign.$int);
+        }
+
+        return $normalized;
+    }
+}
+
 if (!function_exists('findSmallestFactors')) {
     /**
      * Find the smallest factors (dividend and divisor) that can represent a number as a fraction.

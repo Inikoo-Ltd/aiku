@@ -33,6 +33,10 @@ use Spatie\Sluggable\SlugOptions;
  * @property int|null $customer_sales_channel_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property string|null $fulfillment_policy_id
+ * @property string|null $payment_policy_id
+ * @property string|null $return_policy_id
+ * @property string|null $location_key
  * @property WebUserTypeEnum $state
  * @property WebUserAuthTypeEnum $auth_type
  * @property-read Customer $customer

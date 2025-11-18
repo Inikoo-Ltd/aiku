@@ -275,10 +275,10 @@ const showChartButton = computed(() => {
         <!-- State awal: qty 0, tampilkan icon + -->
         <button v-if="showChartButton" @click.stop.prevent="instantAddToBasket" :style="buttonStyle"
             :disabled="isLoadingSubmitQuantityProduct || props.product.stock === 0"
-            class="rounded-full button-cart hover:bg-green-700 bg-gray-800 mr-4 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+            class="rounded-full button-cart hover:bg-green-700 bg-gray-800 text-gray-300 mr-4 h-10 w-10 flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
             v-tooltip="trans('Add to basket')">
             <LoadingIcon v-if="isLoadingSubmitQuantityProduct" class="text-gray-600" />
-            <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width class="text-gray-100 button-cart" :style="{ color : buttonStyle.color}" />
+            <FontAwesomeIcon v-else :icon="faShoppingCart" fixed-width  />
         </button>
 
         <!-- State: qty > 0, tampilkan quantity dan expand saat hover -->
@@ -303,7 +303,7 @@ const showChartButton = computed(() => {
 
             <!-- Quantity display (always visible) -->
             <span @click.stop.prevent 
-                class="text-sm font-medium text-gray-700 min-w-[1rem] cursor-default relative z-10 px-1 text-center self-center">
+                class="text-sm font-medium  min-w-[1rem] cursor-default relative z-10 px-1 text-center self-center">
                 {{ currentQuantity }}
             </span>
 

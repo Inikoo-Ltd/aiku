@@ -117,11 +117,9 @@ const groupedAttachments = computed(() => {
 
             <!-- Files column (up to 2 files per scope) -->
             <div>
-                <div v-for="item in items" :key="item.caption"
-                    class="p-2 text-xs text-blue-600 underline cursor-pointer flex items-center">
+                <div v-for="item in items" :key="item.caption"  class="p-2 text-xs text-blue-600 underline cursor-pointer flex items-center">
                     <div>
-                        <a :href="route(item.download_route.name, item.download_route.parameters)" target="_blank"
-                            class="flex items-center">
+                        <a :href="item.url" target="_blank"  class="flex items-center">
                             <FontAwesomeIcon :icon="getIcon(extractFileType(item.mime_type))" class="mr-1" />
                             {{ item.caption }}{{ `.${extractFileType(item.mime_type)}` }}
                         </a>

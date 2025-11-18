@@ -25,10 +25,8 @@ class GetMasterProductCategoryShowcase
 
     public function handle(MasterProductCategory $productCategory): array
     {
-
         return match ($productCategory->type) {
             MasterProductCategoryTypeEnum::DEPARTMENT => [
-                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($productCategory->masterShop, 'shops')),
                 'storeFamilyRoute' => [
                     'name' => 'grp.models.master_family.store',
                     'parameters' => [
@@ -36,20 +34,8 @@ class GetMasterProductCategoryShowcase
                     ]
                 ],
                 'department' => MasterProductCategoryResource::make($productCategory)->resolve(),
-                'families' => MasterProductCategoryResource::collection($productCategory->masterFamilies()),
-                'translation_box' => [
-                'title' => __('Multi-language Translations'),
-                'save_route' => [
-                     'method' => 'patch',
-                     'name'       => 'grp.models.master_product_categories.translations.update',
-                     'parameters' => [
-                         'masterProductCategory' => $productCategory->id
-                     ]
-                ],
-            ],
             ],
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
-                'shopsData' => OpenShopsInMasterShopResource::collection(IndexOpenShopsInMasterShop::run($productCategory->masterShop, 'shops')),
                 'storeFamilyRoute' => [
                     'name' => 'grp.models.master-sub-department.master_family.store',
                     'parameters' => [
@@ -57,17 +43,6 @@ class GetMasterProductCategoryShowcase
                     ]
                 ],
                 'subDepartment' => MasterSubDepartmentsResource::make($productCategory)->resolve(),
-                'families' => MasterFamiliesResource::collection($productCategory->masterFamilies()),
-                'translation_box' => [
-                'title'      => __('Multi-language Translations'),
-                'save_route' => [
-                    'method' => 'patch',
-                    'name'       => 'grp.models.master_product_categories.translations.update',
-                    'parameters' => [
-                        'masterProductCategory' => $productCategory->id
-                    ]
-                ],
-            ],
             ],
             default => [
                 'family' => MasterProductCategoryResource::make($productCategory),
