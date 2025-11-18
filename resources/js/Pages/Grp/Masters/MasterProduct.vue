@@ -163,7 +163,7 @@ onMounted(() => {
         <Breadcrumb :model="mini_breadcrumbs">
             <template #item="{ item }">
                 <div class="flex items-center gap-1 whitespace-nowrap">
-                    <component :is="item.to ? Link : 'span'"
+                    <component :is="item.to ? Link : 'span'"  :handleTabUpdate="handleTabUpdate"
                         :href="item.to ? route(item.to.name, item.to.parameters) : undefined" :title="item.title"
                         class="flex items-center gap-2 text-sm transition-colors duration-150"
                         :class="item.to ? 'text-gray-500' : 'text-gray-500 cursor-default'">

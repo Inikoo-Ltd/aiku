@@ -73,7 +73,7 @@ const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page));
 const filter = ref({ data: {} });
 const showFilters = ref(false);
 const showAside = ref(false);
-const totalProducts = ref(props.fieldValue.products.meta.total);
+const totalProducts = ref(props.fieldValue?.products?.meta?.last_page == 1 ? props.fieldValue.products.meta.total + props.fieldValue?.products_out_of_stock?.meta?.total : props.fieldValue.products.meta.total)
 const settingPortfolio = ref(false);
 const isFetchingOutOfStock = ref(true);
 // const confirm = useConfirm();

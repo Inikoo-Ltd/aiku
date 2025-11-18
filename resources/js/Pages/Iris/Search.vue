@@ -36,9 +36,10 @@ const LBInitSearchResult = async () => {
                 'brand',
                 'collection',
                 'tag',
+                'price_amount',
             ],
             QuicksearchTypes: [
-                'category',
+                'category:12',
                 'color',
                 'news',
                 'department',

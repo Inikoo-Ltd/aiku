@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
+use Illuminate\Support\Facades\Log;
+use Sentry;
 
 class HydrateCustomersTag
 {
@@ -51,8 +53,9 @@ class HydrateCustomersTag
 
                     try {
                         CustomerHydrateRfm::run($instance);
-                    } catch (Exception $e) {
-                        //
+                    } catch (Exception $e) {            
+                        Log::info("Failed to Hydrate Customer Tags: " . $e->getMessage());
+                        Sentry::captureMessage("Failed to Hydrate Customer Tags to: " . $e->getMessage());
                     }
                 }
             }

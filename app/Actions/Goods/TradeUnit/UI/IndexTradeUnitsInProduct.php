@@ -50,7 +50,8 @@ class IndexTradeUnitsInProduct extends OrgAction
                 'trade_units.net_weight',
                 'trade_units.marketing_dimensions',
                 'trade_units.volume',
-                'trade_units.type'
+                'trade_units.type',
+                'model_has_trade_units.quantity as quantity'
             ]);
 
 
@@ -82,7 +83,8 @@ class IndexTradeUnitsInProduct extends OrgAction
                 ->column(key: 'code', label: __('code'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'name', label: __('name'), canBeHidden: false, sortable: true, searchable: true)
                 ->column(key: 'net_weight', label: __('weight'), canBeHidden: false, sortable: true, searchable: true)
-                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true);
+                ->column(key: 'type', label: __('type'), canBeHidden: false, sortable: true, searchable: true)
+                ->column(key: 'quantity', label: __('quantity'), canBeHidden: false, sortable: false, searchable: false);
         };
     }
 }

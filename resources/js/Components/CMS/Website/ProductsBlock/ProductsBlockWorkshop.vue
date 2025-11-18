@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, provide, toRaw, watch, computed } from "vue"
+import { ref, provide, toRaw, watch, computed, inject } from "vue"
 import { library } from "@fortawesome/fontawesome-svg-core"
 import { faCube, faLink, faStar, faCircle, faChevronLeft, faChevronRight, faDesktop, faThLarge, faPaintBrushAlt, faMedal } from "@fas"
 import { router } from "@inertiajs/vue3"
@@ -51,7 +51,10 @@ interface Props {
 }
 
 const props = defineProps<Props>()
-
+const layout = inject("layout", {});
+layout.iris = {
+  is_logged_in : true
+}
 const selectedTab = ref(props.data.layout.data ? 1 : 0)
 const isLoadingSave = ref(false)
 const iframeClass = ref("w-full h-full")
