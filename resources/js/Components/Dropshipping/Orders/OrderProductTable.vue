@@ -19,6 +19,7 @@ import Image from "@/Components/Image.vue"
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { faBadgePercent } from "@fas"
 import { library } from "@fortawesome/fontawesome-svg-core"
+import Discount from '@/Components/Utils/Label/Discount.vue'
 library.add(faBadgePercent)
 
 type ProductRow = {
@@ -301,7 +302,7 @@ defineExpose({
       <!-- Column: Name / Stock -->
       <template #cell(asset_name)="{ item }">
         <div>
-          <div>{{ item.asset_name }}</div>
+          <div xclass="item.offers_data ? 'text-pink-600' : ''">{{ item.asset_name }}</div>
           <div v-if="item.available_quantity !== undefined && item.available_quantity < 1">
             <Tag label="Out of stock" no-hover-color :theme="7" size="xxs" />
           </div>
@@ -309,10 +310,7 @@ defineExpose({
             Stock: {{ locale.number(item.available_quantity || 0) }} available
           </div>
           
-            <div v-if="item?.offers_data?.offers" class="bg-pink-500/20 px-1 py-0.5 text-xs border flex items-center border-pink-500/50 rounded w-fit text-pink-700" >
-                <FontAwesomeIcon icon="fas fa-badge-percent" class="text-pink-500 text-xxs align-middle" fixed-width aria-hidden="true" />
-                <span class="ml-0.5 font-bold">{{ item.offers_data?.offers?.discounted_percentage * 100 }}%</span> {{ item.offers_data?.offers?.label }}
-            </div>
+            <Discount v-if="item.offers_data" :offers_data="item.offers_data" />
         </div>
       </template>
 
