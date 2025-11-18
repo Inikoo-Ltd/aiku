@@ -81,6 +81,7 @@ class RetinaEcomBasketTransactionsResources extends JsonResource
             'available_quantity'    => $transaction->available_quantity,
             'currency_code'       => $transaction->currency_code,
             'webpage_url'         => $webpageUrl,
+            'offers_data'         => $transaction->offers_data,
             'deleteRoute' => [
                 'name'       => 'retina.models.transaction.delete',
                 'parameters' => [

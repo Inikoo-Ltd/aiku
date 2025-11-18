@@ -108,9 +108,7 @@ const debounceUpdateQuantity = debounce(
                     Stock: {{ locale.number(item.available_quantity || 0) }} available
                 </div>
 
-                <Discount :offers_data="item.offers_data" />
-                
-
+                <Discount v-if="item.offers_data" :offers_data="item.offers_data" />
             </div>
         </template>
 
