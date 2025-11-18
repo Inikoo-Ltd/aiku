@@ -203,6 +203,7 @@ const validImages = computed(() =>
 			:parts="data.parts"
 			:video="videoSetup.url"
 			:hide="['price', 'rrp', 'stock']"
+			:public-attachment="data.attachment_box.public"
 		/>
 
 
