@@ -173,7 +173,7 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'HydrateCustomersTag',
         );
 
-        $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyFiveMinutes()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
+        $schedule->job(PurgeDownloadPortfolioCustomerSalesChannel::makeJob())->everyMinute()->withoutOverlapping()->timezone('UTC')->sentryMonitor(
             monitorSlug: 'PurgeDownloadPortfolioCustomerSalesChannel',
         );
     }

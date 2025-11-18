@@ -102,7 +102,7 @@ const props = defineProps<{
 
     // inactive: {}
     product_count: number
-    download_portfolio_customer_sales_channel_url: string
+    download_portfolio_customer_sales_channel_url: string | null
 }>();
 
 const step = ref(props.step);
@@ -354,8 +354,6 @@ const initSocketListener = () => {
     }
 
     channel = window.Echo.private(socketEvent).listen(socketAction, (eventData: any) => {
-        // make show the link only,
-        console.log(eventData.download_url)
         stateDownloadImagesReady.value = 'success'
         linkDownloadImages.value = 'https://' + eventData.download_url
         isModalDownloadImages.value = false
@@ -375,13 +373,19 @@ const initSocketListener = () => {
     })
 }
 
+watch(() => props.download_portfolio_customer_sales_channel_url, () => {
+    if(props.download_portfolio_customer_sales_channel_url){
+        sessionStorage.removeItem('download_code')
+        linkDownloadImages.value ='https://'+ props.download_portfolio_customer_sales_channel_url
+    } else {
+        linkDownloadImages.value = null
+    }
+}, {
+    immediate: true
+})
+
 // === STORAGE & SOCKET SYNC ===
 onMounted(() => {
-    //  if download_portfolio_customer_sales_channel_url exist remove the sessionStorage
-    if (props.download_portfolio_customer_sales_channel_url) {
-        sessionStorage.removeItem('download_code')
-    }
-
     const storedCode = sessionStorage.getItem('download_code')
     if (storedCode) {
         codeString.value = storedCode
@@ -397,6 +401,7 @@ onMounted(() => {
 
     onBeforeUnmount(() => {
         if (channel) channel.stopListening(".upload-portfolio-to-r2")
+        linkDownloadImages.value = null
     })
 })
 
@@ -408,12 +413,6 @@ const handleDownloadClick = async (type: string, event: Event) => {
         console.error('No valid URL found for download');
         return;
     }
-
-    notify({
-        title: "Download on progress",
-        text: "Please wait while your download is being prepared",
-        type: "success",
-    })
     // Convert URL to string if it's a Router object
     const urlString = typeof url === 'string' ? url : url.toString();
 
@@ -443,17 +442,6 @@ const handleDownloadClick = async (type: string, event: Event) => {
 }
 
 
-const downloadZipFromUrl = (downloadUrl: string): void => {
-  if (!downloadUrl) return;
-
-  const downloadUrlString = typeof downloadUrl === 'string' ? downloadUrl : downloadUrl.toString();
-  const fullUrl = downloadUrlString.startsWith('http') ?
-      downloadUrlString :
-      `https://${downloadUrlString}`;
-
-  window.open(fullUrl, '_blank');
-};
-
 
 </script>
 
@@ -476,7 +464,7 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                 <a v-if="!linkDownloadImages" href="#" @click.prevent="!isSocketActive && handleDownloadClick('images', $event)">
                     <Button :icon="faImage" type="tertiary" class="border-l-0 rounded-l-none" :disabled="isSocketActive">
                         <template #label>
-                            <LoadingText v-if="stateDownloadImagesReady === 'loading'" />
+                            <LoadingIcon v-if="stateDownloadImagesReady === 'loading'" />
                             <span v-else>
                                 {{ trans('Images') }}
                             </span>
@@ -485,7 +473,7 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                 </a>
 
                 <a v-else :href="linkDownloadImages" target="_blank" rel="noopener" download>
-                    <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive">
+                    <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive"  v-tooltip="trans('This link only valid for 1 day')">
                     </Button>
                 </a>
             </div>
@@ -511,7 +499,7 @@ const downloadZipFromUrl = (downloadUrl: string): void => {
                             >
                                 <template #default="{ loading }">
                                     <div class="flex gap-x-2 justify-start items-center w-full">
-                                        <LoadingIcon v-if="loading" class="h-5"/>
+                                        <LoadingIcon v-if="loading" class="h-5"  v-tooltip="trans('Processing...')"/>
                                         <img
                                             v-else
                                             :src="`/assets/channel_logo/${manual_channel.platform_code}.svg`"

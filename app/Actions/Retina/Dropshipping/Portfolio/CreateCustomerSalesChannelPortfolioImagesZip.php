@@ -90,6 +90,7 @@ class CreateCustomerSalesChannelPortfolioImagesZip
             UpdatePortfolioZipImagesProcess::run([
                 'id' => $processId,
                 'file_size' => $fileSize,
+                'size_unit' => 'bytes',
                 'file_completed_create_at' => now(),
             ]);
 

@@ -31,6 +31,7 @@ class DownloadPortfolioCustomerSalesChannel extends Model
     protected $fillable = [
         'customer_sales_channel_id',
         'file_name',
+        'file_path',
         'download_url',
         'file_size',
         'size_unit',

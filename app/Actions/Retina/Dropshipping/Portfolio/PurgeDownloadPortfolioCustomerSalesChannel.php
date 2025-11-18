@@ -21,22 +21,13 @@ class PurgeDownloadPortfolioCustomerSalesChannel
     public function handle()
     {
         try {
-            // get from env
             $days = env('PURGE_DOWNLOAD_PORTFOLIO_CUSTOMER_SALES_CHANNEL_DAYS', 1);
-            // $downloadPortfolioCustomerSalesChannels = DownloadPortfolioCustomerSalesChannel::where('created_at', '<', now()->subDays($days))->get();
-            $downloadPortfolioCustomerSalesChannels = DownloadPortfolioCustomerSalesChannel::where('created_at', '<', now()->addDays($days))->get();
-            Log::info($downloadPortfolioCustomerSalesChannels);
-            // get the download_url if not null from  downloadPortfolioCustomerSalesChannels make it to be array
-            $download_urls = $downloadPortfolioCustomerSalesChannels->pluck('download_url')->filter()->values()->toArray();
-            Log::info($download_urls);
-
+            $downloadPortfolioCustomerSalesChannels = DownloadPortfolioCustomerSalesChannel::where('created_at', '<', now()->subDays($days))->whereNull('deleted_at')->get();
+            $file_paths = $downloadPortfolioCustomerSalesChannels->pluck('file_path')->filter()->values()->toArray();
             $ids = $downloadPortfolioCustomerSalesChannels->pluck('id')->toArray();
-            Log::info($ids);
 
-            // remove from
-            RemoveFilesFromCatalogueIrisR2::run($download_urls);
+            RemoveFilesFromCatalogueIrisR2::run($file_paths);
 
-            // remove from database
             DownloadPortfolioCustomerSalesChannel::whereIn('id', $ids)->delete();
         } catch (Exception $e) {
             Log::error($e);

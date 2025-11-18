@@ -53,6 +53,7 @@ class ProcessPortfolioZipImages extends RetinaAction
 
             UpdatePortfolioZipImagesProcess::run([
                 'id' => $tempZipArr['process_id'],
+                'file_path' => $fullPath,
                 'download_url' => $downloadUrl,
             ]);
 

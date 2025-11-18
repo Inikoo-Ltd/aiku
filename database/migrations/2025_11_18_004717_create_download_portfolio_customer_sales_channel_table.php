@@ -13,6 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('customer_sales_channel_id')->constrained('customer_sales_channels')->cascadeOnDelete();
             $table->string('file_name')->nullable();
+            $table->string('file_path')->nullable();
             $table->string('download_url')->nullable();
             $table->float('file_size')->nullable();
             $table->string('size_unit')->nullable();
