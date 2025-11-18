@@ -15,7 +15,7 @@ use App\Models\Dropshipping\EbayUser;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
 
-class UpdateEbayUser extends OrgAction
+class UpdateShippingPolicyEbayUser extends OrgAction
 {
     use AsAction;
     use WithAttributes;
@@ -23,10 +23,14 @@ class UpdateEbayUser extends OrgAction
 
     public function handle(EbayUser $ebayUser, array $modelData): EbayUser
     {
+        $fulfillmentPolicyId = $ebayUser->fulfilment_policy_id;
+        $fulfillmentPolicy = $ebayUser->updateFulfilmentPolicy($fulfillmentPolicyId, $modelData);
 
-        $ebayUser = $this->update($ebayUser, $modelData, ['settings']);
+        if ($fulfillmentPolicy) {
+            data_set($modelData, 'data.fulfillment_policy', $fulfillmentPolicy);
+        }
 
-        $ebayUser->refresh();
+        UpdateEbayUser::run($ebayUser, $modelData);
 
         return $ebayUser;
     }

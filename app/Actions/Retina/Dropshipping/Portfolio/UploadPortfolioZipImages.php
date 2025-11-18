@@ -9,16 +9,12 @@
 namespace App\Actions\Retina\Dropshipping\Portfolio;
 
 use App\Actions\RetinaAction;
-use App\Events\UploadPortfolioToR2Event;
 use App\Models\Dropshipping\CustomerSalesChannel;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\ActionRequest;
 
-use function Deployer\timestamp;
-
 class UploadPortfolioZipImages extends RetinaAction
 {
-
     public function authorize(ActionRequest $request): bool
     {
         $customerSalesChannel = $request->route()->customerSalesChannel;
@@ -29,7 +25,7 @@ class UploadPortfolioZipImages extends RetinaAction
         return true;
     }
 
-    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request) : string
+    public function asController(CustomerSalesChannel $customerSalesChannel, ActionRequest $request): string
     {
         $this->initialisation($request);
         $key = now()->timestamp.'-'.Str::random(8);

@@ -37,7 +37,7 @@ class ShopHydrateSalesIntervals implements ShouldBeUnique
     {
         $shop = Shop::where('slug', $command->argument('shop'))->first();
         $intervalsExceptHistorical = DateIntervalEnum::allExceptHistorical();
-        $this->handle($shop,$intervalsExceptHistorical,[]);
+        $this->handle($shop, $intervalsExceptHistorical, []);
     }
 
     public function handle(Shop $shop, ?array $intervals = null, ?array $doPreviousPeriods = null): void

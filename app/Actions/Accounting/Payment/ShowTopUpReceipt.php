@@ -12,16 +12,11 @@ namespace App\Actions\Accounting\Payment;
 use App\Actions\OrgAction;
 use App\Actions\Accounting\TopUp\WithSingleTopUpReceipt;
 use App\Models\Accounting\TopUp;
-use Exception;
 use Lorisleiva\Actions\ActionRequest;
 use Lorisleiva\Actions\Concerns\AsAction;
 use Lorisleiva\Actions\Concerns\WithAttributes;
-use Mccarlosen\LaravelMpdf\Facades\LaravelMpdf as PDF;
 use App\Models\Accounting\Payment;
-use App\Models\Catalogue\Shop;
-use App\Models\CRM\Customer;
 use App\Models\SysAdmin\Organisation;
-use Sentry;
 use Symfony\Component\HttpFoundation\Response;
 
 class ShowTopUpReceipt extends OrgAction

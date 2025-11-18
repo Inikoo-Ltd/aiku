@@ -50,7 +50,7 @@ class DeleteMasterCollection extends GrpAction
                     $masterCollection->orderingStats->delete();
                 }
 
-               $masterCollection->forceDelete();
+                $masterCollection->forceDelete();
             } else {
                 $masterCollection->delete();
             }
