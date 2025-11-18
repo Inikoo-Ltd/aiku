@@ -64,7 +64,7 @@ const orderBy = ref(layout.params?.order_by)
 const page = ref(toRaw(props.fieldValue.products.meta.current_page))
 const lastPage = ref(toRaw(props.fieldValue.products.meta.last_page))
 const filter = ref({ data: {} })
-const totalProducts = ref(props.fieldValue.products.meta.total)
+const totalProducts = ref(props.fieldValue?.products?.meta?.last_page == 1 ? props.fieldValue.products.meta.total + props.fieldValue?.products_out_of_stock?.meta?.total : props.fieldValue.products.meta.total)
 
 const isShowFilters = ref(false)
 const isShowAside = ref(false)
@@ -397,7 +397,6 @@ watch(
     },
     { deep: true }
 )
-
 
 </script>
 
