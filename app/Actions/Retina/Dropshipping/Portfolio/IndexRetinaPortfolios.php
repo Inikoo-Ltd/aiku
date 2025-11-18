@@ -244,7 +244,9 @@ class IndexRetinaPortfolios extends RetinaAction
             ];
         })->sortKeys();
 
-        $last_active_download_portfolio_customer_sales_channel_url = DownloadPortfolioCustomerSalesChannel::where('customer_sales_channel_id', $this->customerSalesChannel->id)->whereNotNull('download_url')->orderBy('created_at', 'desc')->first()?->download_url;
+        $downloadPortfolioCustomerSalesChannel = DownloadPortfolioCustomerSalesChannel::where('customer_sales_channel_id', $this->customerSalesChannel->id)->whereNotNull('download_url')->orderBy('created_at', 'desc')->first();
+        $last_active_download_portfolio_customer_sales_channel_url = $downloadPortfolioCustomerSalesChannel?->download_url;
+        $last_created_at_download_portfolio_customer_sales_channel = $downloadPortfolioCustomerSalesChannel?->created_at;
         return Inertia::render(
             'Dropshipping/Portfolios',
             [
@@ -411,7 +413,8 @@ class IndexRetinaPortfolios extends RetinaAction
                 'is_platform_connected'    => $this->customerSalesChannel->platform_status,
                 'customer_sales_channel'   => RetinaCustomerSalesChannelResource::make($this->customerSalesChannel)->toArray(request()),
                 'channels'                  => CustomerSalesChannelsResourceTOFIX::collection($channels), //  Do now use the resource. Use an array of necessary data
-                'download_portfolio_customer_sales_channel_url' => $last_active_download_portfolio_customer_sales_channel_url
+                'download_portfolio_customer_sales_channel_url' => $last_active_download_portfolio_customer_sales_channel_url,
+                'last_created_at_download_portfolio_customer_sales_channel' => $last_created_at_download_portfolio_customer_sales_channel
             ]
         )->table($this->tableStructure(prefix: 'products'))
             ->table(IndexPlatformPortfolioLogs::make()->tableStructure(null, 'logs'));

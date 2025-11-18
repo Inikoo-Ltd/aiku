@@ -21,6 +21,8 @@ import {faSyncAlt, faHandPointer, faBan} from "@fas";
 import { useFormatTime } from "@/Composables/useFormatTime";
 import Icon from '@/Components/Icon.vue'
 import LoadingText from "@/Components/Utils/LoadingText.vue"
+import { differenceInHours, differenceInMinutes, differenceInSeconds, addDays } from 'date-fns';
+
 
 import {
     faBracketsCurly, faPawClaws,
@@ -103,6 +105,7 @@ const props = defineProps<{
     // inactive: {}
     product_count: number
     download_portfolio_customer_sales_channel_url: string | null
+    last_created_at_download_portfolio_customer_sales_channel: string | null
 }>();
 
 const step = ref(props.step);
@@ -441,6 +444,49 @@ const handleDownloadClick = async (type: string, event: Event) => {
     }
 }
 
+// Add these new refs and computed properties
+const now = ref(new Date());
+const timeLeft = ref('');
+
+// Update the current time every second
+onMounted(() => {
+  const timer = setInterval(() => {
+    now.value = new Date();
+    updateTimeLeft();
+  }, 1000);
+
+  onBeforeUnmount(() => {
+    clearInterval(timer);
+  });
+});
+
+// Update the time left until the link expires
+const updateTimeLeft = () => {
+  if (!props.last_created_at_download_portfolio_customer_sales_channel) {
+    timeLeft.value = 'Download link is ready';
+    return;
+  }
+
+  const expiryDate = addDays(new Date(props.last_created_at_download_portfolio_customer_sales_channel), 1);
+  const nowDate = now.value;
+
+  if (nowDate > expiryDate) {
+    timeLeft.value = 'Download link has expired';
+    return;
+  }
+
+  const hours = differenceInHours(expiryDate, nowDate);
+  const minutes = differenceInMinutes(expiryDate, nowDate) % 60;
+  const seconds = differenceInSeconds(expiryDate, nowDate) % 60;
+
+  timeLeft.value = `Link expires in ${hours}h ${minutes}m ${seconds}s`;
+};
+
+// Watch for changes to the creation date
+watch(() => props.last_created_at_download_portfolio_customer_sales_channel, () => {
+  updateTimeLeft();
+}, { immediate: true });
+
 
 
 </script>
@@ -473,7 +519,7 @@ const handleDownloadClick = async (type: string, event: Event) => {
                 </a>
 
                 <a v-else :href="linkDownloadImages" target="_blank" rel="noopener" download>
-                    <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive"  v-tooltip="trans('This link only valid for 1 day')">
+                    <Button :icon="faDownload" :label="trans('Download images')" type="secondary" class="border-l-0 rounded-l-none" :disabled="isSocketActive" v-tooltip="timeLeft">
                     </Button>
                 </a>
             </div>
@@ -700,10 +746,7 @@ const handleDownloadClick = async (type: string, event: Event) => {
                     <div class="mx-auto flex size-12 items-center justify-center rounded-full bg-gray-100"
                         xclass="getBgColorDependsOnStatus(selectedModal?.status)"
                     >
-                        <!-- <FontAwesomeIcon v-if="selectedModal?.status == 'error' || selectedModal?.status == 'failure'" icon='fal fa-times' class="text-red-500 text-2xl" fixed-width aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'success'" icon='fal fa-check' class="text-green-500 text-2xl" fixed-width aria-hidden='true' />
-                        <FontAwesomeIcon v-if="selectedModal?.status == 'warning'" icon='fas fa-exclamation' class="text-orange-500 text-2xl" fixed aria-hidden='true' /> -->
-                        <FontAwesomeIcon icon='fas fa-info' class="text-gray-500 text-2xl" fixed-width aria-hidden='true' />
+                        <FontAwesomeIcon icon='fas fa-spinner' class="text-gray-500 text-2xl animate-spin" fixed-width aria-hidden='true' />
                     </div>
 
                     <div class="mt-3 text-center sm:mt-5">
@@ -712,7 +755,7 @@ const handleDownloadClick = async (type: string, event: Event) => {
                         </div>
 
                         <div xv-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
-                            Please wait a moment and don't refresh the page. It takes around 10 seconds. You will receive a notification when it's ready.
+                            This may take around 10 seconds. You'll receive a notification once it's ready.
                         </div>
 
                     </div>
@@ -743,11 +786,11 @@ const handleDownloadClick = async (type: string, event: Event) => {
 
                     <div class="mt-3 text-center sm:mt-5">
                         <div as="h3" class="font-semibold text-2xl">
-                            Your download images is ready.
+                           Your images are ready for download.
                         </div>
 
                         <div xv-if="selectedModal?.description" class="mt-2 text-sm opacity-75">
-                            Click the download button below to get your files.
+                            Click the button below to retrieve your files.
                         </div>
 
                     </div>
