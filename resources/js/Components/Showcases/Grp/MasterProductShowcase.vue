@@ -172,7 +172,7 @@ const props = defineProps<{
 					<ImagePrime :src="props.data?.main_image.webp" :alt="props?.data?.product?.data?.name" preview />
 					<div class="text-sm italic text-gray-500">
 						See all the images of this product in the tab <span @click="() => handleTabUpdate('images')"
-							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">Media</span>
+							class="underline text-indigo-500 hover:text-indigo-700 cursor-pointer">images</span>
 					</div>
 				</div>
 				<div v-else>
@@ -188,7 +188,14 @@ const props = defineProps<{
 				</div>
 			</div>
 		</div>
-		<MasterProductSummary :data="data.masterProduct" :video="videoSetup?.url"
-			:hide="['price', 'rrp', 'stock', 'weight', 'dimension','picking']" />
+		
+		<MasterProductSummary
+			:data="data.masterProduct"
+			:gpsr="data.gpsr"
+			:properties="data.properties"
+			:parts="data.parts"
+			:video="videoSetup?.url"
+			:hide="['price', 'rrp', 'stock', 'weight', 'dimension','picking']"
+		/>
 	</div>
 </template>
