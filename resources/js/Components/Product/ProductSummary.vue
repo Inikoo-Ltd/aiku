@@ -257,24 +257,28 @@ console.log('product summary : ', props)
                     <div  class="flex justify-between flex-wrap gap-0.5"  v-if="!hide?.includes('picking')">
                         <dt class="text-gray-500">{{ trans("Picking") }}</dt>
 						<dd class="w-full border border-gray-200 px-2.5 py-1.5 rounded">
-							<div v-for="pick in data.picking_factor" class="grid grid-cols-4">
-								<div class="col-span-3">
-									<div class="w-fit">
-										<Link :href="route('grp.helpers.redirect_org_stock', pick.org_stock_id)" class="primaryLink -ml-1">{{ pick.org_stock_code }}</Link>
-										<span class="italic opacity-60">({{ pick.org_stock_id }})</span>
+							<template v-if="data?.picking_factor?.length">
+								<div v-for="pick in data.picking_factor" class="grid grid-cols-4">
+									<div class="col-span-3">
+										<div class="w-fit">
+											<Link :href="route('grp.helpers.redirect_org_stock', pick.org_stock_id)" class="primaryLink -ml-1">{{ pick.org_stock_code }}</Link>
+											<span class="italic opacity-60">({{ pick.org_stock_id }})</span>
+										</div>
+										<div v-tooltip="trans('Note')" class="text-gray-400 text-xs w-fit">
+											{{ pick.note || '-' }}
+										</div>
 									</div>
-
-									<div v-tooltip="trans('Note')" class="text-gray-400 text-xs w-fit">
-										{{ pick.note || '-' }}
-									</div>
-								</div>
 								
-								<div class=" text-right">
-									<FractionDisplay
-										v-tooltip="trans('Number of packed in')"
-										:fractionData="pick.picking_factor"
-									/>
+									<div class=" text-right">
+										<FractionDisplay
+											v-tooltip="trans('Number of packed in')"
+											:fractionData="pick.picking_factor"
+										/>
+									</div>
 								</div>
+							</template>
+							<div v-else class="text-center text-gray-400 italic text-xs">
+								{{ trans("No data available") }}
 							</div>
 						</dd>
                     </div>
