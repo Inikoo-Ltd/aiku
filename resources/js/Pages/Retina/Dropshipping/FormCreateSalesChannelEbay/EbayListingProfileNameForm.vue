@@ -1,6 +1,6 @@
 <!--
   - Author: Steven Wicca stewicalf@gmail.com
-  - Created: Mon, 17 Nov 2025 16:57:42 Central Indonesia Time, Lembeng Beach, Bali, Indonesia
+  - Created: Tue, 18 Nov 2025 08:51:34 Central Indonesia Time, Lembeng Beach, Bali, Indonesia
   - Copyright (c) 2025, Steven Wicca Alfredo
   -->
 
@@ -9,16 +9,18 @@
     import { faInfoCircle } from "@fal";
     import { trans } from "laravel-vue-i18n";
     import { useForm } from "@inertiajs/vue3";
+    import PureInput from "@/Components/Pure/PureInput.vue";
     import { library } from "@fortawesome/fontawesome-svg-core";
     import Button from "@/Components/Elements/Buttons/Button.vue";
-    import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
     library.add(faInfoCircle);
 
     const goNext = inject("goNext");
     const closeCreateEbayModal = inject("closeCreateEbayModal");
 
-    const form = useForm({});
+    const form = useForm({
+        profileName: ""
+    });
 
     const submitForm = async () => {
         console.log(form.data());
@@ -28,13 +30,17 @@
 
 <template>
     <div class="flex flex-col gap-2">
-        <span class="text-lg font-semibold">{{ trans("API Settings") }}</span>
-        <span class="text-sm">{{ trans("This is where you need to add your API settings") }}</span>
+        <span class="text-lg font-semibold">{{ trans("Add eBay listing profile") }}</span>
+        <hr class="w-full border-t" />
     </div>
     <form @submit.prevent="submitForm" class="flex flex-col gap-6">
-        <div class="flex items-center gap-2 w-full md:w-80">
-            <Button size="sm" @click="closeCreateEbayModal">{{ trans("AuthKey") }}</Button>
-            <FontAwesomeIcon v-tooltip="trans('Requests a token from eBay so we can sync without you entering your account details each time')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
+        <div class="flex flex-col gap-2 w-full md:w-80">
+            <label class="font-semibold">{{ trans("Profile name") }}</label>
+            <PureInput
+                type="text"
+                v-model="form.profileName"
+                @update:model-value="form.errors.profileName = null"
+            />
         </div>
 
         <hr class="w-full border-t" />
