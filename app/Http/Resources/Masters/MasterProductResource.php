@@ -16,13 +16,10 @@ class MasterProductResource extends JsonResource
 
     public function toArray($request): array
     {
-        // Ambil trade units dari model, bukan request
         $tradeUnits = $this->tradeUnits;
 
-        // Load ingredients bila belum ada
         $tradeUnits->loadMissing('ingredients');
 
-        // Ambil ingredients unik
         $ingredients = $tradeUnits->flatMap(function ($tradeUnit) {
             return $tradeUnit->ingredients->pluck('name');
         })->unique()->values()->all();
