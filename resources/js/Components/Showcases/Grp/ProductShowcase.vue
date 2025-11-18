@@ -196,14 +196,18 @@ const validImages = computed(() =>
 		</div>
 
 		<!-- Product Summary -->
-		<ProductSummary :data="data.product.data" :gpsr="data.gpsr" :properties="data.properties" :parts="data.parts"
-			:video="videoSetup.url" :hide="['price', 'rrp', 'stock']" />
-
-
+		<ProductSummary
+			:data="data.product.data"
+			:gpsr="data.gpsr"
+			:properties="data.properties"
+			:parts="data.parts"
+			:video="videoSetup.url"
+			:hide="['price', 'rrp', 'stock']"
+		/>
 
 
 		<div class="bg-white h-fit mx-4  shadow-sm ">
-			<div class="flex items-center gap-2 text-sm text-gray-600 mb-4">
+			<div class="flex items-center gap-2 text-3xl text-gray-600 mb-4">
 				<FontAwesomeIcon :icon="faCircle" class="text-[10px]"
 					:class="data?.product?.data?.stock > 0 ? 'text-green-600' : 'text-red-600'" />
 				<span>

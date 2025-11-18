@@ -19,6 +19,7 @@ const props = withDefaults(
     target?: string
     type?: "internal" | "external"
     canonical_url?: string
+    id?:number
   }>(),
   {
     header: () => ({}),
@@ -80,6 +81,7 @@ const isLoading = ref(false)
     :class="class"
     :style="style"
     :target="target"
+    :id="id"
     @start="emit('start'), isLoading = true"
     @success="emit('success')"
     @error="emit('error')"

@@ -168,6 +168,10 @@ class Kernel extends ConsoleKernel
             monitorSlug: 'ConsolidateRecurringBills',
         );
 
+        $schedule->command('hydrate:customers-clv')->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
+            monitorSlug: 'HydrateCustomersClv',
+        );
+
         $schedule->command('hydrate:customers-tag')->dailyAt('00:00')->timezone('UTC')->sentryMonitor(
             monitorSlug: 'HydrateCustomersTag',
         );

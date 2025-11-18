@@ -29,6 +29,10 @@ class GetMasterProductShowcase
             'images' => $this->getImagesData($masterAsset),
             'main_image'      => $masterAsset->imageSources(),
             'masterProduct' => MasterProductResource::make($masterAsset)->toArray(request()),
+            'properties'           => null,  // TODO
+            'gpsr'                 => null,  // TODO
+            'parts'                 => null,  // TODO
+
         ];
     }
 
