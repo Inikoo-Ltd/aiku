@@ -57,6 +57,8 @@ const LBInitAutocompleteNew = async () => {
                 prefixed: true,
                 symbol: locale.currencySymbol(layout.iris?.currency?.code)
             },
+            Width: '100vw',
+            CloseWhenQueryIsEmpty: false,
             Translations: LuigiTranslation,
             RemoveFields: layout.iris.is_logged_in ? [] : ['formatted_price', 'price_amount', 'price'],
             Types: [

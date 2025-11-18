@@ -33,6 +33,7 @@ class IndexBasketProducts extends OrgAction
         return $query->select([
                 'transactions.id as transaction_id',
                 'transactions.quantity_ordered as quantity_ordered',
+                'transactions.offers_data',
                 'products.id as product_id',
                 'products.image_id',
                 'products.code',

@@ -20,6 +20,7 @@ import { router } from '@inertiajs/vue3'
 import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Image from '@/Components/Image.vue'
+import Discount from '@/Components/Utils/Label/Discount.vue'
 library.add(faMinus, faArrowRight, faPlus, faChevronRight, faTrashAlt)
 // import { XMarkIcon } from '@heroicons/vue/24/outline'
 
@@ -266,9 +267,7 @@ const onRemoveFromBasket = (product) => {
                                 </div>
                                 <div class="ml-4 flex justify-between gap-x-4 w-full">
                                     <div class="flex flex-1 flex-col">
-                                        <div class="text-orange-600 text-sm">
-                                            Volume Discount 5% OFF
-                                        </div>
+                                        <Discount v-if="product.offers_data" :offers_data="product.offers_data" />
                             
                                         <div class="flex justify-between font-medium">
                                             <h4>
@@ -282,6 +281,8 @@ const onRemoveFromBasket = (product) => {
                                             </p>
                                         </div>
                                     </div>
+
+                                    
                                     <!-- Section: input quantity -->
                                     <div class="flex flex-col justify-between items-end pt-7">
                                         <div class="max-w-32 flex gap-x-2 h-fit items-center">

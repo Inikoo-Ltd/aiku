@@ -80,6 +80,7 @@ class IrisProductsInBasketResource extends JsonResource
             'website_id'            => $this->website_id,
             'webpage_id'            => $this->webpage_id,
             'currency_code'         => $this->currency_code,
+            'offers_data'           => $this->offers_data,
         ];
     }
 }

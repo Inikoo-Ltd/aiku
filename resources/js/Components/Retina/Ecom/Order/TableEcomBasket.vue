@@ -107,7 +107,7 @@ const debounceUpdateQuantity = debounce(
                 <div v-else class="text-gray-500 italic text-xs">
                     Stock: {{ locale.number(item.available_quantity || 0) }} available
                 </div>
-
+                
                 <Discount v-if="item.offers_data" :offers_data="item.offers_data" />
             </div>
         </template>
