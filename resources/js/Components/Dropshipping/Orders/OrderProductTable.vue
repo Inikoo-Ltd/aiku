@@ -6,7 +6,6 @@ import Table from '@/Components/Table/Table.vue'
 import Tag from '@/Components/Tag.vue'
 import { routeType } from '@/types/route'
 import { Table as TableTS } from '@/types/Table'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faPencil, faTimes, faTrashAlt } from '@far'
 import { Link, router } from '@inertiajs/vue3'
 import { notify } from '@kyvg/vue3-notification'
@@ -16,6 +15,11 @@ import Modal from '@/Components/Utils/Modal.vue'
 import ProductsSelectorAutoSelect from '@/Components/Dropshipping/ProductsSelectorAutoSelect.vue'
 import { ulid } from 'ulid'
 import Image from "@/Components/Image.vue"
+
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { faBadgePercent } from "@fas"
+import { library } from "@fortawesome/fontawesome-svg-core"
+library.add(faBadgePercent)
 
 type ProductRow = {
   id: number
@@ -304,6 +308,11 @@ defineExpose({
           <div v-else class="text-gray-500 italic text-xs">
             Stock: {{ locale.number(item.available_quantity || 0) }} available
           </div>
+          
+            <div v-if="item?.offers_data?.offers" class="bg-pink-500/20 px-1 py-0.5 text-xs border flex items-center border-pink-500/50 rounded w-fit text-pink-700" >
+                <FontAwesomeIcon icon="fas fa-badge-percent" class="text-pink-500 text-xxs align-middle" fixed-width aria-hidden="true" />
+                <span class="ml-0.5 font-bold">{{ item.offers_data?.offers?.discounted_percentage * 100 }}%</span> {{ item.offers_data?.offers?.label }}
+            </div>
         </div>
       </template>
 
