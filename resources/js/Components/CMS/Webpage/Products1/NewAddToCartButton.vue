@@ -262,7 +262,7 @@ const showChartButton = computed(() => {
 
             <!-- Quantity display (always visible) -->
             <span @click.stop.prevent 
-                class="text-sm font-medium text-gray-700 min-w-[1rem] cursor-default relative z-10 px-1 text-center self-center">
+                class="text-sm font-medium  min-w-[1rem] cursor-default relative z-10 px-1 text-center self-center">
                 {{ currentQuantity }}
             </span>
 
