@@ -67,7 +67,6 @@ enum ProfileTabsEnum: string
                 'type'  => 'icon',
                 'align' => 'right',
             ],
-
             // ProfileTabsEnum::MY_DATA => [
             //     'title' => __('My data'),
             //     'icon'  => 'fas fa-info-circle',

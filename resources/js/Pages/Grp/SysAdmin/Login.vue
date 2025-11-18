@@ -6,15 +6,10 @@ import ValidationErrors from '@/Components/ValidationErrors.vue'
 import { trans } from 'laravel-vue-i18n'
 import { onMounted, ref } from 'vue'
 import Button from '@/Components/Elements/Buttons/Button.vue'
-import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser';
 
 import Layout from '@/Layouts/GrpAuth.vue'
 import { useLayoutStore } from '@/Stores/layout'
 defineOptions({ layout: Layout })
-
-window.browserSupportsWebAuthn = browserSupportsWebAuthn;
-window.startAuthentication = startAuthentication;
-window.startRegistration = startRegistration;
 
 const form = useForm({
     username: '',
@@ -44,34 +39,6 @@ const submit = () => {
 }
 
 const _inputUsername = ref(null)
-
-
-const withPassKey = async () => {
-    try {
-      const response = await fetch(window.route("grp.passkeys.authentication_options"));
-      console.log(response)
-      if (!response.ok) {
-        throw new Error('Failed to fetch authentication options');
-      }
-
-      const options = await response.json();
-
-      const startAuthenticationResponse = await window.startAuthentication({
-        optionsJSON: options
-      });
-
-      await router.post(window.route("grp.passkeys.login"), {
-        start_authentication_response: JSON.stringify(
-          startAuthenticationResponse
-        )
-      });
-    } catch (error) {
-      console.error('Passkey authentication error:', error);
-      throw error;
-    }
-  };
-
-
 
 onMounted(async () => {
     _inputUsername.value?.focus()
@@ -112,9 +79,6 @@ onMounted(async () => {
 
         <div class="space-y-2">
             <Button full @click.prevent="submit" :loading="isLoading" label="Sign in" type="indigo"/>
-        </div>
-        <div>
-            <button type="button" @click="withPassKey">Authenticate with a passkey</button>
         </div>
     </form>
 
