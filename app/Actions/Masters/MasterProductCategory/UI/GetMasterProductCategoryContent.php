@@ -10,16 +10,13 @@
 
 namespace App\Actions\Masters\MasterProductCategory\UI;
 
-use App\Actions\Catalogue\Shop\UI\IndexOpenShopsInMasterShop;
 use App\Enums\Catalogue\MasterProductCategory\MasterProductCategoryTypeEnum;
-use App\Http\Resources\Api\Dropshipping\OpenShopsInMasterShopResource;
 use App\Http\Resources\Catalogue\MasterProductCategoryResource;
-use App\Http\Resources\Masters\MasterFamiliesResource;
 use App\Http\Resources\Masters\MasterSubDepartmentsResource;
 use App\Models\Masters\MasterProductCategory;
 use Lorisleiva\Actions\Concerns\AsObject;
 
-class GetMasterProductCategoryShowcase
+class GetMasterProductCategoryContent
 {
     use AsObject;
 
@@ -27,32 +24,13 @@ class GetMasterProductCategoryShowcase
     {
         return match ($productCategory->type) {
             MasterProductCategoryTypeEnum::DEPARTMENT => [
-                'storeFamilyRoute' => [
-                    'name' => 'grp.models.master_family.store',
-                    'parameters' => [
-                        'masterDepartment' => $productCategory->id
-                    ]
-                ],
                 'department' => MasterProductCategoryResource::make($productCategory)->resolve(),
             ],
             MasterProductCategoryTypeEnum::SUB_DEPARTMENT => [
-                'storeFamilyRoute' => [
-                    'name' => 'grp.models.master-sub-department.master_family.store',
-                    'parameters' => [
-                        'masterSubDepartment' => $productCategory->id
-                    ]
-                ],
                 'subDepartment' => MasterSubDepartmentsResource::make($productCategory)->resolve(),
             ],
             default => [
                 'family' => MasterProductCategoryResource::make($productCategory),
-                'save_route' => [
-                    'method' => 'patch',
-                    'name'       => 'grp.models.master_product_categories.translations.update',
-                    'parameters' => [
-                        'masterProductCategory' => $productCategory->id
-                    ]
-                ],
             ],
         };
     }

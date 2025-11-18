@@ -10,7 +10,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faBullhorn,
     faCameraRetro, faClock,
-    faCube, faCubes,
+    faCube, faCubes, faQuoteLeft,
     faFolder, faMoneyBillWave, faProjectDiagram, faTags, faUser, faFolders, faBrowser,faSeedling
 } from "@fal";
 
@@ -37,6 +37,7 @@ import { faOctopusDeploy } from "@fortawesome/free-brands-svg-icons";
 import TableDepartments from "@/Components/Tables/Grp/Org/Catalogue/TableDepartments.vue";
 import ImagesManagement from "@/Components/Goods/ImagesManagement.vue";
 import Breadcrumb from 'primevue/breadcrumb'
+import MasterContentProductCategory from "@/Components/Master/MasterContentProductCategory.vue"
 
 library.add(
     faFolder,
@@ -50,7 +51,7 @@ library.add(
     faMoneyBillWave,
     faDiagramNext,
     faCubes,
-    faFolders, faBrowser, faSeedling
+    faFolders, faBrowser, faSeedling, faQuoteLeft
 );
 
 
@@ -68,6 +69,7 @@ const props = defineProps<{
     history?: object;
     departments?: object
     showcase?: object
+    content?: object
     url_master?:routeType
     images?:object
     mini_breadcrumbs?: any[]
@@ -86,7 +88,8 @@ const component = computed(() => {
         customers: TableCustomers,
         details: ModelDetails,
         history: TableHistories,
-        images: ImagesManagement
+        images: ImagesManagement,
+        content : MasterContentProductCategory,
     };
     return components[currentTab.value];
 
@@ -108,7 +111,6 @@ function masterDepartmentRoute(department: Department) {
 
 
 <template>
-
     <Head :title="capitalize(title)" />
     <PageHeading :data="pageHead">
         <template #button-delete="propx">
