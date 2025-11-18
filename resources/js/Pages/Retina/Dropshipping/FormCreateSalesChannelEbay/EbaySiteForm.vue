@@ -5,7 +5,7 @@
   -->
 
 <script setup lang="ts">
-    import { inject } from "vue";
+    import { inject, ref } from "vue";
     import { faInfoCircle } from "@fal";
     import Select from "primevue/select";
     import { trans } from "laravel-vue-i18n";
@@ -19,10 +19,10 @@
     const goNext = inject("goNext");
     const closeCreateEbayModal = inject("closeCreateEbayModal");
 
-    const sites = [
+    const sites = ref([
         { name: "United States", value: "us" },
         { name: "United Kingdom", value: "uk" },
-    ];
+    ]);
 
     const form = useForm({
         site: ""
@@ -40,17 +40,17 @@
         <span class="text-sm">{{ trans("This is where you need to add your API settings") }}</span>
     </div>
     <form @submit.prevent="submitForm" class="flex flex-col gap-6">
-        <div class="flex flex-col gap-2 w-64">
+        <div class="flex flex-col gap-2 ">
             <label class="font-semibold">{{ trans("eBay Site") }}</label>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 w-full md:w-80">
                 <Select v-model="form.site" :options="sites" optionLabel="name" optionValue="value" class="w-full" />
-                <FontAwesomeIcon v-tooltip="trans('Select eBay site name')" icon="fal fa-info-circle" class="size-5 text-black" />
+                <FontAwesomeIcon v-tooltip="trans('Select listing duration')" icon="fal fa-info-circle" class="hidden md:block size-5 text-black" />
             </div>
         </div>
 
         <hr class="w-full border-t" />
 
-        <div class="flex justify-end gap-4">
+        <div class="flex md:justify-end gap-4">
             <Button type="secondary" size="sm" @click="closeCreateEbayModal">{{ trans("Cancel") }}</Button>
             <Button size="sm" @click="submitForm">{{ trans("Next") }}</Button>
         </div>
