@@ -17,12 +17,12 @@ import {
 } from "@fal"
 import { faCircle, faPlay, faTrash, faPlus, faBarcode } from "@fas"
 import { faImage } from "@far"
-import ProductSummary from "@/Components/Product/ProductSummary.vue"
 import ImagePrime from "primevue/image"
 import { toInteger } from "lodash"
 import { routeType } from "@/types/route"
 import { ProductResource } from "@/types/Iris/Products"
 import { Image as ImageTS } from "@/types/Image"
+import MasterProductSummary from "@/Components/Goods/MasterProductSummary.vue"
 
 
 library.add(
@@ -188,7 +188,7 @@ const props = defineProps<{
 				</div>
 			</div>
 		</div>
-		<ProductSummary :data="data.masterProduct" :video="videoSetup?.url"
+		<MasterProductSummary :data="data.masterProduct" :video="videoSetup?.url"
 			:hide="['price', 'rrp', 'stock', 'weight', 'dimension','picking']" />
 	</div>
 </template>
