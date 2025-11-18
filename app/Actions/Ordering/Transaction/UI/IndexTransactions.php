@@ -86,6 +86,7 @@ class IndexTransactions extends OrgAction
                 'products.available_quantity as available_quantity',
                 'currencies.code as currency_code',
                 'orders.id as order_id',
+                'transactions.offers_data'
             ])
             ->allowedSorts(['asset_code', 'asset_name', 'net_amount', 'quantity_ordered'])
             ->allowedFilters([$globalSearch])

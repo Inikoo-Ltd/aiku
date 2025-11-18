@@ -118,6 +118,7 @@ class Transaction extends Model
     protected $casts = [
         'quantity'                  => 'decimal:3',
         'data'                      => 'array',
+        'offers_data'               => 'array',
         'state'                     => TransactionStateEnum::class,
         'status'                    => TransactionStatusEnum::class,
         'out_of_stock_in_basket'    => 'boolean',
@@ -144,7 +145,8 @@ class Transaction extends Model
     ];
 
     protected $attributes = [
-        'data' => '{}',
+        'data'        => '{}',
+        'offers_data' => '{}',
     ];
 
     protected $guarded = [];

@@ -42,9 +42,22 @@ class CalculateOrderDiscounts
         ]);
 
         foreach ($this->transactions as $transaction) {
-
             DB::table('transactions')->where('id', $transaction->id)
-                ->update(['net_amount' => $transaction->net_amount]);
+                ->update(
+                    [
+                        'net_amount'  => $transaction->net_amount,
+                        'offers_data' => [
+                            'version' => 1,
+                            'offers'  => [
+                                'offer_id'              => $transaction->offer_id,
+                                'offer_type'            => 'percentage',
+                                'discounted_percentage' => $transaction->discounted_percentage,
+                                'label'                 => 'XX'
+
+                            ]
+                        ]
+                    ]
+                );
 
             DB::table('transaction_has_offer_allowances')->insert([
                 'order_id'              => $order->id,
@@ -71,7 +84,7 @@ class CalculateOrderDiscounts
         return $order;
     }
 
-    private function setEnabledOffers(Order $order):void
+    private function setEnabledOffers(Order $order): void
     {
         $enabledOffers = [];
 
@@ -115,7 +128,7 @@ class CalculateOrderDiscounts
         }
     }
 
-    public function processAllowance($offerId):void
+    public function processAllowance($offerId): void
     {
         $allowanceData = DB::table('offer_allowances')->select(['target_type', 'data', 'offer_id', 'id', 'offer_campaign_id'])->where('offer_id', $offerId)->first();
         if ($allowanceData) {
