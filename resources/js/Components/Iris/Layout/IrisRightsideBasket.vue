@@ -21,6 +21,7 @@ import LoadingIcon from '@/Components/Utils/LoadingIcon.vue'
 import { aikuLocaleStructure } from '@/Composables/useLocaleStructure'
 import Image from '@/Components/Image.vue'
 import Discount from '@/Components/Utils/Label/Discount.vue'
+import { computed } from 'vue'
 library.add(faMinus, faArrowRight, faPlus, faChevronRight, faTrashAlt)
 // import { XMarkIcon } from '@heroicons/vue/24/outline'
 
@@ -163,6 +164,14 @@ const onRemoveFromBasket = (product) => {
         }
     )
 }
+
+const compSpendMore = computed(() => {
+    const amount = parseFloat(layout.iris_variables?.cart_amount || 0)
+    if (amount >= 150) {
+        return 0
+    }
+    return locale.currencyFormat(layout.iris?.currency?.code, (150 - amount).toFixed(2))
+})
 </script>
 
 <template>
@@ -221,26 +230,36 @@ const onRemoveFromBasket = (product) => {
                 </div>
 
                 <div class="grid grid-cols-2 mb-3">
-                    <div>FREE Click + Collect from Our Warehouse</div>
-                    <div class="w-full">
+                    <div :class="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) >= 150 ? 'text-green-700' : ''">
+                        <!-- FREE Click + Collect from Our Warehouse -->
+                        <div v-if="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < 150">Spend <span class="text-orange-600 text-sm">{{ compSpendMore }}</span> more for FREE delivery</div>
+                        <div v-else class="text-sm">
+                            You got Discount 10%!
+                        </div>
+                    </div>
+                    
+                    <div class="w-full flex items-center">
                         <div class="w-full rounded-full h-1.5 bg-gray-200 relative overflow-hidden">
-                            <div class="absolute left-0  bg-green-500 top-0 h-full w-3/4 transition-all duration-300 ease-in-out">
-
-                            </div>
+                            <div class="absolute  left-0   top-0 h-full w-3/4 transition-all duration-1000 ease-in-out"
+                                :class="parseFloat(layout.iris_variables?.cart_amount).toFixed(2) < 150 ? 'shimmer bg-green-400' : 'bg-green-500'"
+                                :style="{
+                                    width: parseFloat(layout.iris_variables?.cart_amount).toFixed(2)/150 * 100 + '%'
+                                }"
+                            />
                         </div>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 mb-3">
+                <!-- <div class="grid grid-cols-2 mb-3">
                     <div>Spend <span class="text-orange-600 text-sm">$74.5</span> more for FREE delivery</div>
-                    <div class="w-full">
+                    <div class="w-full flex items-center">
                         <div class="w-full rounded-full h-1.5 bg-gray-200 relative overflow-hidden">
                             <div class="absolute left-0  bg-green-500 top-0 inset-0 w-2/4 transition-all">
 
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
 
                 <div class="">
                     <div>Order within <span class="bg-gray-100">7 hours 42 minutes</span> for next day delivery</div>
@@ -254,13 +273,16 @@ const onRemoveFromBasket = (product) => {
                         <template v-if="!isLoadingProducts">
                             <li v-for="product in get(layout, 'rightbasket.products', [])" :key="product.transaction_id" class="flex py-2 relative">
                                 <div v-if="product?.isLoadingRemove" class="inset-0 bg-gray-500/20 absolute z-10" />
-                                <div
-                                    class="size-20 shrink-0 overflow-hidden rounded-md border border-gray-200">
-                                    <!-- <img :src="product.image" :alt="product.imageAlt"
-                                        class="size-full object-cover" /> -->
-                                    <Image
-                                        :src="product?.web_images?.main?.original"
-                                    />
+                                <div class="relative">
+                                    <div
+                                        class="size-20 shrink-0 overflow-hidden rounded-md border border-gray-200">
+                                        <!-- <img :src="product.image" :alt="product.imageAlt"
+                                            class="size-full object-cover" /> -->
+                                        <Image
+                                            :src="product?.web_images?.main?.original"
+                                        />
+                                    </div>
+                                    <div class="ribbon">{{ "Discount" ?? product.offers_data?.o?.l }}</div>
                                 </div>
                                 <div>
                                     <!-- <pre>{{ product }}</pre> -->
@@ -383,3 +405,31 @@ const onRemoveFromBasket = (product) => {
     </div>
 </template>
 
+
+
+<style lang="scss" scoped>
+.ribbon {
+    font-size: 0.6rem;
+//   font-weight: bold;
+    color: #fff;
+}
+.ribbon {
+    --f: .5em; /* control the folded part*/
+    --r: .8em; /* control the ribbon shape */
+    
+    position: absolute;
+    bottom: 22px;
+    left: calc(-1*var(--f));
+    padding-inline: .25em;
+    padding-left: 4px;
+    line-height: 1.8;
+    background: rgb(236 72 153);
+    border-top: var(--f) solid #0005;
+    border-right: var(--r) solid #0000;
+    clip-path: 
+        polygon(0 100%,0 var(--f),var(--f) 0,
+        var(--f) var(--f),100% var(--f),
+        calc(100% - var(--r)) calc(50% + var(--f)/2),100% 100%);
+}
+
+</style>
