@@ -18,7 +18,7 @@ class CalculateOrderDiscounts
     use AsObject;
 
     private \Illuminate\Support\Collection $transactions;
-    private array $allowances = [];
+
     private array $enabledOffers = [];
     private Order $order;
 
@@ -38,7 +38,8 @@ class CalculateOrderDiscounts
 
         DB::table('transaction_has_offer_allowances')->where('order_id', $order->id)->delete();
         DB::table('transactions')->where('order_id', $order->id)->update([
-            'net_amount' => DB::raw('gross_amount'),
+            'net_amount'  => DB::raw('gross_amount'),
+            'offers_data' => []
         ]);
 
         foreach ($this->transactions as $transaction) {
@@ -50,9 +51,9 @@ class CalculateOrderDiscounts
                             'version' => 1,
                             'offers'  => [
                                 'offer_id'              => $transaction->offer_id,
-                                'offer_type'            => 'percentage',
+                                'offer_type'            => $transaction->allowance_type,
                                 'discounted_percentage' => $transaction->discounted_percentage,
-                                'label'                 => 'XX'
+                                'label'                 => $transaction->offer_label
 
                             ]
                         ]
@@ -88,11 +89,15 @@ class CalculateOrderDiscounts
     {
         $enabledOffers = [];
 
-        $offersData = DB::table('offers')->select(['id', 'type', 'trigger_data', 'allowance_signature'])->where('shop_id', $order->shop_id)->where('status', true)->where('trigger_type', 'Customer')->get();
+        $offersData = DB::table('offers')->select(['id', 'type', 'trigger_data', 'allowance_signature', 'name'])->where('shop_id', $order->shop_id)->where('status', true)->where('trigger_type', 'Customer')->get();
         foreach ($offersData as $offerData) {
             if ($offerData->type == 'Amount AND Order Number') {
                 if ($this->checkAmountAndOrderNumber($order, $offerData)) {
-                    $enabledOffers[$offerData->allowance_signature] = $offerData->id;
+                    $enabledOffers[$offerData->allowance_signature] = [
+                        'offer_id'    => $offerData->id,
+                        'offer_label' => $offerData->name
+
+                    ];
                 }
             }
         }
@@ -123,22 +128,22 @@ class CalculateOrderDiscounts
 
     public function processAllowances(): void
     {
-        foreach ($this->enabledOffers as $offerId) {
-            $this->processAllowance($offerId);
+        foreach ($this->enabledOffers as $offerData) {
+            $this->processAllowance($offerData);
         }
     }
 
-    public function processAllowance($offerId): void
+    public function processAllowance(array $offerData): void
     {
-        $allowanceData = DB::table('offer_allowances')->select(['target_type', 'data', 'offer_id', 'id', 'offer_campaign_id'])->where('offer_id', $offerId)->first();
+        $allowanceData = DB::table('offer_allowances')->select(['target_type', 'data', 'offer_id', 'id', 'offer_campaign_id'])->where('offer_id', $offerData['offer_id'])->first();
         if ($allowanceData) {
             if ($allowanceData->target_type == 'all_products_in_order') {
-                $this->processAllowanceAllProductsInOrder($allowanceData);
+                $this->processAllowanceAllProductsInOrder($offerData, $allowanceData);
             }
         }
     }
 
-    public function processAllowanceAllProductsInOrder($allowanceData): void
+    public function processAllowanceAllProductsInOrder(array $offerData, $allowanceData): void
     {
         $allowanceOpsData = json_decode($allowanceData->data, true) ?? [];
         $percentageOff    = isset($allowanceOpsData['percentage_off']) ? (float)$allowanceOpsData['percentage_off'] : 0.0;
@@ -170,6 +175,8 @@ class CalculateOrderDiscounts
                 $transaction->offer_id              = $allowanceData->offer_id;
                 $transaction->offer_campaign_id     = $allowanceData->offer_campaign_id;
                 $transaction->offer_allowance_id    = $allowanceData->id;
+                $transaction->offer_label           = $offerData['offer_label'];
+                $transaction->allowance_type        = 'percentage';
             }
         }
     }
