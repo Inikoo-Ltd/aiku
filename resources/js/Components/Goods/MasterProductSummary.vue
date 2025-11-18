@@ -86,7 +86,7 @@ const props = withDefaults(
 		data: PropsData
 		gpsr?: Gpsr
 		parts?: { id: number; name: string }[]
-		type: string
+		type?: string
 		video?: string
 		hide?: string[]
 		properties?: {
@@ -220,15 +220,15 @@ console.log('product summary : ', props)
 					</div>
 					<div v-if="!hide?.includes('cpnp')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("CPNP Number") }}</dt>
-						<dd class="font-medium">{{data?.cpnp_number}}</dd>
+						<dd class="font-medium">{{data?.cpnp_number ?? '-'}}</dd>
 					</div>
 					<div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("UFI Number") }}</dt>
-						<dd class="font-medium">{{data?.ufi_number}}</dd>
+						<dd class="font-medium">{{data?.ufi_number ?? '-'}}</dd>
 					</div>
 					<div v-if="!hide?.includes('ufi')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("SCPN Number") }}</dt>
-						<dd class="font-medium">{{data?.scpn_number}}</dd>
+						<dd class="font-medium">{{data?.scpn_number ?? '-'}}</dd>
 					</div>
 					<div v-if="!hide?.includes('created_at')" class="flex justify-between flex-wrap gap-1">
 						<dt class="text-gray-500">{{ trans("Added date") }}</dt>
@@ -469,7 +469,7 @@ console.log('product summary : ', props)
 									<div class="flex justify-between">
 										<dt class="text-gray-500">{{ trans("Duty rate") }}</dt>
 										<dd class="font-medium">
-											{{ properties?.duty_rate }}
+											{{ properties?.duty_rate ?? '-' }}
 										</dd>
 									</div>
 									<div class="flex justify-between">
